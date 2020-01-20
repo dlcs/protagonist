@@ -1,4 +1,4 @@
-# Rethinkinig thumbnail handling
+# Rethinking thumbnail handling
 
 At present, the DLCS stores thumbnails in S3 in a way that matches Image Service URLs. This means you can just proxy S3 and serve thumbnails quickly.
 
@@ -73,7 +73,7 @@ A completely S3-backed service is appealing.
 
 This only works if the DLCS confines thumbnails to squares - which it does, and nobody has ever asked for anything different.
 
-This approach is more flexible, uses far fewer S3 keys, is very very scalable, and is simpler.
+This approach is more flexible, uses far fewer S3 keys, is very very scalable, and is simpler. It still appears to be a normal level 0 IIIF Image APi Service, it works with Openseadragon, etc.
 
 It does mean migrating old layout to new layout.
 
