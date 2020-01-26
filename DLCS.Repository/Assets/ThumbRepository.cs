@@ -45,7 +45,7 @@ namespace DLCS.Repository.Assets
 
         public async Task<ObjectInBucket> GetThumbLocation(int customerId, int spaceId, ImageRequest imageRequest)
         {
-            EnsureNewLayout(customerId, spaceId, imageRequest);
+            await EnsureNewLayout(customerId, spaceId, imageRequest);
             int longestEdge = 0;
             if (imageRequest.Size.Width > 0 && imageRequest.Size.Height > 0)
             {
@@ -89,7 +89,7 @@ namespace DLCS.Repository.Assets
 
         public async Task<List<int[]>> GetSizes(int customerId, int spaceId, ImageRequest imageRequest)
         {
-            EnsureNewLayout(customerId, spaceId, imageRequest);
+            await EnsureNewLayout(customerId, spaceId, imageRequest);
 
             ObjectInBucket sizesList = new ObjectInBucket
             {
@@ -136,7 +136,7 @@ namespace DLCS.Repository.Assets
         }
 
 
-        private void EnsureNewLayout(in int customerId, in int spaceId, ImageRequest imageRequest)
+        private async Task EnsureNewLayout(int customerId, int spaceId, ImageRequest imageRequest)
         {
             if (!ensureNewLayout)
             {
@@ -148,8 +148,8 @@ namespace DLCS.Repository.Assets
                 Bucket = thumbsBucket,
                 Key = GetKeyRoot(customerId, spaceId, imageRequest)
             };
-            var thumbReorganiser = new ThumbReorganiser(rootKey, bucketReader, logger, assetRepository, this);
-            thumbReorganiser.EnsureNewLayout();
+            await new ThumbReorganiser(rootKey, bucketReader, logger, assetRepository, this)
+                .EnsureNewLayout();
         }
     }
 }

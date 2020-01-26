@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using IIIF.ImageApi;
@@ -31,7 +32,7 @@ namespace DLCS.Repository.Assets
             this.thumbRepository = thumbRepository;
         }
 
-        public void EnsureNewLayout()
+        public async Task EnsureNewLayout()
         {
             // test for existence of sizes.json
             var keys = bucketReader.GetMatchingKeys(rootKey).Result;
@@ -62,16 +63,16 @@ namespace DLCS.Repository.Assets
 
             var sizesDest = rootKey.Clone();
             sizesDest.Key += "sizes.json";
-            bucketReader.WriteToBucket(sizesDest, JsonConvert.SerializeObject(sizesJson), "application/json");
+            await bucketReader.WriteToBucket(sizesDest, JsonConvert.SerializeObject(sizesJson), "application/json");
 
             // low.jpg becomes the first in this list
-            bucketReader.CopyWithinBucket(rootKey.Bucket,
+            await bucketReader.CopyWithinBucket(rootKey.Bucket,
                 $"{rootKey.Key}low.jpg",
                 $"{rootKey.Key}{boundingSquares[0]}.jpg");
             int n = 1;
             foreach (Size size in expectedSizes.Skip(1))
             {
-                bucketReader.CopyWithinBucket(rootKey.Bucket,
+                await bucketReader.CopyWithinBucket(rootKey.Bucket,
                     $"{rootKey.Key}full/{size.Width},{size.Height}/0/default.jpg",
                     $"{rootKey.Key}{boundingSquares[n++]}.jpg");
             }
