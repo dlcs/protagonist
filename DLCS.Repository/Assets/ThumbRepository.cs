@@ -78,6 +78,11 @@ namespace DLCS.Repository.Assets
                         }
                     }
                 }
+
+                if (imageRequest.Size.Max)
+                {
+                    longestEdge = Math.Max(sizes[0][0], sizes[0][1]);
+                }
             }
             return new ObjectInBucket
             {

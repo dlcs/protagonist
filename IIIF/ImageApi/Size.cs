@@ -73,7 +73,7 @@ namespace IIIF.ImageApi
                 pathPart = pathPart.Substring(1);
             }
 
-            if (pathPart == "max")
+            if (pathPart == "max" || pathPart == "full")
             {
                 size.Max = true;
                 return size;

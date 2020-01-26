@@ -34,6 +34,7 @@ namespace DLCS.Repository.Assets
 
         public async Task EnsureNewLayout()
         {
+            // TODO: We need to lock this, to avoid multiple concurrent attempts to make the new layout
             // test for existence of sizes.json
             var keys = bucketReader.GetMatchingKeys(rootKey).Result;
             if(keys.Contains($"{rootKey.Key}sizes.json"))
