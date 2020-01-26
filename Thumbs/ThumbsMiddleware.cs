@@ -26,7 +26,7 @@ namespace Thumbs
             IThumbRepository thumbRepository)
         {
             this.configuration = configuration;
-            this.cacheSeconds = configuration.GetValue<int>("responseCacheSeconds", 0);
+            this.cacheSeconds = configuration.GetValue<int>("ResponseCacheSeconds", 0);
             this.logger = logger;
             this.thumbRepository = thumbRepository;
         }
