@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace DLCS.Repository.Assets
 {
-    class ThumbReorganiser
+    public class ThumbReorganiser
     {
         private readonly ObjectInBucket rootKey;
         private readonly IBucketReader bucketReader;
@@ -36,7 +36,7 @@ namespace DLCS.Repository.Assets
         {
             // TODO: We need to lock this, to avoid multiple concurrent attempts to make the new layout
             // test for existence of sizes.json
-            var keys = bucketReader.GetMatchingKeys(rootKey).Result;
+            var keys = await bucketReader.GetMatchingKeys(rootKey);
             if(keys.Contains($"{rootKey.Key}sizes.json"))
             {
                 logger.LogInformation($"sizes.json already present in {rootKey}");
@@ -49,10 +49,10 @@ namespace DLCS.Repository.Assets
             // we'll need to fetch the image dimensions from the database, the Thumbnail policy the image was created with, and compute the sizes.
             // Then sanity check them against the known sizes.
             var asset = assetRepository.GetAsset(rootKey.Key.TrimEnd('/'));
-            var policy = thumbRepository.GeThumbnailPolicy(asset.ThumbnailPolicy);
-            var expectedSizes = new List<Size>();
+            var policy = thumbRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
             var realSize = new Size{ Width = asset.Width, Height = asset.Height };
             var boundingSquares = policy.SizeList.OrderByDescending(i => i).ToList();
+            var expectedSizes = new List<Size>(boundingSquares.Count);
             foreach (int boundingSquare in boundingSquares)
             {
                 expectedSizes.Add(Size.Confine(boundingSquare, realSize));
@@ -78,7 +78,6 @@ namespace DLCS.Repository.Assets
                     $"{rootKey.Key}{boundingSquares[n++]}.jpg");
             }
         }
-
 
         public void DeleteOldLayout()
         {
