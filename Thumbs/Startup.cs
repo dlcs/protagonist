@@ -5,6 +5,7 @@ using DLCS.Model.PathElements;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Builder;
@@ -38,6 +39,8 @@ namespace Thumbs
             services.AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>();
             services.AddSingleton<IThumbRepository, ThumbRepository>();
             services.AddSingleton<IAssetRepository, AssetRepository>();
+            
+            services.Configure<ThumbsSettings>(Configuration.GetSection("Repository"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

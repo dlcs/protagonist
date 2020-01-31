@@ -1,3 +1,4 @@
+using System;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -10,10 +11,22 @@ namespace Thumbs
         {
             CreateHostBuilder(args).Build().Run();
         }
-
-        // TODO: Read config from parameter store, investigate polling of config for live update
+        
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration((context, builder) =>
+                {
+                    builder.AddSystemsManager(configurationSource =>
+                    {
+                        configurationSource.Path = "/thumbs/";
+                        
+                        // TODO - what's a sensible value here?
+                        configurationSource.ReloadAfter = TimeSpan.FromMinutes(90);
+
+                        // Using ParameterStore optional if Development
+                        configurationSource.Optional = context.HostingEnvironment.IsDevelopment();
+                    });
+                })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
