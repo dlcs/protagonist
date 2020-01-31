@@ -31,31 +31,28 @@ namespace Thumbs
             this.thumbRepository = thumbRepository;
         }
 
-        public async Task Invoke(HttpContext context,
+        public Task Invoke(HttpContext context,
             IBucketReader bucketReader,
             AssetDeliveryPathParser parser)
         {
             var thumbnailRequest = parser.Parse(context.Request.Path.Value);
             if (thumbnailRequest.IIIFImageRequest.IsBase)
             {
-                await RedirectToInfoJson(context);
+                return RedirectToInfoJson(context);
             }
-            else if (thumbnailRequest.IIIFImageRequest.IsInformationRequest)
+
+            if (thumbnailRequest.IIIFImageRequest.IsInformationRequest)
             {
-                await WriteInfoJson(context, thumbnailRequest);
+                return WriteInfoJson(context, thumbnailRequest);
             }
-            else
+
+            // mode for debugging etc
+            switch (context.Request.Query["mode"])
             {
-                // mode for debugging etc
-                switch (context.Request.Query["mode"])
-                {
-                    case "dump":
-                        await WriteRequestDump(context, thumbnailRequest);
-                        break;
-                    default:
-                        await WritePixels(context, thumbnailRequest, bucketReader);
-                        break;
-                }
+                case "dump":
+                    return WriteRequestDump(context, thumbnailRequest);
+                default:
+                    return WritePixels(context, thumbnailRequest, bucketReader);
             }
         }
 

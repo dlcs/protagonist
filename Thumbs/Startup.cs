@@ -26,13 +26,14 @@ namespace Thumbs
 
         public void ConfigureServices(IServiceCollection services)
         {
+            // TODO: more healthchecks for DB etc.
             services.AddHealthChecks();
             services.AddCors();
+            services.AddMemoryCache();
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
             services.AddAWSService<IAmazonS3>();
             services.AddSingleton<IBucketReader, BucketReader>();
             services.AddSingleton<AssetDeliveryPathParser>();
-            services.AddSingleton<IMemoryCache, MemoryCache>();
             services.AddSingleton<ICustomerRepository, CustomerRepository>();
             services.AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>();
             services.AddSingleton<IThumbRepository, ThumbRepository>();
@@ -44,6 +45,7 @@ namespace Thumbs
         {
             app.UseRouting();
             app.UseCors(); 
+            // TODO: Consider better caching solutions
             app.UseResponseCaching();
             app.UseEndpoints(endpoints =>
             {

@@ -11,6 +11,7 @@ namespace Thumbs
             CreateHostBuilder(args).Build().Run();
         }
 
+        // TODO: Read config from parameter store, investigate polling of config for live update
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>

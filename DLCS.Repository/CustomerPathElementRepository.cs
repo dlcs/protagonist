@@ -58,6 +58,7 @@ namespace DLCS.Repository
 
         private Dictionary<string, int> EnsureDictionary()
         {
+            // TODO: Investigate locks, best caching approach, etc, LazyCache
             const string key = "CustomerPathElementRepository_CustomerNameLookupKey";
             return memoryCache.GetOrCreate(key, entry =>
                 {
