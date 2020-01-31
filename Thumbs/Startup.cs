@@ -26,8 +26,8 @@ namespace Thumbs
 
         public void ConfigureServices(IServiceCollection services)
         {
-            // TODO: more healthchecks for DB etc.
-            services.AddHealthChecks();
+            services.AddHealthChecks()
+                .AddNpgSql(Configuration.GetConnectionString("PostgreSQLConnection"));
             services.AddCors();
             services.AddMemoryCache();
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
