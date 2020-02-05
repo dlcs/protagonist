@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 using Dapper;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
+using DLCS.Repository.Settings;
 using IIIF.ImageApi;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Npgsql;
 
@@ -18,29 +20,26 @@ namespace DLCS.Repository.Assets
     public class ThumbRepository : IThumbRepository
     {
         private readonly IMemoryCache memoryCache;
-        private readonly IConfiguration configuration;
         private readonly ILogger<ThumbRepository> logger;
-        private readonly bool ensureNewLayout;
         private readonly IBucketReader bucketReader;
-        private readonly string thumbsBucket;
         private readonly IAssetRepository assetRepository;
+        private readonly IOptionsMonitor<ThumbsSettings> settings;
+        private readonly IConfiguration configuration;
 
         public ThumbRepository(
             IMemoryCache memoryCache,
             IConfiguration configuration,
             ILogger<ThumbRepository> logger,
             IBucketReader bucketReader,
-            IAssetRepository assetRepository)
+            IAssetRepository assetRepository,
+            IOptionsMonitor<ThumbsSettings> settings)
         {
-            this.configuration = configuration;
+            this.configuration = configuration;    
             this.logger = logger;
             this.bucketReader = bucketReader;
             this.assetRepository = assetRepository;
+            this.settings = settings;
             this.memoryCache = memoryCache;
-
-            // application config? Or Constructor params..?
-            ensureNewLayout = configuration.GetValue("EnsureNewThumbnailLayout", false);
-            thumbsBucket = configuration.GetValue<string>("ThumbsBucket");
         }
 
         public async Task<ObjectInBucket> GetThumbLocation(int customerId, int spaceId, ImageRequest imageRequest)
@@ -86,11 +85,10 @@ namespace DLCS.Repository.Assets
             }
             return new ObjectInBucket
             {
-                Bucket = thumbsBucket,
+                Bucket = settings.CurrentValue.ThumbsBucket,
                 Key = GetKeyRoot(customerId, spaceId, imageRequest) + $"{longestEdge}.jpg"
             };
         }
-
 
         public async Task<List<int[]>> GetSizes(int customerId, int spaceId, ImageRequest imageRequest)
         {
@@ -98,18 +96,21 @@ namespace DLCS.Repository.Assets
 
             ObjectInBucket sizesList = new ObjectInBucket
             {
-                Bucket = thumbsBucket,
+                Bucket = settings.CurrentValue.ThumbsBucket,
                 Key = GetKeyRoot(customerId, spaceId, imageRequest) + "sizes.json"
             };
             var stream = new MemoryStream();
             await bucketReader.WriteObjectFromBucket(sizesList, stream);
             var serializer = new JsonSerializer();
             stream.Position = 0;
-            using (var sr = new StreamReader(stream))
-            using (var jsonTextReader = new JsonTextReader(sr))
-            {
-                return (List<int[]>) serializer.Deserialize(jsonTextReader, typeof(List<int[]>));
-            }
+            using var sr = new StreamReader(stream);
+            using var jsonTextReader = new JsonTextReader(sr);
+            return serializer.Deserialize<List<int[]>>(jsonTextReader);
+        }
+        
+        public ThumbnailPolicy GetThumbnailPolicy(string thumbnailPolicyId)
+        {
+            return GetThumbnailPolicies().SingleOrDefault(p => p.Id == thumbnailPolicyId);
         }
 
         private List<ThumbnailPolicy> GetThumbnailPolicies()
@@ -118,21 +119,14 @@ namespace DLCS.Repository.Assets
             return memoryCache.GetOrCreate(key, entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                logger.LogInformation("refreshing ThumbnailPolicies from database"); 
-                using (var connection = new NpgsqlConnection(configuration.GetConnectionString("PostgreSQLConnection")))
-                {
-                    connection.Open();
-                    return connection.Query<ThumbnailPolicy>(
+                logger.LogInformation("refreshing ThumbnailPolicies from database");
+                using var connection = new NpgsqlConnection(configuration.GetConnectionString("PostgreSQLConnection"));
+                connection.Open();
+                return connection.Query<ThumbnailPolicy>(
                         "SELECT \"Id\", \"Name\", \"Sizes\" FROM \"ThumbnailPolicies\"")
-                        .ToList();
-                }
+                    .ToList();
             });
 
-        }
-
-        public ThumbnailPolicy GeThumbnailPolicy(string thumbnailPolicyId)
-        {
-            return GetThumbnailPolicies().SingleOrDefault(p => p.Id == thumbnailPolicyId);
         }
 
         private string GetKeyRoot(int customerId, int spaceId, ImageRequest imageRequest)
@@ -140,20 +134,21 @@ namespace DLCS.Repository.Assets
             return $"{customerId}/{spaceId}/{imageRequest.Identifier}/";
         }
 
-
-        private async Task EnsureNewLayout(int customerId, int spaceId, ImageRequest imageRequest)
+        private Task EnsureNewLayout(int customerId, int spaceId, ImageRequest imageRequest)
         {
-            if (!ensureNewLayout)
+            var currentSettings = this.settings.CurrentValue;
+            if (!currentSettings.EnsureNewThumbnailLayout)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             var rootKey = new ObjectInBucket
             {
-                Bucket = thumbsBucket,
+                Bucket = currentSettings.ThumbsBucket,
                 Key = GetKeyRoot(customerId, spaceId, imageRequest)
             };
-            await new ThumbReorganiser(rootKey, bucketReader, logger, assetRepository, this)
+            
+            return new ThumbReorganiser(rootKey, bucketReader, logger, assetRepository, this)
                 .EnsureNewLayout();
         }
     }
