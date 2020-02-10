@@ -10,7 +10,6 @@ using DLCS.Repository.Storage.S3;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -28,7 +27,7 @@ namespace Thumbs
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHealthChecks()
-                .AddNpgSql(Configuration.GetConnectionString("PostgreSQLConnection"));
+                .AddNpgSql(Configuration.GetPostgresSqlConnection());
             services.AddCors();
             services.AddMemoryCache();
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
@@ -39,7 +38,7 @@ namespace Thumbs
             services.AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>();
             services.AddSingleton<IThumbRepository, ThumbRepository>();
             services.AddSingleton<IAssetRepository, AssetRepository>();
-            
+
             services.Configure<ThumbsSettings>(Configuration.GetSection("Repository"));
         }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using DLCS.Model.Customer;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Caching.Memory;
@@ -24,17 +25,17 @@ namespace DLCS.Repository
             this.logger = logger;
         }
 
-        public CustomerPathElement GetCustomer(string customerPart)
+        public async Task<CustomerPathElement> GetCustomer(string customerPart)
         {
             // customerPart can be an int or a string name
             string customerName = null;
             if (int.TryParse(customerPart, out var customerId))
             {
-                customerName = GetCustomerName(customerId);
+                customerName = await GetCustomerName(customerId);
             }
             else
             {
-                customerId = GetCustomerId(customerPart);
+                customerId = await GetCustomerId(customerPart);
                 if (customerId > 0)
                 {
                     customerName = customerPart;
@@ -43,24 +44,23 @@ namespace DLCS.Repository
             return new CustomerPathElement {Id = customerId, Name = customerName};
         }
 
-        private int GetCustomerId(string customerName)
+        private async Task<int> GetCustomerId(string customerName)
         {
-            Dictionary<string, int> lookup = EnsureDictionary();
+            Dictionary<string, int> lookup = await EnsureDictionary();
             return lookup[customerName];
         }
 
-
-        private string GetCustomerName(in int customerId)
+        private async Task<string> GetCustomerName(int customerId)
         {
-            Dictionary<int, string> lookup = EnsureInverseDictionary();
+            Dictionary<int, string> lookup = await EnsureInverseDictionary();
             return lookup[customerId];
         }
 
-        private Dictionary<string, int> EnsureDictionary()
+        private Task<Dictionary<string, int>> EnsureDictionary()
         {
             // TODO: Investigate locks, best caching approach, etc, LazyCache
             const string key = "CustomerPathElementRepository_CustomerNameLookupKey";
-            return memoryCache.GetOrCreate(key, entry =>
+            return memoryCache.GetOrCreateAsync(key, entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                     logger.LogInformation("refreshing customer name => id lookup from database");
@@ -68,15 +68,15 @@ namespace DLCS.Repository
                 });
         }
 
-
-        private Dictionary<int, string> EnsureInverseDictionary()
+        private Task<Dictionary<int, string>> EnsureInverseDictionary()
         {
             const string key = "CustomerPathElementRepository_InverseCustomerNameLookupKey";
-            return memoryCache.GetOrCreate(key, entry =>
+            return memoryCache.GetOrCreateAsync(key, async entry => 
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 logger.LogInformation("refreshing customer id => name lookup from database");
-                return customerRepository.GetCustomerIdLookup().ToDictionary(
+                var customerIdLookup = await customerRepository.GetCustomerIdLookup();
+                return customerIdLookup.ToDictionary(
                     kvp => kvp.Value, kvp => kvp.Key);
             });
         }

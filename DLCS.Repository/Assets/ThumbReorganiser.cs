@@ -48,8 +48,8 @@ namespace DLCS.Repository.Assets
             // trouble is we do not know how big it is!
             // we'll need to fetch the image dimensions from the database, the Thumbnail policy the image was created with, and compute the sizes.
             // Then sanity check them against the known sizes.
-            var asset = assetRepository.GetAsset(rootKey.Key.TrimEnd('/'));
-            var policy = thumbRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
+            var asset = await assetRepository.GetAsset(rootKey.Key.TrimEnd('/'));
+            var policy = await thumbRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
             var realSize = new Size{ Width = asset.Width, Height = asset.Height };
             var boundingSquares = policy.SizeList.OrderByDescending(i => i).ToList();
             var expectedSizes = new List<Size>(boundingSquares.Count);

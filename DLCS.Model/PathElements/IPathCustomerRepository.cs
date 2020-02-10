@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Threading.Tasks;
 
 namespace DLCS.Model.PathElements
 {
     public interface IPathCustomerRepository
     {
-        CustomerPathElement GetCustomer(string customerPart);
+        Task<CustomerPathElement> GetCustomer(string customerPart);
     }
 }

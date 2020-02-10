@@ -1,8 +1,8 @@
-﻿using Dapper;
+﻿using System.Threading.Tasks;
+using Dapper;
 using DLCS.Model.Assets;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Npgsql;
 
 namespace DLCS.Repository.Assets
 {
@@ -18,13 +18,10 @@ namespace DLCS.Repository.Assets
             this.logger = logger;
         }
 
-        public Asset GetAsset(string id)
+        public async Task<Asset> GetAsset(string id)
         {
-            using (var connection = new NpgsqlConnection(configuration.GetConnectionString("PostgreSQLConnection")))
-            {
-                connection.Open();
-                return connection.QuerySingleOrDefault<Asset>(AssetSql, new {Id = id});
-            }
+            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+            return await connection.QuerySingleOrDefaultAsync<Asset>(AssetSql, new {Id = id});
         }
 
         private const string AssetSql = @"

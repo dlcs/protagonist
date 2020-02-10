@@ -13,7 +13,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Npgsql;
 
 namespace DLCS.Repository.Assets
 {
@@ -108,25 +107,24 @@ namespace DLCS.Repository.Assets
             return serializer.Deserialize<List<int[]>>(jsonTextReader);
         }
         
-        public ThumbnailPolicy GetThumbnailPolicy(string thumbnailPolicyId)
+        public async Task<ThumbnailPolicy> GetThumbnailPolicy(string thumbnailPolicyId)
         {
-            return GetThumbnailPolicies().SingleOrDefault(p => p.Id == thumbnailPolicyId);
+            var thumbnailPolicies = await GetThumbnailPolicies();
+            return thumbnailPolicies.SingleOrDefault(p => p.Id == thumbnailPolicyId);
         }
 
-        private List<ThumbnailPolicy> GetThumbnailPolicies()
+        private async Task<List<ThumbnailPolicy>> GetThumbnailPolicies()
         {
             const string key = "ThumbRepository_ThumbnailPolicies";
-            return memoryCache.GetOrCreate(key, entry =>
+            return await memoryCache.GetOrCreateAsync(key, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
                 logger.LogInformation("refreshing ThumbnailPolicies from database");
-                using var connection = new NpgsqlConnection(configuration.GetConnectionString("PostgreSQLConnection"));
-                connection.Open();
-                return connection.Query<ThumbnailPolicy>(
-                        "SELECT \"Id\", \"Name\", \"Sizes\" FROM \"ThumbnailPolicies\"")
-                    .ToList();
+                await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+                var thumbnailPolicies = await connection.QueryAsync<ThumbnailPolicy>(
+                    "SELECT \"Id\", \"Name\", \"Sizes\" FROM \"ThumbnailPolicies\"");
+                return thumbnailPolicies.ToList();
             });
-
         }
 
         private string GetKeyRoot(int customerId, int spaceId, ImageRequest imageRequest)
