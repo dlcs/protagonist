@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Model.Customer;
 using DLCS.Model.PathElements;
+using LazyCache;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
@@ -11,18 +12,18 @@ namespace DLCS.Repository
 {
     public class CustomerPathElementRepository : IPathCustomerRepository
     {
-        private readonly IMemoryCache memoryCache;
         private readonly ICustomerRepository customerRepository;
         private readonly ILogger<CustomerPathElementRepository> logger;
+        private readonly IAppCache appCache;
 
         public CustomerPathElementRepository(
-            IMemoryCache memoryCache,
+            IAppCache appCache,
             ICustomerRepository customerRepository,
             ILogger<CustomerPathElementRepository> logger)
         {
-            this.memoryCache = memoryCache;
             this.customerRepository = customerRepository;
             this.logger = logger;
+            this.appCache = appCache;
         }
 
         public async Task<CustomerPathElement> GetCustomer(string customerPart)
@@ -60,7 +61,7 @@ namespace DLCS.Repository
         {
             // TODO: Investigate locks, best caching approach, etc, LazyCache
             const string key = "CustomerPathElementRepository_CustomerNameLookupKey";
-            return memoryCache.GetOrCreateAsync(key, entry =>
+            return appCache.GetOrAddAsync(key, entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                     logger.LogInformation("refreshing customer name => id lookup from database");
@@ -71,7 +72,7 @@ namespace DLCS.Repository
         private Task<Dictionary<int, string>> EnsureInverseDictionary()
         {
             const string key = "CustomerPathElementRepository_InverseCustomerNameLookupKey";
-            return memoryCache.GetOrCreateAsync(key, async entry => 
+            return appCache.GetOrAddAsync(key, async entry => 
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 logger.LogInformation("refreshing customer id => name lookup from database");

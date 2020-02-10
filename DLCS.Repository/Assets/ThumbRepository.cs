@@ -8,7 +8,7 @@ using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository.Settings;
 using IIIF.ImageApi;
-using Microsoft.Extensions.Caching.Memory;
+using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -18,7 +18,7 @@ namespace DLCS.Repository.Assets
 {
     public class ThumbRepository : IThumbRepository
     {
-        private readonly IMemoryCache memoryCache;
+        private readonly IAppCache appCache;
         private readonly ILogger<ThumbRepository> logger;
         private readonly IBucketReader bucketReader;
         private readonly IAssetRepository assetRepository;
@@ -26,7 +26,7 @@ namespace DLCS.Repository.Assets
         private readonly IConfiguration configuration;
 
         public ThumbRepository(
-            IMemoryCache memoryCache,
+            IAppCache appCache,
             IConfiguration configuration,
             ILogger<ThumbRepository> logger,
             IBucketReader bucketReader,
@@ -38,7 +38,7 @@ namespace DLCS.Repository.Assets
             this.bucketReader = bucketReader;
             this.assetRepository = assetRepository;
             this.settings = settings;
-            this.memoryCache = memoryCache;
+            this.appCache = appCache;
         }
 
         public async Task<ObjectInBucket> GetThumbLocation(int customerId, int spaceId, ImageRequest imageRequest)
@@ -116,7 +116,7 @@ namespace DLCS.Repository.Assets
         private async Task<List<ThumbnailPolicy>> GetThumbnailPolicies()
         {
             const string key = "ThumbRepository_ThumbnailPolicies";
-            return await memoryCache.GetOrCreateAsync(key, async entry =>
+            return await appCache.GetOrAddAsync(key, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
                 logger.LogInformation("refreshing ThumbnailPolicies from database");

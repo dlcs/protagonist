@@ -29,7 +29,7 @@ namespace Thumbs
             services.AddHealthChecks()
                 .AddNpgSql(Configuration.GetPostgresSqlConnection());
             services.AddCors();
-            services.AddMemoryCache();
+            services.AddLazyCache();
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
             services.AddAWSService<IAmazonS3>();
             services.AddSingleton<IBucketReader, BucketReader>();
