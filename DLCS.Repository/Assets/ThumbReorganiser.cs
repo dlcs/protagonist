@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Threading;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using IIIF.ImageApi;
@@ -17,6 +18,7 @@ namespace DLCS.Repository.Assets
         private readonly ILogger<ThumbRepository> logger;
         private readonly IAssetRepository assetRepository;
         private readonly IThumbRepository thumbRepository;
+        private readonly AsyncKeyedLock asyncLocker = new AsyncKeyedLock();
 
         public ThumbReorganiser(
             ObjectInBucket rootKey,
@@ -34,12 +36,14 @@ namespace DLCS.Repository.Assets
 
         public async Task EnsureNewLayout()
         {
-            // TODO: We need to lock this, to avoid multiple concurrent attempts to make the new layout
+            // Create lock on rootKey unique value (bucket + target key)
+            using var processLock = await asyncLocker.LockAsync(rootKey.ToString());
+            
             // test for existence of sizes.json
             var keys = await bucketReader.GetMatchingKeys(rootKey);
-            if(keys.Contains($"{rootKey.Key}sizes.json"))
+            if (keys.Contains($"{rootKey.Key}sizes.json"))
             {
-                logger.LogInformation("sizes.json already present in {RootKey}", rootKey);
+                logger.LogDebug("sizes.json already present in {RootKey}", rootKey);
                 return;
             }
 
@@ -58,25 +62,41 @@ namespace DLCS.Repository.Assets
                 expectedSizes.Add(Size.Confine(boundingSquare, realSize));
             }
 
-            List<int[]> sizesJson = expectedSizes
-                .Select(s => new int[] {s.Width, s.Height})
-                .ToList();
+            // All the thumbnail jpgs will already exist and need copied up to root
+            await CreateThumbnails(boundingSquares, expectedSizes);
 
-            var sizesDest = rootKey.Clone();
-            sizesDest.Key += "sizes.json";
-            await bucketReader.WriteToBucket(sizesDest, JsonConvert.SerializeObject(sizesJson), "application/json");
+            // Create sizes.json last, as this dictates whether this process will be attempted again
+            await CreateSizesJson(expectedSizes);
+        }
 
+        private async Task CreateThumbnails(List<int> boundingSquares, List<Size> expectedSizes)
+        {
+            var copyTasks = new List<Task>(expectedSizes.Count);
+            
             // low.jpg becomes the first in this list
-            await bucketReader.CopyWithinBucket(rootKey.Bucket,
+            copyTasks.Add(bucketReader.CopyWithinBucket(rootKey.Bucket,
                 $"{rootKey.Key}low.jpg",
-                $"{rootKey.Key}{boundingSquares[0]}.jpg");
+                $"{rootKey.Key}{boundingSquares[0]}.jpg"));
+
             int n = 1;
             foreach (Size size in expectedSizes.Skip(1))
             {
-                await bucketReader.CopyWithinBucket(rootKey.Bucket,
+                copyTasks.Add(bucketReader.CopyWithinBucket(rootKey.Bucket,
                     $"{rootKey.Key}full/{size.Width},{size.Height}/0/default.jpg",
-                    $"{rootKey.Key}{boundingSquares[n++]}.jpg");
+                    $"{rootKey.Key}{boundingSquares[n++]}.jpg"));
             }
+
+            await Task.WhenAll(copyTasks);
+        }
+
+        private async Task CreateSizesJson(List<Size> expectedSizes)
+        {
+            List<int[]> sizesJson = expectedSizes
+                .Select(s => new int[] {s.Width, s.Height})
+                .ToList();
+            var sizesDest = rootKey.Clone();
+            sizesDest.Key += "sizes.json";
+            await bucketReader.WriteToBucket(sizesDest, JsonConvert.SerializeObject(sizesJson), "application/json");
         }
 
         public void DeleteOldLayout()

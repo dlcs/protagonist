@@ -11,5 +11,12 @@ namespace DLCS.Repository.Storage.S3
                 BucketName = resource.Bucket,
                 Key = resource.Key
             };
+
+        public static ListObjectsRequest AsListObjectsRequest(this ObjectInBucket resource) =>
+            new ListObjectsRequest
+            {
+                BucketName = resource.Bucket,
+                Prefix = resource.Key
+            };
     }
 }

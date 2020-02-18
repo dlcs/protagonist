@@ -46,13 +46,18 @@ namespace DLCS.Repository.Storage.S3
 
         public async Task<string[]> GetMatchingKeys(ObjectInBucket rootKey)
         {
-            var request = new ListObjectsRequest
+            var listObjectsRequest = rootKey.AsListObjectsRequest();
+            try
             {
-                BucketName = rootKey.Bucket,
-                Prefix = rootKey.Key
-            };
-            var response = await s3Client.ListObjectsAsync(request, CancellationToken.None);
-            return response.S3Objects.Select(obj => obj.Key).OrderBy(s => s).ToArray();
+                var response = await s3Client.ListObjectsAsync(listObjectsRequest, CancellationToken.None);
+                return response.S3Objects.Select(obj => obj.Key).OrderBy(s => s).ToArray();
+            }
+            catch (AmazonS3Exception e)
+            {
+                logger.LogWarning(e, "Error getting matching keys {S3ListObjectRequest}; {StatusCode}",
+                    listObjectsRequest, e.StatusCode);
+                throw new HttpException(e.StatusCode, $"Error getting S3 objects for {listObjectsRequest}", e);
+            }
         }
 
         public async Task CopyWithinBucket(string bucket, string sourceKey, string destKey)
