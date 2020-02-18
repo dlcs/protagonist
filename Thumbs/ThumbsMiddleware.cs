@@ -38,21 +38,22 @@ namespace Thumbs
             {
                 await RedirectToInfoJson(context);
             }
-
-            if (thumbnailRequest.IIIFImageRequest.IsInformationRequest)
+            else if (thumbnailRequest.IIIFImageRequest.IsInformationRequest)
             {
                 await WriteInfoJson(context, thumbnailRequest);
             }
-
-            // mode for debugging etc
-            switch (context.Request.Query["mode"])
+            else
             {
-                case "dump":
-                    await WriteRequestDump(context, thumbnailRequest);
-                    break;
-                default:
-                    await WritePixels(context, thumbnailRequest, bucketReader);
-                    break;
+                // mode for debugging etc
+                switch (context.Request.Query["mode"])
+                {
+                    case "dump":
+                        await WriteRequestDump(context, thumbnailRequest);
+                        break;
+                    default:
+                        await WritePixels(context, thumbnailRequest, bucketReader);
+                        break;
+                }
             }
         }
 
