@@ -31,7 +31,8 @@ namespace DLCS.Repository.Storage.S3
             }
             catch (AmazonS3Exception e)
             {
-                logger.LogWarning(e, $"Could not copy S3 Stream for {getObjectRequest}; {e.StatusCode}");
+                logger.LogWarning(e, "Could not copy S3 Stream for {S3ObjectRequest}; {StatusCode}",
+                    getObjectRequest, e.StatusCode);
                 throw;
 
                 // TODO convert this into an application (not AWS) exception that still conveys status codes
@@ -57,7 +58,7 @@ namespace DLCS.Repository.Storage.S3
 
         public async Task CopyWithinBucket(string bucket, string sourceKey, string destKey)
         {
-            logger.LogInformation($"Copy {sourceKey} to {destKey} in {bucket}");
+            logger.LogDebug("Copying {Source} to {Destination} in {Bucket}", sourceKey, destKey, bucket);
             try
             {
                 CopyObjectRequest request = new CopyObjectRequest
@@ -71,11 +72,11 @@ namespace DLCS.Repository.Storage.S3
             }
             catch (AmazonS3Exception e)
             {
-                logger.LogWarning(e, "Error encountered on server. Message:'{0}' when writing an object", e.Message);
+                logger.LogWarning(e, "Error encountered on server. Message:'{Message}' when writing an object", e.Message);
             }
             catch (Exception e)
             {
-                logger.LogWarning(e, "Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
+                logger.LogWarning(e, "Unknown encountered on server. Message:'{Message}' when writing an object", e.Message);
             }
         }
 
@@ -96,11 +97,11 @@ namespace DLCS.Repository.Storage.S3
             }
             catch (AmazonS3Exception e)
             {
-                logger.LogWarning(e, "Error encountered ***. Message:'{0}' when writing an object", e.Message);
+                logger.LogWarning(e, "S3 Error encountered. Message:'{Message}' when writing an object", e.Message);
             }
             catch (Exception e)
             {
-                logger.LogWarning(e, "Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
+                logger.LogWarning(e, "Unknown encountered on server. Message:'{Message}' when writing an object", e.Message);
             }
         }
     }

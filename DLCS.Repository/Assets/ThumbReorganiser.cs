@@ -39,7 +39,7 @@ namespace DLCS.Repository.Assets
             var keys = await bucketReader.GetMatchingKeys(rootKey);
             if(keys.Contains($"{rootKey.Key}sizes.json"))
             {
-                logger.LogInformation($"sizes.json already present in {rootKey}");
+                logger.LogInformation("sizes.json already present in {RootKey}", rootKey);
                 return;
             }
 
