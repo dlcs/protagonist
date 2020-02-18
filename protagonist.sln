@@ -17,6 +17,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Testing", "Testing", "{8960
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DLCS.Repository.Tests", "DLCS.Repository.Tests\DLCS.Repository.Tests.csproj", "{2F574880-C868-4A9C-8E77-6DAFA2F5EAEF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DLCS.Core", "DLCS.Core\DLCS.Core.csproj", "{9584D327-7F2B-454B-AF4A-388B6EEA25A7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +49,10 @@ Global
 		{2F574880-C868-4A9C-8E77-6DAFA2F5EAEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2F574880-C868-4A9C-8E77-6DAFA2F5EAEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2F574880-C868-4A9C-8E77-6DAFA2F5EAEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9584D327-7F2B-454B-AF4A-388B6EEA25A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9584D327-7F2B-454B-AF4A-388B6EEA25A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9584D327-7F2B-454B-AF4A-388B6EEA25A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9584D327-7F2B-454B-AF4A-388B6EEA25A7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

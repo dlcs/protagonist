@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
     <ProjectReference Include="..\DLCS.Model\DLCS.Model.csproj" />
   </ItemGroup>
 
