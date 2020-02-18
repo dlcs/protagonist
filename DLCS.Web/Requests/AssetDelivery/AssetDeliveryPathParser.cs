@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Text;
 using System.Threading.Tasks;
 using DLCS.Model.PathElements;
 using IIIF.ImageApi;
@@ -24,11 +24,22 @@ namespace DLCS.Web.Requests.AssetDelivery
 
         private async Task ParseBaseAssetRequest(string path, BaseAssetRequest request)
         {
+            const int customerIndex = 2;
+            const int spacesIndex = 3;
+            const int routeIndex = 1;
+            
             string[] parts = path.Split('/');
-            request.RoutePrefix = parts[1];
-            request.Customer = await pathCustomerRepository.GetCustomer(parts[2]);
-            request.Space = Int32.Parse(parts[3]);
-            request.BasePath = $"/{parts[1]}/{parts[2]}/{parts[3]}/"; // is that the fastest way?
+            request.RoutePrefix = parts[routeIndex];
+            request.Customer = await pathCustomerRepository.GetCustomer(parts[customerIndex]);
+            request.Space = int.Parse(parts[spacesIndex]);
+            request.BasePath = new StringBuilder("/", 50)
+                .Append(parts[routeIndex])
+                .Append("/")
+                .Append(parts[customerIndex])
+                .Append("/")
+                .Append(parts[spacesIndex])
+                .Append("/")
+                .ToString();
         }
     }
 }
