@@ -55,9 +55,10 @@ namespace Thumbs
             app.UseCors(); 
             // TODO: Consider better caching solutions
             app.UseResponseCaching();
+            var respondsTo = Configuration.GetValue<string>("RespondsTo", "thumbs");
             app.UseEndpoints(endpoints =>
             {
-                endpoints.Map("/thumbs/{*any}", 
+                endpoints.Map($"/{respondsTo}/{{*any}}", 
                     endpoints.CreateApplicationBuilder()
                     .UseMiddleware<ThumbsMiddleware>()
                     .Build());
