@@ -15,7 +15,6 @@ namespace Thumbs
     public class ThumbsMiddleware
     {
         private readonly int cacheSeconds;
-        private readonly IConfiguration configuration;
         private readonly ILogger<ThumbsMiddleware> logger;
         private readonly IThumbRepository thumbRepository;
 
@@ -25,37 +24,38 @@ namespace Thumbs
             ILogger<ThumbsMiddleware> logger,
             IThumbRepository thumbRepository)
         {
-            this.configuration = configuration;
             this.cacheSeconds = configuration.GetValue<int>("ResponseCacheSeconds", 0);
             this.logger = logger;
             this.thumbRepository = thumbRepository;
         }
 
-        public Task Invoke(HttpContext context,
+        public async Task Invoke(HttpContext context,
             IBucketReader bucketReader,
             AssetDeliveryPathParser parser)
         {
-            var thumbnailRequest = parser.Parse(context.Request.Path.Value);
+            var thumbnailRequest = await parser.Parse(context.Request.Path.Value);
             if (thumbnailRequest.IIIFImageRequest.IsBase)
             {
-                return RedirectToInfoJson(context);
+                await RedirectToInfoJson(context);
             }
-
-            if (thumbnailRequest.IIIFImageRequest.IsInformationRequest)
+            else if (thumbnailRequest.IIIFImageRequest.IsInformationRequest)
             {
-                return WriteInfoJson(context, thumbnailRequest);
+                await WriteInfoJson(context, thumbnailRequest);
             }
-
-            // mode for debugging etc
-            switch (context.Request.Query["mode"])
+            else
             {
-                case "dump":
-                    return WriteRequestDump(context, thumbnailRequest);
-                default:
-                    return WritePixels(context, thumbnailRequest, bucketReader);
+                // mode for debugging etc
+                switch (context.Request.Query["mode"])
+                {
+                    case "dump":
+                        await WriteRequestDump(context, thumbnailRequest);
+                        break;
+                    default:
+                        await WritePixels(context, thumbnailRequest, bucketReader);
+                        break;
+                }
             }
         }
-
 
         private async Task WritePixels(HttpContext context, ThumbnailRequest request, IBucketReader bucketReader)
         {
@@ -70,7 +70,6 @@ namespace Thumbs
         {
             await context.Response.WriteAsync(JsonConvert.SerializeObject(request));
         }
-
 
         // TODO: observe Accepts header - https://iiif.io/api/image/3.0/#51-image-information-request
         // TODO: Don't construct the URL from what came in on the Request.
@@ -114,6 +113,5 @@ namespace Thumbs
                     };
             }
         }
-
     }
 }

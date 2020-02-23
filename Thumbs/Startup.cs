@@ -10,9 +10,9 @@ using DLCS.Repository.Storage.S3;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Thumbs
 {
@@ -28,9 +28,9 @@ namespace Thumbs
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHealthChecks()
-                .AddNpgSql(Configuration.GetConnectionString("PostgreSQLConnection"));
+                .AddNpgSql(Configuration.GetPostgresSqlConnection());
             services.AddCors();
-            services.AddMemoryCache();
+            services.AddLazyCache();
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
             services.AddAWSService<IAmazonS3>();
             services.AddSingleton<IBucketReader, BucketReader>();
@@ -39,13 +39,18 @@ namespace Thumbs
             services.AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>();
             services.AddSingleton<IThumbRepository, ThumbRepository>();
             services.AddSingleton<IAssetRepository, AssetRepository>();
-            
+
             services.Configure<ThumbsSettings>(Configuration.GetSection("Repository"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            
             app.UseRouting();
             app.UseCors(); 
             // TODO: Consider better caching solutions
@@ -58,7 +63,7 @@ namespace Thumbs
                     .Build());
                 endpoints.MapHealthChecks("/ping");
             });
+            
         }
-
     }
 }

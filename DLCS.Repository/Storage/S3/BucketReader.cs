@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.Core.Exceptions;
 using DLCS.Model.Storage;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +22,12 @@ namespace DLCS.Repository.Storage.S3
             this.logger = logger;
         }
 
+        /// <summary>
+        /// Write object from bucket to provided stream.
+        /// </summary>
+        /// <param name="objectInBucket">Object to read.</param>
+        /// <param name="targetStream">Stream to write object into.</param>
+        /// <exception cref="HttpException">Exception thrown if unable to read object.</exception>
         public async Task WriteObjectFromBucket(ObjectInBucket objectInBucket, Stream targetStream)
         {
             var getObjectRequest = objectInBucket.AsGetObjectRequest();
@@ -31,33 +38,31 @@ namespace DLCS.Repository.Storage.S3
             }
             catch (AmazonS3Exception e)
             {
-                logger.LogWarning(e, $"Could not copy S3 Stream for {getObjectRequest}; {e.StatusCode}");
-                throw;
-
-                // TODO convert this into an application (not AWS) exception that still conveys status codes
-                // so callers can do different things for 404 etc.
-
-                // TODO - we almost certainly don't want to write this here, bubble up to caller
-                // and let caller write/handle the error better (e.g., set status code)
-                //var writer = new StreamWriter(targetStream);
-                //writer.Write(e.Message);
+                logger.LogWarning(e, "Could not copy S3 Stream for {S3ObjectRequest}; {StatusCode}",
+                    getObjectRequest, e.StatusCode);
+                throw new HttpException(e.StatusCode, $"Error copying S3 stream for {getObjectRequest}", e);
             }
         }
 
         public async Task<string[]> GetMatchingKeys(ObjectInBucket rootKey)
         {
-            var request = new ListObjectsRequest
+            var listObjectsRequest = rootKey.AsListObjectsRequest();
+            try
             {
-                BucketName = rootKey.Bucket,
-                Prefix = rootKey.Key
-            };
-            var response = await s3Client.ListObjectsAsync(request, CancellationToken.None);
-            return response.S3Objects.Select(obj => obj.Key).OrderBy(s => s).ToArray();
+                var response = await s3Client.ListObjectsAsync(listObjectsRequest, CancellationToken.None);
+                return response.S3Objects.Select(obj => obj.Key).OrderBy(s => s).ToArray();
+            }
+            catch (AmazonS3Exception e)
+            {
+                logger.LogWarning(e, "Error getting matching keys {S3ListObjectRequest}; {StatusCode}",
+                    listObjectsRequest, e.StatusCode);
+                throw new HttpException(e.StatusCode, $"Error getting S3 objects for {listObjectsRequest}", e);
+            }
         }
 
         public async Task CopyWithinBucket(string bucket, string sourceKey, string destKey)
         {
-            logger.LogInformation($"Copy {sourceKey} to {destKey} in {bucket}");
+            logger.LogDebug("Copying {Source} to {Destination} in {Bucket}", sourceKey, destKey, bucket);
             try
             {
                 CopyObjectRequest request = new CopyObjectRequest
@@ -71,11 +76,11 @@ namespace DLCS.Repository.Storage.S3
             }
             catch (AmazonS3Exception e)
             {
-                logger.LogWarning(e, "Error encountered on server. Message:'{0}' when writing an object", e.Message);
+                logger.LogWarning(e, "Error encountered on server. Message:'{Message}' when writing an object", e.Message);
             }
             catch (Exception e)
             {
-                logger.LogWarning(e, "Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
+                logger.LogWarning(e, "Unknown encountered on server. Message:'{Message}' when writing an object", e.Message);
             }
         }
 
@@ -96,11 +101,11 @@ namespace DLCS.Repository.Storage.S3
             }
             catch (AmazonS3Exception e)
             {
-                logger.LogWarning(e, "Error encountered ***. Message:'{0}' when writing an object", e.Message);
+                logger.LogWarning(e, "S3 Error encountered. Message:'{Message}' when writing an object", e.Message);
             }
             catch (Exception e)
             {
-                logger.LogWarning(e, "Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
+                logger.LogWarning(e, "Unknown encountered on server. Message:'{Message}' when writing an object", e.Message);
             }
         }
     }

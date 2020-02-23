@@ -5,13 +5,18 @@ namespace DLCS.Repository.Storage.S3
 {
     public static class S3Extensions
     {
-        public static GetObjectRequest AsGetObjectRequest(this ObjectInBucket resource)
-        {
-            return new GetObjectRequest
+        public static GetObjectRequest AsGetObjectRequest(this ObjectInBucket resource) =>
+            new GetObjectRequest
             {
                 BucketName = resource.Bucket,
                 Key = resource.Key
             };
-        }
+
+        public static ListObjectsRequest AsListObjectsRequest(this ObjectInBucket resource) =>
+            new ListObjectsRequest
+            {
+                BucketName = resource.Bucket,
+                Prefix = resource.Key
+            };
     }
 }

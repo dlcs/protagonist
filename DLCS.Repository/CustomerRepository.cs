@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Dapper;
 using DLCS.Model.Customer;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Npgsql;
 
 namespace DLCS.Repository
 {
@@ -20,15 +20,11 @@ namespace DLCS.Repository
             this.logger = logger;
         }
 
-        public Dictionary<string, int> GetCustomerIdLookup()
+        public async Task<Dictionary<string, int>> GetCustomerIdLookup()
         {
-            using (var connection = new NpgsqlConnection(configuration.GetConnectionString("PostgreSQLConnection")))
-            {
-                connection.Open();
-                return connection
-                    .Query<CustomerPathElement>("SELECT \"Id\", \"Name\" FROM \"Customers\"")
-                    .ToDictionary(cpe => cpe.Name, cpe => cpe.Id);
-            }
+            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+            var results = await connection.QueryAsync<CustomerPathElement>("SELECT \"Id\", \"Name\" FROM \"Customers\"");
+            return results.ToDictionary(cpe => cpe.Name, cpe => cpe.Id);
         }
     }
 }

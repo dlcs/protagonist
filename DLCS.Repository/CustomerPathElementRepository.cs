@@ -1,83 +1,68 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 using DLCS.Model.Customer;
 using DLCS.Model.PathElements;
-using Microsoft.Extensions.Caching.Memory;
+using DLCS.Repository.Collections;
+using LazyCache;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository
 {
     public class CustomerPathElementRepository : IPathCustomerRepository
     {
-        private readonly IMemoryCache memoryCache;
         private readonly ICustomerRepository customerRepository;
         private readonly ILogger<CustomerPathElementRepository> logger;
+        private readonly IAppCache appCache;
 
         public CustomerPathElementRepository(
-            IMemoryCache memoryCache,
+            IAppCache appCache,
             ICustomerRepository customerRepository,
             ILogger<CustomerPathElementRepository> logger)
         {
-            this.memoryCache = memoryCache;
             this.customerRepository = customerRepository;
             this.logger = logger;
+            this.appCache = appCache;
         }
 
-        public CustomerPathElement GetCustomer(string customerPart)
+        public async Task<CustomerPathElement> GetCustomer(string customerPart)
         {
             // customerPart can be an int or a string name
             string customerName = null;
             if (int.TryParse(customerPart, out var customerId))
             {
-                customerName = GetCustomerName(customerId);
+                customerName = await GetCustomerName(customerId);
             }
             else
             {
-                customerId = GetCustomerId(customerPart);
+                customerId = await GetCustomerId(customerPart);
                 if (customerId > 0)
                 {
                     customerName = customerPart;
                 }
             }
-            return new CustomerPathElement {Id = customerId, Name = customerName};
+            return new CustomerPathElement(customerId, customerName);
         }
 
-        private int GetCustomerId(string customerName)
+        private async Task<int> GetCustomerId(string customerName)
         {
-            Dictionary<string, int> lookup = EnsureDictionary();
-            return lookup[customerName];
+            var readOnlyMap = await EnsureDictionary();
+            return readOnlyMap.Forward[customerName];
         }
 
-
-        private string GetCustomerName(in int customerId)
+        private async Task<string> GetCustomerName(int customerId)
         {
-            Dictionary<int, string> lookup = EnsureInverseDictionary();
-            return lookup[customerId];
+            var readOnlyMap = await EnsureDictionary();
+            return readOnlyMap.Reverse[customerId];
         }
 
-        private Dictionary<string, int> EnsureDictionary()
+        private Task<ReadOnlyMap<string, int>> EnsureDictionary()
         {
-            // TODO: Investigate locks, best caching approach, etc, LazyCache
-            const string key = "CustomerPathElementRepository_CustomerNameLookupKey";
-            return memoryCache.GetOrCreate(key, entry =>
-                {
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-                    logger.LogInformation("refreshing customer name => id lookup from database");
-                    return customerRepository.GetCustomerIdLookup();
-                });
-        }
-
-
-        private Dictionary<int, string> EnsureInverseDictionary()
-        {
-            const string key = "CustomerPathElementRepository_InverseCustomerNameLookupKey";
-            return memoryCache.GetOrCreate(key, entry =>
+            const string key = "CustomerPathElementRepository_CustomerLookup";
+            return appCache.GetOrAddAsync(key, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-                logger.LogInformation("refreshing customer id => name lookup from database");
-                return customerRepository.GetCustomerIdLookup().ToDictionary(
-                    kvp => kvp.Value, kvp => kvp.Key);
+                logger.LogDebug("refreshing customer name/id lookup from database");
+                return new ReadOnlyMap<string, int>(await customerRepository.GetCustomerIdLookup());
             });
         }
     }

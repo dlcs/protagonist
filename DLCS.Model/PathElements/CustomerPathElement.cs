@@ -8,7 +8,13 @@
     /// </summary>
     public class CustomerPathElement
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
+        public CustomerPathElement(int id, string name)
+        {
+            Id = id;
+            Name = name;
+        }
+        
+        public int Id { get; }
+        public string Name { get; }
     }
 }

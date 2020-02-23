@@ -17,9 +17,6 @@
             };
         }
 
-        public override string ToString()
-        {
-            return $"{Bucket}:::{Key}";
-        }
+        public override string ToString() => $"{Bucket}:::{Key}";
     }
 }

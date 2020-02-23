@@ -8,18 +8,17 @@ using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository.Settings;
 using IIIF.ImageApi;
-using Microsoft.Extensions.Caching.Memory;
+using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Npgsql;
 
 namespace DLCS.Repository.Assets
 {
     public class ThumbRepository : IThumbRepository
     {
-        private readonly IMemoryCache memoryCache;
+        private readonly IAppCache appCache;
         private readonly ILogger<ThumbRepository> logger;
         private readonly IBucketReader bucketReader;
         private readonly IAssetRepository assetRepository;
@@ -27,7 +26,7 @@ namespace DLCS.Repository.Assets
         private readonly IConfiguration configuration;
 
         public ThumbRepository(
-            IMemoryCache memoryCache,
+            IAppCache appCache,
             IConfiguration configuration,
             ILogger<ThumbRepository> logger,
             IBucketReader bucketReader,
@@ -39,7 +38,7 @@ namespace DLCS.Repository.Assets
             this.bucketReader = bucketReader;
             this.assetRepository = assetRepository;
             this.settings = settings;
-            this.memoryCache = memoryCache;
+            this.appCache = appCache;
         }
 
         public async Task<ObjectInBucket> GetThumbLocation(int customerId, int spaceId, ImageRequest imageRequest)
@@ -108,25 +107,24 @@ namespace DLCS.Repository.Assets
             return serializer.Deserialize<List<int[]>>(jsonTextReader);
         }
         
-        public ThumbnailPolicy GetThumbnailPolicy(string thumbnailPolicyId)
+        public async Task<ThumbnailPolicy> GetThumbnailPolicy(string thumbnailPolicyId)
         {
-            return GetThumbnailPolicies().SingleOrDefault(p => p.Id == thumbnailPolicyId);
+            var thumbnailPolicies = await GetThumbnailPolicies();
+            return thumbnailPolicies.SingleOrDefault(p => p.Id == thumbnailPolicyId);
         }
 
-        private List<ThumbnailPolicy> GetThumbnailPolicies()
+        private async Task<List<ThumbnailPolicy>> GetThumbnailPolicies()
         {
             const string key = "ThumbRepository_ThumbnailPolicies";
-            return memoryCache.GetOrCreate(key, entry =>
+            return await appCache.GetOrAddAsync(key, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
                 logger.LogInformation("refreshing ThumbnailPolicies from database");
-                using var connection = new NpgsqlConnection(configuration.GetConnectionString("PostgreSQLConnection"));
-                connection.Open();
-                return connection.Query<ThumbnailPolicy>(
-                        "SELECT \"Id\", \"Name\", \"Sizes\" FROM \"ThumbnailPolicies\"")
-                    .ToList();
+                await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+                var thumbnailPolicies = await connection.QueryAsync<ThumbnailPolicy>(
+                    "SELECT \"Id\", \"Name\", \"Sizes\" FROM \"ThumbnailPolicies\"");
+                return thumbnailPolicies.ToList();
             });
-
         }
 
         private string GetKeyRoot(int customerId, int spaceId, ImageRequest imageRequest)

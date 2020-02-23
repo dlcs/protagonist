@@ -19,8 +19,6 @@ namespace Thumbs
                     builder.AddSystemsManager(configurationSource =>
                     {
                         configurationSource.Path = "/thumbs/";
-                        
-                        // TODO - what's a sensible value here?
                         configurationSource.ReloadAfter = TimeSpan.FromMinutes(90);
 
                         // Using ParameterStore optional if Development

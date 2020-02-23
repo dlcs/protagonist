@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DLCS.Model.Customer
 {
     public interface ICustomerRepository
     {
-        public Dictionary<string, int> GetCustomerIdLookup();
+        public Task<Dictionary<string, int>> GetCustomerIdLookup();
     }
 }
