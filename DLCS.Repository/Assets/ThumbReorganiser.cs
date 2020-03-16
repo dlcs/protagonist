@@ -12,35 +12,32 @@ using Newtonsoft.Json;
 
 namespace DLCS.Repository.Assets
 {
-    public class ThumbReorganiser
+    public class ThumbReorganiser : IThumbReorganiser
     {
-        private readonly ObjectInBucket rootKey;
         private readonly IBucketReader bucketReader;
         private readonly ILogger<ThumbRepository> logger;
         private readonly IAssetRepository assetRepository;
-        private readonly IThumbRepository thumbRepository;
+        private readonly IThumbnailPolicyRepository thumbnailPolicyRepository;
         private readonly AsyncKeyedLock asyncLocker = new AsyncKeyedLock();
 
         public ThumbReorganiser(
-            ObjectInBucket rootKey,
             IBucketReader bucketReader,
             ILogger<ThumbRepository> logger,
             IAssetRepository assetRepository,
-            IThumbRepository thumbRepository)
+            IThumbnailPolicyRepository thumbnailPolicyRepository )
         {
-            this.rootKey = rootKey;
             this.bucketReader = bucketReader;
             this.logger = logger;
             this.assetRepository = assetRepository;
-            this.thumbRepository = thumbRepository;
+            this.thumbnailPolicyRepository = thumbnailPolicyRepository;
         }
 
-        public async Task EnsureNewLayout()
+        public async Task EnsureNewLayout(ObjectInBucket rootKey)
         {
             // Create lock on rootKey unique value (bucket + target key)
             using var processLock = await asyncLocker.LockAsync(rootKey.ToString());
             
-            if (await HasCurrentLayout())
+            if (await HasCurrentLayout(rootKey))
             {
                 logger.LogDebug("{RootKey} has expected current layout", rootKey);
                 return;
@@ -52,7 +49,7 @@ namespace DLCS.Repository.Assets
             // we'll need to fetch the image dimensions from the database, the Thumbnail policy the image was created with, and compute the sizes.
             // Then sanity check them against the known sizes.
             var asset = await assetRepository.GetAsset(rootKey.Key.TrimEnd('/'));
-            var policy = await thumbRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
+            var policy = await thumbnailPolicyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
             var realSize = new Size{ Width = asset.Width, Height = asset.Height };
             var boundingSquares = policy.SizeList.OrderByDescending(i => i).ToList();
             var expectedSizes = new List<Size>(boundingSquares.Count);
@@ -62,19 +59,19 @@ namespace DLCS.Repository.Assets
             }
 
             // All the thumbnail jpgs will already exist and need copied up to root
-            await CreateThumbnails(boundingSquares, expectedSizes);
+            await CreateThumbnails(rootKey, boundingSquares, expectedSizes);
 
             // Create sizes.json last, as this dictates whether this process will be attempted again
-            await CreateSizesJson(expectedSizes);
+            await CreateSizesJson(rootKey, expectedSizes);
         }
 
-        private async Task<bool> HasCurrentLayout()
+        private async Task<bool> HasCurrentLayout(ObjectInBucket rootKey)
         {
             var keys = await bucketReader.GetMatchingKeys(rootKey);
             return keys.Contains($"{rootKey.Key}{ThumbsSettings.Constants.SizesJsonKey}");
         }
 
-        private async Task CreateThumbnails(List<int> boundingSquares, List<Size> expectedSizes)
+        private async Task CreateThumbnails(ObjectInBucket rootKey, List<int> boundingSquares, List<Size> expectedSizes)
         {
             var copyTasks = new List<Task>(expectedSizes.Count);
             
@@ -94,7 +91,7 @@ namespace DLCS.Repository.Assets
             await Task.WhenAll(copyTasks);
         }
 
-        private async Task CreateSizesJson(List<Size> expectedSizes)
+        private async Task CreateSizesJson(ObjectInBucket rootKey, List<Size> expectedSizes)
         {
             List<int[]> sizesJson = expectedSizes
                 .Select(s => new int[] {s.Width, s.Height})

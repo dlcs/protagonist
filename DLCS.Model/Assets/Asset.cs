@@ -2,6 +2,9 @@
 
 namespace DLCS.Model.Assets
 {
+    /// <summary>
+    /// Represents an Asset that is stored in the DLCS database.
+    /// </summary>
     public class Asset
     {
         public string Id { get; set; }
