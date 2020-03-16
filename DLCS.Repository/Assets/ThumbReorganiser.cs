@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Threading;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
+using DLCS.Repository.Settings;
 using IIIF.ImageApi;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -39,11 +40,9 @@ namespace DLCS.Repository.Assets
             // Create lock on rootKey unique value (bucket + target key)
             using var processLock = await asyncLocker.LockAsync(rootKey.ToString());
             
-            // test for existence of sizes.json
-            var keys = await bucketReader.GetMatchingKeys(rootKey);
-            if (keys.Contains($"{rootKey.Key}sizes.json"))
+            if (await HasCurrentLayout())
             {
-                logger.LogDebug("sizes.json already present in {RootKey}", rootKey);
+                logger.LogDebug("{RootKey} has expected current layout", rootKey);
                 return;
             }
 
@@ -67,6 +66,12 @@ namespace DLCS.Repository.Assets
 
             // Create sizes.json last, as this dictates whether this process will be attempted again
             await CreateSizesJson(expectedSizes);
+        }
+
+        private async Task<bool> HasCurrentLayout()
+        {
+            var keys = await bucketReader.GetMatchingKeys(rootKey);
+            return keys.Contains($"{rootKey.Key}{ThumbsSettings.Constants.SizesJsonKey}");
         }
 
         private async Task CreateThumbnails(List<int> boundingSquares, List<Size> expectedSizes)

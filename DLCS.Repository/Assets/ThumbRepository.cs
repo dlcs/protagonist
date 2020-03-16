@@ -85,7 +85,7 @@ namespace DLCS.Repository.Assets
             return new ObjectInBucket
             {
                 Bucket = settings.CurrentValue.ThumbsBucket,
-                Key = GetKeyRoot(customerId, spaceId, imageRequest) + $"{longestEdge}.jpg"
+                Key = $"{GetKeyRoot(customerId, spaceId, imageRequest)}open/{longestEdge}.jpg"
             };
         }
 
@@ -96,15 +96,21 @@ namespace DLCS.Repository.Assets
             ObjectInBucket sizesList = new ObjectInBucket
             {
                 Bucket = settings.CurrentValue.ThumbsBucket,
-                Key = GetKeyRoot(customerId, spaceId, imageRequest) + "sizes.json"
+                Key = string.Concat(GetKeyRoot(customerId, spaceId, imageRequest), ThumbsSettings.Constants.SizesJsonKey)
             };
-            var stream = new MemoryStream();
-            await bucketReader.WriteObjectFromBucket(sizesList, stream);
+            
+            await using var stream = await bucketReader.GetObjectFromBucket(sizesList);
+            if (stream == null)
+            {
+                logger.LogError("Could not find sizes file for request '{OriginalPath}'", imageRequest.OriginalPath);
+                return new List<int[]>();
+            }
+            
             var serializer = new JsonSerializer();
-            stream.Position = 0;
             using var sr = new StreamReader(stream);
             using var jsonTextReader = new JsonTextReader(sr);
-            return serializer.Deserialize<List<int[]>>(jsonTextReader);
+            var thumbnailSizes = serializer.Deserialize<ThumbnailSizes>(jsonTextReader);
+            return thumbnailSizes.Open;
         }
         
         public async Task<ThumbnailPolicy> GetThumbnailPolicy(string thumbnailPolicyId)
@@ -127,10 +133,8 @@ namespace DLCS.Repository.Assets
             });
         }
 
-        private string GetKeyRoot(int customerId, int spaceId, ImageRequest imageRequest)
-        {
-            return $"{customerId}/{spaceId}/{imageRequest.Identifier}/";
-        }
+        private string GetKeyRoot(int customerId, int spaceId, ImageRequest imageRequest) 
+            => $"{customerId}/{spaceId}/{imageRequest.Identifier}/";
 
         private Task EnsureNewLayout(int customerId, int spaceId, ImageRequest imageRequest)
         {
@@ -149,5 +153,33 @@ namespace DLCS.Repository.Assets
             return new ThumbReorganiser(rootKey, bucketReader, logger, assetRepository, this)
                 .EnsureNewLayout();
         }
+    }
+    
+    public class ThumbnailSizes
+    {
+        [JsonProperty("o")]
+        public List<int[]> Open { get; }
+            
+        [JsonProperty("a")]
+        public List<int[]> Auth { get; }
+
+        [JsonConstructor]
+        public ThumbnailSizes(List<int[]> open, List<int[]> auth)
+        {
+            Open = open;
+            Auth = auth;
+        }
+        
+        public ThumbnailSizes(int sizesCount)
+        {
+            Open = new List<int[]>(sizesCount);
+            Auth = new List<int[]>(sizesCount);
+        }
+
+        public void AddAuth(int width, int height)
+            => Auth.Add(new[] {width, height});
+            
+        public void AddOpen(int width, int height)
+            => Open.Add(new[] {width, height});
     }
 }

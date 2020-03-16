@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.S3;
@@ -22,19 +23,18 @@ namespace DLCS.Repository.Storage.S3
             this.logger = logger;
         }
 
-        /// <summary>
-        /// Write object from bucket to provided stream.
-        /// </summary>
-        /// <param name="objectInBucket">Object to read.</param>
-        /// <param name="targetStream">Stream to write object into.</param>
-        /// <exception cref="HttpException">Exception thrown if unable to read object.</exception>
-        public async Task WriteObjectFromBucket(ObjectInBucket objectInBucket, Stream targetStream)
+        public async Task<Stream?> GetObjectFromBucket(ObjectInBucket objectInBucket)
         {
             var getObjectRequest = objectInBucket.AsGetObjectRequest();
             try
             {
                 var getResponse = await s3Client.GetObjectAsync(getObjectRequest);
-                await getResponse.ResponseStream.CopyToAsync(targetStream);
+                return getResponse.ResponseStream;
+            }
+            catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
+            {
+                logger.LogInformation(e, "Could not find S3 object '{S3ObjectRequest}'", getObjectRequest);
+                return null;
             }
             catch (AmazonS3Exception e)
             {

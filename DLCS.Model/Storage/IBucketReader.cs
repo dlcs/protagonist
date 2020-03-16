@@ -9,11 +9,10 @@ namespace DLCS.Model.Storage
     public interface IBucketReader
     {
         /// <summary>
-        /// Write object from bucket to provided stream.
+        /// Get specified object from bucket.
         /// </summary>
         /// <param name="objectInBucket">Object to read.</param>
-        /// <param name="targetStream">Stream to write object into.</param>
-        Task WriteObjectFromBucket(ObjectInBucket objectInBucket, Stream targetStream);
+        Task<Stream?> GetObjectFromBucket(ObjectInBucket objectInBucket);
         
         Task<string[]> GetMatchingKeys(ObjectInBucket rootKey);
         
