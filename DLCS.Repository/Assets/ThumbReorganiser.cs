@@ -6,7 +6,7 @@ using DLCS.Core.Threading;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository.Settings;
-using IIIF.ImageApi;
+using IIIF;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -50,7 +50,7 @@ namespace DLCS.Repository.Assets
             // Then sanity check them against the known sizes.
             var asset = await assetRepository.GetAsset(rootKey.Key.TrimEnd('/'));
             var policy = await thumbnailPolicyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
-            var realSize = new Size{ Width = asset.Width, Height = asset.Height };
+            var realSize = new Size(asset.Width, asset.Height);
             var boundingSquares = policy.SizeList.OrderByDescending(i => i).ToList();
             var expectedSizes = new List<Size>(boundingSquares.Count);
             foreach (int boundingSquare in boundingSquares)
@@ -94,7 +94,7 @@ namespace DLCS.Repository.Assets
         private async Task CreateSizesJson(ObjectInBucket rootKey, List<Size> expectedSizes)
         {
             List<int[]> sizesJson = expectedSizes
-                .Select(s => new int[] {s.Width, s.Height})
+                .Select(s => new int[] {s.Width, s.Height})// s.ToArray()
                 .ToList();
             var sizesDest = rootKey.Clone();
             sizesDest.Key += "sizes.json";

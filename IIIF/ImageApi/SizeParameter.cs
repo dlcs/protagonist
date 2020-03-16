@@ -1,36 +1,27 @@
 ﻿using System;
 using System.Text;
-using Newtonsoft.Json;
 
 namespace IIIF.ImageApi
 {
-    public class Size
+    /// <summary>
+    /// Represents the {size} parameter of a IIIF image request.
+    /// </summary>
+    /// <remarks>see https://iiif.io/api/image/3.0/#42-size </remarks>
+    public class SizeParameter
     {
-        [JsonProperty(Order = 35, PropertyName = "width")]
         public int Width { get; set; }
-
-        [JsonProperty(Order = 36, PropertyName = "height")]
+        
         public int Height { get; set; }
-
-        [JsonIgnore]
+        
         public bool Max { get; set; }
-
-        [JsonIgnore]
+        
         public bool Upscaled { get; set; }
-
-        [JsonIgnore]
+        
         public bool Confined { get; set; }
-
-        [JsonIgnore]
+        
         public float PercentScale { get; set; }
 
-
         public override string ToString()
-        {
-            return Width + "," + Height;
-        }
-
-        public string ToPathPartString()
         {
             var sb = new StringBuilder();
             if (Upscaled)
@@ -64,9 +55,9 @@ namespace IIIF.ImageApi
             return sb.ToString();
         }
 
-        public static Size Parse(string pathPart)
+        public static SizeParameter Parse(string pathPart)
         {
-            var size = new Size();
+            var size = new SizeParameter();
             if (pathPart[0] == '^')
             {
                 size.Upscaled = true;
@@ -102,41 +93,6 @@ namespace IIIF.ImageApi
             }
 
             return size;
-        }
-
-        public int[] ToArray()
-        {
-            return new[] {Width, Height};
-        }
-
-        public static Size FromArray(int[] size)
-        {
-            return new Size
-            {
-                Width = size[0],
-                Height = size[1]
-            };
-        }
-
-        public static Size Confine(int boundingSquare, Size imageSize)
-        {
-            return Confine(new Size { Width = boundingSquare, Height = boundingSquare }, imageSize);
-        }
-
-        public static Size Confine(Size requiredSize, Size imageSize)
-        {
-            if (imageSize.Width <= requiredSize.Width && imageSize.Height <= requiredSize.Height)
-            {
-                return imageSize;
-            }
-            var scaleW = requiredSize.Width / (double)imageSize.Width;
-            var scaleH = requiredSize.Height / (double)imageSize.Height;
-            var scale = Math.Min(scaleW, scaleH);
-            return new Size
-            {
-                Width = (int)Math.Round((imageSize.Width * scale)),
-                Height = (int)Math.Round((imageSize.Height * scale))
-            };
         }
     }
 }

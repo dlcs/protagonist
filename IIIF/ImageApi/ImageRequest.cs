@@ -2,15 +2,20 @@
 
 namespace IIIF.ImageApi
 {
+    /// <summary>
+    /// Represents a IIIF image request in format:
+    /// {scheme}://{server}{/prefix}/{identifier}/{region}/{size}/{rotation}/{quality}.{format}
+    /// </summary>
+    /// <remarks>See https://iiif.io/api/image/3.0/#21-image-request-uri-syntax </remarks>
     public class ImageRequest
     {
         public string Prefix { get; set; }
         public string Identifier { get; set; }
         public bool IsBase { get; set; }
         public bool IsInformationRequest { get; set; }
-        public Region Region { get; set; }
-        public Size Size { get; set; }
-        public Rotation Rotation { get; set; }
+        public RegionParameter Region { get; set; }
+        public SizeParameter Size { get; set; }
+        public RotationParameter Rotation { get; set; }
         public string Quality { get; set; }
         public string Format { get; set; }
         public string OriginalPath { get; set; }
@@ -52,9 +57,9 @@ namespace IIIF.ImageApi
             }
 
             request.OriginalPath = path;
-            request.Region = Region.Parse(parts[1]);
-            request.Size = Size.Parse(parts[2]);
-            request.Rotation = Rotation.Parse(parts[3]);
+            request.Region = RegionParameter.Parse(parts[1]);
+            request.Size = SizeParameter.Parse(parts[2]);
+            request.Rotation = RotationParameter.Parse(parts[3]);
             var filenameParts = parts[4].Split('.');
             request.Quality = filenameParts[0];
             request.Format = filenameParts[1];

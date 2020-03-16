@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using IIIF.ImageApi;
 
 namespace DLCS.Model.Assets
 {
@@ -17,9 +18,9 @@ namespace DLCS.Model.Assets
         {
             get
             {
-                if (sizeList == null && Sizes != null)
+                if (sizeList == null && !string.IsNullOrEmpty(Sizes))
                 {
-                    sizeList = Sizes.Split(',').Select(int.Parse).ToList();
+                    sizeList = Sizes.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
                 }
                 return sizeList;
             }

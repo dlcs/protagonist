@@ -3,7 +3,11 @@ using Newtonsoft.Json;
 
 namespace IIIF.ImageApi
 {
-    public class Region
+    /// <summary>
+    /// Represents the {region} parameter of a IIIF image request.
+    /// </summary>
+    /// <remarks>see https://iiif.io/api/image/3.0/#41-region </remarks>
+    public class RegionParameter
     {
         [JsonProperty(Order = 91, PropertyName = "x")]
         public float X { get; set; }
@@ -31,23 +35,23 @@ namespace IIIF.ImageApi
             return xywh;
         }
 
-        public static Region Parse(string pathPart)
+        public static RegionParameter Parse(string pathPart)
         {
             try
             {
                 if (pathPart == "full")
                 {
-                    return new Region { Full = true };
+                    return new RegionParameter { Full = true };
                 }
                 if (pathPart == "square")
                 {
-                    return new Region { Square = true };
+                    return new RegionParameter { Square = true };
                 }
 
                 bool percent = pathPart.StartsWith("pct:");
                 var stringParts = pathPart.Substring(percent ? 4 : 0).Split(',');
                 var xywh = Array.ConvertAll(stringParts, float.Parse);
-                return new Region
+                return new RegionParameter
                 {
                     X = xywh[0], Y = xywh[1], W = xywh[2], H = xywh[3], 
                     Percent = percent

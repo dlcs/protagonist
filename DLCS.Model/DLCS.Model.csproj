@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
     <ProjectReference Include="..\IIIF\IIIF.csproj" />
   </ItemGroup>
 
