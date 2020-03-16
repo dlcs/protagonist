@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace DLCS.Model.Assets
 {
@@ -21,6 +23,8 @@ namespace DLCS.Model.Assets
         public int NumberReference1 { get; set; }
         public int NumberReference2 { get; set; }
         public int NumberReference3 { get; set; }
+        
+        // -1 = null (all open), 0 = no allowed size without being auth
         public int MaxUnauthorised { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
@@ -33,5 +37,21 @@ namespace DLCS.Model.Assets
         public char Family { get; set; }
         public string MediaType { get; set; }
         public long Duration { get; set; }
+
+        private IEnumerable<string> rolesList = null;
+        
+        // TODO - map this via Mapper on way out of DB?
+        public IEnumerable<string> RolesList
+        {
+            get
+            {
+                if (rolesList == null && !string.IsNullOrEmpty(Roles))
+                {
+                    rolesList = Roles.Split(",", StringSplitOptions.RemoveEmptyEntries); 
+                }
+
+                return rolesList;
+            }
+        }
     }
 }
