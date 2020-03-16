@@ -7,6 +7,7 @@ using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
+using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -58,13 +59,13 @@ namespace Thumbs
             var respondsTo = Configuration.GetValue<string>("RespondsTo", "thumbs");
             app.UseEndpoints(endpoints =>
             {
-                endpoints.Map($"/{respondsTo}/{{*any}}", 
+                endpoints.Map($"/{respondsTo}/{{*any}}",
                     endpoints.CreateApplicationBuilder()
-                    .UseMiddleware<ThumbsMiddleware>()
-                    .Build());
+                        .UseMiddleware<StatusCodeExceptionHandlerMiddleware>()
+                        .UseMiddleware<ThumbsMiddleware>()
+                        .Build());
                 endpoints.MapHealthChecks("/ping");
             });
-            
         }
     }
 }

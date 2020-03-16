@@ -13,7 +13,7 @@ namespace DLCS.Core.Exceptions
         /// StatusCode associated with exception.
         /// </summary>
         public HttpStatusCode StatusCode { get; }
-        
+
         public HttpException(HttpStatusCode statusCode, string? message)
             : base(message)
         {

@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Net;
 using System.Threading.Tasks;
+using DLCS.Core.Exceptions;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Web.Requests.AssetDelivery;
+using DLCS.Web.Response;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Configuration;
@@ -63,7 +66,18 @@ namespace Thumbs
                 request.Customer.Id, request.Space, request.IIIFImageRequest);
             context.Response.ContentType = "image/jpeg";
             SetCacheControl(context);
-            await bucketReader.WriteObjectFromBucket(await thumbInBucket, context.Response.Body);
+            var response = await bucketReader.GetObjectFromBucket(await thumbInBucket);
+
+            if (response == null)
+            {
+                await StatusCodeResponse
+                    .NotFound("Could not find requested thumbnail")
+                    .WriteJsonResponse(context.Response);
+            }
+            else
+            {
+                await response.CopyToAsync(context.Response.Body);
+            }
         }
 
         private static async Task WriteRequestDump(HttpContext context, ThumbnailRequest request)

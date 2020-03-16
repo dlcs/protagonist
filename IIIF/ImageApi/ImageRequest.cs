@@ -13,6 +13,7 @@ namespace IIIF.ImageApi
         public Rotation Rotation { get; set; }
         public string Quality { get; set; }
         public string Format { get; set; }
+        public string OriginalPath { get; set; }
 
         public static ImageRequest Parse(string path, string prefix)
         {
@@ -50,6 +51,7 @@ namespace IIIF.ImageApi
                 return request;
             }
 
+            request.OriginalPath = path;
             request.Region = Region.Parse(parts[1]);
             request.Size = Size.Parse(parts[2]);
             request.Rotation = Rotation.Parse(parts[3]);

@@ -31,7 +31,7 @@ namespace DLCS.Repository.Tests.Storage.S3
         }
 
         [Fact]
-        public async Task WriteObjectFromBucket_WritesResponseStreamToProvidedStream()
+        public async Task GetObjectFromBucket_ReturnsFoundObjectAsStream()
         {
             // Arrange
             const string bucket = "MyBucket";
@@ -46,21 +46,42 @@ namespace DLCS.Repository.Tests.Storage.S3
                 .Returns(new GetObjectResponse {ResponseStream = responseStream});
 
             var objectInBucket = new ObjectInBucket {Bucket = bucket, Key = key};
-            var targetStream = new MemoryStream();
-            
+
             // Act
-            await sut.WriteObjectFromBucket(objectInBucket, targetStream);
+            var targetStream = await sut.GetObjectFromBucket(objectInBucket);
 
             // Assert
-            var actual = Encoding.Default.GetString(targetStream.ToArray());
+            var memoryStream = new MemoryStream();
+            await targetStream.CopyToAsync(memoryStream);
+            
+            var actual = Encoding.Default.GetString(memoryStream.ToArray());
             actual.Should().Be(bucketResponse);
+        }
+        
+        [Fact]
+        public async Task GetObjectFromBucket_ReturnsNull_IfKeyNotFound()
+        {
+            // Arrange
+            A.CallTo(() =>
+                    s3Client.GetObjectAsync(
+                        A<GetObjectRequest>.Ignored,
+                        A<CancellationToken>.Ignored))
+                .ThrowsAsync(new AmazonS3Exception("uh-oh", ErrorType.Unknown, "123", "xxx-1", HttpStatusCode.NotFound));
+
+            var objectInBucket = new ObjectInBucket {Bucket = "MyBucket", Key = "MyKey"};
+
+            // Act
+            var result = await sut.GetObjectFromBucket(objectInBucket);
+
+            // Assert
+            result.Should().BeNull();
         }
 
         [Theory]
         [InlineData(HttpStatusCode.Redirect)]
         [InlineData(HttpStatusCode.BadRequest)]
         [InlineData(HttpStatusCode.InternalServerError)]
-        public void WriteObjectFromBucket_ThrowsHttpException_IfS3CopyFails(HttpStatusCode statusCode)
+        public void GetObjectFromBucket_ThrowsHttpException_IfS3CopyFails_DueToNon404(HttpStatusCode statusCode)
         {
             // Arrange
             A.CallTo(() =>
@@ -72,7 +93,7 @@ namespace DLCS.Repository.Tests.Storage.S3
             var objectInBucket = new ObjectInBucket {Bucket = "MyBucket", Key = "MyKey"};
 
             // Act
-            Func<Task> action = () => sut.WriteObjectFromBucket(objectInBucket, new MemoryStream());
+            Func<Task> action = () => sut.GetObjectFromBucket(objectInBucket);
 
             // Assert
             action.Should().Throw<HttpException>().Which.StatusCode.Should().Be(statusCode);
