@@ -14,6 +14,5 @@ namespace DLCS.Model.Assets
 
         public Task<ObjectInBucket> GetThumbLocation(int customerId, int spaceId, ImageRequest imageRequest);
         public Task<List<int[]>> GetSizes(int customerId, int spaceId, ImageRequest imageRequest);
-        public Task<ThumbnailPolicy> GetThumbnailPolicy(string thumbnailPolicyId);
     }
 }

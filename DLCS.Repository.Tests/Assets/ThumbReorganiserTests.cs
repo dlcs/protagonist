@@ -11,32 +11,31 @@ namespace DLCS.Repository.Tests.Assets
 {
     public class ThumbReorganiserTests
     {
-        private readonly ObjectInBucket rootKey;
         private readonly IBucketReader bucketReader;
         private readonly ILogger<ThumbRepository> logger;
         private readonly IAssetRepository assetRepository;
-        private readonly IThumbRepository thumbRepository;
+        private readonly IThumbnailPolicyRepository thumbPolicyRepository;
+        private readonly ThumbReorganiser sut;
 
         public ThumbReorganiserTests()
         {
-            rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
             bucketReader = A.Fake<IBucketReader>();
             logger = A.Fake<ILogger<ThumbRepository>>();
             assetRepository = A.Fake<IAssetRepository>();
-            thumbRepository = A.Fake<IThumbRepository>();
+            thumbPolicyRepository = A.Fake<IThumbnailPolicyRepository>();
+            sut = new ThumbReorganiser(bucketReader, logger, assetRepository, thumbPolicyRepository);
         }
 
         [Fact]
         public async Task EnsureNewLayout_DoesNothing_IfSizesJsonExists()
         {
             // Arrange
+            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
-                .Returns(new[] {"2/1/the-astronaut/sizes.json", "2/1/the-astronaut/200.jpg"});
-            
-            var sut = GetThumbReorganiser();
+                .Returns(new[] {"2/1/the-astronaut/s.json", "2/1/the-astronaut/200.jpg"});
             
             // Act
-            await sut.EnsureNewLayout();
+            await sut.EnsureNewLayout(rootKey);
             
             // Assert
             A.CallTo(() => assetRepository.GetAsset(A<string>._))
@@ -46,18 +45,17 @@ namespace DLCS.Repository.Tests.Assets
         [Fact]
         public async Task EnsureNewLayout_CreatesExpectedResources()
         {
+            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
                 .Returns(new[] {"2/1/the-astronaut/200.jpg"});
 
             A.CallTo(() => assetRepository.GetAsset(A<string>._))
                 .Returns(new Asset {Width = 200, Height = 400, ThumbnailPolicy = "TheBestOne"});
-            A.CallTo(() => thumbRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
                 .Returns(new ThumbnailPolicy {Sizes = "100,200,400"});
-
-            var sut = GetThumbReorganiser();
             
             // Act
-            await sut.EnsureNewLayout();
+            await sut.EnsureNewLayout(rootKey);
 
             // Assert
             
@@ -84,6 +82,7 @@ namespace DLCS.Repository.Tests.Assets
         [Fact]
         public async Task EnsureNewLayout_DoesNotMakeConcurrentAttempts_ForSameKey()
         {
+            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
             var fakeBucketContents = new List<string> {"2/1/the-astronaut/200.jpg"};
 
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
@@ -91,20 +90,18 @@ namespace DLCS.Repository.Tests.Assets
 
             A.CallTo(() => assetRepository.GetAsset(A<string>._))
                 .Returns(new Asset {Width = 200, Height = 250, ThumbnailPolicy = "TheBestOne"});
-            A.CallTo(() => thumbRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
                 .Returns(new ThumbnailPolicy {Sizes = "100,200,400"});
             
             // Once called, add sizes.json to return list of bucket contents
             A.CallTo(() => bucketReader.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._))
-                .Invokes(() => fakeBucketContents.Add("2/1/the-astronaut/sizes.json"));
+                .Invokes(() => fakeBucketContents.Add("2/1/the-astronaut/s.json"));
 
             A.CallTo(() => bucketReader.CopyWithinBucket(A<string>._, A<string>._, A<string>._))
                 .Invokes(async () => await Task.Delay(500));
 
-            var sut = GetThumbReorganiser();
-            var sut2 = GetThumbReorganiser();
-            var ensure1 = Task.Factory.StartNew(() => sut.EnsureNewLayout());
-            var ensure2 = Task.Factory.StartNew(() => sut2.EnsureNewLayout());
+            var ensure1 = Task.Factory.StartNew(() => sut.EnsureNewLayout(rootKey));
+            var ensure2 = Task.Factory.StartNew(() => sut.EnsureNewLayout(rootKey));
 
             // Act
             await Task.WhenAll(ensure1, ensure2);
@@ -123,12 +120,12 @@ namespace DLCS.Repository.Tests.Assets
             
             var fakeBucketContents = new List<string> {"2/1/the-astronaut/200.jpg"};
 
-            A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
+            A.CallTo(() => bucketReader.GetMatchingKeys(key1))
                 .ReturnsLazily(() =>  fakeBucketContents.ToArray());
 
             A.CallTo(() => assetRepository.GetAsset(A<string>._))
                 .Returns(new Asset {Width = 200, Height = 250, ThumbnailPolicy = "TheBestOne"});
-            A.CallTo(() => thumbRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
                 .Returns(new ThumbnailPolicy {Sizes = "100,200,400"});
             
             // Once called, add sizes.json to return list of bucket contents
@@ -139,12 +136,9 @@ namespace DLCS.Repository.Tests.Assets
             A.CallTo(() => bucketReader.CopyWithinBucket(A<string>._, A<string>._, A<string>._))
                 .Invokes(async () => await Task.Delay(500));
 
-            var sut = GetThumbReorganiser(key1);
-            var sut2 = GetThumbReorganiser(key2);
-            var sut3 = GetThumbReorganiser(key3);
-            var ensure1 = Task.Factory.StartNew(() => sut.EnsureNewLayout());
-            var ensure2 = Task.Factory.StartNew(() => sut2.EnsureNewLayout());
-            var ensure3 = Task.Factory.StartNew(() => sut3.EnsureNewLayout());
+            var ensure1 = Task.Factory.StartNew(() => sut.EnsureNewLayout(key1));
+            var ensure2 = Task.Factory.StartNew(() => sut.EnsureNewLayout(key2));
+            var ensure3 = Task.Factory.StartNew(() => sut.EnsureNewLayout(key3));
 
             // Act
             await Task.WhenAll(ensure1, ensure2, ensure3);
@@ -153,8 +147,5 @@ namespace DLCS.Repository.Tests.Assets
             A.CallTo(() => assetRepository.GetAsset(A<string>._))
                 .MustHaveHappened(3, Times.Exactly);
         }
-
-        private ThumbReorganiser GetThumbReorganiser(ObjectInBucket? objectInBucket = null) =>
-            new ThumbReorganiser(objectInBucket ?? rootKey, bucketReader, logger, assetRepository, thumbRepository);
     }
 }

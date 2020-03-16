@@ -39,6 +39,8 @@ namespace Thumbs
             services.AddSingleton<ICustomerRepository, CustomerRepository>();
             services.AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>();
             services.AddSingleton<IThumbRepository, ThumbRepository>();
+            services.AddSingleton<IThumbReorganiser, ThumbReorganiser>();
+            services.AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>();
             services.AddSingleton<IAssetRepository, AssetRepository>();
 
             services.Configure<ThumbsSettings>(Configuration.GetSection("Repository"));
