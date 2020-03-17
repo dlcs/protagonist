@@ -123,32 +123,4 @@ namespace DLCS.Repository.Assets
             return thumbReorganiser.EnsureNewLayout(rootKey);
         }
     }
-
-    public class ThumbnailSizes
-    {
-        [JsonProperty("o")]
-        public List<int[]> Open { get; }
-            
-        [JsonProperty("a")]
-        public List<int[]> Auth { get; }
-
-        [JsonConstructor]
-        public ThumbnailSizes(List<int[]> open, List<int[]> auth)
-        {
-            Open = open;
-            Auth = auth;
-        }
-        
-        public ThumbnailSizes(int sizesCount)
-        {
-            Open = new List<int[]>(sizesCount);
-            Auth = new List<int[]>(sizesCount);
-        }
-
-        public void AddAuth(int width, int height)
-            => Auth.Add(new[] {width, height});
-            
-        public void AddOpen(int width, int height)
-            => Open.Add(new[] {width, height});
-    }
 }

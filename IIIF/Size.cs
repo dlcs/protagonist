@@ -13,6 +13,8 @@ namespace IIIF
         
         [JsonProperty(PropertyName = "height")]
         public int Height { get; private set; }
+
+        [JsonIgnore] public int MaxDimension => Width > Height ? Width : Height;
         
         public override string ToString() => $"{Width},{Height}";
 

@@ -2,13 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Collections;
 using DLCS.Core.Threading;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
-using DLCS.Repository.Settings;
 using IIIF;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+
+using thumbConsts =  DLCS.Repository.Settings.ThumbsSettings.Constants;
 
 namespace DLCS.Repository.Assets
 {
@@ -48,57 +50,84 @@ namespace DLCS.Repository.Assets
             // trouble is we do not know how big it is!
             // we'll need to fetch the image dimensions from the database, the Thumbnail policy the image was created with, and compute the sizes.
             // Then sanity check them against the known sizes.
+            
             var asset = await assetRepository.GetAsset(rootKey.Key.TrimEnd('/'));
             var policy = await thumbnailPolicyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
+
+            var maxAvailableThumb = GetMaxAvailableThumb(asset, policy);
+
             var realSize = new Size(asset.Width, asset.Height);
             var boundingSquares = policy.SizeList.OrderByDescending(i => i).ToList();
-            var expectedSizes = new List<Size>(boundingSquares.Count);
+
+            var thumbnailSizes = new ThumbnailSizes(boundingSquares.Count);
             foreach (int boundingSquare in boundingSquares)
             {
-                expectedSizes.Add(Size.Confine(boundingSquare, realSize));
+                var thumb = Size.Confine(boundingSquare, realSize);
+                if (thumb.IsConfinedWithin(maxAvailableThumb))
+                {
+                    thumbnailSizes.AddOpen(thumb);
+                }
+                else
+                {
+                    thumbnailSizes.AddAuth(thumb);
+                }
             }
 
             // All the thumbnail jpgs will already exist and need copied up to root
-            await CreateThumbnails(rootKey, boundingSquares, expectedSizes);
+            await CreateThumbnails(rootKey, boundingSquares, thumbnailSizes);
 
             // Create sizes.json last, as this dictates whether this process will be attempted again
-            await CreateSizesJson(rootKey, expectedSizes);
+            await CreateSizesJson(rootKey, thumbnailSizes);
         }
 
         private async Task<bool> HasCurrentLayout(ObjectInBucket rootKey)
         {
             var keys = await bucketReader.GetMatchingKeys(rootKey);
-            return keys.Contains($"{rootKey.Key}{ThumbsSettings.Constants.SizesJsonKey}");
+            return keys.Contains($"{rootKey.Key}{thumbConsts.SizesJsonKey}");
         }
 
-        private async Task CreateThumbnails(ObjectInBucket rootKey, List<int> boundingSquares, List<Size> expectedSizes)
+        private static Size GetMaxAvailableThumb(Asset asset, ThumbnailPolicy policy)
         {
-            var copyTasks = new List<Task>(expectedSizes.Count);
+            var _ = asset.GetAvailableThumbSizes(policy, out var maxDimensions);
+            return Size.Square(maxDimensions.maxBoundedSize);
+        }
+
+        private async Task CreateThumbnails(ObjectInBucket rootKey, List<int> boundingSquares, ThumbnailSizes thumbnailSizes)
+        {
+            var copyTasks = new List<Task>(thumbnailSizes.Count);
             
             // low.jpg becomes the first in this list
+            var largestSize = boundingSquares[0];
+            var largestSlug = thumbnailSizes.Auth.IsNullOrEmpty() ? thumbConsts.OpenSlug : thumbConsts.AuthorisedSlug;
             copyTasks.Add(bucketReader.CopyWithinBucket(rootKey.Bucket,
                 $"{rootKey.Key}low.jpg",
-                $"{rootKey.Key}{boundingSquares[0]}.jpg"));
-
-            int n = 1;
-            foreach (Size size in expectedSizes.Skip(1))
-            {
-                copyTasks.Add(bucketReader.CopyWithinBucket(rootKey.Bucket,
-                    $"{rootKey.Key}full/{size.Width},{size.Height}/0/default.jpg",
-                    $"{rootKey.Key}{boundingSquares[n++]}.jpg"));
-            }
-
+                $"{rootKey.Key}{largestSlug}/{largestSize}.jpg"));
+            
+            copyTasks.AddRange(ProcessThumbBatch(rootKey, thumbnailSizes.Auth, thumbConsts.AuthorisedSlug, largestSize));
+            copyTasks.AddRange(ProcessThumbBatch(rootKey, thumbnailSizes.Open, thumbConsts.OpenSlug, largestSize));
+            
             await Task.WhenAll(copyTasks);
         }
 
-        private async Task CreateSizesJson(ObjectInBucket rootKey, List<Size> expectedSizes)
+        private IEnumerable<Task> ProcessThumbBatch(ObjectInBucket rootKey, IEnumerable<int[]> thumbnailSizes,
+            string slug, int largestSize)
         {
-            List<int[]> sizesJson = expectedSizes
-                .Select(s => new int[] {s.Width, s.Height})// s.ToArray()
-                .ToList();
+            foreach (var wh in thumbnailSizes)
+            {
+                var size = Size.FromArray(wh);
+                if (size.MaxDimension == largestSize) continue;
+
+                yield return bucketReader.CopyWithinBucket(rootKey.Bucket,
+                    $"{rootKey.Key}full/{size.Width},{size.Height}/0/default.jpg",
+                    $"{rootKey.Key}{slug}/{size.MaxDimension}.jpg");
+            }
+        }
+
+        private async Task CreateSizesJson(ObjectInBucket rootKey, ThumbnailSizes thumbnailSizes)
+        {
             var sizesDest = rootKey.Clone();
-            sizesDest.Key += "sizes.json";
-            await bucketReader.WriteToBucket(sizesDest, JsonConvert.SerializeObject(sizesJson), "application/json");
+            sizesDest.Key += thumbConsts.SizesJsonKey;
+            await bucketReader.WriteToBucket(sizesDest, JsonConvert.SerializeObject(thumbnailSizes), "application/json");
         }
 
         public void DeleteOldLayout()
