@@ -76,11 +76,13 @@ namespace DLCS.Repository.Storage.S3
             }
             catch (AmazonS3Exception e)
             {
-                logger.LogWarning(e, "Error encountered on server. Message:'{Message}' when writing an object", e.Message);
+                logger.LogWarning(e, "Error encountered on server. Message:'{Message}' when writing an object",
+                    e.Message);
             }
             catch (Exception e)
             {
-                logger.LogWarning(e, "Unknown encountered on server. Message:'{Message}' when writing an object", e.Message);
+                logger.LogWarning(e, "Unknown encountered on server. Message:'{Message}' when writing an object",
+                    e.Message);
             }
         }
 
@@ -105,7 +107,32 @@ namespace DLCS.Repository.Storage.S3
             }
             catch (Exception e)
             {
-                logger.LogWarning(e, "Unknown encountered on server. Message:'{Message}' when writing an object", e.Message);
+                logger.LogWarning(e, "Unknown encountered on server. Message:'{Message}' when writing an object",
+                    e.Message);
+            }
+        }
+
+        public async Task DeleteFromBucket(params ObjectInBucket[] toDelete)
+        {
+            try
+            {
+                var deleteObjectsRequest = new DeleteObjectsRequest
+                {
+                    BucketName = toDelete[0].Bucket,
+                    Objects = toDelete.Select(oib => new KeyVersion{Key = oib.Key}).ToList(),
+                };
+
+                await s3Client.DeleteObjectsAsync(deleteObjectsRequest);
+            }
+            catch (AmazonS3Exception e)
+            {
+                logger.LogWarning(e, "S3 Error encountered. Message:'{Message}' when deleting objects from bucket",
+                    e.Message);
+            }
+            catch (Exception e)
+            {
+                logger.LogWarning(e,
+                    "Unknown encountered on server. Message:'{Message}' when deleting objects from bucket", e.Message);
             }
         }
     }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
@@ -177,6 +178,36 @@ namespace DLCS.Repository.Tests.Assets
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
                         "application/json"))
                 .MustHaveHappened();
+        }
+        
+        [Fact]
+        public async Task EnsureNewLayout_DeletesOldConfinedSquareLayout()
+        {
+            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
+                .Returns(new[]
+                {
+                    "2/1/the-astronaut/low.jpg", "2/1/the-astronaut/100.jpg", "2/1/the-astronaut/sizes.json",
+                    "2/1/the-astronaut/full/50,100/0/default.jpg"
+                });
+
+            A.CallTo(() => assetRepository.GetAsset(A<string>._))
+                .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne"});
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+                .Returns(new ThumbnailPolicy {Sizes = "200,100"});
+            
+            // Act
+            await sut.EnsureNewLayout(rootKey);
+
+            // Assert
+            var expectedDeletions = new[]
+            {
+                "the-bucket:::2/1/the-astronaut/100.jpg", "the-bucket:::2/1/the-astronaut/sizes.json"
+            };
+
+            A.CallTo(() => bucketReader.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(a =>
+                expectedDeletions.Contains(a[0].ToString()) && expectedDeletions.Contains(a[1].ToString())
+            ))).MustHaveHappened();
         }
         
         [Fact]

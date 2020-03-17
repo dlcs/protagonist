@@ -19,5 +19,12 @@ namespace DLCS.Model.Storage
         Task CopyWithinBucket(string bucket, string sourceKey, string destKey);
         
         Task WriteToBucket(ObjectInBucket dest, string content, string contentType);
+
+        /// <summary>
+        /// Delete specified objects underlying storage.
+        /// NOTE: This method assumes all objects are in the same bucket.
+        /// </summary>
+        /// <param name="toDelete">List of objects to delete</param>
+        Task DeleteFromBucket(params ObjectInBucket[] toDelete);
     }
 }
