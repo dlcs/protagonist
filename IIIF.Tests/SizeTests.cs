@@ -115,6 +115,13 @@ namespace IIIF.Tests
             size.IsConfinedWithin(confineSize).Should().BeFalse();
         }
 
+        [Theory]
+        [InlineData(10, 10, 10)]
+        [InlineData(5, 10, 10)]
+        [InlineData(10, 5, 10)]
+        public void MaxDimension_Correct(int w, int h, int expected)
+            => new Size(w, h).MaxDimension.Should().Be(expected);
+
         private static List<TestSizeData> sampleTestData = new List<TestSizeData>
         {
             new TestSizeData(200, 200, 300, 300, 200, 200), // actual smaller than confine

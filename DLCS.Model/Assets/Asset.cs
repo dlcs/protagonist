@@ -40,7 +40,7 @@ namespace DLCS.Model.Assets
 
         private IEnumerable<string> rolesList = null;
         
-        // TODO - map this via Mapper on way out of DB?
+        // TODO - map this via Dapper on way out of DB?
         public IEnumerable<string> RolesList
         {
             get
