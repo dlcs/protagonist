@@ -24,6 +24,20 @@ namespace IIIF
             Width = width;
             Height = height;
         }
+        
+        /// <summary>
+        /// Get size object as w,h array
+        /// </summary>
+        /// <returns></returns>
+        public int[] ToArray() => new[] {Width, Height};
+
+        /// <summary>
+        /// Checks if current Size is confined within specified size.
+        /// </summary>
+        /// <param name="confineSize">Size object to check if confined within.</param>
+        /// <returns>true if current item would fit inside specified size; else false.</returns>
+        public bool IsConfinedWithin(Size confineSize)
+            => Width <= confineSize.Width && Height <= confineSize.Height;
 
         /// <summary>
         /// Create new Size object representing square.
@@ -43,12 +57,6 @@ namespace IIIF
                 size[0],
                 size[1]
             );
-        
-        /// <summary>
-        /// Get size object as w,h array
-        /// </summary>
-        /// <returns></returns>
-        public int[] ToArray() => new[] {Width, Height};
 
         /// <summary>
         /// Confine specified Size object to bounding square of specified size.
