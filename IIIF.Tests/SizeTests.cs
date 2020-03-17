@@ -84,6 +84,37 @@ namespace IIIF.Tests
             confined.Height.Should().Be(testData.ExpectedHeight);
         }
 
+        [Theory]
+        [InlineData(10, 10, 10, 10)] // square same size
+        [InlineData(10, 5, 10, 5)] // landscape same size
+        [InlineData(5, 10, 5, 10)] // portrait same size
+        [InlineData(10, 5, 10, 10)] // landscape within 
+        [InlineData(5, 10, 10, 10)] // portrait within
+        [InlineData(5, 5, 10, 10)] // both dimensions within
+        public void IsConfinedWithin_True_IfConfinedWithin(int width, int height, int confinedWidth, int confinedHeight)
+        {
+            // Arrange
+            var size = new Size(width, height);
+            var confineSize = new Size(confinedWidth, confinedHeight);
+
+            // Assert
+            size.IsConfinedWithin(confineSize).Should().BeTrue();
+        }
+        
+        [Theory]
+        [InlineData(11, 11, 10, 10)] // both dimensions out
+        [InlineData(11, 9, 10, 10)] // width outside, height inside
+        [InlineData(9, 11, 10, 10)] // height outside, width inside
+        public void IsConfinedWithin_False_IfNotConfinedWithin(int width, int height, int confinedWidth, int confinedHeight)
+        {
+            // Arrange
+            var size = new Size(width, height);
+            var confineSize = new Size(confinedWidth, confinedHeight);
+
+            // Assert
+            size.IsConfinedWithin(confineSize).Should().BeFalse();
+        }
+
         private static List<TestSizeData> sampleTestData = new List<TestSizeData>
         {
             new TestSizeData(200, 200, 300, 300, 200, 200), // actual smaller than confine
