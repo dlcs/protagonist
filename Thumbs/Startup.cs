@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Thumbs
 {
@@ -47,7 +48,7 @@ namespace Thumbs
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
             if (env.IsDevelopment())
             {
@@ -59,6 +60,7 @@ namespace Thumbs
             // TODO: Consider better caching solutions
             app.UseResponseCaching();
             var respondsTo = Configuration.GetValue<string>("RespondsTo", "thumbs");
+            logger.LogInformation($"ThumbsMiddleware mapped to '/{respondsTo}/*'");
             app.UseEndpoints(endpoints =>
             {
                 endpoints.Map($"/{respondsTo}/{{*any}}",
