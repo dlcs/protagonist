@@ -33,14 +33,14 @@ namespace DLCS.Repository.Storage.S3
             }
             catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
             {
-                logger.LogInformation(e, "Could not find S3 object '{S3ObjectRequest}'", getObjectRequest);
+                logger.LogInformation(e, "Could not find S3 object '{S3ObjectRequest}'", getObjectRequest.AsBucketAndKey());
                 return null;
             }
             catch (AmazonS3Exception e)
             {
                 logger.LogWarning(e, "Could not copy S3 Stream for {S3ObjectRequest}; {StatusCode}",
                     getObjectRequest, e.StatusCode);
-                throw new HttpException(e.StatusCode, $"Error copying S3 stream for {getObjectRequest}", e);
+                throw new HttpException(e.StatusCode, $"Error copying S3 stream for {getObjectRequest.AsBucketAndKey()}", e);
             }
         }
 
