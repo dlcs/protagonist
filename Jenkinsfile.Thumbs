@@ -32,6 +32,7 @@ pipeline {
   stage('Image') {
    steps {
     sh "docker build -t ${DOCKER_IMAGE}:latest -f Dockerfile.Thumbs ."
+   }
   }
   stage('Tag') {
    steps {
@@ -46,12 +47,20 @@ pipeline {
     sh "docker push ${DOCKER_IMAGE}:production"
    }
   }
-  stage('Bounce') {
+  stage('BounceChk') {
    steps {
-    sh "curl --data '{\"text\": \"Jenkins bouncing ${REGION}/${CLUSTER}/${SERVICE}...\"}' ${SLACK_WEBHOOK_URL}"
-    sh "aws ecs update-service --force-new-deployment --cluster ${CLUSTER} --service ${SERVICE} --region ${REGION}"
-    sh "aws ecs wait services-stable --cluster ${CLUSTER} --services ${SERVICE} --region ${REGION}"
-    sh "curl --data '{\"text\": \"${REGION}/${CLUSTER}/${SERVICE} is now stable\"}' ${SLACK_WEBHOOK_URL}"
+    sh "curl --data '{\"text\": \"Jenkins bouncing ${REGION}/${CLUSTER}/${SERVICE_CHK}...\"}' ${SLACK_WEBHOOK_URL}"
+    sh "aws ecs update-service --force-new-deployment --cluster ${CLUSTER} --service ${SERVICE_CHK} --region ${REGION}"
+    sh "aws ecs wait services-stable --cluster ${CLUSTER} --services ${SERVICE_CHK} --region ${REGION}"
+    sh "curl --data '{\"text\": \"${REGION}/${CLUSTER}/${SERVICE_CHK} is now stable\"}' ${SLACK_WEBHOOK_URL}"
+   }
+  }
+  stage('BounceNoChk') {
+   steps {
+    sh "curl --data '{\"text\": \"Jenkins bouncing ${REGION}/${CLUSTER}/${SERVICE_NOCHK}...\"}' ${SLACK_WEBHOOK_URL}"
+    sh "aws ecs update-service --force-new-deployment --cluster ${CLUSTER} --service ${SERVICE_NOCHK} --region ${REGION}"
+    sh "aws ecs wait services-stable --cluster ${CLUSTER} --services ${SERVICE_NOCHK} --region ${REGION}"
+    sh "curl --data '{\"text\": \"${REGION}/${CLUSTER}/${SERVICE_NOCHK} is now stable\"}' ${SLACK_WEBHOOK_URL}"
    }
   }
  }
