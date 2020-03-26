@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
+    <ProjectReference Include="..\IIIF\IIIF.csproj" />
+  </ItemGroup>
+
+</Project>
