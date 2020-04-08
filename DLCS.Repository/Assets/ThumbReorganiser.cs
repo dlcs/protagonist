@@ -55,7 +55,12 @@ namespace DLCS.Repository.Assets
             // Then sanity check them against the known sizes.
             
             var asset = await assetRepository.GetAsset(rootKey.Key.TrimEnd('/'));
-            var policy = await thumbnailPolicyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
+
+            //404 Not Found Asset
+            if (asset == null)
+                return;
+
+            var policy = await thumbnailPolicyRepository.GetThumbnailPolicy(asset!.ThumbnailPolicy);
 
             var maxAvailableThumb = GetMaxAvailableThumb(asset, policy);
 
