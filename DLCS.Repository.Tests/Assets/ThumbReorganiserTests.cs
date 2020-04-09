@@ -278,5 +278,25 @@ namespace DLCS.Repository.Tests.Assets
             A.CallTo(() => assetRepository.GetAsset(A<string>._))
                 .MustHaveHappened(3, Times.Exactly);
         }
+
+        [Fact]
+        public async Task EnsureNewLayout_AssetNotFound()
+        {
+
+            // Arrange
+            var rootKey = new ObjectInBucket { Bucket = "the-bucket", Key = "2/1/doesnotexit/" };
+
+            Asset returnvalue = null;
+            A.CallTo(() => assetRepository.GetAsset(rootKey.Key.TrimEnd('/')))
+                     .Returns(returnvalue);
+           
+            // Act
+            await sut.EnsureNewLayout(rootKey);
+
+            // Assert
+            A.CallTo(() => assetRepository.GetAsset(A<string>._))
+                  .MustHaveHappened();
+
+        }
     }
 }
