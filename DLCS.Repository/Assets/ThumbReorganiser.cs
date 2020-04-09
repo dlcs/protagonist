@@ -60,7 +60,7 @@ namespace DLCS.Repository.Assets
             if (asset == null)
                 return;
 
-            var policy = await thumbnailPolicyRepository.GetThumbnailPolicy(asset!.ThumbnailPolicy);
+            var policy = await thumbnailPolicyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
 
             var maxAvailableThumb = GetMaxAvailableThumb(asset, policy);
 

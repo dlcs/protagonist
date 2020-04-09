@@ -289,9 +289,6 @@ namespace DLCS.Repository.Tests.Assets
             Asset returnvalue = null;
             A.CallTo(() => assetRepository.GetAsset(rootKey.Key.TrimEnd('/')))
                      .Returns(returnvalue);
-            A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
-                    .Returns(new string[0]);
-
            
             // Act
             await sut.EnsureNewLayout(rootKey);
