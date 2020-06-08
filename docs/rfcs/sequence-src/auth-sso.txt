@@ -1,0 +1,83 @@
+title DLCS Auth - Single Sign On Integration (CAS)
+
+note right of Browser:
+    A client of DLCS only via
+    IIIF Auth Interaction patterns
+end note
+note over Browser:
+    window.open()
+end note
+Browser->DLCS: GET dlcs.io/loginService
+DLCS->Browser: (redirect to role provider)
+note over DLCS:
+    DLCS has redirected to its configured role provider.
+    DLCS does not know how this system does auth; it gets
+    pulled back into this flow a few steps later.
+end note
+Browser->Role Provider: GET roleprovider.org/dlcs-login
+Role Provider->Browser: (redirect to SSO (e.g., CAS))
+note right of Role Provider:
+    Role Provider is itself a client of
+    SSO - in this example, it's CAS, but it
+    could be anything. Role provider 
+    understand's SSO's protocol, DLCS doesn't
+end note
+Browser->CAS-SSO: GET sso.org/cas/login
+note left of Browser: 
+    User fills out
+    login form
+end note
+Browser->CAS-SSO: POST (credentials)
+activate CAS-SSO
+CAS-SSO->CAS-SSO: (authorise)
+CAS-SSO->CAS-SSO: (get user info)
+CAS-SSO->CAS-SSO: (establish SSO session)
+CAS-SSO->Browser: (redirect to roleprovider.org/post-cas-login?ticket=xyz)
+deactivate CAS-SSO
+Browser->Role Provider: GET roleprovider.org/post-cas-login?ticket=xyz
+note right of DLCS:
+    Role Provider is a small web service written specially
+    for DLCS integration. DLCS understands the simple
+    Role Provider protocol, but not the SSO protocol. This 
+    indirection keeps the DLCS independent of CAS, etc.
+end note
+activate Role Provider
+Role Provider->CAS-SSO: (validate xyz CAS ticket)
+Role Provider->Role Provider: Get Roles (e.g., Attribute Release)
+note right of Role Provider:
+    The Role Provider might get roles for the user
+    from the SSO server (e.g., via Attribute Release)
+    but it can get them from anywhere suitable
+end note
+Role Provider->Role Provider: establish session, with roles
+Role Provider->Browser: (redirect to DLCS, token abc for session)
+deactivate Role Provider
+Browser->DLCS: GET dlcs.io/from-role-provider?token=abc
+activate DLCS
+DLCS->Role Provider: (validate token)
+DLCS->Role Provider: (get roles for token)
+note right of DLCS:
+    This is a server-to-server API call. The DLCS
+    knows the URL pattern to call the Role Provider,
+    and expects a JSON array of roles for the token.
+end note
+DLCS->DLCS: establish DLCS session
+note right of DLCS:
+    This session is maintained by the
+    Orchestrator. It knows what roles
+    the user has, and the roles required
+    to access the requested image.
+end note
+note over DLCS:
+    renders...
+    window.close()
+end note
+deactivate DLCS
+note right of Browser:
+    Browser now has a cookie it can present on
+    *simple* (in CORS terms) web requests for
+    IIIF Images, videos, etc; DLCS knows what 
+    roles that cookie is entitled to, and what
+    roles the requested image or video has.
+end note
+Browser->DLCS: (follow IIIF Auth Interaction patterns)

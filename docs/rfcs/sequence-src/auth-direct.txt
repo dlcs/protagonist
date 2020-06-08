@@ -1,0 +1,60 @@
+title DLCS Auth - Direct authentication
+
+note right of Browser:
+    A client of DLCS only via
+    IIIF Auth Interaction patterns
+end note
+note over Browser:
+    window.open()
+end note
+Browser->DLCS: GET dlcs.io/loginService
+DLCS->Browser: (redirect)
+note over DLCS:
+    DLCS has redirected to its configured role provider.
+    DLCS does not know how this system does auth; it gets
+    pulled back into this flow a few steps later.
+end note
+Browser->Role Provider: GET example.org/dlcs-login-page
+note right of Role Provider:
+    Role Provider renders
+    login form HTML
+end note
+note left of Browser: 
+    User fills out
+    login form
+end note
+Browser->Role Provider: POST (credentials)
+activate Role Provider
+Role Provider->Auth System: (authorise)
+Role Provider->Auth System: (get user info)
+Role Provider->Role Provider: (establish session)
+Role Provider->Browser: (redirect to dlcs.io/from-role-provider?token=abc)
+deactivate Role Provider
+note right of DLCS:
+    The Role Provider knows about the DLCS,
+    and creates a token that the DLCS will use
+    to associate user roles with a session.
+end note
+Browser->DLCS: GET dlcs.io/from-role-provider?token=abc
+activate DLCS
+DLCS->Role Provider: (validate token)
+DLCS->Role Provider: (get roles)
+note right of DLCS:
+    This is a server-to-server API call. The DLCS
+    knows the URL pattern to call the Role Provider,
+    and expects a JSON array of roles for the token.
+end note
+DLCS->DLCS: establish DLCS session
+note over DLCS:
+    renders...
+    window.close()
+end note
+deactivate DLCS
+note right of Browser:
+    Browser now has a cookie it can present on
+    *simple* (in CORS terms) web requests for
+    IIIF Images, videos, etc; DLCS knows what 
+    roles that cookie is entitled to, and what
+    roles the requested image or video has.
+end note
+Browser->DLCS: (follow IIIF Auth Interaction patterns)
