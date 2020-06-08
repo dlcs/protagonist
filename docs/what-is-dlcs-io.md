@@ -48,7 +48,7 @@ While most image servers can deal with many standard image formats, performance 
 
 We use JPEG2000. There are two JPEG2000 libraries we use for decoding: Kakadu, which is commercial, and OpenJPEG which isn't. On Wellcome we use the IIPImage Server compiled with Kakadu, and on other projects we use IIPImage compiled with OpenJPEG. Kakadu is very fast. OpenJPEG is catching up, but still has a way to go.
 
-Given a disk volume full of JPEG2000s, and an IIPImage server with that volume mounted, you can make requests like those above and it will open the right file and generate the derivative requested. It needs a filesystem, rather than (say) AWS S3, because it needs to make random access reads of the JPEG2000.
+Given a disk volume full of JPEG2000s, and an IIPImage server with that volume mounted, you can make requests like those above and it will open the right file and generate the derivative requested. It needs a file system, rather than (say) AWS S3, because it needs to make random access reads of the JPEG2000.
 
 ## So why the DLCS?
 
@@ -58,13 +58,13 @@ The problem with that is scale. Wellcome has a lot of images - ~ 40 million and 
 
 Access to these images also follows a steep long-tail distribution. Many images won't get looked at for months or even years, whereas some are looked at all the time.
 
-We want the best of both worlds - we want the low cost of S3 storage for terabytes of images, especially as many of them are rarely used. But we _need_ the performance and crucially the random access filesystem behaviour of EBS and similar volumes.
+We want the best of both worlds - we want the low cost of S3 storage for terabytes of images, especially as many of them are rarely used. But we _need_ the performance and crucially the random access file system behaviour of EBS and similar volumes.
 
 The DLCS is an attempt to have this cake and eat it.
 
 The DLCS uses IIPImage under the hood. But it fronts it with an _Orchestrator_ that copies files from S3 _origins_ to a local volume for use by IIPImage. As far as IIPImage is concerned, whenever it gets a request to extract a region from an image, that image is where it expects it to be on a locally readable disk. But it's only there because the orchestrator ensured it was there before the request arrived at IIPImage.
 
-At any one time, only a very small subset of the possible images that the DLCS knows about (that have been registred) are on expensive fast disks. This _cache_ is what the DLCS maintains - ensuring images are present when IIPimage needs them, and scavenging disk space to keep this working set at a sensible size.
+At any one time, only a very small subset of the possible images that the DLCS knows about (that have been registered) are on expensive fast disks. This _cache_ is what the DLCS maintains - ensuring images are present when IIPimage needs them, and scavenging disk space to keep this working set at a sensible size.
 
 The rest of the images that the DLCS knows about are in S3. Sometimes this S3 will be the DLCS's own bucket, because it copied the image there from its original origin when the image was registered, or because it created a JPEG2000 derivative from the original origin version so it could serve tiles faster.
 
@@ -73,6 +73,7 @@ But sometimes, it will be the customer's S3 bucket - if the image is already a t
 ## We need more than this MVP
 
 The description above is the core of what the DLCS does. But we need more! It gets far more complex when it's a managed service that needs to support other functionality, and integrate via its API with customer digitisation workflows, and for Digirati to use on our projects in lots of different ways. It needs to be a managed service, with admin UI, APIs and other features. And there are some issues with the simple orchestration scenario described above.
+
 
 ### Thumbnails
 
@@ -88,24 +89,33 @@ Not everything is freely visible to anonymous users. The DLCS needs to enforce a
 
 When an image is registered via the API it can be given a required _Role_ - the user must be in this role to see the image. The DLCS then has an API for "backchannel" use for acquiring the roles for a given user, so it can establish a session and then match the user's known roles with the roles demanded by the image.
 
-The DLCS does this for the client by implementing the IIIF Auth API, and for role acquistion a simple CAS-like delegation to some services the customer must provide (e.g., at Wellcome we implement this part in the DDS).
+The DLCS does this for the client by implementing the IIIF Auth API, and for role acquisition a simple CAS-like delegation to some services the customer must provide (e.g., at Wellcome we implement this part in the DDS).
+
+### A comprehensive API
+
+How do images get into the DLCS? How do you register origins and manage millions of images? How do you set policies, such as the sizes of thumbnails to produce, or configuration of access control?
+
+In some scenarios, the DLCS might be the back end to a content creation tool, like a manifest editor. Users build IIIF resources and register new assets with the DLCS.
+
+More commonly, the DLCS is used in a complex systems integration context. It's part of a digitisation workflow. As high resolution master images roll off of the digitisation production line, they are registered with the DLCS to provide public access via the Image API, or AV derivatives. To fit into many different scenarios, the DLCS has an API that allows external workflows, dashboards and other tools to integrate with it.
+
 
 ### Metadata for development scenarios
 
 The most important thing to tell the DLCS about an image is its origin - where to find the master image.
-But images have other metadata - some intrinsic, like height or width; and some arbitrary, supplied by the customer. Roles and tags can be supplied, and also three string fields and three integer fields that the customer can use for any purpose. This is very useful for building workflows, synchronisation and reconcilation - you can use the DLCS to store some values with the images for whatever programmatic purpose you might want later.
+But images have other metadata - some intrinsic, like height or width; and some arbitrary, supplied by the customer. Roles and tags can be supplied, and also three string fields and three integer fields that the customer can use for any purpose. This is very useful for building workflows, synchronisation and reconciliation - you can use the DLCS to store some values with the images for whatever programmatic purpose you might want later.
 
 ### Named queries
 
-One of these purposes is _named queries_ - you can ask the DLCS to select from images where one of the values matches something, then order by one of the other values. The DLCS can return this query as a IIIF Manifest. So while it doesn't know anything about structure above the level of an indivdual image, you can use the DLCS to construct skeleton Manifests based on queries, because you used your knowledge of higher level structure and organisation to give the DLCS additional metadata that you can later query on.
+One of these purposes is _named queries_ - you can ask the DLCS to select from images where one of the values matches something, then order by one of the other values. The DLCS can return this query as a IIIF Manifest. So while it doesn't know anything about structure above the level of an individual image, you can use the DLCS to construct skeleton Manifests based on queries, because you used your knowledge of higher level structure and organisation to give the DLCS additional metadata that you can later query on.
 
 ### Audio, Video
 
 It's not just images.
 
-You can register audio and video with the DLCS. It could be a multi-gigabyte unoptimised archival video file, completely innapropriate for web use. This is analagous to our 100 megapixel image above. The DLCS will convert the origin image into one or more web-friendly derivatives (e.g., MP3 for audio) and store them. It uses Amazon Elastic Transcoder to generate the web-friendly versions.
+You can register audio and video with the DLCS. It could be a multi-gigabyte unoptimised archival video file, completely inappropriate for web use. This is analogous to our 100 megapixel image above. The DLCS will convert the origin image into one or more web-friendly derivatives (e.g., MP3 for audio) and store them. It uses Amazon Elastic Transcoder to generate the web-friendly versions.
 
-This _Asset Delivery_ is key to understanding the point of the DLCS - you have one system or source of not-web-friendly archive images, AV files etc. And the DLCS provides access to them through open standards - the IIIF Image API for images, and web-friendly AV formats for time-based media. It's not a preservation system itself - it provides highly scaleable, high performing access to these digital assets, for web use.
+This _Asset Delivery_ is key to understanding the point of the DLCS - you have one system or source of not-web-friendly archive images, AV files etc. And the DLCS provides access to them through open standards - the IIIF Image API for images, and web-friendly AV formats for time-based media. It's not a preservation system itself - it provides highly scalable, high performing access to these digital assets, for web use.
 
 ### PDFs, Word Documents and other files
 
