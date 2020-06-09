@@ -1,0 +1,29 @@
+title DLCS Engine - Image Ingestion
+
+participant Engine
+participant NAS
+participant Image-Processor
+participant Origin
+participant S3
+
+note over NAS: 
+  NAS accessible by
+  Engine + Image-Processor
+end note
+note over Origin:
+  Origin can be any supported
+  source (s3, http, sftp etc)
+end note
+Engine->Origin: 1. get image
+Origin-->NAS: 2. image
+Engine->Image-Processor: 3. POST /ingest
+note left of Image-Processor:
+  Ingest requests contains 
+  link to file on NAS
+end note
+NAS-->Image-Processor: 4. image file
+Image-Processor->Image-Processor: 5. generate JPEG2000 + thumbs
+Image-Processor->NAS: 6. JP2 + thumbs
+Image-Processor-->Engine: 7. /ingest response
+Engine->S3: 8. tile-ready JPEG2000
+Engine->S3: 9. thumbnails

@@ -1,0 +1,25 @@
+title DLCS Engine - Image Ingestion (Optimised Origin)
+
+participant Engine
+participant NAS
+participant Image-Processor
+participant Optimised Origin
+participant S3
+
+note over Optimised Origin:
+  Origin can be any supported
+  source (s3, http, sftp etc)
+end note
+Engine->Optimised Origin: 1. get image
+Optimised Origin-->NAS: 2. image
+Engine->Image-Processor: 3. POST /ingest
+note left of Image-Processor:
+  Ingest requests contains 
+  link to file on NAS and specifies
+  to generate thumbs only
+end note
+NAS-->Image-Processor: 3. image file
+Image-Processor->Image-Processor: 4. generate thumbs
+Image-Processor->NAS: 6. thumbs
+Image-Processor-->Engine: 7. /ingest response
+Engine->S3: 9. thumbnails
