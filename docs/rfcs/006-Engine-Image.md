@@ -2,25 +2,29 @@
 
 ## Context
 
-This document addresses ingesting and preparing image assets for delivery (not not the delivery of the image assets - that is a job for [Orchestration](002-storage-and-orchestration.md)).
+This document addresses ingesting and preparing image assets for delivery (_not_ the actual delivery of the image assets - that is a job for [Orchestration](002-storage-and-orchestration.md)).
 
-This involves generating tile-friendly versions (JPEG2000) of any image assets uploaded alongside thumbnails for efficient serving of smaller images. This element of the DLCS is known as the 'Engine', and has slightly different implementations for [AV](007-Engine-AV.md) and images.
+This involves generating tile-optimised versions (e.g. JPEG2000 or Pyramidal Tiff) of any image assets alongside thumbnails for efficient serving of smaller scaled full-size images. This element of the DLCS is known as the 'Engine', and has slightly different implementations for [AV](007-Engine-AV.md) and images.
 
 ## Architecture
 
-Every Engine is deployed alongside an Image-Processor, the Image-Processor being a side-car when deployed in a containerised environment. This relationship allows image processing to be scaled easier as every new engine gives a new Image-Processor. 
+Every Engine is deployed alongside an [Image Processor](009-Image-Processor.md), the Image-Processor being a side-car when deployed in a containerised environment. This 1:1 relationship allows image ingestion to be scaled easier as every new Engine gets a new Image-Processor. This can simplify scaling operations as it avoids inadvertently overloading image-processors
 
 To cut down on latency the engine and image-processor share local storage, as this is the fastest way to share image resources.
 
+![Image Engine Architecture](img/engine-image.png "Image Engine Architecture")
+
 ## Consuming
 
-The engine exposes a single API endpoint for ingesting/reingesting an image. This is not publicly available,  but is exposed within the private network running the wider DLCS. <!--This means other systems in the DLCS can make HTTP requests to the Engine but generallyInteractions are either via a request to in response to an HTTP request to the API, or via a queue (such as SQS on AWS). -->
+The engine exposes a single API endpoint for ingesting/reingesting an image. This is not publicly available, but is exposed within the private network running the wider DLCS.
 
 Direct HTTP interactions happen synchronously and should be rare. The call is processed synchronously and the end-user, be that a human or automated process, may need to wait for a period of time before the request is complete (see below 'Image Ingestion' sequence diagram).
 
 The preferred interaction is by creating a batch of ingest requests. These requests are then put onto a queue and processed asynchronously, with the engine controlling the number of workers that are running at any given time. The workers can be increased on an individual instance of the Engine - or by creating multiple instances of the Engine. The latter can be done in response to, or preparation of, a spike in ingest traffic. For example, 1000's of newly digitised assets needs added to the DLCS.
 
-Both of these requests will generally go via the API, which will verify request is valid, read user authenticatino etc and forward on calls to the Engine, either directly or via a message queue.
+Both of these requests will generally go via the API, which will verify request is valid, read user authentication etc and forward on calls to the Engine, either directly or via a message queue.
+
+The Engine subscribes to 2 different queues; 'normal' and 'priority'. Both queues trigger the exact same process but the Priority queue is to allow consuming services a way to expedite requests.
 
 ### Sample Requests
 
@@ -97,6 +101,6 @@ An "optimised" origin is one that is a) fast enough to use as a source for orche
 
 This is useful when an institution has already been through a digitisation process and already have a lot of tile-optimised assets that can be copied with little latency (e.g. if DLCS in is AWS this could be an S3 bucket in the same region) and it avoids extra storage costs.
 
-<!--Batch/Synchronous
-Priority + normal queue
-Initial Origin-->
+#### Initial Origin
+
+An "initialOrigin" can be specified as part of the initial payload. This is _not_ stored anywhere - it is purely a convenience function to allow the service to do the initial ingestion from a different origin. 

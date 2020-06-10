@@ -21,7 +21,7 @@ Regardless of which "mode" is used, a list of thumbnail sizes will be provided, 
 
 An "optimisation" parameter tells the Image-Processor _how_ to do it, for example:
 
-* JPEG2000 vs Til Pyramidal Tiff.
+* JPEG2000 vs Pyramidal Tiff.
 * fast and lossy vs slower and max quality.
 * what colour profiles to use.
 

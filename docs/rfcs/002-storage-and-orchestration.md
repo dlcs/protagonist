@@ -19,6 +19,70 @@ From [What is the DLCS?](../what-is-dlcs-io.md)
 
 > At any one time, only a very small subset of the possible images that the DLCS knows about (that have been registred) are on expensive fast disks. This _cache_ is what the DLCS maintains - ensuring images are present when IIPimage needs them, and scavenging disk space to keep this working set at a sensible size.
 
+## Architecture
+
+The _Orchestrator_ application is responsible for fetching assets from their Origin so that they are ready to be used by the ImageServer(s). In addition to this it can 
+
+![Architecture](img/orchestrator-arch.png)
+
+The above diagram has many components, these are discussed below but a short overview of them:
+
+### Orchestrator
+
+At a very simple level the Orchestrator is a reverse proxy that contains a _lot_ more business logic than would normally be found in a reverse proxy. It makes decisions on incoming requests and decides where these should be routed. It is a collection of containerised services that act together to serve image-assets.
+
+#### Reverse Proxy
+
+This is a standard Reverse Proxy. It could sit in front of the Orchestrator application (for example [Lua script in NGINX](https://github.com/openresty/lua-nginx-module#readme)) and make back-channel requests 'into' the main Orchestrator application to aid in decision making.
+
+Alternatively it could be inside the Orchestrator application (for example [YARP](https://microsoft.github.io/reverse-proxy/) for a dotnet application) and use in-process requests to aid in decision making.
+
+The type of information that can inform decision making is:
+
+* Is the request for an asset that requires auth?
+* Is the request for a full image we have a thumbnail for?
+* Is the request for a `/full/` image?
+* Is the request for a tile that we have served recently (and is in cache)?
+
+#### Cache
+
+The cache inside the Orchestrator is a disk-based (e.g. [Varnish](https://varnish-cache.org/)) or in-process memory cache (or a combination of the two). This is a hot-cache of recently generated tiles and can be used to serve future requests for these. The exact caching algorithm used (e.g. LRU vs LFU) will depend on implementation.
+
+#### Orchestrator
+
+The main business logic behind Orchestration. This maintains a list of what images are on the the Fileshare. If a request comes in for an image that is _not_ on the file share then it will copy the tile-optimised image from Storage to Fileshare, ready to be used by the image-servers.
+
+#### Fireball
+
+Fireball is an implementation of a PDF generator. When a request is received for a generated PDF, Fireball can create and store the PDF from a manifest.
+
+### Distributed Lock
+
+This is an external resource that can provide distributed locking for multiple Orchestrator instances. It is used to avoid multiple Orchestration requests. For example, when someone opens an image in a IIIF Viewer and a flood of 40 tile requests come in simultaneously. In this instance we only want to Orchestrate (copy the image from source to Fileshare) once, rather than 40 times. The Distributed Lock helds to 'hold back' 39 of the requests until the image is available for use by the image-servers.
+
+### Cache
+
+The external cache sits between the Image Server Cluster and Orchestrator instances. Whether it is required depends on individual use cases but it can help:
+
+* Speed on 'on boarding' of a new Orchestrator instance when scaling up.
+* Cache authorised tiles - the auth check will have been carried out at Orchestrator layer.
+
+### Fileshare
+
+Fast, local network attached storage. This contains the source tile-optimised files that the image-servers will use to generate tiles from. It is ignorant of how to fetch these files, the Orchestrator is responsible for fetching the files from storage and putting them onto the Fileshare before triggering requests to the image-server.
+
+### Image Server Cluster
+
+1:n Image-Servers that are used for generation of assets to be served over the
+
+
+
+- copy from origin
+- serve tiles
+- clean up
+- use info.json as poke to start
+- use distributed lock to handle 30 requests for same image
+
 ## Orchestration
 
 The DLCS uses local EBS volumes for IIPImage to read, and the request pipeline holds up an image request if orchestration is required. It uses Redis and separate scavenger processes to maintain knowledge of what's where, and to keep the disk usage of this _hot cache_ stable.
@@ -86,8 +150,3 @@ A flood of tile requests for the same image can't all trigger orchestration of t
 How well do the mentioned solutions handle multiple concurrent demands for the same file?
 
 What's the most efficient way to optimise this? Avoiding multiple orchestration attempts, but recognising that all the request are independent? We use Redis and some Lua code in NGINX. 
-
-
-
-
-

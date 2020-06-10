@@ -1,6 +1,6 @@
 # Rethinking thumbnail handling
 
-At present, the DLCS stores thumbnails in S3 in a way that matches Image Service URLs. This means you can just proxy S3 and serve thumbnails quickly.
+Previously, the DLCS stored thumbnails in S3 in a way that matched Image Service URLs. This meant you could just proxy S3 and serve thumbnails quickly.
 
 If an image is registered with a named thumbnail policy, or the default thumbnail policy, images will be laid out in S3 to match the paths supported by a _level 0_ Image API service.
 
@@ -20,7 +20,15 @@ We're already storing two copies, to support the canonical (in IIIF 2.1) `/w,/` 
 
 And, we generate a lot of S3 keys:
 
-![keys](img/thumbs03.png)
+```
+2/1/the-barmecide-feast/full/100,/0/default.jpg
+2/1/the-barmecide-feast/full/100,75/0/default.jpg
+2/1/the-barmecide-feast/full/200,/0/default.jpg
+2/1/the-barmecide-feast/full/200,150/0/default.jpg
+2/1/the-barmecide-feast/full/400,/0/default.jpg
+2/1/the-barmecide-feast/full/400,300/0/default.jpg
+2/1/the-barmecide-feast/low.jpg
+```
 
 And, we're not entirely "static" anyway. We also support the `/!w,h/` syntax which is essential for building UIs when you know the identifier of an image service, and you know the Thumbnail Policy your images are using, but you don't know the actual size of the images. That is, you know you can safely ask for `/!200,200/` to get a thumbnail that fits with your UI, but you don't know the aspect ratio of the image. This is typical in search results. The image returned by that request might be 200 x 150, or 150 x 200 - you don't know enough to request it using either the `/w,/` or `/w,h/` syntax.
 
@@ -42,10 +50,10 @@ That being the case, we can store thumbnails in S3 like this:
     /authed
         400.jpg
         1024.jpg
-    sizes.json
+    s.json
 ```
 
-Where `sizes.json` looks like this (for example):
+Where `s.json` contains the different thumbnail sizes and looks like this (for example):
 
 ```
 {
@@ -60,9 +68,9 @@ Where `sizes.json` looks like this (for example):
 }
 ```
 
-All the thumbs might be in "o" for "open", or all in "a" for "authed", or a mixture as above.
+All the thumbs might be in "o" for "open", or all in "a" for "auth", or a mixture as above.
 
-While other services like PDF generation might use thumbnails from either `/open` or `/authed`, the thumbnail service can only use the thumbs in `/open`, it's not able to proxy anything that isn't in there.
+While other services like PDF generation might use thumbnails from either `/open` or `/auth`, the thumbnail service can only use the thumbs in `/open`, it's not able to proxy anything that isn't in there.
 
 Given this information, and the cached thumbnail policy, we can handle these requests by determining the larger of width and height (let this be nnn) and serving /open/nnn.jpg:
 
@@ -71,11 +79,12 @@ Given this information, and the cached thumbnail policy, we can handle these req
 .../image-id/full/150,200/0/default.jpg
 .../image-id/full/!200,200/0/default.jpg
 ```
-This means the handler for /thumbs/ has no need to consult any data source, it just examines the request URL, picks the matching nnn.jpg, and proxies it. 
+
+This means the handler for `/thumbs/` has no need to consult any data source, it just examines the request URL, picks the matching nnn.jpg, and proxies it. 
 
 Most thumbnail requests are either `/w,h/` (because you have that information in a manifest, to generate all the thumbs for one item) or `\!n,n` (because you know the image id, and the policy, but not the aspect ratio).
 
-And we can handle these requests that are not of this form by consulting the sizes.json information first, and finding a matching width or height from the list under the "o" key:
+And we can handle these requests that are not of this form by consulting the `s.json` information first, and finding a matching width or height from the list under the "o" key:
 
 ```
 .../image-id/full/200,/0/default.jpg
@@ -84,42 +93,35 @@ And we can handle these requests that are not of this form by consulting the siz
 .../image-id/full/,150/0/default.jpg
 ```
 
+![Thumbs flow](sequence-src/thumbs.png)
+
 If we only have one dimension we don't know enough, even if it matches one of our known thumbnail policy sizes, but the cost of acquiring the additional information is either:
 
-* Read the sizes.json from S3
+* Read the `s.json` from S3 (which can be cached for a short duration).
 
 or
 
-* Get the image record from the database, and hence its actual size and thumbnail policy, and determine what the thumb sizes would be
+* Get the image record from the database, and hence its actual size and thumbnail policy, and determine what the thumb sizes would be.
 
-A completely S3-backed service is appealing.
+A completely S3-backed (or alternative object storage like Azure Blob) service is appealing.
 
 This only works if the DLCS confines thumbnails to squares - which it does, and nobody has ever asked for anything different.
 
-This approach is more flexible, uses far fewer S3 keys, is very very scalable, and is simpler. It still appears to be a normal level 0 IIIF Image APi Service, it works with Openseadragon, etc.
+This approach is more flexible, uses far fewer S3 keys, is very very scalable, and is simpler. It still appears to be a normal level 0 IIIF Image API Service, it works with OpenSeaDragon, Mirador 3 etc.
 
-It does mean migrating old layout to new layout.
+It does mean migrating old layout to new layout for existing DLCS implementations. See [Thumb Rearranger](#thumb-rearranger), below for more details.
 
-> There is a PR that provides a thumbnail service implementing this logic, and also migrates old layout to new layout on demand, which can be deployed to a parallel /testthumbs/ or similar, for playing with.
+## [Engine](006-Engine-Image.md)
 
+The current Deliverator/Engine is producing both the 'old' (Level 0-esque layour) and 'new' (open/auth) thumb layout.
 
-## Engine changes
-
-The current Deliverator/engine is already producing an earlier version of this layout.
-It must also keep on producing the layout expected by the current orchestrator.
-
-/DLCS.Application/Behaviour/Thumbnails/ProcessWebTizerOutputBehaviour.cs
-
-It needs to be updated to:
-
- - produce the new layout described above, split into open/authed
- - produce the new sizes.json
- - delete any keys that don't match these (apart from keys for the original layout) - that is, don't leave keys in `/open` because they will be served regardless of the sizes.json for `w,h` or `!w,h` requests, which don't need to look it up.
- - It will need to call https://github.com/digirati-co-uk/deliverator/blob/0f6604afdd5e82a03fad1ba6707026483925765d/DLCS.Data/Extensions/ImageEx.cs#L12 (this tweaked version not yet in master) and compare it to the array of thumb sizes it got from Tizer.
+The former is to the layout expected by the current orchestrator, the latter is to address above problem.
  
 
- ## Thumb rearranger
+ ## Thumb Rearranger
 
- The code in the new Thumbs service will also need to obtain the _permitted_ sizes, that take MaxUnauthorised into account, which will require something like that extension method mentioned above in our new repo (in a shared lib) (we've already got `GetThumbnailPolicy()`).
+The `thumbs` application has a configuration property "EnsureNewThumbnailLayout". This is used for existing DLCS instances that have some thumbnails created using the initial layout, as detailed above. When enabled the `thumbs` application will verify that the 'new' layout exists, by checking for existance of `s.json`. 
 
+If it is _not_ found then it will call out to the database to get enough information to workout which thumbs are open and which are auth'd. This takes MaxUnauthorised and Roles into account.
 
+It will then rearrange the existing thumbnails, maintaining the old format for backwards compatibility with additional systems. By doing this 'on the fly' rearranging of thumbs we can verify that we are getting the speed benefits addressed above without needing to do a bulk operation to rearrange.
