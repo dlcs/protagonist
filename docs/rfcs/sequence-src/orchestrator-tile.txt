@@ -1,0 +1,33 @@
+title DLCS Orchestrator - Tile Request
+
+actor Requestor
+participant ReverseProxy
+participant Cache
+participant Orchestrator
+participant Source
+participant FileShare
+
+Requestor->ReverseProxy: /{iif-request}
+ReverseProxy->Orchestrator: img requires auth?
+Orchestrator-->ReverseProxy: auth reponse
+
+alt requires auth
+    ReverseProxy->Orchestrator: /{iif-request}
+else open
+    ReverseProxy->Cache: /{iif-request}
+    note over Cache: Cache would return\nhere if already has tile
+    Cache->Orchestrator: /{iif-request}
+end
+
+Orchestrator->Orchestrator:image\norchestrated?
+
+opt orchestrate image
+  Orchestrator->Source:copy source image\n(tile-optimised)
+  Source-->FileShare:source image
+end
+
+Orchestrator->ImageServer:/{iif-request}
+FileShare-->ImageServer:read source image
+ImageServer-->ReverseProxy:jpg tile
+note over Cache:jpg file cached if open
+ReverseProxy-->Requestor:default.jpg

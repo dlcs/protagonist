@@ -1,6 +1,5 @@
 # Storage and Orchestration
 
-
 ## Context
 
 From [What is the DLCS?](../what-is-dlcs-io.md)
@@ -19,9 +18,20 @@ From [What is the DLCS?](../what-is-dlcs-io.md)
 
 > At any one time, only a very small subset of the possible images that the DLCS knows about (that have been registred) are on expensive fast disks. This _cache_ is what the DLCS maintains - ensuring images are present when IIPimage needs them, and scavenging disk space to keep this working set at a sensible size.
 
-## Architecture
+<!-- 
+Re the orchestrator sequence diagram, and all the different reverse proxy features that go in in there...
+ - in memory response caching (possibly)
+ - disk-backed response caching
+ - proxying to S3 based on business logic
+ - consulting Redis (or similar) to make a decision
+ - talking to PostgreSQL
+ - initiating a long running process (copying a file - long running by web server standards)
+ - access control logic
+ - passing to a load balancer pool AFTER doing some of the above
+ - simple proxying to further services after doing some of the above
+-->
 
-The _Orchestrator_ application is responsible for fetching assets from their Origin so that they are ready to be used by the ImageServer(s). In addition to this it can 
+## Architecture
 
 ![Architecture](img/orchestrator-arch.png)
 
@@ -29,124 +39,121 @@ The above diagram has many components, these are discussed below but a short ove
 
 ### Orchestrator
 
-At a very simple level the Orchestrator is a reverse proxy that contains a _lot_ more business logic than would normally be found in a reverse proxy. It makes decisions on incoming requests and decides where these should be routed. It is a collection of containerised services that act together to serve image-assets.
+At a fundamental level the Orchestrator is a reverse proxy that contains a _lot_ more business logic than would normally be found in a reverse proxy. It makes decisions on incoming requests and decides where these should be routed. 
+
+The _Orchestrator_ application is also responsible for fetching tile-optimised assets from their source (be that an Optimised Origin, or a DLCS specific location - see [Engine - Image](006-Engine-Image.md)) so that they are ready to be used by the ImageServers.
+
+It is a collection of containerised services that act together to serve image-assets.
 
 #### Reverse Proxy
 
-This is a standard Reverse Proxy. It could sit in front of the Orchestrator application (for example [Lua script in NGINX](https://github.com/openresty/lua-nginx-module#readme)) and make back-channel requests 'into' the main Orchestrator application to aid in decision making.
+This is a standard Reverse Proxy. It could sit in front of the Orchestrator application (but still inside the wider _Orchestrator_ box, as shown in the diagram) (for example [Lua script in NGINX](https://github.com/openresty/lua-nginx-module#readme)) and make back-channel requests 'into' the main Orchestrator application to aid in decision making.
 
-Alternatively it could be inside the Orchestrator application (for example [YARP](https://microsoft.github.io/reverse-proxy/) for a dotnet application) and use in-process requests to aid in decision making.
+Alternatively it could be inside the Orchestrator application (for example [YARP](https://microsoft.github.io/reverse-proxy/) for a dotnet application) and use in-process requests to aid in decision making. If this kind of reverse proxy is available and performant/feature rich enough then it is preferred as it keeps everything cleaner and in one single place.
 
-The type of information that can inform decision making is:
+The back channel/in-process requests that are made from the Reverse Proxy to the Orchestrator are:
 
 * Is the request for an asset that requires auth?
 * Is the request for a full image we have a thumbnail for?
 * Is the request for a `/full/` image?
-* Is the request for a tile that we have served recently (and is in cache)?
+* Is the request for a tile that we have served recently (i.e. is tile in the cache)?
+* What is the Id for this customer name? (e.g. if request is for `/iiif-img/friendly-name/1/the-barmecide-feast`, 'friendly-name' is replaced by the integer Id for downstream calls).
+
+The answers to these questions may involve round trips to PostgreSQL database (to get `ThumbnailPolicy` or `MaxUnauthorised` value).
 
 #### Cache
 
-The cache inside the Orchestrator is a disk-based (e.g. [Varnish](https://varnish-cache.org/)) or in-process memory cache (or a combination of the two). This is a hot-cache of recently generated tiles and can be used to serve future requests for these. The exact caching algorithm used (e.g. LRU vs LFU) will depend on implementation.
+The cache inside the Orchestrator is a disk-based (e.g. [Varnish](https://varnish-cache.org/)) or in-process memory cache (or a combination of the two). This is a hot-cache of recently responses and sits infront of the Orchestrator.
+
+The caching eviction algorithm used (e.g. LRU vs LFU) will depend on implementation and supported use cases. 
+
+404s can be cached for short lengths of time (e.g. 30s) to avoid flooding downstream resources for repeated queries for non-existant, or still ingesting, assets.
+
+200s are cached for longer but only open requests are cached.
+
+In some instances a smarter algorithm may need to be used. For example, if we have a huge JPEG2000 file that is rarely accessed but is slow to orchestrate then we may let this sit 'stale' for longer than we would a single page of a book with a 800KB JPEG2000 file.
 
 #### Orchestrator
 
-The main business logic behind Orchestration. This maintains a list of what images are on the the Fileshare. If a request comes in for an image that is _not_ on the file share then it will copy the tile-optimised image from Storage to Fileshare, ready to be used by the image-servers.
+The main business logic behind Orchestration. This can access a list of what images are on the Fileshare. The list of images on the FileShare is maintained in an external system, such as Redis.
 
-#### Fireball
+If a request comes in for an image that is _not_ on the FileShare then it will copy the tile-optimised image from Storage to FileShare, ready to be used by the image-servers.
 
-Fireball is an implementation of a PDF generator. When a request is received for a generated PDF, Fireball can create and store the PDF from a manifest.
+It can consult the Distributed Lock to decide what state an image is in and react accordingly:
+
+* Not Orchestrated > orchestrate image and mark as Orchestrating.
+* Orchestrating > hold up request until Orchestrated.
+* Orchestrated > let request pass.
+
+#### PDF Generator
+
+This component takes a JSON playbook that documents what the contents of the PDF should be and where the resulting PDF should be stored (e.g. S3 bucket). [Fireball](https://github.com/fractos/fireball) is an implementation of a PDF generator.
+
+See [Named Queries](004-Named-Queries.md) for more information on how PDF generation can work.
 
 ### Distributed Lock
 
-This is an external resource that can provide distributed locking for multiple Orchestrator instances. It is used to avoid multiple Orchestration requests. For example, when someone opens an image in a IIIF Viewer and a flood of 40 tile requests come in simultaneously. In this instance we only want to Orchestrate (copy the image from source to Fileshare) once, rather than 40 times. The Distributed Lock helds to 'hold back' 39 of the requests until the image is available for use by the image-servers.
+This is an external resource that can provide distributed locking for multiple Orchestrator instances. It is used to avoid multiple Orchestration requests. For example, when someone opens an image in a IIIF Viewer and a flood of 40 tile requests come in simultaneously. In this instance we only want to Orchestrate (copy the image from source to Fileshare) once, rather than 40 times. The Distributed Lock helds to hold up 39 of the requests until the image is available for use by the image-servers.
+
+Shown as [Redis](https://redis.io/topics/distlock) on the diagram but could be replaced by an alternative service that supports distributed locking.
+
+> In a smaller scale DLCS implementation this logic could live within the _Orchestrator_ application boundary as all orchestration requests will go via one central application.
+
+![Orchestrate Orchestration](sequence-src/orchestrator-orchestration.png)
 
 ### Cache
 
 The external cache sits between the Image Server Cluster and Orchestrator instances. Whether it is required depends on individual use cases but it can help:
 
 * Speed on 'on boarding' of a new Orchestrator instance when scaling up.
-* Cache authorised tiles - the auth check will have been carried out at Orchestrator layer.
+* Cache tiles for assets that require authentication. The auth check will have been carried out at Orchestrator layer. The Orchestrator doesn't cache any authorised files, it passes the request to image-servers.
+
+Can be disk-based or HTTP cache depending on requirements. Disk-based cache would better suit scenarios where lots of different assets are being requested and HTTP cache suit scenarios where lots of users are requesting the same assets.
 
 ### Fileshare
 
-Fast, local network attached storage. This contains the source tile-optimised files that the image-servers will use to generate tiles from. It is ignorant of how to fetch these files, the Orchestrator is responsible for fetching the files from storage and putting them onto the Fileshare before triggering requests to the image-server.
+Fast, local network attached storage. This contains the source tile-optimised files that the image-servers will use to generate tiles from. Each image-server will have this drive mounted. 
+
+The Fileshare is ignorant of how to fetch or clean files, the Orchestrator is responsible for fetching the files from storage and writing them onto the Fileshare before triggering requests to the image-server. Orchestrator is the only thing that will write to this location.
 
 ### Image Server Cluster
 
-1:n Image-Servers that are used for generation of assets to be served over the
+1:n IIIF Image-Servers ([Loris](https://github.com/loris-imageserver/loris), [Cantaloupe](https://cantaloupe-project.github.io/) or [IIPImage](https://github.com/ruven/iipsrv)). These fetch images from Fileshare to local disk and serve tile requests.
 
+They sit behind a load balancer to share the load across the cluster. Load balancing algorithm can vary depending on load balancing technology used, from simple round-robin to a more complex algorithm using least-traffic or URL. For example to ensure that all requests for a particular image are served by the same server.
 
+### Scavenger
 
-- copy from origin
-- serve tiles
-- clean up
-- use info.json as poke to start
-- use distributed lock to handle 30 requests for same image
+Scavenger is a separate application that maintains the files in the Fileshare. It will periodically check the fileshare for old, redundant files and remove them. It will only scavenge files when a configurable threshold has been hit (e.g. when drive is 75% full) and can be configured to _not_ clean files that are younger than a specific threshold.
+
+ This maintains multiple [SortedSets](https://redis.io/topics/data-types#sorted-sets) that score each file by last access and added time.
 
 ## Orchestration
 
-The DLCS uses local EBS volumes for IIPImage to read, and the request pipeline holds up an image request if orchestration is required. It uses Redis and separate scavenger processes to maintain knowledge of what's where, and to keep the disk usage of this _hot cache_ stable.
+### Images 
+
+![Orchestrate Tile Request](sequence-src/orchestrator-tile.png)
+
+The DLCS uses local volumes for image-servers to read, and the request pipeline holds up an image request if orchestration is required. It uses Redis and separate scavenger processes to maintain knowledge of what's where, and to keep the disk usage of this _hot cache_ stable.
+
+The most expensive part of an image request is when an asset needs copied from source to FileShare. This will be from close object storage (same region S3 bucket) but there will be some latency involve copying a file across the network, particularly in the case of a large file. There can be some optimisations in place, for example a request for IIIF `/info.json` can be used to trigger Orchestration, with the assumption that an image has been opened in a viewer and subsequent requests will be for image resources. This is not always the case but the frequency of only `/info.json` requests vs the cost of unnecessary orchestration is generally okay.
 
 But this is still our extra plumbing, more complexity to manage. 
 
 One ideal scenario is an imaginary AWS offering - S3-backed volumes where you can specify a source bucket, and the size of "real" volume you want (e.g., 1TB). The file system view can be read only - we don't need to write to the bucket via a filesystem, we can do that as S3. Reads of the filesystem manage the orchestration at that file access, below our application logic. We just assume that if it's in the bucket, it can be read from the file system, and everything looks simple.
 
-This is _like_ S3fs-fuse, but a managed service. https://github.com/s3fs-fuse/s3fs-fuse
+### AV
 
-Other people use S3fs-fuse with IIPImage, but either with customisations - https://github.com/klokantech/embedr/issues/16 - or interventions for cache management that are similar to what we're already doing, so not particularly easier to manage.
+![Orchestrate AV Request](sequence-src/orchestrator-av.png)
 
-Other approaches we looked at 5 years ago were commercial offerings on top of AWS, like SoftNAS, but they didn't have quite the features we wanted.
+Orchestration for AV files is somewhat simpler. The assets are larger, we do not cache them and there's no equivalent to requesting tiles. If an AV asset is 'open', the request is served from the underlying object storage. 
 
-There is an echo of AWS EFS in this. We tried using EFS rather than EBS for IIPImage, but found it too slow. A write operation is not finished until everything is consistent, and this was just too slow for image orchestration.
+If an asset requires authentication then the Orchestrator is responsible for the auth logic, once authorised the underyling AV file is served in chunks.
 
 ## Alternatives to Orchestration where possible
 
-We're already offering the separate `/thumbs/` path for cases where the client knows what sizes to ask for.
+There's a difference between image requests for the `/full/` region, and tile requests. Full region requests (that don't match a known thumbnail size) are likely to be the user looking at one image at a time, whereas tile requests arrive in a flood, for the same image, and are generated by deep zoom clients.
 
-We can take this further.
+We're have the separate [`/thumbs/`](001-thumbnails.md) path for cases where the client knows what sizes to ask for.
 
-There's a difference between image requests for the `/full/` region, and tile requests. Full region requests (that don't match a thumbnail size) are likely to be the user looking at one image at a time, whereas tile requests arrive in a flood, for the same image, and are generated by deep zoom clients.
-
-We could direct `/full/` requests down a different path, that doesn't orchestrate but makes byte range, or complete requests, to the source S3 JP2. We save orchestration space for tile requests, interactions that are triggered by deep zoom. Full region requests for small
-
-We could even store the JP2 header as data, separately, so we don't need to go to S3 to read it. We have it handy so that if someone asks for a smallish size, but full region, we can read just enough to service it from the source JP2 with a byte range request. Someone asking for `/full/max/` can be made to wait longer than someone asking for a readable static image (perhaps the view before deep-zooming) or tiles, the kinds of user interactions are very different.
-
-This discussion is related: https://groups.google.com/d/msg/iiif-discuss/OOkBKT8P3Y4/u2Lah-h_EAAJ
-
-Serving tiles via small byte range requests to S3 still seems like a lot of work, I'd like IIPImage (or whatever we are using) to be dealing with as fast a file system as possible, as directly as possible, for handling tile requests. But we could end up where every other kind of `/full/` request is either handled by proxying a ready-made derivative in S3, or by on-the-fly image processing of a stream from S3.
-
-Obviously, sensible reverse-proxy caching is important here too.
-
-## Other things to look at
-
-### AWS File Gateway
-
-On the face of it, AWS Storage Gateway looks a lot like the hypothetical service described earlier: https://aws.amazon.com/storagegateway/file/
-
-The File Gateway can be run on EC2.
-
-However, there are some issues that would limit us:
-
-> An object that needs to be accessed by using a file share should only be managed by the gateway. If you directly overwrite or update an object previously written by file gateway, it results in undefined behavior when the object is accessed through the file share.
-
-This would preclude use cases where the DLCS makes use of the existing buckets of an [archival storage system](https://github.com/wellcomecollection/docs/blob/extract-docs/rfcs/002-archival_storage/README.md); we'd need to copy images into another S3 bucket, which means synchronisation issues as well as huge amounts of extra storage.
- 
-This could be an option for some scenarios though, and we could do some performance testing on it.
-
-### Azure Data Lake Storage
-
-https://docs.microsoft.com/en-gb/azure/storage/blobs/data-lake-storage-introduction
-
-> Azure Data Lake Storage Gen2 is a set of capabilities dedicated to big data analytics, built on Azure Blob storage. Data Lake Storage Gen2 is the result of converging the capabilities of our two existing storage services, Azure Blob storage and Azure Data Lake Storage Gen1. Features from Azure Data Lake Storage Gen1, such as file system semantics, directory, and file level security and scale are combined with low-cost, tiered storage, high availability/disaster recovery capabilities from Azure Blob storage.
-
-## Next steps
-
-What are we missing here? What other ways of doing this are there? Is the system we've got actually the best way of doing it (with some modifications)?
-
-Sources of concern:
-
-A flood of tile requests for the same image can't all trigger orchestration of that image. We make it the equivalent of a critical section, we use a semaphore. While this is as light as possible, it still seems wasteful. Or at least, I'd rather it was someone else's problem.
-
-How well do the mentioned solutions handle multiple concurrent demands for the same file?
-
-What's the most efficient way to optimise this? Avoiding multiple orchestration attempts, but recognising that all the request are independent? We use Redis and some Lua code in NGINX. 
+We direct `/full/` requests down a different path, see [Special Server](010-special-server.md) for further details.

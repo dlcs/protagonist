@@ -1,0 +1,20 @@
+title DLCS Orchestrator - AV Request
+
+actor Requestor
+participant ReverseProxy
+participant Orchestrator
+participant Source
+
+Requestor->ReverseProxy: /{av-request}
+ReverseProxy->Orchestrator: AV requires auth?
+Orchestrator-->ReverseProxy: auth reponse
+
+alt requires auth
+    ReverseProxy->Orchestrator: /{av-request}
+    Orchestrator->Source:read AV (chunks)
+    Source-->Orchestrator:AV chunks
+    Orchestrator-->Requestor:proxy response in chunks
+else open
+    ReverseProxy->Source: /{av-request}
+    Source-->Requestor: AV asset
+end

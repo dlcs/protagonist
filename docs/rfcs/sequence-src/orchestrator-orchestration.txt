@@ -1,0 +1,20 @@
+title DLCS Orchestrator - Orchestration
+
+ReverseProxy->Orchestrator: /{iif-request}
+Orchestrator->Redis: get image status
+Redis-->Orchestrator: image status
+
+alt Not Orchestrated
+    Orchestrator->Redis: mark as orchestrating
+    Orchestrator->Source:copy source image\n(tile-optimised)
+    Source-->FileShare:source image
+    Orchestrator->Redis: mark as orchestrated
+else Orchestrating
+    note right of Orchestrator: request held up
+    loop check until Orchestrated
+      Orchestrator->Redis: get image status
+      Redis-->Orchestrator: image status
+    end
+end
+Orchestrator->ImageServer: /{iif-request}
+ImageServer-->ReverseProxy: default.jpg
