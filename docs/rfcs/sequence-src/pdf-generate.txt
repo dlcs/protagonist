@@ -1,0 +1,26 @@
+title DLCS Orchestrator - PDF Generation
+
+actor Requestor
+participant PDFService
+participant Fireball
+participant PDFStorage
+participant ThumbStorage
+
+Requestor->PDFService:Request
+PDFService->PDFStorage: Get PDF control-file?
+PDFStorage-->PDFService: PDF control-file
+
+alt Control-file does not exists
+    PDFService->PDFStorage: Create control-file\n"Generating"
+    PDFService->PDFService: Gather data
+    PDFService->Fireball: JSON-data
+    ThumbStorage-->Fireball: Thumbnails for images
+    Fireball->Fireball: Create PDF
+    Fireball->PDFStorage: Final PDF
+    Fireball-->PDFService: Complete
+    PDFService->PDFStorage: Update control-file\n"Complete"
+else "Generating"?
+    PDFService->Requestor: 503 response
+end
+
+PDFStorage->Requestor: stream PDF
