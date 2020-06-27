@@ -4,6 +4,10 @@ using System.Collections.Generic;
 
 namespace IIIF.Presentation
 {
+    /// <summary>
+    /// Base class for resources that form the structure of a IIIF resource:
+    /// Manifest, Canvas, Collection, Range
+    /// </summary>
     public abstract class StructureBase : ResourceBase
     {
         private DateTime? navDateInternal;

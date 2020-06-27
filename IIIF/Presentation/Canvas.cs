@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace IIIF.Presentation
 {
-    public class Canvas : StructureBase, IStructuralLocation // but not ISpatial or ITemporal - that's for content
+    public class Canvas : StructureBase, IStructuralLocation, IPaintable // but not ISpatial or ITemporal - that's for content
     {
         public override string Type => nameof(Canvas);
 

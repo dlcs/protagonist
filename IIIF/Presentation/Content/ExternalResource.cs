@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using IIIF.Presentation.Annotation;
+using System.Collections.Generic;
 
 namespace IIIF.Presentation.Content
 {
-    public class ExternalResource : ResourceBase
+    public class ExternalResource : ResourceBase, IPaintable
     {
         public ExternalResource(string type)
         {

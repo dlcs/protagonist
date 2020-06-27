@@ -4,5 +4,6 @@
     {
         public override string Type => nameof(Annotation);
         public string? TimeMode { get; set; }
+        public virtual string? Motivation { get; set; }
     }
 }
