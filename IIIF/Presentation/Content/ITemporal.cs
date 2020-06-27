@@ -1,4 +1,4 @@
-﻿namespace IIIF.Presentation
+﻿namespace IIIF.Presentation.Content
 {
     public interface ITemporal
     {

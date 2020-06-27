@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace IIIF.Presentation.Selectors
+﻿namespace IIIF.Presentation.Selectors
 {
     public class PointSelector : ISelector
     {

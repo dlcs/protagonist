@@ -1,4 +1,4 @@
-﻿namespace IIIF.Presentation
+﻿namespace IIIF.Presentation.Annotation
 {
     public class Annotation : ResourceBase, IAnnotation
     {

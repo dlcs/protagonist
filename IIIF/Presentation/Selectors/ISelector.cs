@@ -1,4 +1,4 @@
-﻿namespace IIIF.Presentation
+﻿namespace IIIF.Presentation.Selectors
 {
     public interface ISelector
     {

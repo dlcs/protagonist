@@ -1,7 +1,7 @@
 ﻿
 using System.Collections.Generic;
 
-namespace IIIF.Presentation
+namespace IIIF.Presentation.Annotation
 {
     public class AnnotationPage : ResourceBase
     {
