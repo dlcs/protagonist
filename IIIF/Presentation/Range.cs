@@ -1,4 +1,5 @@
 ﻿
+using IIIF.Presentation.Annotation;
 using System.Collections.Generic;
 
 namespace IIIF.Presentation
