@@ -10,6 +10,7 @@ using DLCS.Repository.Storage.S3;
 using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,8 @@ namespace Thumbs
 {
     public class Startup
     {
+        private readonly string corsPolicy = "_AllowAll";
+        
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -31,7 +34,15 @@ namespace Thumbs
         {
             services.AddHealthChecks()
                 .AddNpgSql(Configuration.GetPostgresSqlConnection());
-            services.AddCors();
+            services.AddCors(options =>
+            {
+                options.AddPolicy(corsPolicy,
+                    builder => builder
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .SetIsOriginAllowed(host => true)
+                        .AllowCredentials());
+            });
             services.AddLazyCache();
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
             services.AddAWSService<IAmazonS3>();
@@ -64,10 +75,11 @@ namespace Thumbs
             app.UseEndpoints(endpoints =>
             {
                 endpoints.Map($"/{respondsTo}/{{*any}}",
-                    endpoints.CreateApplicationBuilder()
+                        endpoints.CreateApplicationBuilder()
                         .UseMiddleware<StatusCodeExceptionHandlerMiddleware>()
                         .UseMiddleware<ThumbsMiddleware>()
-                        .Build());
+                        .Build())
+                    .RequireCors(corsPolicy);
                 endpoints.MapHealthChecks("/ping");
             });
         }
