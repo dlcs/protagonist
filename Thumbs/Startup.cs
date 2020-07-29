@@ -31,7 +31,6 @@ namespace Thumbs
         {
             services.AddHealthChecks()
                 .AddNpgSql(Configuration.GetPostgresSqlConnection());
-            services.AddCors();
             services.AddLazyCache();
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
             services.AddAWSService<IAmazonS3>();
@@ -56,7 +55,6 @@ namespace Thumbs
             }
             
             app.UseRouting();
-            app.UseCors(); 
             // TODO: Consider better caching solutions
             app.UseResponseCaching();
             var respondsTo = Configuration.GetValue<string>("RespondsTo", "thumbs");
@@ -65,6 +63,7 @@ namespace Thumbs
             {
                 endpoints.Map($"/{respondsTo}/{{*any}}",
                     endpoints.CreateApplicationBuilder()
+                        .UseMiddleware<AlwaysCorsMiddleware>()
                         .UseMiddleware<StatusCodeExceptionHandlerMiddleware>()
                         .UseMiddleware<ThumbsMiddleware>()
                         .Build());
