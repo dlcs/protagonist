@@ -40,8 +40,7 @@ namespace Thumbs
                     builder => builder
                         .AllowAnyMethod()
                         .AllowAnyHeader()
-                        .SetIsOriginAllowed(host => true)
-                        .AllowCredentials());
+                        .SetIsOriginAllowed(host => true));
             });
             services.AddLazyCache();
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
