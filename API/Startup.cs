@@ -1,17 +1,23 @@
+using Amazon.S3;
 using API.Auth;
 using API.Settings;
+using DLCS.Model.Storage;
+using DLCS.Repository.Storage.S3;
+using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 using Serilog;
 
 namespace API
 {
     public class Startup
     {
+        private const string Iso8601DateFormatString = "O";
         private readonly IConfiguration configuration;
         
         public Startup(IConfiguration configuration)
@@ -21,6 +27,7 @@ namespace API
         
         public void ConfigureServices(IServiceCollection services)
         {
+            services.Configure<ApiSettings>(configuration);
             var apiSettings = configuration.Get<ApiSettings>();
             
             services.AddHttpClient();
@@ -30,17 +37,25 @@ namespace API
                 c.DefaultRequestHeaders.Add("User-Agent", "DLCS-APIv2-Protagonist");
             });
 
+            services
+                .AddMediatR(typeof(Startup))
+                .AddAWSService<IAmazonS3>()
+                .AddSingleton<IBucketReader, BucketReader>();;
+
             services.AddDlcsDelegatedBasicAuth(options => options.Realm = "DLCS-API");
 
             services
                 .AddControllers()
-                .SetCompatibilityVersion(CompatibilityVersion.Latest)
-                .AddJsonOptions(
-                    options =>
-                    {
-                        options.JsonSerializerOptions.IgnoreNullValues = true;
-                        options.JsonSerializerOptions.WriteIndented = true;
-                    });
+                .AddNewtonsoftJson(options =>
+                {
+                    var jsonSettings = options.SerializerSettings;
+                    jsonSettings.DateFormatString = Iso8601DateFormatString;
+                    jsonSettings.DateFormatHandling = DateFormatHandling.IsoDateFormat;
+                    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                    options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+                    jsonSettings.Formatting = Formatting.Indented;
+                })
+                .SetCompatibilityVersion(CompatibilityVersion.Latest);
 
             services
                 .AddHealthChecks()

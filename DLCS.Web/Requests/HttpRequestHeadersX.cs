@@ -15,12 +15,24 @@ namespace DLCS.Web.Requests
         /// <param name="secret">Secret/Password for basic auth.</param>
         public static void AddBasicAuth(this HttpRequestHeaders headers, string key, string secret)
         {
-            headers.ThrowIfNull(nameof(headers));
             key.ThrowIfNullOrEmpty(nameof(key));
             secret.ThrowIfNullOrEmpty(nameof(secret));
 
             var creds = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{key}:{secret}"));
-            headers.Authorization = new AuthenticationHeaderValue("Basic", creds);
+            headers.AddBasicAuth(creds);
+        }
+        
+        /// <summary>
+        /// Add Basic auth header to <see cref="HttpRequestHeaders"/> object.
+        /// </summary>
+        /// <param name="headers"><see cref="HttpRequestHeaders"/> object to add headers to.</param>
+        /// <param name="base64Encoded">uname:pword as base64 encoded string.</param>
+        public static void AddBasicAuth(this HttpRequestHeaders headers, string base64Encoded)
+        {
+            headers.ThrowIfNull(nameof(headers));
+            base64Encoded.ThrowIfNull(nameof(base64Encoded));
+            
+            headers.Authorization = new AuthenticationHeaderValue("Basic", base64Encoded);
         }
     }
 }

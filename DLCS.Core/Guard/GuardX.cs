@@ -26,6 +26,23 @@ namespace DLCS.Core.Guard
         }
         
         /// <summary>
+        /// Throw <see cref="ArgumentNullException"/> if provided value is null, empty or whitespace.
+        /// </summary>
+        /// <param name="argument">Argument to check.</param>
+        /// <param name="argName">Name of argument.</param>
+        /// <returns>Passed string, if not null.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if provided argument is null.</exception>
+        public static string ThrowIfNullOrWhiteSpace(this string argument, string argName)
+        {
+            if (string.IsNullOrWhiteSpace(argument))
+            {
+                throw new ArgumentNullException(argName);
+            }
+
+            return argument;
+        }
+        
+        /// <summary>
         /// Throw <see cref="ArgumentNullException"/> if provided string is null or empty.
         /// </summary>
         /// <param name="val">Value to check.</param>

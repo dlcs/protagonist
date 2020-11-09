@@ -77,6 +77,7 @@ namespace API.Auth
             {
                 new Claim(ClaimTypes.Name, user.Name),
                 new Claim("Customer", customerId), 
+                new Claim("DlcsAuth", headerValue.Parameter), 
             };
             var identity = new ClaimsIdentity(claims, Scheme.Name);
             var principal = new ClaimsPrincipal(identity);
