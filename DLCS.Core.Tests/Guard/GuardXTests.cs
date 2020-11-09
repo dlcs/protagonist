@@ -31,5 +31,32 @@ namespace DLCS.Core.Tests.Guard
             // Assert
             actual.Should().Be(val);
         }
+        
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void ThrowIfNullOrEmpty_Throws_IfNullOrEmpty(string val)
+        {
+            // Act
+            Action action = () => GuardX.ThrowIfNullOrEmpty(val, "foo");
+
+            // Assert
+            action.Should()
+                .Throw<ArgumentNullException>()
+                .WithMessage("Value cannot be null. (Parameter 'foo')");
+        }
+
+        [Fact]
+        public void ThrowIfNullOrEmpty_ReturnsProvidedString_IfNotNullOrEmpty()
+        {
+            // Arrange
+            const string val = "foo bar";
+            
+            // Act
+            var actual = val.ThrowIfNullOrEmpty(nameof(val));
+            
+            // Assert
+            actual.Should().Be(val);
+        }
     }
 }

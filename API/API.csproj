@@ -9,4 +9,8 @@
       <PackageReference Include="Serilog.AspNetCore" Version="3.4.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
+    </ItemGroup>
+
 </Project>
