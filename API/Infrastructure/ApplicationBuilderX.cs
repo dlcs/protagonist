@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
-using API.Settings;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
 using Microsoft.OpenApi.Models;
 
 namespace API.Infrastructure
@@ -11,15 +9,9 @@ namespace API.Infrastructure
         /// <summary>
         /// Add swagger + swagger UI to app
         /// </summary>
-        public static IApplicationBuilder UseSwaggerWithUI(this IApplicationBuilder app, IConfiguration configuration)
+        public static IApplicationBuilder UseSwaggerWithUI(this IApplicationBuilder app, string pathBase)
         {
-            var applicationOptions = configuration.Get<ApiSettings>();
-            var pathBase = applicationOptions.PathBase;
             var havePathBase = !string.IsNullOrEmpty(pathBase);
-            if (havePathBase)
-            {
-                app.UsePathBase($"/{pathBase}");
-            }
 
             return app
                 .UseSwagger(c =>

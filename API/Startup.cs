@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Serilog;
@@ -65,15 +66,28 @@ namespace API
                 .AddUrlGroup(apiSettings.DLCS.Root, "DLCS API");
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
+            
+            var applicationOptions = configuration.Get<ApiSettings>();
+            var pathBase = applicationOptions.PathBase;
+            var havePathBase = !string.IsNullOrEmpty(pathBase);
+            if (havePathBase)
+            {
+                logger.LogInformation("Using PathBase '{pathBase}'", pathBase);
+                app.UsePathBase($"/{pathBase}");
+            }
+            else
+            {
+                logger.LogInformation("No PathBase specified");
+            }
 
             app
-                .UseSwaggerWithUI(configuration)
+                .UseSwaggerWithUI(pathBase)
                 .UseRouting()
                 .UseSerilogRequestLogging()
                 .UseCors()
