@@ -352,3 +352,6 @@ MigrationBackup/
 .ionide/
 
 .idea
+
+# Generated xml documentation files
+API/API.xml

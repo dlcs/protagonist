@@ -10,6 +10,8 @@ namespace API.Settings
         public DlcsSettings DLCS { get; set; }
         
         public AwsSettings AWS { get; set; }
+        
+        public string PathBase { get; set; }
     }
 
     public class DlcsSettings

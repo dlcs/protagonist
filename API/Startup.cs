@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Amazon.S3;
 using API.Auth;
 using API.Infrastructure;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Serilog;
 
@@ -70,9 +72,9 @@ namespace API
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseSwagger().UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v2/swagger.json", "DLCS API"));
-
-            app.UseRouting()
+            app
+                .UseSwaggerWithUI(configuration)
+                .UseRouting()
                 .UseSerilogRequestLogging()
                 .UseCors()
                 .UseAuthentication()
