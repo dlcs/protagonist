@@ -24,13 +24,13 @@ namespace API.Features.Image.Models
         public List<string>? Tags { get; set; }
         public List<string>? Roles { get; set; }
         public string? PreservedUri { get; set; }
-        public string? Reference1 { get; set; }
-        public string? Reference2 { get; set; }
-        public string? Reference3 { get; set; }
+        public string? String1 { get; set; }
+        public string? String2 { get; set; }
+        public string? String3 { get; set; }
         public int? MaxUnauthorised { get; set; }
-        public long? NumberReference1 { get; set; }
-        public long? NumberReference2 { get; set; }
-        public long? NumberReference3 { get; set; }
+        public long? Number1 { get; set; }
+        public long? Number2 { get; set; }
+        public long? Number3 { get; set; }
         public int? Width { get; set; }
         public int? Height { get; set; }
         public long? Duration { get; set; }
@@ -59,13 +59,13 @@ namespace API.Features.Image.Models
                 Tags = Tags,
                 Roles = Roles,
                 PreservedUri = PreservedUri,
-                Reference1 = Reference1,
-                Reference2 = Reference2,
-                Reference3 = Reference3,
+                String1 = String1,
+                String2 = String2,
+                String3 = String3,
                 MaxUnauthorised = MaxUnauthorised,
-                NumberReference1 = NumberReference1,
-                NumberReference2 = NumberReference2,
-                NumberReference3 = NumberReference3,
+                Number1 = Number1,
+                Number2 = Number2,
+                Number3 = Number3,
                 Width = Width,
                 Height = Height,
                 Duration = Duration,
