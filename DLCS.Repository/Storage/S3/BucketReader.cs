@@ -88,28 +88,31 @@ namespace DLCS.Repository.Storage.S3
 
         public async Task WriteToBucket(ObjectInBucket dest, string content, string contentType)
         {
-            try
+            // 1. Put object-specify only key name for the new object.
+            var putRequest = new PutObjectRequest
             {
-                // 1. Put object-specify only key name for the new object.
-                var putRequest = new PutObjectRequest
-                {
-                    BucketName = dest.Bucket,
-                    Key = dest.Key,
-                    ContentBody = content,
-                    ContentType = contentType
-                };
+                BucketName = dest.Bucket,
+                Key = dest.Key,
+                ContentBody = content,
+                ContentType = contentType
+            };
 
-                PutObjectResponse response = await s3Client.PutObjectAsync(putRequest);
-            }
-            catch (AmazonS3Exception e)
+            PutObjectResponse? response = await WriteToBucketInternal(putRequest);
+        }
+
+        public async Task<bool> WriteToBucket(ObjectInBucket dest, Stream content, string? contentType = null)
+        {
+            var putRequest = new PutObjectRequest
             {
-                logger.LogWarning(e, "S3 Error encountered. Message:'{Message}' when writing an object", e.Message);
-            }
-            catch (Exception e)
-            {
-                logger.LogWarning(e, "Unknown encountered on server. Message:'{Message}' when writing an object",
-                    e.Message);
-            }
+                BucketName = dest.Bucket,
+                Key = dest.Key,
+                InputStream = content,
+            };
+
+            if (!string.IsNullOrEmpty(contentType)) putRequest.ContentType = contentType;
+
+            PutObjectResponse? response = await WriteToBucketInternal(putRequest);
+            return response != null;
         }
 
         public async Task DeleteFromBucket(params ObjectInBucket[] toDelete)
@@ -133,6 +136,26 @@ namespace DLCS.Repository.Storage.S3
             {
                 logger.LogWarning(e,
                     "Unknown encountered on server. Message:'{Message}' when deleting objects from bucket", e.Message);
+            }
+        }
+        
+        private async Task<PutObjectResponse?> WriteToBucketInternal(PutObjectRequest putRequest)
+        {
+            try
+            {
+                PutObjectResponse response = await s3Client.PutObjectAsync(putRequest);
+                return response;
+            }
+            catch (AmazonS3Exception e)
+            {
+                logger.LogWarning(e, "S3 Error encountered. Message:'{Message}' when writing an object", e.Message);
+                return null;
+            }
+            catch (Exception e)
+            {
+                logger.LogWarning(e, "Unknown encountered on server. Message:'{Message}' when writing an object",
+                    e.Message);
+                return null;
             }
         }
     }

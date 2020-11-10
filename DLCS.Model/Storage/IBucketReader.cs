@@ -19,6 +19,11 @@ namespace DLCS.Model.Storage
         Task CopyWithinBucket(string bucket, string sourceKey, string destKey);
         
         Task WriteToBucket(ObjectInBucket dest, string content, string contentType);
+        
+        /// <summary>
+        /// Write content from provided stream to S3
+        /// </summary>
+        Task<bool> WriteToBucket(ObjectInBucket dest, Stream content, string? contentType = null);
 
         /// <summary>
         /// Delete specified objects underlying storage.

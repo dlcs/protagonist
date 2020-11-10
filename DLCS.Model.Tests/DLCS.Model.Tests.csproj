@@ -15,7 +15,12 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\API\API.csproj" />
       <ProjectReference Include="..\DLCS.Model\DLCS.Model.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Storage" />
     </ItemGroup>
 
 </Project>
