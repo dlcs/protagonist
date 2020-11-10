@@ -17,7 +17,7 @@ How best can we structure the API project to make it easy for developers to navi
 
 ## Decision Outcome
 
-"Organise by Feature and use MediatR", because we can use MediatR to encapsulate the various use-cases of the API. Together with feature folders this should allow developers to more easily identify the capabilities of the API and target the section they need to,
+"Organise by Feature and use MediatR", because we can use MediatR to encapsulate the various use-cases of the API. Together with feature folders this should allow developers to more easily identify the capabilities of the API and target the section they need to.
 
 ## Pros and Cons of the Options
 
