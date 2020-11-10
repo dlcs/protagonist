@@ -31,9 +31,12 @@ namespace API.Features.Image.Commands
         public AssetJsonLD Body { get; }
         
         // TODO - temporary as we forward this on from those the user sent
-        public string BasicAuth { get; } 
+        public string BasicAuth { get; }
 
-        public IngestImageFromFile(string customerId, string spaceId, string imageId, Stream file, AssetJsonLD body, string basicAuth)
+        public override string ToString() => $"{CustomerId}/{SpaceId}/{ImageId}";
+
+        public IngestImageFromFile(string customerId, string spaceId, string imageId, Stream file, AssetJsonLD body,
+            string basicAuth)
         {
             CustomerId = customerId;
             SpaceId = spaceId;
@@ -124,6 +127,8 @@ namespace API.Features.Image.Commands
         
         // NOTE - this isn't ideal but is temporary
         public HttpStatusCode? DownstreamStatusCode { get; }
+
+        public override string ToString() => DownstreamStatusCode?.ToString() ?? "_unknown_";
 
         public DelegatedIngestResponse(HttpStatusCode? downstreamStatusCode, AssetJsonLD? body)
         {

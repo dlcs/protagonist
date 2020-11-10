@@ -1,5 +1,6 @@
 using Amazon.S3;
 using API.Auth;
+using API.Infrastructure;
 using API.Settings;
 using DLCS.Model.Storage;
 using DLCS.Repository.Storage.S3;
@@ -38,7 +39,7 @@ namespace API
             });
 
             services
-                .AddMediatR(typeof(Startup))
+                .ConfigureMediatR()
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>();;
 
