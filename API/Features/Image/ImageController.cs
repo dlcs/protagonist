@@ -19,20 +19,33 @@ namespace API.Features.Image
         {
             this.mediator = mediator;
         }
-        
+
         /// <summary>
         /// Ingest specified file bytes to DLCS.
+        /// "File" property should be base64 encoded image. 
         /// </summary>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     PUT: /customers/1/spaces/1/images/my-image
+        ///     {
+        ///         "@type":"Image",
+        ///         "family": "I",
+        ///         "file": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAM...."
+        ///     }
+        /// </remarks>
+        [ProducesResponseType(201, Type = typeof(AssetJsonLD))]
+        [ProducesResponseType(400, Type = typeof(ProblemDetails))]
         [HttpPost]
         [Route("{imageId}")]
         public async Task<IActionResult> IngestBytes([FromRoute] string customerId, [FromRoute] string spaceId,
-            [FromRoute] string imageId, AssetJsonLdWithBytes asset)
+            [FromRoute] string imageId, [FromBody] AssetJsonLdWithBytes asset)
         {
             var claimsIdentity = User.Identity as ClaimsIdentity;
             var claim = claimsIdentity?.FindFirst("DlcsAuth").Value;
             var command = new IngestImageFromFile(customerId, spaceId, imageId,
                 new MemoryStream(asset.File), asset.ToImageJsonLD(), claim);
-            
+
             var response = await mediator.Send(command);
 
             HttpStatusCode? statusCode = response.Value?.DownstreamStatusCode ??

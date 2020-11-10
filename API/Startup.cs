@@ -4,7 +4,6 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.Model.Storage;
 using DLCS.Repository.Storage.S3;
-using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -40,6 +39,7 @@ namespace API
 
             services
                 .ConfigureMediatR()
+                .ConfigureSwagger()
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>();;
 
@@ -69,6 +69,8 @@ namespace API
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseSwagger().UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v2/swagger.json", "DLCS API"));
 
             app.UseRouting()
                 .UseSerilogRequestLogging()
