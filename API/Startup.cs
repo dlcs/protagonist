@@ -5,6 +5,7 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.Model.Storage;
 using DLCS.Repository.Storage.S3;
+using DLCS.Web.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -47,6 +48,16 @@ namespace API
                 .AddSingleton<IBucketReader, BucketReader>();;
 
             services.AddDlcsDelegatedBasicAuth(options => options.Realm = "DLCS-API");
+            
+            services.AddCors(options =>
+            {
+                options.AddPolicy("CorsPolicy",
+                    builder => builder
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .SetIsOriginAllowed(host => true)
+                        .AllowCredentials());
+            });
 
             services
                 .AddControllers()
@@ -90,11 +101,15 @@ namespace API
                 .UseSwaggerWithUI(pathBase)
                 .UseRouting()
                 .UseSerilogRequestLogging()
-                .UseCors()
+                .UseCors("CorsPolicy")
                 .UseAuthentication()
                 .UseAuthorization()
                 .UseHealthChecks("/ping")
-                .UseEndpoints(endpoints => endpoints.MapControllers().RequireAuthorization());
+                .UseEndpoints(endpoints => 
+                    endpoints
+                        .MapControllers()
+                        .RequireAuthorization())
+                ;
         }
     }
 }
