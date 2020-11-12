@@ -30,7 +30,7 @@ As a development platform, DLCS is informed by two different types of use case.
 The DLCS cannot and should not know about all possible examples of 2). But its design is informed by common usage scenarios in its target market (e.g., digitised cultural heritage collections). Its architecture must allow us to accomodate newly emerging interactions that generate different load patterns, and optimise for typical consumption.
 
 * See [The Shape of Traffic](006-appendix-shape-of-traffic.md)
-* See [Interaction Patterns](https://github.com/dlcs/protagonist/issues?q=is%3Aissue+label%3A%22Interaction+Pattern%22) in GitHub
+* See [Interaction Patterns](https://github.com/dlcs/protagonist/issues?q=label%3A%22Interaction+Pattern%22+sort%3Acreated-asc) in GitHub
 
 ## Technical Implementation
 
