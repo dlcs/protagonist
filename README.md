@@ -2,6 +2,14 @@
 
 (WIP) A collection of separate dotnet core applications that together form the basis of the new DLCS platform.
 
+## About
+
+* [What is the DLCS?](docs/what-is-dlcs-io.md)
+* [Interaction Patterns](https://github.com/dlcs/protagonist/issues?q=is%3Aissue+label%3A%22Interaction+Pattern%22+sort%3Acreated-asc)
+* [Architectural Considerations](docs/architectural-considerations.md)
+* [Design Principles](docs/rfcs/006-Design-Principles.md)
+* [RFCs](docs/rfcs)
+
 ## Projects
 
 There are a number of shared projects and entry point applications that use these shared projects, detailed below:
