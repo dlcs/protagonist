@@ -10,6 +10,10 @@ It is designed for _integration_, whether from a browser-based content creation 
 
 It should not overreach its responsibility. It's never going to be a Discovery environment, but your discovery environment uses it. 
 
+We think that delivery of _assets_ (the Image API, but also AV derivatives) is a separate concern from the delivery of Manifests (and other Presentation API resources such as Collections and Annotation Pages). One system should not be responsible for both, they should not be coupled together. There are many more ways to produce a Manifest than there are to provide an Image Service. 
+
+We also think that web-scale delivery of assets to the public is a very separate concern from _preservation_. It might seem natural that, since the preservation system is where all the master assets live, it is in the right system to deliver access to those assets via web derivatives that it creates. But preservation has very different usage and scaling characteristics from systems for providing asset delivery with wide public visibility. 
+
 The DLCS should make it easy to forget about the technical details, scaling and even the formats of asset delivery. It can do this because it can implement standards (IIIF in particular) for these services. 
 
 As well as direct asset delivery via derivatives (where the IIIF Image API is considered to be a derivative), the DLCS is well placed to handle _some_ derived aggregations, whether for performance reasons (like making PDFs from hundreds of images, where it has the images at source) or for convenience, such as generating skeleton IIIF Manifests from named queries. These are examples of happy secondary opportunities on top of the primary asset delivery purpose.
@@ -25,7 +29,8 @@ As a development platform, DLCS is informed by two different types of use case.
 
 The DLCS cannot and should not know about all possible examples of 2). But its design is informed by common usage scenarios in its target market (e.g., digitised cultural heritage collections). Its architecture must allow us to accomodate newly emerging interactions that generate different load patterns, and optimise for typical consumption.
 
-See [Interaction Patterns](https://github.com/dlcs/protagonist/issues?q=is%3Aissue+label%3A%22Interaction+Pattern%22) in GitHub
+* See [The Shape of Traffic](006-appendix-shape-of-traffic.md)
+* See [Interaction Patterns](https://github.com/dlcs/protagonist/issues?q=is%3Aissue+label%3A%22Interaction+Pattern%22) in GitHub
 
 ## Technical Implementation
 
