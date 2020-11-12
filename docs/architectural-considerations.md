@@ -20,13 +20,13 @@ At least some images will be available for download - that is, users can downloa
 
 ### Different levels of Image API	
 
-The IIIF Image API is designed to support _ramping up_[^1] - you can start with static files on disk and offer some functionality, and progress to dynamic image serving, offering more functionality. To deliver a service you must at least provide an image information document, the JSON file that describes the services you are offering for a given image (the info.json). You must also serve an image response to all the URLs that _could_ be requested, given the information in the info.json document.
+The IIIF Image API is designed to support _[ramping up](https://iiif.io/api/annex/notes/design_patterns/#intelligently-manage-ramping-up)_ - you can start with static files on disk and offer some functionality, and progress to dynamic image serving, offering more functionality. To deliver a service you must at least provide an image information document, the JSON file that describes the services you are offering for a given image (the info.json). You must also serve an image response to all the URLs that _could_ be requested, given the information in the info.json document.
 
 The simplest possible IIIF Image API implementation is just a single static JPEG image file, as long it is served from a URL that conforms to the specification and is accompanied by an info.json document that describes the (in this case, minimal) service. Only one API request (a URL with parameters) is possible, and it will return the single image file. 
 
-A more useful service would offer the same full image at various sizes, listed in the info.json. Client code can choose the size most appropriate for their needs, whether it is a thumbnail, a larger image, or even a responsive image tag[^2].
+A more useful service would offer the same full image at various sizes, listed in the info.json. Client code can choose the size most appropriate for their needs, whether it is a thumbnail, a larger image, or even a [responsive image tag](https://tomcrane.github.io/iiif-img-tag/).
 
-Neither of the above give you true, efficient deep zoom. For this, you need tiles[^3]. We can still do this with static tiles on disk, we just need a lot of them, and a script to process the master image to generate these static tile images. 
+Neither of the above give you true, efficient deep zoom. For this, [you need tiles](https://www.gasi.ch/blog/inside-deep-zoom-1). We can still do this with static tiles on disk, we just need a lot of them, and a script to process the master image to generate these static tile images. 
 
 A large source image will require potentially thousands of tile images on disk (or in inexpensive storage that can be given a web front end, like Amazon S3 or Azure Blob Storage). Although see the discussion of tile size, later. 
 
@@ -34,7 +34,7 @@ All of the above are _Level 0_ IIIF Image Services - they do not need a dynamic 
 
 **_What does an image server give us that a static tile pyramid does not?_**
 
-With an image server, we can request arbitrary regions, at arbitrary sizes, in different formats, rotations and mirrored. This opens up a much larger world of creative reuse. With a static tile set, we can only request the image tiles that have been created as a one-off operation, by a script. These are unlikely to be useful as images in their own right, only when consumed by a deep zoom client such as OpenSeadragon or Leaflet, which manages the seamless stitching together. A dynamic image server is a much more powerful pair of **_digital scissors_**[^4].
+With an image server, we can request arbitrary regions, at arbitrary sizes, in different formats, rotations and mirrored. This opens up a much larger world of creative reuse. With a static tile set, we can only request the image tiles that have been created as a one-off operation, by a script. These are unlikely to be useful as images in their own right, only when consumed by a deep zoom client such as OpenSeadragon or Leaflet, which manages the seamless stitching together. A dynamic image server is a much more powerful pair of **_[digital scissors](https://www.youtube.com/watch?v=-od9S8kn5b8)_**.
 
 With an image server, derivatives are created on the fly. There is no need to store thousands of small tile images, just the single master image that the image server will generate derivatives from at run-time, in response to user requests. This can be significant - mass digitisation of books will create many billions of tiles, many of which may never be used. There is a tradeoff - store one JPEG2000 file, but require an image server to respond to Image API requests, or store thousands of JPEG tiles, but require only static file hosting. 
 
@@ -185,7 +185,7 @@ The platform needs to provide an API and access control policy for it that works
 
 NB this is not the same as access control for the assets themselves, via IIIF Auth.
 
-(DLCS Note - the DLCS API currently works well for machine-to-machine scenarios, but is not suited to direct browser-to-machine scenarios requiring authentication. This is an area we have identified for improvement, and alignment with other systems that use JSON Web Tokens[^5]).
+(DLCS Note - the DLCS API currently works well for machine-to-machine scenarios, but is not suited to direct browser-to-machine scenarios requiring authentication. This is an area we have identified for improvement, and alignment with other systems that use [JSON Web Tokens](https://jwt.io/)).
 
 
 ### Conversion to tile-ready format
@@ -346,24 +346,9 @@ As one of the treasures of the collection, The Night Watch would certainly be re
 
 Consider, though, the case of very large images that are not as popular as the Night Watch. They might be aiding a conservation project. A large number of very large images would swamp the hot cache.
 
-Cantaloupe has done some work in making byte-range requests to JP2s in S3[^7].
+Cantaloupe has done some work in making [byte-range requests to JP2s in S3](https://groups.google.com/forum/#!msg/iiif-discuss/OOkBKT8P3Y4/u2Lah-h_EAAJ).
 
 e.g., say if I had a max policy of 2000 px on that Night Watch image in the system.
 
-If I ask for /full/max, I could service that with maybe a 1~2 MB byte range request to S3, directly. Even if the JP2 in S3 is 100GB.
+If I ask for /full/max, [I could service that](https://github.com/dlcs/protagonist/blob/rfc-stubs/docs/rfcs/002-storage-and%20orchestration.md#alternatives-to-orchestration-where-possible) with maybe a 1~2 MB byte range request to S3, directly. Even if the JP2 in S3 is 100GB.
 
-
-<!-- Footnotes themselves at the bottom. -->
-## Notes
-
-[^1]: [https://iiif.io/api/annex/notes/design_patterns/#intelligently-manage-ramping-up](https://iiif.io/api/annex/notes/design_patterns/#intelligently-manage-ramping-up)
-
-[^2]: [https://tomcrane.github.io/iiif-img-tag/](https://tomcrane.github.io/iiif-img-tag/)
-
-[^3]: [https://www.gasi.ch/blog/inside-deep-zoom-1](https://www.gasi.ch/blog/inside-deep-zoom-1) 
-
-[^4]: [https://www.youtube.com/watch?v=-od9S8kn5b8](https://www.youtube.com/watch?v=-od9S8kn5b8)
-
-[^5]: [https://jwt.io/](https://jwt.io/) 
-
-[^7]: [https://groups.google.com/forum/#!msg/iiif-discuss/OOkBKT8P3Y4/u2Lah-h_EAAJ](https://groups.google.com/forum/#!msg/iiif-discuss/OOkBKT8P3Y4/u2Lah-h_EAAJ) and [https://github.com/dlcs/protagonist/blob/rfc-stubs/docs/rfcs/002-storage-and%20orchestration.md#alternatives-to-orchestration-where-possible](https://github.com/dlcs/protagonist/blob/rfc-stubs/docs/rfcs/002-storage-and%20orchestration.md#alternatives-to-orchestration-where-possible) 
