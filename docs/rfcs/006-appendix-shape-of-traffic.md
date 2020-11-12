@@ -16,5 +16,5 @@ Different usage patterns require different allocation of resources and possibly 
 
 As an open standard, IIIF adds third-party consumption of assets into the picture. That is, even if you know the various user experiences you are offering to consume your IIIF resources, you don’t know what experiences are being offered by others using assets served from your infrastructure. While this is on the whole a good thing, you would like to know what other people are doing with your content, and also guard your infrastructure against abuse.
 
-[Interaction Patterns](https://github.com/dlcs/protagonist/issues?q=is%3Aissue+label%3A%22Interaction+Pattern%22) are captured in GitHub:
+[Interaction Patterns](https://github.com/dlcs/protagonist/issues?q=is%3Aissue+label%3A%22Interaction+Pattern%22) are captured in GitHub.
 
