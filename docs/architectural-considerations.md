@@ -350,5 +350,5 @@ Cantaloupe has done some work in making [byte-range requests to JP2s in S3](http
 
 e.g., say if I had a max policy of 2000 px on that Night Watch image in the system.
 
-If I ask for /full/max, [I could service that](https://github.com/dlcs/protagonist/blob/rfc-stubs/docs/rfcs/002-storage-and%20orchestration.md#alternatives-to-orchestration-where-possible) with maybe a 1~2 MB byte range request to S3, directly. Even if the JP2 in S3 is 100GB.
+If I ask for /full/max, [I could service that](https://github.com/dlcs/protagonist/blob/master/docs/rfcs/002-storage-and%20orchestration.md#alternatives-to-orchestration-where-possible) with maybe a 1~2 MB byte range request to S3, directly. Even if the JP2 in S3 is 100GB.
 
