@@ -56,7 +56,7 @@ We could just have a cluster of one or more IIPImage Servers, a sensible file na
 
 The problem with that is scale. Wellcome has a lot of images - ~ 40 million and counting, dozens of terabytes of disk space. They are already storing them in S3, for digital preservation.
 
-Access to these images also follows a steep long-tail distribution. Many images won't get looked at for months or even years, whereas some are looked at all the time.
+Access to these images also follows a [steep long-tail distribution](https://github.com/dlcs/protagonist/issues/47). Many images won't get looked at for months or even years, whereas some are looked at all the time.
 
 We want the best of both worlds - we want the low cost of S3 storage for terabytes of images, especially as many of them are rarely used. But we _need_ the performance and crucially the random access file system behaviour of EBS and similar volumes.
 
