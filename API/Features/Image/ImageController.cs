@@ -37,6 +37,7 @@ namespace API.Features.Image
         [ProducesResponseType(201, Type = typeof(AssetJsonLD))]
         [ProducesResponseType(400, Type = typeof(ProblemDetails))]
         [HttpPost]
+        [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000, ValueLengthLimit = 100_000_000)]
         [Route("{imageId}")]
         public async Task<IActionResult> IngestBytes([FromRoute] string customerId, [FromRoute] string spaceId,
             [FromRoute] string imageId, [FromBody] AssetJsonLdWithBytes asset)
