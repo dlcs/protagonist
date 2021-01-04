@@ -17,12 +17,14 @@ namespace DLCS.Repository.Assets
 {
     public class ThumbReorganiser : IThumbReorganiser
     {
+        private static readonly Regex ExistingThumbsRegex = new Regex(@".*\/full\/(\d+,\d+)\/.*", RegexOptions.Compiled);
+        
         private readonly IBucketReader bucketReader;
         private readonly ILogger<ThumbRepository> logger;
         private readonly IAssetRepository assetRepository;
         private readonly IThumbnailPolicyRepository thumbnailPolicyRepository;
         private readonly AsyncKeyedLock asyncLocker = new AsyncKeyedLock();
-        private static Regex BoundedThumbRegex = new Regex("^[0-9]+.jpg$");
+        private static readonly Regex BoundedThumbRegex = new Regex("^[0-9]+.jpg$");
 
         public ThumbReorganiser(
             IBucketReader bucketReader,
@@ -56,7 +58,7 @@ namespace DLCS.Repository.Assets
             
             var asset = await assetRepository.GetAsset(rootKey.Key.TrimEnd('/'));
 
-            //404 Not Found Asset
+            // 404 Not Found Asset
             if (asset == null)
                 return;
 
@@ -66,8 +68,11 @@ namespace DLCS.Repository.Assets
 
             var realSize = new Size(asset.Width, asset.Height);
             var boundingSquares = policy.SizeList.OrderByDescending(i => i).ToList();
-
+            
             var thumbnailSizes = new ThumbnailSizes(boundingSquares.Count);
+
+            var existingSizes = GetExistingSizesList(thumbnailSizes, keysInTargetBucket);
+
             foreach (int boundingSquare in boundingSquares)
             {
                 var thumb = Size.Confine(boundingSquare, realSize);
@@ -82,7 +87,7 @@ namespace DLCS.Repository.Assets
             }
 
             // All the thumbnail jpgs will already exist and need copied up to root
-            await CreateThumbnails(rootKey, boundingSquares, thumbnailSizes);
+            await CreateThumbnails(rootKey, boundingSquares, thumbnailSizes, existingSizes);
 
             // Create sizes json file last, as this dictates whether this process will be attempted again
             await CreateSizesJson(rootKey, thumbnailSizes);
@@ -99,8 +104,24 @@ namespace DLCS.Repository.Assets
             var _ = asset.GetAvailableThumbSizes(policy, out var maxDimensions);
             return Size.Square(maxDimensions.maxBoundedSize);
         }
+        
+        private static List<Size> GetExistingSizesList(ThumbnailSizes thumbnailSizes, string[] keysInTargetBucket)
+        {
+            var existingSizes = new List<Size>(thumbnailSizes.Count);
+            foreach (var keyInBucket in keysInTargetBucket)
+            {
+                var match = ExistingThumbsRegex.Match(keyInBucket);
+                if (match.Success)
+                {
+                    existingSizes.Add(Size.FromString(match.Groups[1].Value));
+                }
+            }
 
-        private async Task CreateThumbnails(ObjectInBucket rootKey, List<int> boundingSquares, ThumbnailSizes thumbnailSizes)
+            return existingSizes;
+        }
+
+        private async Task CreateThumbnails(ObjectInBucket rootKey, List<int> boundingSquares,
+            ThumbnailSizes thumbnailSizes, List<Size> existingSizes)
         {
             var copyTasks = new List<Task>(thumbnailSizes.Count);
             
@@ -110,24 +131,37 @@ namespace DLCS.Repository.Assets
             copyTasks.Add(bucketReader.CopyWithinBucket(rootKey.Bucket,
                 $"{rootKey.Key}low.jpg",
                 $"{rootKey.Key}{largestSlug}/{largestSize}.jpg"));
-            
-            copyTasks.AddRange(ProcessThumbBatch(rootKey, thumbnailSizes.Auth, thumbConsts.AuthorisedSlug, largestSize));
-            copyTasks.AddRange(ProcessThumbBatch(rootKey, thumbnailSizes.Open, thumbConsts.OpenSlug, largestSize));
+
+            copyTasks.AddRange(ProcessThumbBatch(rootKey, thumbnailSizes.Auth, thumbConsts.AuthorisedSlug, largestSize,
+                existingSizes));
+            copyTasks.AddRange(ProcessThumbBatch(rootKey, thumbnailSizes.Open, thumbConsts.OpenSlug, largestSize,
+                existingSizes));
             
             await Task.WhenAll(copyTasks);
         }
 
         private IEnumerable<Task> ProcessThumbBatch(ObjectInBucket rootKey, IEnumerable<int[]> thumbnailSizes,
-            string slug, int largestSize)
+            string slug, int largestSize, List<Size> existingSizes)
         {
             foreach (var wh in thumbnailSizes)
             {
-                var size = Size.FromArray(wh);
-                if (size.MaxDimension == largestSize) continue;
+                var maxDimension = Size.FromArray(wh).MaxDimension;
+                if (maxDimension == largestSize) continue;
+
+                // NOTE: Due to legacy issues with rounding calculations between .net and Python, there may be a slight
+                // difference between the keys in S3 and the desired size calculated here. To avoid any bugs, look at
+                // existing keys in s3 to decide what key to copy, rather than what calculation says we should copy.
+                var toCopy = existingSizes.SingleOrDefault(s => s.MaxDimension == maxDimension);
+                if (toCopy == null)
+                {
+                    logger.LogWarning("Unable to find thumb with max dimension {maxDimension} for rootKey '{rootKey}'",
+                        maxDimension, rootKey);
+                    continue;
+                }
 
                 yield return bucketReader.CopyWithinBucket(rootKey.Bucket,
-                    $"{rootKey.Key}full/{size.Width},{size.Height}/0/default.jpg",
-                    $"{rootKey.Key}{slug}/{size.MaxDimension}.jpg");
+                    $"{rootKey.Key}full/{toCopy.Width},{toCopy.Height}/0/default.jpg",
+                    $"{rootKey.Key}{slug}/{maxDimension}.jpg");
             }
         }
 

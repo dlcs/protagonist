@@ -14,8 +14,16 @@ namespace DLCS.Model.Storage
         /// <param name="objectInBucket">Object to read.</param>
         Task<Stream?> GetObjectFromBucket(ObjectInBucket objectInBucket);
         
+        /// <summary>
+        /// Get a list of all keys within specified root.
+        /// </summary>
+        /// <param name="rootKey"><see cref="ObjectInBucket"/> </param>
+        /// <returns></returns>
         Task<string[]> GetMatchingKeys(ObjectInBucket rootKey);
         
+        /// <summary>
+        /// Copy key to new key within same bucket.
+        /// </summary>
         Task CopyWithinBucket(string bucket, string sourceKey, string destKey);
         
         Task WriteToBucket(ObjectInBucket dest, string content, string contentType);

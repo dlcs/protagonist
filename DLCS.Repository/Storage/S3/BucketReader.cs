@@ -65,7 +65,7 @@ namespace DLCS.Repository.Storage.S3
             logger.LogDebug("Copying {Source} to {Destination} in {Bucket}", sourceKey, destKey, bucket);
             try
             {
-                CopyObjectRequest request = new CopyObjectRequest
+                var request = new CopyObjectRequest
                 {
                     SourceBucket = bucket,
                     SourceKey = sourceKey,
