@@ -48,7 +48,13 @@ namespace DLCS.Repository.Tests.Assets
         {
             var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
-                .Returns(new[] {"2/1/the-astronaut/200.jpg"});
+                .Returns(new[]
+                {
+                    "2/1/the-astronaut/full/100,/0/default.jpg",
+                    "2/1/the-astronaut/full/100,200/0/default.jpg",
+                    "2/1/the-astronaut/full/50,/0/default.jpg",
+                    "2/1/the-astronaut/full/50,100/0/default.jpg"
+                });
 
             A.CallTo(() => assetRepository.GetAsset(A<string>._))
                 .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne"});
@@ -92,7 +98,13 @@ namespace DLCS.Repository.Tests.Assets
         {
             var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
-                .Returns(new[] {"2/1/the-astronaut/200.jpg"});
+                .Returns(new[]
+                {
+                    "2/1/the-astronaut/full/100,/0/default.jpg",
+                    "2/1/the-astronaut/full/100,200/0/default.jpg",
+                    "2/1/the-astronaut/full/50,/0/default.jpg",
+                    "2/1/the-astronaut/full/50,100/0/default.jpg"
+                });
 
             A.CallTo(() => assetRepository.GetAsset(A<string>._))
                 .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 0, Roles = "admin"});
@@ -136,7 +148,15 @@ namespace DLCS.Repository.Tests.Assets
         {
             var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
-                .Returns(new[] {"2/1/the-astronaut/200.jpg"});
+                .Returns(new[]
+                {
+                    "2/1/the-astronaut/full/200,/0/default.jpg",
+                    "2/1/the-astronaut/full/200,400/0/default.jpg",
+                    "2/1/the-astronaut/full/100,/0/default.jpg",
+                    "2/1/the-astronaut/full/100,200/0/default.jpg",
+                    "2/1/the-astronaut/full/50,/0/default.jpg",
+                    "2/1/the-astronaut/full/50,100/0/default.jpg"
+                });
 
             A.CallTo(() => assetRepository.GetAsset(A<string>._))
                 .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
@@ -169,6 +189,118 @@ namespace DLCS.Repository.Tests.Assets
                         "2/1/the-astronaut/full/50,100/0/default.jpg",
                         "2/1/the-astronaut/open/100.jpg"))
                 .MustHaveHappened();
+            
+            // create sizes.json
+            const string expected = "{\"o\":[[100,200],[50,100]],\"a\":[[512,1024],[200,400]]}";
+            A.CallTo(() =>
+                    bucketReader.WriteToBucket(
+                        A<ObjectInBucket>.That.Matches(o =>
+                            o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
+                        "application/json"))
+                .MustHaveHappened();
+        }
+
+        [Fact]
+        public async Task EnsureNewLayout_CreatesExpectedResources_HandlingRoundingDifference_Portrait()
+        {
+            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
+                .Returns(new[]
+                {
+                    "2/1/the-astronaut/full/201,/0/default.jpg",
+                    "2/1/the-astronaut/full/201,400/0/default.jpg",
+                    "2/1/the-astronaut/full/99,/0/default.jpg",
+                    "2/1/the-astronaut/full/99,200/0/default.jpg"
+                });
+
+            A.CallTo(() => assetRepository.GetAsset(A<string>._))
+                .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+                .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
+            
+            // Act
+            await sut.EnsureNewLayout(rootKey);
+
+            // Assert
+            
+            // move jpg per thumbnail size
+            A.CallTo(() =>
+                    bucketReader.CopyWithinBucket("the-bucket",
+                        "2/1/the-astronaut/low.jpg",
+                        "2/1/the-astronaut/auth/1024.jpg"))
+                .MustHaveHappened();
+            A.CallTo(() =>
+                    bucketReader.CopyWithinBucket("the-bucket", 
+                        "2/1/the-astronaut/full/201,400/0/default.jpg",
+                        "2/1/the-astronaut/auth/400.jpg"))
+                .MustHaveHappened();
+            A.CallTo(() =>
+                    bucketReader.CopyWithinBucket("the-bucket",
+                        "2/1/the-astronaut/full/99,200/0/default.jpg",
+                        "2/1/the-astronaut/open/200.jpg"))
+                .MustHaveHappened();
+            // this shouldn't happen as matching key not found
+            A.CallTo(() =>
+                    bucketReader.CopyWithinBucket("the-bucket", 
+                        "2/1/the-astronaut/full/50,100/0/default.jpg",
+                        "2/1/the-astronaut/open/100.jpg"))
+                .MustNotHaveHappened();
+            
+            // create sizes.json
+            const string expected = "{\"o\":[[100,200],[50,100]],\"a\":[[512,1024],[200,400]]}";
+            A.CallTo(() =>
+                    bucketReader.WriteToBucket(
+                        A<ObjectInBucket>.That.Matches(o =>
+                            o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
+                        "application/json"))
+                .MustHaveHappened();
+        }
+        
+        [Fact]
+        public async Task EnsureNewLayout_CreatesExpectedResources_HandlingRoundingDifference_Landscape()
+        {
+            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
+                .Returns(new[]
+                {
+                    "2/1/the-astronaut/full/400,/0/default.jpg",
+                    "2/1/the-astronaut/full/400,201/0/default.jpg",
+                    "2/1/the-astronaut/full/200,/0/default.jpg",
+                    "2/1/the-astronaut/full/200,99/0/default.jpg"
+                });
+
+            A.CallTo(() => assetRepository.GetAsset(A<string>._))
+                .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+                .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
+            
+            // Act
+            await sut.EnsureNewLayout(rootKey);
+
+            // Assert
+            
+            // move jpg per thumbnail size
+            A.CallTo(() =>
+                    bucketReader.CopyWithinBucket("the-bucket",
+                        "2/1/the-astronaut/low.jpg",
+                        "2/1/the-astronaut/auth/1024.jpg"))
+                .MustHaveHappened();
+            A.CallTo(() =>
+                    bucketReader.CopyWithinBucket("the-bucket", 
+                        "2/1/the-astronaut/full/400,201/0/default.jpg",
+                        "2/1/the-astronaut/auth/400.jpg"))
+                .MustHaveHappened();
+            A.CallTo(() =>
+                    bucketReader.CopyWithinBucket("the-bucket",
+                        "2/1/the-astronaut/full/200,99/0/default.jpg",
+                        "2/1/the-astronaut/open/200.jpg"))
+                .MustHaveHappened();
+            // this shouldn't happen as matching key not found
+            A.CallTo(() =>
+                    bucketReader.CopyWithinBucket("the-bucket", 
+                        "2/1/the-astronaut/full/50,100/0/default.jpg",
+                        "2/1/the-astronaut/open/100.jpg"))
+                .MustNotHaveHappened();
             
             // create sizes.json
             const string expected = "{\"o\":[[100,200],[50,100]],\"a\":[[512,1024],[200,400]]}";

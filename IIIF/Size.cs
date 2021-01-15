@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Newtonsoft.Json;
 
 namespace IIIF
@@ -59,6 +60,17 @@ namespace IIIF
                 size[0],
                 size[1]
             );
+        
+        /// <summary>
+        /// Create new Size object from "w,h" string.
+        /// </summary>
+        /// <param name="size">String representing size.</param>
+        /// <returns>New Size object</returns>
+        public static Size FromString(string size)
+        {
+            var parts = size.Split(",");
+            return new Size(int.Parse(parts[0]), int.Parse(parts[1]));
+        }
 
         /// <summary>
         /// Confine specified Size object to bounding square of specified size.

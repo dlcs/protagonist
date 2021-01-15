@@ -24,6 +24,20 @@ namespace IIIF.Tests
         }
 
         [Fact]
+        public void FromString_ReturnsCorrect_WH()
+        {
+            // Arrange
+            const string actual = "100,200";
+            
+            // Act
+            var size = Size.FromString(actual);
+            
+            // Assert
+            size.Width.Should().Be(100);
+            size.Height.Should().Be(200);
+        }
+
+        [Fact]
         public void ToArray_ReturnsWidthHeight()
         {
             // Arrange
