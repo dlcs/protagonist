@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using DLCS.Core.Exceptions;
@@ -36,6 +37,16 @@ namespace Thumbs
             IBucketReader bucketReader,
             AssetDeliveryPathParser parser)
         {
+            try
+            {
+                var headers = string.Join("|", context.Request.Headers.Select(h => $"{h.Key}:{h.Value}"));
+                logger.LogInformation("Headers: {Headers}", headers);
+            }
+            catch
+            {
+                // for debug purposes only
+            }
+
             var thumbnailRequest = await parser.Parse(context.Request.Path.Value);
             if (thumbnailRequest.IIIFImageRequest.IsBase)
             {

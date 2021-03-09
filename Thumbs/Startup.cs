@@ -58,7 +58,7 @@ namespace Thumbs
             // TODO: Consider better caching solutions
             app.UseResponseCaching();
             var respondsTo = Configuration.GetValue<string>("RespondsTo", "thumbs");
-            logger.LogInformation($"ThumbsMiddleware mapped to '/{respondsTo}/*'");
+            logger.LogInformation("ThumbsMiddleware mapped to '/{RespondsTo}/*'", respondsTo);
             app.UseEndpoints(endpoints =>
             {
                 endpoints.Map($"/{respondsTo}/{{*any}}",
