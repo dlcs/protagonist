@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Amazon.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
@@ -17,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace Thumbs
 {
@@ -55,6 +57,18 @@ namespace Thumbs
                 opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
             });
             services.AddHttpContextAccessor();
+
+            services.PostConfigure<PathTemplateOptions>(opts =>
+            {
+                if (!string.IsNullOrEmpty(opts.OverridesAsJson))
+                {
+                    var overridesDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(opts.OverridesAsJson);
+                    foreach (var (key, value) in overridesDict)
+                    {
+                        opts.Overrides.Add(key, value);
+                    }
+                }
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
