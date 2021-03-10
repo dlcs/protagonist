@@ -98,7 +98,7 @@ namespace Thumbs
             
             var displayUrl = pathGenerator.GetFullPathForRequest(request);
             
-            var id = displayUrl.Substring(0, displayUrl.Length - 10);  // the length of "/info.json" ... yeah
+            var id = displayUrl.Substring(0, displayUrl.LastIndexOf("/", StringComparison.CurrentCultureIgnoreCase));
             var infoJsonText = InfoJsonBuilder.GetImageApi2_1(id, sizes);
             await context.Response.WriteAsync(infoJsonText);
         }
