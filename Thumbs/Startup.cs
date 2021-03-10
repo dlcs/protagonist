@@ -11,6 +11,7 @@ using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -44,11 +45,18 @@ namespace Thumbs
             services.AddSingleton<IAssetRepository, AssetRepository>();
 
             services.Configure<ThumbsSettings>(Configuration.GetSection("Repository"));
+
+            // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
+            services.Configure<ForwardedHeadersOptions>(opts =>
+            {
+                opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+            });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
+            app.UseForwardedHeaders();
+            
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
