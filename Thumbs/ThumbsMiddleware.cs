@@ -116,7 +116,6 @@ namespace Thumbs
             await context.Response.WriteAsync(infoJsonText);
         }
 
-
         private Task RedirectToInfoJson(HttpContext context, ThumbnailRequest thumbnailRequest)
         {
             var redirectPath = pathGenerator.GetPathForRequest(thumbnailRequest);
