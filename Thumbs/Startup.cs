@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Amazon.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
@@ -9,12 +10,15 @@ using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
 using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
+using DLCS.Web.Response;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace Thumbs
 {
@@ -42,13 +46,35 @@ namespace Thumbs
             services.AddSingleton<IThumbReorganiser, ThumbReorganiser>();
             services.AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>();
             services.AddSingleton<IAssetRepository, AssetRepository>();
+            services.AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>();
 
             services.Configure<ThumbsSettings>(Configuration.GetSection("Repository"));
+            services.Configure<PathTemplateOptions>(Configuration.GetSection("PathRules"));
+
+            // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
+            services.Configure<ForwardedHeadersOptions>(opts =>
+            {
+                opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+            });
+            services.AddHttpContextAccessor();
+
+            services.PostConfigure<PathTemplateOptions>(opts =>
+            {
+                if (!string.IsNullOrEmpty(opts.OverridesAsJson))
+                {
+                    var overridesDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(opts.OverridesAsJson);
+                    foreach (var (key, value) in overridesDict)
+                    {
+                        opts.Overrides.Add(key, value);
+                    }
+                }
+            });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
+            app.UseForwardedHeaders();
+            
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -58,7 +84,7 @@ namespace Thumbs
             // TODO: Consider better caching solutions
             app.UseResponseCaching();
             var respondsTo = Configuration.GetValue<string>("RespondsTo", "thumbs");
-            logger.LogInformation($"ThumbsMiddleware mapped to '/{respondsTo}/*'");
+            logger.LogInformation("ThumbsMiddleware mapped to '/{RespondsTo}/*'", respondsTo);
             app.UseEndpoints(endpoints =>
             {
                 endpoints.Map($"/{respondsTo}/{{*any}}",

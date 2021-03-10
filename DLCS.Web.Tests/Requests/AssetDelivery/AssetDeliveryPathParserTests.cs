@@ -32,9 +32,11 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             
             // Assert
             thumbnailRequest.RoutePrefix.Should().Be("thumbs");
+            thumbnailRequest.CustomerPathValue.Should().Be("99");
             thumbnailRequest.Customer.Should().Be(customer);
             thumbnailRequest.BasePath.Should().Be("/thumbs/99/1/");
             thumbnailRequest.Space.Should().Be(1);
+            thumbnailRequest.AssetPath.Should().Be("the-astronaut");
         }
 
         [Fact]
@@ -51,9 +53,11 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
 
             // Assert
             thumbnailRequest.RoutePrefix.Should().Be("thumbs");
+            thumbnailRequest.CustomerPathValue.Should().Be("test-customer");
             thumbnailRequest.Customer.Should().Be(customer);
             thumbnailRequest.BasePath.Should().Be("/thumbs/test-customer/1/");
             thumbnailRequest.Space.Should().Be(1);
+            thumbnailRequest.AssetPath.Should().Be("the-astronaut");
         }
     }
 }
