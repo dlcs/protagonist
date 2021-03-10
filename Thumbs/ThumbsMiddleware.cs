@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
-using DLCS.Core.Exceptions;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Web.Requests.AssetDelivery;
@@ -21,16 +19,19 @@ namespace Thumbs
         private readonly int cacheSeconds;
         private readonly ILogger<ThumbsMiddleware> logger;
         private readonly IThumbRepository thumbRepository;
+        private readonly IAssetPathGenerator pathGenerator;
 
         public ThumbsMiddleware(
             RequestDelegate next,
             IConfiguration configuration,
             ILogger<ThumbsMiddleware> logger,
-            IThumbRepository thumbRepository)
+            IThumbRepository thumbRepository,
+            IAssetPathGenerator pathGenerator)
         {
             this.cacheSeconds = configuration.GetValue<int>("ResponseCacheSeconds", 0);
             this.logger = logger;
             this.thumbRepository = thumbRepository;
+            this.pathGenerator = pathGenerator;
         }
 
         public async Task Invoke(HttpContext context,
@@ -40,7 +41,7 @@ namespace Thumbs
             try
             {
                 var headers = string.Join("|", context.Request.Headers.Select(h => $"{h.Key}:{h.Value}"));
-                logger.LogInformation("Headers: {Headers}", headers);
+                logger.LogInformation("{Url} Headers: {Headers}", context.Request.GetDisplayUrl(), headers);
             }
             catch
             {
@@ -50,7 +51,7 @@ namespace Thumbs
             var thumbnailRequest = await parser.Parse(context.Request.Path.Value);
             if (thumbnailRequest.IIIFImageRequest.IsBase)
             {
-                await RedirectToInfoJson(context);
+                await RedirectToInfoJson(context, thumbnailRequest);
             }
             else if (thumbnailRequest.IIIFImageRequest.IsInformationRequest)
             {
@@ -107,21 +108,24 @@ namespace Thumbs
 
             // TODO - not like this, construct it properly
             var displayUrl = context.Request.GetDisplayUrl();
+            
+            // if X-Forwarded-Host == "dlcs.io" construct full url
+            // else construct using X-Forwarded-Host + minimal details
             var id = displayUrl.Substring(0, displayUrl.Length - 10);  // the length of "/info.json" ... yeah
             var infoJsonText = InfoJsonBuilder.GetImageApi2_1(id, sizes);
             await context.Response.WriteAsync(infoJsonText);
         }
 
 
-        private static Task RedirectToInfoJson(HttpContext context)
+        private Task RedirectToInfoJson(HttpContext context, ThumbnailRequest thumbnailRequest)
         {
-            var thisPath = context.Request.Path.ToString();
-            if (!thisPath.EndsWith('/'))
+            var redirectPath = pathGenerator.GetPathForRequest(thumbnailRequest);
+            if (!redirectPath.EndsWith('/'))
             {
-                thisPath += "/";
+                redirectPath += "/";
             }
 
-            var infoJson = thisPath + "info.json";
+            var infoJson = $"{redirectPath}info.json";
             context.Response.Redirect(infoJson);
             return context.Response.CompleteAsync();
         }

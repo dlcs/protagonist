@@ -9,6 +9,7 @@ using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
 using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
+using DLCS.Web.Response;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -43,14 +44,17 @@ namespace Thumbs
             services.AddSingleton<IThumbReorganiser, ThumbReorganiser>();
             services.AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>();
             services.AddSingleton<IAssetRepository, AssetRepository>();
+            services.AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>();
 
             services.Configure<ThumbsSettings>(Configuration.GetSection("Repository"));
+            services.Configure<PathTemplateOptions>(Configuration.GetSection("PathRules"));
 
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
             services.Configure<ForwardedHeadersOptions>(opts =>
             {
                 opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
             });
+            services.AddHttpContextAccessor();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
