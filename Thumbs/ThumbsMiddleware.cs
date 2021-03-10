@@ -105,12 +105,9 @@ namespace Thumbs
             context.Response.ContentType = "application/json";
             context.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
             SetCacheControl(context);
-
-            // TODO - not like this, construct it properly
-            var displayUrl = context.Request.GetDisplayUrl();
             
-            // if X-Forwarded-Host == "dlcs.io" construct full url
-            // else construct using X-Forwarded-Host + minimal details
+            var displayUrl = pathGenerator.GetFullPathForRequest(request);
+            
             var id = displayUrl.Substring(0, displayUrl.Length - 10);  // the length of "/info.json" ... yeah
             var infoJsonText = InfoJsonBuilder.GetImageApi2_1(id, sizes);
             await context.Response.WriteAsync(infoJsonText);
