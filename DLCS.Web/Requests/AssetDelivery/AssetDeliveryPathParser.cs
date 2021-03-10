@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using DLCS.Model.PathElements;
 using IIIF.ImageApi;
@@ -24,14 +26,16 @@ namespace DLCS.Web.Requests.AssetDelivery
 
         private async Task ParseBaseAssetRequest(string path, BaseAssetRequest request)
         {
-            const int customerIndex = 2;
-            const int spacesIndex = 3;
-            const int routeIndex = 1;
+            const int routeIndex = 0;
+            const int customerIndex = 1;
+            const int spacesIndex = 2;
             
-            string[] parts = path.Split('/');
+            string[] parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            
             request.RoutePrefix = parts[routeIndex];
             request.Customer = await pathCustomerRepository.GetCustomer(parts[customerIndex]);
             request.Space = int.Parse(parts[spacesIndex]);
+            request.AssetPath = string.Join("/", parts.Skip(3));
             request.BasePath = new StringBuilder("/", 50)
                 .Append(parts[routeIndex])
                 .Append("/")
