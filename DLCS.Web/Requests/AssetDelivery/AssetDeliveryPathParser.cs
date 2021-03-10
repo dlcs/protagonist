@@ -33,6 +33,7 @@ namespace DLCS.Web.Requests.AssetDelivery
             string[] parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
             
             request.RoutePrefix = parts[routeIndex];
+            request.CustomerPathValue = parts[customerIndex];
             request.Customer = await pathCustomerRepository.GetCustomer(parts[customerIndex]);
             request.Space = int.Parse(parts[spacesIndex]);
             request.AssetPath = string.Join("/", parts.Skip(3));

@@ -15,6 +15,11 @@ namespace DLCS.Web.Requests.AssetDelivery
         public CustomerPathElement Customer { get; set; }
         
         /// <summary>
+        /// The "customer" value from request (int or string value). 
+        /// </summary>
+        public string CustomerPathValue { get; set; }
+        
+        /// <summary>
         /// The Space for this request.
         /// </summary>
         public int Space { get; set; }
