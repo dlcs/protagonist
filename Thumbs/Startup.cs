@@ -19,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Serilog;
 
 namespace Thumbs
 {
@@ -71,9 +72,10 @@ namespace Thumbs
             });
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
         {
             app.UseForwardedHeaders();
+            loggerFactory.AddSerilog();
             
             if (env.IsDevelopment())
             {
@@ -84,6 +86,7 @@ namespace Thumbs
             // TODO: Consider better caching solutions
             app.UseResponseCaching();
             var respondsTo = Configuration.GetValue<string>("RespondsTo", "thumbs");
+            var logger = loggerFactory.CreateLogger<Startup>();
             logger.LogInformation("ThumbsMiddleware mapped to '/{RespondsTo}/*'", respondsTo);
             app.UseEndpoints(endpoints =>
             {

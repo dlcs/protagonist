@@ -12,6 +12,7 @@ namespace Thumbs
         {
             Log.Logger = new LoggerConfiguration()
                 .Enrich.FromLogContext()
+                .Enrich.WithCorrelationIdHeader()
                 .WriteTo.Console()
                 .CreateLogger();
             try
@@ -27,11 +28,14 @@ namespace Thumbs
                 Log.CloseAndFlush();
             }
         }
-        
+
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .UseSerilog((hostingContext, loggerConfiguration)
-                    => loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration)
+                    => loggerConfiguration
+                        .ReadFrom.Configuration(hostingContext.Configuration)
+                        .Enrich.FromLogContext()
+                        .Enrich.WithCorrelationIdHeader()
                 )
                 .ConfigureAppConfiguration((context, builder) =>
                 {
@@ -40,7 +44,7 @@ namespace Thumbs
                     {
                         configurationSource.Path = "/thumbs/";
                         configurationSource.ReloadAfter = TimeSpan.FromMinutes(90);
-                    
+
                         // Using ParameterStore optional if Development
                         configurationSource.Optional = isDevelopment;
                     });
@@ -51,9 +55,6 @@ namespace Thumbs
                         builder.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
                     }
                 })
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
+                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
     }
 }
