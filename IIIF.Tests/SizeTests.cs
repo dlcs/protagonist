@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
@@ -98,6 +99,116 @@ namespace IIIF.Tests
             confined.Height.Should().Be(testData.ExpectedHeight);
         }
 
+        [Fact]
+        public void Resize_Throws_IfHeightAndWidthNull()
+        {
+            // Arrange
+            var size = new Size(100, 100);
+            
+            // Act
+            Action action = () => Size.Resize(size, null, null);
+            
+            // Assert
+            action.Should().Throw<InvalidOperationException>();
+        }
+        
+        [Fact]
+        public void Resize_ReturnsCorrectSize_IfHeightAndWidthSpecified()
+        {
+            // Arrange
+            var size = new Size(100, 100);
+            
+            // Act
+            var newSize = Size.Resize(size, 90, 400);
+            
+            // Assert
+            newSize.Width.Should().Be(90);
+            newSize.Height.Should().Be(400);
+        }
+        
+        [Theory]
+        [InlineData(400, null)]
+        [InlineData(null, 400)]
+        public void Resize_ReturnsNewSize_Square(int? width, int? height)
+        {
+            // Arrange
+            var size = new Size(100, 100);
+            
+            // Act
+            var newSize = Size.Resize(size, width, height);
+            
+            // Assert
+            newSize.Width.Should().Be(width ?? height);
+            newSize.Height.Should().Be(width ?? height);
+        }
+
+        [Theory]
+        [InlineData(400, 200)]
+        [InlineData(50, 25)]
+        public void Resize_ReturnsCorrectSize_Landscape_FromWidth(int width, int expectedHeight)
+        {
+            // Arrange
+            var size = new Size(200, 100);
+            
+            // Act
+            var newSize = Size.Resize(size, width);
+            
+            // Assert
+            newSize.Width.Should().Be(width);
+            newSize.Height.Should().Be(expectedHeight);
+        }
+        
+        [Theory]
+        [InlineData(200, 400)]
+        [InlineData(25, 50)]
+        public void Resize_ReturnsCorrectSize_Landscape_FromHeight(int height, int expectedWidth)
+        {
+            // Arrange
+            var size = new Size(200, 100);
+            
+            // Act
+            var newSize = Size.Resize(size, targetHeight: height);
+            
+            // Assert
+            newSize.Height.Should().Be(height);
+            newSize.Width.Should().Be(expectedWidth);
+        }
+        
+        
+        [Theory]
+        [InlineData(200, 400)]
+        [InlineData(25, 50)]
+        public void Resize_ReturnsCorrectSize_Portrait_FromWidth(int width, int expectedHeight)
+        {
+            // Arrange
+            var size = new Size(100, 200);
+            
+            // Act
+            var newSize = Size.Resize(size, width);
+            
+            // Assert
+            newSize.Width.Should().Be(width);
+            newSize.Height.Should().Be(expectedHeight);
+        }
+        
+        [Theory]
+        [InlineData(400, 200)]
+        [InlineData(50, 25)]
+        public void Resize_ReturnsCorrectSize_Portrait_FromHeight(int height, int expectedWidth)
+        {
+            // Arrange
+            var size = new Size(100, 200);
+            
+            // Act
+            var newSize = Size.Resize(size, targetHeight: height);
+            
+            // Assert
+            newSize.Height.Should().Be(height);
+            newSize.Width.Should().Be(expectedWidth);
+        }
+        
+        
+
         [Theory]
         [InlineData(10, 10, 10, 10)] // square same size
         [InlineData(10, 5, 10, 5)] // landscape same size
@@ -135,6 +246,13 @@ namespace IIIF.Tests
         [InlineData(10, 5, 10)]
         public void MaxDimension_Correct(int w, int h, int expected)
             => new Size(w, h).MaxDimension.Should().Be(expected);
+        
+        [Theory]
+        [InlineData(10, 10, ImageShape.Square)]
+        [InlineData(5, 10, ImageShape.Portrait)]
+        [InlineData(10, 5, ImageShape.Landscape)]
+        public void GetShape_Correct(int w, int h, ImageShape expected)
+            => new Size(w, h).GetShape().Should().Be(expected);
 
         private static List<TestSizeData> sampleTestData = new List<TestSizeData>
         {

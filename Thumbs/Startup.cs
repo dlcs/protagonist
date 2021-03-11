@@ -49,7 +49,7 @@ namespace Thumbs
             services.AddSingleton<IAssetRepository, AssetRepository>();
             services.AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>();
 
-            services.Configure<ThumbsSettings>(Configuration.GetSection("Repository"));
+            services.Configure<ThumbsSettings>(Configuration.GetSection("Thumbs"));
             services.Configure<PathTemplateOptions>(Configuration.GetSection("PathRules"));
 
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
@@ -90,6 +90,7 @@ namespace Thumbs
             logger.LogInformation("ThumbsMiddleware mapped to '/{RespondsTo}/*'", respondsTo);
             app.UseEndpoints(endpoints =>
             {
+                // 'normal' thumbs handling - will only return if we have it
                 endpoints.Map($"/{respondsTo}/{{*any}}",
                     endpoints.CreateApplicationBuilder()
                         .UseMiddleware<AlwaysCorsMiddleware>()

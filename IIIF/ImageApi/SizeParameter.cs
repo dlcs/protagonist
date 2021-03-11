@@ -9,9 +9,9 @@ namespace IIIF.ImageApi
     /// <remarks>see https://iiif.io/api/image/3.0/#42-size </remarks>
     public class SizeParameter
     {
-        public int Width { get; set; }
+        public int? Width { get; set; }
         
-        public int Height { get; set; }
+        public int? Height { get; set; }
         
         public bool Max { get; set; }
         

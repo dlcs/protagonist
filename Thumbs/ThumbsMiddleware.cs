@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
@@ -35,7 +33,6 @@ namespace Thumbs
         }
 
         public async Task Invoke(HttpContext context,
-            IBucketReader bucketReader,
             AssetDeliveryPathParser parser)
         {
             var thumbnailRequest = await parser.Parse(context.Request.Path.Value);
@@ -56,19 +53,26 @@ namespace Thumbs
                         await WriteRequestDump(context, thumbnailRequest);
                         break;
                     default:
-                        await WritePixels(context, thumbnailRequest, bucketReader);
+                        await WritePixels(context, thumbnailRequest);
                         break;
                 }
             }
         }
 
-        private async Task WritePixels(HttpContext context, ThumbnailRequest request, IBucketReader bucketReader)
+        private async Task WritePixels(HttpContext context, ThumbnailRequest request)
         {
-            var thumbInBucket = thumbRepository.GetThumbLocation(
-                request.Customer.Id, request.Space, request.IIIFImageRequest);
-            context.Response.ContentType = "image/jpeg";
-            SetCacheControl(context);
-            var response = await bucketReader.GetObjectFromBucket(await thumbInBucket);
+            /* Is this a known thumb size?
+             If so get that thumb in bucket
+             If not - do we have a size larger/smaller that we could resize?
+             control via appSetting
+             deploy to /thumbs/ with "False"
+             deploy to /mirothumbs/ with "True"
+             */
+            /*var thumbInBucket = thumbRepository.GetThumbLocation(
+                request.Customer.Id, request.Space, request.IIIFImageRequest);*/
+            // var response = await bucketReader.GetObjectFromBucket(await thumbInBucket);
+            var response =
+                await thumbRepository.GetThumbnail(request.Customer.Id, request.Space, request.IIIFImageRequest);
 
             if (response == null)
             {
@@ -78,6 +82,8 @@ namespace Thumbs
             }
             else
             {
+                context.Response.ContentType = "image/jpeg";
+                SetCacheControl(context);
                 await response.CopyToAsync(context.Response.Body);
             }
         }
