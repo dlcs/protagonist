@@ -74,7 +74,11 @@ namespace Thumbs
             {
                 context.Response.ContentType = "image/jpeg";
                 SetCacheControl(context);
-                response.Position = 0;
+                if (response.CanSeek)
+                {
+                    response.Position = 0;
+                }
+
                 await response.CopyToAsync(context.Response.Body);
             }
         }
