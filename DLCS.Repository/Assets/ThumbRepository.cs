@@ -40,7 +40,7 @@ namespace DLCS.Repository.Assets
             var openSizes = await GetSizes(customerId, spaceId, imageRequest);
             var sizes = openSizes.Select(Size.FromArray).ToList();
 
-            var sizeCandidate = ThumbnailCalculator.GetCandidates(sizes, imageRequest, settings.CurrentValue.Resize);
+            var sizeCandidate = ThumbnailCalculator.GetCandidate(sizes, imageRequest, settings.CurrentValue.Resize);
             
             if (sizeCandidate.KnownSize)
             {

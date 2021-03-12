@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using IIIF;
 using IIIF.ImageApi;
 
@@ -7,56 +8,58 @@ namespace DLCS.Repository.Assets
 {
     public static class ThumbnailCalculator
     {
-        public static SizeCandidate GetCandidates(List<Size> sizes, ImageRequest imageRequest, bool allowResize)
+        public static SizeCandidate GetCandidate(List<Size> sizes, ImageRequest imageRequest, bool allowResize)
         {
             return allowResize
                 ? GetLongestEdgeAndSize(sizes, imageRequest)
                 : GetLongestEdge(sizes, imageRequest);
         }
-        
+
         private static SizeCandidate GetLongestEdge(List<Size> sizes, ImageRequest imageRequest)
         {
-            int? longestEdge = null;
             if (imageRequest.Size.Width > 0 && imageRequest.Size.Height > 0)
             {
                 // We don't actually need to check imageRequest.Size.Confined (!w,h) because same logic applies...
-                longestEdge = Math.Max(imageRequest.Size.Width ?? 0, imageRequest.Size.Height ?? 0);
+                var max = Math.Max(imageRequest.Size.Width ?? 0, imageRequest.Size.Height ?? 0);
+                return sizes.Select(s => s.MaxDimension).Contains(max)
+                    ? new SizeCandidate(max)
+                    : new SizeCandidate(null);
             }
-            else
+            
+            if (imageRequest.Size.Max)
             {
-                // we need to know the sizes of things...
-                if (imageRequest.Size.Width > 0)
-                {
-                    foreach (var size in sizes)
-                    {
-                        if (size.Width == imageRequest.Size.Width)
-                        {
-                            longestEdge = size.MaxDimension;
-                            break;
-                        }
-                    }
-                }
-                if (imageRequest.Size.Height > 0)
-                {
-                    foreach (var size in sizes)
-                    {
-                        if (size.Height == imageRequest.Size.Height)
-                        {
-                            longestEdge = size.MaxDimension;
-                            break;
-                        }
-                    }
-                }
+                return new SizeCandidate(sizes[0].MaxDimension);
+            }
 
-                if (imageRequest.Size.Max)
+            // we need to know the sizes of things...
+            int? longestEdge = null;
+            if (imageRequest.Size.Width > 0)
+            {
+                foreach (var size in sizes)
                 {
-                    longestEdge = sizes[0].MaxDimension;
+                    if (size.Width == imageRequest.Size.Width)
+                    {
+                        longestEdge = size.MaxDimension;
+                        break;
+                    }
+                }
+            }
+
+            if (imageRequest.Size.Height > 0)
+            {
+                foreach (var size in sizes)
+                {
+                    if (size.Height == imageRequest.Size.Height)
+                    {
+                        longestEdge = size.MaxDimension;
+                        break;
+                    }
                 }
             }
 
             return new SizeCandidate(longestEdge);
         }
-        
+
         private static ResizableSize GetLongestEdgeAndSize(List<Size> sizes, ImageRequest imageRequest)
         {
             // TODO - handle there being none "open"?

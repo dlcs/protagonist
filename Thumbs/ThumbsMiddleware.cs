@@ -61,16 +61,6 @@ namespace Thumbs
 
         private async Task WritePixels(HttpContext context, ThumbnailRequest request)
         {
-            /* Is this a known thumb size?
-             If so get that thumb in bucket
-             If not - do we have a size larger/smaller that we could resize?
-             control via appSetting
-             deploy to /thumbs/ with "False"
-             deploy to /mirothumbs/ with "True"
-             */
-            /*var thumbInBucket = thumbRepository.GetThumbLocation(
-                request.Customer.Id, request.Space, request.IIIFImageRequest);*/
-            // var response = await bucketReader.GetObjectFromBucket(await thumbInBucket);
             var response =
                 await thumbRepository.GetThumbnail(request.Customer.Id, request.Space, request.IIIFImageRequest);
 
