@@ -65,7 +65,7 @@ namespace DLCS.Repository.Assets
             // TODO - handle there being none "open"?
             
             var sizeCandidate = GetLongestEdge(sizes, imageRequest);
-            if (sizeCandidate.LongestEdge.HasValue)
+            if (sizeCandidate.KnownSize)
             {
                 // We have found a matching size, use that.
                 return new ResizableSize(sizeCandidate.LongestEdge.Value);

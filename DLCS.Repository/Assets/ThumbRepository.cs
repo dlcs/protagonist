@@ -131,7 +131,8 @@ namespace DLCS.Repository.Assets
         private async Task<Stream?> ResizeThumbnail(int customerId, int spaceId, ImageRequest imageRequest,
             Size toResize, Size idealSize, int? maxDifference = 0)
         {
-            if (maxDifference.HasValue)
+            // if upscaling, verify % difference isn't too great
+            if ((maxDifference ?? 0) > 0 && idealSize.MaxDimension > toResize.MaxDimension)
             {
                 var difference = (toResize.MaxDimension / idealSize.MaxDimension) * 100;
                 if (difference > maxDifference.Value)
@@ -148,7 +149,7 @@ namespace DLCS.Repository.Assets
 
             var key = GetObjectInBucket(customerId, spaceId, imageRequest, toResize.MaxDimension);
             var thumbnail = await bucketReader.GetObjectFromBucket(key);
-            await using var memStream = new MemoryStream();
+            var memStream = new MemoryStream();
             using var image = await Image.LoadAsync(thumbnail);
             image.Mutate(x => x.Resize(idealSize.Width, idealSize.Height, KnownResamplers.Lanczos3));
             await image.SaveAsync(memStream, new JpegEncoder());

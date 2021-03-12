@@ -61,9 +61,9 @@ namespace Thumbs
 
         private async Task WritePixels(HttpContext context, ThumbnailRequest request)
         {
-            var response =
+            await using var response =
                 await thumbRepository.GetThumbnail(request.Customer.Id, request.Space, request.IIIFImageRequest);
-
+            
             if (response == null)
             {
                 await StatusCodeResponse
@@ -74,6 +74,7 @@ namespace Thumbs
             {
                 context.Response.ContentType = "image/jpeg";
                 SetCacheControl(context);
+                response.Position = 0;
                 await response.CopyToAsync(context.Response.Body);
             }
         }

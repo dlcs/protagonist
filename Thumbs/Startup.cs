@@ -20,7 +20,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serilog;
-using SixLabors.ImageSharp.Memory;
 
 namespace Thumbs
 {
@@ -70,9 +69,6 @@ namespace Thumbs
                         opts.Overrides.Add(key, value);
                     }
                 }
-
-                SixLabors.ImageSharp.Configuration.Default.MemoryAllocator =
-                    ArrayPoolMemoryAllocator.CreateWithModeratePooling();
             });
         }
 

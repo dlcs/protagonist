@@ -19,7 +19,7 @@
     },
     "Thumbs": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "ping",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
