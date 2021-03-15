@@ -45,10 +45,30 @@ Where sizes.json looks like this (for example):
 
 ## Configuration
 
-Can run in 2 "modes" via the `Repository:EnsureNewThumbnailLayout` app setting:
+There are a few app settings that can control the behaviour of the application:
+
+### `Thumbs:EnsureNewThumbnailLayout`
 
 * `True` - when a request is received the `ThumbReorganiser` class will ensure that the above format exists in S3 by consulting an images `ThumbnailPolicy` and copying thumbnails from existing level 0 image API paths in same bucket.
 * `False` - when a request is received the assumption is that the above format exists in S3. If it doesn't a 404 will be returned.
+
+### `Thumbs:Resize`
+
+* `True` - if an exact matching thumbnail is not found, we will attempt to resize the next largest thumbnail to match requirements.
+* `False` - if an exact matching thumbnail is not found, the request will return 404.
+
+### `Thumbs:Upscale`
+
+* `True` - when resizing, the next largest thumbnail will be used to resize. If a larger thumbnail is not found, and `Upscale = true` then we will upscale the next smallest.
+* `False` - upsizing is not attempted.
+
+### `Thumbs:UpscaleThreshold`
+
+Integer value - the maximum % that we will attempt to increase a thumbnail by. If required upscaling exceeds this a 404 will be returned.
+
+For no limit use `0`.
+
+### `RespondsTo`
 
 By default intercepts all requests to `/thumbs/` (e.g. `https://my.dlcs/thumbs/*`) but the path can be configured with the `RespondsTo` app setting.
 
