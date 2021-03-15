@@ -90,7 +90,6 @@ namespace Thumbs
             logger.LogInformation("ThumbsMiddleware mapped to '/{RespondsTo}/*'", respondsTo);
             app.UseEndpoints(endpoints =>
             {
-                // 'normal' thumbs handling - will only return if we have it
                 endpoints.Map($"/{respondsTo}/{{*any}}",
                     endpoints.CreateApplicationBuilder()
                         .UseMiddleware<AlwaysCorsMiddleware>()
