@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
-using DLCS.Model.Storage;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Http;
@@ -61,10 +60,10 @@ namespace Thumbs
 
         private async Task WritePixels(HttpContext context, ThumbnailRequest request)
         {
-            await using var response =
+            await using var thumbnailResponse =
                 await thumbRepository.GetThumbnail(request.Customer.Id, request.Space, request.IIIFImageRequest);
             
-            if (response == null)
+            if (thumbnailResponse.IsEmpty)
             {
                 await StatusCodeResponse
                     .NotFound("Could not find requested thumbnail")
@@ -74,12 +73,13 @@ namespace Thumbs
             {
                 context.Response.ContentType = "image/jpeg";
                 SetCacheControl(context);
-                if (response.CanSeek)
+                SetResponseHeaders(context, thumbnailResponse);
+                if (thumbnailResponse.ThumbnailStream!.CanSeek)
                 {
-                    response.Position = 0;
+                    thumbnailResponse.ThumbnailStream.Position = 0;
                 }
 
-                await response.CopyToAsync(context.Response.Body);
+                await thumbnailResponse.ThumbnailStream.CopyToAsync(context.Response.Body);
             }
         }
 
@@ -127,6 +127,19 @@ namespace Thumbs
                         Public = true,
                         MaxAge = TimeSpan.FromSeconds(cacheSeconds)
                     };
+            }
+        }
+
+        private void SetResponseHeaders(HttpContext context, ThumbnailResponse thumbnailResponse)
+        {
+            if (thumbnailResponse.WasResized)
+            {
+                context.Response.Headers.Add("x-thumb-resized", "1");
+            }
+            
+            if (thumbnailResponse.IsExactMatch)
+            {
+                context.Response.Headers.Add("x-thumb-match", "1");
             }
         }
     }

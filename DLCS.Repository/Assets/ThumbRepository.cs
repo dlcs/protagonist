@@ -35,7 +35,7 @@ namespace DLCS.Repository.Assets
             this.thumbReorganiser = thumbReorganiser;
         }
 
-        public async Task<Stream?> GetThumbnail(int customerId, int spaceId, ImageRequest imageRequest)
+        public async Task<ThumbnailResponse> GetThumbnail(int customerId, int spaceId, ImageRequest imageRequest)
         {
             var openSizes = await GetSizes(customerId, spaceId, imageRequest);
             var sizes = openSizes.Select(Size.FromArray).ToList();
@@ -46,14 +46,14 @@ namespace DLCS.Repository.Assets
             {
                 var location =
                     GetObjectInBucket(customerId, spaceId, imageRequest, sizeCandidate.LongestEdge!.Value);
-                return await bucketReader.GetObjectFromBucket(location);
+                return ThumbnailResponse.ExactSize(await bucketReader.GetObjectFromBucket(location));
             }
 
             if (!settings.CurrentValue.Resize)
             {
                 logger.LogDebug("Could not find thumbnail for '{Path}' and resizing disabled",
                     imageRequest.OriginalPath);
-                return null;
+                return new ThumbnailResponse();
             }
             
             var resizableSize = (ResizableSize) sizeCandidate;
@@ -63,17 +63,17 @@ namespace DLCS.Repository.Assets
             {
                 var downscaled = await ResizeThumbnail(customerId, spaceId, imageRequest, resizableSize.LargerSize,
                     resizableSize.Ideal);
-                if (downscaled != null) return downscaled;
+                if (downscaled != null) return ThumbnailResponse.Resized(downscaled);
             }
 
             // Then try smaller size if allowed
             if (resizableSize.SmallerSize != null && settings.CurrentValue.Upscale)
             {
-                return await ResizeThumbnail(customerId, spaceId, imageRequest, resizableSize.SmallerSize,
-                    resizableSize.Ideal, settings.CurrentValue.UpscaleThreshold);
+                return ThumbnailResponse.Resized(await ResizeThumbnail(customerId, spaceId, imageRequest, resizableSize.SmallerSize,
+                    resizableSize.Ideal, settings.CurrentValue.UpscaleThreshold));
             }
 
-            return null;
+            return new ThumbnailResponse();
         }
 
         public async Task<List<int[]>> GetSizes(int customerId, int spaceId, ImageRequest imageRequest)
