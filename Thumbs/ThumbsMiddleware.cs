@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
-using DLCS.Model.Storage;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
@@ -35,7 +32,6 @@ namespace Thumbs
         }
 
         public async Task Invoke(HttpContext context,
-            IBucketReader bucketReader,
             AssetDeliveryPathParser parser)
         {
             var thumbnailRequest = await parser.Parse(context.Request.Path.Value);
@@ -56,21 +52,18 @@ namespace Thumbs
                         await WriteRequestDump(context, thumbnailRequest);
                         break;
                     default:
-                        await WritePixels(context, thumbnailRequest, bucketReader);
+                        await WritePixels(context, thumbnailRequest);
                         break;
                 }
             }
         }
 
-        private async Task WritePixels(HttpContext context, ThumbnailRequest request, IBucketReader bucketReader)
+        private async Task WritePixels(HttpContext context, ThumbnailRequest request)
         {
-            var thumbInBucket = thumbRepository.GetThumbLocation(
-                request.Customer.Id, request.Space, request.IIIFImageRequest);
-            context.Response.ContentType = "image/jpeg";
-            SetCacheControl(context);
-            var response = await bucketReader.GetObjectFromBucket(await thumbInBucket);
-
-            if (response == null)
+            await using var thumbnailResponse =
+                await thumbRepository.GetThumbnail(request.Customer.Id, request.Space, request.IIIFImageRequest);
+            
+            if (thumbnailResponse.IsEmpty)
             {
                 await StatusCodeResponse
                     .NotFound("Could not find requested thumbnail")
@@ -78,7 +71,15 @@ namespace Thumbs
             }
             else
             {
-                await response.CopyToAsync(context.Response.Body);
+                context.Response.ContentType = "image/jpeg";
+                SetCacheControl(context);
+                SetResponseHeaders(context, thumbnailResponse);
+                if (thumbnailResponse.ThumbnailStream!.CanSeek)
+                {
+                    thumbnailResponse.ThumbnailStream.Position = 0;
+                }
+
+                await thumbnailResponse.ThumbnailStream.CopyToAsync(context.Response.Body);
             }
         }
 
@@ -126,6 +127,19 @@ namespace Thumbs
                         Public = true,
                         MaxAge = TimeSpan.FromSeconds(cacheSeconds)
                     };
+            }
+        }
+
+        private void SetResponseHeaders(HttpContext context, ThumbnailResponse thumbnailResponse)
+        {
+            if (thumbnailResponse.WasResized)
+            {
+                context.Response.Headers.Add("x-thumb-resized", "1");
+            }
+            
+            if (thumbnailResponse.IsExactMatch)
+            {
+                context.Response.Headers.Add("x-thumb-match", "1");
             }
         }
     }

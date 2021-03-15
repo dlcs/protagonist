@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
@@ -9,6 +9,10 @@ using IIIF.ImageApi;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
+using Size = IIIF.Size;
 
 namespace DLCS.Repository.Assets
 {
@@ -31,58 +35,50 @@ namespace DLCS.Repository.Assets
             this.thumbReorganiser = thumbReorganiser;
         }
 
-        public async Task<ObjectInBucket> GetThumbLocation(int customerId, int spaceId, ImageRequest imageRequest)
+        public async Task<ThumbnailResponse> GetThumbnail(int customerId, int spaceId, ImageRequest imageRequest)
         {
-            await EnsureNewLayout(customerId, spaceId, imageRequest);
-            int longestEdge = 0;
-            if (imageRequest.Size.Width > 0 && imageRequest.Size.Height > 0)
-            {
-                // We don't actually need to check imageRequest.Size.Confined (!w,h) because same logic applies...
-                longestEdge = Math.Max(imageRequest.Size.Width, imageRequest.Size.Height);
-            }
-            else
-            {
-                // we need to know the sizes of things...
-                var sizes = await GetSizes(customerId, spaceId, imageRequest);
-                if (imageRequest.Size.Width > 0)
-                {
-                    foreach (var size in sizes)
-                    {
-                        if (size[0] == imageRequest.Size.Width)
-                        {
-                            longestEdge = Math.Max(size[0], size[1]);
-                            break;
-                        }
-                    }
-                }
-                if (imageRequest.Size.Height > 0)
-                {
-                    foreach (var size in sizes)
-                    {
-                        if (size[1] == imageRequest.Size.Height)
-                        {
-                            longestEdge = Math.Max(size[0], size[1]);
-                            break;
-                        }
-                    }
-                }
+            var openSizes = await GetSizes(customerId, spaceId, imageRequest);
+            var sizes = openSizes.Select(Size.FromArray).ToList();
 
-                if (imageRequest.Size.Max)
-                {
-                    longestEdge = Math.Max(sizes[0][0], sizes[0][1]);
-                }
-            }
-            return new ObjectInBucket
+            var sizeCandidate = ThumbnailCalculator.GetCandidate(sizes, imageRequest, settings.CurrentValue.Resize);
+            
+            if (sizeCandidate.KnownSize)
             {
-                Bucket = settings.CurrentValue.ThumbsBucket,
-                Key = $"{GetKeyRoot(customerId, spaceId, imageRequest)}open/{longestEdge}.jpg"
-            };
+                var location =
+                    GetObjectInBucket(customerId, spaceId, imageRequest, sizeCandidate.LongestEdge!.Value);
+                return ThumbnailResponse.ExactSize(await bucketReader.GetObjectFromBucket(location));
+            }
+
+            if (!settings.CurrentValue.Resize)
+            {
+                logger.LogDebug("Could not find thumbnail for '{Path}' and resizing disabled",
+                    imageRequest.OriginalPath);
+                return new ThumbnailResponse();
+            }
+            
+            var resizableSize = (ResizableSize) sizeCandidate;
+            
+            // First try larger size
+            if (resizableSize.LargerSize != null)
+            {
+                var downscaled = await ResizeThumbnail(customerId, spaceId, imageRequest, resizableSize.LargerSize,
+                    resizableSize.Ideal);
+                if (downscaled != null) return ThumbnailResponse.Resized(downscaled);
+            }
+
+            // Then try smaller size if allowed
+            if (resizableSize.SmallerSize != null && settings.CurrentValue.Upscale)
+            {
+                return ThumbnailResponse.Resized(await ResizeThumbnail(customerId, spaceId, imageRequest, resizableSize.SmallerSize,
+                    resizableSize.Ideal, settings.CurrentValue.UpscaleThreshold));
+            }
+
+            return new ThumbnailResponse();
         }
 
         public async Task<List<int[]>> GetSizes(int customerId, int spaceId, ImageRequest imageRequest)
         {
             await EnsureNewLayout(customerId, spaceId, imageRequest);
-
             ObjectInBucket sizesList = new ObjectInBucket
             {
                 Bucket = settings.CurrentValue.ThumbsBucket,
@@ -103,6 +99,15 @@ namespace DLCS.Repository.Assets
             return thumbnailSizes.Open;
         }
 
+        private ObjectInBucket GetObjectInBucket(int customerId, int spaceId, ImageRequest imageRequest, int longestEdge)
+        {
+            return new ObjectInBucket
+            {
+                Bucket = settings.CurrentValue.ThumbsBucket,
+                Key = $"{GetKeyRoot(customerId, spaceId, imageRequest)}open/{longestEdge}.jpg"
+            };
+        }
+
         private string GetKeyRoot(int customerId, int spaceId, ImageRequest imageRequest) 
             => $"{customerId}/{spaceId}/{imageRequest.Identifier}/";
 
@@ -121,6 +126,35 @@ namespace DLCS.Repository.Assets
             };
 
             return thumbReorganiser.EnsureNewLayout(rootKey);
+        }
+
+        private async Task<Stream?> ResizeThumbnail(int customerId, int spaceId, ImageRequest imageRequest,
+            Size toResize, Size idealSize, int? maxDifference = 0)
+        {
+            // if upscaling, verify % difference isn't too great
+            if ((maxDifference ?? 0) > 0 && idealSize.MaxDimension > toResize.MaxDimension)
+            {
+                var difference = (idealSize.MaxDimension / (double)toResize.MaxDimension) * 100;
+                if (difference > maxDifference.Value)
+                {
+                    logger.LogDebug("The next smallest thumbnail {ToResize} breaks the threshold for '{Path}'",
+                        toResize.ToString(), imageRequest.OriginalPath);
+                    return null;
+                }
+            }
+
+            // we now have a candidate size - resize that and return
+            logger.LogDebug("Resize the {Size} thumbnail for {Path}", toResize.MaxDimension,
+                imageRequest.OriginalPath);
+
+            var key = GetObjectInBucket(customerId, spaceId, imageRequest, toResize.MaxDimension);
+            var thumbnail = await bucketReader.GetObjectFromBucket(key);
+            var memStream = new MemoryStream();
+            using var image = await Image.LoadAsync(thumbnail);
+            image.Mutate(x => x.Resize(idealSize.Width, idealSize.Height, KnownResamplers.Lanczos3));
+            await image.SaveAsync(memStream, new JpegEncoder());
+
+            return memStream;
         }
     }
 }

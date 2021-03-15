@@ -9,14 +9,13 @@ namespace IIIF
     /// </summary>
     public class Size
     {
-        [JsonProperty(PropertyName = "width")]
-        public int Width { get; private set; }
-        
+        [JsonProperty(PropertyName = "width")] public int Width { get; private set; }
+
         [JsonProperty(PropertyName = "height")]
         public int Height { get; private set; }
 
-        [JsonIgnore] public int MaxDimension => Width > Height ? Width : Height;
-        
+        [JsonIgnore] public int MaxDimension => Math.Max(Width, Height);
+
         public override string ToString() => $"{Width},{Height}";
 
         /// <summary>
@@ -27,7 +26,7 @@ namespace IIIF
             Width = width;
             Height = height;
         }
-        
+
         /// <summary>
         /// Get size object as w,h array
         /// </summary>
@@ -60,7 +59,7 @@ namespace IIIF
                 size[0],
                 size[1]
             );
-        
+
         /// <summary>
         /// Create new Size object from "w,h" string.
         /// </summary>
@@ -93,13 +92,67 @@ namespace IIIF
             {
                 return imageSize;
             }
-            var scaleW = requiredSize.Width / (double)imageSize.Width;
-            var scaleH = requiredSize.Height / (double)imageSize.Height;
+
+            var scaleW = requiredSize.Width / (double) imageSize.Width;
+            var scaleH = requiredSize.Height / (double) imageSize.Height;
             var scale = Math.Min(scaleW, scaleH);
             return new Size(
                 (int) Math.Round(imageSize.Width * scale),
                 (int) Math.Round(imageSize.Height * scale)
             );
         }
+
+        /// <summary>
+        /// Resize specified image using Width or Height.
+        /// Maintains aspect ratio unless both are specified.
+        /// </summary>
+        public static Size Resize(Size size, int? targetWidth = null, int? targetHeight = null)
+        {
+            if (!targetWidth.HasValue && !targetHeight.HasValue)
+                throw new InvalidOperationException("Cannot confine size without dimensions");
+
+            if (targetWidth.HasValue && targetHeight.HasValue)
+            {
+                return new Size(targetWidth.Value, targetHeight.Value);
+            }
+
+            if (size.GetShape() == ImageShape.Square)
+                return Square(targetWidth ?? targetHeight ?? -1);
+
+            return new Size(
+                targetWidth ?? size.Width * targetHeight!.Value / size.Height,
+                targetHeight ?? size.Height * targetWidth!.Value / size.Width);
+        }
+
+        /// <summary>
+        /// Get the shape of image based on it's dimensions.
+        /// </summary>
+        public ImageShape GetShape()
+        {
+            if (Width == Height) return ImageShape.Square;
+
+            return Width > Height ? ImageShape.Landscape : ImageShape.Portrait;
+        }
+    }
+
+    /// <summary>
+    /// Enum representing shape of an image
+    /// </summary>
+    public enum ImageShape
+    {
+        /// <summary>
+        /// Width == Height
+        /// </summary>
+        Square = 0,
+        
+        /// <summary>
+        /// Width &gt; Height
+        /// </summary>
+        Landscape = 1,
+        
+        /// <summary>
+        /// Width &lt; Height
+        /// </summary>
+        Portrait = 2
     }
 }
