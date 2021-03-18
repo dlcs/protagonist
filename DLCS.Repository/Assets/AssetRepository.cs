@@ -18,7 +18,7 @@ namespace DLCS.Repository.Assets
             this.logger = logger;
         }
 
-        public async Task<Asset> GetAsset(string id)
+        public async Task<Asset?> GetAsset(string id)
         {
             await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
             return await connection.QuerySingleOrDefaultAsync<Asset>(AssetSql, new {Id = id});

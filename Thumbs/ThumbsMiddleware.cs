@@ -93,6 +93,14 @@ namespace Thumbs
         private async Task WriteInfoJson(HttpContext context, ThumbnailRequest request)
         {
             var sizes = await thumbRepository.GetSizes(request.Customer.Id, request.Space, request.IIIFImageRequest);
+            if (sizes == null)
+            {
+                await StatusCodeResponse
+                    .NotFound("Could not find requested thumbnail")
+                    .WriteJsonResponse(context.Response);
+                return;
+            }
+            
             context.Response.ContentType = "application/json";
             context.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
             SetCacheControl(context);

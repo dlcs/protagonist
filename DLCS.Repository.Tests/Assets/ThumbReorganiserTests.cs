@@ -5,6 +5,7 @@ using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository.Assets;
 using FakeItEasy;
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -36,13 +37,14 @@ namespace DLCS.Repository.Tests.Assets
                 .Returns(new[] {"2/1/the-astronaut/s.json", "2/1/the-astronaut/200.jpg"});
             
             // Act
-            await sut.EnsureNewLayout(rootKey);
+            var response = await sut.EnsureNewLayout(rootKey);
             
             // Assert
+            response.Should().Be(ReorganiseResult.HasExpectedLayout);
             A.CallTo(() => assetRepository.GetAsset(A<string>._))
                 .MustNotHaveHappened();
         }
-        
+
         [Fact]
         public async Task EnsureNewLayout_CreatesExpectedResources_AllOpen()
         {
@@ -62,9 +64,10 @@ namespace DLCS.Repository.Tests.Assets
                 .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
             
             // Act
-            await sut.EnsureNewLayout(rootKey);
+            var response = await sut.EnsureNewLayout(rootKey);
 
             // Assert
+            response.Should().Be(ReorganiseResult.Reorganised);
             
             // move jpg per thumbnail size
             A.CallTo(() =>
@@ -112,10 +115,11 @@ namespace DLCS.Repository.Tests.Assets
                 .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
             
             // Act
-            await sut.EnsureNewLayout(rootKey);
+            var response = await sut.EnsureNewLayout(rootKey);
 
             // Assert
-            
+            response.Should().Be(ReorganiseResult.Reorganised);
+
             // move jpg per thumbnail size
             A.CallTo(() =>
                     bucketReader.CopyWithinBucket("the-bucket", 
@@ -164,10 +168,11 @@ namespace DLCS.Repository.Tests.Assets
                 .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
             
             // Act
-            await sut.EnsureNewLayout(rootKey);
+            var response = await sut.EnsureNewLayout(rootKey);
 
             // Assert
-            
+            response.Should().Be(ReorganiseResult.Reorganised);
+
             // move jpg per thumbnail size
             A.CallTo(() =>
                     bucketReader.CopyWithinBucket("the-bucket",
@@ -219,10 +224,11 @@ namespace DLCS.Repository.Tests.Assets
                 .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
             
             // Act
-            await sut.EnsureNewLayout(rootKey);
+            var response = await sut.EnsureNewLayout(rootKey);
 
             // Assert
-            
+            response.Should().Be(ReorganiseResult.Reorganised);
+
             // move jpg per thumbnail size
             A.CallTo(() =>
                     bucketReader.CopyWithinBucket("the-bucket",
@@ -275,9 +281,10 @@ namespace DLCS.Repository.Tests.Assets
                 .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
             
             // Act
-            await sut.EnsureNewLayout(rootKey);
+            var response = await sut.EnsureNewLayout(rootKey);
 
             // Assert
+            response.Should().Be(ReorganiseResult.Reorganised);
             
             // move jpg per thumbnail size
             A.CallTo(() =>
@@ -329,9 +336,10 @@ namespace DLCS.Repository.Tests.Assets
                 .Returns(new ThumbnailPolicy {Sizes = "200,100"});
             
             // Act
-            await sut.EnsureNewLayout(rootKey);
+            var response = await sut.EnsureNewLayout(rootKey);
 
             // Assert
+            response.Should().Be(ReorganiseResult.Reorganised);
             var expectedDeletions = new[]
             {
                 "the-bucket:::2/1/the-astronaut/100.jpg", "the-bucket:::2/1/the-astronaut/sizes.json"
@@ -423,12 +431,12 @@ namespace DLCS.Repository.Tests.Assets
                      .Returns(returnvalue);
            
             // Act
-            await sut.EnsureNewLayout(rootKey);
+            var response = await sut.EnsureNewLayout(rootKey);
 
             // Assert
             A.CallTo(() => assetRepository.GetAsset(A<string>._))
                   .MustHaveHappened();
-
+            response.Should().Be(ReorganiseResult.AssetNotFound);
         }
     }
 }
