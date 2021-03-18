@@ -10,6 +10,8 @@ namespace DLCS.Model.Assets
     /// <see cref="https://docs.microsoft.com/en-us/dotnet/standard/garbage-collection/implementing-disposeasync"/>
     public class ThumbnailResponse : IDisposable, IAsyncDisposable
     {
+        public static readonly ThumbnailResponse Empty = new ThumbnailResponse();
+        
         /// <summary>
         /// True if thumbnail was an exact match for request.
         /// </summary>

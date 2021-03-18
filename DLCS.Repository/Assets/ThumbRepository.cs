@@ -38,6 +38,8 @@ namespace DLCS.Repository.Assets
         public async Task<ThumbnailResponse> GetThumbnail(int customerId, int spaceId, ImageRequest imageRequest)
         {
             var openSizes = await GetSizes(customerId, spaceId, imageRequest);
+            if (openSizes == null) return ThumbnailResponse.Empty;
+            
             var sizes = openSizes.Select(Size.FromArray).ToList();
 
             var sizeCandidate = ThumbnailCalculator.GetCandidate(sizes, imageRequest, settings.CurrentValue.Resize);
@@ -53,7 +55,7 @@ namespace DLCS.Repository.Assets
             {
                 logger.LogDebug("Could not find thumbnail for '{Path}' and resizing disabled",
                     imageRequest.OriginalPath);
-                return new ThumbnailResponse();
+                return ThumbnailResponse.Empty;
             }
             
             var resizableSize = (ResizableSize) sizeCandidate;
@@ -73,12 +75,18 @@ namespace DLCS.Repository.Assets
                     resizableSize.Ideal, settings.CurrentValue.UpscaleThreshold));
             }
 
-            return new ThumbnailResponse();
+            return ThumbnailResponse.Empty;
         }
 
-        public async Task<List<int[]>> GetSizes(int customerId, int spaceId, ImageRequest imageRequest)
+        public async Task<List<int[]>?> GetSizes(int customerId, int spaceId, ImageRequest imageRequest)
         {
-            await EnsureNewLayout(customerId, spaceId, imageRequest);
+            var newLayoutResult = await EnsureNewLayout(customerId, spaceId, imageRequest);
+            if (newLayoutResult == ReorganiseResult.AssetNotFound)
+            {
+                logger.LogDebug("Requested asset not found for '{OriginalPath}'", imageRequest.OriginalPath);
+                return null;
+            }
+
             ObjectInBucket sizesList = new ObjectInBucket
             {
                 Bucket = settings.CurrentValue.ThumbsBucket,
@@ -89,7 +97,7 @@ namespace DLCS.Repository.Assets
             if (stream == null)
             {
                 logger.LogError("Could not find sizes file for request '{OriginalPath}'", imageRequest.OriginalPath);
-                return new List<int[]>();
+                return null;
             }
             
             var serializer = new JsonSerializer();
@@ -111,12 +119,12 @@ namespace DLCS.Repository.Assets
         private string GetKeyRoot(int customerId, int spaceId, ImageRequest imageRequest) 
             => $"{customerId}/{spaceId}/{imageRequest.Identifier}/";
 
-        private Task EnsureNewLayout(int customerId, int spaceId, ImageRequest imageRequest)
+        private Task<ReorganiseResult> EnsureNewLayout(int customerId, int spaceId, ImageRequest imageRequest)
         {
             var currentSettings = this.settings.CurrentValue;
             if (!currentSettings.EnsureNewThumbnailLayout)
             {
-                return Task.CompletedTask;
+                return Task.FromResult(ReorganiseResult.Unknown);
             }
 
             var rootKey = new ObjectInBucket

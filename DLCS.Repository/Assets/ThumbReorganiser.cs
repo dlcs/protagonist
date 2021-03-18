@@ -17,8 +17,9 @@ namespace DLCS.Repository.Assets
 {
     public class ThumbReorganiser : IThumbReorganiser
     {
-        private static readonly Regex ExistingThumbsRegex = new Regex(@".*\/full\/(\d+,\d+)\/.*", RegexOptions.Compiled);
-        
+        private static readonly Regex ExistingThumbsRegex =
+            new Regex(@".*\/full\/(\d+,\d+)\/.*", RegexOptions.Compiled);
+
         private readonly IBucketReader bucketReader;
         private readonly ILogger<ThumbRepository> logger;
         private readonly IAssetRepository assetRepository;
@@ -30,7 +31,7 @@ namespace DLCS.Repository.Assets
             IBucketReader bucketReader,
             ILogger<ThumbRepository> logger,
             IAssetRepository assetRepository,
-            IThumbnailPolicyRepository thumbnailPolicyRepository )
+            IThumbnailPolicyRepository thumbnailPolicyRepository)
         {
             this.bucketReader = bucketReader;
             this.logger = logger;
@@ -38,16 +39,16 @@ namespace DLCS.Repository.Assets
             this.thumbnailPolicyRepository = thumbnailPolicyRepository;
         }
 
-        public async Task EnsureNewLayout(ObjectInBucket rootKey)
+        public async Task<ReorganiseResult> EnsureNewLayout(ObjectInBucket rootKey)
         {
             // Create lock on rootKey unique value (bucket + target key)
             using var processLock = await asyncLocker.LockAsync(rootKey.ToString());
-            
+
             var keysInTargetBucket = await bucketReader.GetMatchingKeys(rootKey);
             if (HasCurrentLayout(rootKey, keysInTargetBucket))
             {
                 logger.LogDebug("{RootKey} has expected current layout", rootKey);
-                return;
+                return ReorganiseResult.HasExpectedLayout;
             }
 
             // under full/ we will find some sizes, but not the largest.
@@ -55,12 +56,14 @@ namespace DLCS.Repository.Assets
             // trouble is we do not know how big it is!
             // we'll need to fetch the image dimensions from the database, the Thumbnail policy the image was created with, and compute the sizes.
             // Then sanity check them against the known sizes.
-            
+
             var asset = await assetRepository.GetAsset(rootKey.Key.TrimEnd('/'));
 
             // 404 Not Found Asset
             if (asset == null)
-                return;
+            {
+                return ReorganiseResult.AssetNotFound;
+            }
 
             var policy = await thumbnailPolicyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
 
@@ -68,7 +71,7 @@ namespace DLCS.Repository.Assets
 
             var realSize = new Size(asset.Width, asset.Height);
             var boundingSquares = policy.SizeList.OrderByDescending(i => i).ToList();
-            
+
             var thumbnailSizes = new ThumbnailSizes(boundingSquares.Count);
 
             var existingSizes = GetExistingSizesList(thumbnailSizes, keysInTargetBucket);
@@ -94,6 +97,8 @@ namespace DLCS.Repository.Assets
 
             // Clean up legacy format from before /open /auth paths
             await CleanupRootConfinedSquareThumbs(rootKey, keysInTargetBucket);
+
+            return ReorganiseResult.Reorganised;
         }
 
         private static bool HasCurrentLayout(ObjectInBucket rootKey, string[] keysInTargetBucket) =>
@@ -104,7 +109,7 @@ namespace DLCS.Repository.Assets
             var _ = asset.GetAvailableThumbSizes(policy, out var maxDimensions);
             return Size.Square(maxDimensions.maxBoundedSize);
         }
-        
+
         private static List<Size> GetExistingSizesList(ThumbnailSizes thumbnailSizes, string[] keysInTargetBucket)
         {
             var existingSizes = new List<Size>(thumbnailSizes.Count);
@@ -124,7 +129,7 @@ namespace DLCS.Repository.Assets
             ThumbnailSizes thumbnailSizes, List<Size> existingSizes)
         {
             var copyTasks = new List<Task>(thumbnailSizes.Count);
-            
+
             // low.jpg becomes the first in this list
             var largestSize = boundingSquares[0];
             var largestSlug = thumbnailSizes.Auth.IsNullOrEmpty() ? thumbConsts.OpenSlug : thumbConsts.AuthorisedSlug;
@@ -136,7 +141,7 @@ namespace DLCS.Repository.Assets
                 existingSizes));
             copyTasks.AddRange(ProcessThumbBatch(rootKey, thumbnailSizes.Open, thumbConsts.OpenSlug, largestSize,
                 existingSizes));
-            
+
             await Task.WhenAll(copyTasks);
         }
 
@@ -169,7 +174,8 @@ namespace DLCS.Repository.Assets
         {
             var sizesDest = rootKey.Clone();
             sizesDest.Key += thumbConsts.SizesJsonKey;
-            await bucketReader.WriteToBucket(sizesDest, JsonConvert.SerializeObject(thumbnailSizes), "application/json");
+            await bucketReader.WriteToBucket(sizesDest, JsonConvert.SerializeObject(thumbnailSizes),
+                "application/json");
         }
 
         private async Task CleanupRootConfinedSquareThumbs(ObjectInBucket rootKey, string[] s3ObjectKeys)
@@ -178,11 +184,11 @@ namespace DLCS.Repository.Assets
             // which created all thumbs at root and sizes.json, rather than s.json
             // We output s.json now. Previously this was sizes.json
             const string oldSizesJsonKey = "sizes.json";
-            
+
             if (s3ObjectKeys.IsNullOrEmpty()) return;
-            
+
             List<ObjectInBucket> toDelete = new List<ObjectInBucket>(s3ObjectKeys.Length);
-            
+
             foreach (var key in s3ObjectKeys)
             {
                 string item = key.Replace(rootKey.Key, string.Empty);
@@ -202,10 +208,33 @@ namespace DLCS.Repository.Assets
                 await bucketReader.DeleteFromBucket(toDelete.ToArray());
             }
         }
-        
+
         public void DeleteOldLayout()
         {
             throw new NotImplementedException("Not yet! Need to be sure of all the others first!");
         }
+    }
+
+    public enum ReorganiseResult
+    {
+        /// <summary>
+        /// Default
+        /// </summary>
+        Unknown,
+        
+        /// <summary>
+        /// Asset with specified key was not found
+        /// </summary>
+        AssetNotFound,
+        
+        /// <summary>
+        /// Key already has expected layout
+        /// </summary>
+        HasExpectedLayout,
+        
+        /// <summary>
+        /// Layout was successfully reorganised.
+        /// </summary>
+        Reorganised
     }
 }

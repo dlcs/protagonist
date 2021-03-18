@@ -33,7 +33,7 @@ namespace DLCS.Repository.Storage.S3
             }
             catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
             {
-                logger.LogInformation(e, "Could not find S3 object '{S3ObjectRequest}'", getObjectRequest.AsBucketAndKey());
+                logger.LogInformation("Could not find S3 object '{S3ObjectRequest}'", getObjectRequest.AsBucketAndKey());
                 return null;
             }
             catch (AmazonS3Exception e)

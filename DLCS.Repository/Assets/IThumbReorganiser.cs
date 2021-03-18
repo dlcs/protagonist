@@ -5,6 +5,6 @@ namespace DLCS.Repository.Assets
 {
     public interface IThumbReorganiser
     {
-        Task EnsureNewLayout(ObjectInBucket rootKey);
+        Task<ReorganiseResult> EnsureNewLayout(ObjectInBucket rootKey);
     }
 }

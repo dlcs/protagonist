@@ -13,6 +13,6 @@ namespace DLCS.Model.Assets
         
         Task<ThumbnailResponse> GetThumbnail(int customerId, int spaceId, ImageRequest imageRequest);
         
-        public Task<List<int[]>> GetSizes(int customerId, int spaceId, ImageRequest imageRequest);
+        public Task<List<int[]>?> GetSizes(int customerId, int spaceId, ImageRequest imageRequest);
     }
 }

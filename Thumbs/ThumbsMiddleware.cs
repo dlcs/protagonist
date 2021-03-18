@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
@@ -93,6 +94,14 @@ namespace Thumbs
         private async Task WriteInfoJson(HttpContext context, ThumbnailRequest request)
         {
             var sizes = await thumbRepository.GetSizes(request.Customer.Id, request.Space, request.IIIFImageRequest);
+            if (sizes.IsNullOrEmpty())
+            {
+                await StatusCodeResponse
+                    .NotFound("Could not find requested thumbnail")
+                    .WriteJsonResponse(context.Response);
+                return;
+            }
+            
             context.Response.ContentType = "application/json";
             context.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
             SetCacheControl(context);
