@@ -206,5 +206,28 @@ namespace DLCS.Repository.Tests.Assets
             result.SmallerSize.Width.Should().Be(400);
             result.LargerSize.Should().BeNull();
         }
+
+        [Fact]
+        public void GetCandidates_Resize_ReturnsCorrectIdealSize_IfConfinedSquareRequested_ForNonSquareImage()
+        {
+            // Arrange
+            var imageRequest = new ImageRequest
+            {
+                Size = new SizeParameter {Height = 400, Width = 400, Confined = true},
+            };
+            
+            // Act
+            var smallSizes = new List<Size> {new Size(200, 195), new Size(100, 97)};
+            var result = (ResizableSize)ThumbnailCalculator.GetCandidate(smallSizes, imageRequest, true);
+            
+            // Assert
+            result.KnownSize.Should().BeFalse();
+            result.LongestEdge.Should().BeNull();
+            result.Ideal.Width.Should().Be(400);
+            result.Ideal.Height.Should().Be(390);
+            result.SmallerSize.Height.Should().Be(195);
+            result.SmallerSize.Width.Should().Be(200);
+            result.LargerSize.Should().BeNull();
+        }
     }
 }

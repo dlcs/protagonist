@@ -173,8 +173,7 @@ namespace IIIF.Tests
             newSize.Height.Should().Be(height);
             newSize.Width.Should().Be(expectedWidth);
         }
-        
-        
+
         [Theory]
         [InlineData(200, 400)]
         [InlineData(25, 50)]
@@ -206,9 +205,39 @@ namespace IIIF.Tests
             newSize.Height.Should().Be(height);
             newSize.Width.Should().Be(expectedWidth);
         }
-        
-        
 
+        [Theory]
+        [InlineData(100, 100, 50, 10, 10, 10)] // shrink square to landscape
+        [InlineData(100, 100, 10, 50, 10, 10)] // shrink square to portrait
+        [InlineData(100, 100, 50, 50, 50, 50)] // shrink square to square
+        [InlineData(100, 100, 500, 600, 500, 500)] // grow square to landscape
+        [InlineData(100, 100, 500, 300, 300, 300)] // grow square to portrait
+        [InlineData(100, 100, 500, 500, 500, 500)] // grow square to square
+        [InlineData(200, 100, 50, 10, 20, 10)] // shrink landscape to landscape
+        [InlineData(200, 100, 10, 50, 10, 5)] // shrink landscape to portrait
+        [InlineData(200, 100, 50, 50, 50, 25)] // shrink landscape to square
+        [InlineData(200, 100, 500, 300, 500, 250)] // grow landscape to landscape
+        [InlineData(200, 100, 500, 600, 500, 250)] // grow landscape to portrait
+        [InlineData(200, 100, 500, 500, 500, 250)] // grow landscape to square
+        [InlineData(100, 200, 50, 10, 5, 10)] // shrink portrait to landscape
+        [InlineData(100, 200, 10, 50, 10, 20)] // shrink portrait to portrait
+        [InlineData(100, 200, 50, 50, 25, 50)] // shrink portrait to square
+        [InlineData(100, 200, 500, 300, 150, 300)] // grow portrait to landscape
+        [InlineData(100, 200, 500, 600, 300, 600)] // grow portrait to portrait
+        [InlineData(100, 200, 500, 500, 250, 500)] // grow portrait to square
+        public void FitWithin_Returns_CorrectSize(int w, int h, int targetWidth, int targetHeight, int expectedWidth, int expectedHeight)
+        {
+            // Arrange 
+            var size = new Size(w, h);
+
+            // Act
+            var newSize = Size.FitWithin(new Size(targetWidth, targetHeight), size);
+            
+            // Assert
+            newSize.Height.Should().Be(expectedHeight);
+            newSize.Width.Should().Be(expectedWidth);
+        }
+        
         [Theory]
         [InlineData(10, 10, 10, 10)] // square same size
         [InlineData(10, 5, 10, 5)] // landscape same size
@@ -256,6 +285,7 @@ namespace IIIF.Tests
 
         private static List<TestSizeData> sampleTestData = new List<TestSizeData>
         {
+            // currW, currH, confW, confH, expectedW, expectedH
             new TestSizeData(200, 200, 300, 300, 200, 200), // actual smaller than confine
             new TestSizeData(500, 500, 300, 300, 300, 300), // confined square
             new TestSizeData(500, 400, 300, 300, 300, 240), // current portrait
