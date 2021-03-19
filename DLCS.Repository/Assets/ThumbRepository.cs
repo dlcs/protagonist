@@ -71,8 +71,9 @@ namespace DLCS.Repository.Assets
             // Then try smaller size if allowed
             if (resizableSize.SmallerSize != null && settings.CurrentValue.Upscale)
             {
-                return ThumbnailResponse.Resized(await ResizeThumbnail(customerId, spaceId, imageRequest, resizableSize.SmallerSize,
-                    resizableSize.Ideal, settings.CurrentValue.UpscaleThreshold));
+                var resizeThumbnail = await ResizeThumbnail(customerId, spaceId, imageRequest, resizableSize.SmallerSize,
+                    resizableSize.Ideal, settings.CurrentValue.UpscaleThreshold);
+                return ThumbnailResponse.Resized(resizeThumbnail);
             }
 
             return ThumbnailResponse.Empty;
@@ -143,7 +144,7 @@ namespace DLCS.Repository.Assets
             if ((maxDifference ?? 0) > 0 && idealSize.MaxDimension > toResize.MaxDimension)
             {
                 var difference = (idealSize.MaxDimension / (double)toResize.MaxDimension) * 100;
-                if (difference > maxDifference.Value)
+                if (difference > maxDifference!.Value)
                 {
                     logger.LogDebug("The next smallest thumbnail {ToResize} breaks the threshold for '{Path}'",
                         toResize.ToString(), imageRequest.OriginalPath);

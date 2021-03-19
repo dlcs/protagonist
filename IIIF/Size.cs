@@ -82,6 +82,7 @@ namespace IIIF
 
         /// <summary>
         /// Confine specified Size object to bounding square of specified size.
+        /// This is similar to FitWithin() but will returned original size if already within confines.
         /// </summary>
         /// <param name="requiredSize">Dimension of bounding square to confine object to.</param>
         /// <param name="imageSize">Size object to Confine dimensions to.</param>
@@ -93,6 +94,17 @@ namespace IIIF
                 return imageSize;
             }
 
+            return FitWithin(requiredSize, imageSize);
+        }
+
+        /// <summary>
+        /// Fit specified Size object withing bounding square of specified size, allowing to grow if required.
+        /// </summary>
+        /// <param name="requiredSize">Dimension of bounding square to confine object to.</param>
+        /// <param name="imageSize">Size object to Confine dimensions to.</param>
+        /// <returns>New <see cref="Size"/> object with dimensions bound to specified square.</returns>
+        public static Size FitWithin(Size requiredSize, Size imageSize)
+        {
             var scaleW = requiredSize.Width / (double) imageSize.Width;
             var scaleH = requiredSize.Height / (double) imageSize.Height;
             var scale = Math.Min(scaleW, scaleH);

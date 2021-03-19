@@ -76,10 +76,8 @@ namespace DLCS.Repository.Assets
             var sizeParameter = imageRequest.Size;
             if (sizeParameter.Confined)
             {
-                var widthIsLarger = imageRequest.Size.Width > imageRequest.Size.Height;
-                var width = widthIsLarger ? imageRequest.Size.Width.Value : (int?) null;
-                var height = widthIsLarger ? (int?) null : imageRequest.Size.Height.Value;
-                idealSize = Size.Resize(sizes[0], width, height);
+                var requestSize = new Size(imageRequest.Size.Width!.Value, imageRequest.Size.Height!.Value);
+                idealSize = Size.FitWithin(requestSize, sizes[0]);
             }
             else
             {
