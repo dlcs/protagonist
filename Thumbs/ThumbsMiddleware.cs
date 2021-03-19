@@ -35,27 +35,35 @@ namespace Thumbs
         public async Task Invoke(HttpContext context,
             AssetDeliveryPathParser parser)
         {
-            var thumbnailRequest = await parser.Parse(context.Request.Path.Value);
-            if (thumbnailRequest.IIIFImageRequest.IsBase)
+            try
             {
-                await RedirectToInfoJson(context, thumbnailRequest);
-            }
-            else if (thumbnailRequest.IIIFImageRequest.IsInformationRequest)
-            {
-                await WriteInfoJson(context, thumbnailRequest);
-            }
-            else
-            {
-                // mode for debugging etc
-                switch (context.Request.Query["mode"])
+                var thumbnailRequest = await parser.Parse(context.Request.Path.Value);
+                if (thumbnailRequest.IIIFImageRequest.IsBase)
                 {
-                    case "dump":
-                        await WriteRequestDump(context, thumbnailRequest);
-                        break;
-                    default:
-                        await WritePixels(context, thumbnailRequest);
-                        break;
+                    await RedirectToInfoJson(context, thumbnailRequest);
                 }
+                else if (thumbnailRequest.IIIFImageRequest.IsInformationRequest)
+                {
+                    await WriteInfoJson(context, thumbnailRequest);
+                }
+                else
+                {
+                    // mode for debugging etc
+                    switch (context.Request.Query["mode"])
+                    {
+                        case "dump":
+                            await WriteRequestDump(context, thumbnailRequest);
+                            break;
+                        default:
+                            await WritePixels(context, thumbnailRequest);
+                            break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error processing request for request {Path}", context.Request.Path);
+                throw;
             }
         }
 
