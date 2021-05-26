@@ -102,7 +102,7 @@ This seems to solve the problem of making Orchestration somebody else's problem:
 2. Alternatives like 3dfs - Orchestration is implemented with somebody else's code - better in _some_ ways
 3. LustreFX - Orchestration is Amazon's problem, it's a managed service - best
 
-Lustre comes in 1.2 TB increments. Something like Wellcome could have a 1.2 or 2.4 TB Lustre volume mounted on all the image servers. This volume is linked to the S3 bucket for Wellcome's optimised origin (storage bucket). All the existing and diverse interactions of other systems with that bucket continue as before, via S3 APIs (including DDS reading METS, text, etc).
+Lustre can be 1.2 TB or increments of 2.4 TB. Something like Wellcome could have a 1.2 or 2.4 TB Lustre volume mounted on all the image servers. This volume is linked to the S3 bucket for Wellcome's optimised origin (storage bucket). All the existing and diverse interactions of other systems with that bucket continue as before, via S3 APIs (including DDS reading METS, text, etc). _Cross-account use of Lustre is not supported in AWS so we would need to setup a VPC Peering between store-account and dlcs-account, see https://docs.aws.amazon.com/fsx/latest/LustreGuide/mounting-on-premises.html_
 
 Only image servers access files through Lustre, so only they fill up those 1.2 TB chunks. Even thumbs still uses the S3 version. An updated Orchestrator application still concerns itself with routing (including deciding to fulfill a request via S3 byte range, if necessary).
 
