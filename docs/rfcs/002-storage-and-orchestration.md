@@ -17,7 +17,7 @@ From [What is the DLCS?](../what-is-dlcs-io.md)
 
 > The DLCS uses IIPImage under the hood (although it could use other image servers). But it fronts it with an _Orchestrator_ that copies files from S3 _origins_ to a local volume for use by IIPImage. As far as IIPImage is concerned, whenever it gets a request to extract a region from an image, that image is where it expects it to be on a locally readable disk. But it's only there because the orchestrator ensured it was there before the request arrived at IIPImage.
 
-> At any one time, only a very small subset of the possible images that the DLCS knows about (that have been registred) are on expensive fast disks. This _cache_ is what the DLCS maintains - ensuring images are present when IIPimage needs them, and scavenging disk space to keep this working set at a sensible size.
+> At any one time, only a subset (e.g., 10%) of the possible images that the DLCS knows about (that have been registered) are on expensive fast disks. This _cache_ is what the DLCS maintains - ensuring images are present when IIPimage needs them, and scavenging disk space to keep this working set at a sensible size.
 
 ## Orchestration
 
@@ -25,15 +25,18 @@ The DLCS uses local EBS volumes for IIPImage to read, and the request pipeline h
 
 But this is still our extra plumbing, more complexity to manage. 
 
-One ideal scenario is an imaginary AWS offering - S3-backed volumes where you can specify a source bucket, and the size of "real" volume you want (e.g., 1TB). The file system view can be read only - we don't need to write to the bucket via a filesystem, we can do that as S3. Reads of the filesystem manage the orchestration at that file access, below our application logic. We just assume that if it's in the bucket, it can be read from the file system, and everything looks simple.
+**One ideal scenario is an imaginary AWS offering - S3-backed volumes where you can specify a source bucket, and the size of "real" volume you want (e.g., 1TB).**
+
+The file system view can be read only - we don't need to write to the bucket via a filesystem, we can do that as S3. Reads of the filesystem manage the orchestration at that file access, below our application logic. We just assume that if it's in the bucket, it can be read from the file system, and everything looks simple.
 
 This is _like_ S3fs-fuse, but a managed service. https://github.com/s3fs-fuse/s3fs-fuse
 
 Other people use S3fs-fuse with IIPImage, but either with customisations - https://github.com/klokantech/embedr/issues/16 - or interventions for cache management that are similar to what we're already doing, so not particularly easier to manage.
 
-Other approaches we looked at 5 years ago were commercial offerings on top of AWS, like SoftNAS, but they didn't have quite the features we wanted.
+Other approaches we looked at 5 years ago were commercial offerings on top of AWS, like SoftNAS, but they didn't have quite the features we wanted. Also file system for image servers based on GlusterFS.
 
 There is an echo of AWS EFS in this. We tried using EFS rather than EBS for IIPImage, but found it too slow. A write operation is not finished until everything is consistent, and this was just too slow for image orchestration.
+
 
 ## Alternatives to Orchestration where possible
 
@@ -53,7 +56,7 @@ Serving tiles via small byte range requests to S3 still seems like a lot of work
 
 Obviously, sensible reverse-proxy caching is important here too.
 
-## Other things to look at
+## Making orchestration somebody else's problem
 
 ### AWS File Gateway
 
@@ -67,7 +70,8 @@ However, there are some issues that would limit us:
 
 This would preclude use cases where the DLCS makes use of the existing buckets of an [archival storage system](https://github.com/wellcomecollection/docs/blob/extract-docs/rfcs/002-archival_storage/README.md); we'd need to copy images into another S3 bucket, which means synchronisation issues as well as huge amounts of extra storage.
  
-This could be an option for some scenarios though, and we could do some performance testing on it.
+(Update - while still here for reference, issues with AWS File Gateway are mitigated by the new [FSx File Gateway](https://aws.amazon.com/storagegateway/file/fsx/) - see below for more information.
+
 
 ### Azure Data Lake Storage
 
@@ -75,17 +79,74 @@ https://docs.microsoft.com/en-gb/azure/storage/blobs/data-lake-storage-introduct
 
 > Azure Data Lake Storage Gen2 is a set of capabilities dedicated to big data analytics, built on Azure Blob storage. Data Lake Storage Gen2 is the result of converging the capabilities of our two existing storage services, Azure Blob storage and Azure Data Lake Storage Gen1. Features from Azure Data Lake Storage Gen1, such as file system semantics, directory, and file level security and scale are combined with low-cost, tiered storage, high availability/disaster recovery capabilities from Azure Blob storage.
 
-## Next steps
+
+### Amazon FSx for Lustre
+
+https://aws.amazon.com/fsx/lustre/
+
+Although this was available in 2018, the Lustre/S3 integration happened at setup time and wouldn't reflect subsequent changes in the bucket. This is no longer the case. 
+
+From the FAQs:
+
+> Q: If I have data in S3, how do I access it from Amazon FSx for Lustre?
+> A: You can link your Amazon FSx for Lustre file system to your Amazon S3 bucket, and FSx will make your S3 data transparently accessible in your file system. Once your file system is created, the names and prefixes of objects in your S3 bucket will appear as file and directory listings on the file system. Although the names and prefixes of objects are listed as files and directories in your file system, the actual content of a given object is imported automatically from S3 only when you access the associated file on the file system for the first time – meaning an object’s data doesn’t consume space on your file system unless it’s accessed at least once on the file system.
+
+And unlike the old File Gateway, the bucket continues to be a normal S3 bucket.
+
+We need to be absolutely sure that the exposure of the bucket as a Lustre file system has no side effects in its use as a normal S3 bucket.
+We would mount the file system as read only.
+
+This seems to solve the problem of making Orchestration somebody else's problem:
+
+1. Current DLCS - Orchestration is our problem and our code.
+2. Alternatives like 3dfs - Orchestration is implemented with somebody else's code - better in _some_ ways
+3. LustreFX - Orchestration is Amazon's problem, it's a managed service - best
+
+Lustre can be 1.2 TB or increments of 2.4 TB. Something like Wellcome could have a 1.2 or 2.4 TB Lustre volume mounted on all the image servers. This volume is linked to the S3 bucket for Wellcome's optimised origin (storage bucket). All the existing and diverse interactions of other systems with that bucket continue as before, via S3 APIs (including DDS reading METS, text, etc). _Cross-account use of Lustre is not supported in AWS so we would need to setup a VPC Peering between store-account and dlcs-account, see https://docs.aws.amazon.com/fsx/latest/LustreGuide/mounting-on-premises.html_
+
+Only image servers access files through Lustre, so only they fill up those 1.2 TB chunks. Even thumbs still uses the S3 version. An updated Orchestrator application still concerns itself with routing (including deciding to fulfill a request via S3 byte range, if necessary).
+
+#### Managing the file system
+
+The synchronisation between S3 and Lustre creates and maintains entries in the file system for everything in the bucket, but no _content_. That gets populated on demand. So we need to de-populate it, just as Echo-FS _scavenges_ the existing EBS volumes in DLCS, based on usage.
+
+AWS have provided a sample for this:
+
+https://github.com/aws-samples/fsx-solutions/blob/master/cache-eviction/readme.adoc
+
+> ...the solution evicts (releases) space consumed by least recently accessed files on the FSx file system. 
+
+The basic mechanism is this:
+
+```python
+  cmd = "sudo lfs hsm_release " + fileName
+  p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, universal_newlines=True)
+  (output,error) = p.communicate()
+```
+
+... where `lfs hsm_release` is [explained here](https://docs.aws.amazon.com/fsx/latest/LustreGuide/release-files.html)
+
+We would likely not use that script as-is but base something on the existing Echo-FS logic.
+
+#### Areas for investigation
+
+ - Would we still want regular DLCS orchestration from other sources?
+ - Ensuring S3 operations are not affected by the Lustre link
+ - Do we even need to keep track of location information any more? (yes if we want to evict based on non-file-entry metrics)
+ 
+
+## Next steps (for all options)
 
 What are we missing here? What other ways of doing this are there? Is the system we've got actually the best way of doing it (with some modifications)?
 
 Sources of concern:
 
-A flood of tile requests for the same image can't all trigger orchestration of that image. We make it the equivalent of a critical section, we use a semaphore. While this is as light as possible, it still seems wasteful. Or at least, I'd rather it was someone else's problem.
+A flood of tile requests for the same image can't all trigger orchestration of that image. We make it the equivalent of a critical section, we use a semaphore. While this is as light as possible, it still seems wasteful. Or at least, I'd rather it was someone else's problem. How does Lustre deal with this?
 
 How well do the mentioned solutions handle multiple concurrent demands for the same file?
 
-What's the most efficient way to optimise this? Avoiding multiple orchestration attempts, but recognising that all the request are independent? We use Redis and some Lua code in NGINX. 
+What's the most efficient way to optimise this? Avoiding multiple orchestration attempts, but recognising that all the request are independent? We use Redis and some Lua code in NGINX. New Orchestrator proposal puts this logic in C# under Kestrel (hopefully via YARP).
+
 
 
 
