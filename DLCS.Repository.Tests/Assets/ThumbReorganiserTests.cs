@@ -8,6 +8,7 @@ using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Xunit;
+using ThumbnailPolicy = DLCS.Repository.Entities.ThumbnailPolicy;
 
 namespace DLCS.Repository.Tests.Assets
 {

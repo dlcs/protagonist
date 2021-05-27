@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Encryption;
+using DLCS.Repository;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -42,6 +44,10 @@ namespace Portal
                 .AddCookie();
 
             services.AddSingleton<IEncryption, SHA256>();
+
+            /*services.AddDbContext<DlcsContext>(opts =>
+                opts.UseNpgsql(Configuration.GetConnectionString("PostgreSQLConnection"))
+            );*/
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
