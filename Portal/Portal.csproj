@@ -8,4 +8,8 @@
       <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
+    </ItemGroup>
+
 </Project>
