@@ -1,16 +1,18 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Portal.Features.Account.Commands;
 
 namespace Portal.Pages.Account
 {
     public class LoginModel : PageModel
     {
+        private readonly IMediator mediator;
+
         [BindProperty]
         public InputModel Input { get; set; }
 
@@ -28,6 +30,11 @@ namespace Portal.Pages.Account
             [Required]
             [DataType(DataType.Password)]
             public string Password { get; set; }
+        }
+
+        public LoginModel(IMediator mediator)
+        {
+            this.mediator = mediator;
         }
         
         public async Task OnGetAsync(string returnUrl = null)
@@ -50,52 +57,18 @@ namespace Portal.Pages.Account
 
             if (!ModelState.IsValid) return Page();
 
-            var user = await AuthenticateUser(Input.Email, Input.Password);
+            var loginCommand = new LoginPortalUser
+            {
+                Username = Input.Email,
+                Password = Input.Password
+            };
+            var loginResult = await mediator.Send(loginCommand);
 
-            if (user == null)
+            if (!loginResult)
             {
                 ModelState.AddModelError(string.Empty, "Invalid login attempt.");
                 return Page();
             }
-
-            var claims = new List<Claim>
-            {
-                new (ClaimTypes.Name, user.Email),
-                new ("Customer", user.Customer.ToString()),
-                new (ClaimTypes.Role, "Customer"),
-            };
-
-            var claimsIdentity = new ClaimsIdentity(
-                claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-            var authProperties = new AuthenticationProperties
-            {
-                //AllowRefresh = <bool>,
-                // Refreshing the authentication session should be allowed.
-
-                //ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(10),
-                // The time at which the authentication ticket expires. A 
-                // value set here overrides the ExpireTimeSpan option of 
-                // CookieAuthenticationOptions set with AddCookie.
-
-                //IsPersistent = true,
-                // Whether the authentication session is persisted across 
-                // multiple requests. When used with cookies, controls
-                // whether the cookie's lifetime is absolute (matching the
-                // lifetime of the authentication ticket) or session-based.
-
-                //IssuedUtc = <DateTimeOffset>,
-                // The time at which the authentication ticket was issued.
-
-                //RedirectUri = <string>
-                // The full path or absolute URI to be used as an http 
-                // redirect response value.
-            };
-
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme, 
-                new ClaimsPrincipal(claimsIdentity), 
-                authProperties);
 
             // TODO - make this reusable
             if (Url.IsLocalUrl(returnUrl))
@@ -104,30 +77,6 @@ namespace Portal.Pages.Account
             }
 
             return LocalRedirect(Url.Page("/Index"));
-
-            // Something failed. Redisplay the form.
-        }
-
-        private Task<PortalUser?> AuthenticateUser(string email, string password)
-        {
-            // TODO - implement this
-            
-            if (email == "donald.gray@digirati.com")
-            {
-                return Task.FromResult(new PortalUser
-                {
-                    Email = email,
-                    Customer = 123
-                });
-            }
-
-            return null;
-        }
-        
-        public class PortalUser
-        {
-            public string Email { get; set; }
-            public int Customer { get; set; }
         }
     }
 }

@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace API.Infrastructure
+namespace DLCS.Mediatr.Behaviours
 {
     /// <summary>
-    /// Mediatr Pipeline Behaviour that logs incoming requests
+    /// Mediatr Pipeline Behaviour that logs incoming requests and timings
     /// </summary>
     public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     {
@@ -22,13 +22,14 @@ namespace API.Infrastructure
             RequestHandlerDelegate<TResponse> next)
         {
             // This could be cleverer, currently will just log ToString()
-            logger.LogDebug($"Handling '{typeof(TRequest).Name}' request. {request}");
+            logger.LogDebug("Handling '{RequestType}' request. {Request}", typeof(TRequest).Name, request);
 
             Stopwatch sw = Stopwatch.StartNew();
             var response = await next();
 
             sw.Stop();
-            logger.LogDebug($"Handled '{typeof(TResponse).Name}' in {sw.ElapsedMilliseconds}ms. {response}");
+            logger.LogDebug("Handled '{RequestType}' in {Elapsed}ms. {Response}",
+                typeof(TResponse).Name, sw.ElapsedMilliseconds, response);
 
             return response;
         }

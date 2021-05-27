@@ -1,0 +1,14 @@
+﻿@page
+@model Portal.Pages.Spaces.Index
+
+@{
+    ViewData["Title"] = "Spaces";
+}
+
+<h2>@ViewData["Title"]</h2>
+<ul>
+    @foreach (var space in Model.Spaces)
+    {
+        <li>@space.Name</li>
+    }
+</ul>

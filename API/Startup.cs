@@ -1,11 +1,9 @@
-using System.Collections.Generic;
 using Amazon.S3;
 using API.Auth;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Model.Storage;
 using DLCS.Repository.Storage.S3;
-using DLCS.Web.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Serilog;
 
