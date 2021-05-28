@@ -33,6 +33,7 @@ namespace Portal
         {
             services.Configure<PortalSettings>(configuration.GetSection("Portal"));
             services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
+            var dlcsSettings = configuration.GetSection("DLCS").Get<DlcsSettings>();
             
             services.AddRazorPages(opts => opts.Conventions.AllowAnonymousToFolder("/Account"));
             
@@ -70,7 +71,10 @@ namespace Portal
                 client.Timeout = TimeSpan.FromMilliseconds(dlcsOptions.DefaultTimeoutMs);
             });
 
-            // TODO - healthchecks
+            services
+                .AddHealthChecks()
+                .AddUrlGroup(dlcsSettings.Root, "DLCS API")
+                .AddDbContextCheck<DlcsContext>("DLCS-DB");
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -100,6 +104,7 @@ namespace Portal
             {
                 endpoints.MapControllers();
                 endpoints.MapRazorPages();
+                endpoints.MapHealthChecks("/ping").AllowAnonymous();
             });
         }
     }
