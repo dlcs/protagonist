@@ -48,6 +48,15 @@ namespace Thumbs
                         // Using ParameterStore optional if Development
                         configurationSource.Optional = isDevelopment;
                     });
+                    
+                    builder.AddSystemsManager(configurationSource =>
+                    {
+                        configurationSource.Path = "/protagonist/";
+                        configurationSource.ReloadAfter = TimeSpan.FromMinutes(90);
+
+                        // Using ParameterStore optional if Development
+                        configurationSource.Optional = isDevelopment;
+                    });
 
                     // If development then ensure appsettings.Development.json wins
                     if (isDevelopment)
