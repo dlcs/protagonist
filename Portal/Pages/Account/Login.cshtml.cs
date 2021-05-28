@@ -32,10 +32,9 @@ namespace Portal.Pages.Account
             public string Password { get; set; }
             
             // TODO - conditional validation
-            public string ApiKey { get; set; }
-            
-            [DataType(DataType.Password)]
-            public string ApiSecret { get; set; }
+            public string? ApiKey { get; set; }
+
+            [DataType(DataType.Password)] public string? ApiSecret { get; set; }
         }
 
         public LoginModel(IMediator mediator)
@@ -43,7 +42,7 @@ namespace Portal.Pages.Account
             this.mediator = mediator;
         }
         
-        public async Task OnGetAsync(string returnUrl = null)
+        public async Task OnGetAsync(string? returnUrl = null)
         {
             if (!string.IsNullOrEmpty(ErrorMessage))
             {
@@ -57,7 +56,7 @@ namespace Portal.Pages.Account
             ReturnUrl = returnUrl;
         }
         
-        public async Task<IActionResult> OnPostAsync(string returnUrl = null)
+        public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
         {
             ReturnUrl = returnUrl;
 
