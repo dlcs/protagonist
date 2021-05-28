@@ -26,7 +26,7 @@ namespace Portal.Pages.Spaces
             this.mediator = mediator;
         }
         
-        public async Task OnGet()
+        public async Task OnGetAsync()
         {
             var spaces = await mediator.Send(new GetAllSpaces());
             Spaces = spaces.Select(s => new SpaceModel {SpaceId = s.Id, Name = s.Name});

@@ -1,5 +1,8 @@
+using System;
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using DLCS.Core.Encryption;
+using DLCS.Core.Settings;
 using DLCS.Mediatr.Behaviours;
 using DLCS.Repository;
 using MediatR;
@@ -12,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Portal.Legacy;
 using Portal.Settings;
 
 namespace Portal
@@ -28,6 +32,7 @@ namespace Portal
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<PortalSettings>(configuration.GetSection("Portal"));
+            services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
             
             services.AddRazorPages(opts => opts.Conventions.AllowAnonymousToFolder("/Account"));
             
@@ -53,6 +58,17 @@ namespace Portal
             services.AddDbContext<DlcsContext>(opts =>
                 opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
             );
+
+            services.AddHttpClient<DlcsClient>(client =>
+            {
+                var dlcsSection = configuration.GetSection("DLCS");
+                var dlcsOptions = dlcsSection.Get<DlcsSettings>();
+
+                client.BaseAddress = dlcsOptions.Root;
+                client.DefaultRequestHeaders.Accept
+                    .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                client.Timeout = TimeSpan.FromMilliseconds(dlcsOptions.DefaultTimeoutMs);
+            });
 
             // TODO - healthchecks
         }

@@ -9,6 +9,8 @@
 <ul>
     @foreach (var space in Model.Spaces)
     {
-        <li>@space.Name</li>
+        <li>
+            <a asp-page="/Spaces/Details" asp-route-id="@space.SpaceId">@space.Name</a>
+        </li>
     }
 </ul>

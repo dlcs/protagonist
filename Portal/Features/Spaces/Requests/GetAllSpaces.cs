@@ -11,9 +11,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Portal.Features.Spaces.Requests
 {
+    /// <summary>
+    /// Request to get details of all spaces available for current user.
+    /// </summary>
     public class GetAllSpaces : IRequest<IEnumerable<Space>>
     {
-        
     }
 
     public class GetAllSpacesHandler : IRequestHandler<GetAllSpaces, IEnumerable<Space>>

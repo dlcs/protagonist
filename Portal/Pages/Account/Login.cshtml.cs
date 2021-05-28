@@ -33,6 +33,8 @@ namespace Portal.Pages.Account
             
             // TODO - conditional validation
             public string ApiKey { get; set; }
+            
+            [DataType(DataType.Password)]
             public string ApiSecret { get; set; }
         }
 

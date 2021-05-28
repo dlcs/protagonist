@@ -1,4 +1,4 @@
-﻿using System;
+﻿using DLCS.Core.Settings;
 
 namespace API.Settings
 {
@@ -12,19 +12,6 @@ namespace API.Settings
         public AwsSettings AWS { get; set; }
         
         public string PathBase { get; set; }
-    }
-
-    public class DlcsSettings
-    {
-        /// <summary>
-        /// The base URI of DLCS to hand-off requests to.
-        /// </summary>
-        public Uri Root { get; set; }
-
-        /// <summary>
-        /// Name of the bucket to act as storage origin for uploaded files.
-        /// </summary>
-        public string OriginBucket { get; set; }
     }
 
     public class AwsSettings

@@ -1,0 +1,11 @@
+﻿@page "{id}"
+@model Portal.Pages.Spaces.Details
+
+@{
+    ViewData["Title"] = $"Space: {RouteData.Values["id"]}";
+}
+
+
+<h2>@ViewData["Title"]</h2>
+<h3>Details pulled from call to current API</h3>
+<pre>@Html.Raw(Model.Space)</pre>
