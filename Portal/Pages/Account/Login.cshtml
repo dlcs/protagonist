@@ -22,6 +22,16 @@
                 <span asp-validation-for="Input.Password" class="text-danger"></span>
             </div>
             <div class="form-group">
+                <label asp-for="Input.ApiKey"></label>
+                <input asp-for="Input.ApiKey" class="form-control">
+                <span asp-validation-for="Input.ApiKey" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Input.ApiSecret"></label>
+                <input asp-for="Input.ApiSecret" class="form-control">
+                <span asp-validation-for="Input.ApiSecret" class="text-danger"></span>
+            </div>
+            <div class="form-group">
                 <button type="submit" class="btn btn-default">Log in</button>
             </div>
         </form>

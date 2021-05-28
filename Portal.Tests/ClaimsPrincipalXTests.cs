@@ -48,5 +48,33 @@ namespace Portal.Tests
             // Assert
             customerId.Should().Be(123);
         }
+        
+        [Fact]
+        public void GetApiCredentials_Null_IfClaimNotFound()
+        {
+            // Arrange
+            var identity = new ClaimsIdentity(new List<Claim> {new("Name", "Test")}, "Whatever");
+            var principal = new ClaimsPrincipal(new[] {identity});
+            
+            // Act
+            var customerId = principal.GetApiCredentials();
+
+            // Assert
+            customerId.Should().BeNull();
+        }
+
+        [Fact]
+        public void GetApiCredentials_ReturnsCorrectValue()
+        {
+            // Arrange
+            var identity = new ClaimsIdentity(new List<Claim> {new("ApiCredentials", "ssshhhh")}, "Whatever");
+            var principal = new ClaimsPrincipal(new[] {identity});
+
+            // Act
+            var customerId = principal.GetApiCredentials();
+
+            // Assert
+            customerId.Should().Be("ssshhhh");
+        }
     }
 }

@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Security.Claims;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Encryption;
@@ -10,6 +12,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Portal.Settings;
 
@@ -19,6 +22,10 @@ namespace Portal.Features.Account.Commands
     {
         public string Username { get; set; }
         public string Password { get; set; }
+        
+        public string ApiKey { get; set; }
+        
+        public string ApiSecret { get; set; }
     }
     
     public class LoginPortalUserHandler : IRequestHandler<LoginPortalUser, bool>
@@ -26,17 +33,20 @@ namespace Portal.Features.Account.Commands
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly DlcsContext dbContext;
         private readonly IEncryption encryption;
+        private readonly ILogger<LoginPortalUserHandler> logger;
         private readonly PortalSettings options;
 
         public LoginPortalUserHandler(
             IHttpContextAccessor httpContextAccessor, 
             DlcsContext dbContext, 
             IOptions<PortalSettings> options,
-            IEncryption encryption)
+            IEncryption encryption,
+            ILogger<LoginPortalUserHandler> logger)
         {
             this.httpContextAccessor = httpContextAccessor;
             this.dbContext = dbContext;
             this.encryption = encryption;
+            this.logger = logger;
             this.options = options.Value;
         }
 
@@ -50,7 +60,7 @@ namespace Portal.Features.Account.Commands
             if (!ValidateCredentials(request, user)) return false;
             
             // Log user in
-            await DoLogin(user);
+            await DoLogin(user, request);
             return true;
         }
 
@@ -69,9 +79,9 @@ namespace Portal.Features.Account.Commands
             return passwordToCheck == user.EncryptedPassword;
         }
 
-        private async Task DoLogin(User user)
+        private async Task DoLogin(User user, LoginPortalUser loginPortalUser)
         {
-            var claimsIdentity = GenerateClaimsIdentity(user);
+            var claimsIdentity = GenerateClaimsIdentity(user, loginPortalUser);
             
             // TODO - what do we want here?
             var authProperties = new AuthenticationProperties
@@ -104,18 +114,28 @@ namespace Portal.Features.Account.Commands
                 authProperties);
         }
 
-        private ClaimsIdentity GenerateClaimsIdentity(User user)
+        private ClaimsIdentity GenerateClaimsIdentity(User user, LoginPortalUser loginPortalUser)
         {
             var claims = new List<Claim>
             {
                 new (ClaimTypes.Name, user.Email),
                 new ("Customer", user.Customer.ToString()),
-                new (ClaimTypes.Role, "Customer"),
+                new (ClaimTypes.Role, ClaimsPrincipalUtils.CustomerClaim),
             };
             
             foreach (var role in user.Roles.Split(","))
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            // TODO - this is temporary only until API supports shared auth with Portal user
+            if (!string.IsNullOrEmpty(loginPortalUser.ApiKey) && !string.IsNullOrEmpty(loginPortalUser.ApiSecret))
+            {
+                logger.LogInformation("Api credentials provided, adding claim");
+
+                var creds = $"{loginPortalUser.ApiKey}:{loginPortalUser.ApiSecret}";
+                var basicAuth = Convert.ToBase64String(Encoding.ASCII.GetBytes(creds));
+                claims.Add(new Claim(ClaimsPrincipalUtils.ApiCredentialsClaim, basicAuth));
             }
 
             return new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
