@@ -35,7 +35,13 @@ namespace Portal
             services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
             var dlcsSettings = configuration.GetSection("DLCS").Get<DlcsSettings>();
             
-            services.AddRazorPages(opts => opts.Conventions.AllowAnonymousToFolder("/Account"));
+            services.AddRazorPages(opts =>
+            {
+                opts.Conventions.AllowAnonymousToFolder("/Account");
+                opts.Conventions.AllowAnonymousToPage("/AccessDenied");
+                opts.Conventions.AllowAnonymousToPage("/Error");
+                opts.Conventions.AuthorizeFolder("/Admin", "Administrators");
+            });
             
             // Add auth to everywhere - with the exception of those configured in AddRazorPages
             services.AddAuthorization(opts =>
@@ -43,11 +49,16 @@ namespace Portal
                 opts.FallbackPolicy = new AuthorizationPolicyBuilder()
                     .RequireAuthenticatedUser()
                     .Build();
+                opts.AddPolicy("Administrators",
+                    policy => policy.RequireClaim(ClaimTypes.Role, ClaimsPrincipalUtils.Roles.Admin));
             });
             
             services
                 .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie();
+                .AddCookie(opts =>
+                {
+                    opts.AccessDeniedPath = new PathString("/AccessDenied");
+                });
 
             services
                 .AddHttpContextAccessor()
