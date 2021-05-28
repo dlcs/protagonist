@@ -81,7 +81,7 @@ namespace Portal.Features.Account.Commands
 
         private async Task DoLogin(User user, LoginPortalUser loginPortalUser)
         {
-            var claimsIdentity = GenerateClaimsIdentity(user, loginPortalUser);
+            var claimsIdentity = await GenerateClaimsIdentity(user, loginPortalUser);
             
             // TODO - what do we want here?
             var authProperties = new AuthenticationProperties
@@ -89,7 +89,7 @@ namespace Portal.Features.Account.Commands
                 //AllowRefresh = <bool>,
                 // Refreshing the authentication session should be allowed.
 
-                //ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(10),
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
                 // The time at which the authentication ticket expires. A 
                 // value set here overrides the ExpireTimeSpan option of 
                 // CookieAuthenticationOptions set with AddCookie.
@@ -114,18 +114,24 @@ namespace Portal.Features.Account.Commands
                 authProperties);
         }
 
-        private ClaimsIdentity GenerateClaimsIdentity(User user, LoginPortalUser loginPortalUser)
+        private async Task<ClaimsIdentity> GenerateClaimsIdentity(User user, LoginPortalUser loginPortalUser)
         {
             var claims = new List<Claim>
             {
                 new (ClaimTypes.Name, user.Email),
-                new ("Customer", user.Customer.ToString()),
-                new (ClaimTypes.Role, ClaimsPrincipalUtils.CustomerClaim),
+                new (ClaimsPrincipalUtils.Claims.Customer, user.Customer.ToString()),
+                new (ClaimTypes.Role, ClaimsPrincipalUtils.Roles.Customer),
             };
             
-            foreach (var role in user.Roles.Split(","))
+            foreach (var role in user.Roles.Split(",", StringSplitOptions.RemoveEmptyEntries))
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            if (await IsUserAdmin(user))
+            {
+                logger.LogInformation("User {UserId} logged in with admin credentials", user.Id);
+                claims.Add(new Claim(ClaimTypes.Role, ClaimsPrincipalUtils.Roles.Admin));
             }
 
             // TODO - this is temporary only until API supports shared auth with Portal user
@@ -135,10 +141,17 @@ namespace Portal.Features.Account.Commands
 
                 var creds = $"{loginPortalUser.ApiKey}:{loginPortalUser.ApiSecret}";
                 var basicAuth = Convert.ToBase64String(Encoding.ASCII.GetBytes(creds));
-                claims.Add(new Claim(ClaimsPrincipalUtils.ApiCredentialsClaim, basicAuth));
+                claims.Add(new Claim(ClaimsPrincipalUtils.Claims.ApiCredentials, basicAuth));
             }
 
             return new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+        
+        private async Task<bool> IsUserAdmin(User user)
+        {
+            // NOTE - is this a candidate for moving to a reusable method?
+            var customer = await dbContext.Customers.FindAsync(user.Customer);
+            return customer.Administrator;
         }
     }
 }

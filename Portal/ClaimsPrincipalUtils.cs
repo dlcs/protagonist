@@ -8,22 +8,34 @@ namespace Portal
     /// </summary>
     public static class ClaimsPrincipalUtils
     {
-        /// <summary>
-        /// Name of claim containing CustomerId.
-        /// </summary>
-        public static string CustomerClaim = "Customer";
+        public class Claims
+        {
+            /// <summary>
+            /// Name of claim containing CustomerId.
+            /// </summary>
+            public static string Customer = "Customer";
         
+            /// <summary>
+            /// Name of claim containing api basic auth credentials.
+            /// </summary>
+            public static string ApiCredentials = "ApiCredentials";    
+        }
+
         /// <summary>
-        /// Name of claim containing api basic auth credentials.
+        /// Collection of roles associated with Claims
         /// </summary>
-        public static string ApiCredentialsClaim = "ApiCredentials";
+        public class Roles
+        {
+            public static string Customer = "Customer";
+            public static string Admin = "Admin";
+        }
         
         /// <summary>
         /// Get CustomerId value from principal claims, if present.
         /// </summary>
         public static int? GetCustomerId(this ClaimsPrincipal claimsPrincipal)
         {
-            var customerClaim = claimsPrincipal.Claims.FirstOrDefault(c => c.Type == CustomerClaim);
+            var customerClaim = claimsPrincipal.Claims.FirstOrDefault(c => c.Type == Claims.Customer);
             if (customerClaim == null) return null;
             
             return int.TryParse(customerClaim.Value, out int customerId) ? customerId : null;
@@ -34,7 +46,7 @@ namespace Portal
         /// </summary>
         public static string? GetApiCredentials(this ClaimsPrincipal claimsPrincipal)
         {
-            var customerClaim = claimsPrincipal.Claims.FirstOrDefault(c => c.Type == ApiCredentialsClaim);
+            var customerClaim = claimsPrincipal.Claims.FirstOrDefault(c => c.Type == Claims.ApiCredentials);
             return customerClaim?.Value;
         }
     }
