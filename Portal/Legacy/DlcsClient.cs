@@ -98,5 +98,13 @@ namespace Portal.Legacy
             var image = await response.ReadAsJsonAsync<Image>(true, jsonSerializerSettings);
             return image;
         }
+        
+        public async Task<Collection<PortalUser>?> GetPortalUsers()
+        {
+            var url = $"/customers/{currentUser.GetCustomerId()}/portalUsers";
+            var response = await httpClient.GetAsync(url);
+            var portalUsers = await response.ReadAsJsonAsync<Collection<PortalUser>>();
+            return portalUsers;
+        }
     }
 }
