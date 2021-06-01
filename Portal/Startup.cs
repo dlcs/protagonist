@@ -40,6 +40,7 @@ namespace Portal
                 opts.Conventions.AllowAnonymousToFolder("/Account");
                 opts.Conventions.AllowAnonymousToPage("/AccessDenied");
                 opts.Conventions.AllowAnonymousToPage("/Error");
+                opts.Conventions.AllowAnonymousToPage("/Index");
                 opts.Conventions.AuthorizeFolder("/Admin", "Administrators");
             });
             
