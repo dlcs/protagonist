@@ -1,0 +1,19 @@
+﻿@page
+@model Portal.Pages.Keys.CreateModel
+
+@{
+    ViewData["Title"] = "New API Key";
+}
+
+<h2>@ViewData["Title"]</h2>
+<div class="alert alert-info" role="alert">
+    <h4 class="alert-heading">API Key Details</h4>
+    <dl>
+        <dt>API Key</dt>
+        <dd>@Model.ApiKey.Key</dd>
+        <dt>API Secret</dt>
+        <dd>@Model.ApiKey.Secret</dd>
+    </dl>
+    <hr>
+    <p class="mb-0">This is the only time the Key and Secret will be visible - please securely record these values!</p>
+</div>

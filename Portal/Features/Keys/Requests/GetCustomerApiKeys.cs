@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using MediatR;
 using Portal.Legacy;
 
-namespace Portal.Features.Keys
+namespace Portal.Features.Keys.Requests
 {
     /// <summary>
     /// Get all ApiKeys for current customer.

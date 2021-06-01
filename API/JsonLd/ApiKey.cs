@@ -18,5 +18,10 @@ namespace API.JsonLd
                 return parts.Count < 2 ? null : parts[^1];
             }
         }
+        
+        /// <summary>
+        /// Get or set secret value for this API key.
+        /// </summary>
+        public string? Secret { get; set; }
     }
 }

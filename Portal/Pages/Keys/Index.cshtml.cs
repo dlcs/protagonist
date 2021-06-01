@@ -5,17 +5,18 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Portal.Features.Keys;
+using Portal.Features.Keys.Requests;
 
 namespace Portal.Pages.Keys
 {
-    public class Index : PageModel
+    public class IndexModel : PageModel
     {
         private readonly IMediator mediator;
         
         [BindProperty]
         public IEnumerable<string> ApiKeys { get; set; } = Enumerable.Empty<string>();
 
-        public Index(IMediator mediator)
+        public IndexModel(IMediator mediator)
         {
             this.mediator = mediator;
         }

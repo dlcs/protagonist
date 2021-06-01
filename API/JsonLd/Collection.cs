@@ -8,7 +8,7 @@ namespace API.JsonLd
     /// Base class for JsonLd collections
     /// </summary>
     /// <typeparam name="T">Type of member</typeparam>
-    public abstract class Collection<T> : JsonLdBase
+    public class Collection<T> : JsonLdBase
         where T : JsonLdBase
     {
         [JsonProperty("totalItems", Order = 5)]
