@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using API.JsonLd;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,7 +13,7 @@ namespace Portal.Pages.Spaces
         private readonly IMediator mediator;
         
         [BindProperty]
-        public JObject Space { get; set; }
+        public Space Space { get; set; }
 
         public Details(IMediator mediator)
         {

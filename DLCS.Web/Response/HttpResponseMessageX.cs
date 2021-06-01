@@ -12,9 +12,11 @@ namespace DLCS.Web.Response
         /// </summary>
         /// <param name="response"><see cref="HttpResponseMessage"/> object</param>
         /// <param name="ensureSuccess">If true, will validate that the response is a 2xx.</param>
+        /// <param name="settings"></param>
         /// <typeparam name="T">Type to convert response to</typeparam>
         /// <returns>Converted Http response.</returns>
-        public static async Task<T?> ReadAsJsonAsync<T>(this HttpResponseMessage response, bool ensureSuccess = true)
+        public static async Task<T?> ReadAsJsonAsync<T>(this HttpResponseMessage response,
+            bool ensureSuccess = true, JsonSerializerSettings? settings = null)
         {
             if (ensureSuccess) response.EnsureSuccessStatusCode();
 
@@ -26,6 +28,13 @@ namespace DLCS.Web.Response
             using var jsonReader = new JsonTextReader(streamReader);
 
             JsonSerializer serializer = new();
+            if (settings == null) return serializer.Deserialize<T>(jsonReader);
+            
+            if (settings.ContractResolver != null)
+            {
+                serializer.ContractResolver = settings.ContractResolver;
+            }
+            serializer.NullValueHandling = settings.NullValueHandling;
             return serializer.Deserialize<T>(jsonReader);
         }
 
