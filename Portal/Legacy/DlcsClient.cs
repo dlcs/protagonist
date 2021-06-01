@@ -1,7 +1,11 @@
-﻿using System.Net.Http;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using API.JsonLd;
+using DLCS.Web.Response;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
@@ -38,6 +42,14 @@ namespace Portal.Legacy
             var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}";
             var result = await httpClient.GetStringAsync(url);
             return JObject.Parse(result);
+        }
+
+        public async Task<IEnumerable<string>?> GetApiKeys()
+        {
+            var url = $"/customers/{currentUser.GetCustomerId()}/keys";
+            var response = await httpClient.GetAsync(url);
+            var apiKeys = await response.ReadAsJsonAsync<Collection<ApiKey>>();
+            return apiKeys?.Member.Select(m => m.Key);
         }
     }
 }
