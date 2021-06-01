@@ -7,11 +7,35 @@
 }
 
 <h2>@ViewData["Title"]</h2>
-<form method="post" asp-page="/Keys/Create" class="row row-cols-lg-auto g-3 align-items-center">
-    <div class="col-4">
-        <button type="submit" class="btn btn-primary">Create new user</button>
+@if (TempData.ContainsKey("SuccessMessage"))
+{
+    <div class="alert alert-success" role="alert">@TempData["SuccessMessage"].ToString()</div>
+}
+@if (TempData.ContainsKey("ErrorMessage"))
+{
+    <div class="alert alert-danger" role="alert">@TempData["ErrorMessage"].ToString()</div>
+}
+
+<div class="row">
+    <div class="col-md-3">
+        <form method="post">
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Input.Email"></label>
+                <input asp-for="Input.Email" class="form-control" required>
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Input.Password"></label>
+                <input asp-for="Input.Password" class="form-control" required>
+                <span asp-validation-for="Input.Password" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Create new user</button>
+            </div>
+        </form>
     </div>
-</form>
+</div>
 
 <div class="row">
     <div class="col-md-3">

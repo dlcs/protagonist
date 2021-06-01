@@ -106,5 +106,15 @@ namespace Portal.Legacy
             var portalUsers = await response.ReadAsJsonAsync<Collection<PortalUser>>();
             return portalUsers;
         }
+
+        public async Task<PortalUser> CreatePortalUser(PortalUser portalUser)
+        {
+            // TODO - a 400 - badRequest is likely an email address that already exists.
+            // Handle that with some sort of nicer response code or known error enum.
+            var url = $"/customers/{currentUser.GetCustomerId()}/portalUsers";
+            var response = await httpClient.PostAsync(url, ApiBody(portalUser));
+            var newUser = await response.ReadAsJsonAsync<PortalUser>(true, jsonSerializerSettings);
+            return newUser;
+        }
     }
 }
