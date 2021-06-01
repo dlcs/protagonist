@@ -51,5 +51,13 @@ namespace Portal.Legacy
             var apiKeys = await response.ReadAsJsonAsync<Collection<ApiKey>>();
             return apiKeys?.Member.Select(m => m.Key);
         }
+
+        public async Task<ApiKey> CreateNewApiKey()
+        {
+            var url = $"/customers/{currentUser.GetCustomerId()}/keys";
+            var response = await httpClient.PostAsync(url, null!);
+            var apiKey = await response.ReadAsJsonAsync<ApiKey>();
+            return apiKey;
+        }
     }
 }
