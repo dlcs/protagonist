@@ -2,10 +2,10 @@ using System;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Repository;
-using DLCS.Repository.Entities;
+using API.JsonLd;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Portal.Legacy;
 
 namespace Portal.Features.Spaces.Requests
 {
@@ -16,39 +16,24 @@ namespace Portal.Features.Spaces.Requests
 
         public class CreateNewSpaceHandler : IRequestHandler<CreateNewSpace, Space>
         {
-            private readonly DlcsContext dbContext;
             private readonly ClaimsPrincipal principal;
             private readonly ILogger logger;
+            private readonly DlcsClient dlcsClient;
 
             public CreateNewSpaceHandler(
-                DlcsContext dbContext, 
+                DlcsClient dlcsClient, 
                 ClaimsPrincipal principal,
                 ILogger<GetAllSpacesHandler> logger)
             {
-                this.dbContext = dbContext;
+                this.dlcsClient = dlcsClient;
                 this.principal = principal;
                 this.logger = logger;
             }
         
             public async Task<Space> Handle(CreateNewSpace request, CancellationToken cancellationToken)
             {
-                var customer = principal.GetCustomerId();
-                if (!customer.HasValue)
-                {
-                    throw new NotSupportedException("No customer to create space for");
-                }
-
-                var newSpace = await dbContext.Spaces.AddAsync(new Space
-                {
-                    Name = request.NewSpaceName,
-                    Created = DateTime.Now,
-                    Customer = customer.Value,
-                    ImageBucket = String.Empty,
-                    Tags = String.Empty,
-                    Roles = String.Empty
-                });
-                await dbContext.SaveChangesAsync(cancellationToken);
-                return newSpace.Entity;
+                var space = new Space { Name = request.NewSpaceName };
+                return await dlcsClient.CreateSpace(space);
             }
         }
     

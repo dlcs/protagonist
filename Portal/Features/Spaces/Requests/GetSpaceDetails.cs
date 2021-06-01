@@ -1,8 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using Newtonsoft.Json.Linq;
 using Portal.Legacy;
+using API.JsonLd;
 
 namespace Portal.Features.Spaces.Requests
 {
@@ -10,12 +10,12 @@ namespace Portal.Features.Spaces.Requests
     /// Request to get details of space from API.
     /// </summary>
     /// <remarks>This is temporary to verify API handling</remarks>
-    public class GetSpaceDetails : IRequest<JObject>
+    public class GetSpaceDetails : IRequest<Space>
     {
         public int SpaceId { get; set; }
     }
 
-    public class GetSpaceDetailsHandler : IRequestHandler<GetSpaceDetails, JObject>
+    public class GetSpaceDetailsHandler : IRequestHandler<GetSpaceDetails, Space>
     {
         private readonly DlcsClient dlcsClient;
 
@@ -24,7 +24,7 @@ namespace Portal.Features.Spaces.Requests
             this.dlcsClient = dlcsClient;
         }
         
-        public Task<JObject> Handle(GetSpaceDetails request, CancellationToken cancellationToken)
+        public Task<Space> Handle(GetSpaceDetails request, CancellationToken cancellationToken)
         {
             return dlcsClient.GetSpaceDetails(request.SpaceId);
         }

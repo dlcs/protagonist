@@ -43,8 +43,10 @@ namespace Portal.Pages.Spaces
         public async Task<IActionResult> OnPostAsync(string newSpaceName)
         {
             var newSpace = await mediator.Send(new CreateNewSpace{NewSpaceName = newSpaceName});
+            int? spaceId = newSpace.ModelId;
+            if (spaceId <= 0) spaceId = newSpace.GetLastPathElementAsInt();
             TempData["new-space-name"] = newSpace.Name;
-            return RedirectToPage("/Spaces/Details", new { id = newSpace.Id });
+            return RedirectToPage("/Spaces/Details", new { id = spaceId });
         }
     }
 }
