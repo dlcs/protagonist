@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Portal.Behaviours;
 using Portal.Legacy;
 using Portal.Settings;
 
@@ -43,7 +44,7 @@ namespace Portal
                 opts.Conventions.AllowAnonymousToPage("/Index");
                 opts.Conventions.AuthorizeFolder("/Admin", "Administrators");
             });
-            
+
             // Add auth to everywhere - with the exception of those configured in AddRazorPages
             services.AddAuthorization(opts =>
             {
@@ -66,7 +67,8 @@ namespace Portal
                 .AddSingleton<IEncryption, SHA256>()
                 .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
                 .AddMediatR(typeof(Startup))
-                .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+                .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
+                .AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditBehaviour<,>));
 
             services.AddDbContext<DlcsContext>(opts =>
                 opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))

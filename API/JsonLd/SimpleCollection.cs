@@ -11,6 +11,8 @@ namespace API.JsonLd
     public class SimpleCollection<T> : JsonLdBase
         where T : JsonLdBase
     {
+        public override string Type => "Collection";
+
         [JsonProperty("totalItems", Order = 5)]
         public int TotalItems { get; set; }
 
@@ -19,10 +21,5 @@ namespace API.JsonLd
         
         [JsonProperty("member", Order = 7)] 
         public IEnumerable<T> Members { get; set; } = Enumerable.Empty<T>();
-
-        protected SimpleCollection()
-        {
-            Type = "Collection";
-        }
     }
 }

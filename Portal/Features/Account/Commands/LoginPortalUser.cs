@@ -119,6 +119,7 @@ namespace Portal.Features.Account.Commands
             var claims = new List<Claim>
             {
                 new (ClaimTypes.Name, user.Email),
+                new (ClaimTypes.NameIdentifier, user.Id),
                 new (ClaimsPrincipalUtils.Claims.Customer, user.Customer.ToString()),
                 new (ClaimTypes.Role, ClaimsPrincipalUtils.Roles.Customer),
             };
