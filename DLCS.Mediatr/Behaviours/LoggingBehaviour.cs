@@ -28,8 +28,8 @@ namespace DLCS.Mediatr.Behaviours
             var response = await next();
 
             sw.Stop();
-            logger.LogDebug("Handled '{RequestType}' in {Elapsed}ms. {Response}",
-                typeof(TResponse).Name, sw.ElapsedMilliseconds, response);
+            logger.LogDebug("Handled '{RequestType}' in {Elapsed}ms",
+                typeof(TResponse).Name, sw.ElapsedMilliseconds);
 
             return response;
         }

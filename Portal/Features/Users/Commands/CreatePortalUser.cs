@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using API.JsonLd;
+using Destructurama.Attributed;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Portal.Behaviours;
 using Portal.Legacy;
 
 namespace Portal.Features.Users.Commands
@@ -12,10 +13,12 @@ namespace Portal.Features.Users.Commands
     /// <summary>
     /// Create a new portal user with specified username and password
     /// </summary>
-    public class CreatePortalUser : IRequest<PortalUser?>
+    public class CreatePortalUser : IRequest<PortalUser?>, IAuditable
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public string Email { get; }
+        
+        [NotLogged]
+        public string Password { get; }
 
         public CreatePortalUser(string email, string password)
         {
@@ -28,16 +31,13 @@ namespace Portal.Features.Users.Commands
     {
         private readonly DlcsClient dlcsClient;
         private readonly ILogger<CreatePortalUserHandler> logger;
-        private readonly ClaimsPrincipal claimsPrincipal;
 
         public CreatePortalUserHandler(
             DlcsClient dlcsClient, 
-            ILogger<CreatePortalUserHandler> logger,
-            ClaimsPrincipal claimsPrincipal)
+            ILogger<CreatePortalUserHandler> logger)
         {
             this.dlcsClient = dlcsClient;
             this.logger = logger;
-            this.claimsPrincipal = claimsPrincipal;
         }
         
         public async Task<PortalUser?> Handle(CreatePortalUser request, CancellationToken cancellationToken)
@@ -52,14 +52,11 @@ namespace Portal.Features.Users.Commands
             try
             {
                 var createdUser = await dlcsClient.CreatePortalUser(newPortalUser);
-
-                logger.LogInformation("New Portal user '{PortalUser}' created by '{CurrentUser}'",
-                    createdUser.GetLastPathElement(),
-                    claimsPrincipal.GetUserId());
                 return createdUser;
             }
             catch (Exception ex)
             {
+                // TODO - better handling of errors - return something better than null
                 logger.LogError(ex, "Error creating new Portal User");
             }
 

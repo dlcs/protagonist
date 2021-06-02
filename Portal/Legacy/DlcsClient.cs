@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -115,6 +116,21 @@ namespace Portal.Legacy
             var response = await httpClient.PostAsync(url, ApiBody(portalUser));
             var newUser = await response.ReadAsJsonAsync<PortalUser>(true, jsonSerializerSettings);
             return newUser;
+        }
+
+        public async Task<bool> DeletePortalUser(string portalUserId)
+        {
+            var url = $"/customers/{currentUser.GetCustomerId()}/portalUsers/{portalUserId}";
+            try
+            {
+                var response = await httpClient.DeleteAsync(url);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error deleting portalUser '{PortalUserId}'", portalUserId);
+                return false;
+            }
         }
     }
 }

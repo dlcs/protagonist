@@ -30,6 +30,7 @@ namespace Portal.Pages.Users
         
         public class PortalUserModel
         {
+            public string Id { get; set; }
             public string Email { get; set; }
             public DateTime? Created { get; set; }
             public bool Enabled { get; set; }
@@ -58,6 +59,7 @@ namespace Portal.Pages.Users
             {
                 PortalUsers = portalUsers.Member.Select(pu => new PortalUserModel
                 {
+                    Id = pu.GetLastPathElement(),
                     Created = pu.Created,
                     Email = pu.Email,
                     Enabled = pu.Enabled
@@ -79,6 +81,26 @@ namespace Portal.Pages.Users
                 SuccessMessage = $"New Portal user '{newPortalUser.Email}' created";
             }
 
+            return RedirectToPage("/Users/Index");
+        }
+
+        public async Task<IActionResult> OnPostDeleteAsync(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                ModelState.AddModelError(string.Empty, "PortalUserId must be specified");
+            }
+
+            var deleteSuccess = await mediator.Send(new DeletePortalUser(id));
+            if (deleteSuccess)
+            {
+                SuccessMessage = $"Portal user '{id}' deleted";
+            }
+            else
+            {
+                ErrorMessage = "Error deleting portal user";
+            }
+            
             return RedirectToPage("/Users/Index");
         }
     }

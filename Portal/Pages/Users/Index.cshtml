@@ -63,7 +63,12 @@
                         <td>@m.Email</td>
                         <td>@m.Created</td>
                         <td>@m.Enabled</td>
-                        <td></td>
+                        <td>
+                            <a asp-controller="User" asp-action="Delete" asp-route-id="@m.Id"
+                               class="delete-user" data-toggle="tooltip" title="Delete user @m.Email">
+                                <span data-feather="x">delete @m.Email</span>
+                            </a>
+                        </td>
                     </tr>
                 }
                 </tbody>
@@ -71,3 +76,30 @@
         }
     </div>
 </div>
+
+@section Scripts {
+    <script type="text/javascript">
+        
+        function deleteUser(evt){            
+            if (window.confirm("Delete user? Are you sure?")){
+                let url = this.getAttribute("href");
+                let row = this.closest('tr');
+                
+                fetch(url, {method: 'DELETE',})
+                    .then(r => r.json())
+                    .then(data => {
+                        console.log(data);
+                        row.remove() 
+                    })                        
+                    .catch(err => alert(err));
+            }
+            
+            evt.preventDefault();
+        }
+        
+        let deleteLink = document.getElementsByClassName("delete-user");
+        for (let i = 0; i < deleteLink.length; i++) {
+            deleteLink[i].addEventListener('click', deleteUser, false);
+        }
+    </script>
+}
