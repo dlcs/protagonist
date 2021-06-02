@@ -77,7 +77,7 @@ namespace Portal
                 var dlcsSection = configuration.GetSection("DLCS");
                 var dlcsOptions = dlcsSection.Get<DlcsSettings>();
 
-                client.BaseAddress = dlcsOptions.Root;
+                client.BaseAddress = dlcsOptions.ApiRoot;
                 client.DefaultRequestHeaders.Accept
                     .Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 client.Timeout = TimeSpan.FromMilliseconds(dlcsOptions.DefaultTimeoutMs);
@@ -85,7 +85,7 @@ namespace Portal
 
             services
                 .AddHealthChecks()
-                .AddUrlGroup(dlcsSettings.Root, "DLCS API")
+                .AddUrlGroup(dlcsSettings.ApiRoot, "DLCS API")
                 .AddDbContextCheck<DlcsContext>("DLCS-DB");
         }
 

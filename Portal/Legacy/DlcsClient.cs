@@ -46,11 +46,19 @@ namespace Portal.Legacy
 
         public async Task<Space?> GetSpaceDetails(int spaceId)
         {
-            // TODO - this is a sample method call to verify API call
             var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}";
             var response = await httpClient.GetAsync(url);
             var space = await response.ReadAsJsonAsync<Space>(true, jsonSerializerSettings);
             return space;
+        }
+        
+        
+        public async Task<HydraImageCollection> GetSpaceImages(int spaceId)
+        {
+            var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images";
+            var response = await httpClient.GetAsync(url);
+            var images = await response.ReadAsJsonAsync<HydraImageCollection>(true, jsonSerializerSettings);
+            return images;
         }
 
         public async Task<Space?> CreateSpace(Space newSpace)
@@ -71,8 +79,8 @@ namespace Portal.Legacy
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/keys";
             var response = await httpClient.GetAsync(url);
-            var apiKeys = await response.ReadAsJsonAsync<Collection<ApiKey>>();
-            return apiKeys?.Member.Select(m => m.Key);
+            var apiKeys = await response.ReadAsJsonAsync<SimpleCollection<ApiKey>>();
+            return apiKeys?.Members.Select(m => m.Key);
         }
 
         public async Task<ApiKey> CreateNewApiKey()
@@ -81,6 +89,14 @@ namespace Portal.Legacy
             var response = await httpClient.PostAsync(url, null!);
             var apiKey = await response.ReadAsJsonAsync<ApiKey>();
             return apiKey;
+        }
+
+        public async Task<Image> GetImage(int requestSpaceId, string requestImageId)
+        {
+            var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{requestSpaceId}/images/{requestImageId}";
+            var response = await httpClient.GetAsync(url);
+            var image = await response.ReadAsJsonAsync<Image>(true, jsonSerializerSettings);
+            return image;
         }
     }
 }

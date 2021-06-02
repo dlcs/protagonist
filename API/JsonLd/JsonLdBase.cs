@@ -17,7 +17,7 @@ namespace API.JsonLd
         public string Id { get; set; }
         
         [JsonProperty("@type", Order = 3)]
-        public string Type { get; set; }
+        public virtual string Type { get; set; }
 
         public string? GetLastPathElement()
         {

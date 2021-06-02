@@ -35,7 +35,7 @@ namespace API
             services.AddHttpClient();
             services.AddHttpClient("dlcs-api", c =>
             {
-                c.BaseAddress = apiSettings.DLCS.Root;
+                c.BaseAddress = apiSettings.DLCS.ApiRoot;
                 c.DefaultRequestHeaders.Add("User-Agent", "DLCS-APIv2-Protagonist");
             });
 
@@ -72,7 +72,7 @@ namespace API
 
             services
                 .AddHealthChecks()
-                .AddUrlGroup(apiSettings.DLCS.Root, "DLCS API");
+                .AddUrlGroup(apiSettings.DLCS.ApiRoot, "DLCS API");
             
             services.Configure<KestrelServerOptions>(options =>
             {

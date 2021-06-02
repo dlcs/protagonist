@@ -8,7 +8,7 @@ namespace API.JsonLd
     /// Base class for JsonLd collections
     /// </summary>
     /// <typeparam name="T">Type of member</typeparam>
-    public class Collection<T> : JsonLdBase
+    public class SimpleCollection<T> : JsonLdBase
         where T : JsonLdBase
     {
         [JsonProperty("totalItems", Order = 5)]
@@ -18,9 +18,9 @@ namespace API.JsonLd
         public int PageSize { get; set; }
         
         [JsonProperty("member", Order = 7)] 
-        public IEnumerable<T> Member { get; set; } = Enumerable.Empty<T>();
+        public IEnumerable<T> Members { get; set; } = Enumerable.Empty<T>();
 
-        protected Collection()
+        protected SimpleCollection()
         {
             Type = "Collection";
         }

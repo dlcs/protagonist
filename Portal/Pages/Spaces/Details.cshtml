@@ -1,11 +1,43 @@
 ﻿@page "{id}"
+@using API.JsonLd
 @model Portal.Pages.Spaces.Details
 
 @{
-    ViewData["Title"] = $"Space: {RouteData.Values["id"]}";
+    ViewData["Title"] = $"Space {Model.SpacePageModel.Space.GetLastPathElementAsInt()}: {Model.SpacePageModel.Space.Name}";
 }
 
+<table class="table">
+    <thead>
+    <tr>
+        <th scope="col"></th>
+        <th scope="col">n1</th>
+        <th scope="col">Name</th>
+        <th scope="col">Created</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var image in Model.SpacePageModel.Images.Members)
+    {
+        <tr>
+            <td>
+                @if (image.Family == 'I')
+                {
+                    <iiif-thumb 
+                        customer-url-part="@Model.Customer"
+                        space-url-part="@Model.Space"
+                        api-image="@image"
+                        class="iiifpreview" 
+                        settings="@Model.DlcsSettings"
+                        small="28" large="@Model.DlcsSettings.PortalThumb" />
+                }
+            </td>
+            <td>@image.Number1</td>
+            <td><a asp-page="/Images/Index" 
+                   asp-route-space="@Model.Space" 
+                   asp-route-image="@image.GetLastPathElement()">@image.GetLastPathElement()</a></td>
+            <td>@image.Created</td>
+        </tr>
+    }
+    </tbody>
+</table>
 
-<h2>@ViewData["Title"]</h2>
-<h3>Details pulled from call to current API</h3>
-<pre>@Html.Raw(Model.Space.Name)</pre>

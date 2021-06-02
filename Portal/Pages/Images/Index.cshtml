@@ -1,0 +1,10 @@
+@page "{space}/{image}"
+@model Portal.Pages.Images.Index
+
+@{
+    ViewData["Title"] = @Model.Image.Id;
+}
+
+<p>
+Image info here for @Model.Image.Id
+</p>
