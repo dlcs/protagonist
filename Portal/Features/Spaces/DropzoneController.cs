@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 
-namespace Portal.Controllers
+namespace Portal.Features.Spaces
 {
     public class DropzoneController : Controller
     {

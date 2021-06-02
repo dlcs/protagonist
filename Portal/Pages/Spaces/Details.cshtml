@@ -8,7 +8,7 @@
 
 @section header
 {
-    <link href="~/lib/dropzone-5.7.0/dist/min/dropzone.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/dropzone@5.9.2/dist/min/dropzone.min.css" rel="stylesheet" />
 }
 
 <form action="/dropzone/@Model.Customer/@Model.Space/local"
@@ -58,7 +58,7 @@
 
 @section Scripts
 {
-<script src="~/lib/dropzone-5.7.0/dist/min/dropzone.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dropzone@5.9.2/dist/dropzone.min.js"></script>
 <script>
 
     document.getElementById('nextBox').style.display = "none";
@@ -72,6 +72,7 @@
             this.on("error", fileSuccess);
             this.on("queuecomplete", queuecomplete);
             this.on("drop", drop);
+            this.on("dragenter", () => console.log("DRAG"));
             window.pDropZone = this;
         }
     };
