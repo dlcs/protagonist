@@ -55,9 +55,9 @@ namespace Portal.Pages.Users
         public async Task OnGetAsync()
         {
             var portalUsers = await mediator.Send(new GetPortalUsers());
-            if (!portalUsers.Member.IsNullOrEmpty())
+            if (!portalUsers.Members.IsNullOrEmpty())
             {
-                PortalUsers = portalUsers.Member.Select(pu => new PortalUserModel
+                PortalUsers = portalUsers.Members.Select(pu => new PortalUserModel
                 {
                     Id = pu.GetLastPathElement(),
                     Created = pu.Created,
@@ -81,26 +81,6 @@ namespace Portal.Pages.Users
                 SuccessMessage = $"New Portal user '{newPortalUser.Email}' created";
             }
 
-            return RedirectToPage("/Users/Index");
-        }
-
-        public async Task<IActionResult> OnPostDeleteAsync(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                ModelState.AddModelError(string.Empty, "PortalUserId must be specified");
-            }
-
-            var deleteSuccess = await mediator.Send(new DeletePortalUser(id));
-            if (deleteSuccess)
-            {
-                SuccessMessage = $"Portal user '{id}' deleted";
-            }
-            else
-            {
-                ErrorMessage = "Error deleting portal user";
-            }
-            
             return RedirectToPage("/Users/Index");
         }
     }

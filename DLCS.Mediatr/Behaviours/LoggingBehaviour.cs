@@ -29,7 +29,7 @@ namespace DLCS.Mediatr.Behaviours
 
             sw.Stop();
             logger.LogDebug("Handled '{RequestType}' in {Elapsed}ms",
-                typeof(TResponse).Name, sw.ElapsedMilliseconds);
+                typeof(TRequest).Name, sw.ElapsedMilliseconds);
 
             return response;
         }
