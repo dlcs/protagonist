@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -97,6 +98,39 @@ namespace Portal.Legacy
             var response = await httpClient.GetAsync(url);
             var image = await response.ReadAsJsonAsync<Image>(true, jsonSerializerSettings);
             return image;
+        }
+        
+        public async Task<SimpleCollection<PortalUser>?> GetPortalUsers()
+        {
+            var url = $"/customers/{currentUser.GetCustomerId()}/portalUsers";
+            var response = await httpClient.GetAsync(url);
+            var portalUsers = await response.ReadAsJsonAsync<SimpleCollection<PortalUser>>();
+            return portalUsers;
+        }
+
+        public async Task<PortalUser> CreatePortalUser(PortalUser portalUser)
+        {
+            // TODO - a 400 - badRequest is likely an email address that already exists.
+            // Handle that with some sort of nicer response code or known error enum.
+            var url = $"/customers/{currentUser.GetCustomerId()}/portalUsers";
+            var response = await httpClient.PostAsync(url, ApiBody(portalUser));
+            var newUser = await response.ReadAsJsonAsync<PortalUser>(true, jsonSerializerSettings);
+            return newUser;
+        }
+
+        public async Task<bool> DeletePortalUser(string portalUserId)
+        {
+            var url = $"/customers/{currentUser.GetCustomerId()}/portalUsers/{portalUserId}";
+            try
+            {
+                var response = await httpClient.DeleteAsync(url);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error deleting portalUser '{PortalUserId}'", portalUserId);
+                return false;
+            }
         }
     }
 }

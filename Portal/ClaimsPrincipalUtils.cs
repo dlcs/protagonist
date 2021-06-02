@@ -40,14 +40,28 @@ namespace Portal
             
             return int.TryParse(customerClaim.Value, out int customerId) ? customerId : null;
         }
-        
+
         /// <summary>
         /// Get Api basic auth credentials value from principal claims, if present.
         /// </summary>
         public static string? GetApiCredentials(this ClaimsPrincipal claimsPrincipal)
+            => claimsPrincipal.GetClaimValue(Claims.ApiCredentials);
+        
+        /// <summary>
+        /// Get User Id value from claim. 
+        /// </summary>
+        public static string? GetUserId(this ClaimsPrincipal claimsPrincipal)
+            => claimsPrincipal.GetClaimValue(ClaimTypes.NameIdentifier);
+        
+        /// <summary>
+        /// Get first value of claim with specified type
+        /// </summary>
+        public static string? GetClaimValue(this ClaimsPrincipal claimsPrincipal, string claimType)
         {
-            var customerClaim = claimsPrincipal.Claims.FirstOrDefault(c => c.Type == Claims.ApiCredentials);
+            var customerClaim = claimsPrincipal.Claims.FirstOrDefault(c => c.Type == claimType);
             return customerClaim?.Value;
         }
+        
+        
     }
 }
