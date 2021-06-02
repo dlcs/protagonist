@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using MediatR;
 using Portal.Legacy;
-using API.JsonLd;
+using Portal.Features.Spaces.Models;
 
 namespace Portal.Features.Spaces.Requests
 {
@@ -10,12 +10,12 @@ namespace Portal.Features.Spaces.Requests
     /// Request to get details of space from API.
     /// </summary>
     /// <remarks>This is temporary to verify API handling</remarks>
-    public class GetSpaceDetails : IRequest<Space>
+    public class GetSpaceDetails : IRequest<SpacePageModel>
     {
         public int SpaceId { get; set; }
     }
 
-    public class GetSpaceDetailsHandler : IRequestHandler<GetSpaceDetails, Space>
+    public class GetSpaceDetailsHandler : IRequestHandler<GetSpaceDetails, SpacePageModel>
     {
         private readonly DlcsClient dlcsClient;
 
@@ -24,9 +24,13 @@ namespace Portal.Features.Spaces.Requests
             this.dlcsClient = dlcsClient;
         }
         
-        public Task<Space> Handle(GetSpaceDetails request, CancellationToken cancellationToken)
+        public async Task<SpacePageModel> Handle(GetSpaceDetails request, CancellationToken cancellationToken)
         {
-            return dlcsClient.GetSpaceDetails(request.SpaceId);
+            return new SpacePageModel
+            {
+                Space = await dlcsClient.GetSpaceDetails(request.SpaceId),
+                Images = await dlcsClient.GetSpaceImages(request.SpaceId)
+            };
         }
     }
 }
