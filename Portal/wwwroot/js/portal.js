@@ -6,8 +6,8 @@
 })()
 
 document.addEventListener("DOMContentLoaded", function(event) {
-    document.querySelectorAll('.iiifpreview').tooltip({
-        html: true
-    });
+    // document.querySelectorAll('.iiifpreview').tooltip({
+    //     html: true
+    // });
 });
 
