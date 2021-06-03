@@ -29,5 +29,7 @@ namespace DLCS.Core.Settings
         /// TODO - the DLCS API's returned Image resource should have this kind of information
         /// </summary>
         public int PortalThumb { get; set; }
+
+        public string Region { get; set; } = "eu-west-1";
     }
 }

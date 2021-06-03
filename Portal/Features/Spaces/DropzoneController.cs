@@ -3,19 +3,23 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Portal.Features.Images.Commands;
 
 namespace Portal.Features.Spaces
 {
     public class DropzoneController : Controller
     {
         private readonly ClaimsPrincipal currentUser;
+        private readonly IMediator mediator;
 
-        public DropzoneController(ClaimsPrincipal currentUser)
+        public DropzoneController(ClaimsPrincipal currentUser, IMediator mediator)
         {
             this.currentUser = currentUser;
+            this.mediator = mediator;
         }
         
         [HttpPost]
@@ -54,7 +58,43 @@ namespace Portal.Features.Spaces
                 return Json(new { message = "completed: " + fileNameForSaving });
             }
             return Json(new { error = errorMessage, message = "error: " + fileNameForSaving + ", " + errorMessage });
-            
+        }
+        
+        [HttpPost]
+        [Route("[controller]/{customer}/{space}/[action]")]
+        public async Task<IActionResult> Upload(int customer, int space, List<IFormFile> file)
+        {
+            if (currentUser.GetCustomerId() != customer)
+            {
+                throw new InvalidOperationException("Customer ID mismatch");
+            }
+            string? errorMessage = null; 
+            string fileNameForSaving = "";
+            try
+            {
+                foreach (var formFile in file)
+                {
+                    if (formFile.Length > 0)
+                    {
+                        await using var ms = new MemoryStream();
+                        fileNameForSaving = Path.GetFileName(formFile.FileName) ?? formFile.FileName;
+                        await formFile.CopyToAsync(ms);
+                        
+                        var ingestRequest = new IngestSingleImage(space, fileNameForSaving, ms, formFile.ContentType);
+                        await mediator.Send(ingestRequest);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+            }
+
+            if (errorMessage == null)
+            {
+                return Json(new { message = "completed: " + fileNameForSaving });
+            }
+            return Json(new { error = errorMessage, message = "error: " + fileNameForSaving + ", " + errorMessage });
         }
 
         private static string GetTargetFilePath(int customer, int space, string fileNameForSaving)
@@ -64,7 +104,6 @@ namespace Portal.Features.Spaces
             var target = Path.Combine(targetDir, fileNameForSaving);
             return target;
         }
-
 
         [HttpPost]
         [Route("[controller]/{customer}/{space}/[action]")]

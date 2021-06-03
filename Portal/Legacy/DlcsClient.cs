@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using API.Features.Image.Models;
 using API.JsonLd;
 using DLCS.Web.Response;
 using Microsoft.Extensions.Logging;
@@ -70,12 +71,6 @@ namespace Portal.Legacy
             return space;
         }
 
-        private HttpContent ApiBody(JsonLdBase apiObject)
-        {
-            var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);
-            return new StringContent(jsonString, Encoding.UTF8, "application/json");
-        }
-
         public async Task<IEnumerable<string>?> GetApiKeys()
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/keys";
@@ -131,6 +126,20 @@ namespace Portal.Legacy
                 logger.LogError(ex, "Error deleting portalUser '{PortalUserId}'", portalUserId);
                 return false;
             }
+        }
+
+        public async Task<AssetJsonLD?> DirectIngestImage(int spaceId, string imageId, AssetJsonLD asset)
+        {
+            // TODO - error handling
+            var uri = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}";
+            var response = await httpClient.PutAsync(uri, ApiBody(asset));
+            return await response.ReadAsJsonAsync<AssetJsonLD>(true, jsonSerializerSettings);
+        }
+        
+        private HttpContent ApiBody(JsonLdBase apiObject)
+        {
+            var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);
+            return new StringContent(jsonString, Encoding.UTF8, "application/json");
         }
     }
 }
