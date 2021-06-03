@@ -3,13 +3,32 @@
 @model Portal.Pages.Spaces.Details
 
 @{
-    ViewData["Title"] = $"Space {Model.SpacePageModel.Space.GetLastPathElementAsInt()}: {Model.SpacePageModel.Space.Name}";
+    var spaceId = Model.SpacePageModel.Space.GetLastPathElementAsInt();
+    ViewData["Title"] = $"Space {spaceId}: {Model.SpacePageModel.Space.Name}";
 }
 
 @section header
 {
     <link href="https://cdn.jsdelivr.net/npm/dropzone@5.9.2/dist/min/dropzone.min.css" rel="stylesheet" />
 }
+
+<form method="post" asp-page-handler="Convert">
+    <input type="hidden" value="@spaceId" name="spaceId">
+    @if (Model.SpacePageModel.Space.IsManifestSpace())
+    {
+        <input type="hidden" value="false" name="manifestMode">
+        <button type="submit" class="btn btn-primary">
+            Convert to 'Normal' mode
+        </button>
+    }
+    else
+    {
+        <input type="hidden" value="true" name="manifestMode">
+        <button type="submit" class="btn btn-primary">
+            Convert to 'Manifest' mode
+        </button>
+    }
+</form>
 
 <form action="/dropzone/@Model.Customer/@Model.Space/local"
       class="dropzone"

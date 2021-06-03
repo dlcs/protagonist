@@ -9,7 +9,6 @@ namespace Portal.Features.Spaces.Requests
     /// <summary>
     /// Request to get details of space from API.
     /// </summary>
-    /// <remarks>This is temporary to verify API handling</remarks>
     public class GetSpaceDetails : IRequest<SpacePageModel>
     {
         public int SpaceId { get; set; }
