@@ -12,6 +12,8 @@ namespace Portal.Features.Spaces.Models
         
         public Uri? NamedQuery { get; set; }
         
+        public Uri? MiradorViewer { get; set; }
+
         public bool IsManifestSpace { get; set; }
     }
 }
