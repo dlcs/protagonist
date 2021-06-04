@@ -37,7 +37,7 @@ namespace Portal.Features.Spaces.Requests
             var customerId = principal.GetCustomerId();
             // TODO - throw if null
 
-            return dbContext.Spaces.AsNoTracking().Where(s => s.Customer == customerId);
+            return dbContext.Spaces.AsNoTracking().Where(s => s.Customer == customerId).OrderBy(s => s.Id);
         }
     }
 }

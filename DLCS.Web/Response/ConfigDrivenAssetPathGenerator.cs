@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using DLCS.Core;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -40,11 +41,11 @@ namespace DLCS.Web.Response
         private string GeneratePathFromTemplate(BaseAssetRequest assetRequest, string host)
         {
             var template = pathTemplateOptions.GetPathTemplateForHost(host);
-            return template
-                .Replace("{prefix}", assetRequest.RoutePrefix)
-                .Replace("{customer}", assetRequest.CustomerPathValue)
-                .Replace("{space}", assetRequest.Space.ToString())
-                .Replace("{assetPath}", assetRequest.AssetPath);
+            return DlcsPathHelpers.GeneratePathFromTemplate(template,
+                prefix: assetRequest.RoutePrefix,
+                customer: assetRequest.CustomerPathValue,
+                space: assetRequest.Space.ToString(),
+                assetPath: assetRequest.AssetPath);
         }
 
         // based on Microsoft.AspNetCore.Http.Extensions.UriHelper.GetDisplayUrl(this HttpRequest request)
