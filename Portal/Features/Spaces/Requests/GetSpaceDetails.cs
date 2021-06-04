@@ -1,12 +1,18 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Linq.Dynamic.Core;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using API.JsonLd;
+using DLCS.Core;
+using DLCS.Core.Settings;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Portal.Legacy;
 using Portal.Features.Spaces.Models;
+using Portal.Settings;
 
 namespace Portal.Features.Spaces.Requests
 {
@@ -35,22 +41,43 @@ namespace Portal.Features.Spaces.Requests
     public class GetSpaceDetailsHandler : IRequestHandler<GetSpaceDetails, SpacePageModel>
     {
         private readonly DlcsClient dlcsClient;
+        private readonly ClaimsPrincipal claimsPrincipal;
+        private readonly PortalSettings portalSettings;
+        private readonly DlcsSettings dlcsSettings;
         private readonly ILogger<GetSpaceDetailsHandler> logger;
 
-        public GetSpaceDetailsHandler(DlcsClient dlcsClient, ILogger<GetSpaceDetailsHandler> logger)
+        public GetSpaceDetailsHandler(
+            DlcsClient dlcsClient, 
+            IOptions<PortalSettings> portalSettings,
+            IOptions<DlcsSettings> dlcsSettings,
+            ClaimsPrincipal claimsPrincipal,
+            ILogger<GetSpaceDetailsHandler> logger)
         {
             this.dlcsClient = dlcsClient;
+            this.claimsPrincipal = claimsPrincipal;
+            this.dlcsSettings = dlcsSettings.Value;
+            this.portalSettings = portalSettings.Value;
             this.logger = logger;
         }
         
         public async Task<SpacePageModel> Handle(GetSpaceDetails request, CancellationToken cancellationToken)
         {
             var images = await GetSpaceImages(request);
-            return new SpacePageModel
+            var space = await dlcsClient.GetSpaceDetails(request.SpaceId);
+            
+            var model = new SpacePageModel
             {
-                Space = await dlcsClient.GetSpaceDetails(request.SpaceId),
-                Images = images
+                Space = space,
+                Images = images,
+                IsManifestSpace = space?.IsManifestSpace() ?? false
             };
+
+            if (model.IsManifestSpace)
+            {
+                SetManifestLinks(model, request);
+            }
+
+            return model;
         }
 
         private async Task<HydraImageCollection?> GetSpaceImages(GetSpaceDetails request)
@@ -64,6 +91,17 @@ namespace Portal.Features.Spaces.Requests
             }
 
             return images;
+        }
+        
+        private void SetManifestLinks(SpacePageModel model, GetSpaceDetails request)
+        {
+            var namedQuery = DlcsPathHelpers.GeneratePathFromTemplate(
+                dlcsSettings.SpaceManifestQuery,
+                customer: claimsPrincipal.GetCustomerId().ToString(),
+                space: request.SpaceId.ToString());
+                
+            model.NamedQuery = new Uri(namedQuery);
+            model.UniversalViewer = new Uri(string.Concat(portalSettings.UVUrl, "?manifest=", namedQuery));
         }
     }
 }

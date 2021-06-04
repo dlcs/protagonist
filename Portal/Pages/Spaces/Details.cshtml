@@ -1,5 +1,4 @@
 ﻿@page "{id}"
-@using API.JsonLd
 @model Portal.Pages.Spaces.Details
 
 @{
@@ -14,12 +13,20 @@
 
 <form method="post" asp-page-handler="Convert">
     <input type="hidden" value="@spaceId" name="spaceId">
-    @if (Model.SpacePageModel.Space.IsManifestSpace())
+    @if (Model.SpacePageModel.IsManifestSpace)
     {
         <input type="hidden" value="false" name="manifestMode">
         <button type="submit" class="btn btn-primary">
             Convert to 'Normal' mode
         </button>
+        <a href="@Model.SpacePageModel.UniversalViewer" class="btn btn-primary" role="button" target="_blank" rel="noopener noreferrer">
+            Universal Viewer
+            <span data-feather="external-link"></span>
+        </a>
+        <a href="@Model.SpacePageModel.NamedQuery" class="btn btn-primary" role="button" target="_blank" rel="noopener noreferrer">
+            DLCS Named Query
+            <span data-feather="external-link"></span>
+        </a>
     }
     else
     {

@@ -11,20 +11,17 @@ using Portal.Features.Spaces.Requests;
 
 namespace Portal.Pages.Spaces
 {
+    [BindProperties]
     public class Details : PageModel
     {
         private readonly IMediator mediator;
         
-        [BindProperty]
         public DlcsSettings DlcsSettings { get; }
         
-        [BindProperty]
         public SpacePageModel SpacePageModel { get; set; }
         
-        [BindProperty]
         public string Customer { get; set; }
         
-        [BindProperty]
         public string Space { get; set; }
 
         public Details(
