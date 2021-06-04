@@ -35,12 +35,7 @@
       id="dropzoneForm">
 </form>
 
-
-<div class="jumbotron" id="nextBox">
-    <button class="btn btn-primary btn-lg disabled" id="iiifify">IIIF-ify this image... &raquo;</button>
-</div>
-
-<table class="table">
+<table class="table" id="assetTable">
     <thead>
     <tr>
         <th scope="col"></th>
@@ -62,7 +57,7 @@
                         api-image="@image"
                         class="iiifpreview" 
                         settings="@Model.DlcsSettings"
-                        small="28" large="@Model.DlcsSettings.PortalThumb" />
+                        small="28" large="200" />
                 }
             </td>
             <td>@image.Number1</td>
@@ -80,7 +75,6 @@
 <script src="https://cdn.jsdelivr.net/npm/dropzone@5.9.2/dist/dropzone.min.js"></script>
 <script>
 
-    document.getElementById('nextBox').style.display = "none";
     Dropzone.options.dropzoneForm = {
         paramName: "file", // The name that will be used to transfer the file
         maxFilesize: 10, // MB,
@@ -91,22 +85,24 @@
             this.on("error", fileSuccess);
             this.on("queuecomplete", queuecomplete);
             this.on("drop", drop);
-            this.on("dragenter", () => console.log("DRAG"));
             window.pDropZone = this;
         }
     };
     
         function fileSuccess(file, response) {
-            log(response.message);
+            log(response.message);            
+            $("#assetTable tbody").load(window.location.href + " #assetTable tbody tr", function () {
+                // remove dropZone icon
+            });
         }
 
         function queuecomplete() {
             log("queuecomplete");
-            setNext(true);
+            // setNext(true);
         }
 
         function drop(e) {
-            setNext(false);
+            // setNext(false);
             if (e.dataTransfer.files.length > 0) {
                 // dropzone 
             } else {
@@ -146,9 +142,9 @@
             .then(data => {
                 log("uploaded external url " + url);
                 if (window.pDropZone.getQueuedFiles().length === 0 && window.pDropZone.getUploadingFiles().length === 0) {
-                    setNext(true);
+                    // setNext(true);
                 } else {
-                    setNext(false);
+                    // setNext(false);
                 }
             })
             .catch((error) => {
@@ -161,23 +157,6 @@
             console.log(s);
         }
 
-        function setNext(available) {
-            log("available: " + available);
-            let link = document.getElementById('iiifify');
-            if (window.pDropZone.getAcceptedFiles().length > 1) {
-                link.innerText = 'IIIF-ify these images »';
-            } else {
-                link.innerText = 'IIIF-ify this image »';
-            }
-            if (available) {
-                document.getElementById('nextBox').style.display = "";
-                link.disabled = "disabled";
-                link.setAttribute('class', 'btn btn-primary btn-lg');
-            } else {
-                link.disabled = "";
-                link.setAttribute('class', 'btn btn-primary btn-lg disabled');
-            }
-        }
 </script>
 }
 
