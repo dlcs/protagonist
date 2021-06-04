@@ -1,4 +1,5 @@
 ﻿@page "{id}"
+@using API.JsonLd
 @model Portal.Pages.Spaces.Details
 
 @{
@@ -9,6 +10,8 @@
 @section header
 {
     <link href="https://cdn.jsdelivr.net/npm/dropzone@5.9.2/dist/min/dropzone.min.css" rel="stylesheet" />
+    <link href="~/assets/dist/css/jquery-ui.min.css" rel="stylesheet" />
+    <link href="~/assets/dist/css/jquery-ui.structure.min.css" rel="stylesheet" />
 }
 
 <form method="post" asp-page-handler="Convert">
@@ -42,51 +45,83 @@
       id="dropzoneForm">
 </form>
 
-<table class="table" id="assetTable">
+<form method="post" asp-page-handler="ReOrder">
+    <input type="hidden" value="@spaceId" name="spaceId">
+    
+    <div class="btn-group" role="group" aria-label="Ordering1" id="saveOrderGroup">
+        <input type="submit" class="btn btn-primary" name="save-order" id="saveOrder" value="Save Order" />
+    </div>
+    <table class="table" id="assetTable">
     <thead>
     <tr>
         <th scope="col"></th>
         <th scope="col">n1</th>
         <th scope="col">Name</th>
         <th scope="col">Created</th>
+    @if (Model.SpacePageModel.Space.IsManifestSpace())
+    {
+        <th></th>
+    }
     </tr>
     </thead>
-    <tbody>
-    @foreach (var image in Model.SpacePageModel.Images.Members)
+<tbody>
+@{
+    int rowIndex = 0;
+    foreach (var image in Model.SpacePageModel.Images.Members)
     {
         <tr>
             <td>
                 @if (image.Family == 'I')
                 {
-                    <iiif-thumb 
+                    <iiif-thumb
                         customer-url-part="@Model.Customer"
                         space-url-part="@Model.Space"
                         api-image="@image"
-                        class="iiifpreview" 
+                        class="iiifpreview"
                         settings="@Model.DlcsSettings"
-                        small="28" large="200" />
+                        small="28" large="200"/>
                 }
             </td>
             <td>@image.Number1</td>
-            <td><a asp-page="/Images/Index" 
-                   asp-route-space="@Model.Space" 
+            <td>
+                <a asp-page="/Images/Index"
+                   asp-route-space="@Model.Space"
                    asp-route-image="@image.GetLastPathElement()">@image.GetLastPathElement()</a></td>
             <td>@image.Created</td>
+        @if (Model.SpacePageModel.Space.IsManifestSpace())
+        {
+            <td>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-primary move" data-move="up">↑</button>
+                    <button type="button" class="btn btn-sm  btn-outline-primary move" data-move="down">↓</button>
+                </div>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm  btn-outline-primary move" data-move="top">↟</button>
+                    <button type="button" class="btn btn-sm  btn-outline-primary move" data-move="bottom">↡</button>
+                </div>
+                <input type="hidden" name="row-id-@(rowIndex)" value="@image.Id" />
+                <input type="text" class="updated-order" name="row-index-@(rowIndex)" value="@(rowIndex++)" />
+            </td>
+        }
         </tr>
     }
-    </tbody>
+}
+</tbody>
 </table>
+
+</form>
 
 @section Scripts
 {
-<script src="https://cdn.jsdelivr.net/npm/dropzone@5.9.2/dist/dropzone.min.js"></script>
-<script>
+    <script src="https://cdn.jsdelivr.net/npm/dropzone@5.9.2/dist/dropzone.min.js"></script>
+    <script src="~/assets/dist/js/jquery-ui.min.js"></script>
+    <script>
 
     Dropzone.options.dropzoneForm = {
         paramName: "file", // The name that will be used to transfer the file
         maxFilesize: 10, // MB,
         maxFiles: 32,
-        dictDefaultMessage: "Drop images from your computer or the web",
+        dictDefaultMessage: "Upload images by dropping them here",
         init: function() {
             this.on("success", fileSuccess);
             this.on("error", fileSuccess);
@@ -100,16 +135,15 @@
             log(response.message);            
             $("#assetTable tbody").load(window.location.href + " #assetTable tbody tr", function () {
                 // remove dropZone icon
+                // rebind move events
             });
         }
 
         function queuecomplete() {
             log("queuecomplete");
-            // setNext(true);
         }
 
         function drop(e) {
-            // setNext(false);
             if (e.dataTransfer.files.length > 0) {
                 // dropzone 
             } else {
@@ -149,9 +183,9 @@
             .then(data => {
                 log("uploaded external url " + url);
                 if (window.pDropZone.getQueuedFiles().length === 0 && window.pDropZone.getUploadingFiles().length === 0) {
-                    // setNext(true);
+                    // 
                 } else {
-                    // setNext(false);
+                    // 
                 }
             })
             .catch((error) => {
@@ -163,6 +197,53 @@
             // $('#logoutput').append(s + "<br/>");
             console.log(s);
         }
+        
+        let fixHelperModified = function(e, tr) {
+            let $originals = tr.children();
+            let $helper = tr.clone();
+            $helper.children().each(function(index) {
+                $(this).width($originals.eq(index).width())
+            });
+            return $helper;
+        }
+        
+        function updateOrder() {
+            $('.updated-order').each(function (i) {
+                $(this).val(i++);
+            });
+        }
+            
+        
+        function bindTable(){
+            $("#assetTable .move").bind("click", function(ev) {
+                ev.preventDefault();
+                let op = $(this).attr("data-move");
+                let row = $(this).parents("tr:first");
+                if (op === "up") {
+                    row.insertBefore(row.prev());
+                } else if (op === "down") {
+                    row.insertAfter(row.next());
+                } else if (op === "top") {
+                    row.insertBefore(row.parent().children().first())
+                } else if (op === "bottom") {
+                    row.insertAfter(row.parent().children().last())
+                }        
+                updateOrder();
+            });
+            $("#assetTable tbody").sortable({
+                helper: fixHelperModified,
+                stop: updateOrder
+            }); // .disableSelection();        
+            $("tbody").sortable({
+                distance: 5,
+                delay: 100,
+                opacity: 0.6,
+                cursor: 'move',
+                update: function() {}
+            });
+        }
+        
+        bindTable();
 
 </script>
 }
