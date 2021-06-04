@@ -141,5 +141,18 @@ namespace Portal.Legacy
             var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);
             return new StringContent(jsonString, Encoding.UTF8, "application/json");
         }
+
+        public async Task<HydraImageCollection> PatchImages(HydraImageCollection images, int spaceId)
+        {
+            int? customerId = currentUser.GetCustomerId();
+            string uri = $"/customers/{customerId}/spaces/{spaceId}/images";
+            foreach (var image in images.Members)
+            {
+                image.ModelId = $"{customerId}/{spaceId}/{image.ModelId}";
+            }
+            var response = await httpClient.PatchAsync(uri, ApiBody(images));
+            var patched = await response.ReadAsJsonAsync<HydraImageCollection>(true, jsonSerializerSettings);
+            return patched;
+        }
     }
 }
