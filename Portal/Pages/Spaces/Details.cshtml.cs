@@ -52,5 +52,13 @@ namespace Portal.Pages.Spaces
 
             return Page();
         }
+
+        public async Task<IActionResult> OnPostConvert(int spaceId, bool manifestMode)
+        {
+            // TODO - handle failure
+            var result = await mediator.Send(new ToggleManifestMode(spaceId, manifestMode));
+
+            return RedirectToPage("/spaces/details", new {id = spaceId});
+        }
     }
 }

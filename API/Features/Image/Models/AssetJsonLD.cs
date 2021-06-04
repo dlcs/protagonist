@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using API.JsonLd;
 using Newtonsoft.Json;
 
 namespace API.Features.Image.Models
@@ -9,16 +10,9 @@ namespace API.Features.Image.Models
     // TODO - Ideally we could inherit from DLCS.Model.Assets.Asset here but would need to make all props nullable
     // and I'm unsure of side effects
 
-    public class AssetJsonLD 
+    public class AssetJsonLD  : JsonLdBase
     {
-        [JsonProperty("@context")]
-        public string? Context { get; set; }
-        
-        [JsonProperty("@type")]
-        public string? Type { get; set; }
-        
-        [JsonProperty("@id")]
-        public string? Id { get; set; }
+        public override string Type => "Image";
         public DateTime? Created { get; set; }
         public string? Origin { get; set; }
         public List<string>? Tags { get; set; }

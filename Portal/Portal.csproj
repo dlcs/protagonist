@@ -8,6 +8,7 @@
     <ItemGroup>
       <PackageReference Include="Amazon.Extensions.Configuration.SystemsManager" Version="2.1.0" />
       <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="5.0.1" />
+      <PackageReference Include="AWSSDK.S3" Version="3.7.0.29" />
       <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.17" />
       <PackageReference Include="Destructurama.Attributed" Version="2.0.0" />
       <PackageReference Include="MediatR" Version="9.0.0" />
@@ -48,10 +49,6 @@
       <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\js\bootstrap.min.js" />
       <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\dist\js\bootstrap.min.js.map" />
       <_ContentIncludedByDefault Remove="wwwroot\lib\bootstrap\LICENSE" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Controllers" />
     </ItemGroup>
 
 </Project>

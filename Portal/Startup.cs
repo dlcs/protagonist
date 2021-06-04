@@ -1,10 +1,14 @@
 using System;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using Amazon.S3;
 using DLCS.Core.Encryption;
 using DLCS.Core.Settings;
 using DLCS.Mediatr.Behaviours;
+using DLCS.Model.Storage;
 using DLCS.Repository;
+using DLCS.Repository.Spaces;
+using DLCS.Repository.Storage.S3;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -68,7 +72,10 @@ namespace Portal
                 .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
                 .AddMediatR(typeof(Startup))
                 .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
-                .AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditBehaviour<,>));
+                .AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditBehaviour<,>))
+                .AddAWSService<IAmazonS3>()
+                .AddSingleton<IBucketReader, BucketReader>()
+                .AddTransient<ISpaceRepository, SpaceRepository>();
 
             services.AddDbContext<DlcsContext>(opts =>
                 opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
@@ -82,6 +89,7 @@ namespace Portal
                 client.BaseAddress = dlcsOptions.ApiRoot;
                 client.DefaultRequestHeaders.Accept
                     .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                client.DefaultRequestHeaders.Add("User-Agent", "DLCS-Portal-Protagonist");
                 client.Timeout = TimeSpan.FromMilliseconds(dlcsOptions.DefaultTimeoutMs);
             });
 

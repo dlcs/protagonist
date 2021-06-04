@@ -43,7 +43,7 @@ namespace API
                 .ConfigureMediatR()
                 .ConfigureSwagger()
                 .AddAWSService<IAmazonS3>()
-                .AddSingleton<IBucketReader, BucketReader>();;
+                .AddSingleton<IBucketReader, BucketReader>();
 
             services.AddDlcsDelegatedBasicAuth(options => options.Realm = "DLCS-API");
             
