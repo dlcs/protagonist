@@ -1,6 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -40,7 +38,7 @@ namespace Portal.Pages.Spaces
         public async Task<IActionResult> OnGetAsync(int id)
         {
             Space = id.ToString();
-            SpacePageModel = await mediator.Send(new GetSpaceDetails(id, nameof(Image.Number1)));
+            SpacePageModel = await mediator.Send(new GetSpaceDetails(id, nameof(API.JsonLd.Image.Number1)));
 
             if (SpacePageModel.Space == null)
             {
@@ -73,7 +71,7 @@ namespace Portal.Pages.Spaces
                     orderDict[imageId] = order;
                 }
             }
-            SpacePageModel = await mediator.Send(new GetSpaceDetails {SpaceId = spaceId});
+            SpacePageModel = await mediator.Send(new GetSpaceDetails(spaceId));
             var images = SpacePageModel.Images;
             if (images != null)
             {
