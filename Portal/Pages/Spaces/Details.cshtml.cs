@@ -6,27 +6,22 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 using Portal.Features.Spaces.Models;
 using Portal.Features.Spaces.Requests;
 
 namespace Portal.Pages.Spaces
 {
+    [BindProperties]
     public class Details : PageModel
     {
         private readonly IMediator mediator;
-        private readonly ClaimsPrincipal currentUser;
         
-        [BindProperty]
         public DlcsSettings DlcsSettings { get; }
         
-        [BindProperty]
         public SpacePageModel SpacePageModel { get; set; }
         
-        [BindProperty]
         public string Customer { get; set; }
         
-        [BindProperty]
         public string Space { get; set; }
 
         public Details(
@@ -36,14 +31,13 @@ namespace Portal.Pages.Spaces
         {
             this.mediator = mediator;
             DlcsSettings = dlcsSettings.Value;
-            this.currentUser = currentUser;
             this.Customer = (currentUser.GetCustomerId() ?? -1).ToString();
         }
         
         public async Task<IActionResult> OnGetAsync(int id)
         {
             Space = id.ToString();
-            SpacePageModel = await this.mediator.Send(new GetSpaceDetails {SpaceId = id});
+            SpacePageModel = await mediator.Send(new GetSpaceDetails(id, nameof(Image.Number1)));
 
             if (SpacePageModel.Space == null)
             {

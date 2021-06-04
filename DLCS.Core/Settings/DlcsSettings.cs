@@ -30,6 +30,14 @@ namespace DLCS.Core.Settings
         /// </summary>
         public int PortalThumb { get; set; }
 
+        /// <summary>
+        /// The AWS region that DLCS is running in
+        /// </summary>
         public string Region { get; set; } = "eu-west-1";
+        
+        /// <summary>
+        /// URL format of NamedQuery for generating manifest for space.
+        /// </summary>
+        public string SpaceManifestQuery { get; set; }
     }
 }
