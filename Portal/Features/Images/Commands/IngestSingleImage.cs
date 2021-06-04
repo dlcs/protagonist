@@ -81,12 +81,11 @@ namespace Portal.Features.Images.Commands
         {
             var spaceCount =
                 await spaceRepository.GetImageCountForSpace(claimsPrincipal.GetCustomerId().Value, request.SpaceId);
-            var nextCount = (spaceCount ?? 0) + 1;
             return new AssetJsonLD
             {
                 Origin = objectInBucket.GetHttpUri(),
-                Number1 = nextCount,
-                String1 = nextCount.ToString()
+                Number1 = spaceCount,
+                String1 = spaceCount.ToString()
             };
         }
     }
