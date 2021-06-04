@@ -102,6 +102,7 @@ namespace Portal.Features.Spaces.Requests
                 
             model.NamedQuery = new Uri(namedQuery);
             model.UniversalViewer = new Uri(string.Concat(portalSettings.UVUrl, "?manifest=", namedQuery));
+            model.MiradorViewer = new Uri(string.Concat(portalSettings.MiradorUrl, "?manifest=", namedQuery));
         }
     }
 }
