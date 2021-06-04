@@ -10,33 +10,27 @@ using Portal.Features.Spaces.Requests;
 
 namespace Portal.Pages.Images
 {
+    [BindProperties]
     public class Index : PageModel
     {
         private readonly IMediator mediator;
-        private readonly ClaimsPrincipal currentUser;
         
-        [BindProperty]
         public DlcsSettings DlcsSettings { get; }
-        
-        [BindProperty]
-        public string Customer { get; set; }
-        
+
         public Image Image { get; set; }
         
         public Index(
             IMediator mediator,
-        IOptions<DlcsSettings> dlcsSettings,
+            IOptions<DlcsSettings> dlcsSettings,
             ClaimsPrincipal currentUser)
         {
             this.mediator = mediator;
             DlcsSettings = dlcsSettings.Value;
-            this.currentUser = currentUser;
-            this.Customer = (currentUser.GetCustomerId() ?? -1).ToString();
         }
 
-        public async Task<IActionResult> OnGetAsync(int space, string id)
+        public async Task<IActionResult> OnGetAsync(int space, string image)
         {
-            Image = await this.mediator.Send(new GetImage {SpaceId = space, ImageId = id});
+            Image = await this.mediator.Send(new GetImage {SpaceId = space, ImageId = image});
 
             return Page();
         }

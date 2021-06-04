@@ -132,7 +132,7 @@
     };
     
         function fileSuccess(file, response) {
-            log(response.message);            
+            log(response.message);
             $("#assetTable tbody").load(window.location.href + " #assetTable tbody tr", function () {
                 // remove dropZone icon
                 // rebind move events
