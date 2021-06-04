@@ -48,9 +48,12 @@
 <form method="post" asp-page-handler="ReOrder">
     <input type="hidden" value="@spaceId" name="spaceId">
     
-    <div class="btn-group" role="group" aria-label="Ordering1" id="saveOrderGroup">
-        <input type="submit" class="btn btn-primary" name="save-order" id="saveOrder" value="Save Order" />
-    </div>
+    @if (Model.SpacePageModel.IsManifestSpace)
+    {
+        <div class="btn-group" role="group" aria-label="Ordering1" id="saveOrderGroup">
+            <input type="submit" class="btn btn-primary" name="save-order" id="saveOrder" value="Save Order"/>
+        </div>
+    }
     <table class="table" id="assetTable">
     <thead>
     <tr>
@@ -58,7 +61,7 @@
         <th scope="col">n1</th>
         <th scope="col">Name</th>
         <th scope="col">Created</th>
-    @if (Model.SpacePageModel.Space.IsManifestSpace())
+    @if (Model.SpacePageModel.IsManifestSpace)
     {
         <th></th>
     }
@@ -88,7 +91,7 @@
                    asp-route-space="@Model.Space"
                    asp-route-image="@image.GetLastPathElement()">@image.GetLastPathElement()</a></td>
             <td>@image.Created</td>
-        @if (Model.SpacePageModel.Space.IsManifestSpace())
+        @if (Model.SpacePageModel.IsManifestSpace)
         {
             <td>
                 <div class="btn-group" role="group">
