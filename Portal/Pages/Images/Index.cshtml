@@ -2,9 +2,68 @@
 @model Portal.Pages.Images.Index
 
 @{
-    ViewData["Title"] = @Model.Image.Id;
+    ViewData["Title"] = Model.Image.GetLastPathElement();
 }
 
-<p>
-Image info here for @Model.Image.Id
-</p>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <tbody>
+        <tr>
+            <td>Created</td>
+            <td>@Model.Image.Created</td>
+        </tr>
+        <tr>
+            <td>Batch</td>
+            <td>@Model.Image.Batch</td>
+        </tr>
+        <tr>
+            <td>Origin</td>
+            <td>@Model.Image.Origin</td>
+        </tr>
+        <tr>
+            <td>Width</td>
+            <td>@Model.Image.Width</td>
+        </tr>
+        <tr>
+            <td>Height</td>
+            <td>@Model.Image.Height</td>
+        </tr>
+        <tr>
+            <td>String1</td>
+            <td>@Model.Image.String1</td>
+        </tr>
+        <tr>
+            <td>String2</td>
+            <td>@Model.Image.String2</td>
+        </tr>
+        <tr>
+            <td>String3</td>
+            <td>@Model.Image.String3</td>
+        </tr>
+        <tr>
+            <td>Number1</td>
+            <td>@Model.Image.Number1</td>
+        </tr>
+        <tr>
+            <td>Number2</td>
+            <td>@Model.Image.Number2</td>
+        </tr>
+        <tr>
+            <td>Number3</td>
+            <td>@Model.Image.Number3</td>
+        </tr>
+        <tr>
+            <td>Tags</td>
+            <td>@string.Join(",", Model.Image.Tags)</td>
+        </tr>
+        <tr>
+            <td>Roles</td>
+            <td>@string.Join(",", Model.Image.Roles)</td>
+        </tr>
+        <tr>
+            <td>MaxUnauthorised</td>
+            <td>@Model.Image.MaxUnauthorised</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
