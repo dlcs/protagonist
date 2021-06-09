@@ -105,3 +105,24 @@ img.iiifpreview {
   max-height: 30px;
   cursor: pointer;
 }
+
+#assetTable.manifest tr td {
+  cursor: move !important;
+}
+
+#assetTable.manifest tr:hover td {
+  background-color: #ddd;
+}
+
+.move {
+  padding:2px 4px;
+  font-size: 1em;
+}
+
+.move-lots {
+  padding:2px;
+}
+
+.form-switch {
+  margin: 0.6em 0;
+}
