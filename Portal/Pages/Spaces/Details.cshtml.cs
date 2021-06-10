@@ -48,8 +48,9 @@ namespace Portal.Pages.Spaces
             return Page();
         }
 
-        public async Task<IActionResult> OnPostConvert(int spaceId, bool manifestMode)
+        public async Task<IActionResult> OnPostConvert(int spaceId)
         {
+            var manifestMode = Request.Form.ContainsKey("manifest-mode");
             // TODO - handle failure
             var result = await mediator.Send(new ToggleManifestMode(spaceId, manifestMode));
 
