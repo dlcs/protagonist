@@ -238,11 +238,7 @@ namespace DLCS.Repository
 
                 entity.HasIndex(e => e.Reference3, "IX_ImagesByReference3");
 
-                entity.HasIndex(e => new { e.Id, e.Customer, e.Space, e.Batch }, "IX_ImagesBySpace_NotWellcome")
-                    .HasFilter("(\"Customer\" <> 2)");
-
-                entity.HasIndex(e => new { e.Customer, e.Space }, "IX_ImagesBySpace_NotWellcomeSpace1")
-                    .HasFilter("((\"Customer\" <> 2) OR ((\"Customer\" = 2) AND (\"Space\" <> 1)))");
+                entity.HasIndex(e => new { e.Customer, e.Space }, "IX_ImagesBySpace");
 
                 entity.Property(e => e.Id).HasMaxLength(500);
 
