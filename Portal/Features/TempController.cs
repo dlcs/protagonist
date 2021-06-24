@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace Portal.Features
 {
+    // TODO - this is a temporary controller to verify integration tests
     [ApiController]
     [Route("[controller]/[action]")]
     public class TempController: Controller
@@ -30,7 +31,6 @@ namespace Portal.Features
             var listObjects = await amazonS3.ListObjectsAsync(new ListObjectsRequest
                 {BucketName = dlcsSettings.OriginBucket});
             
-            // NOTE - this is temporary to verify integration tests
             return new JsonResult(new
             {
                 spaces = await context.Spaces.CountAsync(),

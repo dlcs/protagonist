@@ -12,9 +12,19 @@ TestContainers is used in 3 fixtures. These fixtures implement xunit's `IAsyncLi
 * `LocalStackFixture` -  starts localstack image, configures AWS clients + seeds basic resources (e.g. buckets/queues). Public properties expose AWS clients for use in tests any by `WebApplicationFactory`.
 * `StorageFixtures` - this contains the above 2, exposed as public properties. Only one `ICollectionFixture` can be used per test class so this wraps both.
 
-`ProtagonistAppFactory` is a [`WebApplicationFactory`](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.testing.webapplicationfactory-1?view=aspnetcore-5.0) that is run as a `ClassFixture<T>`. This has a couple of methods to take connectionString and `LocalStackFixture` to replace any running instances in target `Startup`
+`ProtagonistAppFactory` is a [`WebApplicationFactory`](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.testing.webapplicationfactory-1?view=aspnetcore-5.0) that is run as a `ClassFixture<T>`. This has a couple of methods to take connectionString and `LocalStackFixture` to replace any running instances in target `Startup`.
 
 > TODO - figure a better way for managing how these are set?
+
+## Authentication
+
+`ProtagonistAppFactory` adds a new `AuthenticationHandler` to make it easier to make authenticated requests. It's currently Portal specific in that it will add a portal user. 2 extension methods for `HttpClient` are used to make it easier to make requests:
+
+* `AsCustomer(this HttpClient client, int customer = 2)` - if specified gives "Customer" role. `httpClient.AsAdmin().GetAsync("/admin");`
+* `AsAdmin(this HttpClient client, int customer = 2)` - if specified gives Admin role (in addition to "Customer"). `httpClient.AsCustomer(4).GetAsync("/admin");`
+
+This may need to differ between different services and may need to be moved.
+
 
 ### Troubleshooting
 
