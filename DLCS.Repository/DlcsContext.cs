@@ -54,6 +54,12 @@ namespace DLCS.Repository
             modelBuilder.HasPostgresExtension("tablefunc")
                 .HasAnnotation("Relational:Collation", "en_US.UTF-8");
 
+            modelBuilder.HasSequence<long>("batch_id_sequence")
+                .StartsAt(570185)
+                .IncrementsBy(1)
+                .HasMin(1)
+                .HasMax(9223372036854775807);
+
             modelBuilder.Entity<ActivityGroup>(entity =>
             {
                 entity.HasKey(e => e.Group);
