@@ -51,9 +51,6 @@ namespace Portal.Tests.Integration
         [InlineData("/Admin")]
         public async Task Get_AuthPages_Returns401(string url)
         {
-            // Arrange
-            var expectedRedirect = $"http://localhost/Account/Login?ReturnUrl={WebUtility.UrlEncode(url)}";
-            
             // Act
             var response = await httpClient.GetAsync(url);
 

@@ -41,6 +41,13 @@ namespace Portal.Tests.Integration.Infrastructure
             DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         }
         
+        /// <summary>
+        /// Delete any standing data
+        /// </summary>
+        public void CleanUp()
+            => DbContext.Database.ExecuteSqlRaw(@"
+                DELETE FROM ""Spaces""");
+        
         public async Task InitializeAsync()
         {
             // Start DB + apply migrations
