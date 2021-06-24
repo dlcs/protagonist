@@ -54,8 +54,6 @@ namespace Portal.Tests.Integration
         public async Task Get_ReturnsAllSpacesForCustomer()
         {
             // Arrange
-            httpClient.AsCustomer();
-
             // Add 3 spaces - 2 for this customer and 1 for another
             await dbContext.Spaces.AddRangeAsync(
                 new Space {Customer = 1, Id = 1, Created = DateTime.Now, Name = "space1"},
@@ -66,7 +64,7 @@ namespace Portal.Tests.Integration
             await dbContext.SaveChangesAsync();
 
             // Act
-            var response = await httpClient.GetAsync("/spaces");
+            var response = await httpClient.AsCustomer().GetAsync("/spaces");
             var htmlParser = new HtmlParser();
             var document = htmlParser.ParseDocument(await response.Content.ReadAsStreamAsync());
             var table = document.QuerySelector("table.table") as IHtmlTableElement;

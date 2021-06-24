@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using DLCS.Repository;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Portal.Tests.Integration.Infrastructure;
@@ -13,12 +12,10 @@ namespace Portal.Tests.Integration
     [Collection(DatabaseCollection.CollectionName)]
     public class BasicAccessTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
-        private readonly DlcsContext dbContext;
         private readonly HttpClient httpClient;
 
         public BasicAccessTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
         {
-            dbContext = dbFixture.DbContext;
             httpClient = factory
                 .WithConnectionString(dbFixture.ConnectionString)
                 .CreateClient(new WebApplicationFactoryClientOptions
@@ -62,11 +59,8 @@ namespace Portal.Tests.Integration
         [InlineData("/Admin")]
         public async Task Get_AdminPages_LoggedInAsCustomer_Returns403(string url)
         {
-            // Arrange
-            httpClient.AsCustomer();
-            
             // Act
-            var response = await httpClient.GetAsync(url);
+            var response = await httpClient.AsCustomer().GetAsync(url);
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -76,11 +70,8 @@ namespace Portal.Tests.Integration
         [InlineData("/Admin")]
         public async Task Get_AdminPages_LoggedInAsAdmin_ReturnsSuccessAndCorrectContentType(string url)
         {
-            // Arrange
-            httpClient.AsAdmin();
-            
             // Act
-            var response = await httpClient.GetAsync(url);
+            var response = await httpClient.AsAdmin().GetAsync(url);
 
             // Assert
             response.EnsureSuccessStatusCode();

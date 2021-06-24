@@ -12,16 +12,18 @@ namespace Portal.Tests.Integration.Infrastructure
 {
     public static class TestAuthHandlerX
     {
-        public static void AsAdmin(this HttpClient client, int customer = 2)
+        public static HttpClient AsAdmin(this HttpClient client, int customer = 2)
         {
             client.DefaultRequestHeaders.Authorization = 
                 new AuthenticationHeaderValue($"admin|{customer}");
+            return client;
         }
         
-        public static void AsCustomer(this HttpClient client, int customer = 2)
+        public static HttpClient AsCustomer(this HttpClient client, int customer = 2)
         {
             client.DefaultRequestHeaders.Authorization = 
                 new AuthenticationHeaderValue($"user|{customer}");
+            return client;
         }
     }
     

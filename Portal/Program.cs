@@ -40,13 +40,14 @@ namespace Portal
                 .ConfigureAppConfiguration((context, builder) =>
                 {
                     var isDevelopment = context.HostingEnvironment.IsDevelopment();
+                    var isTesting = context.HostingEnvironment.IsEnvironment("Testing");
                     builder.AddSystemsManager(configurationSource =>
                     {
                         configurationSource.Path = "/protagonist/";
                         configurationSource.ReloadAfter = TimeSpan.FromMinutes(90);
 
                         // Using ParameterStore optional if Development
-                        configurationSource.Optional = isDevelopment;
+                        configurationSource.Optional = isDevelopment || isTesting;
                     });
 
                     // If development then ensure appsettings.Development.json wins

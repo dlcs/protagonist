@@ -15,9 +15,10 @@ namespace Portal.Tests.Integration.Infrastructure
     public class DlcsDatabaseFixture : IAsyncLifetime
     {
         private readonly PostgreSqlTestcontainer postgresContainer;
+        
         public DlcsContext DbContext { get; }
         public string ConnectionString { get; }
-
+        
         public DlcsDatabaseFixture()
         {
             var postgresBuilder = new TestcontainersBuilder<PostgreSqlTestcontainer>()
@@ -27,8 +28,8 @@ namespace Portal.Tests.Integration.Infrastructure
                     Password = "postgres_pword",
                     Username = "postgres"
                 })
-                .WithName("protagonist_test")
-                .WithCleanUp(true);
+                .WithCleanUp(true)
+                .WithLabel("protagonist_test", "True");
 
             postgresContainer = postgresBuilder.Build();
             ConnectionString = postgresContainer.ConnectionString;
@@ -63,9 +64,12 @@ namespace Portal.Tests.Integration.Infrastructure
             }
         }
 
-        public Task DisposeAsync()
-        {
-            return postgresContainer.StopAsync();
-        }
+        public Task DisposeAsync() => postgresContainer.StopAsync();
+    }
+
+    [CollectionDefinition(CollectionName)]
+    public class DatabaseCollection : ICollectionFixture<DlcsDatabaseFixture>
+    {
+        public const string CollectionName = "Database Collection";
     }
 }
