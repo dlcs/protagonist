@@ -54,6 +54,12 @@ namespace DLCS.Repository
             modelBuilder.HasPostgresExtension("tablefunc")
                 .HasAnnotation("Relational:Collation", "en_US.UTF-8");
 
+            modelBuilder.HasSequence<long>("batch_id_sequence")
+                .StartsAt(570185)
+                .IncrementsBy(1)
+                .HasMin(1)
+                .HasMax(9223372036854775807);
+
             modelBuilder.Entity<ActivityGroup>(entity =>
             {
                 entity.HasKey(e => e.Group);
@@ -238,11 +244,7 @@ namespace DLCS.Repository
 
                 entity.HasIndex(e => e.Reference3, "IX_ImagesByReference3");
 
-                entity.HasIndex(e => new { e.Id, e.Customer, e.Space, e.Batch }, "IX_ImagesBySpace_NotWellcome")
-                    .HasFilter("(\"Customer\" <> 2)");
-
-                entity.HasIndex(e => new { e.Customer, e.Space }, "IX_ImagesBySpace_NotWellcomeSpace1")
-                    .HasFilter("((\"Customer\" <> 2) OR ((\"Customer\" = 2) AND (\"Space\" <> 1)))");
+                entity.HasIndex(e => new { e.Customer, e.Space }, "IX_ImagesBySpace");
 
                 entity.Property(e => e.Id).HasMaxLength(500);
 
