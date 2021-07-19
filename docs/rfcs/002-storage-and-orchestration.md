@@ -146,9 +146,3 @@ A flood of tile requests for the same image can't all trigger orchestration of t
 How well do the mentioned solutions handle multiple concurrent demands for the same file?
 
 What's the most efficient way to optimise this? Avoiding multiple orchestration attempts, but recognising that all the request are independent? We use Redis and some Lua code in NGINX. New Orchestrator proposal puts this logic in C# under Kestrel (hopefully via YARP).
-
-
-
-
-
-

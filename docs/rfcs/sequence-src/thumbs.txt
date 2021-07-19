@@ -1,0 +1,19 @@
+title DLCS Thumbs
+
+actor Requestor
+participant Thumbs
+participant S3
+
+Requestor->Thumbs: /thumbs/ request
+S3-->Thumbs:Read s.json
+Thumbs->+Thumbs:parse request
+Thumbs->-Thumbs:get longest requested edge
+note right of Thumbs:
+  request can be in many formats
+  e.g. "!w,h" "w," ",h" "w,h"
+end note
+alt requested size 'open'
+    S3-->Requestor:stream requested thumb
+else requested size 'auth'
+    Thumbs-->Requestor: not found
+end
