@@ -1,24 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net5.0</TargetFramework>
         <Nullable>enable</Nullable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <LangVersion>default</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="3.1.2" />
-      <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.3.101" />
-      <PackageReference Include="AWSSDK.S3" Version="3.5.3.12" />
-      <PackageReference Include="AWSSDK.SecurityToken" Version="3.5.1.16" />
+      <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="5.0.1" />
+      <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.0.1" />
+      <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.16" />
       <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="9.0.0" />
       <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
-      <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.9" />
+      <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.6" />
       <PackageReference Include="Serilog.AspNetCore" Version="3.4.0" />
       <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\DLCS.Mediatr\DLCS.Mediatr.csproj" />
       <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
       <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
     </ItemGroup>

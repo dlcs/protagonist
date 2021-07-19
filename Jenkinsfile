@@ -50,10 +50,18 @@ pipeline {
   stage('Bounce') {
    steps {
     sh "curl --data '{\"text\": \"Jenkins bouncing ${REGION}/${CLUSTER}/${SERVICE}...\"}' ${SLACK_WEBHOOK_URL}"
-    sh "aws ecs update-service --force-new-deployment --cluster ${CLUSTER} --service ${SERVICE} --region ${REGION}"
-    sh "aws ecs wait services-stable --cluster ${CLUSTER} --services ${SERVICE} --region ${REGION}"
+    script{
+          for (s in env.SERVICE.split(',')) {
+            bounceService(s)
+          }      
+        }
     sh "curl --data '{\"text\": \"${REGION}/${CLUSTER}/${SERVICE} is now stable\"}' ${SLACK_WEBHOOK_URL}"
    }
   }
  }
+}
+
+def bounceService(String service) {
+    sh "aws ecs update-service --force-new-deployment --cluster ${CLUSTER} --service ${service} --region ${REGION}"
+    sh "aws ecs wait services-stable --cluster ${CLUSTER} --services ${service} --region ${REGION}"
 }
