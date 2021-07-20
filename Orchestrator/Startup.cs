@@ -33,11 +33,12 @@ namespace Orchestrator
                         .AllowCredentials());
             });
             
-            services.AddControllers();
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo {Title = "DLCS Orchestrator", Version = "v1"});
-            });
+            // services.AddControllers();
+            
+            // Add the reverse proxy to capability to the server
+            var proxyBuilder = services.AddReverseProxy();
+            // Initialize the reverse proxy from the "ReverseProxy" section of configuration
+            proxyBuilder.LoadFromConfig(configuration.GetSection("ReverseProxy"));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
@@ -47,10 +48,7 @@ namespace Orchestrator
             
             if (env.IsDevelopment())
             {
-                // TODO Do we want to expose swagger in non-dev environment?
-                app
-                    .UseDeveloperExceptionPage()
-                    .UseSwaggerWithUI("DLCS Orchestrator", pathBase);
+                app.UseDeveloperExceptionPage();
             }
 
             app
@@ -60,7 +58,11 @@ namespace Orchestrator
                 .UseSerilogRequestLogging()
                 .UseCors("CorsPolicy")
                 .UseAuthorization()
-                .UseEndpoints(endpoints => { endpoints.MapControllers(); });
+                .UseEndpoints(endpoints =>
+                {
+                    endpoints.MapReverseProxy();
+                    // endpoints.MapControllers();
+                });
         }
     }
 }

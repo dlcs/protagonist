@@ -6,7 +6,7 @@
 
     <ItemGroup>
         <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.1.4" />
+        <PackageReference Include="Yarp.ReverseProxy" Version="1.0.0-preview.12.21328.2" />
     </ItemGroup>
 
     <ItemGroup>
