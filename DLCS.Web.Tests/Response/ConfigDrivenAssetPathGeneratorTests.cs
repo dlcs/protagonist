@@ -5,7 +5,6 @@ using DLCS.Web.Response;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.Extensions.Options;
 using Xunit;
 
@@ -120,7 +119,7 @@ namespace DLCS.Web.Tests.Response
         private ConfigDrivenAssetPathGenerator GetSut(string host)
         {
             var context = new DefaultHttpContext();
-            var request = new DefaultHttpRequest(context);
+            var request = context.Request;
             var contextAccessor = A.Fake<IHttpContextAccessor>();
             A.CallTo(() => contextAccessor.HttpContext).Returns(context);
             request.Host = new HostString(host);
