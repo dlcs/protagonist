@@ -1,14 +1,18 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using DLCS.Repository;
 using DLCS.Web.Configuration;
+using DLCS.Web.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Orchestrator.Images;
 using Orchestrator.Settings;
 using Serilog;
 using Yarp.ReverseProxy.Forwarder;
@@ -26,7 +30,7 @@ namespace Orchestrator
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<OrchestratorSettings>(configuration);
-            
+
             services.AddCors(options =>
             {
                 options.AddPolicy("CorsPolicy",
@@ -37,7 +41,13 @@ namespace Orchestrator
                         .AllowCredentials());
             });
             
-            // services.AddControllers();
+            services.AddDbContext<DlcsContext>(opts =>
+                opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
+            );
+            
+            services
+                .AddHealthChecks()
+                .AddDbContextCheck<DlcsContext>("DLCS-DB");
             
             // Add the reverse proxy to capability to the server
             var proxyBuilder = services.AddReverseProxy();
@@ -48,18 +58,6 @@ namespace Orchestrator
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger,
             IHttpForwarder forwarder)
         {
-            // TODO - move all of this
-            var httpClient = new HttpMessageInvoker(new SocketsHttpHandler
-            {
-                UseProxy = false,
-                AllowAutoRedirect = false,
-                AutomaticDecompression = DecompressionMethods.GZip,
-                UseCookies = false
-            });
-            
-            var transformer = HttpTransformer.Default;
-            var requestOptions = new ForwarderRequestConfig { Timeout = TimeSpan.FromSeconds(100) };
-
             var applicationOptions = configuration.Get<OrchestratorSettings>();
             var pathBase = applicationOptions.PathBase;
 
@@ -78,21 +76,8 @@ namespace Orchestrator
                 .UseEndpoints(endpoints =>
                 {
                     endpoints.MapReverseProxy();
-                    endpoints.Map("/iiif-img/{**catch-all}", async httpContext =>
-                    {
-                        // TODO - move this to a separate handler 
-                        // TODO - get the deliverator id from config, not hardcoded. This is currently going to httpHole
-                        var error = await forwarder.SendAsync(httpContext, "http://127.0.0.1:8081", httpClient,
-                            requestOptions, transformer);
-                        // Check if the proxy operation was successful
-                        if (error != ForwarderError.None)
-                        {
-                            var errorFeature = httpContext.Features.Get<IForwarderErrorFeature>();
-                            var exception = errorFeature.Exception;
-                        }
-                    });
-
-                    // endpoints.MapControllers();
+                    endpoints.MapImageHandling();
+                    endpoints.MapHealthChecks("/health");
                 });
         }
     }

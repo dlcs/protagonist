@@ -5,11 +5,13 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="5.0.8" />
         <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
         <PackageReference Include="Yarp.ReverseProxy" Version="1.0.0-preview.12.21328.2" />
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
       <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
     </ItemGroup>
 
