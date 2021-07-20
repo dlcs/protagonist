@@ -37,6 +37,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Portal.Tests", "Portal.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API.Tests", "API.Tests\API.Tests.csproj", "{6D31DA62-5634-4B20-8EB3-6ED8D8427D5B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orchestrator", "Orchestrator\Orchestrator.csproj", "{44C6C63D-D254-4D08-B35F-26CCED364D9F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -107,6 +109,10 @@ Global
 		{6D31DA62-5634-4B20-8EB3-6ED8D8427D5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D31DA62-5634-4B20-8EB3-6ED8D8427D5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6D31DA62-5634-4B20-8EB3-6ED8D8427D5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44C6C63D-D254-4D08-B35F-26CCED364D9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44C6C63D-D254-4D08-B35F-26CCED364D9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44C6C63D-D254-4D08-B35F-26CCED364D9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44C6C63D-D254-4D08-B35F-26CCED364D9F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

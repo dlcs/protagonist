@@ -4,6 +4,7 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.Model.Storage;
 using DLCS.Repository.Storage.S3;
+using DLCS.Web.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -89,19 +90,10 @@ namespace API
             
             var applicationOptions = configuration.Get<ApiSettings>();
             var pathBase = applicationOptions.PathBase;
-            var havePathBase = !string.IsNullOrEmpty(pathBase);
-            if (havePathBase)
-            {
-                logger.LogInformation("Using PathBase '{pathBase}'", pathBase);
-                app.UsePathBase($"/{pathBase}");
-            }
-            else
-            {
-                logger.LogInformation("No PathBase specified");
-            }
 
             app
-                .UseSwaggerWithUI(pathBase)
+                .HandlePathBase(pathBase, logger)
+                .UseSwaggerWithUI("DLCS API", pathBase, "v2")
                 .UseRouting()
                 .UseSerilogRequestLogging()
                 .UseCors("CorsPolicy")
