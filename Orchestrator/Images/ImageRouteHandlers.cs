@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Orchestrator.ReverseProxy;
+using Yarp.ReverseProxy.Configuration;
 using Yarp.ReverseProxy.Forwarder;
 
 namespace Orchestrator.Images
@@ -45,6 +46,8 @@ namespace Orchestrator.Images
             var forwarder = endpoints.ServiceProvider.GetService<IHttpForwarder>();
             var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
                 .CreateLogger(nameof(ImageRouteHandlers));
+            
+            var cc = endpoints.ServiceProvider.GetService<IProxyConfigProvider>();
 
             endpoints.Map("/iiif-img/{customer}/{space}/{image}/{**catchAll}", async httpContext =>
             {

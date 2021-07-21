@@ -10,7 +10,6 @@ using DLCS.Repository.Storage.S3;
 using DLCS.Web.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -18,7 +17,7 @@ using Microsoft.Extensions.Logging;
 using Orchestrator.Images;
 using Orchestrator.Settings;
 using Serilog;
-using SixLabors.ImageSharp;
+using Yarp.ReverseProxy.Transforms.Builder;
 
 namespace Orchestrator
 {
@@ -61,8 +60,9 @@ namespace Orchestrator
                 .AddNpgSql(configuration.GetPostgresSqlConnection());
             
             // Add the reverse proxy to capability to the server
-            var proxyBuilder = services.AddReverseProxy();
-            proxyBuilder.LoadFromConfig(configuration.GetSection("ReverseProxy"));
+            var proxyBuilder = services
+                .AddReverseProxy()
+                .LoadFromConfig(configuration.GetSection("ReverseProxy"));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
@@ -88,6 +88,25 @@ namespace Orchestrator
                     endpoints.MapImageHandling();
                     endpoints.MapHealthChecks("/health");
                 });
+        }
+    }
+    
+    
+    public class Thing : ITransformProvider
+    {
+        public void ValidateRoute(TransformRouteValidationContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void ValidateCluster(TransformClusterValidationContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void Apply(TransformBuilderContext context)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }
