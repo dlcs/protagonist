@@ -46,12 +46,10 @@ namespace Orchestrator.Images
             var forwarder = endpoints.ServiceProvider.GetService<IHttpForwarder>();
             var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
                 .CreateLogger(nameof(ImageRouteHandlers));
-            
-            var cc = endpoints.ServiceProvider.GetService<IProxyConfigProvider>();
 
-            endpoints.Map("/iiif-img/{customer}/{space}/{image}/{**catchAll}", async httpContext =>
+            endpoints.Map("/iiif-img/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
             {
-                logger.LogDebug("Catch-all handling request for {Path}", httpContext.Request.Path);
+                logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
                 var proxyResponse = await requestHandler.HandleRequest(httpContext);
                 await ProxyRequest(logger, httpContext, forwarder, proxyResponse);
             });

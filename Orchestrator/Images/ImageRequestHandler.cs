@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.PathElements;
+using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Orchestrator.ReverseProxy;
@@ -14,49 +15,45 @@ namespace Orchestrator.Images
     {
         private readonly ILogger<ImageRequestHandler> logger;
         private readonly IAssetRepository assetRepository;
-        private readonly IPathCustomerRepository pathCustomerRepository;
         private readonly IThumbRepository thumbnailRepository;
+        private readonly AssetDeliveryPathParser assetDeliveryPathParser;
 
         public ImageRequestHandler(
             ILogger<ImageRequestHandler> logger,
             IAssetRepository assetRepository,
-            IPathCustomerRepository pathCustomerRepository,
-            IThumbRepository thumbnailRepository)
+            IThumbRepository thumbnailRepository,
+            AssetDeliveryPathParser assetDeliveryPathParser)
         {
             this.logger = logger;
             this.assetRepository = assetRepository;
-            this.pathCustomerRepository = pathCustomerRepository;
             this.thumbnailRepository = thumbnailRepository;
+            this.assetDeliveryPathParser = assetDeliveryPathParser;
         }
 
         public async Task<ProxyAction> HandleRequest(HttpContext httpContext)
         {
             logger.LogDebug("Handling request for {Path}", httpContext.Request.Path);
             
-            var requestModel = new ImageRequestModel(httpContext);
+            var assetRequest = await assetDeliveryPathParser.Parse(httpContext.Request.Path);
             
             // If "HEAD" then add CORS - is this required here?
-            
-            // Call /requiresAuth/
-            var asset = await GetAsset(requestModel);
+
+            var asset = await GetAsset(assetRequest);
             if (DoesAssetRequireAuth(asset))
             {
                 logger.LogDebug("Request for {Path} requires auth, proxying to orchestrator", httpContext.Request.Path);
                 return new ProxyAction(ProxyTo.Orchestrator);
             }
             
-            if (IsRequestForUVThumb(httpContext, requestModel))
+            if (IsRequestForUVThumb(httpContext, assetRequest))
             {
                 logger.LogDebug("Request for {Path} looks like UV thumb, proxying to thumbs", httpContext.Request.Path);
-                return new ProxyAction(ProxyTo.Thumbs, GetUVThumbReplacementPath(requestModel));
+                return new ProxyAction(ProxyTo.Thumbs, GetUVThumbReplacementPath(assetRequest));
             }
 
-            var customerPathElement = await pathCustomerRepository.GetCustomer(requestModel.Customer);
-            requestModel.SetCustomerPathElement(customerPathElement);
-
-            if (requestModel.ImageRequest.Region.Full && !requestModel.ImageRequest.Size.Max)
+            if (assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max)
             {
-                if (await IsRequestForKnownThumbSize(requestModel))
+                if (await IsRequestForKnownThumbSize(assetRequest))
                 {
                     logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs", httpContext.Request.Path);
                     return new ProxyAction(ProxyTo.Thumbs);
@@ -66,9 +63,9 @@ namespace Orchestrator.Images
             return new ProxyAction(ProxyTo.CachingProxy);
         }
 
-        private async Task<Asset> GetAsset(ImageRequestModel requestModel)
+        private async Task<Asset> GetAsset(AssetDeliveryRequest assetRequest)
         {
-            var imageId = requestModel.ToAssetImageId();
+            var imageId = assetRequest.GetAssetImageId();
             var asset = await assetRepository.GetAsset(imageId.ToString());
             return asset;
         }
@@ -76,18 +73,18 @@ namespace Orchestrator.Images
         private bool DoesAssetRequireAuth(Asset asset) => !string.IsNullOrWhiteSpace(asset.Roles);
         
         // TODO have a flag to enable/disable this logic via config
-        private bool IsRequestForUVThumb(HttpContext httpContext, ImageRequestModel requestModel)
-            => requestModel.ImageRequestPath == "full/90,/0/default.jpg" && httpContext.Request.QueryString.Value.Contains("t=");
+        private bool IsRequestForUVThumb(HttpContext httpContext, AssetDeliveryRequest requestModel)
+            => requestModel.IIIFImageRequest.ImageRequestPath == "/full/90,/0/default.jpg" && httpContext.Request.QueryString.Value.Contains("t=");
         
         // TODO pull size and /thumbs/ slug from config
-        private string GetUVThumbReplacementPath(ImageRequestModel requestModel)
-            => $"/thumbs/{requestModel.ToAssetImageId()}/full/!200,200/0/default.jpg";
+        private string GetUVThumbReplacementPath(AssetDeliveryRequest requestModel)
+            => $"thumbs/{requestModel.GetAssetImageId()}/full/!200,200/0/default.jpg";
 
-        private async Task<bool> IsRequestForKnownThumbSize(ImageRequestModel requestModel)
+        private async Task<bool> IsRequestForKnownThumbSize(AssetDeliveryRequest requestModel)
         {
             // NOTE - would this be quicker, since we have Asset, to calculate sizes? Would need Policy
-            var candidate = await thumbnailRepository.GetThumbnailSizeCandidate(requestModel.CustomerId.Value,
-                requestModel.SpaceId, requestModel.ImageRequest);
+            var candidate = await thumbnailRepository.GetThumbnailSizeCandidate(requestModel.Customer.Id,
+                requestModel.Space, requestModel.IIIFImageRequest);
             return candidate.KnownSize;
         }
     }

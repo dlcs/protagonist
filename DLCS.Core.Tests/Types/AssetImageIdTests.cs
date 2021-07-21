@@ -10,7 +10,7 @@ namespace DLCS.Core.Tests.Types
         [Fact]
         public void ToString_CorrectFormat()
         {
-            var assetImageId = new AssetImageId("19", "4", "my-first-image");
+            var assetImageId = new AssetImageId(19, 4, "my-first-image");
             const string expected = "19/4/my-first-image";
 
             assetImageId.ToString().Should().Be(expected);
@@ -23,8 +23,8 @@ namespace DLCS.Core.Tests.Types
 
             var assetImageId = AssetImageId.FromString(assetId);
 
-            assetImageId.Customer.Should().Be("19");
-            assetImageId.Space.Should().Be("4");
+            assetImageId.Customer.Should().Be(19);
+            assetImageId.Space.Should().Be(4);
             assetImageId.Image.Should().Be("my-first-image");
         }
 

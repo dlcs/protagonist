@@ -67,7 +67,7 @@ namespace Thumbs
             }
         }
 
-        private async Task WritePixels(HttpContext context, ThumbnailRequest request)
+        private async Task WritePixels(HttpContext context, AssetDeliveryRequest request)
         {
             await using var thumbnailResponse =
                 await thumbRepository.GetThumbnail(request.Customer.Id, request.Space, request.IIIFImageRequest);
@@ -92,14 +92,14 @@ namespace Thumbs
             }
         }
 
-        private static async Task WriteRequestDump(HttpContext context, ThumbnailRequest request)
+        private static async Task WriteRequestDump(HttpContext context, AssetDeliveryRequest request)
         {
             await context.Response.WriteAsync(JsonConvert.SerializeObject(request));
         }
 
         // TODO: observe Accepts header - https://iiif.io/api/image/3.0/#51-image-information-request
         // TODO: Don't construct the URL from what came in on the Request.
-        private async Task WriteInfoJson(HttpContext context, ThumbnailRequest request)
+        private async Task WriteInfoJson(HttpContext context, AssetDeliveryRequest request)
         {
             var sizes = await thumbRepository.GetOpenSizes(request.Customer.Id, request.Space, request.IIIFImageRequest);
             if (sizes.IsNullOrEmpty())
@@ -121,9 +121,9 @@ namespace Thumbs
             await context.Response.WriteAsync(infoJsonText);
         }
 
-        private Task RedirectToInfoJson(HttpContext context, ThumbnailRequest thumbnailRequest)
+        private Task RedirectToInfoJson(HttpContext context, AssetDeliveryRequest assetDeliveryRequest)
         {
-            var redirectPath = pathGenerator.GetPathForRequest(thumbnailRequest);
+            var redirectPath = pathGenerator.GetPathForRequest(assetDeliveryRequest);
             if (!redirectPath.EndsWith('/'))
             {
                 redirectPath += "/";

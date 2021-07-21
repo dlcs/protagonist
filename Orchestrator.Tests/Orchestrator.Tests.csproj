@@ -21,11 +21,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Images" />
+      <ProjectReference Include="..\Orchestrator\Orchestrator.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Orchestrator\Orchestrator.csproj" />
+      <Folder Include="Images" />
     </ItemGroup>
 
 </Project>

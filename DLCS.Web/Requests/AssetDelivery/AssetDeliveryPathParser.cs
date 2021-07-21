@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DLCS.Model.PathElements;
 using IIIF.ImageApi;
+using Microsoft.AspNetCore.Http;
 
 namespace DLCS.Web.Requests.AssetDelivery
 {
@@ -16,12 +17,12 @@ namespace DLCS.Web.Requests.AssetDelivery
             this.pathCustomerRepository = pathCustomerRepository;
         }
 
-        public async Task<ThumbnailRequest> Parse(string path)
+        public async Task<AssetDeliveryRequest> Parse(string path)
         {
-            var thumbnailRequest = new ThumbnailRequest();
-            await ParseBaseAssetRequest(path, thumbnailRequest);
-            thumbnailRequest.IIIFImageRequest = ImageRequest.Parse(path, thumbnailRequest.BasePath);
-            return thumbnailRequest;
+            var assetDeliveryRequest = new AssetDeliveryRequest();
+            await ParseBaseAssetRequest(path, assetDeliveryRequest);
+            assetDeliveryRequest.IIIFImageRequest = ImageRequest.Parse(path, assetDeliveryRequest.BasePath);
+            return assetDeliveryRequest;
         }
 
         private async Task ParseBaseAssetRequest(string path, BaseAssetRequest request)
@@ -37,6 +38,7 @@ namespace DLCS.Web.Requests.AssetDelivery
             request.Customer = await pathCustomerRepository.GetCustomer(parts[customerIndex]);
             request.Space = int.Parse(parts[spacesIndex]);
             request.AssetPath = string.Join("/", parts.Skip(3));
+            request.AssetId = request.AssetPath.Split("/")[0];
             request.BasePath = new StringBuilder("/", 50)
                 .Append(parts[routeIndex])
                 .Append("/")

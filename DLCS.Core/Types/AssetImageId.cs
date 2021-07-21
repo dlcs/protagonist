@@ -9,7 +9,7 @@ namespace DLCS.Core.Types
     /// <param name="Customer">Id of customer</param>
     /// <param name="Space">Id of space</param>
     /// <param name="Image">Id of image</param>
-    public record AssetImageId(string Customer, string Space, string Image)
+    public record AssetImageId(int Customer, int Space, string Image)
     {
         public override string ToString()
         {
@@ -39,7 +39,7 @@ namespace DLCS.Core.Types
                 throw new FormatException("AssetImageId string must be in format customer/space/image");
             }
 
-            return new AssetImageId(parts[0], parts[1], parts[2]);
+            return new AssetImageId(int.Parse(parts[0]), int.Parse(parts[1]), parts[2]);
         }
     }
 }

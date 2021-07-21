@@ -8,6 +8,7 @@ using DLCS.Repository.Assets;
 using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
 using DLCS.Web.Configuration;
+using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -39,6 +40,7 @@ namespace Orchestrator
                 .AddSingleton<ICustomerRepository, CustomerRepository>()
                 .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
                 .AddSingleton<IAssetRepository, AssetRepository>()
+                .AddSingleton<AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>()
