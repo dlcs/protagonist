@@ -37,12 +37,9 @@ namespace DLCS.Repository.Assets
 
         public async Task<ThumbnailResponse> GetThumbnail(int customerId, int spaceId, ImageRequest imageRequest)
         {
-            var openSizes = await GetSizes(customerId, spaceId, imageRequest);
-            if (openSizes == null) return ThumbnailResponse.Empty;
+            var sizeCandidate = await GetThumbnailSizeCandidate(customerId, spaceId, imageRequest);
             
-            var sizes = openSizes.Select(Size.FromArray).ToList();
-
-            var sizeCandidate = ThumbnailCalculator.GetCandidate(sizes, imageRequest, settings.CurrentValue.Resize);
+            if (sizeCandidate == null) return ThumbnailResponse.Empty;
             
             if (sizeCandidate.KnownSize)
             {
@@ -79,7 +76,19 @@ namespace DLCS.Repository.Assets
             return ThumbnailResponse.Empty;
         }
 
-        public async Task<List<int[]>?> GetSizes(int customerId, int spaceId, ImageRequest imageRequest)
+        public async Task<SizeCandidate?> GetThumbnailSizeCandidate(int customerId, int spaceId,
+            ImageRequest imageRequest)
+        {
+            var openSizes = await GetOpenSizes(customerId, spaceId, imageRequest);
+            if (openSizes == null) return null;
+            
+            var sizes = openSizes.Select(Size.FromArray).ToList();
+
+            var sizeCandidate = ThumbnailCalculator.GetCandidate(sizes, imageRequest, settings.CurrentValue.Resize);
+            return sizeCandidate;
+        }
+
+        public async Task<List<int[]>?> GetOpenSizes(int customerId, int spaceId, ImageRequest imageRequest)
         {
             var newLayoutResult = await EnsureNewLayout(customerId, spaceId, imageRequest);
             if (newLayoutResult == ReorganiseResult.AssetNotFound)
@@ -88,7 +97,7 @@ namespace DLCS.Repository.Assets
                 return null;
             }
 
-            ObjectInBucket sizesList = new ObjectInBucket
+            ObjectInBucket sizesList = new()
             {
                 Bucket = settings.CurrentValue.ThumbsBucket,
                 Key = string.Concat(GetKeyRoot(customerId, spaceId, imageRequest), ThumbsSettings.Constants.SizesJsonKey)
@@ -108,14 +117,12 @@ namespace DLCS.Repository.Assets
             return thumbnailSizes.Open;
         }
 
-        private ObjectInBucket GetObjectInBucket(int customerId, int spaceId, ImageRequest imageRequest, int longestEdge)
-        {
-            return new ObjectInBucket
+        private ObjectInBucket GetObjectInBucket(int customerId, int spaceId, ImageRequest imageRequest, int longestEdge) 
+            => new()
             {
                 Bucket = settings.CurrentValue.ThumbsBucket,
                 Key = $"{GetKeyRoot(customerId, spaceId, imageRequest)}open/{longestEdge}.jpg"
             };
-        }
 
         private string GetKeyRoot(int customerId, int spaceId, ImageRequest imageRequest) 
             => $"{customerId}/{spaceId}/{imageRequest.Identifier}/";

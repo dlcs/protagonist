@@ -101,7 +101,7 @@ namespace Thumbs
         // TODO: Don't construct the URL from what came in on the Request.
         private async Task WriteInfoJson(HttpContext context, ThumbnailRequest request)
         {
-            var sizes = await thumbRepository.GetSizes(request.Customer.Id, request.Space, request.IIIFImageRequest);
+            var sizes = await thumbRepository.GetOpenSizes(request.Customer.Id, request.Space, request.IIIFImageRequest);
             if (sizes.IsNullOrEmpty())
             {
                 await StatusCodeResponse
