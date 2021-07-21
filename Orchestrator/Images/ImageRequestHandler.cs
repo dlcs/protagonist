@@ -1,118 +1,94 @@
-﻿using System;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
-using DLCS.Core.Types;
-using DLCS.Repository;
-using Microsoft.AspNetCore.Builder;
+﻿using System.Threading.Tasks;
+using DLCS.Model.Assets;
+using DLCS.Model.PathElements;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Yarp.ReverseProxy.Forwarder;
+using Orchestrator.ReverseProxy;
 
 namespace Orchestrator.Images
 {
-    public static class ImageRequestHandlers
+    /// <summary>
+    /// Reverse-proxy routing logic for /iiif-img/ requests 
+    /// </summary>
+    public class ImageRequestHandler
     {
-        private static HttpMessageInvoker httpClient;
-        private static HttpTransformer transformer;
-        private static ForwarderRequestConfig requestOptions;
+        private readonly ILogger<ImageRequestHandler> logger;
+        private readonly IAssetRepository assetRepository;
+        private readonly IPathCustomerRepository pathCustomerRepository;
+        private readonly IThumbRepository thumbnailRepository;
 
-        static ImageRequestHandlers()
+        public ImageRequestHandler(
+            ILogger<ImageRequestHandler> logger,
+            IAssetRepository assetRepository,
+            IPathCustomerRepository pathCustomerRepository,
+            IThumbRepository thumbnailRepository)
         {
-            httpClient = new HttpMessageInvoker(new SocketsHttpHandler
-            {
-                UseProxy = false,
-                AllowAutoRedirect = false,
-                AutomaticDecompression = DecompressionMethods.GZip,
-                UseCookies = false
-            });
-
-            transformer = HttpTransformer.Default;
-            requestOptions = new ForwarderRequestConfig {Timeout = TimeSpan.FromSeconds(100)};
-        }
-        
-        public static void MapImageHandling(this IEndpointRouteBuilder endpoints)
-        {
-            var forwarder = endpoints.ServiceProvider.GetService<IHttpForwarder>();
-            var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
-                .CreateLogger(nameof(ImageRequestHandlers));
-
-            endpoints.Map("/iiif-img/{customer}/{space}/{image}/{**catchAll}", async httpContext =>
-                await CatchAll(logger, httpContext, forwarder)
-            );
+            this.logger = logger;
+            this.assetRepository = assetRepository;
+            this.pathCustomerRepository = pathCustomerRepository;
+            this.thumbnailRepository = thumbnailRepository;
         }
 
-        private static async Task CatchAll(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder)
+        public async Task<ProxyAction> HandleRequest(HttpContext httpContext)
         {
-            logger.LogDebug("Catch-all handling request for {Path}", httpContext.Request.Path);
-
-            var dlcsContext = httpContext.RequestServices.GetService<DlcsContext>();
-
-            var customer = httpContext.Request.RouteValues["customer"]?.ToString();
-            var space = httpContext.Request.RouteValues["space"]?.ToString();
-            var image = httpContext.Request.RouteValues["image"]?.ToString();
-            var catchAll = httpContext.Request.RouteValues["catchAll"]?.ToString();
+            logger.LogDebug("Handling request for {Path}", httpContext.Request.Path);
             
-            // If "HEAD" then add CORS
+            var requestModel = new ImageRequestModel(httpContext);
+            
+            // If "HEAD" then add CORS - is this required here?
             
             // Call /requiresAuth/
-            var requiresAuth = await ImageRequiresAuth(dlcsContext, customer, space, image);
-            if (requiresAuth)
+            var asset = await GetAsset(requestModel);
+            if (DoesAssetRequireAuth(asset))
             {
-                // TODO - proxy to orchestrator
                 logger.LogDebug("Request for {Path} requires auth, proxying to orchestrator", httpContext.Request.Path);
-                await ProxyRequest(logger, httpContext, forwarder);
-                return;
+                return new ProxyAction(ProxyTo.Orchestrator);
             }
             
-            // TODO - add UV_THUMB_HACK as an appSetting
-            if (catchAll == "full/90,/0/default.jpg" && httpContext.Request.QueryString.Value.Contains("t="))
+            if (IsRequestForUVThumb(httpContext, requestModel))
             {
-                // TODO - proxy to thumbs
                 logger.LogDebug("Request for {Path} looks like UV thumb, proxying to thumbs", httpContext.Request.Path);
-                await ProxyRequest(logger, httpContext, forwarder);
-                return;
+                return new ProxyAction(ProxyTo.Thumbs, GetUVThumbReplacementPath(requestModel));
+            }
+
+            var customerPathElement = await pathCustomerRepository.GetCustomer(requestModel.Customer);
+            requestModel.SetCustomerPathElement(customerPathElement);
+
+            if (requestModel.ImageRequest.Region.Full && !requestModel.ImageRequest.Size.Max)
+            {
+                if (await IsRequestForKnownThumbSize(requestModel))
+                {
+                    logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs", httpContext.Request.Path);
+                    return new ProxyAction(ProxyTo.Thumbs);
+                }
             }
             
-            /*
-             * MapCustomerToId
-             * Parse the size parameter to see if we can handle it with an exact size
-             * If so, return S3 URL? (put to /thumbs)
-             * Else, proxy Varnish
-             */
-
-            // TODO - get the deliverator id from config, not hardcoded. This is currently going to httpHole
-            await ProxyRequest(logger, httpContext, forwarder);
+            return new ProxyAction(ProxyTo.CachingProxy);
         }
 
-        private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder)
+        private async Task<Asset> GetAsset(ImageRequestModel requestModel)
         {
-            var error = await forwarder.SendAsync(httpContext, "http://127.0.0.1:8081", httpClient,
-                requestOptions, transformer);
-
-            // Check if the proxy operation was successful
-            if (error != ForwarderError.None)
-            {
-                var errorFeature = httpContext.Features.Get<IForwarderErrorFeature>();
-                logger.LogError(errorFeature.Exception!, "Error in catch-all handler for {Path}",
-                    httpContext.Request.Path);
-            }
+            var imageId = requestModel.ToAssetImageId();
+            var asset = await assetRepository.GetAsset(imageId.ToString());
+            return asset;
         }
 
-        private static async Task<bool> ImageRequiresAuth(DlcsContext dbContext, string customer, string space, string image)
-        {
-            // TODO - cache this. Use a repo?
-            var imageId = new AssetImageId(customer, space, image);
-            var roles = await dbContext.Images.AsNoTracking()
-                .Where(i => i.Id == imageId.ToString())
-                .Select(i => i.Roles)
-                .SingleAsync();
+        private bool DoesAssetRequireAuth(Asset asset) => !string.IsNullOrWhiteSpace(asset.Roles);
+        
+        // TODO have a flag to enable/disable this logic via config
+        private bool IsRequestForUVThumb(HttpContext httpContext, ImageRequestModel requestModel)
+            => requestModel.ImageRequestPath == "full/90,/0/default.jpg" && httpContext.Request.QueryString.Value.Contains("t=");
+        
+        // TODO pull size and /thumbs/ slug from config
+        private string GetUVThumbReplacementPath(ImageRequestModel requestModel)
+            => $"/thumbs/{requestModel.ToAssetImageId()}/full/!200,200/0/default.jpg";
 
-            return !string.IsNullOrWhiteSpace(roles);
+        private async Task<bool> IsRequestForKnownThumbSize(ImageRequestModel requestModel)
+        {
+            // NOTE - would this be quicker, since we have Asset, to calculate sizes? Would need Policy
+            var candidate = await thumbnailRepository.GetThumbnailSizeCandidate(requestModel.CustomerId.Value,
+                requestModel.SpaceId, requestModel.ImageRequest);
+            return candidate.KnownSize;
         }
     }
 }

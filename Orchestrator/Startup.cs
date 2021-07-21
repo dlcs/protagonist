@@ -1,9 +1,13 @@
-using System;
-using System.Net;
-using System.Net.Http;
+using Amazon.S3;
+using DLCS.Model.Assets;
+using DLCS.Model.Customer;
+using DLCS.Model.PathElements;
+using DLCS.Model.Storage;
 using DLCS.Repository;
+using DLCS.Repository.Assets;
+using DLCS.Repository.Settings;
+using DLCS.Repository.Storage.S3;
 using DLCS.Web.Configuration;
-using DLCS.Web.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +15,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
 using Orchestrator.Images;
 using Orchestrator.Settings;
 using Serilog;
-using Yarp.ReverseProxy.Forwarder;
+using SixLabors.ImageSharp;
 
 namespace Orchestrator
 {
@@ -30,6 +33,18 @@ namespace Orchestrator
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<OrchestratorSettings>(configuration);
+            services.Configure<ThumbsSettings>(configuration.GetSection("Thumbs"));
+            
+            services
+                .AddLazyCache()
+                .AddSingleton<ICustomerRepository, CustomerRepository>()
+                .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
+                .AddSingleton<IAssetRepository, AssetRepository>()
+                .AddSingleton<ImageRequestHandler>()
+                .AddAWSService<IAmazonS3>()
+                .AddSingleton<IBucketReader, BucketReader>()
+                .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
+                .AddSingleton<IThumbRepository, ThumbRepository>();
 
             services.AddCors(options =>
             {
@@ -40,23 +55,17 @@ namespace Orchestrator
                         .SetIsOriginAllowed(host => true)
                         .AllowCredentials());
             });
-            
-            services.AddDbContext<DlcsContext>(opts =>
-                opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
-            );
-            
+
             services
                 .AddHealthChecks()
-                .AddDbContextCheck<DlcsContext>("DLCS-DB");
+                .AddNpgSql(configuration.GetPostgresSqlConnection());
             
             // Add the reverse proxy to capability to the server
             var proxyBuilder = services.AddReverseProxy();
-            // Initialize the reverse proxy from the "ReverseProxy" section of configuration
             proxyBuilder.LoadFromConfig(configuration.GetSection("ReverseProxy"));
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger,
-            IHttpForwarder forwarder)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
             var applicationOptions = configuration.Get<OrchestratorSettings>();
             var pathBase = applicationOptions.PathBase;
