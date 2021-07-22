@@ -18,5 +18,18 @@ namespace Orchestrator.Tests.ReverseProxy
             // Assert
             proxyAction.HasPath.Should().BeFalse();
         }
+
+        [Theory]
+        [InlineData("/this/is/the/way")]
+        [InlineData("this/is/the/way")]
+        public void Ctor_RemovesLeadingSlash(string path)
+        {
+            // Act
+            var proxyAction = new ProxyActionResult(ProxyTo.Thumbs, path);
+            
+            // Assert
+            proxyAction.Path.Should().Be("this/is/the/way");
+            proxyAction.HasPath.Should().BeTrue();
+        }
     }
 }

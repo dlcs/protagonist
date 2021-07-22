@@ -30,7 +30,7 @@ namespace Orchestrator.ReverseProxy
         public ProxyActionResult(ProxyTo target, string? path = null)
         {
             Target = target;
-            Path = path;
+            Path = !string.IsNullOrWhiteSpace(path) && path[0] == '/' ? path[1..] : path;
         }
     }
 

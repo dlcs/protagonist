@@ -37,35 +37,18 @@ namespace Orchestrator.Images
         /// Handle /iiif-img/ request, returning object detailing operation that should be carried out.
         /// </summary>
         /// <param name="httpContext">Incoming <see cref="HttpContext"/> object</param>
-        /// <returns><see cref="ProxyActionResult"/> object containing downstream target</returns>
+        /// <returns><see cref="TryGetAssetDeliveryRequest"/> object containing downstream target</returns>
         public async Task<IProxyActionResult> HandleRequest(HttpContext httpContext)
         {
             logger.LogDebug("Handling request for {Path}", httpContext.Request.Path);
 
-            AssetDeliveryRequest assetRequest;
-            try
+            var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest(httpContext);
+            if (statusCode.HasValue || assetRequest == null)
             {
-                assetRequest = await assetDeliveryPathParser.Parse(httpContext.Request.Path);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                logger.LogError(ex, "Could not find Customer/Space from '{Path}'", httpContext.Request.Path);
-                return new StatusCodeProxyResult(HttpStatusCode.NotFound);
-            }
-            catch (FormatException ex)
-            {
-                logger.LogError(ex, "Error parsing path '{Path}'", httpContext.Request.Path);
-                return new StatusCodeProxyResult(HttpStatusCode.BadRequest);
-            }
-            catch (Exception ex)
-            {
-                // TODO - is this the correct status?
-                logger.LogError(ex, "Error parsing path '{Path}'", httpContext.Request.Path);
-                return new StatusCodeProxyResult(HttpStatusCode.InternalServerError);
+                return new StatusCodeProxyResult(statusCode ?? HttpStatusCode.InternalServerError);
             }
 
             // If "HEAD" then add CORS - is this required here?
-
             var asset = await GetAsset(assetRequest);
             if (DoesAssetRequireAuth(asset))
             {
@@ -84,11 +67,38 @@ namespace Orchestrator.Images
                 if (await IsRequestForKnownThumbSize(assetRequest))
                 {
                     logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs", httpContext.Request.Path);
-                    return new ProxyActionResult(ProxyTo.Thumbs);
+                    return new ProxyActionResult(ProxyTo.Thumbs,
+                        httpContext.Request.Path.ToString().Replace("iiif-img", "thumbs"));
                 }
             }
             
             return new ProxyActionResult(ProxyTo.CachingProxy);
+        }
+
+        private async Task<(AssetDeliveryRequest? assetRequest, HttpStatusCode? statusCode)> TryGetAssetDeliveryRequest(
+            HttpContext httpContext)
+        {
+            try
+            {
+                var assetRequest = await assetDeliveryPathParser.Parse(httpContext.Request.Path);
+                return (assetRequest, null);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                logger.LogError(ex, "Could not find Customer/Space from '{Path}'", httpContext.Request.Path);
+                return (null, HttpStatusCode.NotFound);
+            }
+            catch (FormatException ex)
+            {
+                logger.LogError(ex, "Error parsing path '{Path}'", httpContext.Request.Path);
+                return (null, HttpStatusCode.BadRequest);
+            }
+            catch (Exception ex)
+            {
+                // TODO - is this the correct status?
+                logger.LogError(ex, "Error parsing path '{Path}'", httpContext.Request.Path);
+                return (null, HttpStatusCode.InternalServerError);
+            }
         }
 
         private async Task<Asset> GetAsset(AssetDeliveryRequest assetRequest)
