@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using FakeItEasy;
@@ -83,6 +84,19 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             imageRequest.AssetPath.Should().Be("the-astronaut/full/!800,400/0/default.jpg");
             imageRequest.AssetId.Should().Be("the-astronaut");
             imageRequest.IIIFImageRequest.ImageRequestPath.Should().Be("/full/!800,400/0/default.jpg");
+        }
+
+        [Fact]
+        public async Task Parse_ThrowsFormatException_IfPathInUnknownFormat()
+        {
+            // Arrange
+            const string path = "/iiif-img/full/!800,400/0/default.jpg";
+            
+            // Act
+            Func<Task> action = () => sut.Parse(path);
+            
+            // Assert
+            await action.Should().ThrowAsync<FormatException>();
         }
     }
 }

@@ -8,7 +8,20 @@ using Microsoft.AspNetCore.Http;
 
 namespace DLCS.Web.Requests.AssetDelivery
 {
-    public class AssetDeliveryPathParser
+    /// <summary>
+    /// Contains operations for parsing asset delivery requests.
+    /// </summary>
+    public interface IAssetDeliveryPathParser
+    {
+        /// <summary>
+        /// Parse asset delivery requests to <see cref="AssetDeliveryRequest"/>
+        /// </summary>
+        /// <param name="path">Full asset request path</param>
+        /// <returns>Populated <see cref="AssetDeliveryRequest"/> object</returns>
+        Task<AssetDeliveryRequest> Parse(string path);
+    }
+
+    public class AssetDeliveryPathParser : IAssetDeliveryPathParser
     {
         private readonly IPathCustomerRepository pathCustomerRepository;
 
@@ -35,7 +48,6 @@ namespace DLCS.Web.Requests.AssetDelivery
             
             request.RoutePrefix = parts[routeIndex];
             request.CustomerPathValue = parts[customerIndex];
-            request.Customer = await pathCustomerRepository.GetCustomer(parts[customerIndex]);
             request.Space = int.Parse(parts[spacesIndex]);
             request.AssetPath = string.Join("/", parts.Skip(3));
             request.AssetId = request.AssetPath.Split("/")[0];
@@ -47,6 +59,8 @@ namespace DLCS.Web.Requests.AssetDelivery
                 .Append(parts[spacesIndex])
                 .Append("/")
                 .ToString();
+            
+            request.Customer = await pathCustomerRepository.GetCustomer(parts[customerIndex]);
         }
     }
 }
