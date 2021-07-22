@@ -13,7 +13,7 @@ namespace Orchestrator.Tests.ReverseProxy
         public void HasPath_False_IfNullOrWhiteSpace(string path)
         {
             // Act
-            var proxyAction = new ProxyAction(ProxyTo.Thumbs, path);
+            var proxyAction = new ProxyActionResult(ProxyTo.Thumbs, path);
             
             // Assert
             proxyAction.HasPath.Should().BeFalse();

@@ -40,7 +40,7 @@ namespace Orchestrator
                 .AddSingleton<ICustomerRepository, CustomerRepository>()
                 .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
                 .AddSingleton<IAssetRepository, AssetRepository>()
-                .AddSingleton<AssetDeliveryPathParser>()
+                .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>()

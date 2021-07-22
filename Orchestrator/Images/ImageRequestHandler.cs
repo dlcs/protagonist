@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
@@ -16,13 +19,13 @@ namespace Orchestrator.Images
         private readonly ILogger<ImageRequestHandler> logger;
         private readonly IAssetRepository assetRepository;
         private readonly IThumbRepository thumbnailRepository;
-        private readonly AssetDeliveryPathParser assetDeliveryPathParser;
+        private readonly IAssetDeliveryPathParser assetDeliveryPathParser;
 
         public ImageRequestHandler(
             ILogger<ImageRequestHandler> logger,
             IAssetRepository assetRepository,
             IThumbRepository thumbnailRepository,
-            AssetDeliveryPathParser assetDeliveryPathParser)
+            IAssetDeliveryPathParser assetDeliveryPathParser)
         {
             this.logger = logger;
             this.assetRepository = assetRepository;
@@ -30,25 +33,50 @@ namespace Orchestrator.Images
             this.assetDeliveryPathParser = assetDeliveryPathParser;
         }
 
-        public async Task<ProxyAction> HandleRequest(HttpContext httpContext)
+        /// <summary>
+        /// Handle /iiif-img/ request, returning object detailing operation that should be carried out.
+        /// </summary>
+        /// <param name="httpContext">Incoming <see cref="HttpContext"/> object</param>
+        /// <returns><see cref="ProxyActionResult"/> object containing downstream target</returns>
+        public async Task<IProxyActionResult> HandleRequest(HttpContext httpContext)
         {
             logger.LogDebug("Handling request for {Path}", httpContext.Request.Path);
-            
-            var assetRequest = await assetDeliveryPathParser.Parse(httpContext.Request.Path);
-            
+
+            AssetDeliveryRequest assetRequest;
+            try
+            {
+                assetRequest = await assetDeliveryPathParser.Parse(httpContext.Request.Path);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                logger.LogError(ex, "Could not find Customer/Space from '{Path}'", httpContext.Request.Path);
+                return new StatusCodeProxyResult(HttpStatusCode.NotFound);
+            }
+            catch (FormatException ex)
+            {
+                logger.LogError(ex, "Error parsing path '{Path}'", httpContext.Request.Path);
+                return new StatusCodeProxyResult(HttpStatusCode.BadRequest);
+            }
+            catch (Exception ex)
+            {
+                // TODO - is this the correct status?
+                logger.LogError(ex, "Error parsing path '{Path}'", httpContext.Request.Path);
+                return new StatusCodeProxyResult(HttpStatusCode.InternalServerError);
+            }
+
             // If "HEAD" then add CORS - is this required here?
 
             var asset = await GetAsset(assetRequest);
             if (DoesAssetRequireAuth(asset))
             {
                 logger.LogDebug("Request for {Path} requires auth, proxying to orchestrator", httpContext.Request.Path);
-                return new ProxyAction(ProxyTo.Orchestrator);
+                return new ProxyActionResult(ProxyTo.Orchestrator);
             }
             
             if (IsRequestForUVThumb(httpContext, assetRequest))
             {
                 logger.LogDebug("Request for {Path} looks like UV thumb, proxying to thumbs", httpContext.Request.Path);
-                return new ProxyAction(ProxyTo.Thumbs, GetUVThumbReplacementPath(assetRequest));
+                return new ProxyActionResult(ProxyTo.Thumbs, GetUVThumbReplacementPath(assetRequest));
             }
 
             if (assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max)
@@ -56,11 +84,11 @@ namespace Orchestrator.Images
                 if (await IsRequestForKnownThumbSize(assetRequest))
                 {
                     logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs", httpContext.Request.Path);
-                    return new ProxyAction(ProxyTo.Thumbs);
+                    return new ProxyActionResult(ProxyTo.Thumbs);
                 }
             }
             
-            return new ProxyAction(ProxyTo.CachingProxy);
+            return new ProxyActionResult(ProxyTo.CachingProxy);
         }
 
         private async Task<Asset> GetAsset(AssetDeliveryRequest assetRequest)
@@ -80,6 +108,7 @@ namespace Orchestrator.Images
         private string GetUVThumbReplacementPath(AssetDeliveryRequest requestModel)
             => $"thumbs/{requestModel.GetAssetImageId()}/full/!200,200/0/default.jpg";
 
+        // TODO handle resizing via config. Optionally with path regex (resize X but not Y)
         private async Task<bool> IsRequestForKnownThumbSize(AssetDeliveryRequest requestModel)
         {
             // NOTE - would this be quicker, since we have Asset, to calculate sizes? Would need Policy

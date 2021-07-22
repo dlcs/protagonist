@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Orchestrator.ReverseProxy;
-using Yarp.ReverseProxy.Configuration;
 using Yarp.ReverseProxy.Forwarder;
 
 namespace Orchestrator.Images
@@ -56,8 +55,15 @@ namespace Orchestrator.Images
         }
 
         private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
-            ProxyAction proxyAction)
+            IProxyActionResult proxyActionResult)
         {
+            if (proxyActionResult is StatusCodeProxyResult statusCodeResult)
+            {
+                httpContext.Response.StatusCode = (int)statusCodeResult.StatusCode;
+                return;
+            }
+
+            var proxyAction = proxyActionResult as ProxyActionResult; 
             var root = proxyAction.Target switch
             {
                 ProxyTo.Orchestrator => "http://127.0.0.1:8081",
