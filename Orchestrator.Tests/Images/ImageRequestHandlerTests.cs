@@ -10,8 +10,10 @@ using FluentAssertions;
 using IIIF.ImageApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Orchestrator.Images;
 using Orchestrator.ReverseProxy;
+using Orchestrator.Settings;
 using Xunit;
 
 namespace Orchestrator.Tests.Images
@@ -22,18 +24,17 @@ namespace Orchestrator.Tests.Images
         private readonly IThumbRepository thumbnailRepository;
         private readonly IAssetDeliveryPathParser assetDeliveryPathParser;
         private readonly IPathCustomerRepository customerRepository;
-        private readonly ImageRequestHandler sut;
-        
+        private readonly AssetDeliveryPathParser assetDeliveryPathParserImpl;
+        private readonly IOptions<ProxySettings> defaultSettings;
+
         public ImageRequestHandlerTests()
         {
             assetRepository = A.Fake<IAssetRepository>();
             thumbnailRepository = A.Fake<IThumbRepository>();
             assetDeliveryPathParser = A.Fake<IAssetDeliveryPathParser>();
             customerRepository = A.Fake<IPathCustomerRepository>();
-            var assetDeliveryPathParserImpl = new AssetDeliveryPathParser(customerRepository);
-
-            sut = new ImageRequestHandler(new NullLogger<ImageRequestHandler>(), assetRepository, thumbnailRepository,
-                assetDeliveryPathParserImpl);
+            assetDeliveryPathParserImpl = new AssetDeliveryPathParser(customerRepository);
+            defaultSettings = Options.Create(new ProxySettings());
         }
 
         [Fact]
@@ -41,10 +42,10 @@ namespace Orchestrator.Tests.Images
         {
             // Arrange
             A.CallTo(() => assetDeliveryPathParser.Parse(A<string>._)).ThrowsAsync(new KeyNotFoundException());
+            var sut = GetImageRequestHandlerWithMockPathParser(true);
             
             // Act
-            var systemUnderTest = GetImageRequestHandlerWithMockePathParser();
-            var result = await systemUnderTest.HandleRequest(new DefaultHttpContext());
+            var result = await sut.HandleRequest(new DefaultHttpContext());
             
             // Assert
             result.Should().BeOfType<StatusCodeProxyResult>().Which.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -57,10 +58,10 @@ namespace Orchestrator.Tests.Images
             
             // Arrange
             A.CallTo(() => assetDeliveryPathParser.Parse(A<string>._)).ThrowsAsync(new FormatException());
+            var sut = GetImageRequestHandlerWithMockPathParser(true);
             
             // Act
-            var systemUnderTest = GetImageRequestHandlerWithMockePathParser();
-            var result = await systemUnderTest.HandleRequest(new DefaultHttpContext());
+            var result = await sut.HandleRequest(new DefaultHttpContext());
             
             // Assert
             result.Should().BeOfType<StatusCodeProxyResult>().Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -73,10 +74,10 @@ namespace Orchestrator.Tests.Images
             
             // Arrange
             A.CallTo(() => assetDeliveryPathParser.Parse(A<string>._)).ThrowsAsync(new ApplicationException());
+            var sut = GetImageRequestHandlerWithMockPathParser(true);
             
             // Act
-            var systemUnderTest = GetImageRequestHandlerWithMockePathParser();
-            var result = await systemUnderTest.HandleRequest(new DefaultHttpContext());
+            var result = await sut.HandleRequest(new DefaultHttpContext());
             
             // Assert
             result.Should().BeOfType<StatusCodeProxyResult>()
@@ -92,6 +93,7 @@ namespace Orchestrator.Tests.Images
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetRepository.GetAsset("2/2/test-image")).Returns(new Asset {Roles = "admin"});
+            var sut = GetImageRequestHandlerWithMockPathParser();
 
             // Act
             var result = await sut.HandleRequest(context) as ProxyActionResult;
@@ -111,6 +113,7 @@ namespace Orchestrator.Tests.Images
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetRepository.GetAsset("2/2/test-image")).Returns(new Asset());
+            var sut = GetImageRequestHandlerWithMockPathParser();
 
             // Act
             var result = await sut.HandleRequest(context) as ProxyActionResult;
@@ -119,6 +122,49 @@ namespace Orchestrator.Tests.Images
             result.Target.Should().Be(ProxyTo.Thumbs);
             result.HasPath.Should().BeTrue();
             result.Path.Should().Be("thumbs/2/2/test-image/full/!200,200/0/default.jpg");
+        }
+        
+        [Fact]
+        public async Task Handle_Request_ProxiesToThumbs_OnNewPathFromSettings_IfAssetIsForUvThumb()
+        {
+            // Arrange
+            var context = new DefaultHttpContext();
+            context.Request.Path = "/iiif-img/2/2/test-image/full/90,/0/default.jpg";
+            context.Request.QueryString = new QueryString("?t=123123");
+
+            A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+            A.CallTo(() => assetRepository.GetAsset("2/2/test-image")).Returns(new Asset());
+            var sut = GetImageRequestHandlerWithMockPathParser(settings: Options.Create(new ProxySettings
+                {UVThumbReplacementPath = "!300,500"}));
+
+            // Act
+            var result = await sut.HandleRequest(context) as ProxyActionResult;
+            
+            // Assert
+            result.Target.Should().Be(ProxyTo.Thumbs);
+            result.HasPath.Should().BeTrue();
+            result.Path.Should().Be("thumbs/2/2/test-image/full/!300,500/0/default.jpg");
+        }
+        
+        [Fact]
+        public async Task Handle_Request_ProxiesToCachingProxy_IfAssetIsForUvThumb_UvThumbDisabled()
+        {
+            // Arrange
+            var context = new DefaultHttpContext();
+            context.Request.Path = "/iiif-img/2/2/test-image/full/90,/0/default.jpg";
+            context.Request.QueryString = new QueryString("?t=123123");
+
+            A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+            A.CallTo(() => assetRepository.GetAsset("2/2/test-image")).Returns(new Asset());
+            var sut = GetImageRequestHandlerWithMockPathParser(settings: Options.Create(new ProxySettings
+                {CheckUVThumbs = false}));
+
+            // Act
+            var result = await sut.HandleRequest(context) as ProxyActionResult;
+            
+            // Assert
+            result.Target.Should().Be(ProxyTo.CachingProxy);
+            result.HasPath.Should().BeFalse();
         }
         
         [Fact]
@@ -132,6 +178,7 @@ namespace Orchestrator.Tests.Images
             A.CallTo(() => assetRepository.GetAsset("2/2/test-image")).Returns(new Asset());
             A.CallTo(() => thumbnailRepository.GetThumbnailSizeCandidate(2, 2, A<ImageRequest>._))
                 .Returns(new SizeCandidate(150));
+            var sut = GetImageRequestHandlerWithMockPathParser();
 
             // Act
             var result = await sut.HandleRequest(context) as ProxyActionResult;
@@ -153,6 +200,7 @@ namespace Orchestrator.Tests.Images
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetRepository.GetAsset("2/2/test-image")).Returns(new Asset());
+            var sut = GetImageRequestHandlerWithMockPathParser();
 
             if (knownThumb)
             {
@@ -168,8 +216,12 @@ namespace Orchestrator.Tests.Images
             result.HasPath.Should().BeFalse();
         }
 
-        private ImageRequestHandler GetImageRequestHandlerWithMockePathParser()
-            => new(new NullLogger<ImageRequestHandler>(), assetRepository, thumbnailRepository,
-                assetDeliveryPathParser);
+        private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false,
+            IOptions<ProxySettings> settings = null)
+        {
+            return new(new NullLogger<ImageRequestHandler>(), assetRepository, thumbnailRepository,
+                mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl,
+                settings ?? defaultSettings);
+        }
     }
 }

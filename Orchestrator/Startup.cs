@@ -34,6 +34,7 @@ namespace Orchestrator
         {
             services.Configure<OrchestratorSettings>(configuration);
             services.Configure<ThumbsSettings>(configuration.GetSection("Thumbs"));
+            services.Configure<ProxySettings>(configuration.GetSection("Proxy"));
             
             services
                 .AddLazyCache()

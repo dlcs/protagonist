@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
-using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orchestrator.ReverseProxy;
+using Orchestrator.Settings;
 
 namespace Orchestrator.Images
 {
@@ -20,17 +21,20 @@ namespace Orchestrator.Images
         private readonly IAssetRepository assetRepository;
         private readonly IThumbRepository thumbnailRepository;
         private readonly IAssetDeliveryPathParser assetDeliveryPathParser;
+        private readonly ProxySettings proxySettings;
 
         public ImageRequestHandler(
             ILogger<ImageRequestHandler> logger,
             IAssetRepository assetRepository,
             IThumbRepository thumbnailRepository,
-            IAssetDeliveryPathParser assetDeliveryPathParser)
+            IAssetDeliveryPathParser assetDeliveryPathParser,
+            IOptions<ProxySettings> proxySettings)
         {
             this.logger = logger;
             this.assetRepository = assetRepository;
             this.thumbnailRepository = thumbnailRepository;
             this.assetDeliveryPathParser = assetDeliveryPathParser;
+            this.proxySettings = proxySettings.Value;
         }
 
         /// <summary>
@@ -110,13 +114,13 @@ namespace Orchestrator.Images
 
         private bool DoesAssetRequireAuth(Asset asset) => !string.IsNullOrWhiteSpace(asset.Roles);
         
-        // TODO have a flag to enable/disable this logic via config
         private bool IsRequestForUVThumb(HttpContext httpContext, AssetDeliveryRequest requestModel)
-            => requestModel.IIIFImageRequest.ImageRequestPath == "/full/90,/0/default.jpg" && httpContext.Request.QueryString.Value.Contains("t=");
+            => proxySettings.CheckUVThumbs &&
+               requestModel.IIIFImageRequest.ImageRequestPath == "/full/90,/0/default.jpg" &&
+               httpContext.Request.QueryString.Value.Contains("t=");
         
-        // TODO pull size and /thumbs/ slug from config
-        private string GetUVThumbReplacementPath(AssetDeliveryRequest requestModel)
-            => $"thumbs/{requestModel.GetAssetImageId()}/full/!200,200/0/default.jpg";
+        private string GetUVThumbReplacementPath(AssetDeliveryRequest requestModel) => 
+            $"{proxySettings.ThumbsPath}/{requestModel.GetAssetImageId()}/full/{proxySettings.UVThumbReplacementPath}/0/default.jpg";
 
         // TODO handle resizing via config. Optionally with path regex (resize X but not Y)
         private async Task<bool> IsRequestForKnownThumbSize(AssetDeliveryRequest requestModel)
