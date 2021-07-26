@@ -93,23 +93,4 @@ namespace Orchestrator
                 });
         }
     }
-    
-    
-    public class Thing : ITransformProvider
-    {
-        public void ValidateRoute(TransformRouteValidationContext context)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void ValidateCluster(TransformClusterValidationContext context)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void Apply(TransformBuilderContext context)
-        {
-            throw new System.NotImplementedException();
-        }
-    }
 }
