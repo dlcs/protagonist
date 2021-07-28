@@ -27,6 +27,7 @@ namespace Orchestrator.ReverseProxy
         /// </summary>
         public bool HasPath => !string.IsNullOrWhiteSpace(Path);
         
+        // TODO - differentiate between full + part path?
         public ProxyActionResult(ProxyTo target, string? path = null)
         {
             Target = target;
@@ -79,6 +80,11 @@ namespace Orchestrator.ReverseProxy
         /// <summary>
         /// Caching reverse proxy (Varnish) 
         /// </summary>
-        CachingProxy
+        CachingProxy,
+        
+        /// <summary>
+        /// Proxy response from S3
+        /// </summary>
+        S3
     }
 }

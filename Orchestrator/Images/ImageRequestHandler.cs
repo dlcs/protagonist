@@ -41,7 +41,7 @@ namespace Orchestrator.Images
         /// Handle /iiif-img/ request, returning object detailing operation that should be carried out.
         /// </summary>
         /// <param name="httpContext">Incoming <see cref="HttpContext"/> object</param>
-        /// <returns><see cref="TryGetAssetDeliveryRequest"/> object containing downstream target</returns>
+        /// <returns><see cref="IProxyActionResult"/> object containing downstream target</returns>
         public async Task<IProxyActionResult> HandleRequest(HttpContext httpContext)
         {
             logger.LogDebug("Handling request for {Path}", httpContext.Request.Path);

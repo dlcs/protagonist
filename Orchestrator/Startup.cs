@@ -15,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Orchestrator.AV;
 using Orchestrator.Images;
 using Orchestrator.Settings;
 using Serilog;
@@ -89,6 +90,7 @@ namespace Orchestrator
                 {
                     endpoints.MapReverseProxy();
                     endpoints.MapImageHandling();
+                    endpoints.MapAVHandling();
                     endpoints.MapHealthChecks("/health");
                 });
         }

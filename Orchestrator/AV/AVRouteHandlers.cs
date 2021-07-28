@@ -10,18 +10,18 @@ using Microsoft.Extensions.Logging;
 using Orchestrator.ReverseProxy;
 using Yarp.ReverseProxy.Forwarder;
 
-namespace Orchestrator.Images
+namespace Orchestrator.AV
 {
     /// <summary>
-    /// Route-to-code handlers for /iiif-img/ paths
+    /// Route-to-code handlers for /iiif-av/ paths
     /// </summary>
-    public static class ImageRouteHandlers
+    public static class AVRouteHandlers
     {
         private static readonly HttpMessageInvoker HttpClient;
         private static readonly HttpTransformer DefaultTransformer;
         private static readonly ForwarderRequestConfig RequestOptions;
 
-        static ImageRouteHandlers()
+        static AVRouteHandlers()
         {
             // TODO - should this be shared by AV + Image handling?
             HttpClient = new HttpMessageInvoker(new SocketsHttpHandler
@@ -35,19 +35,19 @@ namespace Orchestrator.Images
             DefaultTransformer = HttpTransformer.Default;
             RequestOptions = new ForwarderRequestConfig {Timeout = TimeSpan.FromSeconds(100)};
         }
-
+        
         /// <summary>
-        /// Add endpoint mappings for /iiif-img/ paths
+        /// Add endpoint mappings for /iiif-av/ paths
         /// </summary>
         /// <param name="endpoints">Current <see cref="IEndpointRouteBuilder"/> object.</param>
-        public static void MapImageHandling(this IEndpointRouteBuilder endpoints)
+        public static void MapAVHandling(this IEndpointRouteBuilder endpoints)
         {
-            var requestHandler = endpoints.ServiceProvider.GetService<ImageRequestHandler>();
+            var requestHandler = endpoints.ServiceProvider.GetService<AVRequestHandler>();
             var forwarder = endpoints.ServiceProvider.GetService<IHttpForwarder>();
             var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
-                .CreateLogger(nameof(ImageRouteHandlers));
+                .CreateLogger(nameof(AVRouteHandlers));
 
-            endpoints.Map("/iiif-img/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
+            endpoints.Map("/iiif-av/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
             {
                 logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
                 var proxyResponse = await requestHandler.HandleRequest(httpContext);
@@ -60,27 +60,13 @@ namespace Orchestrator.Images
         {
             if (proxyActionResult is StatusCodeProxyResult statusCodeResult)
             {
-                httpContext.Response.StatusCode = (int)statusCodeResult.StatusCode;
+                httpContext.Response.StatusCode = (int) statusCodeResult.StatusCode;
                 return;
             }
 
-            // TODO - pick appropriate target - get from routes/clusters?
-            var proxyAction = proxyActionResult as ProxyActionResult; 
-            var root = proxyAction.Target switch
-            {
-                ProxyTo.Orchestrator => "http://127.0.0.1:8081",
-                ProxyTo.Unknown => "http://127.0.0.1:8081", // this should never happen - Orchestrator?
-                ProxyTo.Thumbs => "http://127.0.0.1:8081",
-                ProxyTo.ImageServer => "http://127.0.0.1:8081",
-                ProxyTo.CachingProxy => "http://127.0.0.1:8081",
-                _ => throw new ArgumentOutOfRangeException()
-            };
 
-            var transformer = proxyAction.HasPath
-                ? new PathRewriteTransformer(proxyAction.Path)
-                : DefaultTransformer;
-            
-            var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions, transformer);
+            var error = await forwarder.SendAsync(httpContext, "http://127.0.0.1:8081", HttpClient, RequestOptions,
+                DefaultTransformer);
 
             // Check if the proxy operation was successful
             if (error != ForwarderError.None)
@@ -89,6 +75,22 @@ namespace Orchestrator.Images
                 logger.LogError(errorFeature.Exception!, "Error in catch-all handler for {Path}",
                     httpContext.Request.Path);
             }
+        }
+    }
+
+    /// <summary>
+    /// Reverse-proxy routing logic for /iiif-av/ requests 
+    /// </summary>
+    public class AVRequestHandler
+    {
+        /// <summary>
+        /// Handle /iiif-img/ request, returning object detailing operation that should be carried out.
+        /// </summary>
+        /// <param name="httpContext">Incoming <see cref="HttpContext"/> object</param>
+        /// <returns><see cref="IProxyActionResult"/> object containing downstream target</returns>
+        public async Task<IProxyActionResult> HandleRequest(HttpContext httpContext)
+        {
+            return new ProxyActionResult(ProxyTo.CachingProxy);
         }
     }
 }
