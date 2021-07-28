@@ -9,6 +9,7 @@
     <ItemGroup>
         <PackageReference Include="FakeItEasy" Version="7.1.0" />
         <PackageReference Include="FluentAssertions" Version="5.10.3" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="5.0.8" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
         <PackageReference Include="xunit" Version="2.4.1" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
@@ -23,6 +24,10 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Orchestrator\Orchestrator.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Integration\Infrastructure" />
     </ItemGroup>
 
 </Project>

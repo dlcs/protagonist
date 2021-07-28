@@ -11,12 +11,12 @@
       <PackageReference Include="AngleSharp" Version="0.16.0" />
       <PackageReference Include="DotNet.Testcontainers" Version="1.4.0" />
       <PackageReference Include="FluentAssertions" Version="5.10.3" />
-      <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="5.0.7" />
+      <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="5.0.8" />
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.10.0" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.7" />
-      <PackageReference Include="xunit" Version="2.4.0" />
-      <PackageReference Include="xunit.extensibility.core" Version="2.4.0" />
-      <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0">
+      <PackageReference Include="xunit" Version="2.4.1" />
+      <PackageReference Include="xunit.extensibility.core" Version="2.4.1" />
+      <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
@@ -24,6 +24,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Portal\Portal.csproj" />
+      <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj" />
     </ItemGroup>
 
     <ItemGroup>

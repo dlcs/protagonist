@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Test.Helpers.Integration;
 using Xunit;
 
 namespace Portal.Tests.Integration.Infrastructure

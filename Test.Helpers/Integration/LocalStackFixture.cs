@@ -6,7 +6,7 @@ using DotNet.Testcontainers.Containers.Builders;
 using DotNet.Testcontainers.Containers.Modules;
 using Xunit;
 
-namespace Portal.Tests.Integration.Infrastructure
+namespace Test.Helpers.Integration
 {
     /// <summary>
     /// Xunit fixture that manages localstack and contains faked AWS clients for interactions.
@@ -59,11 +59,5 @@ namespace Portal.Tests.Integration.Infrastructure
             // Create basic buckets used by DLCS
             await AmazonS3.PutBucketAsync("protagonist-test-origin");
         }
-    }
-    
-    [CollectionDefinition(CollectionName)]
-    public class LocalStackCollection : ICollectionFixture<LocalStackFixture>
-    {
-        public const string CollectionName = "LocalStack Collection";
     }
 }

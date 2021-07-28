@@ -6,8 +6,11 @@ using Amazon.S3.Model;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using FluentAssertions;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using Portal.Tests.Integration.Infrastructure;
+using Test.Helpers.Integration;
 using Xunit;
 
 namespace Portal.Tests.Integration
@@ -26,6 +29,12 @@ namespace Portal.Tests.Integration
             httpClient = factory
                 .WithConnectionString(storageFixture.DbFixture.ConnectionString)
                 .WithLocalStack(storageFixture.LocalStackFixture)
+                .WithTestServices(services =>
+                {
+                    services.AddAuthentication("Test")
+                        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
+                            "Test", _ => { });
+                })
                 .CreateClient();
 
             amazonS3 = storageFixture.LocalStackFixture.AmazonS3;

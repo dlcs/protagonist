@@ -7,7 +7,7 @@ using DotNet.Testcontainers.Containers.Modules.Databases;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Portal.Tests.Integration.Infrastructure
+namespace Test.Helpers.Integration
 {
     /// <summary>
     /// Xunit fixture that manages lifecycle for Postgres 12 container with basic migration applied.
@@ -65,11 +65,5 @@ namespace Portal.Tests.Integration.Infrastructure
         }
 
         public Task DisposeAsync() => postgresContainer.StopAsync();
-    }
-
-    [CollectionDefinition(CollectionName)]
-    public class DatabaseCollection : ICollectionFixture<DlcsDatabaseFixture>
-    {
-        public const string CollectionName = "Database Collection";
     }
 }
