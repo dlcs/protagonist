@@ -4,7 +4,6 @@ using System.Text;
 using System.Threading.Tasks;
 using DLCS.Model.PathElements;
 using IIIF.ImageApi;
-using Microsoft.AspNetCore.Http;
 
 namespace DLCS.Web.Requests.AssetDelivery
 {
@@ -14,11 +13,12 @@ namespace DLCS.Web.Requests.AssetDelivery
     public interface IAssetDeliveryPathParser
     {
         /// <summary>
-        /// Parse asset delivery requests to <see cref="AssetDeliveryRequest"/>
+        /// Parse asset delivery requests to <see cref="BaseAssetRequest"/>
         /// </summary>
         /// <param name="path">Full asset request path</param>
-        /// <returns>Populated <see cref="AssetDeliveryRequest"/> object</returns>
-        Task<AssetDeliveryRequest> Parse(string path);
+        /// <typeparam name="T">Type of <see cref="BaseAssetRequest"/> to return.</typeparam>
+        /// <returns>Populated <see cref="ImageAssetDeliveryRequest"/> object</returns>
+        Task<T> Parse<T>(string path) where T : BaseAssetRequest, new();
     }
 
     public class AssetDeliveryPathParser : IAssetDeliveryPathParser
@@ -30,12 +30,18 @@ namespace DLCS.Web.Requests.AssetDelivery
             this.pathCustomerRepository = pathCustomerRepository;
         }
 
-        public async Task<AssetDeliveryRequest> Parse(string path)
+        public async Task<T> Parse<T>(string path) 
+            where T : BaseAssetRequest, new()
         {
-            var assetDeliveryRequest = new AssetDeliveryRequest();
-            await ParseBaseAssetRequest(path, assetDeliveryRequest);
-            assetDeliveryRequest.IIIFImageRequest = ImageRequest.Parse(path, assetDeliveryRequest.BasePath);
-            return assetDeliveryRequest;
+            var assetRequest = new T();
+            await ParseBaseAssetRequest(path, assetRequest);
+
+            if (assetRequest is ImageAssetDeliveryRequest imageAssetRequest)
+            {
+                imageAssetRequest.IIIFImageRequest = ImageRequest.Parse(path, assetRequest.BasePath);
+            }
+
+            return assetRequest;
         }
 
         private async Task ParseBaseAssetRequest(string path, BaseAssetRequest request)

@@ -20,7 +20,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
         }
 
         [Fact]
-        public async Task Parse_WithCustomerId_ReturnsCorrectRequest()
+        public async Task Parse_ImageRequest_WithCustomerId_ReturnsCorrectRequest()
         {
             // Arrange
             const string path = "/thumbs/99/1/the-astronaut";
@@ -29,7 +29,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
                 .Returns(customer);
 
             // Act
-            var thumbnailRequest = await sut.Parse(path);
+            var thumbnailRequest = await sut.Parse<ImageAssetDeliveryRequest>(path);
             
             // Assert
             thumbnailRequest.RoutePrefix.Should().Be("thumbs");
@@ -42,7 +42,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
         }
 
         [Fact]
-        public async Task Parse_WithCustomerName_ReturnsCorrectRequest()
+        public async Task Parse_ImageRequest_WithCustomerName_ReturnsCorrectRequest()
         {
             // Arrange
             const string path = "/thumbs/test-customer/1/the-astronaut";
@@ -51,7 +51,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
                 .Returns(customer);
 
             // Act
-            var thumbnailRequest = await sut.Parse(path);
+            var thumbnailRequest = await sut.Parse<ImageAssetDeliveryRequest>(path);
 
             // Assert
             thumbnailRequest.RoutePrefix.Should().Be("thumbs");
@@ -64,7 +64,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
         }
         
         [Fact]
-        public async Task Parse_WithCustomerName_FullParse()
+        public async Task Parse_ImageRequest_WithCustomerName_FullParse()
         {
             // Arrange
             const string path = "/iiif-img/test-customer/1/the-astronaut/full/!800,400/0/default.jpg";
@@ -73,7 +73,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
                 .Returns(customer);
 
             // Act
-            var imageRequest = await sut.Parse(path);
+            var imageRequest = await sut.Parse<ImageAssetDeliveryRequest>(path);
 
             // Assert
             imageRequest.RoutePrefix.Should().Be("iiif-img");
@@ -86,17 +86,38 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             imageRequest.IIIFImageRequest.ImageRequestPath.Should().Be("/full/!800,400/0/default.jpg");
         }
 
-        [Fact]
-        public async Task Parse_ThrowsFormatException_IfPathInUnknownFormat()
+        [Theory]
+        [InlineData("/iiif-img/full/!800,400/0/default.jpg")]
+        [InlineData("/iiif-av/test-customer/1/the-astronaut/full/full/max/max/0/default.mp3")]
+        public async Task Parse_ImageRequest_ThrowsFormatException_IfPathInUnknownFormat(string path)
         {
-            // Arrange
-            const string path = "/iiif-img/full/!800,400/0/default.jpg";
-            
             // Act
-            Func<Task> action = () => sut.Parse(path);
+            Func<Task> action = () => sut.Parse<ImageAssetDeliveryRequest>(path);
             
             // Assert
             await action.Should().ThrowAsync<FormatException>();
+        }
+        
+        [Fact]
+        public async Task Parse_AVRequest_WithCustomerName_FullParse()
+        {
+            // Arrange
+            const string path = "/iiif-av/test-customer/1/the-astronaut/full/full/max/max/0/default.mp3";
+            var customer = new CustomerPathElement(99, "test-customer");
+            A.CallTo(() => pathCustomerRepository.GetCustomer("test-customer"))
+                .Returns(customer);
+
+            // Act
+            var imageRequest = await sut.Parse<AVAssetDeliveryRequest>(path);
+
+            // Assert
+            imageRequest.RoutePrefix.Should().Be("iiif-av");
+            imageRequest.CustomerPathValue.Should().Be("test-customer");
+            imageRequest.Customer.Should().Be(customer);
+            imageRequest.BasePath.Should().Be("/iiif-av/test-customer/1/");
+            imageRequest.Space.Should().Be(1);
+            imageRequest.AssetPath.Should().Be("the-astronaut/full/full/max/max/0/default.mp3");
+            imageRequest.AssetId.Should().Be("the-astronaut");
         }
     }
 }

@@ -41,7 +41,8 @@ namespace Orchestrator.Tests.Images
         public async Task HandleRequest_Returns404_IfAssetPathParserThrowsKeyNotFound()
         {
             // Arrange
-            A.CallTo(() => assetDeliveryPathParser.Parse(A<string>._)).ThrowsAsync(new KeyNotFoundException());
+            A.CallTo(() => assetDeliveryPathParser.Parse<ImageAssetDeliveryRequest>(A<string>._))
+                .ThrowsAsync(new KeyNotFoundException());
             var sut = GetImageRequestHandlerWithMockPathParser(true);
             
             // Act
@@ -57,7 +58,8 @@ namespace Orchestrator.Tests.Images
             // NOTE - routes should prevent this from ever happening
             
             // Arrange
-            A.CallTo(() => assetDeliveryPathParser.Parse(A<string>._)).ThrowsAsync(new FormatException());
+            A.CallTo(() => assetDeliveryPathParser.Parse<ImageAssetDeliveryRequest>(A<string>._))
+                .ThrowsAsync(new FormatException());
             var sut = GetImageRequestHandlerWithMockPathParser(true);
             
             // Act
@@ -73,7 +75,8 @@ namespace Orchestrator.Tests.Images
             // NOTE - routes should prevent this from ever happening
             
             // Arrange
-            A.CallTo(() => assetDeliveryPathParser.Parse(A<string>._)).ThrowsAsync(new ApplicationException());
+            A.CallTo(() => assetDeliveryPathParser.Parse<ImageAssetDeliveryRequest>(A<string>._))
+                .ThrowsAsync(new ApplicationException());
             var sut = GetImageRequestHandlerWithMockPathParser(true);
             
             // Act

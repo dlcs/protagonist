@@ -79,12 +79,13 @@ namespace Orchestrator.Images
             return new ProxyActionResult(ProxyTo.CachingProxy);
         }
 
-        private async Task<(AssetDeliveryRequest? assetRequest, HttpStatusCode? statusCode)> TryGetAssetDeliveryRequest(
+        private async Task<(ImageAssetDeliveryRequest? assetRequest, HttpStatusCode? statusCode)> TryGetAssetDeliveryRequest(
             HttpContext httpContext)
         {
             try
             {
-                var assetRequest = await assetDeliveryPathParser.Parse(httpContext.Request.Path);
+                var assetRequest =
+                    await assetDeliveryPathParser.Parse<ImageAssetDeliveryRequest>(httpContext.Request.Path);
                 return (assetRequest, null);
             }
             catch (KeyNotFoundException ex)
@@ -105,25 +106,25 @@ namespace Orchestrator.Images
             }
         }
 
-        private async Task<Asset> GetAsset(AssetDeliveryRequest assetRequest)
+        private async Task<Asset> GetAsset(ImageAssetDeliveryRequest imageAssetRequest)
         {
-            var imageId = assetRequest.GetAssetImageId();
+            var imageId = imageAssetRequest.GetAssetImageId();
             var asset = await assetRepository.GetAsset(imageId.ToString());
             return asset;
         }
 
         private bool DoesAssetRequireAuth(Asset asset) => !string.IsNullOrWhiteSpace(asset.Roles);
         
-        private bool IsRequestForUVThumb(HttpContext httpContext, AssetDeliveryRequest requestModel)
+        private bool IsRequestForUVThumb(HttpContext httpContext, ImageAssetDeliveryRequest requestModel)
             => proxySettings.CheckUVThumbs &&
                requestModel.IIIFImageRequest.ImageRequestPath == "/full/90,/0/default.jpg" &&
                httpContext.Request.QueryString.Value.Contains("t=");
         
-        private string GetUVThumbReplacementPath(AssetDeliveryRequest requestModel) => 
+        private string GetUVThumbReplacementPath(ImageAssetDeliveryRequest requestModel) => 
             $"{proxySettings.ThumbsPath}/{requestModel.GetAssetImageId()}/full/{proxySettings.UVThumbReplacementPath}/0/default.jpg";
 
         // TODO handle resizing via config. Optionally with path regex (resize X but not Y)
-        private async Task<bool> IsRequestForKnownThumbSize(AssetDeliveryRequest requestModel)
+        private async Task<bool> IsRequestForKnownThumbSize(ImageAssetDeliveryRequest requestModel)
         {
             // NOTE - would this be quicker, since we have Asset, to calculate sizes? Would need Policy
             var candidate = await thumbnailRepository.GetThumbnailSizeCandidate(requestModel.Customer.Id,
