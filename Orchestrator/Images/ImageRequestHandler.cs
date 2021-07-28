@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
+﻿using System.Net;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests.AssetDelivery;
@@ -15,12 +13,9 @@ namespace Orchestrator.Images
     /// <summary>
     /// Reverse-proxy routing logic for /iiif-img/ requests 
     /// </summary>
-    public class ImageRequestHandler
+    public class ImageRequestHandler : RequestHandlerBase
     {
-        private readonly ILogger<ImageRequestHandler> logger;
-        private readonly IAssetRepository assetRepository;
         private readonly IThumbRepository thumbnailRepository;
-        private readonly IAssetDeliveryPathParser assetDeliveryPathParser;
         private readonly ProxySettings proxySettings;
 
         public ImageRequestHandler(
@@ -28,12 +23,9 @@ namespace Orchestrator.Images
             IAssetRepository assetRepository,
             IThumbRepository thumbnailRepository,
             IAssetDeliveryPathParser assetDeliveryPathParser,
-            IOptions<ProxySettings> proxySettings)
+            IOptions<ProxySettings> proxySettings) : base(logger, assetRepository, assetDeliveryPathParser)
         {
-            this.logger = logger;
-            this.assetRepository = assetRepository;
             this.thumbnailRepository = thumbnailRepository;
-            this.assetDeliveryPathParser = assetDeliveryPathParser;
             this.proxySettings = proxySettings.Value;
         }
 
@@ -44,9 +36,9 @@ namespace Orchestrator.Images
         /// <returns><see cref="IProxyActionResult"/> object containing downstream target</returns>
         public async Task<IProxyActionResult> HandleRequest(HttpContext httpContext)
         {
-            logger.LogDebug("Handling request for {Path}", httpContext.Request.Path);
+            Logger.LogDebug("Handling request for {Path}", httpContext.Request.Path);
 
-            var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest(httpContext);
+            var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest<ImageAssetDeliveryRequest>(httpContext);
             if (statusCode.HasValue || assetRequest == null)
             {
                 return new StatusCodeProxyResult(statusCode ?? HttpStatusCode.InternalServerError);
@@ -56,13 +48,13 @@ namespace Orchestrator.Images
             var asset = await GetAsset(assetRequest);
             if (DoesAssetRequireAuth(asset))
             {
-                logger.LogDebug("Request for {Path} requires auth, proxying to orchestrator", httpContext.Request.Path);
+                Logger.LogDebug("Request for {Path} requires auth, proxying to orchestrator", httpContext.Request.Path);
                 return new ProxyActionResult(ProxyTo.Orchestrator);
             }
             
             if (IsRequestForUVThumb(httpContext, assetRequest))
             {
-                logger.LogDebug("Request for {Path} looks like UV thumb, proxying to thumbs", httpContext.Request.Path);
+                Logger.LogDebug("Request for {Path} looks like UV thumb, proxying to thumbs", httpContext.Request.Path);
                 return new ProxyActionResult(ProxyTo.Thumbs, GetUVThumbReplacementPath(assetRequest));
             }
 
@@ -70,7 +62,7 @@ namespace Orchestrator.Images
             {
                 if (await IsRequestForKnownThumbSize(assetRequest))
                 {
-                    logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs", httpContext.Request.Path);
+                    Logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs", httpContext.Request.Path);
                     return new ProxyActionResult(ProxyTo.Thumbs,
                         httpContext.Request.Path.ToString().Replace("iiif-img", "thumbs"));
                 }
@@ -79,42 +71,6 @@ namespace Orchestrator.Images
             return new ProxyActionResult(ProxyTo.CachingProxy);
         }
 
-        private async Task<(ImageAssetDeliveryRequest? assetRequest, HttpStatusCode? statusCode)> TryGetAssetDeliveryRequest(
-            HttpContext httpContext)
-        {
-            try
-            {
-                var assetRequest =
-                    await assetDeliveryPathParser.Parse<ImageAssetDeliveryRequest>(httpContext.Request.Path);
-                return (assetRequest, null);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                logger.LogError(ex, "Could not find Customer/Space from '{Path}'", httpContext.Request.Path);
-                return (null, HttpStatusCode.NotFound);
-            }
-            catch (FormatException ex)
-            {
-                logger.LogError(ex, "Error parsing path '{Path}'", httpContext.Request.Path);
-                return (null, HttpStatusCode.BadRequest);
-            }
-            catch (Exception ex)
-            {
-                // TODO - is this the correct status?
-                logger.LogError(ex, "Error parsing path '{Path}'", httpContext.Request.Path);
-                return (null, HttpStatusCode.InternalServerError);
-            }
-        }
-
-        private async Task<Asset> GetAsset(ImageAssetDeliveryRequest imageAssetRequest)
-        {
-            var imageId = imageAssetRequest.GetAssetImageId();
-            var asset = await assetRepository.GetAsset(imageId.ToString());
-            return asset;
-        }
-
-        private bool DoesAssetRequireAuth(Asset asset) => !string.IsNullOrWhiteSpace(asset.Roles);
-        
         private bool IsRequestForUVThumb(HttpContext httpContext, ImageAssetDeliveryRequest requestModel)
             => proxySettings.CheckUVThumbs &&
                requestModel.IIIFImageRequest.ImageRequestPath == "/full/90,/0/default.jpg" &&
