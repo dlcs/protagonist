@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using DLCS.Web.Auth;
 using DLCS.Web.Requests;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
@@ -21,9 +22,6 @@ namespace API.Auth
     {
         private readonly IHttpClientFactory httpClientFactory;
         
-        private const string AuthHeader = "Authorization";
-        private const string BasicScheme = "Basic";
-        
         public DlcsDelegatedBasicAuthenticationHandler(
             IOptionsMonitor<BasicAuthenticationOptions> options,
             ILoggerFactory logger,
@@ -37,28 +35,16 @@ namespace API.Auth
 
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            if (!Request.Headers.ContainsKey(AuthHeader))
+            var headerValue = Request.GetAuthHeaderValue(AuthenticationHeaderUtils.BasicScheme);
+            if (headerValue == null)
             {
                 // Authorization header not in request
-                return AuthenticateResult.NoResult();
-            }
-
-            if (!AuthenticationHeaderValue.TryParse(Request.Headers[AuthHeader],
-                out AuthenticationHeaderValue headerValue))
-            {
-                // Invalid Authorization header
-                return AuthenticateResult.NoResult();
-            }
-
-            if (!BasicScheme.Equals(headerValue.Scheme, StringComparison.OrdinalIgnoreCase))
-            {
-                // Not Basic authentication header
                 return AuthenticateResult.NoResult();
             }
             
             if (!Request.RouteValues.TryGetValue("customerId", out var customerIdRouteVal))
             {
-                Logger.LogInformation($"Unable to identify customerId in auth request to {Request.Path}");
+                Logger.LogInformation("Unable to identify customerId in auth request to {Path}", Request.Path);
                 return AuthenticateResult.NoResult();
             }
             
