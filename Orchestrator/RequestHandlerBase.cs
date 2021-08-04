@@ -13,7 +13,7 @@ namespace Orchestrator
     {
         protected readonly ILogger Logger;
         protected readonly IAssetRepository AssetRepository;
-        protected IAssetDeliveryPathParser AssetDeliveryPathParser;
+        protected readonly IAssetDeliveryPathParser AssetDeliveryPathParser;
 
         public RequestHandlerBase(
             ILogger logger,

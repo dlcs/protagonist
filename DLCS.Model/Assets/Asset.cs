@@ -53,5 +53,7 @@ namespace DLCS.Model.Assets
                 return rolesList;
             }
         }
+        
+        public bool RequiresAuth => !string.IsNullOrWhiteSpace(Roles) && MaxUnauthorised >= 0;
     }
 }
