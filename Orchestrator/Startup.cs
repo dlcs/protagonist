@@ -15,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Orchestrator.Assets;
 using Orchestrator.AV;
 using Orchestrator.Images;
 using Orchestrator.ReverseProxy;
@@ -33,11 +34,12 @@ namespace Orchestrator
         
         public void ConfigureServices(IServiceCollection services)
         {
+            var reverseProxySection = configuration.GetSection("ReverseProxy");
             services
                 .Configure<OrchestratorSettings>(configuration)
                 .Configure<ThumbsSettings>(configuration.GetSection("Thumbs"))
                 .Configure<ProxySettings>(configuration.GetSection("Proxy"))
-                .Configure<ReverseProxySettings>(configuration.GetSection("ReverseProxy"));
+                .Configure<ReverseProxySettings>(reverseProxySection);
             
             services
                 .AddLazyCache()
@@ -53,7 +55,7 @@ namespace Orchestrator
                 .AddSingleton<IThumbRepository, ThumbRepository>()
                 .AddSingleton<IAssetTracker, MemoryAssetTracker>();
 
-            var reverseProxySettings = configuration.Get<ReverseProxySettings>();
+            var reverseProxySettings = reverseProxySection.Get<ReverseProxySettings>();
             services.AddHttpClient<IDeliveratorClient, DeliveratorClient>(client =>
             {
                 client.DefaultRequestHeaders.Add("x-requested-by", "DLCS Protagonist Yarp"); // TODO - add this to all outgoing?
@@ -76,7 +78,7 @@ namespace Orchestrator
             // Add the reverse proxy to capability to the server
             services
                 .AddReverseProxy()
-                .LoadFromConfig(configuration.GetSection("ReverseProxy"));
+                .LoadFromConfig(reverseProxySection);
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)

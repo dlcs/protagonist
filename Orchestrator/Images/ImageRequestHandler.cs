@@ -5,6 +5,7 @@ using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orchestrator.Assets;
 using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
 

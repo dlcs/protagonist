@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Orchestrator.Assets;
 using Orchestrator.ReverseProxy;
 
 namespace Orchestrator

@@ -12,6 +12,7 @@ using IIIF.ImageApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Orchestrator.Assets;
 using Orchestrator.Images;
 using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;

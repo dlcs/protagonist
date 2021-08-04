@@ -2,19 +2,11 @@
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Web.Requests.AssetDelivery;
 using LazyCache;
+using Microsoft.Extensions.Logging;
 
-namespace Orchestrator.ReverseProxy
+namespace Orchestrator.Assets
 {
-    /// <summary>
-    /// Interface for tracking the location and status of assets for orchestration.
-    /// </summary>
-    public interface IAssetTracker
-    {
-        Task<TrackedAsset> GetAsset(AssetId assetId);
-    }
-
     /// <summary>
     /// <see cref="IAssetTracker"/> implementation using in-memory tracking
     /// </summary>
@@ -22,11 +14,14 @@ namespace Orchestrator.ReverseProxy
     {
         private readonly IAssetRepository assetRepository;
         private readonly IAppCache appCache;
+        private readonly ILogger<MemoryAssetTracker> logger;
 
-        public MemoryAssetTracker(IAssetRepository assetRepository, IAppCache appCache)
+        public MemoryAssetTracker(IAssetRepository assetRepository, IAppCache appCache,
+            ILogger<MemoryAssetTracker> logger)
         {
             this.assetRepository = assetRepository;
             this.appCache = appCache;
+            this.logger = logger;
         }
 
         public Task<TrackedAsset> GetAsset(AssetId assetId)
@@ -38,6 +33,7 @@ namespace Orchestrator.ReverseProxy
             return await appCache.GetOrAddAsync(key, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10); // TODO - pull from config
+                logger.LogDebug("Refreshing cache for {AssetId}", assetId);
                 var asset = await assetRepository.GetAsset(assetId);
                 return new TrackedAsset
                 {
@@ -46,16 +42,5 @@ namespace Orchestrator.ReverseProxy
                 };
             });
         }
-    }
-
-    /// <summary>
-    /// Represents an asset during orchestration.
-    /// </summary>
-    public class TrackedAsset
-    {
-        public string AssetId { get; set; }
-        public bool RequiresAuth { get; set; }
-        
-        // TODO - this will manage the state of the Asset (Orchestrated, Orchestrating, Not-Orchestrated)
     }
 }
