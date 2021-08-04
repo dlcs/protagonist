@@ -7,7 +7,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orchestrator.ReverseProxy;
+using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
 
 namespace Orchestrator.AV
@@ -46,6 +48,7 @@ namespace Orchestrator.AV
             var forwarder = endpoints.ServiceProvider.GetService<IHttpForwarder>();
             var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
                 .CreateLogger(nameof(AVRouteHandlers));
+            var settings = endpoints.ServiceProvider.GetService<IOptions<ReverseProxySettings>>();
 
             endpoints.Map("/iiif-av/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
             {

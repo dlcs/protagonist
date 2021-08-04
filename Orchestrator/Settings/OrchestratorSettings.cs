@@ -1,4 +1,5 @@
-﻿namespace Orchestrator.Settings
+﻿
+namespace Orchestrator.Settings
 {
     public class OrchestratorSettings
     {

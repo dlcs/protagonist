@@ -49,13 +49,13 @@ namespace Orchestrator.Images
             if (DoesAssetRequireAuth(asset))
             {
                 Logger.LogDebug("Request for {Path} requires auth, proxying to orchestrator", httpContext.Request.Path);
-                return new ProxyActionResult(ProxyTo.Orchestrator);
+                return new ProxyActionResult(ProxyDestination.Orchestrator);
             }
             
             if (IsRequestForUVThumb(httpContext, assetRequest))
             {
                 Logger.LogDebug("Request for {Path} looks like UV thumb, proxying to thumbs", httpContext.Request.Path);
-                return new ProxyActionResult(ProxyTo.Thumbs, GetUVThumbReplacementPath(assetRequest));
+                return new ProxyActionResult(ProxyDestination.Thumbs, GetUVThumbReplacementPath(assetRequest));
             }
 
             if (assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max)
@@ -63,12 +63,12 @@ namespace Orchestrator.Images
                 if (await IsRequestForKnownThumbSize(assetRequest))
                 {
                     Logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs", httpContext.Request.Path);
-                    return new ProxyActionResult(ProxyTo.Thumbs,
+                    return new ProxyActionResult(ProxyDestination.Thumbs,
                         httpContext.Request.Path.ToString().Replace("iiif-img", "thumbs"));
                 }
             }
             
-            return new ProxyActionResult(ProxyTo.CachingProxy);
+            return new ProxyActionResult(ProxyDestination.CachingProxy);
         }
 
         private bool IsRequestForUVThumb(HttpContext httpContext, ImageAssetDeliveryRequest requestModel)

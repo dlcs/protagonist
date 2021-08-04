@@ -68,7 +68,7 @@ namespace Orchestrator.AV
                 return new StatusCodeProxyResult(HttpStatusCode.OK);
             }
             
-            return new ProxyActionResult(ProxyTo.S3, s3Path);
+            return new ProxyActionResult(ProxyDestination.S3, s3Path);
         }
 
         private async Task<bool> IsAuthenticated(ImageAssetDeliveryRequest assetRequest, HttpContext httpContext)

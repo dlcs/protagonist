@@ -17,7 +17,7 @@ namespace Orchestrator.ReverseProxy
         /// <summary>
         /// Get downstream system to Proxy to
         /// </summary>
-        public ProxyTo Target { get; }
+        public ProxyDestination Target { get; }
         
         /// <summary>
         /// Get path to proxy to, if rewritten
@@ -30,7 +30,7 @@ namespace Orchestrator.ReverseProxy
         public bool HasPath => !string.IsNullOrWhiteSpace(Path);
         
         // TODO - differentiate between full + part path?
-        public ProxyActionResult(ProxyTo target, string? path = null)
+        public ProxyActionResult(ProxyDestination target, string? path = null)
         {
             Target = target;
             Path = !string.IsNullOrWhiteSpace(path) && path[0] == '/' ? path[1..] : path;
@@ -74,7 +74,7 @@ namespace Orchestrator.ReverseProxy
     /// <summary>
     /// Enum representing potential locations to proxy to
     /// </summary>
-    public enum ProxyTo
+    public enum ProxyDestination
     {
         /// <summary>
         /// Unknown, fallback value

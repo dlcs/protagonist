@@ -102,7 +102,7 @@ namespace Orchestrator.Tests.Images
             var result = await sut.HandleRequest(context) as ProxyActionResult;
             
             // Assert
-            result.Target.Should().Be(ProxyTo.Orchestrator);
+            result.Target.Should().Be(ProxyDestination.Orchestrator);
             result.HasPath.Should().BeFalse();
         }
         
@@ -122,7 +122,7 @@ namespace Orchestrator.Tests.Images
             var result = await sut.HandleRequest(context) as ProxyActionResult;
             
             // Assert
-            result.Target.Should().Be(ProxyTo.Thumbs);
+            result.Target.Should().Be(ProxyDestination.Thumbs);
             result.HasPath.Should().BeTrue();
             result.Path.Should().Be("thumbs/2/2/test-image/full/!200,200/0/default.jpg");
         }
@@ -144,7 +144,7 @@ namespace Orchestrator.Tests.Images
             var result = await sut.HandleRequest(context) as ProxyActionResult;
             
             // Assert
-            result.Target.Should().Be(ProxyTo.Thumbs);
+            result.Target.Should().Be(ProxyDestination.Thumbs);
             result.HasPath.Should().BeTrue();
             result.Path.Should().Be("thumbs/2/2/test-image/full/!300,500/0/default.jpg");
         }
@@ -166,7 +166,7 @@ namespace Orchestrator.Tests.Images
             var result = await sut.HandleRequest(context) as ProxyActionResult;
             
             // Assert
-            result.Target.Should().Be(ProxyTo.CachingProxy);
+            result.Target.Should().Be(ProxyDestination.CachingProxy);
             result.HasPath.Should().BeFalse();
         }
         
@@ -187,7 +187,7 @@ namespace Orchestrator.Tests.Images
             var result = await sut.HandleRequest(context) as ProxyActionResult;
             
             // Assert
-            result.Target.Should().Be(ProxyTo.Thumbs);
+            result.Target.Should().Be(ProxyDestination.Thumbs);
             result.Path.Should().Be("thumbs/2/2/test-image/full/!100,150/0/default.jpg");
         }
         
@@ -215,7 +215,7 @@ namespace Orchestrator.Tests.Images
             var result = await sut.HandleRequest(context) as ProxyActionResult;
             
             // Assert
-            result.Target.Should().Be(ProxyTo.CachingProxy);
+            result.Target.Should().Be(ProxyDestination.CachingProxy);
             result.HasPath.Should().BeFalse();
         }
 

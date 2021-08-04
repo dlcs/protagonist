@@ -68,11 +68,11 @@ namespace Orchestrator.Images
             var proxyAction = proxyActionResult as ProxyActionResult; 
             var root = proxyAction.Target switch
             {
-                ProxyTo.Orchestrator => "http://127.0.0.1:5018",
-                ProxyTo.Unknown => "http://127.0.0.1:5018", // this should never happen - Orchestrator?
-                ProxyTo.Thumbs => "http://127.0.0.1:5018",
-                ProxyTo.ImageServer => "http://127.0.0.1:5018",
-                ProxyTo.CachingProxy => "http://127.0.0.1:5018",
+                ProxyDestination.Orchestrator => "http://127.0.0.1:5018",
+                ProxyDestination.Unknown => "http://127.0.0.1:5018", // this should never happen - Orchestrator?
+                ProxyDestination.Thumbs => "http://127.0.0.1:5018",
+                ProxyDestination.ImageServer => "http://127.0.0.1:5018",
+                ProxyDestination.CachingProxy => "http://127.0.0.1:5018",
                 _ => throw new ArgumentOutOfRangeException()
             };
 

@@ -15,7 +15,7 @@ namespace DLCS.Web.Response
         /// <summary>
         /// Collection of path template overrides, keyed by hostname.
         /// </summary>
-        public Dictionary<string, string> Overrides { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Overrides { get; set; } = new();
         
         /// <summary>
         /// "Overrides" dictionary as JSON blob, will be use to populate Overrides
