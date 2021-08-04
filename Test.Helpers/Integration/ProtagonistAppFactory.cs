@@ -76,7 +76,7 @@ namespace Test.Helpers.Integration
                         ConfigureS3Services(services);
                     }
                 })
-                .UseEnvironment("Testing");  // NOTE: This can cause issues if AddSystemsManager is used and not optional
+                .UseEnvironment("Testing"); 
         }
 
         private void ConfigureS3Services(IServiceCollection services)
