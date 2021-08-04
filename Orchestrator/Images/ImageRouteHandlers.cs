@@ -7,7 +7,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orchestrator.ReverseProxy;
+using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
 
 namespace Orchestrator.Images
@@ -46,41 +48,38 @@ namespace Orchestrator.Images
             var forwarder = endpoints.ServiceProvider.GetService<IHttpForwarder>();
             var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
                 .CreateLogger(nameof(ImageRouteHandlers));
+            var settings = endpoints.ServiceProvider.GetService<IOptions<ReverseProxySettings>>();
 
             endpoints.Map("/iiif-img/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
             {
                 logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
                 var proxyResponse = await requestHandler.HandleRequest(httpContext);
-                await ProxyRequest(logger, httpContext, forwarder, proxyResponse);
+                await ProxyRequest(logger, httpContext, forwarder, proxyResponse, settings);
             });
         }
 
         private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
-            IProxyActionResult proxyActionResult)
+            IProxyActionResult proxyActionResult, IOptions<ReverseProxySettings> reverseProxySettings)
         {
             if (proxyActionResult is StatusCodeProxyResult statusCodeResult)
             {
                 httpContext.Response.StatusCode = (int)statusCodeResult.StatusCode;
+                foreach (var header in statusCodeResult.Headers)
+                {
+                    httpContext.Response.Headers.Add(header);
+                }
                 return;
             }
-
-            // TODO - pick appropriate target - get from routes/clusters?
+            
             var proxyAction = proxyActionResult as ProxyActionResult; 
-            var root = proxyAction.Target switch
-            {
-                ProxyDestination.Orchestrator => "http://127.0.0.1:5018",
-                ProxyDestination.Unknown => "http://127.0.0.1:5018", // this should never happen - Orchestrator?
-                ProxyDestination.Thumbs => "http://127.0.0.1:5018",
-                ProxyDestination.ImageServer => "http://127.0.0.1:5018",
-                ProxyDestination.CachingProxy => "http://127.0.0.1:5018",
-                _ => throw new ArgumentOutOfRangeException()
-            };
+            var root = reverseProxySettings.Value.GetAddressForProxyTarget(proxyAction.Target).ToString();
 
             var transformer = proxyAction.HasPath
                 ? new PathRewriteTransformer(proxyAction.Path)
                 : DefaultTransformer;
-            
-            var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions, transformer);
+
+            var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions,
+                transformer);
 
             // Check if the proxy operation was successful
             if (error != ForwarderError.None)

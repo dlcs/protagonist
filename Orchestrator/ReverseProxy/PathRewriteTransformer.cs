@@ -12,10 +12,12 @@ namespace Orchestrator.ReverseProxy
     public class PathRewriteTransformer : HttpTransformer
     {
         private readonly string newPath;
+        private readonly bool rewriteWholePath;
 
-        public PathRewriteTransformer(string newPath)
+        public PathRewriteTransformer(string newPath, bool rewriteWholePath = false)
         {
             this.newPath = newPath;
+            this.rewriteWholePath = rewriteWholePath;
         }
         
         public override async ValueTask TransformRequestAsync(HttpContext httpContext, HttpRequestMessage proxyRequest, string destinationPrefix)
@@ -24,7 +26,7 @@ namespace Orchestrator.ReverseProxy
             await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix);
 
             // Assign the custom uri. Be careful about extra slashes when concatenating here.
-            proxyRequest.RequestUri = new Uri($"{destinationPrefix}/{newPath}");
+            proxyRequest.RequestUri = new Uri(rewriteWholePath ? newPath : $"{destinationPrefix}/{newPath}");
         }
     }
 }

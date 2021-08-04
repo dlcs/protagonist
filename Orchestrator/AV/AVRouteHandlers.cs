@@ -54,12 +54,12 @@ namespace Orchestrator.AV
             {
                 logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
                 var proxyResponse = await requestHandler.HandleRequest(httpContext);
-                await ProxyRequest(logger, httpContext, forwarder, proxyResponse);
+                await ProxyRequest(logger, httpContext, forwarder, proxyResponse, settings);
             });
         }
 
         private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
-            IProxyActionResult proxyActionResult)
+            IProxyActionResult proxyActionResult, IOptions<ReverseProxySettings> reverseProxySettings)
         {
             if (proxyActionResult is StatusCodeProxyResult statusCodeResult)
             {
@@ -70,9 +70,19 @@ namespace Orchestrator.AV
                 }
                 return;
             }
+            
+            // TODO - tidy me
+            var proxyAction = proxyActionResult as ProxyActionResult;
+            var root = proxyAction.Target == ProxyDestination.S3
+                ? reverseProxySettings.Value.GetAddressForProxyTarget(proxyAction.Target).ToString()
+                : proxyAction.Path;
+            
+            var transformer = proxyAction.HasPath
+                ? new PathRewriteTransformer(proxyAction.Path, proxyAction.Target == ProxyDestination.S3)
+                : DefaultTransformer;
 
-            var error = await forwarder.SendAsync(httpContext, "http://127.0.0.1:8081", HttpClient, RequestOptions,
-                DefaultTransformer);
+            var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions,
+                transformer);
 
             // Check if the proxy operation was successful
             if (error != ForwarderError.None)

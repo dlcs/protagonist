@@ -23,7 +23,7 @@ namespace Orchestrator.Settings
         /// <summary>
         /// Get destination address for specified ProxyDestination
         /// </summary>
-        public Uri? GetAddressForCluster(ProxyDestination destination) 
+        public Uri? GetAddressForProxyTarget(ProxyDestination destination) 
             => destination switch
             {
                 ProxyDestination.Orchestrator => GetAddressForCluster("deliverator"),

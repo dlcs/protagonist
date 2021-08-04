@@ -62,7 +62,7 @@ namespace Orchestrator.Tests
             var expectedUri = new Uri(expected);
             
             // Act
-            var actual = sut.GetAddressForCluster(destination);
+            var actual = sut.GetAddressForProxyTarget(destination);
             
             // Assert
             actual.Should().Be(expectedUri);
@@ -74,7 +74,7 @@ namespace Orchestrator.Tests
         public void GetAddressForCluster_ReturnsNull_ForUnknownAndS3(ProxyDestination destination)
         {
             // Act
-            var actual = sut.GetAddressForCluster(destination);
+            var actual = sut.GetAddressForProxyTarget(destination);
             
             // Assert
             actual.Should().BeNull();
