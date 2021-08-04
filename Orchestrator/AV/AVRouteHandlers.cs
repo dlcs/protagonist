@@ -61,9 +61,12 @@ namespace Orchestrator.AV
             if (proxyActionResult is StatusCodeProxyResult statusCodeResult)
             {
                 httpContext.Response.StatusCode = (int) statusCodeResult.StatusCode;
+                foreach (var header in statusCodeResult.Headers)
+                {
+                    httpContext.Response.Headers.Add(header);
+                }
                 return;
             }
-
 
             var error = await forwarder.SendAsync(httpContext, "http://127.0.0.1:8081", HttpClient, RequestOptions,
                 DefaultTransformer);

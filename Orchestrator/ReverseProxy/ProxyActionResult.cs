@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
+using Microsoft.Extensions.Primitives;
 
 namespace Orchestrator.ReverseProxy
 {
@@ -45,10 +47,27 @@ namespace Orchestrator.ReverseProxy
         /// </summary>
         public HttpStatusCode StatusCode { get; }
 
+        /// <summary>
+        /// A collection of any Headers to set on response object. 
+        /// </summary>
+        public Dictionary<string, StringValues> Headers { get; } = new();
+
         public StatusCodeProxyResult(HttpStatusCode statusCode)
         {
             // TODO - handle message/headers? or let those be set in 
             StatusCode = statusCode;
+        }
+
+        /// <summary>
+        /// Set header to return alongside statusCode
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public StatusCodeProxyResult WithHeader(string key, string value)
+        {
+            Headers[key] = value;
+            return this;
         }
     }
     

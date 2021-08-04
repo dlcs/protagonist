@@ -23,5 +23,15 @@
         /// Get Size parameter for any UV thumb redirect.
         /// </summary>
         public string UVThumbReplacementPath { get; set; } = "!200,200";
+        
+        /// <summary>
+        /// Get https base url for region.
+        /// </summary>
+        public string S3HttpBase { get; set; }
+        
+        /// <summary>
+        /// Get the S3 storage bucket name.
+        /// </summary>
+        public string StorageBucket { get; set; }
     }
 }

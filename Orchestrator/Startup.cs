@@ -1,3 +1,4 @@
+using System;
 using Amazon.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
@@ -9,7 +10,6 @@ using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
 using DLCS.Web.Configuration;
 using DLCS.Web.Requests.AssetDelivery;
-using IIIF.ImageApi;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -18,6 +18,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orchestrator.AV;
 using Orchestrator.Images;
+using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
 using Serilog;
 
@@ -50,14 +51,19 @@ namespace Orchestrator
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
                 .AddSingleton<IThumbRepository, ThumbRepository>();
 
+            services.AddHttpClient<IDeliveratorClient, DeliveratorClient>(client =>
+            {
+                client.DefaultRequestHeaders.Add("x-requested-by", "DLCS Protagonist Yarp");
+                client.BaseAddress = new Uri("http://localhost:5018"); // TODO - get from config
+            });
+
             services.AddCors(options =>
             {
                 options.AddPolicy("CorsPolicy",
                     builder => builder
+                        .AllowAnyOrigin()
                         .AllowAnyMethod()
-                        .AllowAnyHeader()
-                        .SetIsOriginAllowed(host => true)
-                        .AllowCredentials());
+                        .AllowAnyHeader());
             });
 
             services
