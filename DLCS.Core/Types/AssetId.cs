@@ -8,8 +8,8 @@ namespace DLCS.Core.Types
     /// </summary>
     /// <param name="Customer">Id of customer</param>
     /// <param name="Space">Id of space</param>
-    /// <param name="Image">Id of image</param>
-    public record AssetImageId(int Customer, int Space, string Image)
+    /// <param name="Asset">Id of asset</param>
+    public record AssetId(int Customer, int Space, string Asset)
     {
         public override string ToString()
         {
@@ -21,17 +21,17 @@ namespace DLCS.Core.Types
         protected virtual bool PrintMembers(StringBuilder builder)
         {
             builder.Append(Customer);
-            builder.AppendFormat("/{0}/{1}", Space, Image);
+            builder.AppendFormat("/{0}/{1}", Space, Asset);
             return true;
         }
 
         /// <summary>
-        /// Create a new AssetImageId from string in format customer/space/image
+        /// Create a new AssetId from string in format customer/space/image
         /// </summary>
         /// <param name="assetImageId">string representing assetImageId</param>
-        /// <returns>New <see cref="AssetImageId"/> record</returns>
+        /// <returns>New <see cref="AssetId"/> record</returns>
         /// <exception cref="FormatException">Thrown if string not in expected format</exception>
-        public static AssetImageId FromString(string assetImageId)
+        public static AssetId FromString(string assetImageId)
         {
             var parts = assetImageId.Split("/", StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length != 3)
@@ -39,7 +39,7 @@ namespace DLCS.Core.Types
                 throw new FormatException("AssetImageId string must be in format customer/space/image");
             }
 
-            return new AssetImageId(int.Parse(parts[0]), int.Parse(parts[1]), parts[2]);
+            return new AssetId(int.Parse(parts[0]), int.Parse(parts[1]), parts[2]);
         }
     }
 }

@@ -2,26 +2,26 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using DLCS.Model.Assets;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Orchestrator.ReverseProxy;
 
 namespace Orchestrator
 {
     public abstract class RequestHandlerBase
     {
         protected readonly ILogger Logger;
-        protected readonly IAssetRepository AssetRepository;
+        protected readonly IAssetTracker AssetTracker;
         protected readonly IAssetDeliveryPathParser AssetDeliveryPathParser;
 
         public RequestHandlerBase(
             ILogger logger,
-            IAssetRepository assetRepository,
+            IAssetTracker assetTracker,
             IAssetDeliveryPathParser assetDeliveryPathParser)
         {
             this.Logger = logger;
-            this.AssetRepository = assetRepository;
+            this.AssetTracker = assetTracker;
             this.AssetDeliveryPathParser = assetDeliveryPathParser;
         }
 
@@ -52,13 +52,11 @@ namespace Orchestrator
             }
         }
 
-        protected async Task<Asset> GetAsset(ImageAssetDeliveryRequest imageAssetRequest)
+        protected async Task<TrackedAsset> GetAsset(ImageAssetDeliveryRequest imageAssetRequest)
         {
             var imageId = imageAssetRequest.GetAssetImageId();
-            var asset = await AssetRepository.GetAsset(imageId.ToString());
+            var asset = await AssetTracker.GetAsset(imageId);
             return asset;
         }
-
-        protected bool DoesAssetRequireAuth(Asset asset) => !string.IsNullOrWhiteSpace(asset.Roles);
     }
 }

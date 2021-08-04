@@ -11,8 +11,8 @@ namespace Orchestrator.ReverseProxy
 {
     public interface IDeliveratorClient
     {
-        Task<bool> VerifyBearerAuth(AssetImageId imageId, string bearerToken);
-        Task<bool> VerifyCookieAuth(AssetImageId imageId, HttpRequest httpRequest);
+        Task<bool> VerifyBearerAuth(AssetId id, string bearerToken);
+        Task<bool> VerifyCookieAuth(AssetId id, HttpRequest httpRequest);
     }
 
     /// <summary>
@@ -27,18 +27,18 @@ namespace Orchestrator.ReverseProxy
             this.httpClient = httpClient;
         }
         
-        public async Task<bool> VerifyBearerAuth(AssetImageId imageId, string bearerToken)
+        public async Task<bool> VerifyBearerAuth(AssetId id, string bearerToken)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"/auth/services/authpasses{imageId}");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/auth/services/authpasses{id}");
             request.Headers.AddBearerTokenAuth(bearerToken);
             var response = await httpClient.SendAsync(request);
 
             return response.StatusCode == HttpStatusCode.OK;
         }
 
-        public async Task<bool> VerifyCookieAuth(AssetImageId imageId, HttpRequest httpRequest)
+        public async Task<bool> VerifyCookieAuth(AssetId id, HttpRequest httpRequest)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"/auth/services/authpasses{imageId}");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/auth/services/authpasses{id}");
             var response = await httpClient.SendAsync(request);
 
             if (response.StatusCode != HttpStatusCode.OK)

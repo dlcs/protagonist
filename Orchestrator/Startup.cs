@@ -1,4 +1,3 @@
-using System;
 using Amazon.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
@@ -34,10 +33,11 @@ namespace Orchestrator
         
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<OrchestratorSettings>(configuration);
-            services.Configure<ThumbsSettings>(configuration.GetSection("Thumbs"));
-            services.Configure<ProxySettings>(configuration.GetSection("Proxy"));
-            services.Configure<ReverseProxySettings>(configuration.GetSection("ReverseProxy"));
+            services
+                .Configure<OrchestratorSettings>(configuration)
+                .Configure<ThumbsSettings>(configuration.GetSection("Thumbs"))
+                .Configure<ProxySettings>(configuration.GetSection("Proxy"))
+                .Configure<ReverseProxySettings>(configuration.GetSection("ReverseProxy"));
             
             services
                 .AddLazyCache()
@@ -50,12 +50,14 @@ namespace Orchestrator
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>()
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
-                .AddSingleton<IThumbRepository, ThumbRepository>();
+                .AddSingleton<IThumbRepository, ThumbRepository>()
+                .AddSingleton<IAssetTracker, MemoryAssetTracker>();
 
+            var reverseProxySettings = configuration.Get<ReverseProxySettings>();
             services.AddHttpClient<IDeliveratorClient, DeliveratorClient>(client =>
             {
-                client.DefaultRequestHeaders.Add("x-requested-by", "DLCS Protagonist Yarp");
-                client.BaseAddress = new Uri("http://localhost:5018"); // TODO - get from config
+                client.DefaultRequestHeaders.Add("x-requested-by", "DLCS Protagonist Yarp"); // TODO - add this to all outgoing?
+                client.BaseAddress = reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.Orchestrator);
             });
 
             services.AddCors(options =>
@@ -72,7 +74,7 @@ namespace Orchestrator
                 .AddNpgSql(configuration.GetPostgresSqlConnection());
             
             // Add the reverse proxy to capability to the server
-            var proxyBuilder = services
+            services
                 .AddReverseProxy()
                 .LoadFromConfig(configuration.GetSection("ReverseProxy"));
         }

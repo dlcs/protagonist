@@ -10,7 +10,7 @@ namespace DLCS.Core.Tests.Types
         [Fact]
         public void ToString_CorrectFormat()
         {
-            var assetImageId = new AssetImageId(19, 4, "my-first-image");
+            var assetImageId = new AssetId(19, 4, "my-first-image");
             const string expected = "19/4/my-first-image";
 
             assetImageId.ToString().Should().Be(expected);
@@ -21,11 +21,11 @@ namespace DLCS.Core.Tests.Types
         {
             const string assetId = "19/4/my-first-image";
 
-            var assetImageId = AssetImageId.FromString(assetId);
+            var assetImageId = AssetId.FromString(assetId);
 
             assetImageId.Customer.Should().Be(19);
             assetImageId.Space.Should().Be(4);
-            assetImageId.Image.Should().Be("my-first-image");
+            assetImageId.Asset.Should().Be("my-first-image");
         }
 
         [Theory]
@@ -33,7 +33,7 @@ namespace DLCS.Core.Tests.Types
         [InlineData("1/2/image/easrwt")]
         public void FromString_Throws_IfInvalidFormat(string assetId)
         {
-            Action action = () => AssetImageId.FromString(assetId);
+            Action action = () => AssetId.FromString(assetId);
             action.Should().Throw<FormatException>();
         }
     }

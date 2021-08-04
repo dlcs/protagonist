@@ -24,7 +24,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             // Assert
             assetImageId.Customer.Should().Be(1234);
             assetImageId.Space.Should().Be(4);
-            assetImageId.Image.Should().Be("my-asset");
+            assetImageId.Asset.Should().Be("my-asset");
         }
     }
 }

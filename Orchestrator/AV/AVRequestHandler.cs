@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Web.Auth;
 using DLCS.Web.Requests.AssetDelivery;
@@ -21,10 +22,10 @@ namespace Orchestrator.AV
 
         public AVRequestHandler(
             ILogger<AVRequestHandler> logger,
-            IAssetRepository assetRepository,
+            IAssetTracker assetTracker,
             IAssetDeliveryPathParser assetDeliveryPathParser,
             IDeliveratorClient deliveratorClient,
-            IOptions<ProxySettings> proxySettings) : base(logger, assetRepository, assetDeliveryPathParser)
+            IOptions<ProxySettings> proxySettings) : base(logger, assetTracker, assetDeliveryPathParser)
         {
             this.deliveratorClient = deliveratorClient;
             this.proxySettings = proxySettings.Value;
@@ -50,13 +51,13 @@ namespace Orchestrator.AV
             // If "HEAD" then add CORS - is this required here?
             var asset = await GetAsset(assetRequest);
             var s3Path = $"{proxySettings.S3HttpBase}/{proxySettings.StorageBucket}/{assetRequest.GetAssetImageId()}";
-            if (!DoesAssetRequireAuth(asset))
+            if (!asset.RequiresAuth)
             {
                 Logger.LogDebug("No auth for {Path}, 302 to S3 object {S3}", httpContext.Request.Path, s3Path);
                 return new StatusCodeProxyResult(HttpStatusCode.Redirect).WithHeader("Location", s3Path);
             }
 
-            if (!await IsAuthenticated(assetRequest, httpContext))
+            if (!await IsAuthenticated(assetRequest.GetAssetImageId(), httpContext))
             {
                 Logger.LogDebug("User not authenticated for {Path}", httpContext.Request.Path);
                 return new StatusCodeProxyResult(HttpStatusCode.Unauthorized);
@@ -71,25 +72,25 @@ namespace Orchestrator.AV
             return new ProxyActionResult(ProxyDestination.S3, s3Path);
         }
 
-        private async Task<bool> IsAuthenticated(ImageAssetDeliveryRequest assetRequest, HttpContext httpContext)
+        private async Task<bool> IsAuthenticated(AssetId assetId, HttpContext httpContext)
         {
-            var authStuff = GetAuthMechanism(assetRequest, httpContext);
+            var authStuff = GetAuthMechanism(assetId, httpContext);
             if (!authStuff.HasAuth)
             {
                 return false;
             }
 
             return authStuff.HaveCookie
-                ? await deliveratorClient.VerifyCookieAuth(assetRequest.GetAssetImageId(), httpContext.Request)
-                : await deliveratorClient.VerifyBearerAuth(assetRequest.GetAssetImageId(), authStuff.BearerToken!);
+                ? await deliveratorClient.VerifyCookieAuth(assetId, httpContext.Request)
+                : await deliveratorClient.VerifyBearerAuth(assetId, authStuff.BearerToken!);
         }
         
-        private RequestAuth GetAuthMechanism(ImageAssetDeliveryRequest assetRequest, HttpContext httpContext)
+        private RequestAuth GetAuthMechanism(AssetId assetId, HttpContext httpContext)
         {
-            var cookieName = $"dlcs-token-{assetRequest.Customer.Id}";
+            var cookieName = $"dlcs-token-{assetId.Customer}";
             if (httpContext.Request.Cookies.ContainsKey(cookieName))
             {
-                Logger.LogDebug("Found cookie: '{CookieName}' for '{ImageId}'", assetRequest.GetAssetImageId(),
+                Logger.LogDebug("Found cookie: '{CookieName}' for '{ImageId}'", assetId,
                     cookieName);
                 return RequestAuth.WithCookie();
             }
@@ -97,11 +98,11 @@ namespace Orchestrator.AV
             var headerValue = httpContext.Request.GetAuthHeaderValue(AuthenticationHeaderUtils.BearerTokenScheme);
             if (headerValue != null)
             {
-                Logger.LogDebug("Found bearer token for '{ImageId}'", assetRequest.GetAssetImageId());
+                Logger.LogDebug("Found bearer token for '{ImageId}'", assetId);
                 return RequestAuth.WithBearerToken(headerValue.Parameter);
             }
 
-            Logger.LogDebug("No auth found for '{ImageId}'", assetRequest.GetAssetImageId());
+            Logger.LogDebug("No auth found for '{ImageId}'", assetId);
             return new();
         }
     }
