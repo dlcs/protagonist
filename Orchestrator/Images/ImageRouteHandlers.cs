@@ -85,7 +85,7 @@ namespace Orchestrator.Images
             if (error != ForwarderError.None)
             {
                 var errorFeature = httpContext.Features.Get<IForwarderErrorFeature>();
-                logger.LogError(errorFeature.Exception!, "Error in catch-all handler for {Path}",
+                logger.LogError(errorFeature.Exception!, "Error in iiif-img direct handler for {Path}",
                     httpContext.Request.Path);
             }
         }

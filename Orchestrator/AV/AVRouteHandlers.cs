@@ -88,7 +88,7 @@ namespace Orchestrator.AV
             if (error != ForwarderError.None)
             {
                 var errorFeature = httpContext.Features.Get<IForwarderErrorFeature>();
-                logger.LogError(errorFeature.Exception!, "Error in catch-all handler for {Path}",
+                logger.LogError(errorFeature.Exception!, "Error in iiif-av direct handler for {Path}",
                     httpContext.Request.Path);
             }
         }

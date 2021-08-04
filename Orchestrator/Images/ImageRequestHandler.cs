@@ -37,8 +37,6 @@ namespace Orchestrator.Images
         /// <returns><see cref="IProxyActionResult"/> object containing downstream target</returns>
         public async Task<IProxyActionResult> HandleRequest(HttpContext httpContext)
         {
-            Logger.LogDebug("Handling request for {Path}", httpContext.Request.Path);
-
             var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest<ImageAssetDeliveryRequest>(httpContext);
             if (statusCode.HasValue || assetRequest == null)
             {

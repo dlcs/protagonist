@@ -26,7 +26,12 @@ namespace Orchestrator.ReverseProxy
             await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix);
 
             // Assign the custom uri. Be careful about extra slashes when concatenating here.
-            proxyRequest.RequestUri = new Uri(rewriteWholePath ? newPath : $"{destinationPrefix}/{newPath}");
+            proxyRequest.RequestUri = rewriteWholePath ? new Uri(newPath) : GetNewDestination(destinationPrefix);
         }
+
+        private Uri GetNewDestination(string destinationPrefix)
+            => new(destinationPrefix[^1] == '/'
+                ? $"{destinationPrefix}{newPath}"
+                : $"{destinationPrefix}/{newPath}");
     }
 }

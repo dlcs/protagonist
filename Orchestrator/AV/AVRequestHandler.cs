@@ -40,9 +40,6 @@ namespace Orchestrator.AV
         public async Task<IProxyActionResult> HandleRequest(HttpContext httpContext)
         {
             // TODO - verify RangeRequest
-            
-            Logger.LogDebug("Handling request for {Path}", httpContext.Request.Path);
-            
             var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest<ImageAssetDeliveryRequest>(httpContext);
             if (statusCode.HasValue || assetRequest == null)
             {
