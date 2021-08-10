@@ -66,6 +66,7 @@ namespace DLCS.Web.Requests.AssetDelivery
                 .Append("/")
                 .ToString();
             
+            // TODO - should we verify Space exists here?
             request.Customer = await pathCustomerRepository.GetCustomer(parts[customerIndex]);
         }
     }

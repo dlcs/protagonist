@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Yarp.ReverseProxy.Forwarder;
 
 namespace Orchestrator.Tests.Integration.Infrastructure
@@ -39,7 +40,27 @@ namespace Orchestrator.Tests.Integration.Infrastructure
             return Task.FromResult<HttpResponseMessage>(response);
         }
     }
+    
+    public class TestProxyForwarder : IHttpForwarder
+    {
+        public async ValueTask<ForwarderError> SendAsync(HttpContext context, string destinationPrefix, HttpMessageInvoker httpClient,
+            ForwarderRequestConfig requestConfig, HttpTransformer transformer)
+        {
+            var destinationUri = new Uri(destinationPrefix);
+            var requestUri = new UriBuilder(destinationUri.Scheme, destinationUri.Host, destinationUri.Port,
+                context.Request.Path);
+            var requestMessage = context.CreateProxyHttpRequest(requestUri.Uri);
+            await transformer.TransformRequestAsync(context, requestMessage, destinationPrefix);
+            
+            await context.Response.WriteAsJsonAsync(new ProxyResponse(requestMessage));
 
+            return ForwarderError.None;
+        }
+    }
+
+    /// <summary>
+    /// Response written by <see cref="TestProxyHandler"/>, used to verify proxied requests
+    /// </summary>
     public class ProxyResponse
     {
         public Uri Uri { get; set; }

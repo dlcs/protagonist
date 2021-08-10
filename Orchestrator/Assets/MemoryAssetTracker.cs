@@ -16,7 +16,10 @@ namespace Orchestrator.Assets
         private readonly IAppCache appCache;
         private readonly ILogger<MemoryAssetTracker> logger;
 
-        public MemoryAssetTracker(IAssetRepository assetRepository, IAppCache appCache,
+        private const string NullId = "__notfound__";
+        private static readonly TrackedAsset NullTrackedAsset = new() {AssetId = NullId};
+
+    public MemoryAssetTracker(IAssetRepository assetRepository, IAppCache appCache,
             ILogger<MemoryAssetTracker> logger)
         {
             this.assetRepository = assetRepository;
@@ -24,22 +27,32 @@ namespace Orchestrator.Assets
             this.logger = logger;
         }
 
-        public Task<TrackedAsset> GetAsset(AssetId assetId)
-            => GetTrackedAsset(assetId.ToString());
+        public async Task<TrackedAsset?> GetAsset(AssetId assetId)
+        {
+            var trackedAsset = await GetTrackedAsset(assetId.ToString());
+            return trackedAsset.AssetId == NullId ? null : trackedAsset;
+        }
 
         private async Task<TrackedAsset> GetTrackedAsset(string assetId)
         {
             var key = $"Track:{assetId}";
             return await appCache.GetOrAddAsync(key, async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10); // TODO - pull from config
                 logger.LogDebug("Refreshing cache for {AssetId}", assetId);
                 var asset = await assetRepository.GetAsset(assetId);
-                return new TrackedAsset
+                if (asset != null)
                 {
-                    AssetId = assetId,
-                    RequiresAuth = asset.RequiresAuth
-                };
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10); // TODO - pull from config
+                    return new TrackedAsset
+                    {
+                        AssetId = assetId,
+                        RequiresAuth = asset.RequiresAuth
+                    };
+                }
+
+                logger.LogInformation("Asset {AssetId} not found, caching null object", assetId);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1); // TODO - pull from config
+                return NullTrackedAsset;
             });
         }
     }

@@ -8,6 +8,6 @@ namespace Orchestrator.Assets
     /// </summary>
     public interface IAssetTracker
     {
-        Task<TrackedAsset> GetAsset(AssetId assetId);
+        Task<TrackedAsset?> GetAsset(AssetId assetId);
     }
 }

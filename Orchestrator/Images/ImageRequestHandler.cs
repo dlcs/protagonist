@@ -45,6 +45,11 @@ namespace Orchestrator.Images
 
             // If "HEAD" then add CORS - is this required here?
             var asset = await GetAsset(assetRequest);
+            if (asset == null)
+            {
+                return new StatusCodeProxyResult(HttpStatusCode.NotFound);
+            }
+            
             if (asset.RequiresAuth)
             {
                 Logger.LogDebug("Request for {Path} requires auth, proxying to orchestrator", httpContext.Request.Path);

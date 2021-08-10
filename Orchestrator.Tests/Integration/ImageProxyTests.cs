@@ -11,6 +11,9 @@ using Yarp.ReverseProxy.Forwarder;
 
 namespace Orchestrator.Tests.Integration
 {
+    /// <summary>
+    /// Test of all requests handled by YARP configuration
+    /// </summary>
     public class ImageProxyTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         private readonly HttpClient httpClient;

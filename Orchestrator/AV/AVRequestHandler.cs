@@ -40,7 +40,7 @@ namespace Orchestrator.AV
         public async Task<IProxyActionResult> HandleRequest(HttpContext httpContext)
         {
             // TODO - verify RangeRequest
-            var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest<ImageAssetDeliveryRequest>(httpContext);
+            var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest<AVAssetDeliveryRequest>(httpContext);
             if (statusCode.HasValue || assetRequest == null)
             {
                 return new StatusCodeProxyResult(statusCode ?? HttpStatusCode.InternalServerError);

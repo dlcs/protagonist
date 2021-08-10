@@ -6,7 +6,6 @@ using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
-using Orchestrator.ReverseProxy;
 
 namespace Orchestrator
 {
@@ -21,9 +20,9 @@ namespace Orchestrator
             IAssetTracker assetTracker,
             IAssetDeliveryPathParser assetDeliveryPathParser)
         {
-            this.Logger = logger;
-            this.AssetTracker = assetTracker;
-            this.AssetDeliveryPathParser = assetDeliveryPathParser;
+            Logger = logger;
+            AssetTracker = assetTracker;
+            AssetDeliveryPathParser = assetDeliveryPathParser;
         }
 
         protected async Task<(T? assetRequest, HttpStatusCode? statusCode)> TryGetAssetDeliveryRequest<T>(
@@ -49,11 +48,11 @@ namespace Orchestrator
             {
                 // TODO - is this the correct status?
                 Logger.LogError(ex, "Error parsing path '{Path}'", httpContext.Request.Path);
-                return (null, HttpStatusCode.InternalServerError);
+                return (null, HttpStatusCode.BadRequest);
             }
         }
 
-        protected async Task<TrackedAsset> GetAsset(ImageAssetDeliveryRequest imageAssetRequest)
+        protected async Task<TrackedAsset?> GetAsset(BaseAssetRequest imageAssetRequest)
         {
             var imageId = imageAssetRequest.GetAssetImageId();
             var asset = await AssetTracker.GetAsset(imageId);
