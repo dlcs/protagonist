@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
 using DLCS.Web.Auth;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
@@ -11,18 +10,18 @@ using Orchestrator.Assets;
 using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
 
-namespace Orchestrator.AV
+namespace Orchestrator.TimeBased
 {
     /// <summary>
     /// Reverse-proxy routing logic for /iiif-av/ requests 
     /// </summary>
-    public class AVRequestHandler : RequestHandlerBase
+    public class TimeBasedRequestHandler : RequestHandlerBase
     {
         private readonly IDeliveratorClient deliveratorClient;
         private readonly ProxySettings proxySettings;
 
-        public AVRequestHandler(
-            ILogger<AVRequestHandler> logger,
+        public TimeBasedRequestHandler(
+            ILogger<TimeBasedRequestHandler> logger,
             IAssetTracker assetTracker,
             IAssetDeliveryPathParser assetDeliveryPathParser,
             IDeliveratorClient deliveratorClient,
@@ -40,7 +39,7 @@ namespace Orchestrator.AV
         public async Task<IProxyActionResult> HandleRequest(HttpContext httpContext)
         {
             // TODO - verify RangeRequest
-            var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest<AVAssetDeliveryRequest>(httpContext);
+            var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest<TimeBasedAssetDeliveryRequest>(httpContext);
             if (statusCode.HasValue || assetRequest == null)
             {
                 return new StatusCodeProxyResult(statusCode ?? HttpStatusCode.InternalServerError);
@@ -48,7 +47,14 @@ namespace Orchestrator.AV
 
             // If "HEAD" then add CORS - is this required here?
             var asset = await GetAsset(assetRequest);
-            var s3Path = $"{proxySettings.S3HttpBase}/{proxySettings.StorageBucket}/{assetRequest.GetAssetImageId()}";
+            if (asset == null)
+            {
+                Logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
+                return new StatusCodeProxyResult(HttpStatusCode.NotFound);
+            }
+            
+            var s3Path =
+                $"{proxySettings.S3HttpBase}/{proxySettings.StorageBucket}/{assetRequest.GetAssetImageId()}{assetRequest.TimeBasedRequest}";
             if (!asset.RequiresAuth)
             {
                 Logger.LogDebug("No auth for {Path}, 302 to S3 object {S3}", httpContext.Request.Path, s3Path);

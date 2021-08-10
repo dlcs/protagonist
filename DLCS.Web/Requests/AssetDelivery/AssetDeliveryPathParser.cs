@@ -40,6 +40,10 @@ namespace DLCS.Web.Requests.AssetDelivery
             {
                 imageAssetRequest.IIIFImageRequest = ImageRequest.Parse(path, assetRequest.BasePath);
             }
+            else if (assetRequest is TimeBasedAssetDeliveryRequest timebasedAssetRequest)
+            {
+                timebasedAssetRequest.TimeBasedRequest = timebasedAssetRequest.AssetPath.Replace(assetRequest.AssetId, string.Empty);
+            }
 
             return assetRequest;
         }

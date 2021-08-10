@@ -47,6 +47,7 @@ namespace Orchestrator.Images
             var asset = await GetAsset(assetRequest);
             if (asset == null)
             {
+                Logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
                 return new StatusCodeProxyResult(HttpStatusCode.NotFound);
             }
             

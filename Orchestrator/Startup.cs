@@ -16,10 +16,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
-using Orchestrator.AV;
 using Orchestrator.Images;
 using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
+using Orchestrator.TimeBased;
 using Serilog;
 
 namespace Orchestrator
@@ -48,7 +48,7 @@ namespace Orchestrator
                 .AddSingleton<IAssetRepository, AssetRepository>()
                 .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
-                .AddSingleton<AVRequestHandler>()
+                .AddSingleton<TimeBasedRequestHandler>()
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>()
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
@@ -102,7 +102,7 @@ namespace Orchestrator
                 {
                     endpoints.MapReverseProxy();
                     endpoints.MapImageHandling();
-                    endpoints.MapAVHandling();
+                    endpoints.MapTimeBasedHandling();
                     endpoints.MapHealthChecks("/health");
                 });
         }

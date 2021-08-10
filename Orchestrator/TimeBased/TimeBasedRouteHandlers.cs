@@ -12,18 +12,18 @@ using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
 
-namespace Orchestrator.AV
+namespace Orchestrator.TimeBased
 {
     /// <summary>
     /// Route-to-code handlers for /iiif-av/ paths
     /// </summary>
-    public static class AVRouteHandlers
+    public static class TimeBasedRouteHandlers
     {
         private static readonly HttpMessageInvoker HttpClient;
         private static readonly HttpTransformer DefaultTransformer;
         private static readonly ForwarderRequestConfig RequestOptions;
 
-        static AVRouteHandlers()
+        static TimeBasedRouteHandlers()
         {
             // TODO - should this be shared by AV + Image handling?
             HttpClient = new HttpMessageInvoker(new SocketsHttpHandler
@@ -42,12 +42,12 @@ namespace Orchestrator.AV
         /// Add endpoint mappings for /iiif-av/ paths
         /// </summary>
         /// <param name="endpoints">Current <see cref="IEndpointRouteBuilder"/> object.</param>
-        public static void MapAVHandling(this IEndpointRouteBuilder endpoints)
+        public static void MapTimeBasedHandling(this IEndpointRouteBuilder endpoints)
         {
-            var requestHandler = endpoints.ServiceProvider.GetService<AVRequestHandler>();
+            var requestHandler = endpoints.ServiceProvider.GetService<TimeBasedRequestHandler>();
             var forwarder = endpoints.ServiceProvider.GetService<IHttpForwarder>();
             var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
-                .CreateLogger(nameof(AVRouteHandlers));
+                .CreateLogger(nameof(TimeBasedRouteHandlers));
             var settings = endpoints.ServiceProvider.GetService<IOptions<ReverseProxySettings>>();
 
             endpoints.Map("/iiif-av/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
@@ -73,7 +73,7 @@ namespace Orchestrator.AV
             
             // TODO - tidy me
             var proxyAction = proxyActionResult as ProxyActionResult;
-            var root = proxyAction.Target == ProxyDestination.S3
+            var root = proxyAction.Target != ProxyDestination.S3
                 ? reverseProxySettings.Value.GetAddressForProxyTarget(proxyAction.Target).ToString()
                 : proxyAction.Path;
             

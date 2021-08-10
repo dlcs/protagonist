@@ -108,7 +108,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
                 .Returns(customer);
 
             // Act
-            var imageRequest = await sut.Parse<AVAssetDeliveryRequest>(path);
+            var imageRequest = await sut.Parse<TimeBasedAssetDeliveryRequest>(path);
 
             // Assert
             imageRequest.RoutePrefix.Should().Be("iiif-av");
@@ -118,6 +118,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             imageRequest.Space.Should().Be(1);
             imageRequest.AssetPath.Should().Be("the-astronaut/full/full/max/max/0/default.mp3");
             imageRequest.AssetId.Should().Be("the-astronaut");
+            imageRequest.TimeBasedRequest.Should().Be("/full/full/max/max/0/default.mp3");
         }
     }
 }
