@@ -58,6 +58,7 @@ namespace Test.Helpers.Integration
         {
             // Create basic buckets used by DLCS
             await AmazonS3.PutBucketAsync("protagonist-test-origin");
+            await AmazonS3.PutBucketAsync("protagonist-thumbs");
         }
     }
 }
