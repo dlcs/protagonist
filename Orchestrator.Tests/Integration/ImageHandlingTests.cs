@@ -9,11 +9,12 @@ using DLCS.Model.Assets;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
 using Xunit;
 using Yarp.ReverseProxy.Forwarder;
 
-namespace Orchestrator.Tests.Integration.Infrastructure
+namespace Orchestrator.Tests.Integration
 {
     /// <summary>
     /// Test of all requests handled by custom iiif-img handling
