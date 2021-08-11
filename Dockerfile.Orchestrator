@@ -8,22 +8,11 @@ COPY ["DLCS.Repository/DLCS.Repository.csproj", "DLCS.Repository/"]
 COPY ["DLCS.Model/DLCS.Model.csproj", "DLCS.Model/"]
 COPY ["DLCS.Web/DLCS.Web.csproj", "DLCS.Web/"]
 
-COPY ["Orchestrator.Tests/Orchestrator.Tests.csproj", "Orchestrator.Tests/"]
-COPY ["IIIF.Tests/IIIF.Tests.csproj", "IIIF.Tests/"]
-COPY ["DLCS.Core.Tests/DLCS.Core.Tests.csproj", "DLCS.Core.Tests/"]
-COPY ["DLCS.Repository.Tests/DLCS.Repository.Tests.csproj", "DLCS.Repository.Tests/"]
-COPY ["DLCS.Model.Tests/DLCS.Model.Tests.csproj", "DLCS.Model.Tests/"]
-COPY ["DLCS.Web.Tests/DLCS.Web.Tests.csproj", "DLCS.Web.Tests/"]
-
 RUN dotnet restore "Orchestrator/Orchestrator.csproj"
 
 COPY . .
 WORKDIR "/src/Orchestrator"
 RUN dotnet build "Orchestrator.csproj" --no-restore -c Release -o /app/build
-
-FROM build AS testrunner
-WORKDIR "/src"
-RUN dotnet test "protagonist.sln" --filter "Category!=Database&Category!=Manual&Category!=Integration"
 
 FROM build AS publish
 RUN dotnet publish "Orchestrator.csproj" --no-restore -c Release -o /app/publish
