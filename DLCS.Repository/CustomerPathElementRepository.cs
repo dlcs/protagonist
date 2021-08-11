@@ -60,7 +60,7 @@ namespace DLCS.Repository
             const string key = "CustomerPathElementRepository_CustomerLookup";
             return appCache.GetOrAddAsync(key, async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
                 logger.LogDebug("refreshing customer name/id lookup from database");
                 return new ReadOnlyMap<string, int>(await customerRepository.GetCustomerIdLookup());
             });
