@@ -54,7 +54,7 @@ namespace Orchestrator.Images
             if (asset.RequiresAuth)
             {
                 Logger.LogDebug("Request for {Path} requires auth, proxying to orchestrator", httpContext.Request.Path);
-                return new ProxyActionResult(ProxyDestination.Orchestrator);
+                return new ProxyActionResult(ProxyDestination.Orchestrator, assetRequest.NormalisedFullPath);
             }
             
             if (IsRequestForUVThumb(httpContext, assetRequest))
@@ -73,7 +73,7 @@ namespace Orchestrator.Images
                 }
             }
             
-            return new ProxyActionResult(ProxyDestination.CachingProxy);
+            return new ProxyActionResult(ProxyDestination.CachingProxy, assetRequest.NormalisedFullPath);
         }
 
         private bool IsRequestForUVThumb(HttpContext httpContext, ImageAssetDeliveryRequest requestModel)

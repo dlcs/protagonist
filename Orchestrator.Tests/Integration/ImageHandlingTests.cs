@@ -50,7 +50,6 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_UnknownCustomer_Returns404()
         {
             // Arrange
-            
             const string path = "iiif-img/1/1/my-image/full/full/0/default.jpg";
 
             // Act
@@ -98,27 +97,29 @@ namespace Orchestrator.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
         
-        [Fact]
-        public async Task Get_ImageRequiresAuth_RedirectsToDeliverator()
+        [Theory]
+        [InlineData("iiif-img/99/1/test-authid/full/!200,200/0/default.jpg", "id")]
+        [InlineData("iiif-img/test/1/test-authdisplay/full/!200,200/0/default.jpg", "display")]
+        public async Task Get_ImageRequiresAuth_RedirectsToDeliverator(string path, string type)
         {
             // Arrange
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/test-auth", Roles = "basic",
+                Created = DateTime.Now, Customer = 99, Space = 1, Id = $"99/1/test-auth{type}", Roles = "basic",
                 MaxUnauthorised = 100, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
-            var expectedPath = new Uri("http://deliverator/iiif-img/99/1/test-auth/full/!200,200/0/default.jpg");
+            var expectedPath = new Uri($"http://deliverator/iiif-img/99/1/test-auth{type}/full/!200,200/0/default.jpg");
             
             // Act
-            var response = await httpClient.GetAsync("iiif-img/99/1/test-auth/full/!200,200/0/default.jpg");
+            var response = await httpClient.GetAsync(path);
             var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
             
             // Assert
             proxyResponse.Uri.Should().Be(expectedPath);
         }
-        
+
         [Fact]
         public async Task Get_ImageIsUVThumb_RewritesSizeAndRedirectsToThumbs()
         {
@@ -171,7 +172,8 @@ namespace Orchestrator.Tests.Integration
         [InlineData("iiif-img/99/1/resize/full/!200,200/0/default.jpg", "resize")]
         [InlineData("iiif-img/99/1/full/full/full/0/default.jpg", "full")]
         [InlineData("iiif-img/99/1/tile/0,0,1000,1000/200,200/0/default.jpg", "tile")]
-        public async Task Get_RedirectsToVarnish_AsFallThrough(string path, string imageName)
+        [InlineData("iiif-img/test/1/rewrite_id/0,0,1000,1000/200,200/0/default.jpg", "rewrite_id", "iiif-img/99/1/rewrite_id/0,0,1000,1000/200,200/0/default.jpg")]
+        public async Task Get_RedirectsToVarnish_AsFallThrough(string path, string imageName, string rewrittenPath = null)
         {
             // Arrange
             await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -188,7 +190,7 @@ namespace Orchestrator.Tests.Integration
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
-            var expectedPath = new Uri($"http://varnish/{path}");
+            var expectedPath = new Uri($"http://varnish/{rewrittenPath ?? path}");
             
             // Act
             var response = await httpClient.GetAsync(path);

@@ -26,11 +26,11 @@ namespace Orchestrator.ReverseProxy
             // Copy all request headers
             await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix);
 
-            // TODO - handle x-forwarded-* headers?
-            proxyRequest.Headers.Host = new Uri(destinationPrefix).Authority;
-
             // Assign the custom uri. Be careful about extra slashes when concatenating here.
             proxyRequest.RequestUri = rewriteWholePath ? new Uri(newPath) : GetNewDestination(destinationPrefix);
+            
+            // TODO - handle x-forwarded-* headers?
+            proxyRequest.Headers.Host = proxyRequest.RequestUri.Authority;
         }
 
         private Uri GetNewDestination(string destinationPrefix)

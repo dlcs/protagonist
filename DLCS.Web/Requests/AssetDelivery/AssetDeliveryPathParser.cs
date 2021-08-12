@@ -53,25 +53,32 @@ namespace DLCS.Web.Requests.AssetDelivery
             const int routeIndex = 0;
             const int customerIndex = 1;
             const int spacesIndex = 2;
-            
+
             string[] parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            
+
             request.RoutePrefix = parts[routeIndex];
             request.CustomerPathValue = parts[customerIndex];
-            request.Space = int.Parse(parts[spacesIndex]);
+            var space = parts[spacesIndex];
+            request.Space = int.Parse(space);
             request.AssetPath = string.Join("/", parts.Skip(3));
             request.AssetId = request.AssetPath.Split("/")[0];
-            request.BasePath = new StringBuilder("/", 50)
-                .Append(parts[routeIndex])
-                .Append("/")
-                .Append(parts[customerIndex])
-                .Append("/")
-                .Append(parts[spacesIndex])
-                .Append("/")
-                .ToString();
-            
+            request.BasePath = GenerateBasePath(request.RoutePrefix, request.CustomerPathValue, space);
+
             // TODO - should we verify Space exists here?
             request.Customer = await pathCustomerRepository.GetCustomer(parts[customerIndex]);
+
+            request.NormalisedBasePath = GenerateBasePath(request.RoutePrefix, request.Customer.Id, space);
+            request.NormalisedFullPath = string.Concat(request.NormalisedBasePath, request.AssetPath);
         }
+
+        private static string GenerateBasePath(string route, object customer, string space) 
+            => new StringBuilder("/", 50)
+                .Append(route)
+                .Append("/")
+                .Append(customer)
+                .Append("/")
+                .Append(space)
+                .Append("/")
+                .ToString();
     }
 }

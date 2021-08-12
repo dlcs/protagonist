@@ -43,6 +43,18 @@ namespace DLCS.Web.Requests.AssetDelivery
         /// e.g. my-image/full/61,100/0/default.jpg => my-image
         /// </summary>
         public string AssetId { get; set; }
+        
+        /// <summary>
+        /// The normalised BasePath for this request, this is {routePrefix}/{customer}/{space} always using numeric
+        /// value for {customer}, regardless of what was passed 
+        /// </summary>
+        public string NormalisedBasePath { get; set; }
+        
+        /// <summary>
+        /// The normalised original full request Path, always using numeric  value for {customer}, regardless of what
+        /// was passed. 
+        /// </summary>
+        public string NormalisedFullPath { get; set; }
 
         /// <summary>
         /// Generate an <see cref="Core.Types.AssetId"/> object from BaseAssetRequest
