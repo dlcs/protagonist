@@ -18,13 +18,28 @@ There are a number of shared projects and entry point applications that use thes
 ### Shared
 
 * DLCS.Core - general non-domain specific utilities and exceptions.
+* DLCS.Mediatr - shared classes for projects using [Mediatr](https://github.com/jbogard/MediatR).
 * DLCS.Model - DLCS models and repository interfaces.
-* DLCS.Repository - Repository implementations.
+* DLCS.Repository - Repository implementations and `DbContext` for database.
 * DLCS.Web - Classes that are aware of HTTP pipeline (e.g. request/response classes)
 * IIIF - For parsing and processing IIIF requests.
 
-In addition to the above there are a number of *.Tests classes for automated tests.
+In addition to the above there are a number of `*.Tests` classes for automated tests.
 
 ### Entry Points
 
-* Thumbs- simplified handling of thumbnail requests.
+* Thumbs - simplified handling of thumbnail requests.
+* Orchestrator - reverse proxy that serves user requests (WIP).
+* Portal - administration UI for managing assets (WIP).
+* API - HTTP API for interactions (WIP).
+
+## Technology :robot:
+
+There are a variety of technologies used across the projects, including:
+
+* [LazyCache](https://github.com/alastairtree/LazyCache) - lazy in-memory cache.
+* [Serilog](https://serilog.net/) - structured logging framework.
+* [Mediatr](https://github.com/jbogard/MediatR) - mediator implementation for in-proc messaging.
+* [EFCore](https://github.com/dotnet/efcore) - ORM data-access and migrations.
+* [Dapper](https://github.com/DapperLib/Dapper) - high performance object mapper.
+* [XUnit](https://xunit.net/) - automated test framework.
