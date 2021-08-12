@@ -1,3 +1,4 @@
+using System.Net.Http;
 using Amazon.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
@@ -56,12 +57,15 @@ namespace Orchestrator
                 .AddSingleton<IAssetTracker, MemoryAssetTracker>();
 
             var reverseProxySettings = reverseProxySection.Get<ReverseProxySettings>();
-            services.AddHttpClient<IDeliveratorClient, DeliveratorClient>(client =>
-            {
-                client.DefaultRequestHeaders.Add("x-requested-by", "DLCS Protagonist Yarp"); // TODO - add this to all outgoing?
-                client.BaseAddress = reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.Orchestrator);
-            });
-
+            services
+                .AddHttpClient<IDeliveratorClient, DeliveratorClient>(client =>
+                {
+                    // TODO - add this to all outgoing?
+                    client.DefaultRequestHeaders.Add("x-requested-by", "DLCS Protagonist Yarp");
+                    client.BaseAddress = reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.Orchestrator);
+                })
+                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false });
+            
             services.AddCors(options =>
             {
                 options.AddPolicy("CorsPolicy",

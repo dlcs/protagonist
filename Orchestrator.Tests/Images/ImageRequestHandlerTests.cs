@@ -86,7 +86,7 @@ namespace Orchestrator.Tests.Images
             
             // Assert
             result.Should().BeOfType<StatusCodeProxyResult>()
-                .Which.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+                .Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
         [Fact]

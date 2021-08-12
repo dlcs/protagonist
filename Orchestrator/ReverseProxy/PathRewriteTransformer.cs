@@ -19,14 +19,17 @@ namespace Orchestrator.ReverseProxy
             this.newPath = newPath;
             this.rewriteWholePath = rewriteWholePath;
         }
-        
-        public override async ValueTask TransformRequestAsync(HttpContext httpContext, HttpRequestMessage proxyRequest, string destinationPrefix)
+
+        public override async ValueTask TransformRequestAsync(HttpContext httpContext, HttpRequestMessage proxyRequest,
+            string destinationPrefix)
         {
             // Copy all request headers
             await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix);
 
-            // Assign the custom uri. Be careful about extra slashes when concatenating here.
+            // TODO - handle x-forwarded-* headers?
             proxyRequest.Headers.Host = new Uri(destinationPrefix).Authority;
+
+            // Assign the custom uri. Be careful about extra slashes when concatenating here.
             proxyRequest.RequestUri = rewriteWholePath ? new Uri(newPath) : GetNewDestination(destinationPrefix);
         }
 

@@ -78,25 +78,26 @@ namespace Orchestrator.TimeBased
 
         private async Task<bool> IsAuthenticated(AssetId assetId, HttpContext httpContext)
         {
-            var authStuff = GetAuthMechanism(assetId, httpContext);
-            if (!authStuff.HasAuth)
+            var requestAuthentication = GetAuthMechanism(assetId, httpContext);
+            if (!requestAuthentication.HasAuth)
             {
                 return false;
             }
 
-            return authStuff.HaveCookie
-                ? await deliveratorClient.VerifyCookieAuth(assetId, httpContext.Request)
-                : await deliveratorClient.VerifyBearerAuth(assetId, authStuff.BearerToken!);
+            return requestAuthentication.HaveCookie
+                ? await deliveratorClient.VerifyCookieAuth(assetId, httpContext.Request, requestAuthentication.CookieName, requestAuthentication.CookieValue)
+                : await deliveratorClient.VerifyBearerAuth(assetId, requestAuthentication.BearerToken!);
         }
         
         private RequestAuth GetAuthMechanism(AssetId assetId, HttpContext httpContext)
         {
             var cookieName = $"dlcs-token-{assetId.Customer}";
-            if (httpContext.Request.Cookies.ContainsKey(cookieName))
+            if (httpContext.Request.Cookies.TryGetValue(cookieName, out var cookieValue))
             {
+                
                 Logger.LogDebug("Found cookie: '{CookieName}' for '{ImageId}'", assetId,
                     cookieName);
-                return RequestAuth.WithCookie();
+                return RequestAuth.WithCookie(cookieName, cookieValue!);
             }
             
             var headerValue = httpContext.Request.GetAuthHeaderValue(AuthenticationHeaderUtils.BearerTokenScheme);
@@ -116,13 +117,15 @@ namespace Orchestrator.TimeBased
         public string? BearerToken { get; private init;}
         public bool HaveBearerToken { get; private init; }
         public bool HaveCookie { get; private init; }
+        public string CookieValue { get; private init; }
+        public string CookieName { get; private init; }
             
         public bool HasAuth => HaveBearerToken || HaveCookie;
 
         public static RequestAuth WithBearerToken(string bearerToken)
-            => new() {BearerToken = bearerToken, HaveBearerToken = true};
+            => new() { BearerToken = bearerToken, HaveBearerToken = true };
 
-        public static RequestAuth WithCookie()
-            => new() {HaveCookie = true};
+        public static RequestAuth WithCookie(string cookieName, string cookieValue)
+            => new() { HaveCookie = true, CookieName = cookieName, CookieValue = cookieValue };
     }
 }
