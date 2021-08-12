@@ -45,10 +45,10 @@ namespace DLCS.Repository.Tests.Storage.S3
                         A<CancellationToken>.Ignored))
                 .Returns(new GetObjectResponse {ResponseStream = responseStream});
 
-            var objectInBucket = new ObjectInBucket {Bucket = bucket, Key = key};
+            var objectInBucket = new ObjectInBucket(bucket, key);
 
             // Act
-            var targetStream = await sut.GetObjectFromBucket(objectInBucket);
+            var targetStream = (await sut.GetObjectFromBucket(objectInBucket)).Stream;
 
             // Assert
             var memoryStream = new MemoryStream();
@@ -68,7 +68,7 @@ namespace DLCS.Repository.Tests.Storage.S3
                         A<CancellationToken>.Ignored))
                 .ThrowsAsync(new AmazonS3Exception("uh-oh", ErrorType.Unknown, "123", "xxx-1", HttpStatusCode.NotFound));
 
-            var objectInBucket = new ObjectInBucket {Bucket = "MyBucket", Key = "MyKey"};
+            var objectInBucket = new ObjectInBucket("MyBucket", "MyKey");
 
             // Act
             var result = await sut.GetObjectFromBucket(objectInBucket);
@@ -90,7 +90,7 @@ namespace DLCS.Repository.Tests.Storage.S3
                         A<CancellationToken>.Ignored))
                 .ThrowsAsync(new AmazonS3Exception("uh-oh", ErrorType.Unknown, "123", "xxx-1", statusCode));
 
-            var objectInBucket = new ObjectInBucket {Bucket = "MyBucket", Key = "MyKey"};
+            var objectInBucket = new ObjectInBucket("MyBucket", "MyKey");
 
             // Act
             Func<Task> action = () => sut.GetObjectFromBucket(objectInBucket);

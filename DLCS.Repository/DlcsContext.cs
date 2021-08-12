@@ -1,6 +1,8 @@
 ﻿using DLCS.Model.Assets;
+using DLCS.Model.Customer;
 using DLCS.Repository.Entities;
 using Microsoft.EntityFrameworkCore;
+using OriginStrategy = DLCS.Repository.Entities.OriginStrategy;
 
 #nullable disable
 

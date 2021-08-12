@@ -7,6 +7,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.Threading;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
+using DLCS.Repository.Storage;
 using IIIF;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -24,8 +25,8 @@ namespace DLCS.Repository.Assets
         private readonly ILogger<ThumbRepository> logger;
         private readonly IAssetRepository assetRepository;
         private readonly IThumbnailPolicyRepository thumbnailPolicyRepository;
-        private readonly AsyncKeyedLock asyncLocker = new AsyncKeyedLock();
-        private static readonly Regex BoundedThumbRegex = new Regex("^[0-9]+.jpg$");
+        private readonly AsyncKeyedLock asyncLocker = new();
+        private static readonly Regex BoundedThumbRegex = new("^[0-9]+.jpg$");
 
         public ThumbReorganiser(
             IBucketReader bucketReader,
@@ -172,8 +173,7 @@ namespace DLCS.Repository.Assets
 
         private async Task CreateSizesJson(ObjectInBucket rootKey, ThumbnailSizes thumbnailSizes)
         {
-            var sizesDest = rootKey.Clone();
-            sizesDest.Key += thumbConsts.SizesJsonKey;
+            var sizesDest = rootKey.CloneWithKey(StorageKeyGenerator.GetSizesJsonPath(rootKey.Key));
             await bucketReader.WriteToBucket(sizesDest, JsonConvert.SerializeObject(thumbnailSizes),
                 "application/json");
         }
@@ -195,11 +195,7 @@ namespace DLCS.Repository.Assets
                 if (BoundedThumbRegex.IsMatch(item) || item == oldSizesJsonKey)
                 {
                     logger.LogDebug($"Deleting legacy confined-thumb object: '{key}'");
-                    toDelete.Add(new ObjectInBucket
-                    {
-                        Bucket = rootKey.Bucket,
-                        Key = key
-                    });
+                    toDelete.Add(new ObjectInBucket(rootKey.Bucket, key));
                 }
             }
 

@@ -32,7 +32,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task EnsureNewLayout_DoesNothing_IfSizesJsonExists()
         {
             // Arrange
-            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            var rootKey = new ObjectInBucket("the-bucket", "2/1/the-astronaut/");
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
                 .Returns(new[] {"2/1/the-astronaut/s.json", "2/1/the-astronaut/200.jpg"});
             
@@ -48,7 +48,7 @@ namespace DLCS.Repository.Tests.Assets
         [Fact]
         public async Task EnsureNewLayout_CreatesExpectedResources_AllOpen()
         {
-            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            var rootKey = new ObjectInBucket("the-bucket", "2/1/the-astronaut/");
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
                 .Returns(new[]
                 {
@@ -99,7 +99,7 @@ namespace DLCS.Repository.Tests.Assets
         [Fact]
         public async Task EnsureNewLayout_CreatesExpectedResources_AllAuth()
         {
-            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            var rootKey = new ObjectInBucket("the-bucket", "2/1/the-astronaut/");
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
                 .Returns(new[]
                 {
@@ -150,7 +150,7 @@ namespace DLCS.Repository.Tests.Assets
         [Fact]
         public async Task EnsureNewLayout_CreatesExpectedResources_MixedAuthAndOpen()
         {
-            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            var rootKey = new ObjectInBucket("the-bucket", "2/1/the-astronaut/");
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
                 .Returns(new[]
                 {
@@ -208,7 +208,7 @@ namespace DLCS.Repository.Tests.Assets
         [Fact]
         public async Task EnsureNewLayout_CreatesExpectedResources_HandlingRoundingDifference_Portrait()
         {
-            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            var rootKey = new ObjectInBucket("the-bucket", "2/1/the-astronaut/");
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
                 .Returns(new[]
                 {
@@ -265,7 +265,7 @@ namespace DLCS.Repository.Tests.Assets
         [Fact]
         public async Task EnsureNewLayout_CreatesExpectedResources_HandlingRoundingDifference_Landscape()
         {
-            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            var rootKey = new ObjectInBucket("the-bucket", "2/1/the-astronaut/");
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
                 .Returns(new[]
                 {
@@ -322,7 +322,7 @@ namespace DLCS.Repository.Tests.Assets
         [Fact]
         public async Task EnsureNewLayout_DeletesOldConfinedSquareLayout()
         {
-            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            var rootKey = new ObjectInBucket("the-bucket", "2/1/the-astronaut/");
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
                 .Returns(new[]
                 {
@@ -353,7 +353,7 @@ namespace DLCS.Repository.Tests.Assets
         [Fact]
         public async Task EnsureNewLayout_DoesNotMakeConcurrentAttempts_ForSameKey()
         {
-            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            var rootKey = new ObjectInBucket("the-bucket", "2/1/the-astronaut/");
             var fakeBucketContents = new List<string> {"2/1/the-astronaut/200.jpg"};
 
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
@@ -385,9 +385,9 @@ namespace DLCS.Repository.Tests.Assets
         [Fact]
         public async Task EnsureNewLayout_AllowsConcurrentAttempts_ForDifferentKey()
         {
-            var key1 = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
-            var key2 = new ObjectInBucket {Bucket = "another-bucket", Key = "2/1/the-astronaut/"};
-            var key3 = new ObjectInBucket {Bucket = "the-bucket", Key = "3/1/the-astronaut/"};
+            var key1 = new ObjectInBucket("the-bucket", "2/1/the-astronaut/");
+            var key2 = new ObjectInBucket("another-bucket", "2/1/the-astronaut/");
+            var key3 = new ObjectInBucket("the-bucket", "3/1/the-astronaut/");
             
             var fakeBucketContents = new List<string> {"2/1/the-astronaut/200.jpg"};
 
@@ -422,9 +422,8 @@ namespace DLCS.Repository.Tests.Assets
         [Fact]
         public async Task EnsureNewLayout_AssetNotFound()
         {
-
             // Arrange
-            var rootKey = new ObjectInBucket { Bucket = "the-bucket", Key = "2/1/doesnotexit/" };
+            var rootKey = new ObjectInBucket("the-bucket", "2/1/doesnotexit/");
 
             Asset returnvalue = null;
             A.CallTo(() => assetRepository.GetAsset(rootKey.Key.TrimEnd('/')))

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository.Settings;
+using DLCS.Repository.Storage;
 using IIIF.ImageApi;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -45,7 +46,8 @@ namespace DLCS.Repository.Assets
             {
                 var location =
                     GetObjectInBucket(customerId, spaceId, imageRequest, sizeCandidate.LongestEdge!.Value);
-                return ThumbnailResponse.ExactSize(await bucketReader.GetObjectFromBucket(location));
+                var objectFromBucket = await bucketReader.GetObjectFromBucket(location);
+                return ThumbnailResponse.ExactSize(objectFromBucket.Stream);
             }
 
             if (!settings.CurrentValue.Resize)
@@ -97,13 +99,12 @@ namespace DLCS.Repository.Assets
                 return null;
             }
 
-            ObjectInBucket sizesList = new()
-            {
-                Bucket = settings.CurrentValue.ThumbsBucket,
-                Key = string.Concat(GetKeyRoot(customerId, spaceId, imageRequest), ThumbsSettings.Constants.SizesJsonKey)
-            };
+            ObjectInBucket sizesList = new(
+                settings.CurrentValue.ThumbsBucket,
+                StorageKeyGenerator.GetSizesJsonPath(GetKeyRoot(customerId, spaceId, imageRequest))
+            );
             
-            await using var stream = await bucketReader.GetObjectFromBucket(sizesList);
+            await using var stream = (await bucketReader.GetObjectFromBucket(sizesList)).Stream;
             if (stream == null)
             {
                 logger.LogError("Could not find sizes file for request '{OriginalPath}'", imageRequest.OriginalPath);
@@ -117,15 +118,13 @@ namespace DLCS.Repository.Assets
             return thumbnailSizes.Open;
         }
 
-        private ObjectInBucket GetObjectInBucket(int customerId, int spaceId, ImageRequest imageRequest, int longestEdge) 
-            => new()
-            {
-                Bucket = settings.CurrentValue.ThumbsBucket,
-                Key = $"{GetKeyRoot(customerId, spaceId, imageRequest)}open/{longestEdge}.jpg"
-            };
+        private ObjectInBucket GetObjectInBucket(int customerId, int spaceId, ImageRequest imageRequest,
+            int longestEdge)
+            => new(settings.CurrentValue.ThumbsBucket,
+                $"{GetKeyRoot(customerId, spaceId, imageRequest)}open/{longestEdge}.jpg");
 
         private string GetKeyRoot(int customerId, int spaceId, ImageRequest imageRequest) 
-            => $"{customerId}/{spaceId}/{imageRequest.Identifier}/";
+            => $"{StorageKeyGenerator.GetStorageKey(customerId, spaceId, imageRequest.Identifier)}/";
 
         private Task<ReorganiseResult> EnsureNewLayout(int customerId, int spaceId, ImageRequest imageRequest)
         {
@@ -135,11 +134,9 @@ namespace DLCS.Repository.Assets
                 return Task.FromResult(ReorganiseResult.Unknown);
             }
 
-            var rootKey = new ObjectInBucket
-            {
-                Bucket = currentSettings.ThumbsBucket,
-                Key = GetKeyRoot(customerId, spaceId, imageRequest)
-            };
+            var rootKey = new ObjectInBucket(
+                currentSettings.ThumbsBucket,
+                GetKeyRoot(customerId, spaceId, imageRequest));
 
             return thumbReorganiser.EnsureNewLayout(rootKey);
         }
@@ -164,7 +161,7 @@ namespace DLCS.Repository.Assets
                 imageRequest.OriginalPath);
 
             var key = GetObjectInBucket(customerId, spaceId, imageRequest, toResize.MaxDimension);
-            var thumbnail = await bucketReader.GetObjectFromBucket(key);
+            var thumbnail = (await bucketReader.GetObjectFromBucket(key)).Stream;
             var memStream = new MemoryStream();
             using var image = await Image.LoadAsync(thumbnail);
             image.Mutate(x => x.Resize(idealSize.Width, idealSize.Height, KnownResamplers.Lanczos3));

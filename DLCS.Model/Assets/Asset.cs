@@ -55,5 +55,30 @@ namespace DLCS.Model.Assets
         }
         
         public bool RequiresAuth => !string.IsNullOrWhiteSpace(Roles) && MaxUnauthorised >= 0;
+        
+        // TODO - how to handle this? Split model + entity?
+        public string InitialOrigin { get; set; }
+        
+        /// <summary>
+        /// Get origin to use for ingestion. This will be 'initialOrigin' if present, else origin.
+        /// </summary>
+        public string GetIngestOrigin()
+            => string.IsNullOrWhiteSpace(InitialOrigin) ? Origin : InitialOrigin;
+        
+        private string uniqueName;
+        /// <summary>
+        /// Get the identifier part from from Id.
+        /// Id contains {cust}/{space}/{identifier}
+        /// </summary>
+        /// <returns></returns>
+        public string GetUniqueName()
+        {
+            if (string.IsNullOrWhiteSpace(uniqueName))
+            {
+                uniqueName = Id[(Id.LastIndexOf('/') + 1)..];
+            }
+
+            return uniqueName;
+        }
     }
 }

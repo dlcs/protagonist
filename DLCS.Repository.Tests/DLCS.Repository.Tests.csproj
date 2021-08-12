@@ -25,6 +25,11 @@
 
     <ItemGroup>
       <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
+      <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Strategy" />
     </ItemGroup>
 
 </Project>
