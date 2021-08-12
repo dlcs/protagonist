@@ -267,7 +267,7 @@ namespace Orchestrator.Tests.Integration
         public Task<bool> VerifyBearerAuth(AssetId id, string bearerToken)
             => Task.FromResult(id.Asset.Contains("pass") || id.Asset.Contains("head"));
 
-        public Task<bool> VerifyCookieAuth(AssetId id, HttpRequest httpRequest)
+        public Task<bool> VerifyCookieAuth(AssetId id, HttpRequest httpRequest, string cookieName, string cookieValue)
             => Task.FromResult(id.Asset.Contains("pass") || id.Asset.Contains("head"));
     }
 }

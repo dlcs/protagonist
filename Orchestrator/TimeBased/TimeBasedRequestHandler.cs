@@ -79,10 +79,7 @@ namespace Orchestrator.TimeBased
         private async Task<bool> IsAuthenticated(AssetId assetId, HttpContext httpContext)
         {
             var requestAuthentication = GetAuthMechanism(assetId, httpContext);
-            if (!requestAuthentication.HasAuth)
-            {
-                return false;
-            }
+            if (!requestAuthentication.HasAuth) return false;
 
             return requestAuthentication.HaveCookie
                 ? await deliveratorClient.VerifyCookieAuth(assetId, httpContext.Request, requestAuthentication.CookieName, requestAuthentication.CookieValue)
@@ -94,9 +91,7 @@ namespace Orchestrator.TimeBased
             var cookieName = $"dlcs-token-{assetId.Customer}";
             if (httpContext.Request.Cookies.TryGetValue(cookieName, out var cookieValue))
             {
-                
-                Logger.LogDebug("Found cookie: '{CookieName}' for '{ImageId}'", assetId,
-                    cookieName);
+                Logger.LogDebug("Found cookie: '{CookieName}' for '{ImageId}'", assetId, cookieName);
                 return RequestAuth.WithCookie(cookieName, cookieValue!);
             }
             
