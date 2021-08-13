@@ -1,4 +1,5 @@
-﻿using DLCS.Model.Assets;
+﻿using DLCS.Core.Enum;
+using DLCS.Model.Assets;
 using DLCS.Model.Customer;
 using DLCS.Repository.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -207,7 +208,10 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Strategy)
                     .IsRequired()
-                    .HasMaxLength(500);
+                    .HasMaxLength(500)
+                    .HasConversion(
+                        v => v.GetDescription(),
+                        v => v.GetEnumFromString<OriginStrategyType>(true));
             });
 
             modelBuilder.Entity<CustomerStorage>(entity =>

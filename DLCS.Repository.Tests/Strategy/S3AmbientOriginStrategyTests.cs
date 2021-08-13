@@ -26,7 +26,7 @@ namespace DLCS.Repository.Tests.Strategy
             sut = new S3AmbientOriginStrategy(bucketReader, new NullLogger<S3AmbientOriginStrategy>());
             customerOriginStrategy = new CustomerOriginStrategy
             {
-                Strategy = OriginStrategy.S3Ambient
+                Strategy = OriginStrategyType.S3Ambient
             };
         }
 

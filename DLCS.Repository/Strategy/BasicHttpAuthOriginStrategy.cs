@@ -10,7 +10,6 @@ using DLCS.Model.Customer;
 using DLCS.Model.Security;
 using DLCS.Repository.Entities;
 using Microsoft.Extensions.Logging;
-using OriginStrategy = DLCS.Model.Customer.OriginStrategy;
 
 namespace DLCS.Repository.Strategy
 {
@@ -23,7 +22,7 @@ namespace DLCS.Repository.Strategy
         private readonly ICredentialsRepository credentialsRepository;
         private readonly ILogger<BasicHttpAuthOriginStrategy> logger;
         
-        public override OriginStrategy Strategy => OriginStrategy.BasicHttp;
+        public override OriginStrategyType Strategy => OriginStrategyType.BasicHttp;
 
         public BasicHttpAuthOriginStrategy(
             IHttpClientFactory httpClientFactory,

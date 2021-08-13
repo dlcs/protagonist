@@ -22,7 +22,7 @@ namespace DLCS.Repository.Strategy
             this.logger = logger;
         }
 
-        public override OriginStrategy Strategy => OriginStrategy.S3Ambient;
+        public override OriginStrategyType Strategy => OriginStrategyType.S3Ambient;
 
         protected override async Task<OriginResponse?> LoadAssetFromOriginImpl(Asset asset,
             CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)

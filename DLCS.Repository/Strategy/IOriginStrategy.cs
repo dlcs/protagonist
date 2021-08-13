@@ -11,9 +11,9 @@ namespace DLCS.Repository.Strategy
     public interface IOriginStrategy
     {
         /// <summary>
-        /// The <see cref="OriginStrategy"/> that this implementation handles.
+        /// The <see cref="OriginStrategyType"/> that this implementation handles.
         /// </summary>
-        public OriginStrategy Strategy { get; }
+        public OriginStrategyType Strategy { get; }
 
         /// <summary>
         /// Loads specified <see cref="Asset"/> from origin, using details in specified <see cref="CustomerOriginStrategy"/>

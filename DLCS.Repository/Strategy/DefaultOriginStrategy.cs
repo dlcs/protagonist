@@ -23,7 +23,7 @@ namespace DLCS.Repository.Strategy
             this.logger = logger;
         }
 
-        public override OriginStrategy Strategy => OriginStrategy.Default;
+        public override OriginStrategyType Strategy => OriginStrategyType.Default;
 
         protected override async Task<OriginResponse?> LoadAssetFromOriginImpl(Asset asset,
             CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)

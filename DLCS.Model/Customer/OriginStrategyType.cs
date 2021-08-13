@@ -3,9 +3,9 @@
 namespace DLCS.Model.Customer
 {
     /// <summary>
-    /// Represents a specific CustomerOriginStrategy
+    /// Represents a type of CustomerOriginStrategy which determines how resources are fetched.
     /// </summary>
-    public enum OriginStrategy
+    public enum OriginStrategyType
     {
         /// <summary>
         /// Use unauthorised http request to fetch original source. Default origin strategy. 

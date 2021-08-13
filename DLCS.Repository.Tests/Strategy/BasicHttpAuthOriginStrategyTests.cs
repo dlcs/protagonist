@@ -30,7 +30,7 @@ namespace DLCS.Repository.Tests.Strategy
             var httpClient = new HttpClient(httpHandler);
             A.CallTo(() => httpClientFactory.CreateClient("OriginStrategy")).Returns(httpClient);
 
-            customerOriginStrategy = new CustomerOriginStrategy {Strategy = OriginStrategy.BasicHttp};
+            customerOriginStrategy = new CustomerOriginStrategy {Strategy = OriginStrategyType.BasicHttp};
 
             sut = new BasicHttpAuthOriginStrategy(httpClientFactory, credentialsRepository,
                 new NullLogger<BasicHttpAuthOriginStrategy>());

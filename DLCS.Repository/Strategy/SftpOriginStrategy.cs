@@ -11,7 +11,7 @@ namespace DLCS.Repository.Strategy
     /// </summary>
     public class SftpOriginStrategy : SafetyCheckOriginStrategy
     {
-        public override OriginStrategy Strategy => OriginStrategy.SFTP;
+        public override OriginStrategyType Strategy => OriginStrategyType.SFTP;
 
         protected override Task<OriginResponse?> LoadAssetFromOriginImpl(Asset asset,
             CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)

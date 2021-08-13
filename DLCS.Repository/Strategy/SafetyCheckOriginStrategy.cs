@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
-using OriginStrategy = DLCS.Model.Customer.OriginStrategy;
 
 namespace DLCS.Repository.Strategy
 {
@@ -13,7 +12,7 @@ namespace DLCS.Repository.Strategy
     /// </summary>
     public abstract class SafetyCheckOriginStrategy : IOriginStrategy
     {
-        public abstract OriginStrategy Strategy { get; }
+        public abstract OriginStrategyType Strategy { get; }
 
         protected abstract Task<OriginResponse?> LoadAssetFromOriginImpl(Asset asset,
             CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default);
@@ -26,8 +25,7 @@ namespace DLCS.Repository.Strategy
             asset.ThrowIfNull(nameof(asset));
                 
             var originStrategy = customerOriginStrategy.Strategy;
-            // TODO - fix this, will fail
-            if (originStrategy != Strategy.ToString())
+            if (originStrategy != Strategy)
             {
                 throw new InvalidOperationException(
                     $"Provided CustomerOriginStrategy uses strategy {originStrategy} which differs from current IOriginStrategy.Strategy '{Strategy}'");

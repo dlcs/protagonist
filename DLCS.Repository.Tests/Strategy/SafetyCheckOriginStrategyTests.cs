@@ -45,10 +45,10 @@ namespace DLCS.Repository.Tests.Strategy
         }
         
         [Theory]
-        [InlineData(OriginStrategy.Default)]
-        [InlineData(OriginStrategy.BasicHttp)]
-        [InlineData(OriginStrategy.SFTP)]
-        public void LoadAssetFromOrigin_Throws_IfCustomerOriginStrategyDiffersFromImplementationStrategy(OriginStrategy strategy)
+        [InlineData(OriginStrategyType.Default)]
+        [InlineData(OriginStrategyType.BasicHttp)]
+        [InlineData(OriginStrategyType.SFTP)]
+        public void LoadAssetFromOrigin_Throws_IfCustomerOriginStrategyDiffersFromImplementationStrategy(OriginStrategyType strategy)
         {
             // Arrange
             var customerOriginStrategy = new CustomerOriginStrategy {Strategy = strategy};
@@ -65,7 +65,7 @@ namespace DLCS.Repository.Tests.Strategy
         public void LoadAssetFromOrigin_Throws_IfAssetNull()
         {
             // Arrange
-            var customerOriginStrategy = new CustomerOriginStrategy {Strategy = OriginStrategy.S3Ambient};
+            var customerOriginStrategy = new CustomerOriginStrategy {Strategy = OriginStrategyType.S3Ambient};
             
             // Act
             Func<Task> action = () => sut.LoadAssetFromOrigin(null, customerOriginStrategy);
@@ -80,7 +80,7 @@ namespace DLCS.Repository.Tests.Strategy
         public async Task LoadAssetFromOrigin_CallsImplementation_IfAssetNull()
         {
             // Arrange
-            var customerOriginStrategy = new CustomerOriginStrategy {Strategy = OriginStrategy.S3Ambient};
+            var customerOriginStrategy = new CustomerOriginStrategy {Strategy = OriginStrategyType.S3Ambient};
             
             // Act
             await sut.LoadAssetFromOrigin(new Asset(), customerOriginStrategy);
@@ -91,7 +91,7 @@ namespace DLCS.Repository.Tests.Strategy
         
         private class TestStrategy : SafetyCheckOriginStrategy
         {
-            public override OriginStrategy Strategy => OriginStrategy.S3Ambient;
+            public override OriginStrategyType Strategy => OriginStrategyType.S3Ambient;
             
             public bool HaveBeenCalled { get; private set; }
 
