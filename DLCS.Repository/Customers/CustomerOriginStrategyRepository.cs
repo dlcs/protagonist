@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
-using DLCS.Model.Assets;
+using DLCS.Core.Types;
 using DLCS.Model.Customer;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
@@ -43,16 +43,15 @@ namespace DLCS.Repository.Customers
         public Task<IEnumerable<CustomerOriginStrategy>> GetCustomerOriginStrategies(int customer)
             => GetStrategiesForCustomer(customer);
 
-        public async Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Asset asset, bool initialIngestion = false)
+        public async Task<CustomerOriginStrategy> GetCustomerOriginStrategy(AssetId assetId, string origin)
         {
-            asset.ThrowIfNull(nameof(asset));
+            assetId.ThrowIfNull(nameof(assetId));
             
-            var customerStrategies = await GetCustomerOriginStrategies(asset.Customer);
-
-            var assetOrigin = initialIngestion ? asset.GetIngestOrigin() : asset.Origin;
-            var matching = FindMatchingStrategy(assetOrigin, customerStrategies) ?? DefaultStrategy;
+            var customerStrategies = await GetCustomerOriginStrategies(assetId.Customer);
+            
+            var matching = FindMatchingStrategy(origin, customerStrategies) ?? DefaultStrategy;
             logger.LogTrace("Using strategy: {strategy} ('{strategyId}') for handling asset '{assetId}'",
-                matching.Strategy, matching.Id, asset.Id);
+                matching.Strategy, matching.Id, assetId);
             
             return matching;
         }

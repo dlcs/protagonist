@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 
 namespace DLCS.Model.Customer
@@ -16,9 +17,9 @@ namespace DLCS.Model.Customer
         /// <summary>
         /// Get <see cref="CustomerOriginStrategy"/> for specified <see cref="Asset"/>.
         /// </summary>
-        /// <param name="asset">Asset to get <see cref="CustomerOriginStrategy"/> for.</param>
-        /// <param name="initialIngestion">Whether the strategy is to be used for initial ingestion or not.</param>
+        /// <param name="assetId">Id of asset to get <see cref="CustomerOriginStrategy"/> for.</param>
+        /// <param name="origin">asset origin.</param>
         /// <returns><see cref="Asset"/> to use for <see cref="Asset"/>.</returns>
-        public Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Asset asset, bool initialIngestion = false);
+        public Task<CustomerOriginStrategy> GetCustomerOriginStrategy(AssetId assetId, string origin);
     }
 }

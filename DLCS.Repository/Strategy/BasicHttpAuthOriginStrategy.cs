@@ -1,14 +1,12 @@
 ﻿using System;
-using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Model.Assets;
+using DLCS.Core.Types;
 using DLCS.Model.Customer;
 using DLCS.Model.Security;
-using DLCS.Repository.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Strategy
@@ -22,8 +20,6 @@ namespace DLCS.Repository.Strategy
         private readonly ICredentialsRepository credentialsRepository;
         private readonly ILogger<BasicHttpAuthOriginStrategy> logger;
         
-        public override OriginStrategyType Strategy => OriginStrategyType.BasicHttp;
-
         public BasicHttpAuthOriginStrategy(
             IHttpClientFactory httpClientFactory,
             ICredentialsRepository credentialsRepository,
@@ -34,21 +30,20 @@ namespace DLCS.Repository.Strategy
             this.logger = logger;
         }
 
-        protected override async Task<OriginResponse?> LoadAssetFromOriginImpl(Asset asset,
+        protected override async Task<OriginResponse?> LoadAssetFromOriginImpl(AssetId assetId, string origin,
             CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
         {
-            var assetOrigin = asset.GetIngestOrigin();
-            logger.LogDebug("Fetching asset from Origin: {url}", assetOrigin);
+            logger.LogDebug("Fetching {asset} from Origin: {url}", assetId, origin);
 
             try
             {
-                var response = await GetHttpResponse(customerOriginStrategy, cancellationToken, assetOrigin);
+                var response = await GetHttpResponse(customerOriginStrategy, cancellationToken, origin);
                 var originResponse = await CreateOriginResponse(response);
                 return originResponse;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error fetching asset from Origin: {url}", assetOrigin);
+                logger.LogError(ex, "Error fetching {asset} from Origin: {url}", assetId, origin);
                 return null;
             }
         }

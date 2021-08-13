@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
 using DLCS.Repository.Strategy;
@@ -13,6 +14,7 @@ namespace DLCS.Repository.Tests.Strategy
     public class SafetyCheckOriginStrategyTests
     {
         private readonly TestStrategy sut;
+        private readonly AssetId assetId = new(2, 2, "foo");
 
         public SafetyCheckOriginStrategyTests()
         {
@@ -25,7 +27,7 @@ namespace DLCS.Repository.Tests.Strategy
             // Act
             var cts = new CancellationTokenSource();
             cts.Cancel();
-            Func<Task> action = () => sut.LoadAssetFromOrigin(new Asset(), new CustomerOriginStrategy(), cts.Token);
+            Func<Task> action = () => sut.LoadAssetFromOrigin(assetId, "origin", new CustomerOriginStrategy(), cts.Token);
             
             // Assert
             action.Should()
@@ -36,31 +38,14 @@ namespace DLCS.Repository.Tests.Strategy
         public void LoadAssetFromOrigin_Throws_IfCustomerOriginStrategyNull()
         {
             // Act
-            Func<Task> action = () => sut.LoadAssetFromOrigin(new Asset(), null);
+            Func<Task> action = () => sut.LoadAssetFromOrigin(assetId, "origin", null);
             
             // Assert
             action.Should()
                 .Throw<ArgumentNullException>()
                 .WithMessage("Value cannot be null. (Parameter 'customerOriginStrategy')");
         }
-        
-        [Theory]
-        [InlineData(OriginStrategyType.Default)]
-        [InlineData(OriginStrategyType.BasicHttp)]
-        [InlineData(OriginStrategyType.SFTP)]
-        public void LoadAssetFromOrigin_Throws_IfCustomerOriginStrategyDiffersFromImplementationStrategy(OriginStrategyType strategy)
-        {
-            // Arrange
-            var customerOriginStrategy = new CustomerOriginStrategy {Strategy = strategy};
-            
-            // Act
-            Func<Task> action = () => sut.LoadAssetFromOrigin(new Asset(), customerOriginStrategy);
-            
-            // Assert
-            action.Should()
-                .Throw<InvalidOperationException>();
-        }
-        
+
         [Fact]
         public void LoadAssetFromOrigin_Throws_IfAssetNull()
         {
@@ -68,34 +53,37 @@ namespace DLCS.Repository.Tests.Strategy
             var customerOriginStrategy = new CustomerOriginStrategy {Strategy = OriginStrategyType.S3Ambient};
             
             // Act
-            Func<Task> action = () => sut.LoadAssetFromOrigin(null, customerOriginStrategy);
+            Func<Task> action = () => sut.LoadAssetFromOrigin(null, "origin", customerOriginStrategy);
             
             // Assert
             action.Should()
                 .Throw<ArgumentNullException>()
-                .WithMessage("Value cannot be null. (Parameter 'asset')");
+                .WithMessage("Value cannot be null. (Parameter 'assetId')");
         }
         
-        [Fact]
-        public async Task LoadAssetFromOrigin_CallsImplementation_IfAssetNull()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        public void LoadAssetFromOrigin_Throws_IfOriginNullOrWhitespace(string origin)
         {
             // Arrange
             var customerOriginStrategy = new CustomerOriginStrategy {Strategy = OriginStrategyType.S3Ambient};
             
             // Act
-            await sut.LoadAssetFromOrigin(new Asset(), customerOriginStrategy);
+            Func<Task> action = () => sut.LoadAssetFromOrigin(assetId, origin, customerOriginStrategy);
             
             // Assert
-            sut.HaveBeenCalled.Should().BeTrue();
+            action.Should()
+                .Throw<ArgumentNullException>()
+                .WithMessage("Value cannot be null. (Parameter 'origin')");
         }
         
         private class TestStrategy : SafetyCheckOriginStrategy
         {
-            public override OriginStrategyType Strategy => OriginStrategyType.S3Ambient;
-            
             public bool HaveBeenCalled { get; private set; }
 
-            protected override Task<OriginResponse?> LoadAssetFromOriginImpl(Asset asset,
+            protected override Task<OriginResponse?> LoadAssetFromOriginImpl(AssetId asset, string origin,
                 CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
             {
                 HaveBeenCalled = true;

@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
 
@@ -11,19 +12,11 @@ namespace DLCS.Repository.Strategy
     public interface IOriginStrategy
     {
         /// <summary>
-        /// The <see cref="OriginStrategyType"/> that this implementation handles.
-        /// </summary>
-        public OriginStrategyType Strategy { get; }
-
-        /// <summary>
         /// Loads specified <see cref="Asset"/> from origin, using details in specified <see cref="CustomerOriginStrategy"/>
         /// </summary>
-        /// <param name="asset"></param>
-        /// <param name="customerOriginStrategy"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns>Asset as Stream</returns>
-        public Task<OriginResponse?> LoadAssetFromOrigin(Asset asset, CustomerOriginStrategy customerOriginStrategy,
-            CancellationToken cancellationToken = default);
+        /// <returns>Asset as response</returns>
+        public Task<OriginResponse?> LoadAssetFromOrigin(AssetId assetId, string origin,
+            CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default);
     }
     
     public class HttpClients

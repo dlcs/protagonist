@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
 using DLCS.Repository.Customers;
@@ -102,10 +103,8 @@ namespace DLCS.Repository.Tests.Customers
             await dbContext.CustomerOriginStrategies.AddRangeAsync(originStrategies);
             await dbContext.SaveChangesAsync();
 
-            var asset = new Asset { Customer = 5, Origin = "https://matching.io/bla" };
-            
             // Act
-            var result = await sut.GetCustomerOriginStrategy(asset);
+            var result = await sut.GetCustomerOriginStrategy(new AssetId(5, 1, "whatever"), "https://matching.io/bla");
             
             // Assert
             result.Should().BeEquivalentTo(expected);
@@ -115,12 +114,11 @@ namespace DLCS.Repository.Tests.Customers
         public async Task GetCustomerOriginStrategy_ReturnsDefaultStrategy_IfNoMatchFound()
         {
             // Arrange
-            var asset = new Asset
-                { Customer = 5, Origin = nameof(GetCustomerOriginStrategy_ReturnsDefaultStrategy_IfNoMatchFound) };
             var expected = new CustomerOriginStrategy { Id = "_default_", Strategy = OriginStrategyType.Default };
             
             // Act
-            var result = await sut.GetCustomerOriginStrategy(asset);
+            var result = await sut.GetCustomerOriginStrategy(new AssetId(5, 1, "whatever"),
+                nameof(GetCustomerOriginStrategy_ReturnsDefaultStrategy_IfNoMatchFound));
             
             // Assert
             result.Should().BeEquivalentTo(expected);

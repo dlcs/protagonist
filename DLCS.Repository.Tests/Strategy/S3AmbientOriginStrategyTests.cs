@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using DLCS.Model.Assets;
+using DLCS.Core.Types;
 using DLCS.Model.Customer;
 using DLCS.Model.Storage;
 using DLCS.Repository.Strategy;
@@ -18,6 +18,7 @@ namespace DLCS.Repository.Tests.Strategy
         private readonly S3AmbientOriginStrategy sut;
         private readonly IBucketReader bucketReader;
         private readonly CustomerOriginStrategy customerOriginStrategy;
+        private readonly AssetId assetId = new(2, 2, "foo");
 
         public S3AmbientOriginStrategyTests()
         {
@@ -54,7 +55,7 @@ namespace DLCS.Repository.Tests.Strategy
                     A<ObjectInBucket>.That.Matches(a => a.ToString() == regionalisedString))).Returns(response);
 
             // Act
-            var result = await sut.LoadAssetFromOrigin(new Asset {Origin = originUri}, customerOriginStrategy);
+            var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
             
             // Assert
             A.CallTo(() =>
@@ -64,27 +65,6 @@ namespace DLCS.Repository.Tests.Strategy
             result.Stream.Should().NotBeNull().And.Should().NotBe(Stream.Null);
             result.ContentLength.Should().Be(contentLength);
             result.ContentType.Should().Be(contentType);
-        }
-        
-        [Fact]
-        public async Task LoadAssetFromOrigin_UsesInitialOrigin_IfSpecified()
-        {
-            // Arrange
-            const string originUri = "s3://eu-west-1/test-storage/2/1/ratts-of-the-capital";
-            const string initialOrigin = "s3://us-east-1/test-storage/2/1/simon-ferocious";
-            var objectInBucket =
-                new RegionalisedObjectInBucket("test-storage", "2/1/simon-ferocious", "us-east-1");
-            var initialOriginString = objectInBucket.ToString();
-            
-            // Act
-            var asset = new Asset {Origin = originUri, InitialOrigin = initialOrigin};
-            await sut.LoadAssetFromOrigin(asset, customerOriginStrategy);
-            
-            // Assert
-            A.CallTo(() =>
-                    bucketReader.GetObjectFromBucket(
-                        A<ObjectInBucket>.That.Matches(a => a.ToString() == initialOriginString)))
-                .MustHaveHappened();
         }
         
         [Fact]
@@ -100,7 +80,7 @@ namespace DLCS.Repository.Tests.Strategy
             A.CallTo(() => bucketReader.GetObjectFromBucket(A<ObjectInBucket>._)).Returns(response);
 
             // Act
-            var result = await sut.LoadAssetFromOrigin(new Asset {Origin = originUri}, customerOriginStrategy);
+            var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
             
             // Assert
             result.Stream.Should().NotBeNull().And.Should().NotBe(Stream.Null);
@@ -117,7 +97,7 @@ namespace DLCS.Repository.Tests.Strategy
                 .ThrowsAsync(new Exception());
             
             // Act
-            var result = await sut.LoadAssetFromOrigin(new Asset {Origin = originUri}, customerOriginStrategy);
+            var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
             
             // Assert
             result.Should().BeNull();

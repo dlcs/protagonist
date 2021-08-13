@@ -16,8 +16,7 @@ namespace Orchestrator.Assets
         private readonly IAppCache appCache;
         private readonly ILogger<MemoryAssetTracker> logger;
 
-        private const string NullId = "__notfound__";
-        private static readonly TrackedAsset NullTrackedAsset = new() {AssetId = NullId};
+        private static readonly TrackedAsset NullTrackedAsset = new() {AssetId = new AssetId(-1, -1, "__notfound__")};
 
     public MemoryAssetTracker(IAssetRepository assetRepository, IAppCache appCache,
             ILogger<MemoryAssetTracker> logger)
@@ -29,11 +28,11 @@ namespace Orchestrator.Assets
 
         public async Task<TrackedAsset?> GetAsset(AssetId assetId)
         {
-            var trackedAsset = await GetTrackedAsset(assetId.ToString());
-            return trackedAsset.AssetId == NullId ? null : trackedAsset;
+            var trackedAsset = await GetTrackedAsset(assetId);
+            return trackedAsset.AssetId == NullTrackedAsset.AssetId ? null : trackedAsset;
         }
 
-        private async Task<TrackedAsset> GetTrackedAsset(string assetId)
+        private async Task<TrackedAsset> GetTrackedAsset(AssetId assetId)
         {
             var key = $"Track:{assetId}";
             return await appCache.GetOrAddAsync(key, async entry =>
@@ -42,11 +41,13 @@ namespace Orchestrator.Assets
                 var asset = await assetRepository.GetAsset(assetId);
                 if (asset != null)
                 {
+                    // TODO - don't cache if File?
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10); // TODO - pull from config
                     return new TrackedAsset
                     {
                         AssetId = assetId,
-                        RequiresAuth = asset.RequiresAuth
+                        RequiresAuth = asset.RequiresAuth,
+                        Origin = asset.Origin
                     };
                 }
 

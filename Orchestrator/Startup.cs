@@ -54,7 +54,7 @@ namespace Orchestrator
                 .AddLazyCache()
                 .AddSingleton<ICustomerRepository, CustomerRepository>()
                 .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
-                .AddSingleton<DapperAssetRepository>()
+                .AddSingleton<IAssetRepository, DapperAssetRepository>()
                 .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
                 .AddSingleton<TimeBasedRequestHandler>()
@@ -62,11 +62,8 @@ namespace Orchestrator
                 .AddSingleton<IBucketReader, BucketReader>()
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
                 .AddSingleton<IThumbRepository, ThumbRepository>()
-                .AddSingleton<IAssetTracker, MemoryAssetTracker>(provider =>
-                    ActivatorUtilities.CreateInstance<MemoryAssetTracker>(provider,
-                        provider.GetService<DapperAssetRepository>()!))
+                .AddSingleton<IAssetTracker, MemoryAssetTracker>()
                 .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
-                .AddScoped<IAssetRepository, AssetRepository>()
                 .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
                 .AddOriginStrategies()
                 .AddDbContext<DlcsContext>(opts =>

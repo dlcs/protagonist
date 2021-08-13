@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
@@ -81,7 +82,7 @@ namespace Orchestrator.Features.Images
                requestModel.IIIFImageRequest.ImageRequestPath == "/full/90,/0/default.jpg" &&
                httpContext.Request.QueryString.Value.Contains("t=");
         
-        private string GetUVThumbReplacementPath(string assetId) => 
+        private string GetUVThumbReplacementPath(AssetId assetId) => 
             $"{proxySettings.ThumbsPath}/{assetId}/full/{proxySettings.UVThumbReplacementPath}/0/default.jpg";
 
         // TODO handle resizing via config. Optionally with path regex (resize X but not Y)

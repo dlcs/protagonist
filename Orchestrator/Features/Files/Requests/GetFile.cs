@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Model.Assets;
 using DLCS.Model.Customer;
 using DLCS.Repository.Strategy;
 using DLCS.Web.Requests.AssetDelivery;
 using MediatR;
+using Orchestrator.Assets;
 using Orchestrator.Infrastructure.Mediatr;
 
 namespace Orchestrator.Features.Files.Requests
@@ -27,33 +26,35 @@ namespace Orchestrator.Features.Files.Requests
     
     public class GetFileHandler : IRequestHandler<GetFile, OriginResponse>
     {
-        private readonly IAssetRepository assetRepository;
+        private readonly IAssetTracker assetTracker;
         private readonly ICustomerOriginStrategyRepository customerOriginStrategyRepository;
         private readonly OriginStrategyResolver originStrategyResolver;
 
         public GetFileHandler(
-            IAssetRepository assetRepository,
+            IAssetTracker assetTracker,
             ICustomerOriginStrategyRepository customerOriginStrategyRepository,
             OriginStrategyResolver originStrategyResolver)
         {
-            this.assetRepository = assetRepository;
+            this.assetTracker = assetTracker;
             this.customerOriginStrategyRepository = customerOriginStrategyRepository;
             this.originStrategyResolver = originStrategyResolver;
         }
         
         public async Task<OriginResponse> Handle(GetFile request, CancellationToken cancellationToken)
         {
-            var asset = await assetRepository.GetAsset(request.AssetRequest.GetAssetImageId());
+            var asset = await assetTracker.GetAsset(request.AssetRequest.GetAssetImageId());
             if (asset == null)
             {
                 return OriginResponse.Empty;
             }
 
-            var customerOriginStrategy = await customerOriginStrategyRepository.GetCustomerOriginStrategy(asset);
+            var customerOriginStrategy =
+                await customerOriginStrategyRepository.GetCustomerOriginStrategy(asset.AssetId, asset.Origin);
 
             var originStrategy = originStrategyResolver(customerOriginStrategy.Strategy);
 
-            var assetFromOrigin = await originStrategy.LoadAssetFromOrigin(asset, customerOriginStrategy, cancellationToken);
+            var assetFromOrigin = await originStrategy.LoadAssetFromOrigin(asset.AssetId, asset.Origin,
+                customerOriginStrategy, cancellationToken);
             return assetFromOrigin;
         }
     }

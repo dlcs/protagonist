@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Model.Assets;
+using DLCS.Core.Types;
 using DLCS.Model.Customer;
 using DLCS.Model.Storage;
 using Microsoft.Extensions.Logging;
@@ -21,25 +21,22 @@ namespace DLCS.Repository.Strategy
             this.bucketReader = bucketReader;
             this.logger = logger;
         }
-
-        public override OriginStrategyType Strategy => OriginStrategyType.S3Ambient;
-
-        protected override async Task<OriginResponse?> LoadAssetFromOriginImpl(Asset asset,
+        
+        protected override async Task<OriginResponse?> LoadAssetFromOriginImpl(AssetId assetId, string origin,
             CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
         {
-            var assetOrigin = asset.GetIngestOrigin();
-            logger.LogDebug("Fetching asset from Origin: {url}", assetOrigin);
+            logger.LogDebug("Fetching {asset} from Origin: {url}", assetId, origin);
 
             try
             {
-                var regionalisedBucket = RegionalisedObjectInBucket.Parse(assetOrigin);
+                var regionalisedBucket = RegionalisedObjectInBucket.Parse(origin);
                 var response = await bucketReader.GetObjectFromBucket(regionalisedBucket);
                 var originResponse = CreateOriginResponse(response);
                 return originResponse;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error fetching asset from Origin: {url}", assetOrigin);
+                logger.LogError(ex, "Error fetching {asset} from Origin: {url}", assetId, origin);
                 return null;
             }
         }

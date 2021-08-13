@@ -2,6 +2,7 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
 using DLCS.Repository.Strategy;
@@ -17,6 +18,7 @@ namespace DLCS.Repository.Tests.Strategy
     {
         private readonly DefaultOriginStrategy sut;
         private readonly ControllableHttpMessageHandler httpHandler;
+        private readonly AssetId assetId = new(2, 2, "foo");
 
         public DefaultOriginStrategyTests()
         {
@@ -44,30 +46,13 @@ namespace DLCS.Repository.Tests.Strategy
             const string originUri = "https://test.example.com/string";
             
             // Act
-            var result = await sut.LoadAssetFromOrigin(new Asset {Origin = originUri}, new CustomerOriginStrategy());
+            var result = await sut.LoadAssetFromOrigin(assetId, originUri, new CustomerOriginStrategy());
             
             // Assert
             httpHandler.CallsMade.Should().Contain(originUri);
             result.Stream.Should().NotBeNull();
             result.ContentLength.Should().Be(contentLength);
             result.ContentType.Should().Be(contentType);
-        }
-        
-        [Fact]
-        public async Task LoadAssetFromOrigin_UsesInitialOrigin_IfSpecified()
-        {
-            // Arrange
-            var response = httpHandler.GetResponseMessage("", HttpStatusCode.OK);
-            httpHandler.SetResponse(response);
-            const string originUri = "https://test.example.com/string";
-            const string initialOrigin = "https://initial.origin.com";
-            
-            // Act
-            await sut.LoadAssetFromOrigin(new Asset {Origin = originUri, InitialOrigin = initialOrigin},
-                new CustomerOriginStrategy());
-            
-            // Assert
-            httpHandler.CallsMade.Should().ContainSingle(initialOrigin);
         }
         
         [Fact]
@@ -79,7 +64,7 @@ namespace DLCS.Repository.Tests.Strategy
             const string originUri = "https://test.example.com/string";
             
             // Act
-            var result = await sut.LoadAssetFromOrigin(new Asset {Origin = originUri}, new CustomerOriginStrategy());
+            var result = await sut.LoadAssetFromOrigin(assetId, originUri, new CustomerOriginStrategy());
             
             // Assert
             httpHandler.CallsMade.Should().Contain(originUri);
@@ -99,7 +84,7 @@ namespace DLCS.Repository.Tests.Strategy
             const string originUri = "https://test.example.com/string";
             
             // Act
-            var result = await sut.LoadAssetFromOrigin(new Asset {Origin = originUri}, new CustomerOriginStrategy());
+            var result = await sut.LoadAssetFromOrigin(assetId, originUri, new CustomerOriginStrategy());
             
             // Assert
             httpHandler.CallsMade.Should().Contain(originUri);
