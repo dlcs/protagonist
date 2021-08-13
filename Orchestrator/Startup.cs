@@ -3,11 +3,15 @@ using Amazon.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
 using DLCS.Model.PathElements;
+using DLCS.Model.Security;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Customers;
+using DLCS.Repository.Security;
 using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
+using DLCS.Repository.Strategy;
 using DLCS.Web.Configuration;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Builder;
@@ -54,7 +58,10 @@ namespace Orchestrator
                 .AddSingleton<IBucketReader, BucketReader>()
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
                 .AddSingleton<IThumbRepository, ThumbRepository>()
-                .AddSingleton<IAssetTracker, MemoryAssetTracker>();
+                .AddSingleton<IAssetTracker, MemoryAssetTracker>()
+                .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
+                .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
+                .AddOriginStrategies();
 
             var reverseProxySettings = reverseProxySection.Get<ReverseProxySettings>();
             services

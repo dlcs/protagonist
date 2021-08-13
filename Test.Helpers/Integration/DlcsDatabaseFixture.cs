@@ -55,6 +55,7 @@ namespace Test.Helpers.Integration
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
+            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerOriginStrategies\"");
         }
 
         private async Task SeedCustomer()

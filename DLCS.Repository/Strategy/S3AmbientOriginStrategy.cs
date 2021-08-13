@@ -44,8 +44,8 @@ namespace DLCS.Repository.Strategy
             }
         }
 
-        private static OriginResponse CreateOriginResponse(ObjectFromBucket response) =>
-            new OriginResponse(response.Stream)
+        private static OriginResponse CreateOriginResponse(ObjectFromBucket response)
+            => new OriginResponse(response.Stream)
                 .WithContentLength(response.Headers.ContentLength)
                 .WithContentType(response.Headers.ContentType);
     }

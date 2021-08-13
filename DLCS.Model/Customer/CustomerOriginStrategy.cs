@@ -8,7 +8,7 @@ namespace DLCS.Model.Customer
         public int Customer { get; set; }
         public string Regex { get; set; }
         public OriginStrategyType Strategy { get; set; }
-        public string Credentials { get; set; }
+        public string Credentials { get; set; } = "";
         public bool Optimised { get; set; }
     }
 }

@@ -7,7 +7,7 @@ using DLCS.Model.PathElements;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace DLCS.Repository
+namespace DLCS.Repository.Customers
 {
     public class CustomerRepository : ICustomerRepository
     {
