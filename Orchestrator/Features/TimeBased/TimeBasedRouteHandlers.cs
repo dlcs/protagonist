@@ -12,7 +12,7 @@ using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
 
-namespace Orchestrator.TimeBased
+namespace Orchestrator.Features.TimeBased
 {
     /// <summary>
     /// Route-to-code handlers for /iiif-av/ paths

@@ -12,7 +12,7 @@ using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
 
-namespace Orchestrator.Images
+namespace Orchestrator.Features.Images
 {
     /// <summary>
     /// Route-to-code handlers for /iiif-img/ paths

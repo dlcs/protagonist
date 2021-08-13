@@ -9,7 +9,7 @@ using Orchestrator.Assets;
 using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
 
-namespace Orchestrator.Images
+namespace Orchestrator.Features.Images
 {
     /// <summary>
     /// Reverse-proxy routing logic for /iiif-img/ requests 

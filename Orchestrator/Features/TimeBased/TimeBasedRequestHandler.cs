@@ -10,7 +10,7 @@ using Orchestrator.Assets;
 using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
 
-namespace Orchestrator.TimeBased
+namespace Orchestrator.Features.TimeBased
 {
     /// <summary>
     /// Reverse-proxy routing logic for /iiif-av/ requests 

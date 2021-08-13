@@ -21,10 +21,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
-using Orchestrator.Images;
+using Orchestrator.Features.Images;
+using Orchestrator.Features.TimeBased;
 using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
-using Orchestrator.TimeBased;
 using Serilog;
 
 namespace Orchestrator
