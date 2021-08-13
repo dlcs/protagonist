@@ -59,7 +59,7 @@ namespace DLCS.Repository.Tests.Storage.S3
         }
         
         [Fact]
-        public async Task GetObjectFromBucket_ReturnsNull_IfKeyNotFound()
+        public async Task GetObjectFromBucket_ReturnsNullStream_IfKeyNotFound()
         {
             // Arrange
             A.CallTo(() =>
@@ -74,7 +74,7 @@ namespace DLCS.Repository.Tests.Storage.S3
             var result = await sut.GetObjectFromBucket(objectInBucket);
 
             // Assert
-            result.Should().BeNull();
+            result.Stream.Should().Be(Stream.Null);
         }
 
         [Theory]

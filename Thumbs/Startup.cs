@@ -47,7 +47,7 @@ namespace Thumbs
             services.AddSingleton<IThumbRepository, ThumbRepository>();
             services.AddSingleton<IThumbReorganiser, ThumbReorganiser>();
             services.AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>();
-            services.AddSingleton<IAssetRepository, AssetRepository>();
+            services.AddSingleton<IAssetRepository, DapperAssetRepository>();
             services.AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>();
 
             services.Configure<ThumbsSettings>(Configuration.GetSection("Thumbs"));

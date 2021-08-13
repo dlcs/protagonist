@@ -172,5 +172,52 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             imageRequest.NormalisedBasePath.Should().Be("/iiif-av/99/1/");
             imageRequest.NormalisedFullPath.Should().Be("/iiif-av/99/1/the-astronaut/full/full/max/max/0/default.mp4");
         }
+
+        [Fact]
+        public async Task Parse_FileRequest_Parse()
+        {
+            // Arrange
+            const string path = "/file/test-customer/1/the-astronaut";
+            var customer = new CustomerPathElement(99, "test-customer");
+            A.CallTo(() => pathCustomerRepository.GetCustomer("test-customer"))
+                .Returns(customer);
+
+            // Act
+            var imageRequest = await sut.Parse<FileAssetDeliveryRequest>(path);
+
+            // Assert
+            imageRequest.RoutePrefix.Should().Be("file");
+            imageRequest.CustomerPathValue.Should().Be("test-customer");
+            imageRequest.Customer.Should().Be(customer);
+            imageRequest.BasePath.Should().Be("/file/test-customer/1/");
+            imageRequest.Space.Should().Be(1);
+            imageRequest.AssetPath.Should().Be("the-astronaut");
+            imageRequest.AssetId.Should().Be("the-astronaut");
+        }
+        
+        [Theory]
+        [InlineData("test-customer")]
+        [InlineData("99")]
+        public async Task Parse_FileRequest_SetsNormalisedPath(string customerPathValue)
+        {
+            // Arrange
+            var path = $"/file/{customerPathValue}/1/the-astronaut";
+            var customer = new CustomerPathElement(99, "test-customer");
+            A.CallTo(() => pathCustomerRepository.GetCustomer(A<string>._)).Returns(customer);
+
+            // Act
+            var imageRequest = await sut.Parse<FileAssetDeliveryRequest>(path);
+
+            // Assert
+            imageRequest.RoutePrefix.Should().Be("file");
+            imageRequest.CustomerPathValue.Should().Be(customerPathValue);
+            imageRequest.Customer.Should().Be(customer);
+            imageRequest.BasePath.Should().Be($"/file/{customerPathValue}/1/");
+            imageRequest.Space.Should().Be(1);
+            imageRequest.AssetPath.Should().Be("the-astronaut");
+            imageRequest.AssetId.Should().Be("the-astronaut");
+            imageRequest.NormalisedBasePath.Should().Be("/file/99/1/");
+            imageRequest.NormalisedFullPath.Should().Be("/file/99/1/the-astronaut");
+        }
     }
 }

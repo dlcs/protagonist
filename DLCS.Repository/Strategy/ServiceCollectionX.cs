@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Http;
 using DLCS.Model.Customer;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,11 +22,12 @@ namespace DLCS.Repository.Strategy
         /// <param name="services">Current <see cref="IServiceCollection"/> object</param>
         /// <returns>Modified service collection</returns>
         public static IServiceCollection AddOriginStrategies(this IServiceCollection services)
-            => services
-                .AddScoped<IOriginStrategy, S3AmbientOriginStrategy>()
-                .AddSingleton<IOriginStrategy, DefaultOriginStrategy>()
-                .AddSingleton<IOriginStrategy, BasicHttpAuthOriginStrategy>()
-                .AddSingleton<IOriginStrategy, SftpOriginStrategy>()
+        {
+            services
+                .AddScoped<S3AmbientOriginStrategy>()
+                .AddSingleton<DefaultOriginStrategy>()
+                .AddSingleton<BasicHttpAuthOriginStrategy>()
+                .AddSingleton<SftpOriginStrategy>()
                 .AddTransient<OriginStrategyResolver>(provider => strategy => strategy switch
                 {
                     OriginStrategyType.Default => provider.GetService<DefaultOriginStrategy>(),
@@ -34,5 +36,20 @@ namespace DLCS.Repository.Strategy
                     OriginStrategyType.SFTP => provider.GetService<SftpOriginStrategy>(),
                     _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, null)
                 });
+            
+            services
+                .AddHttpClient(HttpClients.OriginStrategy, client =>
+                {
+                    client.DefaultRequestHeaders.Add("Accept", "*/*");
+                    client.DefaultRequestHeaders.Add("User-Agent", "DLCS/2.0");
+                })
+                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+                {
+                    AllowAutoRedirect = true,
+                    MaxAutomaticRedirections = 8
+                });
+
+            return services;
+        }
     }
 }

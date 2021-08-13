@@ -16,6 +16,8 @@ using DLCS.Web.Configuration;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -23,6 +25,7 @@ using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.TimeBased;
+using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
 using Serilog;
@@ -46,11 +49,12 @@ namespace Orchestrator
                 .Configure<ProxySettings>(configuration.GetSection("Proxy"))
                 .Configure<ReverseProxySettings>(reverseProxySection);
             
+            // TODO - configure memoryCache
             services
                 .AddLazyCache()
                 .AddSingleton<ICustomerRepository, CustomerRepository>()
                 .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
-                .AddSingleton<IAssetRepository, AssetRepository>()
+                .AddSingleton<DapperAssetRepository>()
                 .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
                 .AddSingleton<TimeBasedRequestHandler>()
@@ -58,10 +62,17 @@ namespace Orchestrator
                 .AddSingleton<IBucketReader, BucketReader>()
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
                 .AddSingleton<IThumbRepository, ThumbRepository>()
-                .AddSingleton<IAssetTracker, MemoryAssetTracker>()
+                .AddSingleton<IAssetTracker, MemoryAssetTracker>(provider =>
+                    ActivatorUtilities.CreateInstance<MemoryAssetTracker>(provider,
+                        provider.GetService<DapperAssetRepository>()!))
                 .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
+                .AddScoped<IAssetRepository, AssetRepository>()
                 .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
-                .AddOriginStrategies();
+                .AddOriginStrategies()
+                .AddDbContext<DlcsContext>(opts =>
+                    opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
+                )
+                .AddMediatR();
 
             var reverseProxySettings = reverseProxySection.Get<ReverseProxySettings>();
             services
@@ -72,6 +83,10 @@ namespace Orchestrator
                     client.BaseAddress = reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.Orchestrator);
                 })
                 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false });
+
+            services
+                .AddControllers()
+                .SetCompatibilityVersion(CompatibilityVersion.Latest);
             
             services.AddCors(options =>
             {
@@ -81,7 +96,7 @@ namespace Orchestrator
                         .AllowAnyMethod()
                         .AllowAnyHeader());
             });
-
+            
             services
                 .AddHealthChecks()
                 .AddNpgSql(configuration.GetPostgresSqlConnection());
@@ -111,6 +126,7 @@ namespace Orchestrator
                 .UseAuthorization()
                 .UseEndpoints(endpoints =>
                 {
+                    endpoints.MapControllers();
                     endpoints.MapReverseProxy();
                     endpoints.MapImageHandling();
                     endpoints.MapTimeBasedHandling();

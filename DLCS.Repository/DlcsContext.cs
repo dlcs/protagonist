@@ -264,7 +264,7 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Family)
                     .IsRequired()
-                    .HasColumnType("char")
+                    //.HasColumnType("char")
                     .HasDefaultValueSql("'I'::\"char\"");
 
                 entity.Property(e => e.Finished).HasColumnType("timestamp with time zone");
@@ -311,6 +311,8 @@ namespace DLCS.Repository
                     .IsRequired()
                     .HasMaxLength(500)
                     .HasDefaultValueSql("'original'::character varying");
+
+                entity.Ignore(e => e.InitialOrigin);
             });
 
             modelBuilder.Entity<ImageLocation>(entity =>

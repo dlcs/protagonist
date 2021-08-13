@@ -29,7 +29,6 @@ namespace Orchestrator.Tests.Integration
         
         [Theory]
         [InlineData("/auth/2/1/something")]
-        [InlineData("/file/2/1/something")]
         [InlineData("/iiif-resource/2/1/something")]
         [InlineData("/info/2/1/something")]
         [InlineData("/pdf/2/1/something")]

@@ -106,7 +106,7 @@ namespace Orchestrator.Tests.Images
             
             // Assert
             result.Target.Should().Be(ProxyDestination.Orchestrator);
-            result.HasPath.Should().BeFalse();
+            result.HasPath.Should().BeTrue();
         }
         
         [Fact]
@@ -173,7 +173,7 @@ namespace Orchestrator.Tests.Images
             
             // Assert
             result.Target.Should().Be(ProxyDestination.CachingProxy);
-            result.HasPath.Should().BeFalse();
+            result.HasPath.Should().BeTrue();
         }
         
         [Fact]
@@ -224,7 +224,7 @@ namespace Orchestrator.Tests.Images
             
             // Assert
             result.Target.Should().Be(ProxyDestination.CachingProxy);
-            result.HasPath.Should().BeFalse();
+            result.HasPath.Should().BeTrue();
         }
 
         private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false,

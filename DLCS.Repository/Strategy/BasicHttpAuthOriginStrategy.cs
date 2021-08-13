@@ -85,7 +85,7 @@ namespace DLCS.Repository.Strategy
             var content = response.Content;
             if (content == null)
             {
-                return new OriginResponse(Stream.Null);
+                return OriginResponse.Empty;
             }
 
             return new OriginResponse(await content.ReadAsStreamAsync())
