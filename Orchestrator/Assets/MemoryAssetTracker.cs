@@ -41,7 +41,6 @@ namespace Orchestrator.Assets
                 var asset = await assetRepository.GetAsset(assetId);
                 if (asset != null)
                 {
-                    // TODO - don't cache if File?
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10); // TODO - pull from config
                     return new TrackedAsset
                     {

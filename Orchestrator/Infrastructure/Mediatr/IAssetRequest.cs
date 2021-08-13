@@ -4,27 +4,16 @@ namespace Orchestrator.Infrastructure.Mediatr
 {
     /// <summary>
     /// Marker interface for any Asset requests.
-    /// Request Pipeline will parse FullPath to populate AssetRequest object 
+    /// <see cref="AssetRequestParsingBehavior{TRequest,TResponse}"/> will parse FullPath to populate AssetRequest
+    /// object on subclass 
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public interface IAssetRequest<T> : IAssetRequest
-        where T : BaseAssetRequest, new()
+    public interface IAssetRequest
     {
-        /// <summary>
-        /// Basic request Path
-        /// </summary>
-        //string FullPath { get; }
-        
-        T? AssetRequest { set; }
+        string FullPath { get; }
     }
     
     public interface IFileRequest : IAssetRequest
     {
         FileAssetDeliveryRequest AssetRequest { set; }
-    }
-
-    public interface IAssetRequest
-    {
-        string FullPath { get; }
     }
 }
