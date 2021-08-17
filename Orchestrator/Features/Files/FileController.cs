@@ -1,7 +1,10 @@
-﻿using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Orchestrator.Features.Files.Requests;
 
 namespace Orchestrator.Features.Files
@@ -11,10 +14,12 @@ namespace Orchestrator.Features.Files
     public class FileController : Controller
     {
         private readonly IMediator mediator;
+        private readonly ILogger<FileController> logger;
 
-        public FileController(IMediator mediator)
+        public FileController(IMediator mediator, ILogger<FileController> logger)
         {
             this.mediator = mediator;
+            this.logger = logger;
         }
 
         /// <summary>
@@ -23,14 +28,28 @@ namespace Orchestrator.Features.Files
         [Route("{fileId}")]
         public async Task<IActionResult> Index(CancellationToken cancellationToken)
         {
-            var response = await mediator.Send(new GetFile(HttpContext.Request.Path), cancellationToken);
-
-            if (response.IsEmpty)
+            try
             {
+                var response = await mediator.Send(new GetFile(HttpContext.Request.Path), cancellationToken);
+
+                if (response.IsEmpty)
+                {
+                    return NotFound();
+                }
+
+                return File(response.Stream, response.ContentType ?? "application/octet-stream");
+            }
+            catch (KeyNotFoundException ex)
+            {
+                // TODO - this error handling duplicates same in RequestHandlerBase
+                logger.LogError(ex, "Could not find Customer/Space from '{Path}'", HttpContext.Request.Path);
                 return NotFound();
             }
-
-            return File(response.Stream, response.ContentType ?? "application/octet-stream");
+            catch (FormatException ex)
+            {
+                logger.LogError(ex, "Error parsing path '{Path}'", HttpContext.Request.Path);
+                return BadRequest();
+            }
         }
     }
 }

@@ -40,7 +40,7 @@ namespace DLCS.Repository.Strategy
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error fetching {asset} from Origin: {url}", assetId, origin);
-                return null;
+                return OriginResponse.Empty;
             }
         }
         
