@@ -7,6 +7,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Model.Assets;
 using FluentAssertions;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Tests.Integration.Infrastructure;
@@ -44,6 +45,24 @@ namespace Orchestrator.Tests.Integration
                 .CreateClient(new WebApplicationFactoryClientOptions {AllowAutoRedirect = false});
             
             dbFixture.CleanUp();
+        }
+        
+        [Theory]
+        [InlineData("/iiif-img/2/1/image")]
+        [InlineData("/iiif-img/2/1/image/")]
+        [InlineData("/iiif-img/display-name/1/image")]
+        [InlineData("/iiif-img/display-name/1/image/")]
+        public async Task Get_ImageRoot_RedirectsToInfoJson(string path)
+        {
+            // Arrange
+            var expected = path[^1] == '/' ? $"{path}info.json" : $"{path}/info.json";
+            
+            // Act
+            var response = await httpClient.GetAsync(path);
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+            response.Headers.Location.Should().Be(expected);
         }
         
         [Fact]

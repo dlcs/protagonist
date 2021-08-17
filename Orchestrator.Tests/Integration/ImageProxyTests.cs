@@ -44,22 +44,7 @@ namespace Orchestrator.Tests.Integration
             proxyResponse.Uri.Should().Be(expectedPath);
             proxyResponse.Method.Should().Be(HttpMethod.Options);
         }
-        
-        [Fact]
-        public async Task Test_ImageGetRoot_RedirectsToDeliverator()
-        {
-            // Arrange
-            var expectedPath = new Uri("http://deliverator/iiif-img/2/1/image");
-            
-            // Act
-            var response = await httpClient.GetAsync("/iiif-img/2/1/image");
-            var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
 
-            // Assert
-            proxyResponse.Uri.Should().Be(expectedPath);
-            proxyResponse.Method.Should().Be(HttpMethod.Get);
-        }
-        
         [Fact]
         public async Task Test_ImageGetInfoJson_RedirectsToDeliverator()
         {
