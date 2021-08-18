@@ -55,10 +55,10 @@ namespace DLCS.Model.Tests.Assets
     ""supports"": [ ""regionByPct"",""sizeByForcedWh"",""sizeByWh"",""sizeAboveFull"",""rotationBy90s"",""mirroring"",""gray"" ]
   }
   ],
-  ""width"": 1000,
-  ""height"": 2000,
+  ""width"": 4200,
+  ""height"": 8400,
   ""tiles"": [
-    { ""width"": 256, ""height"": 256, ""scaleFactors"": [ 1, 2, 4, 8 ] }
+    { ""width"": 256, ""height"": 256, ""scaleFactors"": [ 1, 2, 4, 8, 16, 32, 64 ] }
   ],
   ""sizes"": [
     { ""width"": 100, ""height"": 200 }, { ""width"": 400, ""height"": 800 }, { ""width"": 1000, ""height"": 2000 }
@@ -68,6 +68,7 @@ namespace DLCS.Model.Tests.Assets
             // Act
             var actual = InfoJsonBuilder.GetImageApi2_1Level1(
                 "https://test.example.com/iiif-img/2/1/jackal",
+                4200, 8400,
                 new List<int[]> {  new[] { 1000, 2000 }, new[] { 400, 800 }, new[] { 100, 200 } });
             
             // Assert

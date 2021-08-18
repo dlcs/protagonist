@@ -48,7 +48,7 @@ namespace Orchestrator.Features.Images.Requests
 
             var id = assetPathGenerator.GetFullPathForRequest(request.AssetRequest);
 
-            return InfoJsonBuilder.GetImageApi2_1Level1(id, asset.OpenThumbs);
+            return InfoJsonBuilder.GetImageApi2_1Level1(id, asset.Width, asset.Height, asset.OpenThumbs);
         }
     }
 }

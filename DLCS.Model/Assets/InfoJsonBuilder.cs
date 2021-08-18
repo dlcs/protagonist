@@ -44,9 +44,11 @@ namespace DLCS.Model.Assets
         /// Get full info.json for use by image-services
         /// </summary>
         /// <param name="serviceEndpoint">URI for image</param>
-        /// <param name="sizes">List of sizes image is available in.</param>
+        /// <param name="sizes">List of sizes image is available in</param>
+        /// <param name="width">Width of image</param>
+        /// <param name="height">Height of image</param>
         /// <returns>info.json string</returns>
-        public static string GetImageApi2_1Level1(string serviceEndpoint, List<int[]> sizes)
+        public static string GetImageApi2_1Level1(string serviceEndpoint, int width, int height, List<int[]> sizes)
         {
             const string template = @"{
 ""@context"":""http://iiif.io/api/image/2/context.json"",
@@ -70,7 +72,7 @@ namespace DLCS.Model.Assets
   ]
 }
 ";
-            return InfoJson(serviceEndpoint, sizes, template);
+            return InfoJson(serviceEndpoint, sizes, template, width, height);
         }
 
         public static string GetThumbsImageApi3_0(string serviceEndpoint, List<int[]> sizes)
@@ -94,29 +96,38 @@ namespace DLCS.Model.Assets
             return InfoJson(serviceEndpoint, sizes, template);
         }
 
-        private static string InfoJson(string serviceEndpoint, List<int[]> sizes, string template, int tileSize = 256)
+        private static string InfoJson(
+            string serviceEndpoint, 
+            List<int[]> sizes, 
+            string template,
+            int? width = null,
+            int? height = null,
+            int tileSize = 256)
         {
             var sizeStr = new StringBuilder();
-            int width = 0;
-            int height = 0;
+            int workingWidth = 0;
+            int workingHeight = 0;
             foreach (int[] wh in sizes.OrderBy(wh => wh[0]))
             {
-                if (width > 0) sizeStr.Append(", ");
-                width = wh[0];
-                height = wh[1];
+                if (workingWidth > 0) sizeStr.Append(", ");
+                workingWidth = wh[0];
+                workingHeight = wh[1];
                 sizeStr.Append("{ \"width\": ");
-                sizeStr.Append(width);
+                sizeStr.Append(workingWidth);
                 sizeStr.Append(", \"height\": ");
-                sizeStr.Append(height);
+                sizeStr.Append(workingHeight);
                 sizeStr.Append(" }");
             }
 
+            var imgWidth = width ?? workingWidth;
+            var imgHeight = height ?? workingHeight;
+
             var infoJson = template
                 .Replace("$id$", serviceEndpoint)
-                .Replace("$width$", width.ToString())
-                .Replace("$height$", height.ToString())
+                .Replace("$width$", imgWidth.ToString())
+                .Replace("$height$", imgHeight.ToString())
                 .Replace("$sizes$", sizeStr.ToString())
-                .Replace("$scaleFactors$", GetScaleFactors(width, height, tileSize));
+                .Replace("$scaleFactors$", GetScaleFactors(imgWidth, imgHeight, tileSize));
             
             return infoJson;
         }
