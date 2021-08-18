@@ -1,6 +1,6 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
@@ -13,7 +13,7 @@ namespace Orchestrator.Features.Images.Requests
     /// <summary>
     /// Mediatr request for generating info.json request for specified image.
     /// </summary>
-    public class GetImageInfoJson : IRequest<string?>, IImageRequest
+    public class GetImageInfoJson : IRequest<ImageInfoJsonResponse>, IImageRequest
     {
         public string FullPath { get; }
         
@@ -24,8 +24,28 @@ namespace Orchestrator.Features.Images.Requests
             FullPath = path;
         }
     }
-    
-    public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, string?>
+
+    public class ImageInfoJsonResponse
+    {
+        public string? InfoJson { get; }
+        public bool HasInfoJson { get; }
+        public bool RequiresAuth { get; }
+
+        public static ImageInfoJsonResponse Empty = new();
+
+        private ImageInfoJsonResponse()
+        {
+        }
+
+        public ImageInfoJsonResponse(string infoJson, bool requiresAuth)
+        {
+            InfoJson = infoJson;
+            RequiresAuth = requiresAuth;
+            HasInfoJson = true;
+        }
+    }
+
+    public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, ImageInfoJsonResponse>
     {
         private readonly IAssetTracker assetTracker;
         private readonly IAssetPathGenerator assetPathGenerator;
@@ -38,17 +58,27 @@ namespace Orchestrator.Features.Images.Requests
             this.assetPathGenerator = assetPathGenerator;
         }
         
-        public async Task<string?> Handle(GetImageInfoJson request, CancellationToken cancellationToken)
+        public async Task<ImageInfoJsonResponse> Handle(GetImageInfoJson request, CancellationToken cancellationToken)
         {
             var asset = await assetTracker.GetOrchestrationAsset<OrchestrationImage>(request.AssetRequest.GetAssetId());
             if (asset == null)
             {
-                return null;
+                return ImageInfoJsonResponse.Empty;
             }
 
-            var id = assetPathGenerator.GetFullPathForRequest(request.AssetRequest);
+            var imageId = GetImageId(request);
 
-            return InfoJsonBuilder.GetImageApi2_1Level1(id, asset.Width, asset.Height, asset.OpenThumbs);
+            var infoJson = InfoJsonBuilder.GetImageApi2_1Level1(imageId, asset.Width, asset.Height, asset.OpenThumbs);
+            return new ImageInfoJsonResponse(infoJson, asset.RequiresAuth);
         }
+
+        private string GetImageId(GetImageInfoJson request)
+            => assetPathGenerator.GetFullPathForRequest(request.AssetRequest,
+                (assetRequest, template) => DlcsPathHelpers.GeneratePathFromTemplate(
+                    template,
+                    assetRequest.RoutePrefix,
+                    assetRequest.CustomerPathValue,
+                    assetRequest.Space.ToString(),
+                    assetRequest.AssetId));
     }
 }

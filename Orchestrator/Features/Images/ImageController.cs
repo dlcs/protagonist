@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
@@ -44,15 +45,15 @@ namespace Orchestrator.Features.Images
             try
             {
 
-                var infoJson = await mediator.Send(new GetImageInfoJson(HttpContext.Request.Path), cancellationToken);
-                if (infoJson.IsNullOrEmpty()) return NotFound();
+                var infoJsonResponse = await mediator.Send(new GetImageInfoJson(HttpContext.Request.Path), cancellationToken);
+                if (!infoJsonResponse.HasInfoJson) return NotFound();
                 
                 // TODO - cache headers
-                // TODO headers
-                // TODO 401 if not auth?
                 // TODO add clickthrough gubbins
 
-                return Content(infoJson, "application/json");
+                if (infoJsonResponse.RequiresAuth) Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                
+                return Content(infoJsonResponse.InfoJson, "application/json");
             }
             catch (KeyNotFoundException ex)
             {
