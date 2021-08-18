@@ -14,17 +14,19 @@ namespace Orchestrator.Assets
     {
         private readonly IAssetRepository assetRepository;
         private readonly IAppCache appCache;
+        private readonly IThumbRepository thumbRepository;
         private readonly ILogger<MemoryAssetTracker> logger;
 
         // Null object to store in cache for short duration
         private static readonly OrchestrationAsset NullOrchestrationAsset =
             new() { AssetId = new AssetId(-1, -1, "__notfound__") };
 
-    public MemoryAssetTracker(IAssetRepository assetRepository, IAppCache appCache,
+    public MemoryAssetTracker(IAssetRepository assetRepository, IAppCache appCache, IThumbRepository thumbRepository,
             ILogger<MemoryAssetTracker> logger)
         {
             this.assetRepository = assetRepository;
             this.appCache = appCache;
+            this.thumbRepository = thumbRepository;
             this.logger = logger;
         }
 
@@ -56,7 +58,7 @@ namespace Orchestrator.Assets
                 if (asset != null)
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10); // TODO - pull from config
-                    return ConvertAssetToTrackedAsset(assetId, asset);
+                    return await ConvertAssetToTrackedAsset(assetId, asset);
                 }
 
                 logger.LogInformation("Asset {AssetId} not found, caching null object", assetId);
@@ -68,7 +70,7 @@ namespace Orchestrator.Assets
         private bool IsNullAsset(OrchestrationAsset orchestrationAsset)
             => orchestrationAsset.AssetId == NullOrchestrationAsset.AssetId;
 
-        private OrchestrationAsset ConvertAssetToTrackedAsset(AssetId assetId, Asset asset)
+        private async Task<OrchestrationAsset> ConvertAssetToTrackedAsset(AssetId assetId, Asset asset)
             => asset.Family switch
             {
                 'I' => new OrchestrationImage
@@ -77,12 +79,13 @@ namespace Orchestrator.Assets
                     RequiresAuth = asset.RequiresAuth,
                     Origin = asset.Origin,
                     Width = asset.Width,
-                    Height = asset.Height
+                    Height = asset.Height,
+                    OpenThumbs = await thumbRepository.GetOpenSizes(assetId)
                 },
                 _ => new OrchestrationAsset
                 {
-                    AssetId = assetId, 
-                    RequiresAuth = asset.RequiresAuth, 
+                    AssetId = assetId,
+                    RequiresAuth = asset.RequiresAuth,
                     Origin = asset.Origin,
                 }
             };

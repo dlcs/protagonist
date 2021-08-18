@@ -23,9 +23,15 @@ namespace Orchestrator.Infrastructure.Mediatr
         public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken,
             RequestHandlerDelegate<TResponse> next)
         {
-            if (request is IFileRequest fileRequest)
+            if (request is IImageRequest imageRequest)
             {
-                fileRequest.AssetRequest = await assetDeliveryPathParser.Parse<FileAssetDeliveryRequest>(request.FullPath);    
+                imageRequest.AssetRequest =
+                    await assetDeliveryPathParser.Parse<ImageAssetDeliveryRequest>(request.FullPath);
+            }
+            else if (request is IFileRequest fileRequest)
+            {
+                fileRequest.AssetRequest =
+                    await assetDeliveryPathParser.Parse<FileAssetDeliveryRequest>(request.FullPath);
             }
             // TODO - error handling
             // TODO - image and TimeBased handling

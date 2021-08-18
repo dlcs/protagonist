@@ -37,10 +37,10 @@ namespace Orchestrator.Assets
         /// Get or set asset Height
         /// </summary>
         public int Height { get; set; }
-        
+
         /// <summary>
         /// Gets or sets list of thumbnail sizes
         /// </summary>
-        public List<int[]>? OpenThumbs { get; set; }
+        public List<int[]> OpenThumbs { get; set; } = new();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -14,12 +15,14 @@ namespace Orchestrator.Tests.Assets
     public class MemoryAssetTrackerTests
     {
         private readonly IAssetRepository assetRepository;
+        private readonly IThumbRepository thumbRepository;
         private readonly MemoryAssetTracker sut;
 
         public MemoryAssetTrackerTests()
         {
             assetRepository = A.Fake<IAssetRepository>();
-            sut = new MemoryAssetTracker(assetRepository, new MockCachingService(),
+            thumbRepository = A.Fake<IThumbRepository>();
+            sut = new MemoryAssetTracker(assetRepository, new MockCachingService(), thumbRepository,
                 new NullLogger<MemoryAssetTracker>());
         }
 
@@ -97,6 +100,7 @@ namespace Orchestrator.Tests.Assets
             
             // Assert
             result.AssetId.Should().Be(assetId);
+            A.CallTo(() => thumbRepository.GetOpenSizes(A<AssetId>._)).MustNotHaveHappened();
         }
         
         [Fact]
@@ -104,13 +108,16 @@ namespace Orchestrator.Tests.Assets
         {
             // Arrange
             var assetId = new AssetId(1, 1, "go!");
+            var sizes = new List<int[]> { new[] { 100, 200 } };
             A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset { Family = 'I' });
-            
+            A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
+
             // Act
             var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
             
             // Assert
             result.AssetId.Should().Be(assetId);
+            result.OpenThumbs.Should().BeEquivalentTo(sizes);
         }
         
         [Theory]
