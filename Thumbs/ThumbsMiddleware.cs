@@ -70,7 +70,7 @@ namespace Thumbs
         private async Task WritePixels(HttpContext context, ImageAssetDeliveryRequest request)
         {
             await using var thumbnailResponse =
-                await thumbRepository.GetThumbnail(request.Customer.Id, request.Space, request.IIIFImageRequest);
+                await thumbRepository.GetThumbnail(request.GetAssetId(), request.IIIFImageRequest);
             
             if (thumbnailResponse.IsEmpty)
             {
@@ -101,7 +101,7 @@ namespace Thumbs
         // TODO: Don't construct the URL from what came in on the Request.
         private async Task WriteInfoJson(HttpContext context, ImageAssetDeliveryRequest request)
         {
-            var sizes = await thumbRepository.GetOpenSizes(request.Customer.Id, request.Space, request.IIIFImageRequest);
+            var sizes = await thumbRepository.GetOpenSizes(request.GetAssetId());
             if (sizes.IsNullOrEmpty())
             {
                 await StatusCodeResponse

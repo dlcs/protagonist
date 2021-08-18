@@ -184,9 +184,10 @@ namespace Orchestrator.Tests.Images
             context.Request.Path = "/iiif-img/2/2/test-image/full/!100,150/0/default.jpg";
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-            A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new OrchestrationAsset {AssetId = new AssetId(2, 2, "test-image")});
-            A.CallTo(() => thumbnailRepository.GetThumbnailSizeCandidate(2, 2, A<ImageRequest>._))
+            var assetId = new AssetId(2, 2, "test-image");
+            A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+                .Returns(new OrchestrationAsset { AssetId = assetId });
+            A.CallTo(() => thumbnailRepository.GetThumbnailSizeCandidate(assetId, A<ImageRequest>._))
                 .Returns(new SizeCandidate(150));
             var sut = GetImageRequestHandlerWithMockPathParser();
 
@@ -209,13 +210,14 @@ namespace Orchestrator.Tests.Images
             context.Request.Path = path;
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-            A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new OrchestrationAsset {AssetId = new AssetId(2, 2, "test-image")});
+            var assetId = new AssetId(2, 2, "test-image");
+            A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+                .Returns(new OrchestrationAsset {AssetId = assetId});
             var sut = GetImageRequestHandlerWithMockPathParser();
 
             if (knownThumb)
             {
-                A.CallTo(() => thumbnailRepository.GetThumbnailSizeCandidate(2, 2, A<ImageRequest>._))
+                A.CallTo(() => thumbnailRepository.GetThumbnailSizeCandidate(assetId, A<ImageRequest>._))
                     .Returns(new SizeCandidate(150));
             }
 

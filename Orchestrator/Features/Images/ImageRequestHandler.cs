@@ -90,8 +90,9 @@ namespace Orchestrator.Features.Images
         private async Task<bool> IsRequestForKnownThumbSize(ImageAssetDeliveryRequest requestModel)
         {
             // NOTE - would this be quicker, since we have Asset, to calculate sizes? Would need Policy
-            var candidate = await thumbnailRepository.GetThumbnailSizeCandidate(requestModel.Customer.Id,
-                requestModel.Space, requestModel.IIIFImageRequest);
+            var candidate =
+                await thumbnailRepository.GetThumbnailSizeCandidate(requestModel.GetAssetId(),
+                    requestModel.IIIFImageRequest);
             return candidate.KnownSize;
         }
     }

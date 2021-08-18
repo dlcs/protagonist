@@ -54,7 +54,7 @@ namespace Orchestrator
 
         protected async Task<OrchestrationAsset?> GetAsset(BaseAssetRequest imageAssetRequest)
         {
-            var imageId = imageAssetRequest.GetAssetImageId();
+            var imageId = imageAssetRequest.GetAssetId();
             var asset = await AssetTracker.GetOrchestrationAsset(imageId);
             return asset;
         }
