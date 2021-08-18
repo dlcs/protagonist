@@ -52,10 +52,10 @@ namespace Orchestrator
             }
         }
 
-        protected async Task<TrackedAsset?> GetAsset(BaseAssetRequest imageAssetRequest)
+        protected async Task<OrchestrationAsset?> GetAsset(BaseAssetRequest imageAssetRequest)
         {
             var imageId = imageAssetRequest.GetAssetImageId();
-            var asset = await AssetTracker.GetAsset(imageId);
+            var asset = await AssetTracker.GetOrchestrationAsset(imageId);
             return asset;
         }
     }

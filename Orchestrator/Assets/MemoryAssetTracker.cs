@@ -16,7 +16,9 @@ namespace Orchestrator.Assets
         private readonly IAppCache appCache;
         private readonly ILogger<MemoryAssetTracker> logger;
 
-        private static readonly TrackedAsset NullTrackedAsset = new() {AssetId = new AssetId(-1, -1, "__notfound__")};
+        // Null object to store in cache for short duration
+        private static readonly OrchestrationAsset NullOrchestrationAsset =
+            new() { AssetId = new AssetId(-1, -1, "__notfound__") };
 
     public MemoryAssetTracker(IAssetRepository assetRepository, IAppCache appCache,
             ILogger<MemoryAssetTracker> logger)
@@ -26,13 +28,25 @@ namespace Orchestrator.Assets
             this.logger = logger;
         }
 
-        public async Task<TrackedAsset?> GetAsset(AssetId assetId)
+        public async Task<OrchestrationAsset?> GetOrchestrationAsset(AssetId assetId)
         {
             var trackedAsset = await GetTrackedAsset(assetId);
-            return trackedAsset.AssetId == NullTrackedAsset.AssetId ? null : trackedAsset;
+            return IsNullAsset(trackedAsset) ? null : trackedAsset;
         }
 
-        private async Task<TrackedAsset> GetTrackedAsset(AssetId assetId)
+        public async Task<T?> GetOrchestrationAsset<T>(AssetId assetId) where T : OrchestrationAsset
+        {
+            var trackedAsset = await GetTrackedAsset(assetId);
+            if (IsNullAsset(trackedAsset)) return null;
+
+            if (trackedAsset is T typedAsset) return typedAsset;
+            
+            logger.LogWarning("Request for asset {AssetId} is of wrong type. Expected '{Expected}' but found '{Actual}",
+                assetId, typeof(T), trackedAsset.GetType());
+            return null;
+        }
+
+        private async Task<OrchestrationAsset> GetTrackedAsset(AssetId assetId)
         {
             var key = $"Track:{assetId}";
             return await appCache.GetOrAddAsync(key, async entry =>
@@ -42,18 +56,35 @@ namespace Orchestrator.Assets
                 if (asset != null)
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10); // TODO - pull from config
-                    return new TrackedAsset
-                    {
-                        AssetId = assetId,
-                        RequiresAuth = asset.RequiresAuth,
-                        Origin = asset.Origin
-                    };
+                    return ConvertAssetToTrackedAsset(assetId, asset);
                 }
 
                 logger.LogInformation("Asset {AssetId} not found, caching null object", assetId);
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1); // TODO - pull from config
-                return NullTrackedAsset;
+                return NullOrchestrationAsset;
             });
         }
+
+        private bool IsNullAsset(OrchestrationAsset orchestrationAsset)
+            => orchestrationAsset.AssetId == NullOrchestrationAsset.AssetId;
+
+        private OrchestrationAsset ConvertAssetToTrackedAsset(AssetId assetId, Asset asset)
+            => asset.Family switch
+            {
+                'I' => new OrchestrationImage
+                {
+                    AssetId = assetId,
+                    RequiresAuth = asset.RequiresAuth,
+                    Origin = asset.Origin,
+                    Width = asset.Width,
+                    Height = asset.Height
+                },
+                _ => new OrchestrationAsset
+                {
+                    AssetId = assetId, 
+                    RequiresAuth = asset.RequiresAuth, 
+                    Origin = asset.Origin,
+                }
+            };
     }
 }

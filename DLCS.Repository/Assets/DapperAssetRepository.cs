@@ -13,12 +13,10 @@ namespace DLCS.Repository.Assets
     public class DapperAssetRepository : IAssetRepository
     {
         private readonly IConfiguration configuration;
-        private readonly ILogger<DapperAssetRepository> logger;
 
-        public DapperAssetRepository(IConfiguration configuration, ILogger<DapperAssetRepository> logger)
+        public DapperAssetRepository(IConfiguration configuration)
         {
             this.configuration = configuration;
-            this.logger = logger;
         }
 
         public async Task<Asset?> GetAsset(string id)
