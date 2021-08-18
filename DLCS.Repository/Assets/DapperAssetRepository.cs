@@ -3,7 +3,6 @@ using Dapper;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Assets
 {

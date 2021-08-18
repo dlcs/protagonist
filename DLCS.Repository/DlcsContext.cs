@@ -1,6 +1,7 @@
 ﻿using DLCS.Core.Enum;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
+using DLCS.Model.Security;
 using DLCS.Repository.Entities;
 using Microsoft.EntityFrameworkCore;
 using OriginStrategy = DLCS.Repository.Entities.OriginStrategy;

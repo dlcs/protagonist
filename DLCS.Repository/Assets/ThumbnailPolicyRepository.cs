@@ -36,7 +36,7 @@ namespace DLCS.Repository.Assets
             const string key = "ThumbRepository_ThumbnailPolicies";
             return await appCache.GetOrAddAsync(key, async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);  // TODO - config
                 logger.LogInformation("refreshing ThumbnailPolicies from database");
                 await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
                 var thumbnailPolicies = await connection.QueryAsync<ThumbnailPolicy>(

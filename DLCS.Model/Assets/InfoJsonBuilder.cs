@@ -74,6 +74,35 @@ namespace DLCS.Model.Assets
 ";
             return InfoJson(serviceEndpoint, sizes, template, width, height);
         }
+        
+        public static string GetImageApi2_1Level1Auth(string serviceEndpoint, int width, int height, List<int[]> sizes, string services)
+        {
+            const string template = @"{
+""@context"":""http://iiif.io/api/image/2/context.json"",
+""@id"":""$id$"",
+""protocol"": ""http://iiif.io/api/image"",
+""profile"": [
+  ""http://iiif.io/api/image/2/level1.json"",
+  {
+    ""formats"": [ ""jpg"" ],
+    ""qualities"": [ ""native"",""color"",""gray"" ],
+    ""supports"": [ ""regionByPct"",""sizeByForcedWh"",""sizeByWh"",""sizeAboveFull"",""rotationBy90s"",""mirroring"",""gray"" ]
+  }
+  ],
+  ""width"": $width$,
+  ""height"": $height$,
+  ""tiles"": [
+    { ""width"": 256, ""height"": 256, ""scaleFactors"": [ $scaleFactors$ ] }
+  ],
+  ""sizes"": [
+    $sizes$
+  ],
+  ""services"": $services$
+}
+";
+            var basicTemplate = InfoJson(serviceEndpoint, sizes, template, width, height);
+            return basicTemplate.Replace("$services$", services);
+        }
 
         public static string GetThumbsImageApi3_0(string serviceEndpoint, List<int[]> sizes)
         {
