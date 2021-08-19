@@ -160,7 +160,7 @@ namespace Orchestrator.Features.Images.Requests
             var authServices = new List<AuthService>();
             foreach (var role in asset.RolesList)
             {
-                authServices.AddRange(await authServicesRepository.GetAuthServiceForRole(assetId.Customer, role));
+                authServices.AddRange(await authServicesRepository.GetAuthServicesForRole(assetId.Customer, role));
             }
 
             return authServices;

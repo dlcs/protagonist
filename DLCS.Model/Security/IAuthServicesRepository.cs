@@ -11,6 +11,6 @@ namespace DLCS.Model.Security
         /// <param name="customer">Id of customer</param>
         /// <param name="role">Full role identifier (e.g. https://api.dlcs.digirati.io/customers/2/roles/clickthrough)</param>
         /// <returns>List of authServices</returns>
-        public Task<IEnumerable<AuthService>> GetAuthServiceForRole(int customer, string role);
+        public Task<IEnumerable<AuthService>> GetAuthServicesForRole(int customer, string role);
     }
 }

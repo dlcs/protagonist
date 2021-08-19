@@ -27,7 +27,7 @@ namespace DLCS.Repository.Security
             this.logger = logger;
         }
         
-        public async Task<IEnumerable<AuthService>> GetAuthServiceForRole(int customer, string role)
+        public async Task<IEnumerable<AuthService>> GetAuthServicesForRole(int customer, string role)
         {
             var cacheKey = $"roles:{customer}:{role}";
 
