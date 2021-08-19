@@ -1,8 +1,10 @@
-﻿using System.Net;
+﻿using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
+using DLCS.Repository.Assets;
 using DLCS.Web.Requests.AssetDelivery;
+using IIIF;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,17 +19,14 @@ namespace Orchestrator.Features.Images
     /// </summary>
     public class ImageRequestHandler : RequestHandlerBase
     {
-        private readonly IThumbRepository thumbnailRepository;
         private readonly ProxySettings proxySettings;
 
         public ImageRequestHandler(
             ILogger<ImageRequestHandler> logger,
             IAssetTracker assetTracker,
-            IThumbRepository thumbnailRepository,
             IAssetDeliveryPathParser assetDeliveryPathParser,
             IOptions<ProxySettings> proxySettings) : base(logger, assetTracker, assetDeliveryPathParser)
         {
-            this.thumbnailRepository = thumbnailRepository;
             this.proxySettings = proxySettings.Value;
         }
 
@@ -45,14 +44,14 @@ namespace Orchestrator.Features.Images
             }
 
             // If "HEAD" then add CORS - is this required here?
-            var asset = await GetAsset(assetRequest);
-            if (asset == null)
+            var orchestrationAsset = await GetAsset(assetRequest);
+            if (orchestrationAsset is not OrchestrationImage orchestrationImage)
             {
                 Logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
                 return new StatusCodeProxyResult(HttpStatusCode.NotFound);
             }
             
-            if (asset.RequiresAuth)
+            if (orchestrationImage.RequiresAuth)
             {
                 Logger.LogDebug("Request for {Path} requires auth, proxying to orchestrator", httpContext.Request.Path);
                 return new ProxyActionResult(ProxyDestination.Orchestrator, assetRequest.NormalisedFullPath);
@@ -61,12 +60,12 @@ namespace Orchestrator.Features.Images
             if (IsRequestForUVThumb(httpContext, assetRequest))
             {
                 Logger.LogDebug("Request for {Path} looks like UV thumb, proxying to thumbs", httpContext.Request.Path);
-                return new ProxyActionResult(ProxyDestination.Thumbs, GetUVThumbReplacementPath(asset.AssetId));
+                return new ProxyActionResult(ProxyDestination.Thumbs, GetUVThumbReplacementPath(orchestrationImage.AssetId));
             }
 
             if (assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max)
             {
-                if (await IsRequestForKnownThumbSize(assetRequest))
+                if (IsRequestForKnownThumbSize(assetRequest, orchestrationImage))
                 {
                     Logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs", httpContext.Request.Path);
                     return new ProxyActionResult(ProxyDestination.Thumbs,
@@ -87,12 +86,10 @@ namespace Orchestrator.Features.Images
 
         // TODO handle resizing via config. Optionally with path regex (resize X but not Y)
         // TODO thumb-size lookup could be cached
-        private async Task<bool> IsRequestForKnownThumbSize(ImageAssetDeliveryRequest requestModel)
+        private bool IsRequestForKnownThumbSize(ImageAssetDeliveryRequest requestModel, OrchestrationImage orchestrationImage)
         {
-            // NOTE - would this be quicker, since we have Asset, to calculate sizes? Would need Policy
-            var candidate =
-                await thumbnailRepository.GetThumbnailSizeCandidate(requestModel.GetAssetId(),
-                    requestModel.IIIFImageRequest);
+            var openSizes = orchestrationImage.OpenThumbs.Select(wh => Size.FromArray(wh)).ToList();
+            var candidate = ThumbnailCalculator.GetCandidate(openSizes, requestModel.IIIFImageRequest, false);
             return candidate.KnownSize;
         }
     }
