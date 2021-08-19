@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 using Dapper;
 using DLCS.Core.Collections;
 using DLCS.Model.Security;
+using DLCS.Repository.Settings;
 using LazyCache;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Security
 {
@@ -16,15 +18,18 @@ namespace DLCS.Repository.Security
     {
         private readonly IConfiguration configuration;
         private readonly IAppCache appCache;
+        private readonly CacheSettings cacheSettings;
         private readonly ILogger<DapperCredentialsRepository> logger;
 
         public DapperAuthServicesRepository(IConfiguration configuration, 
             IAppCache appCache, 
+            IOptions<CacheSettings> cacheOptions,
             ILogger<DapperCredentialsRepository> logger)
         {
             this.configuration = configuration;
             this.appCache = appCache;
             this.logger = logger;
+            cacheSettings = cacheOptions.Value;
         }
         
         public async Task<IEnumerable<AuthService>> GetAuthServicesForRole(int customer, string role)
@@ -47,11 +52,12 @@ namespace DLCS.Repository.Security
             var authServices = result.ToList();
             if (authServices.IsNullOrEmpty())
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1); // TODO - config
+                logger.LogInformation("Found no authServices for customer {Customer}, role {Role}", customer, role);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
                 return Enumerable.Empty<AuthService>();
             }
 
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10); // TODO - config
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl());
             return authServices;
         }
 

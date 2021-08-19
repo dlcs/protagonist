@@ -26,6 +26,7 @@ namespace Thumbs
             IThumbRepository thumbRepository,
             IAssetPathGenerator pathGenerator)
         {
+            // TODO - change this to use CacheSettings
             this.cacheSeconds = configuration.GetValue<int>("ResponseCacheSeconds", 0);
             this.logger = logger;
             this.thumbRepository = thumbRepository;

@@ -4,9 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using DLCS.Model.Assets;
+using DLCS.Repository.Settings;
 using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Assets
 {
@@ -14,15 +16,18 @@ namespace DLCS.Repository.Assets
     {
         private readonly IAppCache appCache;
         private readonly IConfiguration configuration;
+        private readonly CacheSettings cacheSettings;
         private readonly ILogger<ThumbnailPolicyRepository> logger;
 
         public ThumbnailPolicyRepository(IAppCache appCache,
             IConfiguration configuration,
+            IOptions<CacheSettings> cacheOptions,
             ILogger<ThumbnailPolicyRepository> logger)
         {
             this.appCache = appCache;
             this.configuration = configuration;
             this.logger = logger;
+            cacheSettings = cacheOptions.Value;
         }
         
         public async Task<ThumbnailPolicy> GetThumbnailPolicy(string thumbnailPolicyId)
@@ -36,7 +41,7 @@ namespace DLCS.Repository.Assets
             const string key = "ThumbRepository_ThumbnailPolicies";
             return await appCache.GetOrAddAsync(key, async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);  // TODO - config
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl());
                 logger.LogInformation("refreshing ThumbnailPolicies from database");
                 await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
                 var thumbnailPolicies = await connection.QueryAsync<ThumbnailPolicy>(

@@ -50,8 +50,10 @@ namespace Thumbs
             services.AddSingleton<IAssetRepository, DapperAssetRepository>();
             services.AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>();
 
-            services.Configure<ThumbsSettings>(Configuration.GetSection("Thumbs"));
-            services.Configure<PathTemplateOptions>(Configuration.GetSection("PathRules"));
+            services
+                .Configure<ThumbsSettings>(Configuration.GetSection("Thumbs"))
+                .Configure<PathTemplateOptions>(Configuration.GetSection("PathRules"))
+                .Configure<CacheSettings>(Configuration.GetSection("Caching"));
 
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
             services.Configure<ForwardedHeadersOptions>(opts =>

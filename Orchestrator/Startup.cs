@@ -49,6 +49,7 @@ namespace Orchestrator
                 .Configure<OrchestratorSettings>(configuration)
                 .Configure<ThumbsSettings>(configuration.GetSection("Thumbs"))
                 .Configure<ProxySettings>(configuration.GetSection("Proxy"))
+                .Configure<CacheSettings>(configuration.GetSection("Caching"))
                 .Configure<ReverseProxySettings>(reverseProxySection);
             
             // TODO - configure memoryCache

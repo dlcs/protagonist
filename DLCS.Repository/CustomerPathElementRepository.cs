@@ -3,8 +3,10 @@ using System.Threading.Tasks;
 using DLCS.Model.Customer;
 using DLCS.Model.PathElements;
 using DLCS.Repository.Collections;
+using DLCS.Repository.Settings;
 using LazyCache;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository
 {
@@ -12,16 +14,19 @@ namespace DLCS.Repository
     {
         private readonly ICustomerRepository customerRepository;
         private readonly ILogger<CustomerPathElementRepository> logger;
+        private readonly CacheSettings cacheSettings;
         private readonly IAppCache appCache;
 
         public CustomerPathElementRepository(
             IAppCache appCache,
+            IOptions<CacheSettings> cacheOptions,
             ICustomerRepository customerRepository,
             ILogger<CustomerPathElementRepository> logger)
         {
             this.customerRepository = customerRepository;
             this.logger = logger;
             this.appCache = appCache;
+            cacheSettings = cacheOptions.Value;
         }
 
         public async Task<CustomerPathElement> GetCustomer(string customerPart)
@@ -60,7 +65,7 @@ namespace DLCS.Repository
             const string key = "CustomerPathElementRepository_CustomerLookup";
             return appCache.GetOrAddAsync(key, async entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Long));
                 logger.LogDebug("refreshing customer name/id lookup from database");
                 return new ReadOnlyMap<string, int>(await customerRepository.GetCustomerIdLookup());
             });

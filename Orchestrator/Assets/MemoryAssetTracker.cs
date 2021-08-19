@@ -2,8 +2,10 @@
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Repository.Settings;
 using LazyCache;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Orchestrator.Assets
 {
@@ -14,6 +16,7 @@ namespace Orchestrator.Assets
     {
         private readonly IAssetRepository assetRepository;
         private readonly IAppCache appCache;
+        private readonly CacheSettings cacheSettings;
         private readonly IThumbRepository thumbRepository;
         private readonly ILogger<MemoryAssetTracker> logger;
 
@@ -21,13 +24,18 @@ namespace Orchestrator.Assets
         private static readonly OrchestrationAsset NullOrchestrationAsset =
             new() { AssetId = new AssetId(-1, -1, "__notfound__") };
 
-    public MemoryAssetTracker(IAssetRepository assetRepository, IAppCache appCache, IThumbRepository thumbRepository,
+        public MemoryAssetTracker(
+            IAssetRepository assetRepository,
+            IAppCache appCache,
+            IThumbRepository thumbRepository,
+            IOptions<CacheSettings> cacheOptions,
             ILogger<MemoryAssetTracker> logger)
         {
             this.assetRepository = assetRepository;
             this.appCache = appCache;
             this.thumbRepository = thumbRepository;
             this.logger = logger;
+            cacheSettings = cacheOptions.Value;
         }
 
         public async Task<OrchestrationAsset?> GetOrchestrationAsset(AssetId assetId)
@@ -57,12 +65,12 @@ namespace Orchestrator.Assets
                 var asset = await assetRepository.GetAsset(assetId);
                 if (asset != null)
                 {
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10); // TODO - pull from config
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl());
                     return await ConvertAssetToTrackedAsset(assetId, asset);
                 }
 
                 logger.LogInformation("Asset {AssetId} not found, caching null object", assetId);
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1); // TODO - pull from config
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
                 return NullOrchestrationAsset;
             });
         }

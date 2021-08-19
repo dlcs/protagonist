@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 using Orchestrator.Features.Images.Requests;
 
 namespace Orchestrator.Features.Images
@@ -47,12 +47,14 @@ namespace Orchestrator.Features.Images
 
                 var infoJsonResponse = await mediator.Send(new GetImageInfoJson(HttpContext.Request.Path), cancellationToken);
                 if (!infoJsonResponse.HasInfoJson) return NotFound();
-                
-                // TODO - cache headers
-                // TODO add clickthrough gubbins
 
-                if (infoJsonResponse.RequiresAuth) Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                if (infoJsonResponse.RequiresAuth)
+                {
+                    
+                    Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                }
                 
+                HttpContext.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
                 return Content(infoJsonResponse.InfoJson, "application/json");
             }
             catch (KeyNotFoundException ex)
@@ -67,5 +69,18 @@ namespace Orchestrator.Features.Images
                 return BadRequest();
             }
         }
+        
+        /*private void SetCacheControl(bool requiresAuth)
+        {
+            if (cacheSeconds > 0)
+            {
+                HttpContext.Response.GetTypedHeaders().CacheControl =
+                    new CacheControlHeaderValue
+                    {
+                        Public = true,
+                        MaxAge = TimeSpan.FromSeconds(cacheSeconds)
+                    };
+            }
+        }*/
     }
 }

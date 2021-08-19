@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Repository.Settings;
 using FakeItEasy;
 using FluentAssertions;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Xunit;
 
@@ -23,7 +25,7 @@ namespace Orchestrator.Tests.Assets
             assetRepository = A.Fake<IAssetRepository>();
             thumbRepository = A.Fake<IThumbRepository>();
             sut = new MemoryAssetTracker(assetRepository, new MockCachingService(), thumbRepository,
-                new NullLogger<MemoryAssetTracker>());
+                Options.Create(new CacheSettings()), new NullLogger<MemoryAssetTracker>());
         }
 
         [Fact]
