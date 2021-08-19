@@ -1,5 +1,5 @@
 ﻿using FluentAssertions;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Xunit;
 
 namespace Orchestrator.Tests.ReverseProxy

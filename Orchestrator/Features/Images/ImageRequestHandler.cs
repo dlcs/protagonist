@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images

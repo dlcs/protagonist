@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.ReverseProxy;
 
 namespace Orchestrator.Settings
 {

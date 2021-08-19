@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Yarp.ReverseProxy.Forwarder;
 
-namespace Orchestrator.ReverseProxy
+namespace Orchestrator.Infrastructure.ReverseProxy
 {
     /// <summary>
     /// <see cref="HttpTransformer"/> that redirects to new path.

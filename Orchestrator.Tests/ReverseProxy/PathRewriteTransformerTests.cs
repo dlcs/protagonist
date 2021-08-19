@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Xunit;
 
 namespace Orchestrator.Tests.ReverseProxy

@@ -2,7 +2,7 @@
 using System.Net;
 using Microsoft.Extensions.Primitives;
 
-namespace Orchestrator.ReverseProxy
+namespace Orchestrator.Infrastructure.ReverseProxy
 {
     /// <summary>
     /// Marker interface for result of proxy processing logic.

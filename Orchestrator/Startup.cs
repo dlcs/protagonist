@@ -28,7 +28,7 @@ using Orchestrator.Assets;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure.Mediatr;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Serilog;
 
