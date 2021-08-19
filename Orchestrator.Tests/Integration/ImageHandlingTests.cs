@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Model.Assets;
+using DLCS.Model.Security;
+using DLCS.Repository.Entities;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json.Linq;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
 using Xunit;
@@ -64,10 +67,123 @@ namespace Orchestrator.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.Redirect);
             response.Headers.Location.Should().Be(expected);
         }
+
+        [Fact]
+        public async Task GetInfoJson_OpenImage_Correct()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJson_OpenImage_Correct)}";
+            await dbFixture.DbContext.Images.AddAsync(new Asset
+            {
+                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "",
+                Width = 8000, Height = 8000, Roles = "", Family = 'I', MediaType = "image/jpeg",
+                ThumbnailPolicy = "default"
+            });
+
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
+
+            // Assert
+            // TODO - improve these tests when we have IIIF models
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_OpenImage_Correct");
+            jsonResponse["height"].ToString().Should().Be("8000");
+            jsonResponse["width"].ToString().Should().Be("8000");
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.CacheControl.Public.Should().BeTrue();
+            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        }
         
-        //[Theory]
+        [Fact]
+        public async Task GetInfoJson_OpenImage_ForwardedFor_Correct()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJson_OpenImage_ForwardedFor_Correct)}";
+            await dbFixture.DbContext.Images.AddAsync(new Asset
+            {
+                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "",
+                Width = 8000, Height = 8000, Roles = "", Family = 'I', MediaType = "image/jpeg",
+                ThumbnailPolicy = "default"
+            });
+
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Get, $"iiif-img/{id}/info.json");
+            request.Headers.Add("X-Forwarded-Host", "new-host.dlcs");
+            var response = await httpClient.SendAsync(request);
+
+            // Assert
+            // TODO - improve these tests when we have IIIF models
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@id"].ToString().Should()
+                .Be("http://new-host.dlcs/iiif-img/99/1/GetInfoJson_OpenImage_ForwardedFor_Correct");
+            jsonResponse["height"].ToString().Should().Be("8000");
+            jsonResponse["width"].ToString().Should().Be("8000");
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.CacheControl.Public.Should().BeTrue();
+            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        }
         
-        
+        [Fact]
+        public async Task GetInfoJson_RestrictedImage_Correct()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJson_RestrictedImage_Correct)}";
+            const string roleName = "my-test-role";
+            const string authServiceName = "my-auth-service";
+            await dbFixture.DbContext.Images.AddAsync(new Asset
+            {
+                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "", MaxUnauthorised = 500,
+                Width = 8000, Height = 8000, Roles = roleName, Family = 'I', MediaType = "image/jpeg",
+                ThumbnailPolicy = "default"
+            });
+            await dbFixture.DbContext.Roles.AddAsync(new Role
+            {
+                Customer = 99, Id = roleName, Name = "test-role", AuthService = authServiceName
+            });
+            await dbFixture.DbContext.AuthServices.AddAsync(new AuthService
+            {
+                Name = "test-service", Customer = 99, Id = authServiceName, Profile = "profile"
+            });
+
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[400,400],[200,200]]}"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
+
+            // Assert
+            // TODO - improve these tests when we have IIIF models
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@id"].ToString().Should()
+                .Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_Correct");
+            jsonResponse["services"].Should().NotBeNull();
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            response.Headers.CacheControl.Public.Should().BeFalse();
+            response.Headers.CacheControl.Private.Should().BeTrue();
+            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        }
+
         [Fact]
         public async Task Get_UnknownCustomer_Returns404()
         {

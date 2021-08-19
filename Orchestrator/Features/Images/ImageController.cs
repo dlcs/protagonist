@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Repository.Settings;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using Orchestrator.Features.Images.Requests;
 
@@ -17,11 +20,13 @@ namespace Orchestrator.Features.Images
     {
         private readonly IMediator mediator;
         private readonly ILogger<ImageController> logger;
+        private readonly CacheSettings cacheSettings;
 
-        public ImageController(IMediator mediator, ILogger<ImageController> logger)
+        public ImageController(IMediator mediator, IOptions<CacheSettings> cacheSettings, ILogger<ImageController> logger)
         {
             this.mediator = mediator;
             this.logger = logger;
+            this.cacheSettings = cacheSettings.Value;
         }
         
         /// <summary>
@@ -44,16 +49,15 @@ namespace Orchestrator.Features.Images
         {
             try
             {
-
                 var infoJsonResponse = await mediator.Send(new GetImageInfoJson(HttpContext.Request.Path), cancellationToken);
                 if (!infoJsonResponse.HasInfoJson) return NotFound();
 
                 if (infoJsonResponse.RequiresAuth)
                 {
-                    
                     Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 }
-                
+
+                SetCacheControl(infoJsonResponse.RequiresAuth);
                 HttpContext.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
                 return Content(infoJsonResponse.InfoJson, "application/json");
             }
@@ -69,18 +73,16 @@ namespace Orchestrator.Features.Images
                 return BadRequest();
             }
         }
-        
-        /*private void SetCacheControl(bool requiresAuth)
+
+        private void SetCacheControl(bool requiresAuth)
         {
-            if (cacheSeconds > 0)
-            {
-                HttpContext.Response.GetTypedHeaders().CacheControl =
-                    new CacheControlHeaderValue
-                    {
-                        Public = true,
-                        MaxAge = TimeSpan.FromSeconds(cacheSeconds)
-                    };
-            }
-        }*/
+            HttpContext.Response.GetTypedHeaders().CacheControl =
+                new CacheControlHeaderValue
+                {
+                    Public = !requiresAuth,
+                    Private = requiresAuth,
+                    MaxAge = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Long))
+                };
+        }
     }
 }

@@ -128,6 +128,7 @@ namespace Orchestrator
 
             app
                 .HandlePathBase(pathBase, logger)
+                .UseForwardedHeaders()
                 .UseHttpsRedirection()
                 .UseRouting()
                 .UseSerilogRequestLogging()
