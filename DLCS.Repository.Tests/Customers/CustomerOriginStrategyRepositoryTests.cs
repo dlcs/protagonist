@@ -26,7 +26,7 @@ namespace DLCS.Repository.Tests.Customers
         {
             dbContext = dbFixture.DbContext;
             var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new KeyValuePair<string, string>[] { new("s3OriginRegex", "http\\:\\/\\/s3-/.*") })
+                .AddInMemoryCollection(new KeyValuePair<string, string>[] { new("S3OriginRegex", "http\\:\\/\\/s3-/.*") })
                 .Build();
             
             sut = new CustomerOriginStrategyRepository(dbFixture.DbContext, new MockCachingService(), configuration,
@@ -46,7 +46,7 @@ namespace DLCS.Repository.Tests.Customers
             var sampleDictionary = new Dictionary<string, string>();
             if (s3Origin != "no_val")
             {
-                sampleDictionary.Add("s3OriginRegex", s3Origin);
+                sampleDictionary.Add("S3OriginRegex", s3Origin);
             }
 
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(sampleDictionary).Build();
@@ -58,7 +58,7 @@ namespace DLCS.Repository.Tests.Customers
             
             // Assert
             action.Should().Throw<ArgumentNullException>()
-                .WithMessage("Value cannot be null. (Parameter 'appsetting:s3OriginRegex')");
+                .WithMessage("Value cannot be null. (Parameter 'appsetting:S3OriginRegex')");
         }
 
         [Fact]

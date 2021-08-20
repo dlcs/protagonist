@@ -24,11 +24,11 @@ namespace DLCS.Repository.Strategy
         public static IServiceCollection AddOriginStrategies(this IServiceCollection services)
         {
             services
-                .AddScoped<S3AmbientOriginStrategy>()
+                .AddSingleton<S3AmbientOriginStrategy>()
                 .AddSingleton<DefaultOriginStrategy>()
                 .AddSingleton<BasicHttpAuthOriginStrategy>()
                 .AddSingleton<SftpOriginStrategy>()
-                .AddTransient<OriginStrategyResolver>(provider => strategy => strategy switch
+                .AddSingleton<OriginStrategyResolver>(provider => strategy => strategy switch
                 {
                     OriginStrategyType.Default => provider.GetService<DefaultOriginStrategy>(),
                     OriginStrategyType.BasicHttp => provider.GetService<BasicHttpAuthOriginStrategy>(),

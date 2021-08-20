@@ -68,7 +68,8 @@ namespace Orchestrator
                 .AddSingleton<IAssetTracker, MemoryAssetTracker>()
                 .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
-                .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
+                .AddSingleton<ICustomerOriginStrategyRepository, DapperCustomerOriginStrategyRepository>()
+                .AddSingleton<OriginFetcher>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
                 .AddOriginStrategies()
                 .AddDbContext<DlcsContext>(opts =>
@@ -105,6 +106,8 @@ namespace Orchestrator
                         .AllowAnyMethod()
                         .AllowAnyHeader());
             });
+            
+            DapperMappings.Register();
             
             services
                 .AddHealthChecks()

@@ -36,7 +36,7 @@ namespace Orchestrator.Features.Images
         [Route("", Name = "image_only")]
         [HttpGet]
         public RedirectResult Index()
-            => Redirect(HttpContext.Request.Path.Add("/info.json"));
+            => Redirect(HttpContext.Request.Path.Add("/info.json")); // TODO - Make this a 303, seeOther
 
         /// <summary>
         /// Get info.json file for specified image

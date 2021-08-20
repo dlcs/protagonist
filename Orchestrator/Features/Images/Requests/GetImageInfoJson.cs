@@ -119,7 +119,7 @@ namespace Orchestrator.Features.Images.Requests
         private string GenerateInfoJsonServices(AssetId assetId, List<AuthService>? authServices)
         {
             // TODO - fix this with IIIF nuget lib, this is lift + shift from Deliverator
-            var authServicesUriFormat = configuration["authServicesUriTemplate"];
+            var authServicesUriFormat = configuration["AuthServicesUriTemplate"];
             var id = authServicesUriFormat
                 .Replace("{customer}", assetId.Customer.ToString()) // should this be customer Path value?
                 .Replace("{behaviour}", authServices[0].Name);

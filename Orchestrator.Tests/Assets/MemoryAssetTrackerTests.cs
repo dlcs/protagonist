@@ -24,7 +24,9 @@ namespace Orchestrator.Tests.Assets
         {
             assetRepository = A.Fake<IAssetRepository>();
             thumbRepository = A.Fake<IThumbRepository>();
-            sut = new MemoryAssetTracker(assetRepository, new MockCachingService(), thumbRepository,
+            
+            // TODO - fix ctor param
+            sut = new MemoryAssetTracker(assetRepository, new MockCachingService(), thumbRepository, null,
                 Options.Create(new CacheSettings()), new NullLogger<MemoryAssetTracker>());
         }
 

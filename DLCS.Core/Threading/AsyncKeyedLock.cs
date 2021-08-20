@@ -11,30 +11,31 @@ namespace DLCS.Core.Threading
     /// <remarks>See https://stackoverflow.com/a/31194647/83096 </remarks>
     public sealed class AsyncKeyedLock
     {
-        public IDisposable Lock(object key)
+        public IDisposable Lock(object key, CancellationToken cancellationToken = default)
         {
-            GetOrCreate(key).Wait();
+            GetOrCreate(key).Wait(cancellationToken);
             return new Releaser { Key = key };
         }
 
-        public async Task<IDisposable> LockAsync(object key)
+        public async Task<IDisposable> LockAsync(object key, CancellationToken cancellationToken = default)
         {
-            await GetOrCreate(key).WaitAsync();
+            await GetOrCreate(key).WaitAsync(cancellationToken);
             return new Releaser { Key = key };
         }
-        
-        public async Task<IDisposable> LockAsync(object key, TimeSpan timeout, bool throwIfNoLock = false)
+
+        public async Task<IDisposable> LockAsync(object key, TimeSpan timeout, bool throwIfNoLock = false,
+            CancellationToken cancellationToken = default)
         {
-            var success = await GetOrCreate(key).WaitAsync(timeout);
+            var success = await GetOrCreate(key).WaitAsync(timeout, cancellationToken);
             if (!success && throwIfNoLock)
             {
                 throw new TimeoutException(
                     $"Unable to attain lock for {key} within timeout of {timeout.TotalMilliseconds}ms");
             }
 
-            return new Releaser { Key = key, HaveLock = success};
+            return new Releaser { Key = key, HaveLock = success };
         }
-        
+
         private SemaphoreSlim GetOrCreate(object key)
         {
             RefCounted<SemaphoreSlim> item;
@@ -50,9 +51,10 @@ namespace DLCS.Core.Threading
                     SemaphoreSlims[key] = item;
                 }
             }
+
             return item.Value;
         }
-        
+
         private sealed class RefCounted<T>
         {
             public RefCounted(T value)
@@ -79,7 +81,7 @@ namespace DLCS.Core.Threading
                 {
                     return;
                 }
-                
+
                 RefCounted<SemaphoreSlim> item;
                 lock (SemaphoreSlims)
                 {
@@ -88,6 +90,7 @@ namespace DLCS.Core.Threading
                     if (item.RefCount == 0)
                         SemaphoreSlims.Remove(Key);
                 }
+
                 item.Value.Release();
             }
         }

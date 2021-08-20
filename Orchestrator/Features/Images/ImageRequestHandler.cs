@@ -62,7 +62,20 @@ namespace Orchestrator.Features.Images
                 Logger.LogDebug("Request for {Path} looks like UV thumb, proxying to thumbs", httpContext.Request.Path);
                 return new ProxyActionResult(ProxyDestination.Thumbs, GetUVThumbReplacementPath(orchestrationImage.AssetId));
             }
+            
+            /*
+            Is known thumb size
+            Is full and smaller than biggest thumb size
+            is full and bigger than biggest thumb size
+            anything else
 
+            1 - proxy thumb
+            2 - resample next thumb size up
+            3 - off to S3-cantaloupe
+            4 - off to filesystem cantaloupe (including orchestration if reqd)
+            for 2 and 3 - if the asked-for thumb is not on S3 but is in the thumbnail policy list, save it to S3 on the way out
+            ... and use the No 3 S3 cantaloupe, not the orchestrating path
+             */
             if (assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max)
             {
                 if (IsRequestForKnownThumbSize(assetRequest, orchestrationImage))
@@ -73,6 +86,7 @@ namespace Orchestrator.Features.Images
                 }
             }
             
+            //return new OrchestrateImageResult()
             return new ProxyActionResult(ProxyDestination.CachingProxy, assetRequest.NormalisedFullPath);
         }
 
@@ -85,7 +99,7 @@ namespace Orchestrator.Features.Images
             $"{proxySettings.ThumbsPath}/{assetId}/full/{proxySettings.UVThumbReplacementPath}/0/default.jpg";
 
         // TODO handle resizing via config. Optionally with path regex (resize X but not Y)
-        // TODO thumb-size lookup could be cached
+        // TODO handle known thumb size that doesn't exist yet - call image-server and save to s3 on way back
         private bool IsRequestForKnownThumbSize(ImageAssetDeliveryRequest requestModel, OrchestrationImage orchestrationImage)
         {
             var openSizes = orchestrationImage.OpenThumbs.Select(wh => Size.FromArray(wh)).ToList();

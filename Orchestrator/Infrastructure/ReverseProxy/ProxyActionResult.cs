@@ -1,13 +1,27 @@
 ﻿using System.Collections.Generic;
 using System.Net;
 using Microsoft.Extensions.Primitives;
+using Orchestrator.Assets;
 
 namespace Orchestrator.Infrastructure.ReverseProxy
 {
     /// <summary>
     /// Marker interface for result of proxy processing logic.
     /// </summary>
-    public interface IProxyActionResult {}
+    public interface IProxyActionResult {} // TODO -rename this?
+
+    /// <summary>
+    /// Results for actions that is for image orchestration
+    /// </summary>
+    public class OrchestrateImageResult : IProxyActionResult
+    {
+        public OrchestrationImage OrchestrationImage { get; set; }
+    }
+
+    public class SaveMe : IProxyActionResult
+    {
+        public string S3Key { get; set; }
+    }
 
     /// <summary>
     /// Result for actions that should be proxied to downstream service.

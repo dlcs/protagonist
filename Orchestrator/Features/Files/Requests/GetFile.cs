@@ -1,6 +1,5 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Model.Customer;
 using DLCS.Repository.Strategy;
 using DLCS.Web.Requests.AssetDelivery;
 using MediatR;
@@ -27,34 +26,24 @@ namespace Orchestrator.Features.Files.Requests
     public class GetFileHandler : IRequestHandler<GetFile, OriginResponse>
     {
         private readonly IAssetTracker assetTracker;
-        private readonly ICustomerOriginStrategyRepository customerOriginStrategyRepository;
-        private readonly OriginStrategyResolver originStrategyResolver;
+        private readonly OriginFetcher originFetcher;
 
-        public GetFileHandler(
-            IAssetTracker assetTracker,
-            ICustomerOriginStrategyRepository customerOriginStrategyRepository,
-            OriginStrategyResolver originStrategyResolver)
+        public GetFileHandler(IAssetTracker assetTracker, OriginFetcher originFetcher)
         {
             this.assetTracker = assetTracker;
-            this.customerOriginStrategyRepository = customerOriginStrategyRepository;
-            this.originStrategyResolver = originStrategyResolver;
+            this.originFetcher = originFetcher;
         }
-        
+
         public async Task<OriginResponse> Handle(GetFile request, CancellationToken cancellationToken)
         {
-            var asset = await assetTracker.GetOrchestrationAsset(request.AssetRequest.GetAssetId());
+            var asset = await assetTracker.GetOrchestrationAsset<OrchestrationFile>(request.AssetRequest.GetAssetId());
             if (asset == null)
             {
                 return OriginResponse.Empty;
             }
 
-            var customerOriginStrategy =
-                await customerOriginStrategyRepository.GetCustomerOriginStrategy(asset.AssetId, asset.Origin);
-
-            var originStrategy = originStrategyResolver(customerOriginStrategy.Strategy);
-
-            var assetFromOrigin = await originStrategy.LoadAssetFromOrigin(asset.AssetId, asset.Origin,
-                customerOriginStrategy, cancellationToken);
+            var assetFromOrigin =
+                await originFetcher.LoadAssetFromLocation(asset.AssetId, asset.Origin, cancellationToken);
             return assetFromOrigin;
         }
     }

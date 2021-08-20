@@ -1,11 +1,39 @@
 ﻿
+using DLCS.Repository.Settings;
+
 namespace Orchestrator.Settings
 {
     public class OrchestratorSettings
     {
+        /// <summary>
+        /// PathBase to host app on.
+        /// </summary>
         public string PathBase { get; set; }
+        
+        /// <summary>
+        /// Regex for S3-origin, for objects uploaded directly to DLCS.
+        /// </summary>
+        public string S3OriginRegex { get; set; }
+        
+        /// <summary>
+        /// URI template for auth services
+        /// </summary>
+        public string AuthServicesUriTemplate { get; set; }
+
+        /// <summary>
+        /// Timeout for critical orchestration path. How long to wait to acheive lock when orchestrating asset.
+        /// If timeout breached, multiple orchestrations can happen for same item.
+        /// </summary>
+        public int CriticalPathTimeoutMs { get; set; } = 10000;
+        
+        /// <summary>
+        /// Folder template for downloading resources to.
+        /// </summary>
+        public string ImageFolderTemplate { get; set; }
 
         public ProxySettings Proxy { get; set; }
+        
+        public CacheSettings Caching { get; set; }
     }
 
     public class ProxySettings

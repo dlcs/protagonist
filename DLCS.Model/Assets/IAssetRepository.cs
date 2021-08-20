@@ -5,8 +5,10 @@ namespace DLCS.Model.Assets
 {
     public interface IAssetRepository
     {
-        public Task<Asset?> GetAsset(string id);
+        public ValueTask<Asset?> GetAsset(string id);
         
-        public Task<Asset?> GetAsset(AssetId id);
+        public ValueTask<Asset?> GetAsset(AssetId id);
+
+        public ValueTask<ImageLocation> GetImageLocation(AssetId assetId);
     }
 }
