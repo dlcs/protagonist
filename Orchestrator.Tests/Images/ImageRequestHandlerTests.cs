@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Orchestrator.Images;
+using Orchestrator.Features.Images;
 using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
 using Xunit;
@@ -97,8 +97,8 @@ namespace Orchestrator.Tests.Images
             context.Request.Path = "/iiif-img/2/2/test-image/full/!200,200/0/default.jpg";
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-            A.CallTo(() => assetTracker.GetAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new TrackedAsset {RequiresAuth = true});
+            A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
+                .Returns(new OrchestrationAsset {RequiresAuth = true});
             var sut = GetImageRequestHandlerWithMockPathParser();
 
             // Act
@@ -106,7 +106,7 @@ namespace Orchestrator.Tests.Images
             
             // Assert
             result.Target.Should().Be(ProxyDestination.Orchestrator);
-            result.HasPath.Should().BeFalse();
+            result.HasPath.Should().BeTrue();
         }
         
         [Fact]
@@ -118,8 +118,8 @@ namespace Orchestrator.Tests.Images
             context.Request.QueryString = new QueryString("?t=123123");
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-            A.CallTo(() => assetTracker.GetAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new TrackedAsset {AssetId = "2/2/test-image"});
+            A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
+                .Returns(new OrchestrationAsset {AssetId = new AssetId(2, 2, "test-image")});
             var sut = GetImageRequestHandlerWithMockPathParser();
 
             // Act
@@ -140,8 +140,8 @@ namespace Orchestrator.Tests.Images
             context.Request.QueryString = new QueryString("?t=123123");
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-            A.CallTo(() => assetTracker.GetAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new TrackedAsset {AssetId = "2/2/test-image"});
+            A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
+                .Returns(new OrchestrationAsset {AssetId = new AssetId(2, 2, "test-image")});
             var sut = GetImageRequestHandlerWithMockPathParser(settings: Options.Create(new ProxySettings
                 {UVThumbReplacementPath = "!300,500"}));
 
@@ -163,8 +163,8 @@ namespace Orchestrator.Tests.Images
             context.Request.QueryString = new QueryString("?t=123123");
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-            A.CallTo(() => assetTracker.GetAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new TrackedAsset {AssetId = "2/2/test-image"});
+            A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
+                .Returns(new OrchestrationAsset {AssetId = new AssetId(2, 2, "test-image")});
             var sut = GetImageRequestHandlerWithMockPathParser(settings: Options.Create(new ProxySettings
                 {CheckUVThumbs = false}));
 
@@ -173,7 +173,7 @@ namespace Orchestrator.Tests.Images
             
             // Assert
             result.Target.Should().Be(ProxyDestination.CachingProxy);
-            result.HasPath.Should().BeFalse();
+            result.HasPath.Should().BeTrue();
         }
         
         [Fact]
@@ -184,9 +184,10 @@ namespace Orchestrator.Tests.Images
             context.Request.Path = "/iiif-img/2/2/test-image/full/!100,150/0/default.jpg";
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-            A.CallTo(() => assetTracker.GetAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new TrackedAsset {AssetId = "2/2/test-image"});
-            A.CallTo(() => thumbnailRepository.GetThumbnailSizeCandidate(2, 2, A<ImageRequest>._))
+            var assetId = new AssetId(2, 2, "test-image");
+            A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+                .Returns(new OrchestrationAsset { AssetId = assetId });
+            A.CallTo(() => thumbnailRepository.GetThumbnailSizeCandidate(assetId, A<ImageRequest>._))
                 .Returns(new SizeCandidate(150));
             var sut = GetImageRequestHandlerWithMockPathParser();
 
@@ -209,13 +210,14 @@ namespace Orchestrator.Tests.Images
             context.Request.Path = path;
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-            A.CallTo(() => assetTracker.GetAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new TrackedAsset {AssetId = "2/2/test-image"});
+            var assetId = new AssetId(2, 2, "test-image");
+            A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+                .Returns(new OrchestrationAsset {AssetId = assetId});
             var sut = GetImageRequestHandlerWithMockPathParser();
 
             if (knownThumb)
             {
-                A.CallTo(() => thumbnailRepository.GetThumbnailSizeCandidate(2, 2, A<ImageRequest>._))
+                A.CallTo(() => thumbnailRepository.GetThumbnailSizeCandidate(assetId, A<ImageRequest>._))
                     .Returns(new SizeCandidate(150));
             }
 
@@ -224,7 +226,7 @@ namespace Orchestrator.Tests.Images
             
             // Assert
             result.Target.Should().Be(ProxyDestination.CachingProxy);
-            result.HasPath.Should().BeFalse();
+            result.HasPath.Should().BeTrue();
         }
 
         private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false,

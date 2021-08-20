@@ -1,5 +1,4 @@
-﻿using System;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using DLCS.Core.Guard;
 
 namespace DLCS.Model.Storage
@@ -8,11 +7,9 @@ namespace DLCS.Model.Storage
     {
         public string Region { get; set; }
         
-        public RegionalisedObjectInBucket(string bucket, string key = null, string region = null)
+        public RegionalisedObjectInBucket(string bucket, string key = null, string region = null) : base(bucket, key)
         {
             Region = region;
-            Bucket = bucket;
-            Key = key;
         }
         
         /// <summary>

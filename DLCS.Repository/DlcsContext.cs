@@ -1,6 +1,10 @@
-﻿using DLCS.Model.Assets;
+﻿using DLCS.Core.Enum;
+using DLCS.Model.Assets;
+using DLCS.Model.Customer;
+using DLCS.Model.Security;
 using DLCS.Repository.Entities;
 using Microsoft.EntityFrameworkCore;
+using OriginStrategy = DLCS.Repository.Entities.OriginStrategy;
 
 #nullable disable
 
@@ -205,7 +209,10 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Strategy)
                     .IsRequired()
-                    .HasMaxLength(500);
+                    .HasMaxLength(500)
+                    .HasConversion(
+                        v => v.GetDescription(),
+                        v => v.GetEnumFromString<OriginStrategyType>(true));
             });
 
             modelBuilder.Entity<CustomerStorage>(entity =>
@@ -258,7 +265,7 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Family)
                     .IsRequired()
-                    .HasColumnType("char")
+                    //.HasColumnType("char")
                     .HasDefaultValueSql("'I'::\"char\"");
 
                 entity.Property(e => e.Finished).HasColumnType("timestamp with time zone");
@@ -305,6 +312,8 @@ namespace DLCS.Repository
                     .IsRequired()
                     .HasMaxLength(500)
                     .HasDefaultValueSql("'original'::character varying");
+
+                entity.Ignore(e => e.InitialOrigin);
             });
 
             modelBuilder.Entity<ImageLocation>(entity =>

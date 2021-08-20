@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
@@ -9,7 +10,7 @@ using Orchestrator.Assets;
 using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
 
-namespace Orchestrator.Images
+namespace Orchestrator.Features.Images
 {
     /// <summary>
     /// Reverse-proxy routing logic for /iiif-img/ requests 
@@ -81,7 +82,7 @@ namespace Orchestrator.Images
                requestModel.IIIFImageRequest.ImageRequestPath == "/full/90,/0/default.jpg" &&
                httpContext.Request.QueryString.Value.Contains("t=");
         
-        private string GetUVThumbReplacementPath(string assetId) => 
+        private string GetUVThumbReplacementPath(AssetId assetId) => 
             $"{proxySettings.ThumbsPath}/{assetId}/full/{proxySettings.UVThumbReplacementPath}/0/default.jpg";
 
         // TODO handle resizing via config. Optionally with path regex (resize X but not Y)
@@ -89,8 +90,9 @@ namespace Orchestrator.Images
         private async Task<bool> IsRequestForKnownThumbSize(ImageAssetDeliveryRequest requestModel)
         {
             // NOTE - would this be quicker, since we have Asset, to calculate sizes? Would need Policy
-            var candidate = await thumbnailRepository.GetThumbnailSizeCandidate(requestModel.Customer.Id,
-                requestModel.Space, requestModel.IIIFImageRequest);
+            var candidate =
+                await thumbnailRepository.GetThumbnailSizeCandidate(requestModel.GetAssetId(),
+                    requestModel.IIIFImageRequest);
             return candidate.KnownSize;
         }
     }

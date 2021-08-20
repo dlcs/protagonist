@@ -19,7 +19,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             };
             
             // Act
-            var assetImageId = baseRequest.GetAssetImageId();
+            var assetImageId = baseRequest.GetAssetId();
             
             // Assert
             assetImageId.Customer.Should().Be(1234);

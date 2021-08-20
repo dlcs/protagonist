@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DLCS.Model.Customer;
 using DLCS.Model.PathElements;
+using DLCS.Repository.Settings;
 using FakeItEasy;
 using FluentAssertions;
 using LazyCache;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace DLCS.Repository.Tests
@@ -29,8 +31,9 @@ namespace DLCS.Repository.Tests
             
             logger = A.Fake<ILogger<CustomerPathElementRepository>>();
             appCache = new MockCachingService();
-            
-            sut = new CustomerPathElementRepository(appCache, customerRepository, logger);
+
+            sut = new CustomerPathElementRepository(appCache, Options.Create(new CacheSettings()), customerRepository,
+                logger);
         }
         
         [Fact]

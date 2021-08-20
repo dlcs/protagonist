@@ -4,8 +4,10 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Tests.Integration.Infrastructure;
+using Stubbery;
 using Test.Helpers.Integration;
 using Xunit;
 using Yarp.ReverseProxy.Forwarder;
@@ -29,7 +31,6 @@ namespace Orchestrator.Tests.Integration
         
         [Theory]
         [InlineData("/auth/2/1/something")]
-        [InlineData("/file/2/1/something")]
         [InlineData("/iiif-resource/2/1/something")]
         [InlineData("/info/2/1/something")]
         [InlineData("/pdf/2/1/something")]

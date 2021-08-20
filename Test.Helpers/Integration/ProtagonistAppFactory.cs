@@ -18,6 +18,7 @@ namespace Test.Helpers.Integration
         where TStartup: class
     {
         private readonly Dictionary<string, string> configuration = new();
+        private readonly List<IDisposable> disposables = new();
         private LocalStackFixture localStack;
         private Action<IServiceCollection> configureTestServices;
 
@@ -52,6 +53,15 @@ namespace Test.Helpers.Integration
             this.configureTestServices = configureTestServices;
             return this;
         }
+
+        /// <summary>
+        /// <see cref="IDisposable"/> implementation that will be disposed of alongside appfactor
+        /// </summary>
+        public ProtagonistAppFactory<TStartup> WithDisposable(IDisposable disposable)
+        {
+            disposables.Add(disposable);
+            return this;
+        }
         
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -77,6 +87,15 @@ namespace Test.Helpers.Integration
                     }
                 })
                 .UseEnvironment("Testing"); 
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            foreach (var d in disposables)
+            {
+                d.Dispose();
+            }
+            base.Dispose(disposing);
         }
 
         private void ConfigureS3Services(IServiceCollection services)

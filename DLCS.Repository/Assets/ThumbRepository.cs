@@ -2,9 +2,11 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository.Settings;
+using DLCS.Repository.Storage;
 using IIIF.ImageApi;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -35,17 +37,18 @@ namespace DLCS.Repository.Assets
             this.thumbReorganiser = thumbReorganiser;
         }
 
-        public async Task<ThumbnailResponse> GetThumbnail(int customerId, int spaceId, ImageRequest imageRequest)
+        public async Task<ThumbnailResponse> GetThumbnail(AssetId assetId, ImageRequest imageRequest)
         {
-            var sizeCandidate = await GetThumbnailSizeCandidate(customerId, spaceId, imageRequest);
+            var sizeCandidate = await GetThumbnailSizeCandidate(assetId, imageRequest);
             
             if (sizeCandidate == null) return ThumbnailResponse.Empty;
             
             if (sizeCandidate.KnownSize)
             {
                 var location =
-                    GetObjectInBucket(customerId, spaceId, imageRequest, sizeCandidate.LongestEdge!.Value);
-                return ThumbnailResponse.ExactSize(await bucketReader.GetObjectFromBucket(location));
+                    GetObjectInBucket(assetId, sizeCandidate.LongestEdge!.Value);
+                var objectFromBucket = await bucketReader.GetObjectFromBucket(location);
+                return ThumbnailResponse.ExactSize(objectFromBucket.Stream);
             }
 
             if (!settings.CurrentValue.Resize)
@@ -60,7 +63,7 @@ namespace DLCS.Repository.Assets
             // First try larger size
             if (resizableSize.LargerSize != null)
             {
-                var downscaled = await ResizeThumbnail(customerId, spaceId, imageRequest, resizableSize.LargerSize,
+                var downscaled = await ResizeThumbnail(assetId, imageRequest, resizableSize.LargerSize,
                     resizableSize.Ideal);
                 if (downscaled != null) return ThumbnailResponse.Resized(downscaled);
             }
@@ -68,7 +71,7 @@ namespace DLCS.Repository.Assets
             // Then try smaller size if allowed
             if (resizableSize.SmallerSize != null && settings.CurrentValue.Upscale)
             {
-                var resizeThumbnail = await ResizeThumbnail(customerId, spaceId, imageRequest, resizableSize.SmallerSize,
+                var resizeThumbnail = await ResizeThumbnail(assetId, imageRequest, resizableSize.SmallerSize,
                     resizableSize.Ideal, settings.CurrentValue.UpscaleThreshold);
                 return ThumbnailResponse.Resized(resizeThumbnail);
             }
@@ -76,10 +79,9 @@ namespace DLCS.Repository.Assets
             return ThumbnailResponse.Empty;
         }
 
-        public async Task<SizeCandidate?> GetThumbnailSizeCandidate(int customerId, int spaceId,
-            ImageRequest imageRequest)
+        public async Task<SizeCandidate?> GetThumbnailSizeCandidate(AssetId assetId, ImageRequest imageRequest)
         {
-            var openSizes = await GetOpenSizes(customerId, spaceId, imageRequest);
+            var openSizes = await GetOpenSizes(assetId);
             if (openSizes == null) return null;
             
             var sizes = openSizes.Select(Size.FromArray).ToList();
@@ -88,25 +90,24 @@ namespace DLCS.Repository.Assets
             return sizeCandidate;
         }
 
-        public async Task<List<int[]>?> GetOpenSizes(int customerId, int spaceId, ImageRequest imageRequest)
+        public async Task<List<int[]>?> GetOpenSizes(AssetId assetId)
         {
-            var newLayoutResult = await EnsureNewLayout(customerId, spaceId, imageRequest);
+            var newLayoutResult = await EnsureNewLayout(assetId);
             if (newLayoutResult == ReorganiseResult.AssetNotFound)
             {
-                logger.LogDebug("Requested asset not found for '{OriginalPath}'", imageRequest.OriginalPath);
+                logger.LogDebug("Requested asset not found for asset '{Asset}'", assetId);
                 return null;
             }
 
-            ObjectInBucket sizesList = new()
-            {
-                Bucket = settings.CurrentValue.ThumbsBucket,
-                Key = string.Concat(GetKeyRoot(customerId, spaceId, imageRequest), ThumbsSettings.Constants.SizesJsonKey)
-            };
+            ObjectInBucket sizesList = new(
+                settings.CurrentValue.ThumbsBucket,
+                StorageKeyGenerator.GetSizesJsonPath(GetKeyRoot(assetId))
+            );
             
-            await using var stream = await bucketReader.GetObjectFromBucket(sizesList);
+            await using var stream = (await bucketReader.GetObjectFromBucket(sizesList)).Stream;
             if (stream == null)
             {
-                logger.LogError("Could not find sizes file for request '{OriginalPath}'", imageRequest.OriginalPath);
+                logger.LogError("Could not find sizes file for asset '{Asset}'", assetId);
                 return null;
             }
             
@@ -117,17 +118,14 @@ namespace DLCS.Repository.Assets
             return thumbnailSizes.Open;
         }
 
-        private ObjectInBucket GetObjectInBucket(int customerId, int spaceId, ImageRequest imageRequest, int longestEdge) 
-            => new()
-            {
-                Bucket = settings.CurrentValue.ThumbsBucket,
-                Key = $"{GetKeyRoot(customerId, spaceId, imageRequest)}open/{longestEdge}.jpg"
-            };
+        private ObjectInBucket GetObjectInBucket(AssetId assetId, int longestEdge)
+            => new(settings.CurrentValue.ThumbsBucket,
+                $"{GetKeyRoot(assetId)}open/{longestEdge}.jpg");
+        
+        private string GetKeyRoot(AssetId assetId) 
+            => $"{StorageKeyGenerator.GetStorageKey(assetId)}/";
 
-        private string GetKeyRoot(int customerId, int spaceId, ImageRequest imageRequest) 
-            => $"{customerId}/{spaceId}/{imageRequest.Identifier}/";
-
-        private Task<ReorganiseResult> EnsureNewLayout(int customerId, int spaceId, ImageRequest imageRequest)
+        private Task<ReorganiseResult> EnsureNewLayout(AssetId assetId)
         {
             var currentSettings = this.settings.CurrentValue;
             if (!currentSettings.EnsureNewThumbnailLayout)
@@ -135,16 +133,11 @@ namespace DLCS.Repository.Assets
                 return Task.FromResult(ReorganiseResult.Unknown);
             }
 
-            var rootKey = new ObjectInBucket
-            {
-                Bucket = currentSettings.ThumbsBucket,
-                Key = GetKeyRoot(customerId, spaceId, imageRequest)
-            };
-
+            var rootKey = new ObjectInBucket(currentSettings.ThumbsBucket, GetKeyRoot(assetId));
             return thumbReorganiser.EnsureNewLayout(rootKey);
         }
 
-        private async Task<Stream?> ResizeThumbnail(int customerId, int spaceId, ImageRequest imageRequest,
+        private async Task<Stream?> ResizeThumbnail(AssetId assetId, ImageRequest imageRequest,
             Size toResize, Size idealSize, int? maxDifference = 0)
         {
             // if upscaling, verify % difference isn't too great
@@ -163,8 +156,8 @@ namespace DLCS.Repository.Assets
             logger.LogDebug("Resize the {Size} thumbnail for {Path}", toResize.MaxDimension,
                 imageRequest.OriginalPath);
 
-            var key = GetObjectInBucket(customerId, spaceId, imageRequest, toResize.MaxDimension);
-            var thumbnail = await bucketReader.GetObjectFromBucket(key);
+            var key = GetObjectInBucket(assetId, toResize.MaxDimension);
+            var thumbnail = (await bucketReader.GetObjectFromBucket(key)).Stream;
             var memStream = new MemoryStream();
             using var image = await Image.LoadAsync(thumbnail);
             image.Mutate(x => x.Resize(idealSize.Width, idealSize.Height, KnownResamplers.Lanczos3));

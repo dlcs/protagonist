@@ -10,7 +10,7 @@ using Orchestrator.Assets;
 using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
 
-namespace Orchestrator.TimeBased
+namespace Orchestrator.Features.TimeBased
 {
     /// <summary>
     /// Reverse-proxy routing logic for /iiif-av/ requests 
@@ -54,14 +54,14 @@ namespace Orchestrator.TimeBased
             }
             
             var s3Path =
-                $"{proxySettings.S3HttpBase}/{proxySettings.StorageBucket}/{assetRequest.GetAssetImageId()}{assetRequest.TimeBasedRequest}";
+                $"{proxySettings.S3HttpBase}/{proxySettings.StorageBucket}/{assetRequest.GetAssetId()}{assetRequest.TimeBasedRequest}";
             if (!asset.RequiresAuth)
             {
                 Logger.LogDebug("No auth for {Path}, 302 to S3 object {S3}", httpContext.Request.Path, s3Path);
                 return new StatusCodeProxyResult(HttpStatusCode.Redirect).WithHeader("Location", s3Path);
             }
 
-            if (!await IsAuthenticated(assetRequest.GetAssetImageId(), httpContext))
+            if (!await IsAuthenticated(assetRequest.GetAssetId(), httpContext))
             {
                 Logger.LogDebug("User not authenticated for {Path}", httpContext.Request.Path);
                 return new StatusCodeProxyResult(HttpStatusCode.Unauthorized);

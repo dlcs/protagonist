@@ -55,6 +55,9 @@ namespace Test.Helpers.Integration
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
+            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerOriginStrategies\"");
+            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"AuthServices\"");
+            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Roles\"");
         }
 
         private async Task SeedCustomer()
@@ -69,9 +72,10 @@ namespace Test.Helpers.Integration
                 Name = "test",
                 Keys = ""
             });
-            await DbContext.Spaces.AddAsync(new Space {Created = DateTime.Now, Id = 1, Customer = customer, Name = "space-1"});
-            await  DbContext.ThumbnailPolicies.AddAsync(new ThumbnailPolicy
-                {Id = "default", Name = "default", Sizes = "800,400,200"});
+            await DbContext.Spaces.AddAsync(new Space
+                { Created = DateTime.Now, Id = 1, Customer = customer, Name = "space-1" });
+            await DbContext.ThumbnailPolicies.AddAsync(new ThumbnailPolicy
+                { Id = "default", Name = "default", Sizes = "800,400,200" });
             await DbContext.SaveChangesAsync();
         }
 

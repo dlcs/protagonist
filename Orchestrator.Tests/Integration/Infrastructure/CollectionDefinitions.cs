@@ -20,4 +20,10 @@ namespace Orchestrator.Tests.Integration.Infrastructure
     {
         public const string CollectionName = "Storage Collection";
     }
+    
+    [CollectionDefinition(CollectionName)]
+    public class OrchestratorCollection : ICollectionFixture<OrchestratorFixture>
+    {
+        public const string CollectionName = "Orchestrator Collection";
+    }
 }

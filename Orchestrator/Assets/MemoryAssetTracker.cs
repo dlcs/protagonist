@@ -2,8 +2,10 @@
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Repository.Settings;
 using LazyCache;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Orchestrator.Assets
 {
@@ -14,26 +16,47 @@ namespace Orchestrator.Assets
     {
         private readonly IAssetRepository assetRepository;
         private readonly IAppCache appCache;
+        private readonly CacheSettings cacheSettings;
+        private readonly IThumbRepository thumbRepository;
         private readonly ILogger<MemoryAssetTracker> logger;
 
-        private const string NullId = "__notfound__";
-        private static readonly TrackedAsset NullTrackedAsset = new() {AssetId = NullId};
+        // Null object to store in cache for short duration
+        private static readonly OrchestrationAsset NullOrchestrationAsset =
+            new() { AssetId = new AssetId(-1, -1, "__notfound__") };
 
-    public MemoryAssetTracker(IAssetRepository assetRepository, IAppCache appCache,
+        public MemoryAssetTracker(
+            IAssetRepository assetRepository,
+            IAppCache appCache,
+            IThumbRepository thumbRepository,
+            IOptions<CacheSettings> cacheOptions,
             ILogger<MemoryAssetTracker> logger)
         {
             this.assetRepository = assetRepository;
             this.appCache = appCache;
+            this.thumbRepository = thumbRepository;
             this.logger = logger;
+            cacheSettings = cacheOptions.Value;
         }
 
-        public async Task<TrackedAsset?> GetAsset(AssetId assetId)
+        public async Task<OrchestrationAsset?> GetOrchestrationAsset(AssetId assetId)
         {
-            var trackedAsset = await GetTrackedAsset(assetId.ToString());
-            return trackedAsset.AssetId == NullId ? null : trackedAsset;
+            var trackedAsset = await GetTrackedAsset(assetId);
+            return IsNullAsset(trackedAsset) ? null : trackedAsset;
         }
 
-        private async Task<TrackedAsset> GetTrackedAsset(string assetId)
+        public async Task<T?> GetOrchestrationAsset<T>(AssetId assetId) where T : OrchestrationAsset
+        {
+            var trackedAsset = await GetTrackedAsset(assetId);
+            if (IsNullAsset(trackedAsset)) return null;
+
+            if (trackedAsset is T typedAsset) return typedAsset;
+            
+            logger.LogWarning("Request for asset {AssetId} is of wrong type. Expected '{Expected}' but found '{Actual}",
+                assetId, typeof(T), trackedAsset.GetType());
+            return null;
+        }
+
+        private async Task<OrchestrationAsset> GetTrackedAsset(AssetId assetId)
         {
             var key = $"Track:{assetId}";
             return await appCache.GetOrAddAsync(key, async entry =>
@@ -42,18 +65,37 @@ namespace Orchestrator.Assets
                 var asset = await assetRepository.GetAsset(assetId);
                 if (asset != null)
                 {
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10); // TODO - pull from config
-                    return new TrackedAsset
-                    {
-                        AssetId = assetId,
-                        RequiresAuth = asset.RequiresAuth
-                    };
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl());
+                    return await ConvertAssetToTrackedAsset(assetId, asset);
                 }
 
                 logger.LogInformation("Asset {AssetId} not found, caching null object", assetId);
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1); // TODO - pull from config
-                return NullTrackedAsset;
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+                return NullOrchestrationAsset;
             });
         }
+
+        private bool IsNullAsset(OrchestrationAsset orchestrationAsset)
+            => orchestrationAsset.AssetId == NullOrchestrationAsset.AssetId;
+
+        private async Task<OrchestrationAsset> ConvertAssetToTrackedAsset(AssetId assetId, Asset asset)
+            => asset.Family switch
+            {
+                'I' => new OrchestrationImage
+                {
+                    AssetId = assetId,
+                    RequiresAuth = asset.RequiresAuth,
+                    Origin = asset.Origin,
+                    Width = asset.Width,
+                    Height = asset.Height,
+                    OpenThumbs = await thumbRepository.GetOpenSizes(assetId)
+                },
+                _ => new OrchestrationAsset
+                {
+                    AssetId = assetId,
+                    RequiresAuth = asset.RequiresAuth,
+                    Origin = asset.Origin,
+                }
+            };
     }
 }
