@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using DLCS.Model.Assets;
 using IIIF;
 using IIIF.ImageApi;
 
@@ -8,6 +9,13 @@ namespace DLCS.Repository.Assets
 {
     public static class ThumbnailCalculator
     {
+        /// <summary>
+        /// Get a list of all 
+        /// </summary>
+        /// <param name="sizes"></param>
+        /// <param name="imageRequest"></param>
+        /// <param name="allowResize"></param>
+        /// <returns></returns>
         public static SizeCandidate GetCandidate(List<Size> sizes, ImageRequest imageRequest, bool allowResize)
         {
             return allowResize
@@ -23,7 +31,7 @@ namespace DLCS.Repository.Assets
                 var max = Math.Max(imageRequest.Size.Width ?? 0, imageRequest.Size.Height ?? 0);
                 return sizes.Select(s => s.MaxDimension).Contains(max)
                     ? new SizeCandidate(max)
-                    : new SizeCandidate(null);
+                    : new SizeCandidate();
             }
             
             if (imageRequest.Size.Max)
@@ -105,44 +113,6 @@ namespace DLCS.Repository.Assets
                 LargerSize = larger,
                 SmallerSize = count == sizes.Count ? null : sizes[count]
             };
-        }
-    }
-    
-    /// <summary>
-    /// Size candidate for a single longest edge.
-    /// </summary>
-    public class SizeCandidate
-    {
-        public int? LongestEdge { get; }
-        
-        public bool KnownSize { get; }
-        
-        public SizeCandidate(int? longestEdge)
-        {
-            LongestEdge = longestEdge;
-            KnownSize = longestEdge.HasValue;
-        }
-
-        public SizeCandidate()
-        {
-        }
-    }
-
-    /// <summary>
-    /// Size candidates for size where no exact match is found.
-    /// </summary>
-    public class ResizableSize : SizeCandidate
-    {
-        public Size? LargerSize { get; set;}
-        public Size? SmallerSize { get; set;}
-        public Size Ideal { get; set; }
-
-        public ResizableSize(int? longestEdge) : base(longestEdge)
-        {
-        }
-
-        public ResizableSize()
-        {
         }
     }
 }

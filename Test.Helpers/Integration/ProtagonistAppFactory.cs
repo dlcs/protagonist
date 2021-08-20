@@ -1,14 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Amazon.S3;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Portal.Tests.Integration.Infrastructure
+namespace Test.Helpers.Integration
 {
     /// <summary>
     /// Basic appFactory for protagonist, configuring <see cref="TestAuthHandler"/> for auth and LocalStack for aws
@@ -19,6 +19,7 @@ namespace Portal.Tests.Integration.Infrastructure
     {
         private readonly Dictionary<string, string> configuration = new();
         private LocalStackFixture localStack;
+        private Action<IServiceCollection> configureTestServices;
 
         /// <summary>
         /// Specify connection string to use for dlcsContext when building services
@@ -41,6 +42,16 @@ namespace Portal.Tests.Integration.Infrastructure
             localStack = fixture;
             return this;
         }
+
+        /// <summary>
+        /// Action to call in ConfigureTestServices
+        /// </summary>
+        /// <returns>Current instance</returns>
+        public ProtagonistAppFactory<TStartup> WithTestServices(Action<IServiceCollection> configureTestServices)
+        {
+            this.configureTestServices = configureTestServices;
+            return this;
+        }
         
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -55,22 +66,17 @@ namespace Portal.Tests.Integration.Infrastructure
                 })
                 .ConfigureTestServices(services =>
                 {
-                    ReplaceAuthentication(services);
-
+                    if (configureTestServices != null)
+                    {
+                        configureTestServices(services);
+                    }
+                    
                     if (localStack != null)
                     {
                         ConfigureS3Services(services);
                     }
                 })
-                .UseEnvironment("Testing");  // NOTE: This can cause issues if AddSystemsManager is used and not optional
-        }
-
-        private static void ReplaceAuthentication(IServiceCollection services)
-        {
-            // TODO - is this portal-specific?
-            services.AddAuthentication("Test")
-                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
-                    "Test", _ => { });
+                .UseEnvironment("Testing"); 
         }
 
         private void ConfigureS3Services(IServiceCollection services)

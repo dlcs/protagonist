@@ -20,6 +20,7 @@ namespace DLCS.Repository.Assets
 
         public async Task<Asset?> GetAsset(string id)
         {
+            // TODO - cache
             await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
             return await connection.QuerySingleOrDefaultAsync<Asset>(AssetSql, new {Id = id});
         }

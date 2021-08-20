@@ -1,12 +1,26 @@
+using System.Net.Http;
+using Amazon.S3;
+using DLCS.Model.Assets;
+using DLCS.Model.Customer;
+using DLCS.Model.PathElements;
+using DLCS.Model.Storage;
+using DLCS.Repository;
+using DLCS.Repository.Assets;
+using DLCS.Repository.Settings;
+using DLCS.Repository.Storage.S3;
 using DLCS.Web.Configuration;
+using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
+using Orchestrator.Assets;
+using Orchestrator.Images;
+using Orchestrator.ReverseProxy;
 using Orchestrator.Settings;
+using Orchestrator.TimeBased;
 using Serilog;
 
 namespace Orchestrator
@@ -21,36 +35,64 @@ namespace Orchestrator
         
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<OrchestratorSettings>(configuration);
+            var reverseProxySection = configuration.GetSection("ReverseProxy");
+            services
+                .Configure<OrchestratorSettings>(configuration)
+                .Configure<ThumbsSettings>(configuration.GetSection("Thumbs"))
+                .Configure<ProxySettings>(configuration.GetSection("Proxy"))
+                .Configure<ReverseProxySettings>(reverseProxySection);
+            
+            services
+                .AddLazyCache()
+                .AddSingleton<ICustomerRepository, CustomerRepository>()
+                .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
+                .AddSingleton<IAssetRepository, AssetRepository>()
+                .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
+                .AddSingleton<ImageRequestHandler>()
+                .AddSingleton<TimeBasedRequestHandler>()
+                .AddAWSService<IAmazonS3>()
+                .AddSingleton<IBucketReader, BucketReader>()
+                .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
+                .AddSingleton<IThumbRepository, ThumbRepository>()
+                .AddSingleton<IAssetTracker, MemoryAssetTracker>();
+
+            var reverseProxySettings = reverseProxySection.Get<ReverseProxySettings>();
+            services
+                .AddHttpClient<IDeliveratorClient, DeliveratorClient>(client =>
+                {
+                    // TODO - add this to all outgoing?
+                    client.DefaultRequestHeaders.Add("x-requested-by", "DLCS Protagonist Yarp");
+                    client.BaseAddress = reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.Orchestrator);
+                })
+                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false });
             
             services.AddCors(options =>
             {
                 options.AddPolicy("CorsPolicy",
                     builder => builder
+                        .AllowAnyOrigin()
                         .AllowAnyMethod()
-                        .AllowAnyHeader()
-                        .SetIsOriginAllowed(host => true)
-                        .AllowCredentials());
+                        .AllowAnyHeader());
             });
+
+            services
+                .AddHealthChecks()
+                .AddNpgSql(configuration.GetPostgresSqlConnection());
             
-            services.AddControllers();
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo {Title = "DLCS Orchestrator", Version = "v1"});
-            });
+            // Add the reverse proxy to capability to the server
+            services
+                .AddReverseProxy()
+                .LoadFromConfig(reverseProxySection);
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
             var applicationOptions = configuration.Get<OrchestratorSettings>();
             var pathBase = applicationOptions.PathBase;
-            
+
             if (env.IsDevelopment())
             {
-                // TODO Do we want to expose swagger in non-dev environment?
-                app
-                    .UseDeveloperExceptionPage()
-                    .UseSwaggerWithUI("DLCS Orchestrator", pathBase);
+                app.UseDeveloperExceptionPage();
             }
 
             app
@@ -60,7 +102,13 @@ namespace Orchestrator
                 .UseSerilogRequestLogging()
                 .UseCors("CorsPolicy")
                 .UseAuthorization()
-                .UseEndpoints(endpoints => { endpoints.MapControllers(); });
+                .UseEndpoints(endpoints =>
+                {
+                    endpoints.MapReverseProxy();
+                    endpoints.MapImageHandling();
+                    endpoints.MapTimeBasedHandling();
+                    endpoints.MapHealthChecks("/health");
+                });
         }
     }
 }

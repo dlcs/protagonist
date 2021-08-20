@@ -1,8 +1,12 @@
-﻿# Integration Tests
+﻿# Test Helpers
 
-The files container here will eventually be moved out to reused by the wider solution but starting with Portal for now.
+This project contains any reusable components to help with testing.
 
-## Overview
+## Integration Tests
+
+Helpers for integration tests are in the /Integration folder. 
+
+### Overview
 
 [dotnet-testcontainers](https://github.com/HofmeisterAn/dotnet-testcontainers) is used to manage starting/stopping Postgres and LocalStack containers.
 
@@ -16,17 +20,7 @@ TestContainers is used in 3 fixtures. These fixtures implement xunit's `IAsyncLi
 
 > TODO - figure a better way for managing how these are set?
 
-## Authentication
-
-`ProtagonistAppFactory` adds a new `AuthenticationHandler` to make it easier to make authenticated requests. It's currently Portal specific in that it will add a portal user. 2 extension methods for `HttpClient` are used to make it easier to make requests:
-
-* `AsCustomer(this HttpClient client, int customer = 2)` - if specified gives "Customer" role. `httpClient.AsAdmin().GetAsync("/admin");`
-* `AsAdmin(this HttpClient client, int customer = 2)` - if specified gives Admin role (in addition to "Customer"). `httpClient.AsCustomer(4).GetAsync("/admin");`
-
-This may need to differ between different services and may need to be moved.
-
-
-### Troubleshooting
+#### Troubleshooting
 
 Stopping and starting the docker containers isn't always perfect - particularly if aborting tests without them completing. The following command will delete any of the test-containers running:
 
@@ -34,7 +28,7 @@ Stopping and starting the docker containers isn't always perfect - particularly 
 docker rm $(docker stop $(docker ps -q --filter label=protagonist_test))
 ```
 
-## TODO
+### TODO
 
 The tests here are pretty basic and just prove that we can control the relevant classes.
 

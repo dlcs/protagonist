@@ -2,7 +2,6 @@
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using IIIF;
-using IIIF.ImageApi;
 
 namespace DLCS.Model.Assets
 {
@@ -55,6 +54,6 @@ namespace DLCS.Model.Assets
         }
 
         private static bool AssetIsUnavailable(Asset asset, int boundingSize)
-            => !asset.RolesList.IsNullOrEmpty() && asset.MaxUnauthorised >= 0 && boundingSize > asset.MaxUnauthorised;
+            => asset.RequiresAuth && boundingSize > asset.MaxUnauthorised;
     }
 }

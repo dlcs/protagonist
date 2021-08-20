@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DLCS.Model.Assets;
 using DLCS.Repository.Assets;
 using FluentAssertions;
 using IIIF;
@@ -16,16 +17,16 @@ namespace DLCS.Repository.Tests.Assets
         {
             portraitSizes = new List<Size>
             {
-                new Size(400, 800),
-                new Size(200, 400),
-                new Size(100, 200),
+                new(400, 800),
+                new(200, 400),
+                new(100, 200),
             };
 
             landscapeSizes = new List<Size>
             {
-                new Size(800, 400),
-                new Size(400, 200),
-                new Size(200, 100),
+                new(800, 400),
+                new(400, 200),
+                new(200, 100),
             };
         }
 

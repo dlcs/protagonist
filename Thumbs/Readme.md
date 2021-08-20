@@ -74,4 +74,15 @@ By default intercepts all requests to `/thumbs/` (e.g. `https://my.dlcs/thumbs/*
 
 ## Deployment
 
-See Dockerfile.Thumbs and Jenkinsfile.Thumbs in the solution root for deployment artifacts.
+See Dockerfile.Thumbs in the solution root for deployment artifacts.
+
+```bash
+cd..
+docker build -f Dockerfile.Thumbs -t Thumbs:local .
+```
+
+## Technology :robot:
+
+There are a variety of technologies used across the projects, including:
+
+* [ImageSharp](https://github.com/SixLabors/ImageSharp) - high performance graphics library. Used for resizing thumbnails.

@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Xunit;
 
-namespace Portal.Tests.Integration.Infrastructure
+namespace Test.Helpers.Integration
 {
     /// <summary>
     /// Xunit fixture that contains both DbFixture and LocalStackFixture
@@ -28,11 +28,5 @@ namespace Portal.Tests.Integration.Infrastructure
             await DbFixture.DisposeAsync();
             await LocalStackFixture.DisposeAsync();
         }
-    }
-    
-    [CollectionDefinition(CollectionName)]
-    public class StorageCollection : ICollectionFixture<StorageFixture>
-    {
-        public const string CollectionName = "Storage Collection";
     }
 }

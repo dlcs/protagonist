@@ -1,4 +1,5 @@
-﻿using DLCS.Model.PathElements;
+﻿using DLCS.Core.Types;
+using DLCS.Model.PathElements;
 
 namespace DLCS.Web.Requests.AssetDelivery
 {
@@ -36,5 +37,28 @@ namespace DLCS.Web.Requests.AssetDelivery
         /// file-identifier
         /// </summary>
         public string AssetPath { get; set; }
+
+        /// <summary>
+        /// The Id of the asset in the request
+        /// e.g. my-image/full/61,100/0/default.jpg => my-image
+        /// </summary>
+        public string AssetId { get; set; }
+        
+        /// <summary>
+        /// The normalised BasePath for this request, this is {routePrefix}/{customer}/{space} always using numeric
+        /// value for {customer}, regardless of what was passed 
+        /// </summary>
+        public string NormalisedBasePath { get; set; }
+        
+        /// <summary>
+        /// The normalised original full request Path, always using numeric  value for {customer}, regardless of what
+        /// was passed. 
+        /// </summary>
+        public string NormalisedFullPath { get; set; }
+
+        /// <summary>
+        /// Generate an <see cref="Core.Types.AssetId"/> object from BaseAssetRequest
+        /// </summary>
+        public AssetId GetAssetImageId() => new(Customer.Id, Space, AssetId);
     }
 }

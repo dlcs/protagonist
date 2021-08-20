@@ -53,7 +53,7 @@ namespace DLCS.Repository.Tests
             Func<Task<CustomerPathElement>> action = () => sut.GetCustomer($"not{CustomerId.ToString()}");
 
             // Assert
-            action.Should().Throw<Exception>();
+            action.Should().Throw<KeyNotFoundException>();
         }
         
         [Fact]
@@ -76,7 +76,7 @@ namespace DLCS.Repository.Tests
             Func<Task<CustomerPathElement>> action = () => sut.GetCustomer($"not{CustomerName}");
 
             // Assert
-            action.Should().Throw<Exception>();
+            action.Should().Throw<KeyNotFoundException>();
         }
     }
 }

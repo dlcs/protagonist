@@ -33,10 +33,10 @@ namespace DLCS.Model.Assets
         public bool IsEmpty => ThumbnailStream == null;
         
         public static ThumbnailResponse ExactSize(Stream? stream) 
-            => new ThumbnailResponse {IsExactMatch = true, ThumbnailStream = stream};
+            => new() {IsExactMatch = true, ThumbnailStream = stream};
         
         public static ThumbnailResponse Resized(Stream? stream) 
-            => new ThumbnailResponse {WasResized = true, ThumbnailStream = stream};
+            => new() {WasResized = true, ThumbnailStream = stream};
 
         public async ValueTask DisposeAsync()
         {

@@ -19,8 +19,15 @@ namespace IIIF.ImageApi
         public string Quality { get; set; }
         public string Format { get; set; }
         public string OriginalPath { get; set; }
+        public string ImageRequestPath => OriginalPath.Replace(Identifier, string.Empty);
 
-        public static ImageRequest Parse(string path, string prefix)
+        /// <summary>
+        /// Parse the path to get IIIF <see cref="ImageRequest"/>.
+        /// </summary>
+        /// <param name="path">Full IIIF image path, in format {identifier}/{region}/{size}/{rotation}/{quality}.{format}</param>
+        /// <param name="prefix">Optional {prefix} in path</param>
+        /// <returns>Parse <see cref="ImageRequest"/></returns>
+        public static ImageRequest Parse(string path, string prefix = "")
         {
             if (path[0] == '/')
             {
@@ -43,7 +50,7 @@ namespace IIIF.ImageApi
             var request = new ImageRequest { Prefix = prefix };
             var parts = path.Split('/');
             request.Identifier = parts[0];
-            if (parts.Length == 1 || parts[1] == String.Empty)
+            if (parts.Length == 1 || parts[1] == string.Empty)
             {
                 // likely the server will want to redirect this
                 request.IsBase = true;

@@ -34,5 +34,18 @@ namespace DLCS.Web.Requests
             
             headers.Authorization = new AuthenticationHeaderValue("Basic", base64Encoded);
         }
+        
+        /// <summary>
+        /// Add Bearer auth header to <see cref="HttpRequestHeaders"/> object.
+        /// </summary>
+        /// <param name="headers"><see cref="HttpRequestHeaders"/> object to add headers to.</param>
+        /// <param name="token">Bearer token.</param>
+        public static void AddBearerTokenAuth(this HttpRequestHeaders headers, string token)
+        {
+            headers.ThrowIfNull(nameof(headers));
+            token.ThrowIfNull(nameof(token));
+            
+            headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
     }
 }

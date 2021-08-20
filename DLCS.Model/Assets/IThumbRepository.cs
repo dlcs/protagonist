@@ -6,13 +6,19 @@ namespace DLCS.Model.Assets
 {
     public interface IThumbRepository
     {
-        // question... these could just take ThumbnailRequest from DLCS.Web.
-        // But I that represents the full path of a web request.
-        // it's fine for this to know about the IIIF part of the request path, as that's an
-        // external context.
-        
+        /// <summary>
+        /// Get <see cref="ThumbnailResponse"/> object, containing actual thumbnail bytes
+        /// </summary>
         Task<ThumbnailResponse> GetThumbnail(int customerId, int spaceId, ImageRequest imageRequest);
         
-        public Task<List<int[]>?> GetSizes(int customerId, int spaceId, ImageRequest imageRequest);
+        /// <summary>
+        /// Get a list of all open thumbnails for specified image.
+        /// </summary>
+        Task<List<int[]>?> GetOpenSizes(int customerId, int spaceId, ImageRequest imageRequest);
+
+        /// <summary>
+        /// Get thumbnail <see cref="SizeCandidate"/> for specified request.
+        /// </summary>
+        Task<SizeCandidate?> GetThumbnailSizeCandidate(int customerId, int spaceId, ImageRequest imageRequest);
     }
 }
