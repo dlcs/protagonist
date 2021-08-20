@@ -23,6 +23,18 @@ namespace DLCS.Core.Threading
             return new Releaser { Key = key };
         }
         
+        public async Task<IDisposable> LockAsync(object key, TimeSpan timeout, bool throwIfNoLock = false)
+        {
+            var success = await GetOrCreate(key).WaitAsync(timeout);
+            if (!success && throwIfNoLock)
+            {
+                throw new TimeoutException(
+                    $"Unable to attain lock for {key} within timeout of {timeout.TotalMilliseconds}ms");
+            }
+
+            return new Releaser { Key = key, HaveLock = success};
+        }
+        
         private SemaphoreSlim GetOrCreate(object key)
         {
             RefCounted<SemaphoreSlim> item;
@@ -53,15 +65,21 @@ namespace DLCS.Core.Threading
             public T Value { get; }
         }
 
-        private static readonly Dictionary<object, RefCounted<SemaphoreSlim>> SemaphoreSlims
-            = new Dictionary<object, RefCounted<SemaphoreSlim>>();
+        private static readonly Dictionary<object, RefCounted<SemaphoreSlim>> SemaphoreSlims = new();
 
-        private sealed class Releaser : IDisposable
+        public sealed class Releaser : IDisposable
         {
             public object Key { get; set; }
 
+            public bool HaveLock { get; set; } = true;
+
             public void Dispose()
             {
+                if (!HaveLock)
+                {
+                    return;
+                }
+                
                 RefCounted<SemaphoreSlim> item;
                 lock (SemaphoreSlims)
                 {
