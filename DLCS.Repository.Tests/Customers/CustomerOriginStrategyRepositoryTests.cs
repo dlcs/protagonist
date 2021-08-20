@@ -5,10 +5,12 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customer;
 using DLCS.Repository.Customers;
+using DLCS.Repository.Settings;
 using FluentAssertions;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Test.Helpers.Integration;
 using Xunit;
 
@@ -26,9 +28,9 @@ namespace DLCS.Repository.Tests.Customers
             var configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(new KeyValuePair<string, string>[] { new("s3OriginRegex", "http\\:\\/\\/s3-/.*") })
                 .Build();
-
+            
             sut = new CustomerOriginStrategyRepository(dbFixture.DbContext, new MockCachingService(), configuration,
-                new NullLogger<CustomerOriginStrategyRepository>());
+                Options.Create(new CacheSettings()), new NullLogger<CustomerOriginStrategyRepository>());
             
             dbFixture.CleanUp();
         }
@@ -50,7 +52,9 @@ namespace DLCS.Repository.Tests.Customers
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(sampleDictionary).Build();
 
             // Act
-            Action action = () => new CustomerOriginStrategyRepository(null, null, configuration, null);
+            Action action = () =>
+                new CustomerOriginStrategyRepository(null, null, configuration, Options.Create(new CacheSettings()),
+                    null);
             
             // Assert
             action.Should().Throw<ArgumentNullException>()

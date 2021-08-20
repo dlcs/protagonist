@@ -26,7 +26,6 @@ Handle requests for TimeBased assets. Handles authentication and proxies media f
 The following routes are defined for YARP to handle:
 
 * img_infojson - handles `GET` requests for image `info.json`, proxied to deliverator
-* img_only - handles `GET` requests for `/iiif-img/{cust}/{space}/{image}` requests, proxied to deliverator as these are info.json requests (without info.json)
 * img_options - handles any `OPTIONS` requests for images, proxied to deliverator
 * av_infojson - handles `GET` requests for timebased media `info.json` requests, proxied to deliverator
 * av_only - handles `GET` requests for `/iiif-av/{cust}/{space}/{image}` requests, proxied to deliverator as these are info.json requests (without info.json)

@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Customer;
+using DLCS.Repository.Settings;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Customers
 {
@@ -22,6 +24,7 @@ namespace DLCS.Repository.Customers
         
         private readonly DlcsContext dbContext;
         private readonly IAppCache appCache;
+        private readonly CacheSettings cacheSettings;
         private readonly string s3OriginRegex;
         private readonly ILogger<CustomerOriginStrategyRepository> logger;
 
@@ -29,12 +32,14 @@ namespace DLCS.Repository.Customers
             DlcsContext dbContext,
             IAppCache appCache,
             IConfiguration configuration,
+            IOptions<CacheSettings> cacheOptions,
             ILogger<CustomerOriginStrategyRepository> logger
             )
         {
             this.dbContext = dbContext;
             this.appCache = appCache;
             this.logger = logger;
+            cacheSettings = cacheOptions.Value;
 
             s3OriginRegex = configuration[OriginRegexAppSettings]
                 .ThrowIfNullOrWhiteSpace($"appsetting:{OriginRegexAppSettings}");
@@ -61,13 +66,13 @@ namespace DLCS.Repository.Customers
             var key = $"OriginStrategy:{customer}";
             return await appCache.GetOrAddAsync(key, async entry =>
             {
-                // TODO - config
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl());
                 logger.LogInformation("Refreshing CustomerOriginStrategy from database for customer {customer}",
                     customer);
 
-                var origins = dbContext.CustomerOriginStrategies.AsNoTracking().Where(cos => cos.Customer == customer)
-                    .ToList();
+                var origins = await dbContext.CustomerOriginStrategies.AsNoTracking()
+                    .Where(cos => cos.Customer == customer)
+                    .ToListAsync();
                 origins.Add(GetPortalOriginStrategy(customer));
                 return origins;
             });

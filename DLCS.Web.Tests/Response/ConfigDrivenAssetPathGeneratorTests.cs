@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DLCS.Core;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
@@ -111,6 +112,70 @@ namespace DLCS.Web.Tests.Response
             
             // Act
             var actual = sut.GetFullPathForRequest(request);
+            
+            // Assert
+            actual.Should().Be(expected);
+        }
+        
+        [Theory]
+        [InlineData("123")]
+        [InlineData("test-customer")]
+        public void GetFullPathForRequest_PathGenerator_Default(string customerPathValue)
+        {
+            // Arrange
+            var sut = GetSut("default.com");
+            var request = new BaseAssetRequest
+            {
+                Customer = new CustomerPathElement(123, "test-customer"),
+                CustomerPathValue = customerPathValue,
+                Space = 10,
+                AssetPath = "path/to/asset",
+                BasePath = "thumbs/123/10",
+                RoutePrefix = "thumbs"
+            };
+
+            var expected = $"https://default.com/thumbs/{customerPathValue}/2000/not-asset";
+            
+            // Act
+            var actual = sut.GetFullPathForRequest(request,
+                (assetRequest, template) =>
+                    DlcsPathHelpers.GeneratePathFromTemplate(
+                        template, 
+                        assetRequest.RoutePrefix, 
+                        assetRequest.CustomerPathValue, 
+                        "2000", "not-asset"));
+            
+            // Assert
+            actual.Should().Be(expected);
+        }
+        
+        [Theory]
+        [InlineData("123")]
+        [InlineData("test-customer")]
+        public void GetFullPathForRequest_PathGenerator_Override(string customerPathValue)
+        {
+            // Arrange
+            var sut = GetSut("test.example.com");
+            var request = new BaseAssetRequest
+            {
+                Customer = new CustomerPathElement(123, "test-customer"),
+                CustomerPathValue = customerPathValue,
+                Space = 10,
+                AssetPath = "path/to/asset",
+                BasePath = "thumbs/123/10",
+                RoutePrefix = "thumbs"
+            };
+
+            var expected = "https://test.example.com/thumbs/not-asset";
+            
+            // Act
+            var actual = sut.GetFullPathForRequest(request,
+                (assetRequest, template) =>
+                    DlcsPathHelpers.GeneratePathFromTemplate(
+                        template, 
+                        assetRequest.RoutePrefix, 
+                        assetRequest.CustomerPathValue, 
+                        "2000", "not-asset"));
             
             // Assert
             actual.Should().Be(expected);

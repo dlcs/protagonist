@@ -42,7 +42,7 @@ namespace Orchestrator.Features.Files.Requests
         
         public async Task<OriginResponse> Handle(GetFile request, CancellationToken cancellationToken)
         {
-            var asset = await assetTracker.GetAsset(request.AssetRequest.GetAssetImageId());
+            var asset = await assetTracker.GetOrchestrationAsset(request.AssetRequest.GetAssetId());
             if (asset == null)
             {
                 return OriginResponse.Empty;

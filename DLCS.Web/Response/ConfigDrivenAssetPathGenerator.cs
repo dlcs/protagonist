@@ -23,30 +23,38 @@ namespace DLCS.Web.Response
         }
 
         public string GetPathForRequest(BaseAssetRequest assetRequest)
-            => GetPathForRequestInternal(assetRequest, false);
+            => GetForPath(assetRequest, false);
 
         public string GetFullPathForRequest(BaseAssetRequest assetRequest)
-            => GetPathForRequestInternal(assetRequest, true);
+            => GetForPath(assetRequest, true);
+
+        public string GetFullPathForRequest(BaseAssetRequest assetRequest, PathGenerator pathGenerator)
+            => GetPathForRequestInternal(assetRequest, pathGenerator, true);
+
+        private string GetForPath(BaseAssetRequest assetRequest, bool fullRequest)
+            => GetPathForRequestInternal(
+                assetRequest, 
+                (request, template) => GeneratePathFromTemplate(request, template),
+                fullRequest);
         
-        private string GetPathForRequestInternal(BaseAssetRequest assetRequest, bool fullRequest)
+        private string GetPathForRequestInternal(BaseAssetRequest assetRequest, PathGenerator pathGenerator,
+            bool fullRequest)
         {
             var request = httpContextAccessor.HttpContext.Request;
             var host = request.Host.Value ?? string.Empty;
-            
-            var path = GeneratePathFromTemplate(assetRequest, host);
+            var template = pathTemplateOptions.GetPathTemplateForHost(host);
+
+            var path = pathGenerator(assetRequest, template);
 
             return fullRequest ? GetDisplayUrl(request, host, path) : path;
         }
 
-        private string GeneratePathFromTemplate(BaseAssetRequest assetRequest, string host)
-        {
-            var template = pathTemplateOptions.GetPathTemplateForHost(host);
-            return DlcsPathHelpers.GeneratePathFromTemplate(template,
+        private string GeneratePathFromTemplate(BaseAssetRequest assetRequest, string template) 
+            => DlcsPathHelpers.GeneratePathFromTemplate(template,
                 prefix: assetRequest.RoutePrefix,
                 customer: assetRequest.CustomerPathValue,
                 space: assetRequest.Space.ToString(),
                 assetPath: assetRequest.AssetPath);
-        }
 
         // based on Microsoft.AspNetCore.Http.Extensions.UriHelper.GetDisplayUrl(this HttpRequest request)
         private static string GetDisplayUrl(HttpRequest request, string host, string path)

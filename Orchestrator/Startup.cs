@@ -14,8 +14,10 @@ using DLCS.Repository.Storage.S3;
 using DLCS.Repository.Strategy;
 using DLCS.Web.Configuration;
 using DLCS.Web.Requests.AssetDelivery;
+using DLCS.Web.Response;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -47,6 +49,7 @@ namespace Orchestrator
                 .Configure<OrchestratorSettings>(configuration)
                 .Configure<ThumbsSettings>(configuration.GetSection("Thumbs"))
                 .Configure<ProxySettings>(configuration.GetSection("Proxy"))
+                .Configure<CacheSettings>(configuration.GetSection("Caching"))
                 .Configure<ReverseProxySettings>(reverseProxySection);
             
             // TODO - configure memoryCache
@@ -64,12 +67,15 @@ namespace Orchestrator
                 .AddSingleton<IThumbRepository, ThumbRepository>()
                 .AddSingleton<IAssetTracker, MemoryAssetTracker>()
                 .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
+                .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
                 .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
+                .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
                 .AddOriginStrategies()
                 .AddDbContext<DlcsContext>(opts =>
                     opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
                 )
-                .AddMediatR();
+                .AddMediatR()
+                .AddHttpContextAccessor();
 
             var reverseProxySettings = reverseProxySection.Get<ReverseProxySettings>();
             services
@@ -80,6 +86,12 @@ namespace Orchestrator
                     client.BaseAddress = reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.Orchestrator);
                 })
                 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false });
+            
+            // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
+            services.Configure<ForwardedHeadersOptions>(opts =>
+            {
+                opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+            });
 
             services
                 .AddControllers()
@@ -116,6 +128,7 @@ namespace Orchestrator
 
             app
                 .HandlePathBase(pathBase, logger)
+                .UseForwardedHeaders()
                 .UseHttpsRedirection()
                 .UseRouting()
                 .UseSerilogRequestLogging()

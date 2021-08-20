@@ -5,8 +5,10 @@ using DLCS.Core.Guard;
 using DLCS.Model.Customer;
 using DLCS.Model.Security;
 using DLCS.Model.Storage;
+using DLCS.Repository.Settings;
 using LazyCache;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace DLCS.Repository.Security
@@ -18,16 +20,19 @@ namespace DLCS.Repository.Security
     {
         private readonly IBucketReader bucketReader;
         private readonly IAppCache appCache;
+        private readonly CacheSettings cacheSettings;
         private readonly ILogger<DapperCredentialsRepository> logger;
         private readonly JsonSerializer jsonSerializer;
 
         public DapperCredentialsRepository(IBucketReader bucketReader,
             IAppCache appCache,
+            IOptions<CacheSettings> cacheOptions,
             ILogger<DapperCredentialsRepository> logger)
         {
             this.bucketReader = bucketReader;
             this.appCache = appCache;
             this.logger = logger;
+            cacheSettings = cacheOptions.Value;
             jsonSerializer = new JsonSerializer();
         }
         
@@ -41,8 +46,7 @@ namespace DLCS.Repository.Security
 
             return appCache.GetOrAddAsync(cacheKey, entry =>
             {
-                // TODO - config
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl());
                 logger.LogDebug("Refreshing CustomerOriginStrategy credentials for {customerOriginStrategy}",
                     customerOriginStrategy.Id);
                 return GetBasicCredentials(credentials, customerOriginStrategy.Id);

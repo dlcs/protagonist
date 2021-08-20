@@ -1,6 +1,6 @@
 ﻿#nullable disable
 
-namespace DLCS.Repository.Entities
+namespace DLCS.Model.Security
 {
     public partial class AuthService
     {

@@ -59,6 +59,6 @@ namespace DLCS.Web.Requests.AssetDelivery
         /// <summary>
         /// Generate an <see cref="Core.Types.AssetId"/> object from BaseAssetRequest
         /// </summary>
-        public AssetId GetAssetImageId() => new(Customer.Id, Space, AssetId);
+        public AssetId GetAssetId() => new(Customer.Id, Space, AssetId);
     }
 }

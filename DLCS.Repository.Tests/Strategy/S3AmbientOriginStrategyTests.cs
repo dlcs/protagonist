@@ -100,7 +100,8 @@ namespace DLCS.Repository.Tests.Strategy
             var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
             
             // Assert
-            result.Should().BeNull();
+            result.Stream.Should().Be(Stream.Null);
+            result.IsEmpty.Should().BeTrue();
         }
     }
 }

@@ -1,9 +1,13 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Dapper;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Repository.Settings;
+using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Assets
 {
@@ -13,19 +17,33 @@ namespace DLCS.Repository.Assets
     public class DapperAssetRepository : IAssetRepository
     {
         private readonly IConfiguration configuration;
+        private readonly CacheSettings cacheSettings;
+        private readonly IAppCache appCache;
         private readonly ILogger<DapperAssetRepository> logger;
 
-        public DapperAssetRepository(IConfiguration configuration, ILogger<DapperAssetRepository> logger)
+        public DapperAssetRepository(
+            IConfiguration configuration, 
+            IAppCache appCache,
+            IOptions<CacheSettings> cacheOptions,
+            ILogger<DapperAssetRepository> logger)
         {
-            this.configuration = configuration;
+            this.appCache = appCache;
             this.logger = logger;
+            cacheSettings = cacheOptions.Value;
+            this.configuration = configuration;
         }
 
         public async Task<Asset?> GetAsset(string id)
         {
-            // TODO - cache
-            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-            return await connection.QuerySingleOrDefaultAsync<Asset>(AssetSql, new {Id = id});
+            var key = $"asset:{id}";
+            return await appCache.GetOrAddAsync(key, async entry =>
+            {
+                logger.LogInformation("Refreshing assetCache from database {Asset}", id);
+                await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+                return await connection.QuerySingleOrDefaultAsync<Asset>(AssetSql, new { Id = id });
+            });
         }
 
         public Task<Asset?> GetAsset(AssetId id)
