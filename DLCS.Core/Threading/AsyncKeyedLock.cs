@@ -11,19 +11,19 @@ namespace DLCS.Core.Threading
     /// <remarks>See https://stackoverflow.com/a/31194647/83096 </remarks>
     public sealed class AsyncKeyedLock
     {
-        public IDisposable Lock(object key, CancellationToken cancellationToken = default)
+        public Releaser Lock(object key, CancellationToken cancellationToken = default)
         {
             GetOrCreate(key).Wait(cancellationToken);
             return new Releaser { Key = key };
         }
 
-        public async Task<IDisposable> LockAsync(object key, CancellationToken cancellationToken = default)
+        public async Task<Releaser> LockAsync(object key, CancellationToken cancellationToken = default)
         {
             await GetOrCreate(key).WaitAsync(cancellationToken);
             return new Releaser { Key = key };
         }
 
-        public async Task<IDisposable> LockAsync(object key, TimeSpan timeout, bool throwIfNoLock = false,
+        public async Task<Releaser> LockAsync(object key, TimeSpan timeout, bool throwIfNoLock = false,
             CancellationToken cancellationToken = default)
         {
             var success = await GetOrCreate(key).WaitAsync(timeout, cancellationToken);

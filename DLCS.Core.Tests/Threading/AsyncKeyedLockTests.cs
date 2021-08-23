@@ -16,6 +16,42 @@ namespace DLCS.Core.Tests.Threading
         {
             sut = new AsyncKeyedLock();
         }
+        
+        [Fact]
+        public async Task LockAsync_PreventsItemsWithSameKey_AttainingLockAtSameTime_FromDifferentInstances()
+        {
+            const string key = nameof(LockAsync_PreventsItemsWithSameKey_AttainingLockAtSameTime_FromDifferentInstances);
+            var calls = new List<string>();
+            bool task1Complete = false;
+
+            await Task.WhenAll(
+                Task.Run(async () =>
+                {
+                    // Task will get lock immediately but wait 400ms to release
+                    using (var theLock = await new AsyncKeyedLock().LockAsync(key))
+                    {
+                        await Task.Delay(400);
+                        calls.Add("Quick attain, run slow");
+                        theLock.HaveLock.Should().BeTrue();
+                        task1Complete = true;
+                    }
+                }),
+                Task.Run(async () =>
+                {
+                    // Task will try get lock after 200ms 
+                    await Task.Delay(200);
+                    using (var theLock = await new AsyncKeyedLock().LockAsync(key))
+                    {
+                        calls.Add("Slow attain, run quick");
+                        theLock.HaveLock.Should().BeTrue();
+                        task1Complete.Should().BeTrue();
+                    }
+                }));
+
+            calls.Count.Should().Be(2);
+            calls[0].Should().Be("Quick attain, run slow");
+            calls[1].Should().Be("Slow attain, run quick");
+        }
 
         [Fact]
         public async Task LockAsync_PreventsItemsWithSameKey_AttainingLockAtSameTime()
@@ -32,7 +68,7 @@ namespace DLCS.Core.Tests.Threading
                     {
                         await Task.Delay(400);
                         calls.Add("Quick attain, run slow");
-                        (theLock as AsyncKeyedLock.Releaser).HaveLock.Should().BeTrue();
+                        theLock.HaveLock.Should().BeTrue();
                         task1Complete = true;
                     }
                 }),
@@ -43,7 +79,7 @@ namespace DLCS.Core.Tests.Threading
                     using (var theLock = await sut.LockAsync(key))
                     {
                         calls.Add("Slow attain, run quick");
-                        (theLock as AsyncKeyedLock.Releaser).HaveLock.Should().BeTrue();
+                        theLock.HaveLock.Should().BeTrue();
                         task1Complete.Should().BeTrue();
                     }
                 }));
@@ -68,7 +104,7 @@ namespace DLCS.Core.Tests.Threading
                     {
                         await Task.Delay(400);
                         calls.Add("Quick attain, run slow");
-                        (theLock as AsyncKeyedLock.Releaser).HaveLock.Should().BeTrue();
+                        theLock.HaveLock.Should().BeTrue();
                         task1Complete = true;
                     }
                 }),
@@ -79,7 +115,7 @@ namespace DLCS.Core.Tests.Threading
                     using (var theLock = await sut.LockAsync($"not{key}"))
                     {
                         calls.Add("Slow attain, run quick");
-                        (theLock as AsyncKeyedLock.Releaser).HaveLock.Should().BeTrue();
+                        theLock.HaveLock.Should().BeTrue();
                         task1Complete.Should().BeFalse();
                     }
                 }));
@@ -104,7 +140,7 @@ namespace DLCS.Core.Tests.Threading
                     using (var theLock = await sut.LockAsync(key))
                     {
                         await Task.Delay(400);
-                        (theLock as AsyncKeyedLock.Releaser).HaveLock.Should().BeTrue();
+                        theLock.HaveLock.Should().BeTrue();
                         calls.Add("Quick attain, run slow");
                         task1Complete = true;
                     }
@@ -116,7 +152,7 @@ namespace DLCS.Core.Tests.Threading
                     using (var theLock = await sut.LockAsync(key, TimeSpan.FromMilliseconds(100)))
                     {
                         calls.Add("Slow attain, run quick");
-                        (theLock as AsyncKeyedLock.Releaser).HaveLock.Should().BeFalse();
+                        theLock.HaveLock.Should().BeFalse();
                         task1Complete.Should().BeFalse();
                     }
                 }),
@@ -127,7 +163,7 @@ namespace DLCS.Core.Tests.Threading
                     using (var theLock = await sut.LockAsync(key))
                     {
                         calls.Add("Verify timeout lock doesn't affect normal process");
-                        (theLock as AsyncKeyedLock.Releaser).HaveLock.Should().BeTrue();
+                        theLock.HaveLock.Should().BeTrue();
                         task2Complete.Should().BeFalse();
                     }
                 }));
