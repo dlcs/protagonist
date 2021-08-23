@@ -26,7 +26,7 @@ namespace Orchestrator.Tests.Images
         private readonly IAssetDeliveryPathParser assetDeliveryPathParser;
         private readonly IPathCustomerRepository customerRepository;
         private readonly AssetDeliveryPathParser assetDeliveryPathParserImpl;
-        private readonly IOptions<ProxySettings> defaultSettings;
+        private readonly IOptions<OrchestratorSettings> defaultSettings;
 
         public ImageRequestHandlerTests()
         {
@@ -34,7 +34,7 @@ namespace Orchestrator.Tests.Images
             assetDeliveryPathParser = A.Fake<IAssetDeliveryPathParser>();
             customerRepository = A.Fake<IPathCustomerRepository>();
             assetDeliveryPathParserImpl = new AssetDeliveryPathParser(customerRepository);
-            defaultSettings = Options.Create(new ProxySettings());
+            defaultSettings = Options.Create(new OrchestratorSettings());
         }
 
         [Fact]
@@ -49,7 +49,7 @@ namespace Orchestrator.Tests.Images
             var result = await sut.HandleRequest(new DefaultHttpContext());
             
             // Assert
-            result.Should().BeOfType<StatusCodeProxyResult>().Which.StatusCode.Should().Be(HttpStatusCode.NotFound);
+            result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
         
         [Fact]
@@ -66,7 +66,7 @@ namespace Orchestrator.Tests.Images
             var result = await sut.HandleRequest(new DefaultHttpContext());
             
             // Assert
-            result.Should().BeOfType<StatusCodeProxyResult>().Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
         
         [Fact]
@@ -83,7 +83,7 @@ namespace Orchestrator.Tests.Images
             var result = await sut.HandleRequest(new DefaultHttpContext());
             
             // Assert
-            result.Should().BeOfType<StatusCodeProxyResult>()
+            result.Should().BeOfType<StatusCodeResult>()
                 .Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
@@ -140,9 +140,12 @@ namespace Orchestrator.Tests.Images
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
                 .Returns(new OrchestrationImage {AssetId = new AssetId(2, 2, "test-image")});
-            var sut = GetImageRequestHandlerWithMockPathParser(settings: Options.Create(new ProxySettings
-                {UVThumbReplacementPath = "!300,500"}));
-
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    Proxy = new ProxySettings { UVThumbReplacementPath = "!300,500" }
+                }));
+            
             // Act
             var result = await sut.HandleRequest(context) as ProxyActionResult;
             
@@ -163,8 +166,11 @@ namespace Orchestrator.Tests.Images
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
                 .Returns(new OrchestrationImage {AssetId = new AssetId(2, 2, "test-image")});
-            var sut = GetImageRequestHandlerWithMockPathParser(settings: Options.Create(new ProxySettings
-                {CheckUVThumbs = false}));
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    Proxy = new ProxySettings { CheckUVThumbs = false }
+                }));
 
             // Act
             var result = await sut.HandleRequest(context) as ProxyActionResult;
@@ -227,7 +233,7 @@ namespace Orchestrator.Tests.Images
         }
 
         private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false,
-            IOptions<ProxySettings> settings = null) 
+            IOptions<OrchestratorSettings> settings = null) 
             => new(new NullLogger<ImageRequestHandler>(), assetTracker,
                 mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl, settings ?? defaultSettings);
     }

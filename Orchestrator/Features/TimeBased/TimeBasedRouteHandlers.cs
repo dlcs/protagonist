@@ -61,7 +61,7 @@ namespace Orchestrator.Features.TimeBased
         private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
             IProxyActionResult proxyActionResult, IOptions<ReverseProxySettings> reverseProxySettings)
         {
-            if (proxyActionResult is StatusCodeProxyResult statusCodeResult)
+            if (proxyActionResult is StatusCodeResult statusCodeResult)
             {
                 httpContext.Response.StatusCode = (int) statusCodeResult.StatusCode;
                 foreach (var header in statusCodeResult.Headers)

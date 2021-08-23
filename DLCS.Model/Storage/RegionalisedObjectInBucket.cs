@@ -24,19 +24,19 @@ namespace DLCS.Model.Storage
         public string GetHttpUri() => $"https://{Bucket}.s3-{Region.ThrowIfNullOrWhiteSpace(nameof(Region))}.amazonaws.com/{Key}";
         
         // NOTE(DG) Regex's and logic moved from deliverator
-        private static readonly Regex RegexS3Qualified = new Regex(@"s3\:\/\/(.*?)\/(.*?)\/(.*)", RegexOptions.Compiled);
+        private static readonly Regex RegexS3Qualified = new(@"s3\:\/\/(.*?)\/(.*?)\/(.*)", RegexOptions.Compiled);
         
         // us-east-1 uses period instead of dash
-        private static readonly Regex RegexHttp1 = new Regex(@"^http[s]?\:\/\/s3[\-\.](\S+\-\S+\-\d)\.amazonaws\.com\/(.*?)\/(.*)$", RegexOptions.Compiled); 
+        private static readonly Regex RegexHttp1 = new(@"^http[s]?\:\/\/s3[\-\.](\S+\-\S+\-\d)\.amazonaws\.com\/(.*?)\/(.*)$", RegexOptions.Compiled); 
         
         // no region for this one
-        private static readonly Regex RegexHttp2 = new Regex(@"^http[s]?:\/\/(.*?)\.s3\.amazonaws\.com\/(.*)$", RegexOptions.Compiled); 
+        private static readonly Regex RegexHttp2 = new(@"^http[s]?:\/\/(.*?)\.s3\.amazonaws\.com\/(.*)$", RegexOptions.Compiled); 
         
         // includes region
-        private static readonly Regex RegexHttp3 = new Regex(@"^http[s]?:\/\/(.*?)\.s3\.(.*?)\.amazonaws\.com\/(.*)$", RegexOptions.Compiled); 
+        private static readonly Regex RegexHttp3 = new(@"^http[s]?:\/\/(.*?)\.s3\.(.*?)\.amazonaws\.com\/(.*)$", RegexOptions.Compiled); 
         
         // bucket name in path (assumes same region as caller)
-        private static readonly Regex RegexHttp4 = new Regex(@"^http[s]?:\/\/s3\.amazonaws\.com\/(.*?)\/(.*)$", RegexOptions.Compiled); 
+        private static readonly Regex RegexHttp4 = new(@"^http[s]?:\/\/s3\.amazonaws\.com\/(.*?)\/(.*)$", RegexOptions.Compiled); 
 
         public static RegionalisedObjectInBucket Parse(string uri)
         {

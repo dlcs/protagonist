@@ -2,8 +2,9 @@
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Customer;
+using DLCS.Repository.Strategy.DependencyInjection;
 
-namespace DLCS.Repository.Strategy
+namespace DLCS.Repository.Strategy.Utils
 {
     public class OriginFetcher
     {

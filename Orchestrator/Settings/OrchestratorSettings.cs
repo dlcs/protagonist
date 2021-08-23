@@ -1,4 +1,6 @@
-﻿
+﻿using System.IO;
+using DLCS.Core.Types;
+using DLCS.Model.Templates;
 using DLCS.Repository.Settings;
 
 namespace Orchestrator.Settings
@@ -27,13 +29,28 @@ namespace Orchestrator.Settings
         public int CriticalPathTimeoutMs { get; set; } = 10000;
         
         /// <summary>
+        /// Folder template for downloading pointing ImageServer at local file
+        /// </summary>
+        public string ImageFolderTemplateImageServer { get; set; }
+        
+        /// <summary>
         /// Folder template for downloading resources to.
         /// </summary>
-        public string ImageFolderTemplate { get; set; }
+        public string ImageFolderTemplateOrchestrator { get; set; }
 
         public ProxySettings Proxy { get; set; }
         
         public CacheSettings Caching { get; set; }
+
+        /// <summary>
+        /// Get the local folder where Asset should be saved to
+        /// </summary>
+        public string GetImageLocalPath(AssetId assetId, bool forImageServer)
+        {
+            var template = forImageServer ? ImageFolderTemplateImageServer : ImageFolderTemplateOrchestrator;
+            var separator = forImageServer ? '/' : Path.DirectorySeparatorChar;
+            return TemplatedFolders.GenerateTemplate(template, assetId, separator);
+        }
     }
 
     public class ProxySettings
@@ -62,5 +79,10 @@ namespace Orchestrator.Settings
         /// Get the S3 storage bucket name.
         /// </summary>
         public string StorageBucket { get; set; }
+        
+        /// <summary>
+        /// The root URI of the image server
+        /// </summary>
+        public string ImageServerRoot { get; set; }
     }
 }

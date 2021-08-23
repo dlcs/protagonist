@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using DLCS.Mediatr.Behaviours;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Orchestrator.Infrastructure.Mediatr
@@ -13,6 +14,7 @@ namespace Orchestrator.Infrastructure.Mediatr
         public static IServiceCollection AddMediatR(this IServiceCollection services)
             => services
                 .AddMediatR(typeof(Startup))
+                .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
                 .AddScoped(typeof(IPipelineBehavior<,>), typeof(AssetRequestParsingBehavior<,>));
     }
 }

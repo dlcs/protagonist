@@ -16,13 +16,13 @@ namespace DLCS.Repository.Assets
             this.dlcsContext = dlcsContext;
         }
 
-        public ValueTask<Asset?> GetAsset(string id)
-            => dlcsContext.Images.FindAsync(id);
+        public async Task<Asset?> GetAsset(string id)
+            => await dlcsContext.Images.FindAsync(id);
 
-        public ValueTask<Asset?> GetAsset(AssetId id)
-            => GetAsset(id.ToString());
+        public async Task<Asset?> GetAsset(AssetId id)
+            => await GetAsset(id.ToString());
 
-        public ValueTask<ImageLocation> GetImageLocation(AssetId assetId)
-            => dlcsContext.ImageLocations.FindAsync(assetId.ToString());
+        public async Task<ImageLocation> GetImageLocation(AssetId assetId)
+            => await dlcsContext.ImageLocations.FindAsync(assetId.ToString());
     }
 }

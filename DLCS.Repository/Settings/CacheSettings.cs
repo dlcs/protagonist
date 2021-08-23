@@ -78,6 +78,11 @@ namespace DLCS.Repository.Settings
         /// External distributed cache
         /// </summary>
         Distributed,
+        
+        /// <summary>
+        /// Http caching (via headers)
+        /// </summary>
+        Http
     }
 
     /// <summary>

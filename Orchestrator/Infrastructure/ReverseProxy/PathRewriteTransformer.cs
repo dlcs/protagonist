@@ -14,7 +14,9 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         private readonly string newPath;
         private readonly bool rewriteWholePath;
 
-        public PathRewriteTransformer(string newPath, bool rewriteWholePath = false)
+        public PathRewriteTransformer(
+            string newPath,
+            bool rewriteWholePath = false)
         {
             this.newPath = newPath;
             this.rewriteWholePath = rewriteWholePath;
@@ -31,6 +33,18 @@ namespace Orchestrator.Infrastructure.ReverseProxy
             
             // TODO - handle x-forwarded-* headers?
             proxyRequest.Headers.Host = proxyRequest.RequestUri.Authority;
+        }
+
+        public override ValueTask<bool> TransformResponseAsync(
+            HttpContext httpContext,
+            HttpResponseMessage proxyResponse)
+        {
+            // TODO - this will need to be aware of public/not-public assets and set headers accordingly
+            base.TransformResponseAsync(httpContext, proxyResponse);
+            
+            httpContext.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+
+            return new ValueTask<bool>(true);
         }
 
         private Uri GetNewDestination(string destinationPrefix)

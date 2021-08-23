@@ -9,7 +9,7 @@ using DLCS.Repository.Settings;
 using LazyCache;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.Features.Images.Commands;
+using Orchestrator.Features.Images;
 
 namespace Orchestrator.Assets
 {
@@ -22,7 +22,7 @@ namespace Orchestrator.Assets
         private readonly IAppCache appCache;
         private readonly CacheSettings cacheSettings;
         private readonly IThumbRepository thumbRepository;
-        private readonly ImageOrchestrator imageOrchestrator;
+        private readonly ImageOrchestrationStatusProvider statusProvider;
         private readonly ILogger<MemoryAssetTracker> logger;
         private readonly AsyncKeyedLock asyncLocker = new();
 
@@ -34,14 +34,14 @@ namespace Orchestrator.Assets
             IAssetRepository assetRepository,
             IAppCache appCache,
             IThumbRepository thumbRepository,
-            ImageOrchestrator imageOrchestrator,
+            ImageOrchestrationStatusProvider statusProvider,
             IOptions<CacheSettings> cacheOptions,
             ILogger<MemoryAssetTracker> logger)
         {
             this.assetRepository = assetRepository;
             this.appCache = appCache;
             this.thumbRepository = thumbRepository;
-            this.imageOrchestrator = imageOrchestrator;
+            this.statusProvider = statusProvider;
             this.logger = logger;
             cacheSettings = cacheOptions.Value;
         }
@@ -75,7 +75,7 @@ namespace Orchestrator.Assets
                 var current = await GetOrchestrationAsset<OrchestrationImage>(orchestrationImage.AssetId);
                 current.ThrowIfNull(nameof(current));
 
-                if (current.Status == orchestrationImage.Status) return (true, current);
+                if (current.Status == status) return (true, current);
 
                 if (!force && current.Version > orchestrationImage.Version)
                 {
@@ -139,30 +139,35 @@ namespace Orchestrator.Assets
         private bool IsNullAsset(OrchestrationAsset orchestrationAsset)
             => orchestrationAsset.AssetId == NullOrchestrationAsset.AssetId;
 
-        private async Task<OrchestrationAsset> ConvertAssetToTrackedAsset(AssetId assetId, Asset asset) 
-            => asset.Family switch
+        private async Task<OrchestrationAsset> ConvertAssetToTrackedAsset(AssetId assetId, Asset asset)
+        {
+            switch (asset.Family)
             {
-                'I' => new OrchestrationImage
-                {
-                    AssetId = assetId,
-                    RequiresAuth = asset.RequiresAuth,
-                    S3Location = (await assetRepository.GetImageLocation(assetId)).S3, // TODO - error handling
-                    Width = asset.Width,
-                    Height = asset.Height,
-                    OpenThumbs = await thumbRepository.GetOpenSizes(assetId), // TODO - reorganise thumb layout + create missing eventually
-                    Status = imageOrchestrator.GetCurrentStatus(assetId),
-                },
-                'F' => new OrchestrationFile
-                {
-                    AssetId = assetId,
-                    RequiresAuth = asset.RequiresAuth,
-                    Origin = asset.Origin,
-                },
-                _ => new OrchestrationAsset
-                {
-                    AssetId = assetId,
-                    RequiresAuth = asset.RequiresAuth,
-                }
-            };
+                case 'I':
+                    var getImageLocation = assetRepository.GetImageLocation(assetId);
+                    var getOpenThumbs = thumbRepository.GetOpenSizes(assetId);
+                    var getOrchestrationStatus = statusProvider.GetOrchestrationStatus(assetId);
+
+                    await Task.WhenAll(getImageLocation, getOpenThumbs, getOrchestrationStatus);
+                    
+                    return new OrchestrationImage
+                    {
+                        AssetId = assetId,
+                        RequiresAuth = asset.RequiresAuth,
+                        S3Location = getImageLocation.Result.S3, // TODO - error handling
+                        Width = asset.Width,
+                        Height = asset.Height,
+                        OpenThumbs = getOpenThumbs.Result, // TODO - reorganise thumb layout + create missing eventually
+                        Status = getOrchestrationStatus.Result
+                    };
+                case 'F':
+                    return new OrchestrationFile
+                    {
+                        AssetId = assetId, RequiresAuth = asset.RequiresAuth, Origin = asset.Origin,
+                    };
+                default:
+                    return new OrchestrationAsset { AssetId = assetId, RequiresAuth = asset.RequiresAuth, };
+            }
+        }
     }
 }

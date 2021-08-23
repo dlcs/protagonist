@@ -19,15 +19,15 @@ namespace Orchestrator.Features.Images
     /// </summary>
     public class ImageRequestHandler : RequestHandlerBase
     {
-        private readonly ProxySettings proxySettings;
+        private readonly IOptions<OrchestratorSettings> orchestratorSettings;
 
         public ImageRequestHandler(
             ILogger<ImageRequestHandler> logger,
             IAssetTracker assetTracker,
             IAssetDeliveryPathParser assetDeliveryPathParser,
-            IOptions<ProxySettings> proxySettings) : base(logger, assetTracker, assetDeliveryPathParser)
+            IOptions<OrchestratorSettings> orchestratorSettings) : base(logger, assetTracker, assetDeliveryPathParser)
         {
-            this.proxySettings = proxySettings.Value;
+            this.orchestratorSettings = orchestratorSettings;
         }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace Orchestrator.Features.Images
             var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest<ImageAssetDeliveryRequest>(httpContext);
             if (statusCode.HasValue || assetRequest == null)
             {
-                return new StatusCodeProxyResult(statusCode ?? HttpStatusCode.InternalServerError);
+                return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
             }
 
             // If "HEAD" then add CORS - is this required here?
@@ -48,7 +48,7 @@ namespace Orchestrator.Features.Images
             if (orchestrationAsset is not OrchestrationImage orchestrationImage)
             {
                 Logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
-                return new StatusCodeProxyResult(HttpStatusCode.NotFound);
+                return new StatusCodeResult(HttpStatusCode.NotFound);
             }
             
             if (orchestrationImage.RequiresAuth)
@@ -85,18 +85,17 @@ namespace Orchestrator.Features.Images
                         httpContext.Request.Path.ToString().Replace("iiif-img", "thumbs"));
                 }
             }
-            
-            //return new OrchestrateImageResult()
-            return new ProxyActionResult(ProxyDestination.CachingProxy, assetRequest.NormalisedFullPath);
+
+            return GenerateImageResult(orchestrationImage, assetRequest);
         }
 
         private bool IsRequestForUVThumb(HttpContext httpContext, ImageAssetDeliveryRequest requestModel)
-            => proxySettings.CheckUVThumbs &&
+            => orchestratorSettings.Value.Proxy.CheckUVThumbs &&
                requestModel.IIIFImageRequest.ImageRequestPath == "/full/90,/0/default.jpg" &&
                httpContext.Request.QueryString.Value.Contains("t=");
-        
-        private string GetUVThumbReplacementPath(AssetId assetId) => 
-            $"{proxySettings.ThumbsPath}/{assetId}/full/{proxySettings.UVThumbReplacementPath}/0/default.jpg";
+
+        private string GetUVThumbReplacementPath(AssetId assetId) =>
+            $"{orchestratorSettings.Value.Proxy.ThumbsPath}/{assetId}/full/{orchestratorSettings.Value.Proxy.UVThumbReplacementPath}/0/default.jpg";
 
         // TODO handle resizing via config. Optionally with path regex (resize X but not Y)
         // TODO handle known thumb size that doesn't exist yet - call image-server and save to s3 on way back
@@ -105,6 +104,18 @@ namespace Orchestrator.Features.Images
             var openSizes = orchestrationImage.OpenThumbs.Select(wh => Size.FromArray(wh)).ToList();
             var candidate = ThumbnailCalculator.GetCandidate(openSizes, requestModel.IIIFImageRequest, false);
             return candidate.KnownSize;
+        }
+
+        private ProxyImageServerResult GenerateImageResult(OrchestrationImage orchestrationImage,
+            ImageAssetDeliveryRequest requestModel)
+        {
+            // TODO - this is for IIP image only
+            var targetPath = orchestratorSettings.Value.GetImageLocalPath(orchestrationImage.AssetId, true);
+            var root = orchestratorSettings.Value.Proxy.ImageServerRoot;
+            var imageServerPath =
+                $"{root}/fcgi-bin/iipsrv.fcgi?IIIF={targetPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
+            return new ProxyImageServerResult(orchestrationImage, ProxyDestination.ImageServer,
+                imageServerPath);
         }
     }
 }

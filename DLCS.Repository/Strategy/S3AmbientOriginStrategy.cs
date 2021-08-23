@@ -11,7 +11,7 @@ namespace DLCS.Repository.Strategy
     /// <summary>
     /// OriginStrategy implementation for 's3-ambient' assets.
     /// </summary>
-    public class S3AmbientOriginStrategy : SafetyCheckOriginStrategy
+    public class S3AmbientOriginStrategy : IOriginStrategy
     {
         private readonly IBucketReader bucketReader;
         private readonly ILogger<S3AmbientOriginStrategy> logger;
@@ -22,10 +22,10 @@ namespace DLCS.Repository.Strategy
             this.logger = logger;
         }
         
-        protected override async Task<OriginResponse?> LoadAssetFromOriginImpl(AssetId assetId, string origin,
-            CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
+        public async Task<OriginResponse?> LoadAssetFromOrigin(AssetId assetId, string origin,
+            CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
         {
-            logger.LogDebug("Fetching {asset} from Origin: {url}", assetId, origin);
+            logger.LogDebug("Fetching {Asset} from Origin: {Origin}", assetId, origin);
 
             try
             {
@@ -36,7 +36,7 @@ namespace DLCS.Repository.Strategy
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error fetching {asset} from Origin: {url}", assetId, origin);
+                logger.LogError(ex, "Error fetching {Asset} from Origin: {Origin}", assetId, origin);
                 return OriginResponse.Empty;
             }
         }

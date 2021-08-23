@@ -13,10 +13,10 @@ namespace Portal.Behaviours
     public class AuditBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IAuditable
     {
-        private readonly ILogger<LoggingBehavior<TRequest, TResponse>> logger;
+        private readonly ILogger<AuditBehaviour<TRequest, TResponse>> logger;
         private readonly ClaimsPrincipal claimsPrincipal;
 
-        public AuditBehaviour(ILogger<LoggingBehavior<TRequest, TResponse>> logger, ClaimsPrincipal claimsPrincipal)
+        public AuditBehaviour(ILogger<AuditBehaviour<TRequest, TResponse>> logger, ClaimsPrincipal claimsPrincipal)
         {
             this.logger = logger;
             this.claimsPrincipal = claimsPrincipal;

@@ -12,7 +12,10 @@ using DLCS.Repository.Security;
 using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
 using DLCS.Repository.Strategy;
+using DLCS.Repository.Strategy.DependencyInjection;
+using DLCS.Repository.Strategy.Utils;
 using DLCS.Web.Configuration;
+using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Builder;
@@ -68,8 +71,9 @@ namespace Orchestrator
                 .AddSingleton<IAssetTracker, MemoryAssetTracker>()
                 .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
-                .AddSingleton<ICustomerOriginStrategyRepository, DapperCustomerOriginStrategyRepository>()
-                .AddSingleton<OriginFetcher>()
+                .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
+                .AddSingleton<ImageOrchestrator>()
+                .AddSingleton<ImageOrchestrationStatusProvider>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
                 .AddOriginStrategies()
                 .AddDbContext<DlcsContext>(opts =>

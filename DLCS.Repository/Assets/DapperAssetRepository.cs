@@ -33,7 +33,7 @@ namespace DLCS.Repository.Assets
             this.configuration = configuration;
         }
 
-        public async ValueTask<Asset?> GetAsset(string id)
+        public async Task<Asset?> GetAsset(string id)
         {
             var key = $"asset:{id}";
             return await appCache.GetOrAddAsync(key, async entry =>
@@ -46,13 +46,14 @@ namespace DLCS.Repository.Assets
             });
         }
 
-        public ValueTask<Asset?> GetAsset(AssetId id)
+        public Task<Asset?> GetAsset(AssetId id)
             => GetAsset(id.ToString());
 
-        public async ValueTask<ImageLocation> GetImageLocation(AssetId assetId)
+        public async Task<ImageLocation> GetImageLocation(AssetId assetId)
         {
             await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-            return await connection.QuerySingleOrDefaultAsync<ImageLocation>(AssetSql, new { Id = assetId.ToString() });
+            return await connection.QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql,
+                new { Id = assetId.ToString() });
         }
 
         private const string AssetSql = @"

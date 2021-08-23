@@ -13,14 +13,20 @@ namespace Orchestrator.Infrastructure.ReverseProxy
     /// <summary>
     /// Results for actions that is for image orchestration
     /// </summary>
-    public class OrchestrateImageResult : IProxyActionResult
+    public class ProxyImageServerResult : ProxyActionResult
     {
-        public OrchestrationImage OrchestrationImage { get; set; }
-    }
-
-    public class SaveMe : IProxyActionResult
-    {
-        public string S3Key { get; set; }
+        /// <summary>
+        /// <see cref="OrchestrationImage"/> for current request
+        /// </summary>
+        public OrchestrationImage OrchestrationImage { get; }
+        
+        public ProxyImageServerResult(
+            OrchestrationImage orchestrationImage,
+            ProxyDestination target,
+            string? path = null) : base(target, path)
+        {
+            OrchestrationImage = orchestrationImage;
+        }
     }
 
     /// <summary>
@@ -54,7 +60,7 @@ namespace Orchestrator.Infrastructure.ReverseProxy
     /// <summary>
     /// Result for proxy actions that should be shortcut to return status code.
     /// </summary>
-    public class StatusCodeProxyResult : IProxyActionResult
+    public class StatusCodeResult : IProxyActionResult
     {
         /// <summary>
         /// StatusCode to return
@@ -66,7 +72,7 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         /// </summary>
         public Dictionary<string, StringValues> Headers { get; } = new();
 
-        public StatusCodeProxyResult(HttpStatusCode statusCode)
+        public StatusCodeResult(HttpStatusCode statusCode)
         {
             // TODO - handle message/headers? or let those be set in 
             StatusCode = statusCode;
@@ -78,7 +84,7 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public StatusCodeProxyResult WithHeader(string key, string value)
+        public StatusCodeResult WithHeader(string key, string value)
         {
             Headers[key] = value;
             return this;

@@ -81,7 +81,7 @@ namespace Orchestrator.Features.Images
                 {
                     Public = !requiresAuth,
                     Private = requiresAuth,
-                    MaxAge = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Long))
+                    MaxAge = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Default, CacheSource.Http))
                 };
         }
     }

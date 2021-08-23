@@ -11,7 +11,7 @@ namespace DLCS.Repository.Strategy
     /// <summary>
     /// OriginStrategy implementation for 'default' assets.
     /// </summary>
-    public class DefaultOriginStrategy : SafetyCheckOriginStrategy
+    public class DefaultOriginStrategy : IOriginStrategy
     {
         private readonly IHttpClientFactory httpClientFactory;
         private readonly ILogger<DefaultOriginStrategy> logger;
@@ -22,8 +22,8 @@ namespace DLCS.Repository.Strategy
             this.logger = logger;
         }
 
-        protected override async Task<OriginResponse?> LoadAssetFromOriginImpl(AssetId assetId, string origin,
-            CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
+        public async Task<OriginResponse?> LoadAssetFromOrigin(AssetId assetId, string origin,
+            CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
         {
             // NOTE(DG): This will follow up to 8 redirections, as per deliverator.
             // However, https -> http will fail. 

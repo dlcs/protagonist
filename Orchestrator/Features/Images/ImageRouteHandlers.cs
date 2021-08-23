@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using DLCS.Web.Middleware;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -38,7 +39,9 @@ namespace Orchestrator.Features.Images
             });
 
             DefaultTransformer = HttpTransformer.Default;
-            RequestOptions = new ForwarderRequestConfig {Timeout = TimeSpan.FromSeconds(100)};
+            
+            // TODO - make this configurable, potentially by target
+            RequestOptions = new ForwarderRequestConfig {Timeout = TimeSpan.FromSeconds(100)};  
         }
 
         /// <summary>
@@ -53,52 +56,62 @@ namespace Orchestrator.Features.Images
                 .CreateLogger(nameof(ImageRouteHandlers));
             var settings = endpoints.ServiceProvider.GetService<IOptions<ReverseProxySettings>>();
             
-            endpoints.Map("/iiif-img/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
+            endpoints.MapGet("/iiif-img/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
             {
                 logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
                 var proxyResponse = await requestHandler.HandleRequest(httpContext);
                 await ProcessResponse(logger, httpContext, forwarder, proxyResponse, settings);
             });
         }
-
+        
         private static async Task ProcessResponse(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
             IProxyActionResult proxyActionResult, IOptions<ReverseProxySettings> reverseProxySettings)
         {
-            if (proxyActionResult is StatusCodeProxyResult statusCodeResult)
+            if (proxyActionResult is StatusCodeResult statusCodeResult)
             {
-                httpContext.Response.StatusCode = (int)statusCodeResult.StatusCode;
-                foreach (var header in statusCodeResult.Headers)
-                {
-                    httpContext.Response.Headers.Add(header);
-                }
+                HandleStatusCodeResult(httpContext, statusCodeResult);
                 return;
             }
 
-            if (proxyActionResult is OrchestrateImageResult orchestrateImageResult &&
-                orchestrateImageResult.OrchestrationImage.Status != OrchestrationStatus.Orchestrated)
+            if (proxyActionResult is ProxyImageServerResult proxyImageServer)
             {
-                var mediator = httpContext.RequestServices.GetService<IMediator>();
-                // Kick off orchestration logic here.
-                // Once orchestrated, call image-server - by rewriting path
-                // Where does path come from? Needs to know the location on disk
-
-                // Should this return orchestrated path, on local disk?
-                var result = await mediator.Send(new OrchestrateImage(orchestrateImageResult.OrchestrationImage),
-                    httpContext.RequestAborted);
-
+                await EnsureImageOrchestrated(httpContext, proxyImageServer);
             }
 
             var proxyAction = proxyActionResult as ProxyActionResult; 
+            await ProxyRequest(logger, httpContext, forwarder, reverseProxySettings, proxyAction);
+        }
+        
+        private static void HandleStatusCodeResult(HttpContext httpContext, StatusCodeResult statusCodeResult)
+        {
+            httpContext.Response.StatusCode = (int)statusCodeResult.StatusCode;
+            foreach (var header in statusCodeResult.Headers)
+            {
+                httpContext.Response.Headers.Add(header);
+            }
+        }
+
+        private static async Task EnsureImageOrchestrated(HttpContext httpContext, ProxyImageServerResult proxyImageServer)
+        {
+            if (proxyImageServer.OrchestrationImage.Status == OrchestrationStatus.Orchestrated) return;
+         
+            // Send Mediatr event to copy file from blob-storage to local disk
+            var mediator = httpContext.RequestServices.GetService<IMediator>();
+            var orchestrateImage = new OrchestrateImage(proxyImageServer.OrchestrationImage);
+            await mediator.Send(orchestrateImage, httpContext.RequestAborted);
+        }
+
+        private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
+            IOptions<ReverseProxySettings> reverseProxySettings, ProxyActionResult? proxyAction)
+        {
             var root = reverseProxySettings.Value.GetAddressForProxyTarget(proxyAction.Target).ToString();
 
             var transformer = proxyAction.HasPath
-                ? new PathRewriteTransformer(proxyAction.Path)
+                ? new PathRewriteTransformer(proxyAction.Path, proxyAction.Path.StartsWith("http"))
                 : DefaultTransformer;
 
             var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions,
                 transformer);
-            
-            // httpContext.Response.Body
 
             // Check if the proxy operation was successful
             if (error != ForwarderError.None)
