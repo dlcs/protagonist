@@ -118,7 +118,12 @@ namespace Orchestrator.Tests.Images
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
                 .Returns(new OrchestrationImage {AssetId = new AssetId(2, 2, "test-image")});
-            var sut = GetImageRequestHandlerWithMockPathParser();
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    ImageFolderTemplateImageServer = "/path",
+                    Proxy = new ProxySettings()
+                }));
 
             // Act
             var result = await sut.HandleRequest(context) as ProxyActionResult;
@@ -156,7 +161,7 @@ namespace Orchestrator.Tests.Images
         }
         
         [Fact]
-        public async Task Handle_Request_ProxiesToCachingProxy_IfAssetIsForUvThumb_UvThumbDisabled()
+        public async Task Handle_Request_ProxiesToImageServer_IfAssetIsForUvThumb_UvThumbDisabled()
         {
             // Arrange
             var context = new DefaultHttpContext();
@@ -169,14 +174,15 @@ namespace Orchestrator.Tests.Images
             var sut = GetImageRequestHandlerWithMockPathParser(
                 settings: Options.Create(new OrchestratorSettings
                 {
+                    ImageFolderTemplateImageServer = "/path",
                     Proxy = new ProxySettings { CheckUVThumbs = false }
                 }));
 
             // Act
-            var result = await sut.HandleRequest(context) as ProxyActionResult;
+            var result = await sut.HandleRequest(context) as ProxyImageServerResult;
             
             // Assert
-            result.Target.Should().Be(ProxyDestination.CachingProxy);
+            result.Target.Should().Be(ProxyDestination.ImageServer);
             result.HasPath.Should().BeTrue();
         }
         
@@ -192,7 +198,12 @@ namespace Orchestrator.Tests.Images
             A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
                 .Returns(new OrchestrationImage
                     { AssetId = assetId, OpenThumbs = new List<int[]> { new[] { 150, 150 } } });
-            var sut = GetImageRequestHandlerWithMockPathParser();
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    ImageFolderTemplateImageServer = "/path",
+                    Proxy = new ProxySettings()
+                }));
 
             // Act
             var result = await sut.HandleRequest(context) as ProxyActionResult;
@@ -206,7 +217,7 @@ namespace Orchestrator.Tests.Images
         [InlineData("/iiif-img/2/2/test-image/full/90,/0/default.jpg", false)] // UV without ?t=
         [InlineData("/iiif-img/2/2/test-image/full/full/0/default.jpg", true)] // /full/full
         [InlineData("/iiif-img/2/2/test-image/full/max/0/default.jpg", true)] // /full/max
-        public async Task Handle_Request_ProxiesToCachingProxy_ForAllOtherCases(string path, bool knownThumb)
+        public async Task Handle_Request_ProxiesToImageServer_ForAllOtherCases(string path, bool knownThumb)
         {
             // Arrange
             var context = new DefaultHttpContext();
@@ -215,7 +226,12 @@ namespace Orchestrator.Tests.Images
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             var assetId = new AssetId(2, 2, "test-image");
             
-            var sut = GetImageRequestHandlerWithMockPathParser();
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    ImageFolderTemplateImageServer = "/path",
+                    Proxy = new ProxySettings()
+                }));
 
             List<int[]> openSizes = knownThumb
                 ? new List<int[]> { new[] { 150, 150 } }
@@ -225,10 +241,10 @@ namespace Orchestrator.Tests.Images
                 .Returns(new OrchestrationImage { AssetId = assetId, OpenThumbs = openSizes });
 
             // Act
-            var result = await sut.HandleRequest(context) as ProxyActionResult;
+            var result = await sut.HandleRequest(context) as ProxyImageServerResult;
             
             // Assert
-            result.Target.Should().Be(ProxyDestination.CachingProxy);
+            result.Target.Should().Be(ProxyDestination.ImageServer);
             result.HasPath.Should().BeTrue();
         }
 

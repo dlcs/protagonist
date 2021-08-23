@@ -10,6 +10,8 @@ using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Features.Images;
+using Orchestrator.Features.Images.Orchestration.Status;
 using Xunit;
 
 namespace Orchestrator.Tests.Assets
@@ -19,15 +21,17 @@ namespace Orchestrator.Tests.Assets
         private readonly IAssetRepository assetRepository;
         private readonly IThumbRepository thumbRepository;
         private readonly MemoryAssetTracker sut;
+        private readonly IImageOrchestrationStatusProvider imageOrchestrationStatusProvider;
 
         public MemoryAssetTrackerTests()
         {
             assetRepository = A.Fake<IAssetRepository>();
             thumbRepository = A.Fake<IThumbRepository>();
-            
-            // TODO - fix ctor param
-            sut = new MemoryAssetTracker(assetRepository, new MockCachingService(), thumbRepository, null,
-                Options.Create(new CacheSettings()), new NullLogger<MemoryAssetTracker>());
+            imageOrchestrationStatusProvider = A.Fake<IImageOrchestrationStatusProvider>();
+
+            sut = new MemoryAssetTracker(assetRepository, new MockCachingService(), thumbRepository,
+                imageOrchestrationStatusProvider, Options.Create(new CacheSettings()),
+                new NullLogger<MemoryAssetTracker>());
         }
 
         [Fact]
@@ -46,8 +50,8 @@ namespace Orchestrator.Tests.Assets
 
         [Theory]
         [InlineData('I', typeof(OrchestrationImage))]
-        [InlineData('T', typeof(OrchestrationAsset))]
-        [InlineData('F', typeof(OrchestrationAsset))]
+        //[InlineData('T', typeof(OrchestrationAsset))]
+        //[InlineData('F', typeof(OrchestrationFile))]
         public async Task GetOrchestrationAsset_ReturnsCorrectType(char family, Type expectedType)
         {
             // Arrange

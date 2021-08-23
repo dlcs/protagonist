@@ -10,6 +10,7 @@ using LazyCache;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Features.Images;
+using Orchestrator.Features.Images.Orchestration.Status;
 
 namespace Orchestrator.Assets
 {
@@ -22,7 +23,7 @@ namespace Orchestrator.Assets
         private readonly IAppCache appCache;
         private readonly CacheSettings cacheSettings;
         private readonly IThumbRepository thumbRepository;
-        private readonly ImageOrchestrationStatusProvider statusProvider;
+        private readonly IImageOrchestrationStatusProvider statusProvider;
         private readonly ILogger<MemoryAssetTracker> logger;
         private readonly AsyncKeyedLock asyncLocker = new();
 
@@ -34,7 +35,7 @@ namespace Orchestrator.Assets
             IAssetRepository assetRepository,
             IAppCache appCache,
             IThumbRepository thumbRepository,
-            ImageOrchestrationStatusProvider statusProvider,
+            IImageOrchestrationStatusProvider statusProvider,
             IOptions<CacheSettings> cacheOptions,
             ILogger<MemoryAssetTracker> logger)
         {
@@ -154,7 +155,7 @@ namespace Orchestrator.Assets
                     {
                         AssetId = assetId,
                         RequiresAuth = asset.RequiresAuth,
-                        S3Location = getImageLocation.Result.S3, // TODO - error handling
+                        S3Location = getImageLocation.Result?.S3, // TODO - error handling
                         Width = asset.Width,
                         Height = asset.Height,
                         OpenThumbs = getOpenThumbs.Result, // TODO - reorganise thumb layout + create missing eventually

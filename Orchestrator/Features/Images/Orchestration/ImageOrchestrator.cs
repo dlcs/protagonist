@@ -9,17 +9,21 @@ using DLCS.Repository.Strategy.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Settings;
 
-namespace Orchestrator.Features.Images
+namespace Orchestrator.Features.Images.Orchestration
 {
+    /// <summary>
+    /// Class that contains logic for copying images from slow object-storage to fast-disk storage
+    /// </summary>
     public class ImageOrchestrator
     {
         private readonly IAssetTracker assetTracker;
         private readonly IOptions<OrchestratorSettings> orchestratorSettings;
         private readonly S3AmbientOriginStrategy s3OriginStrategy;
         private readonly FileSaver fileSaver;
-        private readonly ImageOrchestrationStatusProvider statusProvider;
+        private readonly IImageOrchestrationStatusProvider statusProvider;
         private readonly ILogger<ImageOrchestrator> logger;
         private readonly AsyncKeyedLock asyncLocker = new();
 
@@ -27,7 +31,7 @@ namespace Orchestrator.Features.Images
             IOptions<OrchestratorSettings> orchestratorSettings,
             S3AmbientOriginStrategy s3OriginStrategy,
             FileSaver fileSaver,
-            ImageOrchestrationStatusProvider statusProvider,
+            IImageOrchestrationStatusProvider statusProvider,
             ILogger<ImageOrchestrator> logger)
         {
             this.assetTracker = assetTracker;
@@ -116,46 +120,6 @@ namespace Orchestrator.Features.Images
             }
 
             return updateLock;
-        }
-    }
-    
-    public class ImageOrchestrationStatusProvider
-    {
-        private readonly IOptions<OrchestratorSettings> orchestratorSettings;
-        private readonly AsyncKeyedLock asyncLocker = new();
-        
-        public ImageOrchestrationStatusProvider(
-            IOptions<OrchestratorSettings> orchestratorSettings
-            )
-        {
-            this.orchestratorSettings = orchestratorSettings;
-        }
-        
-        public async Task<OrchestrationStatus> GetOrchestrationStatus(AssetId assetId,
-            CancellationToken cancellationToken = default)
-        {
-            if (DoesFileForAssetExist(assetId)) return OrchestrationStatus.Orchestrated;
-
-            return await IsOrchestrating(assetId, cancellationToken)
-                ? OrchestrationStatus.Orchestrating
-                : OrchestrationStatus.NotOrchestrated;
-        }
-
-        private bool DoesFileForAssetExist(AssetId assetId)
-        {
-            var localPath = GetLocalPath(assetId);
-            return File.Exists(localPath);
-        }
-
-        private string GetLocalPath(AssetId assetId) => orchestratorSettings.Value.GetImageLocalPath(assetId, false);
-
-        private async Task<bool> IsOrchestrating(AssetId assetId, CancellationToken cancellationToken = default)
-        {
-            // How to tell if Orchestrating? Use Asynclocker here?
-            var lockKey = ImageOrchestrationKeys.GetOrchestrationLockKey(assetId);
-            
-            using var updateLock = await asyncLocker.LockAsync(lockKey, TimeSpan.Zero, false, cancellationToken);
-            return !updateLock.HaveLock;
         }
     }
 

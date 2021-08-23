@@ -4,6 +4,7 @@ using DLCS.Mediatr.Behaviours;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
+using Orchestrator.Features.Images.Orchestration;
 
 namespace Orchestrator.Features.Images.Commands
 {

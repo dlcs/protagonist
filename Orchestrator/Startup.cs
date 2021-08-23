@@ -29,6 +29,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images;
+using Orchestrator.Features.Images.Orchestration;
+using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.ReverseProxy;
@@ -73,7 +75,7 @@ namespace Orchestrator
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
                 .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
                 .AddSingleton<ImageOrchestrator>()
-                .AddSingleton<ImageOrchestrationStatusProvider>()
+                .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
                 .AddOriginStrategies()
                 .AddDbContext<DlcsContext>(opts =>
