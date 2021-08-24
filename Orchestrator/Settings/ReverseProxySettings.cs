@@ -29,7 +29,6 @@ namespace Orchestrator.Settings
                 ProxyDestination.Orchestrator => GetAddressForCluster("deliverator"),
                 ProxyDestination.Thumbs => GetAddressForCluster("thumbs"),
                 ProxyDestination.ImageServer => GetAddressForCluster("image_server"),
-                ProxyDestination.CachingProxy => GetAddressForCluster("varnish_cache"),
                 ProxyDestination.S3 => null,
                 ProxyDestination.Unknown => null,
                 _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, null)

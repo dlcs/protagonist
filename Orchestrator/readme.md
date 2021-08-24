@@ -25,7 +25,6 @@ Handle requests for TimeBased assets. Handles authentication and proxies media f
 
 The following routes are defined for YARP to handle:
 
-* img_infojson - handles `GET` requests for image `info.json`, proxied to deliverator
 * img_options - handles any `OPTIONS` requests for images, proxied to deliverator
 * av_infojson - handles `GET` requests for timebased media `info.json` requests, proxied to deliverator
 * av_only - handles `GET` requests for `/iiif-av/{cust}/{space}/{image}` requests, proxied to deliverator as these are info.json requests (without info.json)
@@ -36,10 +35,9 @@ The following routes are defined for YARP to handle:
 
 ## Clusters
 
-4 YARP Clusters are used:
+3 YARP Clusters are used:
 
 * deliverator - legacy DLCS orchestrator implementation.
-* varnish_cache - [varnish cache](https://varnish-cache.org/), sits infront of deliverator.
 * image_server - IIIF image-server.
 * thumbs - Protagonist thumbs service.
 

@@ -117,11 +117,6 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         ImageServer,
         
         /// <summary>
-        /// Caching reverse proxy (Varnish) 
-        /// </summary>
-        CachingProxy,
-        
-        /// <summary>
         /// Proxy response from S3
         /// </summary>
         S3

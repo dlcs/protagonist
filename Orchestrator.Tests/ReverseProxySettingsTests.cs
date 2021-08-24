@@ -54,7 +54,6 @@ namespace Orchestrator.Tests
         [InlineData(ProxyDestination.Orchestrator, "https://orchestrator")]
         [InlineData(ProxyDestination.Thumbs, "https://thumbs")]
         [InlineData(ProxyDestination.ImageServer, "https://image_server")]
-        [InlineData(ProxyDestination.CachingProxy, "https://varnish_cache")]
         public void GetAddressForCluster_ReturnsFirstEntry_ForKnownClusters(ProxyDestination destination,
             string expected)
         {
