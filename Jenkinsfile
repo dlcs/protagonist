@@ -29,6 +29,20 @@ pipeline {
     ]
    }
   }
+  stage('Install') {
+    steps {
+      sh "apt-get update"
+      sh "apt install -y libunwind8 gettext apt-transport-https python3-pip"
+      sh "pip3 install awscli"
+      sh "curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 5.0"
+    }
+  }
+  stage('Test') {
+    steps {
+      sh "dotnet test protagonist.sln --logger trx --filter 'Category!=Database&Category!=Manual&Category!=Integration'"
+      sh "mstest testResultsFile:\"**/*.trx\", keepLongStdio: true"
+    }
+  }
   stage('Image') {
    steps {
     sh "docker build -t ${DOCKER_IMAGE}:latest -f ${DOCKER_FILE} ."

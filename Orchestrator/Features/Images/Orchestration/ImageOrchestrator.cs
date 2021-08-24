@@ -85,6 +85,8 @@ namespace Orchestrator.Features.Images.Orchestration
                 await assetTracker.TrySetOrchestrationStatus(orchestrationImage, OrchestrationStatus.Orchestrated,
                     true, cancellationToken);
             }
+            
+            // TODO - fire orchestration echo event
         }
 
         private async Task SaveImageToFastDisk(OrchestrationImage image, string filePath, CancellationToken cancellationToken)

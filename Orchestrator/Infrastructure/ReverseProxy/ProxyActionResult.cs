@@ -74,7 +74,6 @@ namespace Orchestrator.Infrastructure.ReverseProxy
 
         public StatusCodeResult(HttpStatusCode statusCode)
         {
-            // TODO - handle message/headers? or let those be set in 
             StatusCode = statusCode;
         }
 
