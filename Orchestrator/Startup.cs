@@ -32,6 +32,7 @@ using Orchestrator.Features.Images;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Features.TimeBased;
+using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
@@ -84,13 +85,13 @@ namespace Orchestrator
                 .AddMediatR()
                 .AddHttpContextAccessor();
 
-            var reverseProxySettings = reverseProxySection.Get<ReverseProxySettings>();
+            var baseAddress = reverseProxySection.Get<ReverseProxySettings>()
+                .GetAddressForProxyTarget(ProxyDestination.Orchestrator);
             services
                 .AddHttpClient<IDeliveratorClient, DeliveratorClient>(client =>
                 {
-                    // TODO - add this to all outgoing?
-                    client.DefaultRequestHeaders.Add("x-requested-by", "DLCS Protagonist Yarp");
-                    client.BaseAddress = reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.Orchestrator);
+                    client.DefaultRequestHeaders.WithRequestedBy();
+                    client.BaseAddress = baseAddress;
                 })
                 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false });
             

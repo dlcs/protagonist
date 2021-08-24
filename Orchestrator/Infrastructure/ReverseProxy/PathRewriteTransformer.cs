@@ -33,6 +33,7 @@ namespace Orchestrator.Infrastructure.ReverseProxy
             
             // TODO - handle x-forwarded-* headers?
             proxyRequest.Headers.Host = proxyRequest.RequestUri.Authority;
+            proxyRequest.Headers.WithRequestedBy();
         }
 
         public override ValueTask<bool> TransformResponseAsync(

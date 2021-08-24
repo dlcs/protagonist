@@ -2,7 +2,7 @@
 using Orchestrator.Infrastructure.ReverseProxy;
 using Xunit;
 
-namespace Orchestrator.Tests.ReverseProxy
+namespace Orchestrator.Tests.Infrastructure.ReverseProxy
 {
     public class ProxyActionTests
     {
