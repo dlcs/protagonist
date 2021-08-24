@@ -40,7 +40,7 @@ pipeline {
   stage('Test') {
     steps {
       sh "~/.dotnet/dotnet test protagonist.sln --logger trx --filter 'Category!=Database&Category!=Manual&Category!=Integration'"
-      sh "mstest testResultsFile:\"**/*.trx\", keepLongStdio: true"
+      step([$class: 'MSTestPublisher', testResultsFile:"**/*.trx", failOnError: true, keepLongStdio: true])
     }
   }
   stage('Image') {
