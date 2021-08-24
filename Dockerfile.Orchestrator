@@ -7,6 +7,7 @@ COPY ["DLCS.Core/DLCS.Core.csproj", "DLCS.Core/"]
 COPY ["DLCS.Repository/DLCS.Repository.csproj", "DLCS.Repository/"]
 COPY ["DLCS.Model/DLCS.Model.csproj", "DLCS.Model/"]
 COPY ["DLCS.Web/DLCS.Web.csproj", "DLCS.Web/"]
+COPY ["DLCS.Mediatr/DLCS.Mediatr.csproj", "DLCS.Mediatr/"]
 
 RUN dotnet restore "Orchestrator/Orchestrator.csproj"
 
