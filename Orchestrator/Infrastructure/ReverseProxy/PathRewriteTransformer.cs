@@ -43,7 +43,11 @@ namespace Orchestrator.Infrastructure.ReverseProxy
             // TODO - this will need to be aware of public/not-public assets and set headers accordingly
             base.TransformResponseAsync(httpContext, proxyResponse);
             
-            httpContext.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+            var accessControlAllowOrigin = "Access-Control-Allow-Origin";
+            if (!httpContext.Response.Headers.ContainsKey(accessControlAllowOrigin))
+            {
+                httpContext.Response.Headers.Add(accessControlAllowOrigin, "*");
+            }
 
             return new ValueTask<bool>(true);
         }

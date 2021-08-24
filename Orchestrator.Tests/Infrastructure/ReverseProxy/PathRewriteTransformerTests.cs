@@ -84,7 +84,40 @@ namespace Orchestrator.Tests.Infrastructure.ReverseProxy
             await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com");
             
             // Assert
-            request.Headers.Should().Contain(h => h.Key == "x-requested-by");
+            request.Headers.Should().ContainKey("x-requested-by");
+        }
+
+        [Fact]
+        public async Task TransformResponseAsync_AddsCORSHeader_IfMissing()
+        {
+            // Arrange
+            var context = new DefaultHttpContext();
+            var responseMessage = new HttpResponseMessage();
+            var sut = new PathRewriteTransformer("whatever");
+            
+            // Act
+            await sut.TransformResponseAsync(context, responseMessage);
+            
+            // Assert
+            context.Response.Headers.Should().ContainKey("Access-Control-Allow-Origin")
+                .WhoseValue.Single().Should().Be("*");
+        }
+        
+        [Fact]
+        public async Task TransformResponseAsync_DoesNotChangeCORSHeader_IfAlreadyInResponseFromDownstream()
+        {
+            // Arrange
+            var context = new DefaultHttpContext();
+            var responseMessage = new HttpResponseMessage();
+            responseMessage.Headers.Add("Access-Control-Allow-Origin", "_value_");
+            var sut = new PathRewriteTransformer("whatever");
+            
+            // Act
+            await sut.TransformResponseAsync(context, responseMessage);
+            
+            // Assert
+            context.Response.Headers.Should().ContainKey("Access-Control-Allow-Origin")
+                .WhoseValue.Single().Should().Be("_value_");
         }
     }
 }
