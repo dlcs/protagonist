@@ -39,7 +39,7 @@ pipeline {
   }
   stage('Test') {
     steps {
-      sh "dotnet test protagonist.sln --logger trx --filter 'Category!=Database&Category!=Manual&Category!=Integration'"
+      sh "~/.dotnet/dotnet test protagonist.sln --logger trx --filter 'Category!=Database&Category!=Manual&Category!=Integration'"
       sh "mstest testResultsFile:\"**/*.trx\", keepLongStdio: true"
     }
   }
