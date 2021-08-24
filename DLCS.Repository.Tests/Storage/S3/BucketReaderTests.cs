@@ -74,7 +74,7 @@ namespace DLCS.Repository.Tests.Storage.S3
             var result = await sut.GetObjectFromBucket(objectInBucket);
 
             // Assert
-            result.Stream.Should().Be(Stream.Null);
+            result.Stream.Should().BeSameAs(Stream.Null);
         }
 
         [Theory]
@@ -96,7 +96,7 @@ namespace DLCS.Repository.Tests.Storage.S3
             Func<Task> action = () => sut.GetObjectFromBucket(objectInBucket);
 
             // Assert
-            action.Should().Throw<HttpException>().Which.StatusCode.Should().Be(statusCode);
+            action.Should().ThrowAsync<HttpException>().Result.Which.StatusCode.Should().Be(statusCode);
         }
     }
 }

@@ -89,7 +89,7 @@ namespace DLCS.Repository.Tests.Strategy
             
             // Assert
             httpHandler.CallsMade.Should().Contain(originUri);
-            result.Stream.Should().Be(Stream.Null);
+            result.Stream.Should().BeSameAs(Stream.Null);
             result.IsEmpty.Should().BeTrue();
         }
     }

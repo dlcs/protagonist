@@ -62,7 +62,7 @@ namespace DLCS.Repository.Tests.Strategy
                     bucketReader.GetObjectFromBucket(
                         A<ObjectInBucket>.That.Matches(a => a.ToString() == regionalisedString)))
                 .MustHaveHappened();
-            result.Stream.Should().NotBeNull().And.Should().NotBe(Stream.Null);
+            result.Stream.Should().NotBeNull().And.Subject.Should().NotBeSameAs(Stream.Null);
             result.ContentLength.Should().Be(contentLength);
             result.ContentType.Should().Be(contentType);
         }
@@ -83,7 +83,7 @@ namespace DLCS.Repository.Tests.Strategy
             var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
             
             // Assert
-            result.Stream.Should().NotBeNull().And.Should().NotBe(Stream.Null);
+            result.Stream.Should().NotBeNull().And.Subject.Should().NotBeSameAs(Stream.Null);
             result.ContentLength.Should().BeNull();
             result.ContentType.Should().BeNull();
         }
@@ -100,7 +100,7 @@ namespace DLCS.Repository.Tests.Strategy
             var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
             
             // Assert
-            result.Stream.Should().Be(Stream.Null);
+            result.Stream.Should().BeSameAs(Stream.Null);
             result.IsEmpty.Should().BeTrue();
         }
     }
