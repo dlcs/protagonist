@@ -109,7 +109,7 @@ namespace Orchestrator.Features.Images
         private ProxyImageServerResult GenerateImageResult(OrchestrationImage orchestrationImage,
             ImageAssetDeliveryRequest requestModel)
         {
-            // TODO - this is for IIP image only
+            // NOTE - this is for IIP image only
             var targetPath = orchestratorSettings.Value.GetImageLocalPath(orchestrationImage.AssetId, true);
             var root = orchestratorSettings.Value.Proxy.ImageServerRoot;
             var imageServerPath =

@@ -71,7 +71,6 @@ namespace Orchestrator.Features.TimeBased
                 return;
             }
             
-            // TODO - tidy me
             var proxyAction = proxyActionResult as ProxyActionResult;
             var root = proxyAction.Target != ProxyDestination.S3
                 ? reverseProxySettings.Value.GetAddressForProxyTarget(proxyAction.Target).ToString()
