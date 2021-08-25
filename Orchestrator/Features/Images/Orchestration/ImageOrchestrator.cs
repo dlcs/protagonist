@@ -9,21 +9,25 @@ using DLCS.Repository.Strategy.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images.Orchestration
 {
+    public interface IImageOrchestrator
+    {
+        Task OrchestrateImage(OrchestrationImage orchestrationImage,
+            CancellationToken cancellationToken = default);
+    }
+
     /// <summary>
     /// Class that contains logic for copying images from slow object-storage to fast-disk storage
     /// </summary>
-    public class ImageOrchestrator
+    public class ImageOrchestrator : IImageOrchestrator
     {
         private readonly IAssetTracker assetTracker;
         private readonly IOptions<OrchestratorSettings> orchestratorSettings;
         private readonly S3AmbientOriginStrategy s3OriginStrategy;
         private readonly FileSaver fileSaver;
-        private readonly IImageOrchestrationStatusProvider statusProvider;
         private readonly ILogger<ImageOrchestrator> logger;
         private readonly AsyncKeyedLock asyncLocker = new();
 
@@ -31,28 +35,21 @@ namespace Orchestrator.Features.Images.Orchestration
             IOptions<OrchestratorSettings> orchestratorSettings,
             S3AmbientOriginStrategy s3OriginStrategy,
             FileSaver fileSaver,
-            IImageOrchestrationStatusProvider statusProvider,
             ILogger<ImageOrchestrator> logger)
         {
             this.assetTracker = assetTracker;
             this.orchestratorSettings = orchestratorSettings;
             this.s3OriginStrategy = s3OriginStrategy;
             this.fileSaver = fileSaver;
-            this.statusProvider = statusProvider;
             this.logger = logger;
         }
         
         public async Task OrchestrateImage(OrchestrationImage orchestrationImage,
             CancellationToken cancellationToken = default)
         {
-            // TODO - error handling
-            // Safety check - final check if item is orchestrated before doing any work
-            var orchestrationStatus = await statusProvider.GetOrchestrationStatus(orchestrationImage.AssetId, cancellationToken);
-            if (orchestrationStatus == OrchestrationStatus.Orchestrated)
+            if (orchestrationImage.Status == OrchestrationStatus.Orchestrated)
             {
-                logger.LogInformation("Asset '{AssetId}' is already orchestrated", orchestrationImage.AssetId);
-                await assetTracker.TrySetOrchestrationStatus(orchestrationImage, OrchestrationStatus.Orchestrated,
-                    true, cancellationToken);
+                logger.LogDebug("Asset '{AssetId}' already orchestrated, no-op", orchestrationImage.AssetId);
                 return;
             }
 

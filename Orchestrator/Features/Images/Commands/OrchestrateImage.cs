@@ -27,10 +27,10 @@ namespace Orchestrator.Features.Images.Commands
     
     public class OrchestrateImageHandler : IRequestHandler<OrchestrateImage>
     {
-        private readonly ImageOrchestrator orchestrator;
+        private readonly IImageOrchestrator orchestrator;
         private readonly ILogger<OrchestrateImageHandler> logger;
 
-        public OrchestrateImageHandler(ImageOrchestrator orchestrator,
+        public OrchestrateImageHandler(IImageOrchestrator orchestrator,
             ILogger<OrchestrateImageHandler> logger)
         {
             this.orchestrator = orchestrator;
@@ -39,12 +39,6 @@ namespace Orchestrator.Features.Images.Commands
         
         public async Task<Unit> Handle(OrchestrateImage request, CancellationToken cancellationToken)
         {
-            if (request.Image.Status == OrchestrationStatus.Orchestrated)
-            {
-                logger.LogDebug("Asset '{AssetId}' already orchestrated, aborting", request.Image.AssetId);
-                return Unit.Value;
-            }
-            
             await orchestrator.OrchestrateImage(request.Image, cancellationToken);
             return Unit.Value;
         }

@@ -105,7 +105,7 @@ namespace DLCS.Repository.Assets
             );
             
             await using var stream = (await bucketReader.GetObjectFromBucket(sizesList)).Stream;
-            if (stream == null)
+            if (stream == null || stream == Stream.Null)
             {
                 logger.LogError("Could not find sizes file for asset '{Asset}'", assetId);
                 return null;

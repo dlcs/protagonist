@@ -75,7 +75,7 @@ namespace Orchestrator
                 .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
                 .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
-                .AddSingleton<ImageOrchestrator>()
+                .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
                 .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
                 .AddOriginStrategies()

@@ -1,18 +1,22 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Security;
 using DLCS.Repository.Entities;
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
+using Orchestrator.Assets;
+using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
 using Xunit;
@@ -30,6 +34,7 @@ namespace Orchestrator.Tests.Integration
         private readonly DlcsDatabaseFixture dbFixture;
         private readonly HttpClient httpClient;
         private readonly IAmazonS3 amazonS3;
+        private readonly FakeImageOrchestrator orchestrator = new();
 
         public ImageHandlingTests(ProtagonistAppFactory<Startup> factory, StorageFixture storageFixture)
         {
@@ -43,6 +48,7 @@ namespace Orchestrator.Tests.Integration
                     services
                         .AddSingleton<IForwarderHttpClientFactory, TestProxyHttpClientFactory>()
                         .AddSingleton<IHttpForwarder, TestProxyForwarder>()
+                        .AddSingleton<IImageOrchestrator>(orchestrator)
                         .AddSingleton<TestProxyHandler>();
                 })
                 .CreateClient(new WebApplicationFactoryClientOptions {AllowAutoRedirect = false});
@@ -100,6 +106,60 @@ namespace Orchestrator.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeTrue();
             response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        }
+        
+        [Fact]
+        public async Task GetInfoJson_OrchestratesImage()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJson_OrchestratesImage)}";
+            await dbFixture.DbContext.Images.AddAsync(new Asset
+            {
+                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "",
+                Width = 8000, Height = 8000, Roles = "", Family = 'I', MediaType = "image/jpeg",
+                ThumbnailPolicy = "default"
+            });
+
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            await httpClient.GetAsync($"iiif-img/{id}/info.json");
+
+            // Assert
+            FakeImageOrchestrator.OrchestratedImages.Should().Contain(AssetId.FromString(id));
+        }
+        
+        [Fact]
+        public async Task GetInfoJson_DoesNotOrchestratesImage_IfQueryParamPassed()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJson_DoesNotOrchestratesImage_IfQueryParamPassed)}";
+            await dbFixture.DbContext.Images.AddAsync(new Asset
+            {
+                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "",
+                Width = 8000, Height = 8000, Roles = "", Family = 'I', MediaType = "image/jpeg",
+                ThumbnailPolicy = "default"
+            });
+
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            await httpClient.GetAsync($"iiif-img/{id}/info.json?noOrchestrate=true");
+
+            // Assert
+            FakeImageOrchestrator.OrchestratedImages.Should().NotContain(AssetId.FromString(id));
         }
         
         [Fact]
@@ -262,6 +322,12 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_ImageIsUVThumb_RewritesSizeAndRedirectsToThumbs()
         {
             // Arrange
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = "99/1/test-uv-thumb/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[200,200]]}",
+            });
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/test-uv-thumb",
@@ -311,7 +377,7 @@ namespace Orchestrator.Tests.Integration
         [InlineData("iiif-img/99/1/full/full/full/0/default.jpg", "full")]
         [InlineData("iiif-img/99/1/tile/0,0,1000,1000/200,200/0/default.jpg", "tile")]
         [InlineData("iiif-img/test/1/rewrite_id/0,0,1000,1000/200,200/0/default.jpg", "rewrite_id", "iiif-img/99/1/rewrite_id/0,0,1000,1000/200,200/0/default.jpg")]
-        public async Task Get_RedirectsToVarnish_AsFallThrough(string path, string imageName, string rewrittenPath = null)
+        public async Task Get_RedirectsImageServer_AsFallThrough(string path, string imageName, string rewrittenPath = null)
         {
             // Arrange
             await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -328,14 +394,25 @@ namespace Orchestrator.Tests.Integration
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
-            var expectedPath = new Uri($"http://varnish/{rewrittenPath ?? path}");
-            
+
             // Act
             var response = await httpClient.GetAsync(path);
             var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
             
             // Assert
-            proxyResponse.Uri.Should().Be(expectedPath);
+            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/fcgi-bin/iipsrv.fcgi?IIIF");
+        }
+    }
+    
+    public class FakeImageOrchestrator : IImageOrchestrator
+    {
+        public static List<AssetId> OrchestratedImages { get; } = new();
+
+        public Task OrchestrateImage(OrchestrationImage orchestrationImage,
+            CancellationToken cancellationToken = default)
+        {
+            OrchestratedImages.Add(orchestrationImage.AssetId);
+            return Task.CompletedTask;
         }
     }
 }

@@ -9,10 +9,14 @@ using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using MediatR;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Assets;
+using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.Mediatr;
+using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images.Requests
 {
@@ -22,12 +26,14 @@ namespace Orchestrator.Features.Images.Requests
     public class GetImageInfoJson : IRequest<ImageInfoJsonResponse>, IImageRequest
     {
         public string FullPath { get; }
-        
+        public bool NoOrchestrationOverride { get; }
+
         public ImageAssetDeliveryRequest AssetRequest { get; set; }
 
-        public GetImageInfoJson(string path)
+        public GetImageInfoJson(string path, bool noOrchestrationOverride)
         {
             FullPath = path;
+            NoOrchestrationOverride = noOrchestrationOverride;
         }
     }
 
@@ -62,20 +68,26 @@ namespace Orchestrator.Features.Images.Requests
         private readonly IAssetPathGenerator assetPathGenerator;
         private readonly IAssetRepository assetRepository;
         private readonly IAuthServicesRepository authServicesRepository;
-        private readonly IConfiguration configuration;
+        private readonly IImageOrchestrator orchestrator;
+        private readonly ILogger<GetImageInfoJson> logger;
+        private readonly OrchestratorSettings orchestratorSettings;
 
         public GetImageInfoJsonHandler(
             IAssetTracker assetTracker,
             IAssetPathGenerator assetPathGenerator,
             IAssetRepository assetRepository,
             IAuthServicesRepository authServicesRepository,
-            IConfiguration configuration)
+            IImageOrchestrator orchestrator,
+            IOptions<OrchestratorSettings> orchestratorSettings,
+            ILogger<GetImageInfoJson> logger)
         {
             this.assetTracker = assetTracker;
             this.assetPathGenerator = assetPathGenerator;
             this.assetRepository = assetRepository;
             this.authServicesRepository = authServicesRepository;
-            this.configuration = configuration;
+            this.orchestrator = orchestrator;
+            this.logger = logger;
+            this.orchestratorSettings = orchestratorSettings.Value;
         }
         
         public async Task<ImageInfoJsonResponse> Handle(GetImageInfoJson request, CancellationToken cancellationToken)
@@ -87,16 +99,34 @@ namespace Orchestrator.Features.Images.Requests
                 return ImageInfoJsonResponse.Empty;
             }
 
+            var orchestrationTask =
+                DoOrchestrationIfRequired(asset, request.NoOrchestrationOverride, cancellationToken);
+
             var imageId = GetImageId(request);
 
             if (!asset.RequiresAuth)
             {
-                var infoJson = InfoJsonBuilder.GetImageApi2_1Level1(imageId, asset.Width, asset.Height, asset.OpenThumbs);
+                var infoJson =
+                    InfoJsonBuilder.GetImageApi2_1Level1(imageId, asset.Width, asset.Height, asset.OpenThumbs);
+                await orchestrationTask;
                 return ImageInfoJsonResponse.Open(infoJson);
             }
             
             var authInfoJson = await GetAuthInfoJson(imageId, asset, assetId);
+            await orchestrationTask;
             return ImageInfoJsonResponse.Restricted(authInfoJson);
+        }
+
+        private Task DoOrchestrationIfRequired(OrchestrationImage orchestrationImage, bool noOrchestrationOverride,
+            CancellationToken cancellationToken)
+        {
+            if (noOrchestrationOverride || !orchestratorSettings.OrchestrateOnInfoJson)
+            {
+                return Task.CompletedTask;
+            }
+
+            logger.LogDebug("Info.json starting orchestration for asset {Asset}", orchestrationImage.AssetId);
+            return orchestrator.OrchestrateImage(orchestrationImage, cancellationToken);
         }
 
         private string GetImageId(GetImageInfoJson request)
@@ -119,7 +149,7 @@ namespace Orchestrator.Features.Images.Requests
         private string GenerateInfoJsonServices(AssetId assetId, List<AuthService>? authServices)
         {
             // TODO - fix this with IIIF nuget lib, this is lift + shift from Deliverator
-            var authServicesUriFormat = configuration["AuthServicesUriTemplate"];
+            var authServicesUriFormat = orchestratorSettings.AuthServicesUriTemplate;
             var id = authServicesUriFormat
                 .Replace("{customer}", assetId.Customer.ToString()) // should this be customer Path value?
                 .Replace("{behaviour}", authServices[0].Name);

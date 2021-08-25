@@ -37,6 +37,11 @@ namespace Orchestrator.Settings
         /// Folder template for downloading resources to.
         /// </summary>
         public string ImageFolderTemplateOrchestrator { get; set; }
+        
+        /// <summary>
+        /// If true, requests for info.json will cause image to be orchestrated.
+        /// </summary>
+        public bool OrchestrateOnInfoJson { get; set; }
 
         public ProxySettings Proxy { get; set; }
         
