@@ -283,16 +283,58 @@ namespace IIIF.Tests
         public void GetShape_Correct(int w, int h, ImageShape expected)
             => new Size(w, h).GetShape().Should().Be(expected);
 
-        private static List<TestSizeData> sampleTestData = new List<TestSizeData>
+        [Fact]
+        public void GetSizeIncreasePercent_Correct_SameSize()
+        {
+            // Arrange
+            var large = new Size(100, 200);
+            var small = new Size(100, 200);
+            
+            // Act
+            var difference = Size.GetSizeIncreasePercent(large, small);
+            
+            // Assert
+            difference.Should().Be(0);
+        }
+        
+        [Fact]
+        public void GetSizeIncreasePercent_Correct()
+        {
+            // Arrange
+            var large = new Size(300, 400);
+            var small = new Size(100, 200);
+            
+            // Act
+            var difference = Size.GetSizeIncreasePercent(large, small);
+            
+            // Assert
+            difference.Should().Be(200);
+        }
+        
+        [Fact]
+        public void GetSizeIncreasePercent_Throws_IfSmallerLarger()
+        {
+            // Arrange
+            var large = new Size(300, 400);
+            var small = new Size(100, 800);
+            
+            // Act
+            Action action = () => Size.GetSizeIncreasePercent(large, small);
+            
+            // Assert
+            action.Should().Throw<InvalidOperationException>();
+        }
+
+        private static List<TestSizeData> sampleTestData = new()
         {
             // currW, currH, confW, confH, expectedW, expectedH
-            new TestSizeData(200, 200, 300, 300, 200, 200), // actual smaller than confine
-            new TestSizeData(500, 500, 300, 300, 300, 300), // confined square
-            new TestSizeData(500, 400, 300, 300, 300, 240), // current portrait
-            new TestSizeData(400, 500, 300, 300, 240, 300), // current landscape
-            new TestSizeData(500, 500, 300, 200, 200, 200), // target portrait
-            new TestSizeData(500, 500, 200, 300, 200, 300), // target landscape
-            new TestSizeData(4553, 5668, 200, 200, 161, 200), // a specific rounding issue with Appetiser
+            new(200, 200, 300, 300, 200, 200), // actual smaller than confine
+            new(500, 500, 300, 300, 300, 300), // confined square
+            new(500, 400, 300, 300, 300, 240), // current portrait
+            new(400, 500, 300, 300, 240, 300), // current landscape
+            new(500, 500, 300, 200, 200, 200), // target portrait
+            new(500, 500, 200, 300, 200, 300), // target landscape
+            new(4553, 5668, 200, 200, 161, 200), // a specific rounding issue with Appetiser
         };
         
         // Test data for square confine targets only
