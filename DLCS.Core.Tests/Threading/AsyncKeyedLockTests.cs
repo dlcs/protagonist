@@ -173,5 +173,28 @@ namespace DLCS.Core.Tests.Threading
             calls[1].Should().Be("Quick attain, run slow");
             calls[2].Should().Be("Verify timeout lock doesn't affect normal process");
         }
+
+        [Fact]
+        public async Task CanGetNestedLockForDifferentKey()
+        {
+            var calls = new List<string>();
+
+            using (var firstLock = await sut.LockAsync("first"))
+            {
+                calls.Add("Attained first");
+                firstLock.HaveLock.Should().BeTrue();
+                using (var secondLock = await sut.LockAsync("second"))
+                {
+                    calls.Add("Attained second");
+                    secondLock.HaveLock.Should().BeTrue();
+                }
+                calls.Add("Released second");
+            }
+            
+            calls.Count.Should().Be(3);
+            calls[0].Should().Be("Attained first");
+            calls[1].Should().Be("Attained second");
+            calls[2].Should().Be("Released second");
+        }
     }
 }
