@@ -70,7 +70,7 @@ namespace Orchestrator.Tests.Integration
             var response = await httpClient.GetAsync(path);
 
             // Assert
-            response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+            response.StatusCode.Should().Be(HttpStatusCode.SeeOther);
             response.Headers.Location.Should().Be(expected);
         }
 

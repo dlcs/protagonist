@@ -38,8 +38,12 @@ namespace Orchestrator.Features.Images
         /// <returns></returns>
         [Route("", Name = "image_only")]
         [HttpGet]
-        public RedirectResult Index()
-            => Redirect(HttpContext.Request.Path.Add("/info.json")); // TODO - Make this a 303, seeOther
+        public IActionResult Index()
+        {
+            var location = HttpContext.Request.Path.Add("/info.json");
+            Response.Headers["Location"] = location.Value;
+            return new StatusCodeResult(303);
+        }
 
         /// <summary>
         /// Get info.json file for specified image
