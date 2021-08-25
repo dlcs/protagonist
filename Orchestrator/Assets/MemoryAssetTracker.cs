@@ -69,43 +69,40 @@ namespace Orchestrator.Assets
             OrchestrationImage orchestrationImage, OrchestrationStatus status, bool force = false,
             CancellationToken cancellationToken = default)
         {
+            // NOTE - there is no locking here as this is called from lock in Orchestrator
             var cacheKey = GetCacheKey(orchestrationImage.AssetId);
 
-            using (var updateLock = await asyncLocker.LockAsync(cacheKey, cancellationToken))
+            var current = await GetOrchestrationAsset<OrchestrationImage>(orchestrationImage.AssetId);
+            current.ThrowIfNull(nameof(current));
+
+            if (current.Status == status) return (true, current);
+
+            if (!force && current.Version > orchestrationImage.Version)
             {
-                var current = await GetOrchestrationAsset<OrchestrationImage>(orchestrationImage.AssetId);
-                current.ThrowIfNull(nameof(current));
-
-                if (current.Status == status) return (true, current);
-
-                if (!force && current.Version > orchestrationImage.Version)
-                {
-                    logger.LogDebug("{SaveVersion} of {AssetId} is earlier than {CurrentVersion} save failed",
-                        orchestrationImage.Version, orchestrationImage.AssetId, current.Version);
-                    return (false, current);
-                }
-
-                current.Status = status;
-                current.Version += 1;
-
-                appCache.Add(cacheKey, current, TimeSpan.FromSeconds(cacheSettings.GetTtl()));
-
-                return (true, current);
+                logger.LogDebug("{SaveVersion} of {AssetId} is earlier than {CurrentVersion} save failed",
+                    orchestrationImage.Version, orchestrationImage.AssetId, current.Version);
+                return (false, current);
             }
+
+            current.Status = status;
+            current.Version += 1;
+
+            appCache.Add(cacheKey, current, TimeSpan.FromSeconds(cacheSettings.GetTtl()));
+
+            return (true, current);
         }
 
-        public async Task<OrchestrationAsset> RefreshCachedAsset(AssetId assetId, CancellationToken cancellationToken = default)
+        public async Task<OrchestrationAsset> RefreshCachedAsset(AssetId assetId,
+            CancellationToken cancellationToken = default)
         {
+            // NOTE - there is no locking here as this is called from lock in Orchestrator
             var cacheKey = GetCacheKey(assetId);
 
             var newOrchestrationAsset = await GetOrchestrationAssetFromSource(assetId);
 
-            using (var updateLock = await asyncLocker.LockAsync(cacheKey, cancellationToken))
-            {
-                var current = await appCache.GetAsync<OrchestrationAsset>(cacheKey);
-                newOrchestrationAsset.Version = IsNullAsset(current) ? 0 : current.Version + 1;
-                appCache.Add(cacheKey, current, TimeSpan.FromSeconds(cacheSettings.GetTtl()));
-            }
+            var current = await appCache.GetAsync<OrchestrationAsset>(cacheKey);
+            newOrchestrationAsset.Version = IsNullAsset(current) ? 0 : current.Version + 1;
+            appCache.Add(cacheKey, current, TimeSpan.FromSeconds(cacheSettings.GetTtl()));
 
             return newOrchestrationAsset;
         }
