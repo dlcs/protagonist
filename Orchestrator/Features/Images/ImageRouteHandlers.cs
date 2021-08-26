@@ -2,7 +2,6 @@
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -10,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Orchestrator.Features.Images.Commands;
+using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
@@ -54,17 +53,19 @@ namespace Orchestrator.Features.Images
             var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
                 .CreateLogger(nameof(ImageRouteHandlers));
             var settings = endpoints.ServiceProvider.GetService<IOptions<ReverseProxySettings>>();
-            
+            var orchestrator = endpoints.ServiceProvider.GetService<IImageOrchestrator>();
+
             endpoints.MapGet("/iiif-img/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
             {
                 logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
                 var proxyResponse = await requestHandler.HandleRequest(httpContext);
-                await ProcessResponse(logger, httpContext, forwarder, proxyResponse, settings);
+                await ProcessResponse(logger, httpContext, forwarder, proxyResponse, settings, orchestrator);
             });
         }
         
         private static async Task ProcessResponse(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
-            IProxyActionResult proxyActionResult, IOptions<ReverseProxySettings> reverseProxySettings)
+            IProxyActionResult proxyActionResult, IOptions<ReverseProxySettings> reverseProxySettings,
+            IImageOrchestrator imageOrchestrator)
         {
             if (proxyActionResult is StatusCodeResult statusCodeResult)
             {
@@ -74,7 +75,7 @@ namespace Orchestrator.Features.Images
 
             if (proxyActionResult is ProxyImageServerResult proxyImageServer)
             {
-                await EnsureImageOrchestrated(httpContext, proxyImageServer);
+                await EnsureImageOrchestrated(httpContext, proxyImageServer, imageOrchestrator);
             }
 
             var proxyAction = proxyActionResult as ProxyActionResult; 
@@ -90,14 +91,13 @@ namespace Orchestrator.Features.Images
             }
         }
 
-        private static async Task EnsureImageOrchestrated(HttpContext httpContext, ProxyImageServerResult proxyImageServer)
+        private static async Task EnsureImageOrchestrated(HttpContext httpContext,
+            ProxyImageServerResult proxyImageServer, IImageOrchestrator imageOrchestrator)
         {
             if (proxyImageServer.OrchestrationImage.Status == OrchestrationStatus.Orchestrated) return;
          
-            // Send Mediatr event to copy file from blob-storage to local disk
-            var mediator = httpContext.RequestServices.GetService<IMediator>();
-            var orchestrateImage = new OrchestrateImage(proxyImageServer.OrchestrationImage);
-            await mediator.Send(orchestrateImage, httpContext.RequestAborted);
+            // Orchestrate image
+            await imageOrchestrator.OrchestrateImage(proxyImageServer.OrchestrationImage, httpContext.RequestAborted);
         }
 
         private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
