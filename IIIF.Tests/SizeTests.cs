@@ -308,7 +308,7 @@ namespace IIIF.Tests
             var difference = Size.GetSizeIncreasePercent(large, small);
             
             // Assert
-            difference.Should().Be(200);
+            difference.Should().Be(100);
         }
         
         [Fact]

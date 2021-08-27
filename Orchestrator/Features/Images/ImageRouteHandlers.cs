@@ -108,10 +108,11 @@ namespace Orchestrator.Features.Images
             var transformer = proxyAction.HasPath
                 ? new PathRewriteTransformer(proxyAction.Path, proxyAction.Path.StartsWith("http"))
                 : DefaultTransformer;
-
+            
             var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions,
                 transformer);
 
+            // TODO - spruce up this logging, store startTime.ticks and switch
             // Check if the proxy operation was successful
             if (error != ForwarderError.None)
             {

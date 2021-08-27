@@ -143,8 +143,7 @@ namespace DLCS.Repository.Assets
             // if upscaling, verify % difference isn't too great
             if ((maxDifference ?? 0) > 0 && idealSize.MaxDimension > toResize.MaxDimension)
             {
-                var difference = (idealSize.MaxDimension / (double)toResize.MaxDimension) * 100;
-                if (difference > maxDifference!.Value)
+                if (Size.GetSizeIncreasePercent(idealSize, toResize) > maxDifference!.Value)
                 {
                     logger.LogDebug("The next smallest thumbnail {ToResize} breaks the threshold for '{Path}'",
                         toResize.ToString(), imageRequest.OriginalPath);

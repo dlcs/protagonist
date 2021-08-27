@@ -28,6 +28,7 @@ namespace Orchestrator.Settings
             {
                 ProxyDestination.Orchestrator => GetAddressForCluster("deliverator"),
                 ProxyDestination.Thumbs => GetAddressForCluster("thumbs"),
+                ProxyDestination.ResizeThumbs => GetAddressForCluster("thumbresize"),
                 ProxyDestination.ImageServer => GetAddressForCluster("image_server"),
                 ProxyDestination.S3 => null,
                 ProxyDestination.Unknown => null,

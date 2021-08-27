@@ -111,6 +111,11 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         Thumbs,
         
         /// <summary>
+        /// Resize thumbs services, for handling requests for thumbs that are resized from pre-generated version
+        /// </summary>
+        ResizeThumbs,
+        
+        /// <summary>
         /// Image-server/image-server cluster
         /// </summary>
         ImageServer,

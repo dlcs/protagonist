@@ -345,7 +345,7 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_ImageIsKnownThumb_RedirectsToThumbs()
+        public async Task Get_ImageIsExactThumbMatch_RedirectsToThumbs()
         {
             // Arrange
             await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -366,6 +366,153 @@ namespace Orchestrator.Tests.Integration
             
             // Act
             var response = await httpClient.GetAsync("iiif-img/99/1/known-thumb/full/!200,200/0/default.jpg");
+            var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+            
+            // Assert
+            proxyResponse.Uri.Should().Be(expectedPath);
+        }
+
+        [Fact]
+        public async Task Get_FullRegion_LargerThumbExists_RedirectsToResizeThumbs()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_FullRegion_LargerThumbExists_RedirectsToResizeThumbs)}";
+            
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[400,400], [200,200]]}",
+            });
+
+            await dbFixture.DbContext.Images.AddAsync(new Asset
+            {
+                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
+                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                ThumbnailPolicy = "default"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            var expectedPath = new Uri($"http://thumbresize/thumbs/{id}/full/!123,123/0/default.jpg");
+            
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/{id}/full/!123,123/0/default.jpg");
+            var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+            
+            // Assert
+            proxyResponse.Uri.Should().Be(expectedPath);
+        }
+        
+        [Fact]
+        public async Task Get_FullRegion_SmallerThumbExists_NoMatchingUpscaleConfig_RedirectsToImageServer()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_FullRegion_SmallerThumbExists_NoMatchingUpscaleConfig_RedirectsToImageServer)}";
+            
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[400,400], [200,200]]}",
+            });
+
+            await dbFixture.DbContext.Images.AddAsync(new Asset
+            {
+                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
+                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                ThumbnailPolicy = "default"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/{id}/full/!800,800/0/default.jpg");
+            var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+            
+            // Assert
+            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/fcgi-bin/iipsrv.fcgi?IIIF");
+        }
+        
+        [Fact]
+        public async Task Get_FullRegion_NoOpenThumbs_RedirectsToImageServer()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_FullRegion_NoOpenThumbs_RedirectsToImageServer)}";
+            
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": []}",
+            });
+
+            await dbFixture.DbContext.Images.AddAsync(new Asset
+            {
+                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
+                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                ThumbnailPolicy = "default"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/{id}/full/!800,800/0/default.jpg");
+            var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+            
+            // Assert
+            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/fcgi-bin/iipsrv.fcgi?IIIF");
+        }
+        
+        [Fact]
+        public async Task Get_FullRegion_HasSmallerThumb_MatchesUpscaleRegex_ThresholdTooLarge_RedirectsToImageServer()
+        {
+            // Arrange
+            var id = $"99/1/upscale{nameof(Get_FullRegion_HasSmallerThumb_MatchesUpscaleRegex_ThresholdTooLarge_RedirectsToImageServer)}";
+            
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[300,300]]}",
+            });
+
+            await dbFixture.DbContext.Images.AddAsync(new Asset
+            {
+                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
+                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                ThumbnailPolicy = "default"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/{id}/full/!800,800/0/default.jpg");
+            var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+            
+            // Assert
+            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/fcgi-bin/iipsrv.fcgi?IIIF");
+        }
+        
+        [Fact]
+        public async Task Get_FullRegion_HasSmallerThumb_MatchesUpscaleRegex_WithinThreshold_RedirectsToResizeThumbs()
+        {
+            // Arrange
+            var id = $"99/1/upscale{nameof(Get_FullRegion_HasSmallerThumb_MatchesUpscaleRegex_WithinThreshold_RedirectsToResizeThumbs)}";
+            
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[300,300]]}",
+            });
+
+            await dbFixture.DbContext.Images.AddAsync(new Asset
+            {
+                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
+                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                ThumbnailPolicy = "default"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            var expectedPath = new Uri($"http://thumbresize/thumbs/{id}/full/!600,600/0/default.jpg");
+            
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/{id}/full/!600,600/0/default.jpg");
             var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
             
             // Assert

@@ -144,9 +144,8 @@ namespace IIIF
             var largeMax = largerSize.MaxDimension;
             var smallMax = smallerSize.MaxDimension;
             if (smallMax > largeMax) throw new InvalidOperationException("Larger size must be larger than smaller");
-            if (smallMax == largeMax) return 0;
             
-            return (largeMax / (double)smallMax) * 100;
+            return ((largeMax / (double)smallMax) - 1) * 100;
         }
 
         /// <summary>

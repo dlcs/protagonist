@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using DLCS.Core.Types;
 using DLCS.Model.Templates;
 using DLCS.Repository.Settings;
@@ -89,5 +90,36 @@ namespace Orchestrator.Settings
         /// The root URI of the image server
         /// </summary>
         public string ImageServerRoot { get; set; }
+        
+        /// <summary>
+        /// Whether resizing thumbs is supported
+        /// </summary>
+        public bool CanResizeThumbs { get; set; }
+        
+        /// <summary>
+        /// Get the root path that thumb handler is listening on
+        /// </summary>
+        public string ThumbResizePath { get; set; } = "thumbs";
+
+        /// <summary>
+        /// A collection of resize config for serving resized thumbs rather than handling requests via image-server
+        /// </summary>
+        public Dictionary<string, ThumbUpscaleConfig> ThumbUpscaleConfig { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Represents resize logic for a set of assets
+    /// </summary>
+    public class ThumbUpscaleConfig
+    {
+        /// <summary>
+        /// Regex to validate image Id against, the entire asset Id will be used (e.g. 2/2/my-image-name)
+        /// </summary>
+        public string AssetIdRegex { get; set; }
+
+        /// <summary>
+        /// The maximum % size difference for upscaling.
+        /// </summary>
+        public int UpscaleThreshold { get; set; }
     }
 }
