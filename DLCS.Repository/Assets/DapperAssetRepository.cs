@@ -1,9 +1,8 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Dapper;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Repository.Settings;
+using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -36,14 +35,12 @@ namespace DLCS.Repository.Assets
         public async Task<Asset?> GetAsset(string id)
         {
             var key = $"asset:{id}";
-            return await appCache.GetOrAddAsync(key, async entry =>
+            return await appCache.GetOrAddAsync(key, async () =>
             {
                 logger.LogInformation("Refreshing assetCache from database {Asset}", id);
                 await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
                 return await connection.QuerySingleOrDefaultAsync<Asset>(AssetSql, new { Id = id });
-            });
+            }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short));
         }
 
         public Task<Asset?> GetAsset(AssetId id)

@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Customer;
-using DLCS.Repository.Settings;
+using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -60,16 +59,15 @@ namespace DLCS.Repository.Customers
         private async Task<IEnumerable<CustomerOriginStrategy>> GetStrategiesForCustomer(int customer)
         {
             var key = $"OriginStrategy:{customer}";
-            return await appCache.GetOrAddAsync(key, async entry =>
+            return await appCache.GetOrAddAsync(key, async () =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl());
                 logger.LogInformation("Refreshing CustomerOriginStrategy from database for customer {customer}",
                     customer);
 
                 var origins = await GetCustomerOriginStrategiesFromDb(customer);
                 origins.Add(GetPortalOriginStrategy(customer));
                 return origins;
-            });
+            }, cacheSettings.GetMemoryCacheOptions());
         }
 
         protected abstract Task<List<CustomerOriginStrategy>> GetCustomerOriginStrategiesFromDb(int customer);

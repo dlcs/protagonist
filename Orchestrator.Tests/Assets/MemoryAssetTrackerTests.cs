@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Repository.Caching;
 using DLCS.Repository.Settings;
 using FakeItEasy;
 using FluentAssertions;

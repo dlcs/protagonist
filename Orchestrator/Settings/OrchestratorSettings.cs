@@ -2,6 +2,7 @@
 using System.IO;
 using DLCS.Core.Types;
 using DLCS.Model.Templates;
+using DLCS.Repository.Caching;
 using DLCS.Repository.Settings;
 
 namespace Orchestrator.Settings

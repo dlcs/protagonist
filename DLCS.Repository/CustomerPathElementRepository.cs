@@ -1,10 +1,10 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using DLCS.Model.Customer;
 using DLCS.Model.PathElements;
+using DLCS.Repository.Caching;
 using DLCS.Repository.Collections;
-using DLCS.Repository.Settings;
 using LazyCache;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -63,12 +63,11 @@ namespace DLCS.Repository
         private Task<ReadOnlyMap<string, int>> EnsureDictionary()
         {
             const string key = "CustomerPathElementRepository_CustomerLookup";
-            return appCache.GetOrAddAsync(key, async entry =>
+            return appCache.GetOrAddAsync(key, async () =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Long));
                 logger.LogDebug("refreshing customer name/id lookup from database");
                 return new ReadOnlyMap<string, int>(await customerRepository.GetCustomerIdLookup());
-            });
+            }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.High));
         }
     }
 }

@@ -7,6 +7,7 @@ using DLCS.Model.Security;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Security;
 using DLCS.Repository.Settings;
@@ -18,6 +19,8 @@ using DLCS.Web.Configuration;
 using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
+using LazyCache;
+using LazyCache.Providers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -25,6 +28,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
@@ -51,15 +55,21 @@ namespace Orchestrator
         public void ConfigureServices(IServiceCollection services)
         {
             var reverseProxySection = configuration.GetSection("ReverseProxy");
+            var cachingSection = configuration.GetSection("Caching");
             services
                 .Configure<OrchestratorSettings>(configuration)
                 .Configure<ThumbsSettings>(configuration.GetSection("Thumbs"))
                 .Configure<ProxySettings>(configuration.GetSection("Proxy"))
-                .Configure<CacheSettings>(configuration.GetSection("Caching"))
+                .Configure<CacheSettings>(cachingSection)
                 .Configure<ReverseProxySettings>(reverseProxySection);
             
-            // TODO - configure memoryCache
+            var cacheSettings = cachingSection.Get<CacheSettings>();
             services
+                .AddMemoryCache(memoryCacheOptions =>
+                {
+                    memoryCacheOptions.SizeLimit = cacheSettings.MemoryCacheSizeLimit;
+                    memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
+                })
                 .AddLazyCache()
                 .AddSingleton<ICustomerRepository, CustomerRepository>()
                 .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()

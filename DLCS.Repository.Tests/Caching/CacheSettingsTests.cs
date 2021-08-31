@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
-using DLCS.Repository.Settings;
+using DLCS.Repository.Caching;
 using FluentAssertions;
 using Xunit;
 
-namespace DLCS.Repository.Tests.Settings
+namespace DLCS.Repository.Tests.Caching
 {
     public class CacheSettingsTests
     {

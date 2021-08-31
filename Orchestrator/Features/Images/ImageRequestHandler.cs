@@ -35,9 +35,10 @@ namespace Orchestrator.Features.Images
         {
             this.orchestratorSettings = orchestratorSettings;
 
-            upscaleConfig = orchestratorSettings.Value.Proxy.ThumbUpscaleConfig
-                .Where(kvp => kvp.Value.UpscaleThreshold > 0)
-                .ToDictionary(kvp => kvp.Key, kvp => new CompiledRegexThumbUpscaleConfig(kvp.Value));
+            upscaleConfig = orchestratorSettings.Value.Proxy?.ThumbUpscaleConfig?
+                                .Where(kvp => kvp.Value.UpscaleThreshold > 0)
+                                .ToDictionary(kvp => kvp.Key, kvp => new CompiledRegexThumbUpscaleConfig(kvp.Value)) ??
+                            new Dictionary<string, CompiledRegexThumbUpscaleConfig>();
             haveUpscaleRules = upscaleConfig.Count > 0;
         }
 

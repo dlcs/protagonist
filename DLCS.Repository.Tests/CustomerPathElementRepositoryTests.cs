@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DLCS.Model.Customer;
 using DLCS.Model.PathElements;
+using DLCS.Repository.Caching;
 using DLCS.Repository.Settings;
 using FakeItEasy;
 using FluentAssertions;

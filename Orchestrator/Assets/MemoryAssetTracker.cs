@@ -2,14 +2,14 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
-using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Repository.Caching;
 using DLCS.Repository.Settings;
 using LazyCache;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.Features.Images;
 using Orchestrator.Features.Images.Orchestration.Status;
 
 namespace Orchestrator.Assets
@@ -25,7 +25,6 @@ namespace Orchestrator.Assets
         private readonly IThumbRepository thumbRepository;
         private readonly IImageOrchestrationStatusProvider statusProvider;
         private readonly ILogger<MemoryAssetTracker> logger;
-        private readonly AsyncKeyedLock asyncLocker = new();
 
         // Null object to store in cache for short duration
         private static readonly OrchestrationAsset NullOrchestrationAsset =
@@ -87,7 +86,7 @@ namespace Orchestrator.Assets
             current.Status = status;
             current.Version += 1;
 
-            appCache.Add(cacheKey, current, TimeSpan.FromSeconds(cacheSettings.GetTtl()));
+            appCache.CacheProvider.Set(cacheKey, current, cacheSettings.GetMemoryCacheOptions());
 
             return (true, current);
         }
@@ -116,14 +115,13 @@ namespace Orchestrator.Assets
                 var orchestrationAsset = await GetOrchestrationAssetFromSource(assetId);
                 if (orchestrationAsset != null)
                 {
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl());
                     return orchestrationAsset;
                 }
 
                 logger.LogInformation("Asset {AssetId} not found, caching null object", assetId);
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
                 return NullOrchestrationAsset;
-            });
+            }, cacheSettings.GetMemoryCacheOptions());
         }
 
         private async Task<OrchestrationAsset?> GetOrchestrationAssetFromSource(AssetId assetId)
