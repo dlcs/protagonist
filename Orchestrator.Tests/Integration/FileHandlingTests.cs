@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Amazon.S3;
 using DLCS.Model.Assets;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Orchestrator.Tests.Integration.Infrastructure;

@@ -9,6 +9,7 @@ using DLCS.Repository.Strategy.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Infrastructure;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images.Orchestration
@@ -28,6 +29,7 @@ namespace Orchestrator.Features.Images.Orchestration
         private readonly IOptions<OrchestratorSettings> orchestratorSettings;
         private readonly S3AmbientOriginStrategy s3OriginStrategy;
         private readonly FileSaver fileSaver;
+        private readonly IDlcsApiClient dlcsApiClient;
         private readonly ILogger<ImageOrchestrator> logger;
         private readonly AsyncKeyedLock asyncLocker = new();
 
@@ -35,25 +37,28 @@ namespace Orchestrator.Features.Images.Orchestration
             IOptions<OrchestratorSettings> orchestratorSettings,
             S3AmbientOriginStrategy s3OriginStrategy,
             FileSaver fileSaver,
+            IDlcsApiClient dlcsApiClient,
             ILogger<ImageOrchestrator> logger)
         {
             this.assetTracker = assetTracker;
             this.orchestratorSettings = orchestratorSettings;
             this.s3OriginStrategy = s3OriginStrategy;
             this.fileSaver = fileSaver;
+            this.dlcsApiClient = dlcsApiClient;
             this.logger = logger;
         }
         
         public async Task OrchestrateImage(OrchestrationImage orchestrationImage,
             CancellationToken cancellationToken = default)
         {
+            var assetId = orchestrationImage.AssetId;
             if (orchestrationImage.Status == OrchestrationStatus.Orchestrated)
             {
-                logger.LogDebug("Asset '{AssetId}' already orchestrated, no-op", orchestrationImage.AssetId);
+                logger.LogDebug("Asset '{AssetId}' already orchestrated, no-op", assetId);
                 return;
             }
 
-            using (var updateLock = await GetLock(orchestrationImage.AssetId, cancellationToken))
+            using (var updateLock = await GetLock(assetId, cancellationToken))
             {
                 var (saveSuccess, currentOrchestrationImage) =
                     await assetTracker.TrySetOrchestrationStatus(orchestrationImage, OrchestrationStatus.Orchestrating,
@@ -63,19 +68,26 @@ namespace Orchestrator.Features.Images.Orchestration
                 {
                     // Previous lock holder has orchestrated image, abort.
                     logger.LogDebug("Asset '{AssetId}' lock attained but image orchestrated",
-                        orchestrationImage.AssetId);
+                        assetId);
                     return;
                 }
                 
+                // TODO - should this be done prior to entering the lock?
                 if (string.IsNullOrEmpty(orchestrationImage.S3Location))
                 {
-                    logger.LogWarning("Asset '{AssetId}' has no s3 location, resyncing", orchestrationImage.AssetId);
+                    logger.LogWarning("Asset '{AssetId}' has no s3 location, reingesting", assetId);
                     
-                    throw new NotImplementedException("Resync asset and refresh cached version");
-                    // TODO - call /resync and refresh cache
+                    if (!await dlcsApiClient.ReingestAsset(assetId))
+                    {
+                        logger.LogWarning("Error reingesting asset '{AssetId}'", assetId);
+                        throw new ApplicationException($"Unable to ingest Asset '{assetId}' from origin");
+                    }
+
+                    orchestrationImage = await assetTracker.RefreshCachedAsset<OrchestrationImage>(assetId);
+
                 }
 
-                var targetPath = orchestratorSettings.Value.GetImageLocalPath(orchestrationImage.AssetId, false);
+                var targetPath = orchestratorSettings.Value.GetImageLocalPath(assetId, false);
                 await SaveImageToFastDisk(orchestrationImage, targetPath, cancellationToken);
 
                 // Save status as Orchestrated

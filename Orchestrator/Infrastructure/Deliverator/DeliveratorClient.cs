@@ -8,7 +8,7 @@ using DLCS.Web.Requests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 
-namespace Orchestrator.Infrastructure.ReverseProxy
+namespace Orchestrator.Infrastructure.Deliverator
 {
     public interface IDeliveratorClient
     {

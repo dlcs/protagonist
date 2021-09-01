@@ -5,9 +5,7 @@ using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository.Caching;
-using DLCS.Repository.Settings;
 using LazyCache;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Features.Images.Orchestration.Status;
@@ -86,13 +84,13 @@ namespace Orchestrator.Assets
             current.Status = status;
             current.Version += 1;
 
-            appCache.CacheProvider.Set(cacheKey, current, cacheSettings.GetMemoryCacheOptions());
+            appCache.Add(cacheKey, current, cacheSettings.GetMemoryCacheOptions());
 
             return (true, current);
         }
 
-        public async Task<OrchestrationAsset> RefreshCachedAsset(AssetId assetId,
-            CancellationToken cancellationToken = default)
+        public async Task<T?> RefreshCachedAsset<T>(AssetId assetId)
+            where T : OrchestrationAsset
         {
             // NOTE - there is no locking here as this is called from lock in Orchestrator
             var cacheKey = GetCacheKey(assetId);
@@ -101,9 +99,9 @@ namespace Orchestrator.Assets
 
             var current = await appCache.GetAsync<OrchestrationAsset>(cacheKey);
             newOrchestrationAsset.Version = IsNullAsset(current) ? 0 : current.Version + 1;
-            appCache.Add(cacheKey, current, TimeSpan.FromSeconds(cacheSettings.GetTtl()));
+            appCache.Add(cacheKey, current, cacheSettings.GetMemoryCacheOptions());
 
-            return newOrchestrationAsset;
+            return newOrchestrationAsset as T;
         }
 
         private async Task<OrchestrationAsset> GetOrchestrationAssetInternal(AssetId assetId)

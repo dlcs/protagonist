@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Collections;

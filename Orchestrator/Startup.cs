@@ -1,7 +1,8 @@
 using System.Net.Http;
 using Amazon.S3;
+using DLCS.Core.Encryption;
 using DLCS.Model.Assets;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Model.Security;
 using DLCS.Model.Storage;
@@ -37,6 +38,7 @@ using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
+using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
@@ -71,12 +73,13 @@ namespace Orchestrator
                     memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
                 })
                 .AddLazyCache()
-                .AddSingleton<ICustomerRepository, CustomerRepository>()
+                .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
                 .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
                 .AddSingleton<IAssetRepository, DapperAssetRepository>()
                 .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
                 .AddSingleton<TimeBasedRequestHandler>()
+                .AddSingleton<IEncryption, SHA256>()
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>()
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
@@ -95,16 +98,24 @@ namespace Orchestrator
                 .AddMediatR()
                 .AddHttpContextAccessor();
 
-            var baseAddress = reverseProxySection.Get<ReverseProxySettings>()
+            var orchestratorAddress = reverseProxySection.Get<ReverseProxySettings>()
                 .GetAddressForProxyTarget(ProxyDestination.Orchestrator);
             services
                 .AddHttpClient<IDeliveratorClient, DeliveratorClient>(client =>
                 {
                     client.DefaultRequestHeaders.WithRequestedBy();
-                    client.BaseAddress = baseAddress;
+                    client.BaseAddress = orchestratorAddress;
                 })
                 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false });
-            
+
+            var apiRoot = configuration.Get<OrchestratorSettings>().ApiRoot;
+            services
+                .AddHttpClient<IDlcsApiClient, DeliveratorApiClient>(client =>
+                {
+                    client.DefaultRequestHeaders.WithRequestedBy();
+                    client.BaseAddress = apiRoot;
+                });
+
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
             services.Configure<ForwardedHeadersOptions>(opts =>
             {

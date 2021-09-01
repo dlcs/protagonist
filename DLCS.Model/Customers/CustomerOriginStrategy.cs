@@ -1,6 +1,6 @@
 ﻿#nullable disable
 
-namespace DLCS.Model.Customer
+namespace DLCS.Model.Customers
 {
     public partial class CustomerOriginStrategy
     {

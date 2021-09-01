@@ -2,7 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.Storage;
 using DLCS.Repository.Strategy;
 using FakeItEasy;

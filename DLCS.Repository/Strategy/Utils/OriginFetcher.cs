@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Repository.Strategy.DependencyInjection;
 
 namespace DLCS.Repository.Strategy.Utils

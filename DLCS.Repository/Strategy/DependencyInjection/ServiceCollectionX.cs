@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Net.Http;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Repository.Strategy.Utils;
 using Microsoft.Extensions.DependencyInjection;
 

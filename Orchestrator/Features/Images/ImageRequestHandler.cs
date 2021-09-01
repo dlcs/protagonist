@@ -93,7 +93,7 @@ namespace Orchestrator.Features.Images
                 var canHandleByThumbResponse = CanRequestBeHandledByThumb(assetRequest, orchestrationImage);
                 if (canHandleByThumbResponse.CanHandle)
                 {
-                    Logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs. IsResize: {}",
+                    Logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs. IsResize: {IsResize}",
                         httpContext.Request.Path, canHandleByThumbResponse.IsResize);
                     
                     var pathReplacement = canHandleByThumbResponse.IsResize

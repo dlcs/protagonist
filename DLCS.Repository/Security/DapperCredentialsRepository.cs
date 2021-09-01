@@ -2,7 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.Security;
 using DLCS.Model.Storage;
 using DLCS.Repository.Caching;

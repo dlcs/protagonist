@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.Security;
 using Microsoft.Extensions.Logging;
 

@@ -42,9 +42,10 @@ namespace Orchestrator.Assets
         /// Refresh the cached OrchestrationAsset
         /// </summary>
         /// <param name="assetId">Id of asset to get data for.</param>
-        /// <param name="cancellationToken">Async CancellationToken</param>
+        /// <typeparam name="T">Type of <see cref="OrchestrationAsset"/> to return</typeparam>
         /// <returns>Updated OrchestrationAsset</returns>
-        Task<OrchestrationAsset> RefreshCachedAsset(AssetId assetId, CancellationToken cancellationToken = default);
+        Task<T?> RefreshCachedAsset<T>(AssetId assetId)
+            where T : OrchestrationAsset;
     }
 
     /// <summary>

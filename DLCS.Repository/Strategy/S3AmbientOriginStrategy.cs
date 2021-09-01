@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.Storage;
 using Microsoft.Extensions.Logging;
 

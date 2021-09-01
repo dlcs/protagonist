@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 
 namespace DLCS.Repository.Strategy
 {

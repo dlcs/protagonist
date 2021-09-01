@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
+using DLCS.Model.Customers;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using DotNet.Testcontainers.Containers.Builders;
@@ -70,7 +71,7 @@ namespace Test.Helpers.Integration
                 Id = customer,
                 DisplayName = "TestUser",
                 Name = "test",
-                Keys = ""
+                Keys = Array.Empty<string>()
             });
             await DbContext.Spaces.AddAsync(new Space
                 { Created = DateTime.Now, Id = 1, Customer = customer, Name = "space-1" });

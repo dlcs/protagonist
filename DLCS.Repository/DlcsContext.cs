@@ -1,6 +1,8 @@
-﻿using DLCS.Core.Enum;
+﻿using System;
+using System.Linq;
+using DLCS.Core.Enum;
 using DLCS.Model.Assets;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.Security;
 using DLCS.Repository.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -177,7 +179,10 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Keys)
                     .IsRequired()
-                    .HasMaxLength(1000);
+                    .HasMaxLength(1000)
+                    .HasConversion(
+                        v => string.Join(",", v),
+                        v => v.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray());
 
                 entity.Property(e => e.Name)
                     .IsRequired()

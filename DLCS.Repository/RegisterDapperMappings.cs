@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using Dapper;
 using DLCS.Core.Enum;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 
 namespace DLCS.Repository
 {

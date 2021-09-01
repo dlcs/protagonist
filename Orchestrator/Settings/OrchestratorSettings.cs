@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using DLCS.Core.Types;
 using DLCS.Model.Templates;
 using DLCS.Repository.Caching;
-using DLCS.Repository.Settings;
 
 namespace Orchestrator.Settings
 {
@@ -44,6 +44,16 @@ namespace Orchestrator.Settings
         /// If true, requests for info.json will cause image to be orchestrated.
         /// </summary>
         public bool OrchestrateOnInfoJson { get; set; }
+        
+        /// <summary>
+        /// String used for salting requests to API
+        /// </summary>
+        public string ApiSalt { get; set; }
+        
+        /// <summary>
+        /// Root URL for dlcs api
+        /// </summary>
+        public Uri ApiRoot { get; set; }
 
         public ProxySettings Proxy { get; set; }
         
