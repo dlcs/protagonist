@@ -548,6 +548,9 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             proxyResponse.Uri.ToString().Should().StartWith("http://image-server/fcgi-bin/iipsrv.fcgi?IIIF");
+            response.Headers.CacheControl.Public.Should().BeTrue();
+            response.Headers.CacheControl.SharedMaxAge.Should().Be(TimeSpan.FromDays(28));
+            response.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromDays(28));
         }
     }
     

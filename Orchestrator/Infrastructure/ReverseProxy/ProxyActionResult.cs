@@ -22,8 +22,9 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         
         public ProxyImageServerResult(
             OrchestrationImage orchestrationImage,
+            bool requiresAuth,
             ProxyDestination target,
-            string? path = null) : base(target, path)
+            string? path = null) : base(target, requiresAuth, path)
         {
             OrchestrationImage = orchestrationImage;
         }
@@ -49,10 +50,13 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         /// </summary>
         public bool HasPath => !string.IsNullOrWhiteSpace(Path);
         
+        public bool RequiresAuth { get; }
+        
         // TODO - differentiate between full + part path?
-        public ProxyActionResult(ProxyDestination target, string? path = null)
+        public ProxyActionResult(ProxyDestination target, bool requiresAuth, string? path = null)
         {
             Target = target;
+            RequiresAuth = requiresAuth;
             Path = !string.IsNullOrWhiteSpace(path) && path[0] == '/' ? path[1..] : path;
         }
     }

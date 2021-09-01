@@ -73,6 +73,7 @@ namespace Orchestrator.Features.Images
                 return;
             }
 
+            bool requiresAuth = false;
             if (proxyActionResult is ProxyImageServerResult proxyImageServer)
             {
                 await EnsureImageOrchestrated(httpContext, proxyImageServer, imageOrchestrator);
@@ -106,7 +107,10 @@ namespace Orchestrator.Features.Images
             var root = reverseProxySettings.Value.GetAddressForProxyTarget(proxyAction.Target).ToString();
 
             var transformer = proxyAction.HasPath
-                ? new PathRewriteTransformer(proxyAction.Path, proxyAction.Path.StartsWith("http"))
+                ? new PathRewriteTransformer(
+                    proxyAction.Path, 
+                    proxyAction.Target, 
+                    proxyAction.Path.StartsWith("http"))
                 : DefaultTransformer;
             
             var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions,

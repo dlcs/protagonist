@@ -74,7 +74,7 @@ namespace Orchestrator.Features.TimeBased
                 return new StatusCodeResult(HttpStatusCode.OK);
             }
             
-            return new ProxyActionResult(ProxyDestination.S3, s3Path);
+            return new ProxyActionResult(ProxyDestination.S3, asset.RequiresAuth, s3Path);
         }
 
         private async Task<bool> IsAuthenticated(AssetId assetId, HttpContext httpContext)
