@@ -84,7 +84,6 @@ namespace Orchestrator.Features.Images.Orchestration
                     }
 
                     orchestrationImage = await assetTracker.RefreshCachedAsset<OrchestrationImage>(assetId);
-
                 }
 
                 var targetPath = orchestratorSettings.Value.GetImageLocalPath(assetId, false);
