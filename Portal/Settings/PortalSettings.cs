@@ -3,6 +3,11 @@
     public class PortalSettings
     {
         public string LoginSalt { get; set; }
+        
+        /// <summary>
+        /// String used for salting requests to API
+        /// </summary>
+        public string ApiSalt { get; set; }
 
         /// <summary>
         /// URL for viewing manifest in UniversalViewer

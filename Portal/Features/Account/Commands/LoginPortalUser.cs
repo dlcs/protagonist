@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
@@ -22,10 +23,6 @@ namespace Portal.Features.Account.Commands
     {
         public string Username { get; set; }
         public string Password { get; set; }
-        
-        public string ApiKey { get; set; }
-        
-        public string ApiSecret { get; set; }
     }
     
     public class LoginPortalUserHandler : IRequestHandler<LoginPortalUser, bool>
@@ -35,19 +32,22 @@ namespace Portal.Features.Account.Commands
         private readonly IEncryption encryption;
         private readonly ILogger<LoginPortalUserHandler> logger;
         private readonly PortalSettings options;
+        private readonly DeliveratorApiAuth deliveratorApiAuth; // TODO - will become apiAuth
 
         public LoginPortalUserHandler(
             IHttpContextAccessor httpContextAccessor, 
             DlcsContext dbContext, 
             IOptions<PortalSettings> options,
             IEncryption encryption,
-            ILogger<LoginPortalUserHandler> logger)
+            ILogger<LoginPortalUserHandler> logger,
+            DeliveratorApiAuth deliveratorApiAuth)
         {
             this.httpContextAccessor = httpContextAccessor;
             this.dbContext = dbContext;
             this.encryption = encryption;
             this.logger = logger;
             this.options = options.Value;
+            this.deliveratorApiAuth = deliveratorApiAuth;
         }
 
         public async Task<bool> Handle(LoginPortalUser request, CancellationToken cancellationToken)
@@ -128,31 +128,23 @@ namespace Portal.Features.Account.Commands
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
             }
-
-            if (await IsUserAdmin(user))
+            
+            var customer = await dbContext.Customers.FindAsync(user.Customer);
+            if (customer.Administrator)
             {
                 logger.LogInformation("User {UserId} logged in with admin credentials", user.Id);
                 claims.Add(new Claim(ClaimTypes.Role, ClaimsPrincipalUtils.Roles.Admin));
             }
 
-            // TODO - this is temporary only until API supports shared auth with Portal user
-            if (!string.IsNullOrEmpty(loginPortalUser.ApiKey) && !string.IsNullOrEmpty(loginPortalUser.ApiSecret))
+            // TODO - revisit how the API calls are authenticated
+            var basicAuth = deliveratorApiAuth.GetBasicAuthForCustomer(customer, options.ApiSalt);
+            if (basicAuth != null)
             {
                 logger.LogInformation("Api credentials provided, adding claim");
-
-                var creds = $"{loginPortalUser.ApiKey}:{loginPortalUser.ApiSecret}";
-                var basicAuth = Convert.ToBase64String(Encoding.ASCII.GetBytes(creds));
                 claims.Add(new Claim(ClaimsPrincipalUtils.Claims.ApiCredentials, basicAuth));
             }
 
             return new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        }
-        
-        private async Task<bool> IsUserAdmin(User user)
-        {
-            // NOTE - is this a candidate for moving to a reusable method?
-            var customer = await dbContext.Customers.FindAsync(user.Customer);
-            return customer.Administrator;
         }
     }
 }

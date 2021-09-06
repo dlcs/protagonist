@@ -2,6 +2,7 @@ using System;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using Amazon.S3;
+using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Core.Settings;
 using DLCS.Mediatr.Behaviours;
@@ -69,6 +70,7 @@ namespace Portal
             services
                 .AddHttpContextAccessor()
                 .AddSingleton<IEncryption, SHA256>()
+                .AddSingleton<DeliveratorApiAuth>()
                 .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
                 .AddMediatR(typeof(Startup))
                 .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))

@@ -30,11 +30,6 @@ namespace Portal.Pages.Account
             [Required]
             [DataType(DataType.Password)]
             public string Password { get; set; }
-            
-            // TODO - conditional validation
-            public string? ApiKey { get; set; }
-
-            [DataType(DataType.Password)] public string? ApiSecret { get; set; }
         }
 
         public LoginModel(IMediator mediator)
@@ -65,9 +60,7 @@ namespace Portal.Pages.Account
             var loginCommand = new LoginPortalUser
             {
                 Username = Input.Email,
-                Password = Input.Password,
-                ApiKey = Input.ApiKey,
-                ApiSecret = Input.ApiSecret
+                Password = Input.Password
             };
             var loginResult = await mediator.Send(loginCommand);
 
