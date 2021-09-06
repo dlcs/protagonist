@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Client;
 using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Repository.Strategy;
@@ -9,7 +10,6 @@ using DLCS.Repository.Strategy.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Orchestrator.Infrastructure;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images.Orchestration
@@ -77,7 +77,7 @@ namespace Orchestrator.Features.Images.Orchestration
                 {
                     logger.LogWarning("Asset '{AssetId}' has no s3 location, reingesting", assetId);
                     
-                    if (!await dlcsApiClient.ReingestAsset(assetId))
+                    if (!await dlcsApiClient.ReingestAsset(assetId, cancellationToken))
                     {
                         logger.LogWarning("Error reingesting asset '{AssetId}'", assetId);
                         throw new ApplicationException($"Unable to ingest Asset '{assetId}' from origin");
@@ -93,8 +93,6 @@ namespace Orchestrator.Features.Images.Orchestration
                 await assetTracker.TrySetOrchestrationStatus(orchestrationImage, OrchestrationStatus.Orchestrated,
                     true, cancellationToken);
             }
-            
-            // TODO - fire orchestration echo event
         }
 
         private async Task SaveImageToFastDisk(OrchestrationImage image, string filePath, CancellationToken cancellationToken)

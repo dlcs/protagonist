@@ -29,7 +29,10 @@ namespace Orchestrator.Features.Images.Orchestration.Status
         public async Task<OrchestrationStatus> GetOrchestrationStatus(AssetId assetId,
             CancellationToken cancellationToken = default)
         {
-            if (DoesFileForAssetExist(assetId)) return OrchestrationStatus.Orchestrated;
+            if (DoesFileForAssetExist(assetId))
+            {
+                return OrchestrationStatus.Orchestrated;
+            }
 
             return await IsOrchestrating(assetId, cancellationToken)
                 ? OrchestrationStatus.Orchestrating
@@ -39,7 +42,12 @@ namespace Orchestrator.Features.Images.Orchestration.Status
         private bool DoesFileForAssetExist(AssetId assetId)
         {
             var localPath = GetLocalPath(assetId);
-            return File.Exists(localPath);
+            if (File.Exists(localPath))
+            {
+                File.SetLastWriteTimeUtc(localPath, DateTime.UtcNow);
+            }
+
+            return false;
         }
 
         private string GetLocalPath(AssetId assetId) => orchestratorSettings.Value.GetImageLocalPath(assetId, false);

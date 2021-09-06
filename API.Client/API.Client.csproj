@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
+      <ProjectReference Include="..\DLCS.Model\DLCS.Model.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -1,5 +1,6 @@
 using System.Net.Http;
 using Amazon.S3;
+using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
@@ -13,15 +14,10 @@ using DLCS.Repository.Customers;
 using DLCS.Repository.Security;
 using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
-using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.DependencyInjection;
-using DLCS.Repository.Strategy.Utils;
 using DLCS.Web.Configuration;
-using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
-using LazyCache;
-using LazyCache.Providers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -29,7 +25,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
@@ -80,6 +75,7 @@ namespace Orchestrator
                 .AddSingleton<ImageRequestHandler>()
                 .AddSingleton<TimeBasedRequestHandler>()
                 .AddSingleton<IEncryption, SHA256>()
+                .AddSingleton<DeliveratorApiAuth>()
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>()
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()

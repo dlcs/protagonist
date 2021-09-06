@@ -117,7 +117,7 @@ namespace Orchestrator.Assets
                 }
 
                 logger.LogInformation("Asset {AssetId} not found, caching null object", assetId);
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings .GetTtl(CacheDuration.Short));
                 return NullOrchestrationAsset;
             }, cacheSettings.GetMemoryCacheOptions());
         }

@@ -95,7 +95,11 @@ namespace Orchestrator.Features.Images
         private static async Task EnsureImageOrchestrated(HttpContext httpContext,
             ProxyImageServerResult proxyImageServer, IImageOrchestrator imageOrchestrator)
         {
-            if (proxyImageServer.OrchestrationImage.Status == OrchestrationStatus.Orchestrated) return;
+            if (proxyImageServer.OrchestrationImage.Status == OrchestrationStatus.Orchestrated)
+            {
+                // TODO - how do we handle an image having been scavenged?
+                return;
+            }
          
             // Orchestrate image
             await imageOrchestrator.OrchestrateImage(proxyImageServer.OrchestrationImage, httpContext.RequestAborted);

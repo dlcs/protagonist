@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Core.Types;
 using DLCS.Model.Customers;
@@ -34,7 +35,7 @@ namespace Orchestrator.Tests.Infrastructure.Deliverator
             A.CallTo(() => encryption.Encrypt(A<string>._)).Returns("encrypted");
             customerRepository = A.Fake<ICustomerRepository>();
 
-            sut = new DeliveratorApiClient(httpClient, encryption, customerRepository, options,
+            sut = new DeliveratorApiClient(httpClient, new DeliveratorApiAuth(encryption), customerRepository, options,
                 new NullLogger<DeliveratorApiClient>());
         }
         

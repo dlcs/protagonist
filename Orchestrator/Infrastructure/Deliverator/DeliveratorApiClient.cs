@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Core.Types;
 using DLCS.Model.Customers;
 using DLCS.Web.Requests;
-using DLCS.Web.Response;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Settings;
 
@@ -24,20 +21,20 @@ namespace Orchestrator.Infrastructure.Deliverator
     public class DeliveratorApiClient : IDlcsApiClient
     {
         private readonly HttpClient httpClient;
-        private readonly IEncryption encryption;
+        private readonly DeliveratorApiAuth deliveratorApiAuth;
         private readonly ICustomerRepository customerRepository;
         private readonly OrchestratorSettings orchestratorSettings;
         private readonly ILogger<DeliveratorApiClient> logger;
 
         public DeliveratorApiClient(
             HttpClient httpClient, 
-            IEncryption encryption,
+            DeliveratorApiAuth deliveratorApiAuth,
             ICustomerRepository customerRepository,
             IOptions<OrchestratorSettings> orchestratorSettings,
             ILogger<DeliveratorApiClient> logger)
         {
             this.httpClient = httpClient;
-            this.encryption = encryption;
+            this.deliveratorApiAuth = deliveratorApiAuth;
             this.customerRepository = customerRepository;
             this.orchestratorSettings = orchestratorSettings.Value;
             this.logger = logger;
@@ -92,10 +89,14 @@ namespace Orchestrator.Infrastructure.Deliverator
                 logger.LogWarning("Unable to find customer details for setting API Auth - {CustomerId}", customerId);
                 return false;
             }
-            
-            string apiKey = customer.Keys[0];
-            string apiSecret = encryption.Encrypt(string.Concat(orchestratorSettings.ApiSalt, customerId, apiKey));
-            request.Headers.AddBasicAuth(apiKey, apiSecret);
+
+            var basicAuth = deliveratorApiAuth.GetBasicAuthForCustomer(customer, orchestratorSettings.ApiSalt);
+            if (string.IsNullOrEmpty(basicAuth))
+            {
+                logger.LogWarning("Unable to find customer key for API Auth - {CustomerId}", customerId);
+                return false;
+            }
+            request.Headers.AddBasicAuth(basicAuth);
             return true;
         }
     }
