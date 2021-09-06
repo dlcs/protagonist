@@ -150,13 +150,28 @@ namespace DLCS.Repository.Assets
         {
             foreach (var wh in thumbnailSizes)
             {
-                var maxDimension = Size.FromArray(wh).MaxDimension;
+                var currentSize = Size.FromArray(wh);
+                var maxDimension = currentSize.MaxDimension;
                 if (maxDimension == largestSize) continue;
 
                 // NOTE: Due to legacy issues with rounding calculations between .net and Python, there may be a slight
                 // difference between the keys in S3 and the desired size calculated here. To avoid any bugs, look at
                 // existing keys in s3 to decide what key to copy, rather than what calculation says we should copy.
-                var toCopy = existingSizes.SingleOrDefault(s => s.MaxDimension == maxDimension);
+                var sizeCandidates = existingSizes.Where(s => s.MaxDimension == maxDimension).ToList();
+                if (sizeCandidates.IsNullOrEmpty())
+                {
+                    logger.LogWarning("Unable to find thumb with max dimension {maxDimension} for rootKey '{rootKey}'",
+                        maxDimension, rootKey);
+                    continue;
+                }
+
+                // NOTE: In rare occasions there may be multiple thumbs with the same MaxDimension (due to historical
+                // rounding issue). In that case look for an exact match.
+                var toCopy = sizeCandidates.Count == 1
+                    ? sizeCandidates[0]
+                    : sizeCandidates.SingleOrDefault(
+                        s => s.Width == currentSize.Width && s.Height == currentSize.Height);
+
                 if (toCopy == null)
                 {
                     logger.LogWarning("Unable to find thumb with max dimension {maxDimension} for rootKey '{rootKey}'",
