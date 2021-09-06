@@ -19,7 +19,10 @@ namespace DLCS.Repository.Assets
         public async Task<Asset?> GetAsset(string id)
             => await dlcsContext.Images.FindAsync(id);
 
-        public Task<Asset?> GetAsset(AssetId id)
-            => GetAsset(id.ToString());
+        public async Task<Asset?> GetAsset(AssetId id)
+            => await GetAsset(id.ToString());
+
+        public async Task<ImageLocation> GetImageLocation(AssetId assetId)
+            => await dlcsContext.ImageLocations.FindAsync(assetId.ToString());
     }
 }

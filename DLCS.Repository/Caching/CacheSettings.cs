@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace DLCS.Repository.Settings
+namespace DLCS.Repository.Caching
 {
     /// <summary>
     /// Settings related to caching
@@ -11,6 +11,17 @@ namespace DLCS.Repository.Settings
         /// A collection CacheTtls per source
         /// </summary>
         public Dictionary<CacheSource, CacheGroupSettings> TimeToLive { get; set; } = new();
+
+        /// <summary>
+        /// The size limit for MemoryCache. Maps to MemoryCacheOptions.SizeLimit property 
+        /// </summary>
+        public long MemoryCacheSizeLimit { get; set; } = 10000;
+
+        /// <summary>
+        /// The amount to compact the cache by when the maximum size is exceeded, value be between 0 and 1.
+        /// Maps to MemoryCacheOptions.CompactionPercentage property. 
+        /// </summary>
+        public double MemoryCacheCompactionPercentage { get; set; } = 0.05;
 
         /// <summary>
         /// Get pre configured Ttl for a source.
@@ -78,6 +89,11 @@ namespace DLCS.Repository.Settings
         /// External distributed cache
         /// </summary>
         Distributed,
+        
+        /// <summary>
+        /// Http caching (via headers)
+        /// </summary>
+        Http
     }
 
     /// <summary>

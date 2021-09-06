@@ -1,13 +1,34 @@
 ﻿using System.Collections.Generic;
 using System.Net;
 using Microsoft.Extensions.Primitives;
+using Orchestrator.Assets;
 
-namespace Orchestrator.ReverseProxy
+namespace Orchestrator.Infrastructure.ReverseProxy
 {
     /// <summary>
     /// Marker interface for result of proxy processing logic.
     /// </summary>
-    public interface IProxyActionResult {}
+    public interface IProxyActionResult {} // TODO -rename this?
+
+    /// <summary>
+    /// Results for actions that is for image orchestration
+    /// </summary>
+    public class ProxyImageServerResult : ProxyActionResult
+    {
+        /// <summary>
+        /// <see cref="OrchestrationImage"/> for current request
+        /// </summary>
+        public OrchestrationImage OrchestrationImage { get; }
+        
+        public ProxyImageServerResult(
+            OrchestrationImage orchestrationImage,
+            bool requiresAuth,
+            ProxyDestination target,
+            string? path = null) : base(target, requiresAuth, path)
+        {
+            OrchestrationImage = orchestrationImage;
+        }
+    }
 
     /// <summary>
     /// Result for actions that should be proxied to downstream service.
@@ -29,10 +50,13 @@ namespace Orchestrator.ReverseProxy
         /// </summary>
         public bool HasPath => !string.IsNullOrWhiteSpace(Path);
         
+        public bool RequiresAuth { get; }
+        
         // TODO - differentiate between full + part path?
-        public ProxyActionResult(ProxyDestination target, string? path = null)
+        public ProxyActionResult(ProxyDestination target, bool requiresAuth, string? path = null)
         {
             Target = target;
+            RequiresAuth = requiresAuth;
             Path = !string.IsNullOrWhiteSpace(path) && path[0] == '/' ? path[1..] : path;
         }
     }
@@ -40,7 +64,7 @@ namespace Orchestrator.ReverseProxy
     /// <summary>
     /// Result for proxy actions that should be shortcut to return status code.
     /// </summary>
-    public class StatusCodeProxyResult : IProxyActionResult
+    public class StatusCodeResult : IProxyActionResult
     {
         /// <summary>
         /// StatusCode to return
@@ -52,9 +76,8 @@ namespace Orchestrator.ReverseProxy
         /// </summary>
         public Dictionary<string, StringValues> Headers { get; } = new();
 
-        public StatusCodeProxyResult(HttpStatusCode statusCode)
+        public StatusCodeResult(HttpStatusCode statusCode)
         {
-            // TODO - handle message/headers? or let those be set in 
             StatusCode = statusCode;
         }
 
@@ -64,7 +87,7 @@ namespace Orchestrator.ReverseProxy
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public StatusCodeProxyResult WithHeader(string key, string value)
+        public StatusCodeResult WithHeader(string key, string value)
         {
             Headers[key] = value;
             return this;
@@ -92,14 +115,14 @@ namespace Orchestrator.ReverseProxy
         Thumbs,
         
         /// <summary>
+        /// Resize thumbs services, for handling requests for thumbs that are resized from pre-generated version
+        /// </summary>
+        ResizeThumbs,
+        
+        /// <summary>
         /// Image-server/image-server cluster
         /// </summary>
         ImageServer,
-        
-        /// <summary>
-        /// Caching reverse proxy (Varnish) 
-        /// </summary>
-        CachingProxy,
         
         /// <summary>
         /// Proxy response from S3

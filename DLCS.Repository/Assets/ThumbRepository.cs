@@ -105,7 +105,7 @@ namespace DLCS.Repository.Assets
             );
             
             await using var stream = (await bucketReader.GetObjectFromBucket(sizesList)).Stream;
-            if (stream == null)
+            if (stream == null || stream == Stream.Null)
             {
                 logger.LogError("Could not find sizes file for asset '{Asset}'", assetId);
                 return null;
@@ -143,8 +143,7 @@ namespace DLCS.Repository.Assets
             // if upscaling, verify % difference isn't too great
             if ((maxDifference ?? 0) > 0 && idealSize.MaxDimension > toResize.MaxDimension)
             {
-                var difference = (idealSize.MaxDimension / (double)toResize.MaxDimension) * 100;
-                if (difference > maxDifference!.Value)
+                if (Size.GetSizeIncreasePercent(idealSize, toResize) > maxDifference!.Value)
                 {
                     logger.LogDebug("The next smallest thumbnail {ToResize} breaks the threshold for '{Path}'",
                         toResize.ToString(), imageRequest.OriginalPath);

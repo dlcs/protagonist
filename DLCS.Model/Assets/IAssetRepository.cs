@@ -8,5 +8,7 @@ namespace DLCS.Model.Assets
         public Task<Asset?> GetAsset(string id);
         
         public Task<Asset?> GetAsset(AssetId id);
+
+        public Task<ImageLocation> GetImageLocation(AssetId assetId);
     }
 }

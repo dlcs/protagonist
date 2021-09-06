@@ -1,17 +1,20 @@
 using System.Net.Http;
 using Amazon.S3;
+using API.Client;
+using DLCS.Core.Encryption;
 using DLCS.Model.Assets;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Model.Security;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Security;
 using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
-using DLCS.Repository.Strategy;
+using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Configuration;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
@@ -26,9 +29,13 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images;
+using Orchestrator.Features.Images.Orchestration;
+using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Features.TimeBased;
+using Orchestrator.Infrastructure;
+using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.Mediatr;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Serilog;
 
@@ -45,22 +52,30 @@ namespace Orchestrator
         public void ConfigureServices(IServiceCollection services)
         {
             var reverseProxySection = configuration.GetSection("ReverseProxy");
+            var cachingSection = configuration.GetSection("Caching");
             services
                 .Configure<OrchestratorSettings>(configuration)
                 .Configure<ThumbsSettings>(configuration.GetSection("Thumbs"))
                 .Configure<ProxySettings>(configuration.GetSection("Proxy"))
-                .Configure<CacheSettings>(configuration.GetSection("Caching"))
+                .Configure<CacheSettings>(cachingSection)
                 .Configure<ReverseProxySettings>(reverseProxySection);
             
-            // TODO - configure memoryCache
+            var cacheSettings = cachingSection.Get<CacheSettings>();
             services
+                .AddMemoryCache(memoryCacheOptions =>
+                {
+                    memoryCacheOptions.SizeLimit = cacheSettings.MemoryCacheSizeLimit;
+                    memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
+                })
                 .AddLazyCache()
-                .AddSingleton<ICustomerRepository, CustomerRepository>()
+                .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
                 .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
                 .AddSingleton<IAssetRepository, DapperAssetRepository>()
                 .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
                 .AddSingleton<TimeBasedRequestHandler>()
+                .AddSingleton<IEncryption, SHA256>()
+                .AddSingleton<DeliveratorApiAuth>()
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>()
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
@@ -69,6 +84,8 @@ namespace Orchestrator
                 .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
                 .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
+                .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
+                .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
                 .AddOriginStrategies()
                 .AddDbContext<DlcsContext>(opts =>
@@ -77,16 +94,24 @@ namespace Orchestrator
                 .AddMediatR()
                 .AddHttpContextAccessor();
 
-            var reverseProxySettings = reverseProxySection.Get<ReverseProxySettings>();
+            var orchestratorAddress = reverseProxySection.Get<ReverseProxySettings>()
+                .GetAddressForProxyTarget(ProxyDestination.Orchestrator);
             services
                 .AddHttpClient<IDeliveratorClient, DeliveratorClient>(client =>
                 {
-                    // TODO - add this to all outgoing?
-                    client.DefaultRequestHeaders.Add("x-requested-by", "DLCS Protagonist Yarp");
-                    client.BaseAddress = reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.Orchestrator);
+                    client.DefaultRequestHeaders.WithRequestedBy();
+                    client.BaseAddress = orchestratorAddress;
                 })
                 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false });
-            
+
+            var apiRoot = configuration.Get<OrchestratorSettings>().ApiRoot;
+            services
+                .AddHttpClient<IDlcsApiClient, DeliveratorApiClient>(client =>
+                {
+                    client.DefaultRequestHeaders.WithRequestedBy();
+                    client.BaseAddress = apiRoot;
+                });
+
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
             services.Configure<ForwardedHeadersOptions>(opts =>
             {
@@ -105,6 +130,8 @@ namespace Orchestrator
                         .AllowAnyMethod()
                         .AllowAnyHeader());
             });
+            
+            DapperMappings.Register();
             
             services
                 .AddHealthChecks()

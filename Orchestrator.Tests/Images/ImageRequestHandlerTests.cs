@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Xunit;
 
@@ -23,20 +23,18 @@ namespace Orchestrator.Tests.Images
     public class ImageRequestHandlerTests
     {
         private readonly IAssetTracker assetTracker;
-        private readonly IThumbRepository thumbnailRepository;
         private readonly IAssetDeliveryPathParser assetDeliveryPathParser;
         private readonly IPathCustomerRepository customerRepository;
         private readonly AssetDeliveryPathParser assetDeliveryPathParserImpl;
-        private readonly IOptions<ProxySettings> defaultSettings;
+        private readonly IOptions<OrchestratorSettings> defaultSettings;
 
         public ImageRequestHandlerTests()
         {
             assetTracker = A.Fake<IAssetTracker>();
-            thumbnailRepository = A.Fake<IThumbRepository>();
             assetDeliveryPathParser = A.Fake<IAssetDeliveryPathParser>();
             customerRepository = A.Fake<IPathCustomerRepository>();
             assetDeliveryPathParserImpl = new AssetDeliveryPathParser(customerRepository);
-            defaultSettings = Options.Create(new ProxySettings());
+            defaultSettings = Options.Create(new OrchestratorSettings());
         }
 
         [Fact]
@@ -51,7 +49,7 @@ namespace Orchestrator.Tests.Images
             var result = await sut.HandleRequest(new DefaultHttpContext());
             
             // Assert
-            result.Should().BeOfType<StatusCodeProxyResult>().Which.StatusCode.Should().Be(HttpStatusCode.NotFound);
+            result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
         
         [Fact]
@@ -68,7 +66,7 @@ namespace Orchestrator.Tests.Images
             var result = await sut.HandleRequest(new DefaultHttpContext());
             
             // Assert
-            result.Should().BeOfType<StatusCodeProxyResult>().Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
         
         [Fact]
@@ -85,7 +83,7 @@ namespace Orchestrator.Tests.Images
             var result = await sut.HandleRequest(new DefaultHttpContext());
             
             // Assert
-            result.Should().BeOfType<StatusCodeProxyResult>()
+            result.Should().BeOfType<StatusCodeResult>()
                 .Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
@@ -98,7 +96,7 @@ namespace Orchestrator.Tests.Images
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new OrchestrationAsset {RequiresAuth = true});
+                .Returns(new OrchestrationImage {RequiresAuth = true});
             var sut = GetImageRequestHandlerWithMockPathParser();
 
             // Act
@@ -119,8 +117,13 @@ namespace Orchestrator.Tests.Images
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new OrchestrationAsset {AssetId = new AssetId(2, 2, "test-image")});
-            var sut = GetImageRequestHandlerWithMockPathParser();
+                .Returns(new OrchestrationImage {AssetId = new AssetId(2, 2, "test-image")});
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    ImageFolderTemplateImageServer = "/path",
+                    Proxy = new ProxySettings()
+                }));
 
             // Act
             var result = await sut.HandleRequest(context) as ProxyActionResult;
@@ -141,10 +144,13 @@ namespace Orchestrator.Tests.Images
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new OrchestrationAsset {AssetId = new AssetId(2, 2, "test-image")});
-            var sut = GetImageRequestHandlerWithMockPathParser(settings: Options.Create(new ProxySettings
-                {UVThumbReplacementPath = "!300,500"}));
-
+                .Returns(new OrchestrationImage {AssetId = new AssetId(2, 2, "test-image")});
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    Proxy = new ProxySettings { UVThumbReplacementPath = "!300,500" }
+                }));
+            
             // Act
             var result = await sut.HandleRequest(context) as ProxyActionResult;
             
@@ -155,7 +161,7 @@ namespace Orchestrator.Tests.Images
         }
         
         [Fact]
-        public async Task Handle_Request_ProxiesToCachingProxy_IfAssetIsForUvThumb_UvThumbDisabled()
+        public async Task Handle_Request_ProxiesToImageServer_IfAssetIsForUvThumb_UvThumbDisabled()
         {
             // Arrange
             var context = new DefaultHttpContext();
@@ -164,15 +170,19 @@ namespace Orchestrator.Tests.Images
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new OrchestrationAsset {AssetId = new AssetId(2, 2, "test-image")});
-            var sut = GetImageRequestHandlerWithMockPathParser(settings: Options.Create(new ProxySettings
-                {CheckUVThumbs = false}));
+                .Returns(new OrchestrationImage {AssetId = new AssetId(2, 2, "test-image")});
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    ImageFolderTemplateImageServer = "/path",
+                    Proxy = new ProxySettings { CheckUVThumbs = false }
+                }));
 
             // Act
-            var result = await sut.HandleRequest(context) as ProxyActionResult;
+            var result = await sut.HandleRequest(context) as ProxyImageServerResult;
             
             // Assert
-            result.Target.Should().Be(ProxyDestination.CachingProxy);
+            result.Target.Should().Be(ProxyDestination.ImageServer);
             result.HasPath.Should().BeTrue();
         }
         
@@ -186,10 +196,14 @@ namespace Orchestrator.Tests.Images
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             var assetId = new AssetId(2, 2, "test-image");
             A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
-                .Returns(new OrchestrationAsset { AssetId = assetId });
-            A.CallTo(() => thumbnailRepository.GetThumbnailSizeCandidate(assetId, A<ImageRequest>._))
-                .Returns(new SizeCandidate(150));
-            var sut = GetImageRequestHandlerWithMockPathParser();
+                .Returns(new OrchestrationImage
+                    { AssetId = assetId, OpenThumbs = new List<int[]> { new[] { 150, 150 } } });
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    ImageFolderTemplateImageServer = "/path",
+                    Proxy = new ProxySettings()
+                }));
 
             // Act
             var result = await sut.HandleRequest(context) as ProxyActionResult;
@@ -203,7 +217,7 @@ namespace Orchestrator.Tests.Images
         [InlineData("/iiif-img/2/2/test-image/full/90,/0/default.jpg", false)] // UV without ?t=
         [InlineData("/iiif-img/2/2/test-image/full/full/0/default.jpg", true)] // /full/full
         [InlineData("/iiif-img/2/2/test-image/full/max/0/default.jpg", true)] // /full/max
-        public async Task Handle_Request_ProxiesToCachingProxy_ForAllOtherCases(string path, bool knownThumb)
+        public async Task Handle_Request_ProxiesToImageServer_ForAllOtherCases(string path, bool knownThumb)
         {
             // Arrange
             var context = new DefaultHttpContext();
@@ -211,30 +225,32 @@ namespace Orchestrator.Tests.Images
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             var assetId = new AssetId(2, 2, "test-image");
-            A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
-                .Returns(new OrchestrationAsset {AssetId = assetId});
-            var sut = GetImageRequestHandlerWithMockPathParser();
+            
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    ImageFolderTemplateImageServer = "/path",
+                    Proxy = new ProxySettings()
+                }));
 
-            if (knownThumb)
-            {
-                A.CallTo(() => thumbnailRepository.GetThumbnailSizeCandidate(assetId, A<ImageRequest>._))
-                    .Returns(new SizeCandidate(150));
-            }
+            List<int[]> openSizes = knownThumb
+                ? new List<int[]> { new[] { 150, 150 } }
+                : new List<int[]>();
+
+            A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+                .Returns(new OrchestrationImage { AssetId = assetId, OpenThumbs = openSizes });
 
             // Act
-            var result = await sut.HandleRequest(context) as ProxyActionResult;
+            var result = await sut.HandleRequest(context) as ProxyImageServerResult;
             
             // Assert
-            result.Target.Should().Be(ProxyDestination.CachingProxy);
+            result.Target.Should().Be(ProxyDestination.ImageServer);
             result.HasPath.Should().BeTrue();
         }
 
         private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false,
-            IOptions<ProxySettings> settings = null)
-        {
-            return new(new NullLogger<ImageRequestHandler>(), assetTracker, thumbnailRepository,
-                mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl,
-                settings ?? defaultSettings);
-        }
+            IOptions<OrchestratorSettings> settings = null) 
+            => new(new NullLogger<ImageRequestHandler>(), assetTracker,
+                mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl, settings ?? defaultSettings);
     }
 }

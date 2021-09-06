@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.ReverseProxy;
 
 namespace Orchestrator.Settings
 {
@@ -18,18 +18,18 @@ namespace Orchestrator.Settings
         /// Get a list of declared Clusters
         /// </summary>
         public Dictionary<string, ClusterConfig> Clusters { get; set; }
-
-        // TODO - this assumes 1 address per destination and has no error handling
+        
         /// <summary>
         /// Get destination address for specified ProxyDestination
         /// </summary>
+        /// <remarks>Assumes 1 address per destination and has no error handling</remarks>
         public Uri? GetAddressForProxyTarget(ProxyDestination destination) 
             => destination switch
             {
                 ProxyDestination.Orchestrator => GetAddressForCluster("deliverator"),
                 ProxyDestination.Thumbs => GetAddressForCluster("thumbs"),
+                ProxyDestination.ResizeThumbs => GetAddressForCluster("thumbresize"),
                 ProxyDestination.ImageServer => GetAddressForCluster("image_server"),
-                ProxyDestination.CachingProxy => GetAddressForCluster("varnish_cache"),
                 ProxyDestination.S3 => null,
                 ProxyDestination.Unknown => null,
                 _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, null)

@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using DLCS.Model.Assets;
-using DLCS.Repository.Settings;
+using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -36,18 +35,17 @@ namespace DLCS.Repository.Assets
             return thumbnailPolicies.SingleOrDefault(p => p.Id == thumbnailPolicyId);
         }
 
-        private async Task<List<ThumbnailPolicy>> GetThumbnailPolicies()
+        private Task<List<ThumbnailPolicy>> GetThumbnailPolicies()
         {
             const string key = "ThumbRepository_ThumbnailPolicies";
-            return await appCache.GetOrAddAsync(key, async entry =>
+            return appCache.GetOrAddAsync(key, async () =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl());
                 logger.LogInformation("refreshing ThumbnailPolicies from database");
                 await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
                 var thumbnailPolicies = await connection.QueryAsync<ThumbnailPolicy>(
                     "SELECT \"Id\", \"Name\", \"Sizes\" FROM \"ThumbnailPolicies\"");
                 return thumbnailPolicies.ToList();
-            });
+            }, cacheSettings.GetMemoryCacheOptions());
         }
     }
 }

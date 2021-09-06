@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DLCS.Core.Types;
 
 namespace Orchestrator.Assets
@@ -17,13 +18,19 @@ namespace Orchestrator.Assets
         /// Get or set boolean indicating whether asset is restricted or not.
         /// </summary>
         public bool RequiresAuth { get; set; }
-        
+
+        /// <summary>
+        /// Version identifier, used to validate saves are against correct version
+        /// </summary>
+        public int Version { get; set; }
+    }
+
+    public class OrchestrationFile : OrchestrationAsset
+    {
         /// <summary>
         /// Get or set Asset origin 
         /// </summary>
         public string Origin { get; set; }
-
-        // TODO - this will manage the state of the Asset (Orchestrated, Orchestrating, Not-Orchestrated)
     }
 
     public class OrchestrationImage : OrchestrationAsset
@@ -42,5 +49,15 @@ namespace Orchestrator.Assets
         /// Gets or sets list of thumbnail sizes
         /// </summary>
         public List<int[]> OpenThumbs { get; set; } = new();
+        
+        /// <summary>
+        /// Get or set Asset location in S3 
+        /// </summary>
+        public string? S3Location { get; set; }
+        
+        /// <summary>
+        /// Get or set the OrchestrationStatus of object
+        /// </summary>
+        public OrchestrationStatus Status { get; set; } = OrchestrationStatus.Unknown;
     }
 }

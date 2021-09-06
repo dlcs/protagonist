@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 
 namespace DLCS.Repository.Strategy
 {
@@ -16,7 +16,7 @@ namespace DLCS.Repository.Strategy
         /// </summary>
         /// <returns>Asset as response</returns>
         public Task<OriginResponse?> LoadAssetFromOrigin(AssetId assetId, string origin,
-            CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default);
+            CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default);
     }
     
     public class HttpClients

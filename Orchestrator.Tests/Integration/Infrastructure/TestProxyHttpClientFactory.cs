@@ -49,11 +49,18 @@ namespace Orchestrator.Tests.Integration.Infrastructure
             var destinationUri = new Uri(destinationPrefix);
             var requestUri = new UriBuilder(destinationUri.Scheme, destinationUri.Host, destinationUri.Port,
                 context.Request.Path);
+            
+            // Create request and transform to outgoing
             var requestMessage = context.CreateProxyHttpRequest(requestUri.Uri);
             await transformer.TransformRequestAsync(context, requestMessage, destinationPrefix);
             
-            await context.Response.WriteAsJsonAsync(new ProxyResponse(requestMessage));
+            // Create a fake 200 response from proxy + run through transformer
+            var proxyResponse = new HttpResponseMessage(HttpStatusCode.OK);
+            await context.CopyProxyHttpResponse(proxyResponse);
+            await transformer.TransformResponseAsync(context, proxyResponse);
 
+            // Write request parameters into response
+            await context.Response.WriteAsJsonAsync(new ProxyResponse(requestMessage));
             return ForwarderError.None;
         }
     }

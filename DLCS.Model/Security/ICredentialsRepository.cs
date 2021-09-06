@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 
 namespace DLCS.Model.Security
 {

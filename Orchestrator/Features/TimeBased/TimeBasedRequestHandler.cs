@@ -7,7 +7,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.Deliverator;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.TimeBased
@@ -42,7 +43,7 @@ namespace Orchestrator.Features.TimeBased
             var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest<TimeBasedAssetDeliveryRequest>(httpContext);
             if (statusCode.HasValue || assetRequest == null)
             {
-                return new StatusCodeProxyResult(statusCode ?? HttpStatusCode.InternalServerError);
+                return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
             }
 
             // If "HEAD" then add CORS - is this required here?
@@ -50,7 +51,7 @@ namespace Orchestrator.Features.TimeBased
             if (asset == null)
             {
                 Logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
-                return new StatusCodeProxyResult(HttpStatusCode.NotFound);
+                return new StatusCodeResult(HttpStatusCode.NotFound);
             }
             
             var s3Path =
@@ -58,22 +59,22 @@ namespace Orchestrator.Features.TimeBased
             if (!asset.RequiresAuth)
             {
                 Logger.LogDebug("No auth for {Path}, 302 to S3 object {S3}", httpContext.Request.Path, s3Path);
-                return new StatusCodeProxyResult(HttpStatusCode.Redirect).WithHeader("Location", s3Path);
+                return new StatusCodeResult(HttpStatusCode.Redirect).WithHeader("Location", s3Path);
             }
 
             if (!await IsAuthenticated(assetRequest.GetAssetId(), httpContext))
             {
                 Logger.LogDebug("User not authenticated for {Path}", httpContext.Request.Path);
-                return new StatusCodeProxyResult(HttpStatusCode.Unauthorized);
+                return new StatusCodeResult(HttpStatusCode.Unauthorized);
             }
 
             if (httpContext.Request.Method == "HEAD")
             {
                 // quit with success as we've done all we need to
-                return new StatusCodeProxyResult(HttpStatusCode.OK);
+                return new StatusCodeResult(HttpStatusCode.OK);
             }
             
-            return new ProxyActionResult(ProxyDestination.S3, s3Path);
+            return new ProxyActionResult(ProxyDestination.S3, asset.RequiresAuth, s3Path);
         }
 
         private async Task<bool> IsAuthenticated(AssetId assetId, HttpContext httpContext)

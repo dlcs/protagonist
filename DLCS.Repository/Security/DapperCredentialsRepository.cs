@@ -2,11 +2,13 @@
 using System.IO;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.Security;
 using DLCS.Model.Storage;
+using DLCS.Repository.Caching;
 using DLCS.Repository.Settings;
 using LazyCache;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -44,13 +46,12 @@ namespace DLCS.Repository.Security
 
             var cacheKey = $"OriginStrategy_Creds:{customerOriginStrategy.Id}";
 
-            return appCache.GetOrAddAsync(cacheKey, entry =>
+            return appCache.GetOrAddAsync(cacheKey, () =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl());
                 logger.LogDebug("Refreshing CustomerOriginStrategy credentials for {customerOriginStrategy}",
                     customerOriginStrategy.Id);
                 return GetBasicCredentials(credentials, customerOriginStrategy.Id);
-            });
+            }, cacheSettings.GetMemoryCacheOptions(priority: CacheItemPriority.Low));
         }
         
         private async Task<BasicCredentials?> GetBasicCredentials(string credentials, string id)

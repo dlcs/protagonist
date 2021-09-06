@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Net.Http;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
+using DLCS.Repository.Strategy.Utils;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DLCS.Repository.Strategy
+namespace DLCS.Repository.Strategy.DependencyInjection
 {
     /// <summary>
     /// Delegate for getting <see cref="IOriginStrategy"/> implementation for specified strategy.
@@ -24,11 +25,13 @@ namespace DLCS.Repository.Strategy
         public static IServiceCollection AddOriginStrategies(this IServiceCollection services)
         {
             services
-                .AddScoped<S3AmbientOriginStrategy>()
+                .AddSingleton<S3AmbientOriginStrategy>()
                 .AddSingleton<DefaultOriginStrategy>()
                 .AddSingleton<BasicHttpAuthOriginStrategy>()
                 .AddSingleton<SftpOriginStrategy>()
-                .AddTransient<OriginStrategyResolver>(provider => strategy => strategy switch
+                .AddScoped<OriginFetcher>()
+                .AddSingleton<FileSaver>()
+                .AddSingleton<OriginStrategyResolver>(provider => strategy => strategy switch
                 {
                     OriginStrategyType.Default => provider.GetService<DefaultOriginStrategy>(),
                     OriginStrategyType.BasicHttp => provider.GetService<BasicHttpAuthOriginStrategy>(),

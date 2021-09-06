@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace DLCS.Model.Customer
+namespace DLCS.Model.Customers
 {
     /// <summary>
     /// Represents a type of CustomerOriginStrategy which determines how resources are fetched.

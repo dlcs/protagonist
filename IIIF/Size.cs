@@ -137,6 +137,18 @@ namespace IIIF
         }
 
         /// <summary>
+        /// Get % size difference between larger and smaller size, based on longest edge.
+        /// </summary>
+        public static double GetSizeIncreasePercent(Size largerSize, Size smallerSize)
+        {
+            var largeMax = largerSize.MaxDimension;
+            var smallMax = smallerSize.MaxDimension;
+            if (smallMax > largeMax) throw new InvalidOperationException("Larger size must be larger than smaller");
+            
+            return ((largeMax / (double)smallMax) - 1) * 100;
+        }
+
+        /// <summary>
         /// Get the shape of image based on it's dimensions.
         /// </summary>
         public ImageShape GetShape()

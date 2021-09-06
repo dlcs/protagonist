@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Dapper;
 using DLCS.Core.Collections;
 using DLCS.Model.Security;
-using DLCS.Repository.Settings;
+using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -36,14 +36,14 @@ namespace DLCS.Repository.Security
         {
             var cacheKey = $"roles:{customer}:{role}";
 
-            return await appCache.GetOrAddAsync(cacheKey, async entry =>
+            return await appCache.GetOrAddAsync(cacheKey, async () =>
             {
                 logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
-                return await GetAuthServicesFromDatabase(customer, role, entry);
-            });
+                return await GetAuthServicesFromDatabase(customer, role);
+            }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
         }
 
-        private async Task<IEnumerable<AuthService>> GetAuthServicesFromDatabase(int customer, string role, ICacheEntry entry)
+        private async Task<IEnumerable<AuthService>> GetAuthServicesFromDatabase(int customer, string role)
         {
             await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
             var result = await connection.QueryAsync<AuthService>(AuthServiceSql,
@@ -53,11 +53,9 @@ namespace DLCS.Repository.Security
             if (authServices.IsNullOrEmpty())
             {
                 logger.LogInformation("Found no authServices for customer {Customer}, role {Role}", customer, role);
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
                 return Enumerable.Empty<AuthService>();
             }
 
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl());
             return authServices;
         }
 

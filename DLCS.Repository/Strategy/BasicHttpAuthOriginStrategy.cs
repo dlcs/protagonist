@@ -4,8 +4,9 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Guard;
 using DLCS.Core.Types;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.Security;
 using Microsoft.Extensions.Logging;
 
@@ -14,7 +15,7 @@ namespace DLCS.Repository.Strategy
     /// <summary>
     /// OriginStrategy implementation for 'basic-http-authentication' assets.
     /// </summary>
-    public class BasicHttpAuthOriginStrategy : SafetyCheckOriginStrategy
+    public class BasicHttpAuthOriginStrategy : IOriginStrategy
     {
         private readonly IHttpClientFactory httpClientFactory;
         private readonly ICredentialsRepository credentialsRepository;
@@ -30,10 +31,11 @@ namespace DLCS.Repository.Strategy
             this.logger = logger;
         }
 
-        protected override async Task<OriginResponse?> LoadAssetFromOriginImpl(AssetId assetId, string origin,
-            CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
+        public async Task<OriginResponse?> LoadAssetFromOrigin(AssetId assetId, string origin,
+            CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
         {
             logger.LogDebug("Fetching {asset} from Origin: {url}", assetId, origin);
+            customerOriginStrategy.ThrowIfNull(nameof(customerOriginStrategy));
 
             try
             {
@@ -52,14 +54,14 @@ namespace DLCS.Repository.Strategy
             string assetOrigin)
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, assetOrigin);
-            request.Headers.Authorization = await SetBasicAuthHeader(customerOriginStrategy, request);
+            request.Headers.Authorization = await SetBasicAuthHeader(customerOriginStrategy);
 
             var httpClient = httpClientFactory.CreateClient(HttpClients.OriginStrategy);
             var response = await httpClient.SendAsync(request, cancellationToken);
             return response;
         }
 
-        private async Task<AuthenticationHeaderValue> SetBasicAuthHeader(CustomerOriginStrategy customerOriginStrategy, HttpRequestMessage request)
+        private async Task<AuthenticationHeaderValue> SetBasicAuthHeader(CustomerOriginStrategy customerOriginStrategy)
         {
             var basicCredentials =
                 await credentialsRepository.GetBasicCredentialsForOriginStrategy(customerOriginStrategy);

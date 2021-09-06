@@ -35,7 +35,7 @@ namespace Orchestrator.Infrastructure.Mediatr
             }
             // TODO - error handling
             // TODO - image and TimeBased handling
-            return await next();
+            return await next(); // Thing that we implement
         }
     }
 }

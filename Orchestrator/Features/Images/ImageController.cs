@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Repository.Caching;
 using DLCS.Repository.Settings;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -22,34 +23,46 @@ namespace Orchestrator.Features.Images
         private readonly ILogger<ImageController> logger;
         private readonly CacheSettings cacheSettings;
 
-        public ImageController(IMediator mediator, IOptions<CacheSettings> cacheSettings, ILogger<ImageController> logger)
+        public ImageController(
+            IMediator mediator, 
+            IOptions<CacheSettings> cacheSettings,
+            ILogger<ImageController> logger)
         {
             this.mediator = mediator;
             this.logger = logger;
             this.cacheSettings = cacheSettings.Value;
         }
-        
+
         /// <summary>
         /// Index request for image root, redirects to info.json.
         /// </summary>
         /// <returns></returns>
         [Route("", Name = "image_only")]
         [HttpGet]
-        public RedirectResult Index()
-            => Redirect(HttpContext.Request.Path.Add("/info.json"));
+        public IActionResult Index()
+        {
+            var location = HttpContext.Request.Path.Add("/info.json");
+            Response.Headers["Location"] = location.Value;
+            return new StatusCodeResult(303);
+        }
 
         /// <summary>
         /// Get info.json file for specified image
         /// </summary>
-        /// <param name="cancellationToken"></param>
+        /// <param name="noOrchestrate">
+        /// Optional query parameter, if true then info.json request will not trigger orchestration
+        /// </param>
+        /// <param name="cancellationToken">Async cancellation token</param>
         /// <returns></returns>
         [Route("info.json", Name = "info_json")]
         [HttpGet]
-        public async Task<IActionResult> InfoJson(CancellationToken cancellationToken)
+        public async Task<IActionResult> InfoJson([FromQuery] bool noOrchestrate = false, CancellationToken cancellationToken = default)
         {
             try
             {
-                var infoJsonResponse = await mediator.Send(new GetImageInfoJson(HttpContext.Request.Path), cancellationToken);
+                var infoJsonResponse =
+                    await mediator.Send(new GetImageInfoJson(HttpContext.Request.Path, noOrchestrate),
+                        cancellationToken);
                 if (!infoJsonResponse.HasInfoJson) return NotFound();
 
                 if (infoJsonResponse.RequiresAuth)
@@ -73,7 +86,7 @@ namespace Orchestrator.Features.Images
                 return BadRequest();
             }
         }
-
+        
         private void SetCacheControl(bool requiresAuth)
         {
             HttpContext.Response.GetTypedHeaders().CacheControl =
@@ -81,7 +94,7 @@ namespace Orchestrator.Features.Images
                 {
                     Public = !requiresAuth,
                     Private = requiresAuth,
-                    MaxAge = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Long))
+                    MaxAge = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Default, CacheSource.Http))
                 };
         }
     }

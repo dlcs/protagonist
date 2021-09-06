@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using FluentAssertions;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Xunit;
 
@@ -54,7 +54,6 @@ namespace Orchestrator.Tests
         [InlineData(ProxyDestination.Orchestrator, "https://orchestrator")]
         [InlineData(ProxyDestination.Thumbs, "https://thumbs")]
         [InlineData(ProxyDestination.ImageServer, "https://image_server")]
-        [InlineData(ProxyDestination.CachingProxy, "https://varnish_cache")]
         public void GetAddressForCluster_ReturnsFirstEntry_ForKnownClusters(ProxyDestination destination,
             string expected)
         {

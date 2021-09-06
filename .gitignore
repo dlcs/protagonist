@@ -356,3 +356,5 @@ MigrationBackup/
 
 # Generated xml documentation files
 API/API.xml
+
+.env

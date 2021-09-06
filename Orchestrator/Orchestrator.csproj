@@ -21,6 +21,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\API.Client\API.Client.csproj" />
+      <ProjectReference Include="..\DLCS.Mediatr\DLCS.Mediatr.csproj" />
       <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
       <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
     </ItemGroup>

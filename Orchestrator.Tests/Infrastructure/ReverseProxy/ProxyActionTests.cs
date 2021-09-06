@@ -1,8 +1,8 @@
 ﻿using FluentAssertions;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Xunit;
 
-namespace Orchestrator.Tests.ReverseProxy
+namespace Orchestrator.Tests.Infrastructure.ReverseProxy
 {
     public class ProxyActionTests
     {
@@ -13,7 +13,7 @@ namespace Orchestrator.Tests.ReverseProxy
         public void HasPath_False_IfNullOrWhiteSpace(string path)
         {
             // Act
-            var proxyAction = new ProxyActionResult(ProxyDestination.Thumbs, path);
+            var proxyAction = new ProxyActionResult(ProxyDestination.Thumbs, false, path);
             
             // Assert
             proxyAction.HasPath.Should().BeFalse();
@@ -25,7 +25,7 @@ namespace Orchestrator.Tests.ReverseProxy
         public void Ctor_RemovesLeadingSlash(string path)
         {
             // Act
-            var proxyAction = new ProxyActionResult(ProxyDestination.Thumbs, path);
+            var proxyAction = new ProxyActionResult(ProxyDestination.Thumbs, false, path);
             
             // Assert
             proxyAction.Path.Should().Be("this/is/the/way");

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 
-namespace DLCS.Model.Customer
+namespace DLCS.Model.Customers
 {
     public interface ICustomerOriginStrategyRepository
     {

@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
 
@@ -61,7 +61,7 @@ namespace Orchestrator.Features.TimeBased
         private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
             IProxyActionResult proxyActionResult, IOptions<ReverseProxySettings> reverseProxySettings)
         {
-            if (proxyActionResult is StatusCodeProxyResult statusCodeResult)
+            if (proxyActionResult is StatusCodeResult statusCodeResult)
             {
                 httpContext.Response.StatusCode = (int) statusCodeResult.StatusCode;
                 foreach (var header in statusCodeResult.Headers)
@@ -71,14 +71,13 @@ namespace Orchestrator.Features.TimeBased
                 return;
             }
             
-            // TODO - tidy me
             var proxyAction = proxyActionResult as ProxyActionResult;
             var root = proxyAction.Target != ProxyDestination.S3
                 ? reverseProxySettings.Value.GetAddressForProxyTarget(proxyAction.Target).ToString()
                 : proxyAction.Path;
             
             var transformer = proxyAction.HasPath
-                ? new PathRewriteTransformer(proxyAction.Path, proxyAction.Target == ProxyDestination.S3)
+                ? new PathRewriteTransformer(proxyAction.Path, proxyAction.Target, proxyAction.Target == ProxyDestination.S3)
                 : DefaultTransformer;
 
             var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions,

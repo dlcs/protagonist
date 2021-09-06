@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.Security;
 using DLCS.Repository.Strategy;
 using FakeItEasy;
@@ -109,7 +109,7 @@ namespace DLCS.Repository.Tests.Strategy
             
             // Assert
             httpHandler.CallsMade.Should().BeNullOrEmpty();
-            result.Stream.Should().Be(Stream.Null);
+            result.Stream.Should().BeSameAs(Stream.Null);
             result.IsEmpty.Should().BeTrue();
         }
         
@@ -131,7 +131,7 @@ namespace DLCS.Repository.Tests.Strategy
             
             // Assert
             httpHandler.CallsMade.Should().Contain(originUri);
-            result.Stream.Should().Be(Stream.Null);
+            result.Stream.Should().BeSameAs(Stream.Null);
             result.IsEmpty.Should().BeTrue();
         }
     }

@@ -45,6 +45,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orchestrator.Tests", "Orche
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Helpers", "Test.Helpers\Test.Helpers.csproj", "{68876B84-0636-4573-A53A-926AB5C16231}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API.Client", "API.Client\API.Client.csproj", "{252F2167-CC85-45A0-9D67-1F8125F64C1D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -127,6 +129,10 @@ Global
 		{68876B84-0636-4573-A53A-926AB5C16231}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{68876B84-0636-4573-A53A-926AB5C16231}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68876B84-0636-4573-A53A-926AB5C16231}.Release|Any CPU.Build.0 = Release|Any CPU
+		{252F2167-CC85-45A0-9D67-1F8125F64C1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{252F2167-CC85-45A0-9D67-1F8125F64C1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{252F2167-CC85-45A0-9D67-1F8125F64C1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{252F2167-CC85-45A0-9D67-1F8125F64C1D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

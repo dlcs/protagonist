@@ -28,7 +28,7 @@ namespace DLCS.Repository.Tests.Strategy
             var empty = OriginResponse.Empty;
             
             // Assert
-            empty.Stream.Should().Be(Stream.Null);
+            empty.Stream.Should().BeSameAs(Stream.Null);
             empty.IsEmpty.Should().BeTrue();
         }
         

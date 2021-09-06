@@ -131,7 +131,7 @@ namespace Thumbs
             }
 
             var infoJson = $"{redirectPath}info.json";
-            context.Response.Redirect(infoJson);
+            context.Response.SeeOther(infoJson);
             return context.Response.CompleteAsync();
         }
 

@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.ReverseProxy;
+using Orchestrator.Assets;
+using Orchestrator.Features.Images.Orchestration;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
 
@@ -35,7 +37,9 @@ namespace Orchestrator.Features.Images
             });
 
             DefaultTransformer = HttpTransformer.Default;
-            RequestOptions = new ForwarderRequestConfig {Timeout = TimeSpan.FromSeconds(100)};
+            
+            // TODO - make this configurable, potentially by target
+            RequestOptions = new ForwarderRequestConfig {Timeout = TimeSpan.FromSeconds(100)};  
         }
 
         /// <summary>
@@ -49,38 +53,74 @@ namespace Orchestrator.Features.Images
             var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
                 .CreateLogger(nameof(ImageRouteHandlers));
             var settings = endpoints.ServiceProvider.GetService<IOptions<ReverseProxySettings>>();
+            var orchestrator = endpoints.ServiceProvider.GetService<IImageOrchestrator>();
 
-            endpoints.Map("/iiif-img/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
+            endpoints.MapGet("/iiif-img/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
             {
                 logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
                 var proxyResponse = await requestHandler.HandleRequest(httpContext);
-                await ProxyRequest(logger, httpContext, forwarder, proxyResponse, settings);
+                await ProcessResponse(logger, httpContext, forwarder, proxyResponse, settings, orchestrator);
             });
+        }
+        
+        private static async Task ProcessResponse(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
+            IProxyActionResult proxyActionResult, IOptions<ReverseProxySettings> reverseProxySettings,
+            IImageOrchestrator imageOrchestrator)
+        {
+            if (proxyActionResult is StatusCodeResult statusCodeResult)
+            {
+                HandleStatusCodeResult(httpContext, statusCodeResult);
+                return;
+            }
+
+            bool requiresAuth = false;
+            if (proxyActionResult is ProxyImageServerResult proxyImageServer)
+            {
+                await EnsureImageOrchestrated(httpContext, proxyImageServer, imageOrchestrator);
+            }
+
+            var proxyAction = proxyActionResult as ProxyActionResult; 
+            await ProxyRequest(logger, httpContext, forwarder, reverseProxySettings, proxyAction);
+        }
+        
+        private static void HandleStatusCodeResult(HttpContext httpContext, StatusCodeResult statusCodeResult)
+        {
+            httpContext.Response.StatusCode = (int)statusCodeResult.StatusCode;
+            foreach (var header in statusCodeResult.Headers)
+            {
+                httpContext.Response.Headers.Add(header);
+            }
+        }
+
+        private static async Task EnsureImageOrchestrated(HttpContext httpContext,
+            ProxyImageServerResult proxyImageServer, IImageOrchestrator imageOrchestrator)
+        {
+            if (proxyImageServer.OrchestrationImage.Status == OrchestrationStatus.Orchestrated)
+            {
+                // TODO - how do we handle an image having been scavenged?
+                return;
+            }
+         
+            // Orchestrate image
+            await imageOrchestrator.OrchestrateImage(proxyImageServer.OrchestrationImage, httpContext.RequestAborted);
         }
 
         private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
-            IProxyActionResult proxyActionResult, IOptions<ReverseProxySettings> reverseProxySettings)
+            IOptions<ReverseProxySettings> reverseProxySettings, ProxyActionResult? proxyAction)
         {
-            if (proxyActionResult is StatusCodeProxyResult statusCodeResult)
-            {
-                httpContext.Response.StatusCode = (int)statusCodeResult.StatusCode;
-                foreach (var header in statusCodeResult.Headers)
-                {
-                    httpContext.Response.Headers.Add(header);
-                }
-                return;
-            }
-            
-            var proxyAction = proxyActionResult as ProxyActionResult; 
             var root = reverseProxySettings.Value.GetAddressForProxyTarget(proxyAction.Target).ToString();
 
             var transformer = proxyAction.HasPath
-                ? new PathRewriteTransformer(proxyAction.Path)
+                ? new PathRewriteTransformer(
+                    proxyAction.Path, 
+                    proxyAction.Target, 
+                    proxyAction.Path.StartsWith("http"))
                 : DefaultTransformer;
-
+            
             var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions,
                 transformer);
 
+            // TODO - spruce up this logging, store startTime.ticks and switch
             // Check if the proxy operation was successful
             if (error != ForwarderError.None)
             {

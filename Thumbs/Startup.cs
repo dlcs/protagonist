@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using Amazon.S3;
 using DLCS.Model.Assets;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
@@ -42,7 +43,7 @@ namespace Thumbs
             services.AddAWSService<IAmazonS3>();
             services.AddSingleton<IBucketReader, BucketReader>();
             services.AddSingleton<AssetDeliveryPathParser>();
-            services.AddSingleton<ICustomerRepository, CustomerRepository>();
+            services.AddSingleton<ICustomerRepository, DapperCustomerRepository>();
             services.AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>();
             services.AddSingleton<IThumbRepository, ThumbRepository>();
             services.AddSingleton<IThumbReorganiser, ThumbReorganiser>();

@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using DLCS.Model.Customer;
+using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
+using DLCS.Repository.Caching;
 using DLCS.Repository.Settings;
 using FakeItEasy;
 using FluentAssertions;
@@ -56,7 +57,7 @@ namespace DLCS.Repository.Tests
             Func<Task<CustomerPathElement>> action = () => sut.GetCustomer($"not{CustomerId.ToString()}");
 
             // Assert
-            action.Should().Throw<KeyNotFoundException>();
+            action.Should().ThrowAsync<KeyNotFoundException>();
         }
         
         [Fact]
@@ -79,7 +80,7 @@ namespace DLCS.Repository.Tests
             Func<Task<CustomerPathElement>> action = () => sut.GetCustomer($"not{CustomerName}");
 
             // Assert
-            action.Should().Throw<KeyNotFoundException>();
+            action.Should().ThrowAsync<KeyNotFoundException>();
         }
     }
 }
