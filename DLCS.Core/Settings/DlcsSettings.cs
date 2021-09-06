@@ -39,6 +39,5 @@ namespace DLCS.Core.Settings
         /// URL format of NamedQuery for generating manifest for space.
         /// </summary>
         public string SpaceManifestQuery { get; set; }
-        
     }
 }

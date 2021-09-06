@@ -30,11 +30,6 @@ namespace Portal.Pages.Account
             [Required]
             [DataType(DataType.Password)]
             public string Password { get; set; }
-            
-            // TODO - conditional validation
-            //public string? ApiKey { get; set; }
-
-            //[DataType(DataType.Password)] public string? ApiSecret { get; set; }
         }
 
         public LoginModel(IMediator mediator)
