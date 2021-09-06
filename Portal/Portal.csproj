@@ -25,6 +25,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\API.Client\API.Client.csproj" />
       <ProjectReference Include="..\API\API.csproj" />
       <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
       <ProjectReference Include="..\DLCS.Mediatr\DLCS.Mediatr.csproj" />
