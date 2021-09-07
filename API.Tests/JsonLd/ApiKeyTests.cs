@@ -1,4 +1,4 @@
-﻿using API.JsonLd;
+﻿using API.Client.JsonLd;
 using FluentAssertions;
 using Xunit;
 

@@ -4,13 +4,13 @@ using System.Linq.Dynamic.Core;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using API.JsonLd;
+using API.Client;
+using API.Client.JsonLd;
 using DLCS.Core;
 using DLCS.Core.Settings;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Portal.Legacy;
 using Portal.Features.Spaces.Models;
 using Portal.Settings;
 

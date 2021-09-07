@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Client;
 using MediatR;
-using Portal.Legacy;
 
 namespace Portal.Features.Keys.Requests
 {

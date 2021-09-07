@@ -1,8 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using API.Client;
 using MediatR;
 using Portal.Behaviours;
-using Portal.Legacy;
 
 namespace Portal.Features.Users.Commands
 {

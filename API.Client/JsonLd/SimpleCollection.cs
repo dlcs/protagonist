@@ -2,7 +2,7 @@
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace API.JsonLd
+namespace API.Client.JsonLd
 {
     /// <summary>
     /// Base class for JsonLd collections

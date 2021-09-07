@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace API.JsonLd
+namespace API.Client.JsonLd
 {
     public class HydraImageCollection : HydraCollectionBase
     {

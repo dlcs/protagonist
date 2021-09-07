@@ -1,7 +1,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace API.JsonLd
+namespace API.Client.JsonLd
 {
     public class Image : JsonLdBase
     {

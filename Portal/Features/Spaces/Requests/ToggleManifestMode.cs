@@ -1,11 +1,13 @@
 ﻿using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Client;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Portal.Behaviours;
+using SpaceX = API.Client.JsonLd.SpaceX;
 
 namespace Portal.Features.Spaces.Requests
 {
@@ -54,11 +56,11 @@ namespace Portal.Features.Spaces.Requests
         {
             if (toggleOn)
             {
-                dbSpace.AddTag(API.JsonLd.SpaceX.ManifestTag);
+                dbSpace.AddTag(SpaceX.ManifestTag);
             }
             else
             {
-                dbSpace.RemoveTag(API.JsonLd.SpaceX.ManifestTag);
+                dbSpace.RemoveTag(SpaceX.ManifestTag);
             }
 
             var changeCount = await dbContext.SaveChangesAsync(cancellationToken);

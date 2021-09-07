@@ -21,7 +21,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Portal.Behaviours;
-using Portal.Legacy;
 using Portal.Settings;
 
 namespace Portal

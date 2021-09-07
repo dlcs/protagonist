@@ -6,14 +6,13 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using API.Features.Image.Models;
-using API.JsonLd;
+using API.Client.JsonLd;
 using DLCS.Web.Response;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Portal.Legacy
+namespace API.Client
 {
     /// <summary>
     /// Client for Dlcs API

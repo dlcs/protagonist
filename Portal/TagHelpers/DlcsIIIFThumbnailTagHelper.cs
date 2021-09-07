@@ -1,5 +1,5 @@
 using System;
-using API.JsonLd;
+using API.Client.JsonLd;
 using DLCS.Core.Settings;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 

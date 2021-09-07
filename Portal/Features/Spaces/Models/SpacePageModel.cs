@@ -1,5 +1,5 @@
 using System;
-using API.JsonLd;
+using API.Client.JsonLd;
 
 namespace Portal.Features.Spaces.Models
 {

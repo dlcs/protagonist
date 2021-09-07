@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace API.JsonLd
+namespace API.Client.JsonLd
 {
     public class ApiKey : JsonLdBase
     {

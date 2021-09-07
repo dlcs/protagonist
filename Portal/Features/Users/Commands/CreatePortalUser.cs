@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using API.JsonLd;
+using API.Client;
+using API.Client.JsonLd;
 using Destructurama.Attributed;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Portal.Behaviours;
-using Portal.Legacy;
 
 namespace Portal.Features.Users.Commands
 {

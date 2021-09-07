@@ -2,10 +2,10 @@ using System;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using API.JsonLd;
+using API.Client;
+using API.Client.JsonLd;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Portal.Legacy;
 
 namespace Portal.Features.Spaces.Requests
 {
