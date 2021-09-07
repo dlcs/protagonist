@@ -1,8 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using API.JsonLd;
+using API.Client;
+using API.Client.JsonLd;
 using MediatR;
-using Portal.Legacy;
 
 namespace Portal.Features.Users.Requests
 {
@@ -15,9 +15,9 @@ namespace Portal.Features.Users.Requests
     
     public class GetPortalUsersHandler : IRequestHandler<GetPortalUsers, SimpleCollection<PortalUser>?>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
 
-        public GetPortalUsersHandler(DlcsClient dlcsClient)
+        public GetPortalUsersHandler(IDlcsClient dlcsClient)
         {
             this.dlcsClient = dlcsClient;
         }

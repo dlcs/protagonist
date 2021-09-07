@@ -4,13 +4,13 @@ using System.Linq.Dynamic.Core;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using API.JsonLd;
+using API.Client;
+using API.Client.JsonLd;
 using DLCS.Core;
 using DLCS.Core.Settings;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Portal.Legacy;
 using Portal.Features.Spaces.Models;
 using Portal.Settings;
 
@@ -40,14 +40,14 @@ namespace Portal.Features.Spaces.Requests
 
     public class GetSpaceDetailsHandler : IRequestHandler<GetSpaceDetails, SpacePageModel>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
         private readonly ClaimsPrincipal claimsPrincipal;
         private readonly PortalSettings portalSettings;
         private readonly DlcsSettings dlcsSettings;
         private readonly ILogger<GetSpaceDetailsHandler> logger;
 
         public GetSpaceDetailsHandler(
-            DlcsClient dlcsClient, 
+            IDlcsClient dlcsClient, 
             IOptions<PortalSettings> portalSettings,
             IOptions<DlcsSettings> dlcsSettings,
             ClaimsPrincipal claimsPrincipal,

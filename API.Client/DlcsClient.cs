@@ -6,19 +6,18 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using API.Features.Image.Models;
-using API.JsonLd;
+using API.Client.JsonLd;
 using DLCS.Web.Response;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Portal.Legacy
+namespace API.Client
 {
     /// <summary>
     /// Client for Dlcs API
     /// </summary>
-    public class DlcsClient
+    public class DlcsClient : IDlcsClient
     {
         private readonly ILogger<DlcsClient> logger;
         private readonly HttpClient httpClient;
@@ -135,12 +134,6 @@ namespace Portal.Legacy
             var response = await httpClient.PutAsync(uri, ApiBody(asset));
             return await response.ReadAsJsonAsync<AssetJsonLD>(true, jsonSerializerSettings);
         }
-        
-        private HttpContent ApiBody(JsonLdBase apiObject)
-        {
-            var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);
-            return new StringContent(jsonString, Encoding.UTF8, "application/json");
-        }
 
         public async Task<HydraImageCollection> PatchImages(HydraImageCollection images, int spaceId)
         {
@@ -153,6 +146,17 @@ namespace Portal.Legacy
             var response = await httpClient.PatchAsync(uri, ApiBody(images));
             var patched = await response.ReadAsJsonAsync<HydraImageCollection>(true, jsonSerializerSettings);
             return patched;
+        }
+
+        public Task<bool> ReingestAsset(int requestSpaceId, string requestImageId)
+        {
+            throw new NotImplementedException();
+        }
+
+        private HttpContent ApiBody(JsonLdBase apiObject)
+        {
+            var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);
+            return new StringContent(jsonString, Encoding.UTF8, "application/json");
         }
     }
 }

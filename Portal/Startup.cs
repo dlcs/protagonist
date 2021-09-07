@@ -21,7 +21,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Portal.Behaviours;
-using Portal.Legacy;
 using Portal.Settings;
 
 namespace Portal
@@ -83,7 +82,7 @@ namespace Portal
                 opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
             );
 
-            services.AddHttpClient<DlcsClient>(client =>
+            services.AddHttpClient<IDlcsClient, DlcsClient>(client =>
             {
                 var dlcsSection = configuration.GetSection("DLCS");
                 var dlcsOptions = dlcsSection.Get<DlcsSettings>();

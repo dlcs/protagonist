@@ -1,7 +1,7 @@
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace API.JsonLd
+namespace API.Client.JsonLd
 {
     public class Space : JsonLdBase
     {

@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using API.Client;
+using API.Client.JsonLd;
 using DLCS.Core.Settings;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -38,7 +40,7 @@ namespace Portal.Pages.Spaces
         public async Task<IActionResult> OnGetAsync(int id)
         {
             Space = id.ToString();
-            SpacePageModel = await mediator.Send(new GetSpaceDetails(id, nameof(API.JsonLd.Image.Number1)));
+            SpacePageModel = await mediator.Send(new GetSpaceDetails(id, nameof(Image.Number1)));
 
             if (SpacePageModel.Space == null)
             {
@@ -77,7 +79,7 @@ namespace Portal.Pages.Spaces
             if (images != null)
             {
                 var highest = orderDict.Values.Max();
-                foreach (API.JsonLd.Image image in images.Members)
+                foreach (Image image in images.Members)
                 {
                     if (orderDict.ContainsKey(image.Id))
                     {

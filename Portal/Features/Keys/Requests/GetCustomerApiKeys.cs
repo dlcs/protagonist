@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Client;
 using MediatR;
-using Portal.Legacy;
 
 namespace Portal.Features.Keys.Requests
 {
@@ -15,9 +15,9 @@ namespace Portal.Features.Keys.Requests
 
     public class GetCustomerApiKeysHandler : IRequestHandler<GetCustomerApiKeys, IEnumerable<string>?>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
 
-        public GetCustomerApiKeysHandler(DlcsClient dlcsClient)
+        public GetCustomerApiKeysHandler(IDlcsClient dlcsClient)
         {
             this.dlcsClient = dlcsClient;
         }

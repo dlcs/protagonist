@@ -1,8 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using API.Client;
 using MediatR;
 using Portal.Behaviours;
-using Portal.Legacy;
 
 namespace Portal.Features.Users.Commands
 {
@@ -21,9 +21,9 @@ namespace Portal.Features.Users.Commands
     
     public class DeletePortalUserHandler : IRequestHandler<DeletePortalUser, bool>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
 
-        public DeletePortalUserHandler(DlcsClient dlcsClient)
+        public DeletePortalUserHandler(IDlcsClient dlcsClient)
         {
             this.dlcsClient = dlcsClient;
         }

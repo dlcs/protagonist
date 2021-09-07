@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using API.Features.Image.Models;
+using API.Client.JsonLd;
 using API.Settings;
 using DLCS.Core;
 using DLCS.Model.Storage;

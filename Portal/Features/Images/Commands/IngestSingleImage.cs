@@ -2,14 +2,14 @@
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using API.Features.Image.Models;
+using API.Client;
+using API.Client.JsonLd;
 using DLCS.Core.Settings;
 using DLCS.Model.Storage;
 using DLCS.Repository.Spaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Portal.Legacy;
 
 namespace Portal.Features.Images.Commands
 {
@@ -34,7 +34,7 @@ namespace Portal.Features.Images.Commands
         private readonly ClaimsPrincipal claimsPrincipal;
         private readonly IBucketReader bucketReader;
         private readonly DlcsSettings settings;
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
         private readonly ILogger<IngestImageFromFileHandler> logger;
         private readonly ISpaceRepository spaceRepository;
 
@@ -42,7 +42,7 @@ namespace Portal.Features.Images.Commands
             ClaimsPrincipal claimsPrincipal,
             IBucketReader bucketReader,
             IOptions<DlcsSettings> settings,
-            DlcsClient dlcsClient,
+            IDlcsClient dlcsClient,
             ILogger<IngestImageFromFileHandler> logger,
             ISpaceRepository spaceRepository)
         {

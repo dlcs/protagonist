@@ -2,10 +2,10 @@ using System;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using API.JsonLd;
+using API.Client;
+using API.Client.JsonLd;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Portal.Legacy;
 
 namespace Portal.Features.Spaces.Requests
 {
@@ -18,10 +18,10 @@ namespace Portal.Features.Spaces.Requests
         {
             private readonly ClaimsPrincipal principal;
             private readonly ILogger logger;
-            private readonly DlcsClient dlcsClient;
+            private readonly IDlcsClient dlcsClient;
 
             public CreateNewSpaceHandler(
-                DlcsClient dlcsClient, 
+                IDlcsClient dlcsClient, 
                 ClaimsPrincipal principal,
                 ILogger<GetAllSpacesHandler> logger)
             {

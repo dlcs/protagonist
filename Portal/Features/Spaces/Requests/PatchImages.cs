@@ -1,8 +1,8 @@
 using System.Threading;
 using System.Threading.Tasks;
-using API.JsonLd;
+using API.Client;
+using API.Client.JsonLd;
 using MediatR;
-using Portal.Legacy;
 
 namespace Portal.Features.Spaces.Requests
 {
@@ -14,9 +14,9 @@ namespace Portal.Features.Spaces.Requests
 
     public class PatchImagesHandler : IRequestHandler<PatchImages, HydraImageCollection>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
 
-        public PatchImagesHandler(DlcsClient dlcsClient)
+        public PatchImagesHandler(IDlcsClient dlcsClient)
         {
             this.dlcsClient = dlcsClient;
         }

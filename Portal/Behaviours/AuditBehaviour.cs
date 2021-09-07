@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Client;
 using DLCS.Mediatr.Behaviours;
 using MediatR;
 using Microsoft.Extensions.Logging;

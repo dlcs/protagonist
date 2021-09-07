@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace API.JsonLd
+namespace API.Client.JsonLd
 {
     /// <summary>
     /// Hydra entity representing User of Portal UI.

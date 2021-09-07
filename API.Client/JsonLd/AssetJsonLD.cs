@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using API.JsonLd;
-using Newtonsoft.Json;
 
-namespace API.Features.Image.Models
+namespace API.Client.JsonLd
 {
-    // NOTE - these classes will be worked on when 'real' implementation of API is added. These are passed directly
-    // to API for now.
-    // TODO - Ideally we could inherit from DLCS.Model.Assets.Asset here but would need to make all props nullable
-    // and I'm unsure of side effects
+    // TODO - as a result of refactoring from two different directions into API.Client, we now have this class AND Image.
+    // need to get rid of one of them!
 
     public class AssetJsonLD  : JsonLdBase
     {

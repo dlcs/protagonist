@@ -1,9 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
-using API.JsonLd;
+using API.Client;
+using API.Client.JsonLd;
 using MediatR;
 using Portal.Features.Spaces.Models;
-using Portal.Legacy;
 
 namespace Portal.Features.Spaces.Requests
 {
@@ -15,9 +15,9 @@ namespace Portal.Features.Spaces.Requests
     
     public class GetImageHandler : IRequestHandler<GetImage, Image>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
 
-        public GetImageHandler(DlcsClient dlcsClient)
+        public GetImageHandler(IDlcsClient dlcsClient)
         {
             this.dlcsClient = dlcsClient;
         }

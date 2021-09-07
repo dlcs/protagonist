@@ -1,6 +1,6 @@
 using System;
 
-namespace API.JsonLd
+namespace API.Client.JsonLd
 {
     public class Batch : JsonLdBase
     {

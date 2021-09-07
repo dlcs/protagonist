@@ -19,7 +19,7 @@ namespace API.Client
         }
 
         /// <summary>
-        /// Get base-64 encoded string containins basic authentication details for customer.
+        /// Get base-64 encoded string contains basic authentication details for customer.
         /// </summary>
         /// <param name="customer"><see cref="Customer"/> to get credentials for.</param>
         /// <param name="salt">ApiSalt for generating API key.</param>

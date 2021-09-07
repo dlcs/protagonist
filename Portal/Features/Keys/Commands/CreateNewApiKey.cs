@@ -1,8 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using API.JsonLd;
+using API.Client;
+using API.Client.JsonLd;
 using MediatR;
-using Portal.Legacy;
 
 namespace Portal.Features.Keys.Commands
 {
@@ -15,9 +15,9 @@ namespace Portal.Features.Keys.Commands
     
     public class CreateNewApiKeyHandler : IRequestHandler<CreateNewApiKey, ApiKey>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
 
-        public CreateNewApiKeyHandler(DlcsClient dlcsClient)
+        public CreateNewApiKeyHandler(IDlcsClient dlcsClient)
         {
             this.dlcsClient = dlcsClient;
         }

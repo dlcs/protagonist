@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using System.Threading.Tasks;
-using API.JsonLd;
+using API.Client.JsonLd;
 using DLCS.Core.Settings;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
