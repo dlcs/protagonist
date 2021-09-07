@@ -126,3 +126,7 @@ img.iiifpreview {
 .form-switch {
   margin: 0.6em 0;
 }
+
+.form-group {
+  margin-bottom: 1rem;  
+}

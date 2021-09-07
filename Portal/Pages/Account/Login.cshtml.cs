@@ -14,12 +14,12 @@ namespace Portal.Pages.Account
         private readonly IMediator mediator;
 
         [BindProperty]
-        public InputModel Input { get; set; }
+        public InputModel? Input { get; set; }
 
-        public string ReturnUrl { get; set; }
+        public string? ReturnUrl { get; set; }
 
         [TempData]
-        public string ErrorMessage { get; set; }
+        public string? ErrorMessage { get; set; }
 
         public class InputModel
         {

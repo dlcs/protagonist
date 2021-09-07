@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using Amazon.S3;
@@ -82,22 +83,25 @@ namespace Portal
                 opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
             );
 
-            services.AddHttpClient<IDlcsClient, DlcsClient>(client =>
-            {
-                var dlcsSection = configuration.GetSection("DLCS");
-                var dlcsOptions = dlcsSection.Get<DlcsSettings>();
-
-                client.BaseAddress = dlcsOptions.ApiRoot;
-                client.DefaultRequestHeaders.Accept
-                    .Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                client.DefaultRequestHeaders.Add("User-Agent", "DLCS-Portal-Protagonist");
-                client.Timeout = TimeSpan.FromMilliseconds(dlcsOptions.DefaultTimeoutMs);
-            });
+            services.AddHttpClient<IDlcsClient, DlcsClient>(GetHttpClientSettings);
+            services.AddHttpClient<AdminDlcsClient>(GetHttpClientSettings);
 
             services
                 .AddHealthChecks()
                 .AddUrlGroup(dlcsSettings.ApiRoot, "DLCS API")
                 .AddDbContextCheck<DlcsContext>("DLCS-DB");
+        }
+
+        private void GetHttpClientSettings(HttpClient client)
+        {
+            var dlcsSection = configuration.GetSection("DLCS");
+            var dlcsOptions = dlcsSection.Get<DlcsSettings>();
+
+            client.BaseAddress = dlcsOptions.ApiRoot;
+            client.DefaultRequestHeaders.Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Add("User-Agent", "DLCS-Portal-Protagonist");
+            client.Timeout = TimeSpan.FromMilliseconds(dlcsOptions.DefaultTimeoutMs);
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

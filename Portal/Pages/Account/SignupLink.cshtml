@@ -1,0 +1,59 @@
+@page "{signupCode}"
+@model Portal.Pages.Account.SignupModel
+
+@{
+    ViewData["Title"] = "Create a DLCS account";
+}
+
+<div class="row">
+    <div class="col-md-9">
+        @if (Model.CreatedMessage != null)
+        {
+            <div class="alert alert-success" role="alert">
+                You have successfully created an account! 
+                You can now <a href="/account/login">log in</a> with the email and password you just supplied.
+            </div>
+        } 
+        else if (Model.ValidLink)
+        {
+            <form method="post">
+                <hr>
+                <div asp-validation-summary="All" class="text-danger"></div>
+                <div class="form-group">
+                    <label asp-for="Input.DisplayName"></label>
+                    <input asp-for="Input.DisplayName" class="form-control">
+                    <span asp-validation-for="Input.DisplayName" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Input.Slug"></label>
+                    <input asp-for="Input.Slug" class="form-control">
+                    <span asp-validation-for="Input.Slug" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Input.Email"></label>
+                    <input asp-for="Input.Email" class="form-control">
+                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Input.Password"></label>
+                    <input asp-for="Input.Password" class="form-control">
+                    <span asp-validation-for="Input.Password" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Input.ConfirmPassword"></label>
+                    <input asp-for="Input.ConfirmPassword" class="form-control">
+                    <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Create account</button>
+                </div>
+            </form>
+        }
+        else
+        {
+            <div class="alert alert-danger" role="alert">
+                This signup link is not valid!
+            </div>
+        }
+    </div>
+</div>
