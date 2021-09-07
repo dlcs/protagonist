@@ -10,6 +10,7 @@ using DLCS.Repository.Strategy.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images.Orchestration

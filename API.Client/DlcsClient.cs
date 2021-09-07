@@ -147,7 +147,12 @@ namespace API.Client
             var patched = await response.ReadAsJsonAsync<HydraImageCollection>(true, jsonSerializerSettings);
             return patched;
         }
-        
+
+        public Task<bool> ReingestAsset(int requestSpaceId, string requestImageId)
+        {
+            throw new NotImplementedException();
+        }
+
         private HttpContent ApiBody(JsonLdBase apiObject)
         {
             var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);

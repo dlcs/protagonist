@@ -17,5 +17,8 @@ namespace API.Client
         Task<bool> DeletePortalUser(string portalUserId);
         Task<AssetJsonLD?> DirectIngestImage(int spaceId, string imageId, AssetJsonLD asset);
         Task<HydraImageCollection> PatchImages(HydraImageCollection images, int spaceId);
+        
+        
+        Task<bool> ReingestAsset(int requestSpaceId, string requestImageId);
     }
 }
