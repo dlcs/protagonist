@@ -29,11 +29,11 @@ namespace Portal.Features.Users.Commands
     
     public class CreatePortalUserHandler : IRequestHandler<CreatePortalUser, PortalUser?>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
         private readonly ILogger<CreatePortalUserHandler> logger;
 
         public CreatePortalUserHandler(
-            DlcsClient dlcsClient, 
+            IDlcsClient dlcsClient, 
             ILogger<CreatePortalUserHandler> logger)
         {
             this.dlcsClient = dlcsClient;

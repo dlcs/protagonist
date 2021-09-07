@@ -15,9 +15,9 @@ namespace Portal.Features.Keys.Commands
     
     public class CreateNewApiKeyHandler : IRequestHandler<CreateNewApiKey, ApiKey>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
 
-        public CreateNewApiKeyHandler(DlcsClient dlcsClient)
+        public CreateNewApiKeyHandler(IDlcsClient dlcsClient)
         {
             this.dlcsClient = dlcsClient;
         }

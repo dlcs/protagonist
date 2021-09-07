@@ -40,14 +40,14 @@ namespace Portal.Features.Spaces.Requests
 
     public class GetSpaceDetailsHandler : IRequestHandler<GetSpaceDetails, SpacePageModel>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
         private readonly ClaimsPrincipal claimsPrincipal;
         private readonly PortalSettings portalSettings;
         private readonly DlcsSettings dlcsSettings;
         private readonly ILogger<GetSpaceDetailsHandler> logger;
 
         public GetSpaceDetailsHandler(
-            DlcsClient dlcsClient, 
+            IDlcsClient dlcsClient, 
             IOptions<PortalSettings> portalSettings,
             IOptions<DlcsSettings> dlcsSettings,
             ClaimsPrincipal claimsPrincipal,

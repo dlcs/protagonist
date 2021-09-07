@@ -14,9 +14,9 @@ namespace Portal.Features.Spaces.Requests
 
     public class PatchImagesHandler : IRequestHandler<PatchImages, HydraImageCollection>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
 
-        public PatchImagesHandler(DlcsClient dlcsClient)
+        public PatchImagesHandler(IDlcsClient dlcsClient)
         {
             this.dlcsClient = dlcsClient;
         }

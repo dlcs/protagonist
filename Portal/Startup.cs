@@ -82,7 +82,7 @@ namespace Portal
                 opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
             );
 
-            services.AddHttpClient<DlcsClient>(client =>
+            services.AddHttpClient<IDlcsClient, DlcsClient>(client =>
             {
                 var dlcsSection = configuration.GetSection("DLCS");
                 var dlcsOptions = dlcsSection.Get<DlcsSettings>();

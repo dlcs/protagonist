@@ -17,7 +17,7 @@ namespace API.Client
     /// <summary>
     /// Client for Dlcs API
     /// </summary>
-    public class DlcsClient
+    public class DlcsClient : IDlcsClient
     {
         private readonly ILogger<DlcsClient> logger;
         private readonly HttpClient httpClient;
@@ -134,12 +134,6 @@ namespace API.Client
             var response = await httpClient.PutAsync(uri, ApiBody(asset));
             return await response.ReadAsJsonAsync<AssetJsonLD>(true, jsonSerializerSettings);
         }
-        
-        private HttpContent ApiBody(JsonLdBase apiObject)
-        {
-            var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);
-            return new StringContent(jsonString, Encoding.UTF8, "application/json");
-        }
 
         public async Task<HydraImageCollection> PatchImages(HydraImageCollection images, int spaceId)
         {
@@ -152,6 +146,12 @@ namespace API.Client
             var response = await httpClient.PatchAsync(uri, ApiBody(images));
             var patched = await response.ReadAsJsonAsync<HydraImageCollection>(true, jsonSerializerSettings);
             return patched;
+        }
+        
+        private HttpContent ApiBody(JsonLdBase apiObject)
+        {
+            var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);
+            return new StringContent(jsonString, Encoding.UTF8, "application/json");
         }
     }
 }

@@ -18,10 +18,10 @@ namespace Portal.Features.Spaces.Requests
         {
             private readonly ClaimsPrincipal principal;
             private readonly ILogger logger;
-            private readonly DlcsClient dlcsClient;
+            private readonly IDlcsClient dlcsClient;
 
             public CreateNewSpaceHandler(
-                DlcsClient dlcsClient, 
+                IDlcsClient dlcsClient, 
                 ClaimsPrincipal principal,
                 ILogger<GetAllSpacesHandler> logger)
             {

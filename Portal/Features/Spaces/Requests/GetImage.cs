@@ -15,9 +15,9 @@ namespace Portal.Features.Spaces.Requests
     
     public class GetImageHandler : IRequestHandler<GetImage, Image>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
 
-        public GetImageHandler(DlcsClient dlcsClient)
+        public GetImageHandler(IDlcsClient dlcsClient)
         {
             this.dlcsClient = dlcsClient;
         }

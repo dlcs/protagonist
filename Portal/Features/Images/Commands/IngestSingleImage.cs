@@ -34,7 +34,7 @@ namespace Portal.Features.Images.Commands
         private readonly ClaimsPrincipal claimsPrincipal;
         private readonly IBucketReader bucketReader;
         private readonly DlcsSettings settings;
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
         private readonly ILogger<IngestImageFromFileHandler> logger;
         private readonly ISpaceRepository spaceRepository;
 
@@ -42,7 +42,7 @@ namespace Portal.Features.Images.Commands
             ClaimsPrincipal claimsPrincipal,
             IBucketReader bucketReader,
             IOptions<DlcsSettings> settings,
-            DlcsClient dlcsClient,
+            IDlcsClient dlcsClient,
             ILogger<IngestImageFromFileHandler> logger,
             ISpaceRepository spaceRepository)
         {

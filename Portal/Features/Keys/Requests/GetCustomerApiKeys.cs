@@ -15,9 +15,9 @@ namespace Portal.Features.Keys.Requests
 
     public class GetCustomerApiKeysHandler : IRequestHandler<GetCustomerApiKeys, IEnumerable<string>?>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
 
-        public GetCustomerApiKeysHandler(DlcsClient dlcsClient)
+        public GetCustomerApiKeysHandler(IDlcsClient dlcsClient)
         {
             this.dlcsClient = dlcsClient;
         }

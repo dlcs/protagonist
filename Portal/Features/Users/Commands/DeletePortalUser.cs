@@ -21,9 +21,9 @@ namespace Portal.Features.Users.Commands
     
     public class DeletePortalUserHandler : IRequestHandler<DeletePortalUser, bool>
     {
-        private readonly DlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
 
-        public DeletePortalUserHandler(DlcsClient dlcsClient)
+        public DeletePortalUserHandler(IDlcsClient dlcsClient)
         {
             this.dlcsClient = dlcsClient;
         }
