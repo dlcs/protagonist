@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Portal.Features.Account.Commands;
 
 namespace Portal.Pages.Account
 {
@@ -29,17 +30,14 @@ namespace Portal.Pages.Account
         
         public class InputModel
         {
-            [Display(Name = "Display name of this account (e.g., organisation name)")]
             [Required(ErrorMessage = "Display name is required.")]
             public string DisplayName { get; set; }
             
-            [Display(Name = "Account name that appears as part of a web address")]
             [RegularExpression(@"^[-a-z]*$", ErrorMessage = "Url component can only have lower-case letters and hyphens, max 30 characters.")]
             [Required(ErrorMessage = "Url component is required.")]
             [StringLength(30, MinimumLength = 3)]
             public string Slug { get; set; }
             
-            [Display(Name = "Email address to log into this portal.")]
             [Required(ErrorMessage = "A Valid email address is required.")]
             [EmailAddress]
             public string Email { get; set; }
@@ -81,7 +79,17 @@ namespace Portal.Pages.Account
                 ModelState.AddModelError("Input.Email", $"The url component {Input.Slug} is already taken.");
             }
             if (!ModelState.IsValid) return Page();
-            
+
+            var signupCommand = new SignUpFromLink
+            {
+                CustomerDisplayName = Input.DisplayName,
+                CustomerSlugName = Input.Slug,
+                UserEmail = Input.Email,
+                UserPassword = Input.Password,
+                SignUpCode = signupCode
+            };
+            // error handling here
+            CreatedMessage = await mediator.Send(signupCommand);
             return Page();
         }
 
