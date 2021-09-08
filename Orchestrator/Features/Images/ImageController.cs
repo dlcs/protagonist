@@ -41,7 +41,7 @@ namespace Orchestrator.Features.Images
         /// Optional query parameter, if true then info.json request will not trigger orchestration
         /// </param>
         /// <param name="cancellationToken">Async cancellation token</param>
-        /// <returns></returns>
+        /// <returns>IIIF info.json for specified manifest.</returns>
         [Route("info.json", Name = "info_json")]
         [HttpGet]
         public Task<IActionResult> InfoJson([FromQuery] bool noOrchestrate = false,
