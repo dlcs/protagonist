@@ -92,7 +92,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/test-noauth", Roles = "",
-                MaxUnauthorised = -1, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
+                MaxUnauthorised = -1, Origin = "/test/space", Family = AssetFamily.Timebased, MediaType = "video/mpeg"
             });
             await dbFixture.DbContext.SaveChangesAsync();
             var expectedPath =
@@ -114,7 +114,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/test-auth", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
+                MaxUnauthorised = 100, Origin = "/test/space", Family = AssetFamily.Timebased, MediaType = "video/mpeg"
             });
             await dbFixture.DbContext.SaveChangesAsync();
 
@@ -132,7 +132,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/bearer-fail", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
+                MaxUnauthorised = 100, Origin = "/test/space", Family = AssetFamily.Timebased, MediaType = "video/mpeg"
             });
             await dbFixture.DbContext.SaveChangesAsync();
             const string bearerToken = "ababababab";
@@ -154,7 +154,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/bearer-pass", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
+                MaxUnauthorised = 100, Origin = "/test/space", Family = AssetFamily.Timebased, MediaType = "video/mpeg"
             });
             await dbFixture.DbContext.SaveChangesAsync();
             
@@ -180,7 +180,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/bearer-head", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
+                MaxUnauthorised = 100, Origin = "/test/space", Family = AssetFamily.Timebased, MediaType = "video/mpeg"
             });
             await dbFixture.DbContext.SaveChangesAsync();
 
@@ -201,7 +201,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/cookie-fail", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
+                MaxUnauthorised = 100, Origin = "/test/space", Family = AssetFamily.Timebased, MediaType = "video/mpeg"
             });
             await dbFixture.DbContext.SaveChangesAsync();
 
@@ -222,7 +222,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/cookie-pass", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
+                MaxUnauthorised = 100, Origin = "/test/space", Family = AssetFamily.Timebased, MediaType = "video/mpeg"
             });
             await dbFixture.DbContext.SaveChangesAsync();
             
@@ -248,7 +248,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/cookie-head", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
+                MaxUnauthorised = 100, Origin = "/test/space", Family = AssetFamily.Timebased, MediaType = "video/mpeg"
             });
             await dbFixture.DbContext.SaveChangesAsync();
 

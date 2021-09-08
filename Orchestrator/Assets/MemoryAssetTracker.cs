@@ -137,7 +137,7 @@ namespace Orchestrator.Assets
         {
             switch (asset.Family)
             {
-                case 'I':
+                case AssetFamily.Image:
                     var getImageLocation = assetRepository.GetImageLocation(assetId);
                     var getOpenThumbs = thumbRepository.GetOpenSizes(assetId);
                     var getOrchestrationStatus = statusProvider.GetOrchestrationStatus(assetId);
@@ -154,7 +154,7 @@ namespace Orchestrator.Assets
                         OpenThumbs = getOpenThumbs.Result, // TODO - reorganise thumb layout + create missing eventually
                         Status = getOrchestrationStatus.Result
                     };
-                case 'F':
+                case AssetFamily.File:
                     return new OrchestrationFile
                     {
                         AssetId = assetId, RequiresAuth = asset.RequiresAuth, Origin = asset.Origin,

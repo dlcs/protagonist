@@ -87,7 +87,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/Get_NotFoundHttOrigin_Returns404",
-                Origin = $"{stubAddress}/not-found", Family = 'F', MediaType = "image/jpeg",
+                Origin = $"{stubAddress}/not-found", Family = AssetFamily.File, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -106,7 +106,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/Get_HttpOrigin_ReturnsFile",
-                Origin = $"{stubAddress}/testfile", Family = 'F', MediaType = "image/jpeg",
+                Origin = $"{stubAddress}/testfile", Family = AssetFamily.File, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -126,7 +126,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/Get_BasicAuthHttpOrigin_ReturnsFile",
-                Origin = $"{stubAddress}/authfile", Family = 'F', MediaType = "image/jpeg",
+                Origin = $"{stubAddress}/authfile", Family = AssetFamily.File, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.CustomerOriginStrategies.AddRangeAsync(new CustomerOriginStrategy
@@ -151,7 +151,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/Get_BasicAuthHttpOrigin_BadCredentials_Returns404",
-                Origin = $"{stubAddress}/forbiddenfile", Family = 'F', MediaType = "application/pdf",
+                Origin = $"{stubAddress}/forbiddenfile", Family = AssetFamily.File, MediaType = "application/pdf",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.CustomerOriginStrategies.AddRangeAsync(new CustomerOriginStrategy

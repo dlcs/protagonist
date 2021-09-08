@@ -82,7 +82,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "",
-                Width = 8000, Height = 8000, Roles = "", Family = 'I', MediaType = "image/jpeg",
+                Width = 8000, Height = 8000, Roles = "", Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
 
@@ -116,7 +116,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "",
-                Width = 8000, Height = 8000, Roles = "", Family = 'I', MediaType = "image/jpeg",
+                Width = 8000, Height = 8000, Roles = "", Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
 
@@ -143,7 +143,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "",
-                Width = 8000, Height = 8000, Roles = "", Family = 'I', MediaType = "image/jpeg",
+                Width = 8000, Height = 8000, Roles = "", Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
 
@@ -170,7 +170,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "",
-                Width = 8000, Height = 8000, Roles = "", Family = 'I', MediaType = "image/jpeg",
+                Width = 8000, Height = 8000, Roles = "", Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
 
@@ -209,7 +209,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "", MaxUnauthorised = 500,
-                Width = 8000, Height = 8000, Roles = roleName, Family = 'I', MediaType = "image/jpeg",
+                Width = 8000, Height = 8000, Roles = roleName, Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.Roles.AddAsync(new Role
@@ -304,7 +304,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = $"99/1/test-auth{type}", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                MaxUnauthorised = 100, Origin = "/test/space", Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -331,7 +331,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/test-uv-thumb",
-                Origin = "/test/space", Family = 'I', MediaType = "image/jpeg", ThumbnailPolicy = "default"
+                Origin = "/test/space", Family = AssetFamily.Image, MediaType = "image/jpeg", ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
             var expectedPath = new Uri("http://thumbs/thumbs/99/1/test-uv-thumb/full/!200,200/0/default.jpg");
@@ -358,7 +358,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/known-thumb", Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                Height = 1000, Origin = "/test/space", Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -388,7 +388,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                Height = 1000, Origin = "/test/space", Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -418,7 +418,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                Height = 1000, Origin = "/test/space", Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -447,7 +447,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                Height = 1000, Origin = "/test/space", Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -476,7 +476,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                Height = 1000, Origin = "/test/space", Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -505,7 +505,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                Height = 1000, Origin = "/test/space", Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -537,7 +537,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.Images.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = 99, Space = 1, Id = $"99/1/{imageName}", Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
+                Height = 1000, Origin = "/test/space", Family = AssetFamily.Image, MediaType = "image/jpeg",
                 ThumbnailPolicy = "default"
             });
             await dbFixture.DbContext.SaveChangesAsync();
