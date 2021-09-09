@@ -92,7 +92,6 @@ namespace Orchestrator.Tests.Integration
             var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
 
             // Assert
-            // TODO - improve these tests when we have IIIF models
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_OpenImage_Correct");
             jsonResponse["height"].ToString().Should().Be("8000");

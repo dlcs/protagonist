@@ -103,13 +103,6 @@ namespace Orchestrator.Features.Manifests
         {
             var fullyQualifiedThumbId = GetFullyQualifiedId(assetRequest, orchestratorSettings.Proxy.ThumbsPath);
 
-            string thumbExample = string.Empty;
-            if (!openThumbs.IsNullOrEmpty())
-            {
-                var smallestThumb = Size.FromArray(openThumbs[^1]);
-                thumbExample = $"{fullyQualifiedThumbId}/full/{smallestThumb.Width},{smallestThumb.Height}/0/default.jpg";
-            }
-
             var imageExample = $"{fullyQualifiedImageId}/full/{asset.Width},{asset.Height}/0/default.jpg";
 
             var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/0");
@@ -117,12 +110,6 @@ namespace Orchestrator.Features.Manifests
             {
                 Id = canvasId,
                 Label = new MetaDataValue($"Image - {assetRequest.GetAssetId()}"),
-                Thumbnail = new Thumbnail
-                {
-                    Id = thumbExample,
-                    Service = (InfoJsonBuilder.GetImageApi2_1Level0(fullyQualifiedThumbId, openThumbs) as IService)
-                        .AsList()
-                }.AsList(),
                 Height = asset.Height,
                 Width = asset.Width,
                 Images = new ImageAnnotation
@@ -145,9 +132,24 @@ namespace Orchestrator.Features.Manifests
                 }.AsList()
             };
 
+            if (!openThumbs.IsNullOrEmpty())
+            {
+                var thumbsService = InfoJsonBuilder.GetImageApi2_1Level0(fullyQualifiedThumbId, openThumbs!);
+                var smallestThumb = thumbsService.Sizes[0];
+
+                string thumbExample =
+                    $"{fullyQualifiedThumbId}/full/{smallestThumb.Width},{smallestThumb.Height}/0/default.jpg";
+                
+                canvas.Thumbnail = new Thumbnail
+                {
+                    Id = thumbExample,
+                    Service = thumbsService.AsListOf<IService>() 
+                }.AsList();
+            }
+
             return canvas.AsList();
         }
-        
+
         private string GetFullyQualifiedId(BaseAssetRequest baseAssetRequest, string prefix)
             => assetPathGenerator.GetFullPathForRequest(
                 baseAssetRequest,

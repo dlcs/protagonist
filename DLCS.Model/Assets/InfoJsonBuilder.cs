@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using IIIF;
 using IIIF.ImageApi.Service;
-using IIIF.Presentation.V2;
 
 namespace DLCS.Model.Assets
 {
@@ -19,7 +18,7 @@ namespace DLCS.Model.Assets
         /// <param name="serviceEndpoint">URI for image</param>
         /// <param name="sizes">List of sizes image is available in.</param>
         /// <returns>info.json object</returns>
-        public static JsonLdBase GetImageApi2_1Level0(string serviceEndpoint, List<int[]> sizes)
+        public static ImageService2 GetImageApi2_1Level0(string serviceEndpoint, List<int[]> sizes)
         {
             var imageService = new ImageService2
             {
@@ -47,7 +46,7 @@ namespace DLCS.Model.Assets
         /// <param name="width">Width of image</param>
         /// <param name="height">Height of image</param>
         /// <returns>info.json string</returns>
-        public static JsonLdBase GetImageApi2_1Level1(string serviceEndpoint, int width, int height,
+        public static ImageService2 GetImageApi2_1Level1(string serviceEndpoint, int width, int height,
             List<int[]> sizes)
         {
             var imageService = new ImageService2
