@@ -2,7 +2,6 @@ FROM mcr.microsoft.com/dotnet/sdk:5.0.102-ca-patch-buster-slim-amd64 AS build
 WORKDIR /src
 
 COPY ["API/API.csproj", "API/"]
-COPY ["IIIF/IIIF.csproj", "IIIF/"]
 COPY ["DLCS.Repository/DLCS.Repository.csproj", "DLCS.Repository/"]
 COPY ["DLCS.Model/DLCS.Model.csproj", "DLCS.Model/"]
 COPY ["DLCS.Core/DLCS.Core.csproj", "DLCS.Core/"]
