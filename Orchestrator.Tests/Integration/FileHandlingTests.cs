@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Amazon.S3;
@@ -84,12 +83,9 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_NotFoundHttOrigin_Returns404()
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/Get_NotFoundHttOrigin_Returns404",
-                Origin = $"{stubAddress}/not-found", Family = AssetFamily.File, MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            var id = "99/1/Get_NotFoundHttOrigin_Returns404";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
+                origin: $"{stubAddress}/not-found");
             await dbFixture.DbContext.SaveChangesAsync();
 
             // Act
@@ -103,12 +99,9 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_HttpOrigin_ReturnsFile()
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/Get_HttpOrigin_ReturnsFile",
-                Origin = $"{stubAddress}/testfile", Family = AssetFamily.File, MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            var id = "99/1/Get_HttpOrigin_ReturnsFile";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
+                origin: $"{stubAddress}/testfile");
             await dbFixture.DbContext.SaveChangesAsync();
 
             // Act
@@ -123,12 +116,9 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_BasicAuthHttpOrigin_ReturnsFile()
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/Get_BasicAuthHttpOrigin_ReturnsFile",
-                Origin = $"{stubAddress}/authfile", Family = AssetFamily.File, MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            var id = "99/1/Get_BasicAuthHttpOrigin_ReturnsFile";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
+                origin: $"{stubAddress}/authfile");
             await dbFixture.DbContext.CustomerOriginStrategies.AddRangeAsync(new CustomerOriginStrategy
             {
                 Credentials = orchestratorFixture.ValidCreds, Customer = 99, Id = "basic-auth-file", 
@@ -148,12 +138,9 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_BasicAuthHttpOrigin_BadCredentials_Returns404()
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/Get_BasicAuthHttpOrigin_BadCredentials_Returns404",
-                Origin = $"{stubAddress}/forbiddenfile", Family = AssetFamily.File, MediaType = "application/pdf",
-                ThumbnailPolicy = "default"
-            });
+            var id = "99/1/Get_BasicAuthHttpOrigin_BadCredentials_Returns404";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
+                origin: $"{stubAddress}/forbiddenfile");
             await dbFixture.DbContext.CustomerOriginStrategies.AddRangeAsync(new CustomerOriginStrategy
             {
                 Credentials = orchestratorFixture.ValidCreds, Customer = 99, Id = "basic-forbidden-file", 
