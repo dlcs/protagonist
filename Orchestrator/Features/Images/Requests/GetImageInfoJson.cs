@@ -7,8 +7,8 @@ using DLCS.Model.Assets;
 using DLCS.Model.Security;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
+using IIIF.Serialisation;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -45,7 +45,7 @@ namespace Orchestrator.Features.Images.Requests
         private readonly IAssetRepository assetRepository;
         private readonly IAuthServicesRepository authServicesRepository;
         private readonly IImageOrchestrator orchestrator;
-        private readonly ILogger<GetImageInfoJson> logger;
+        private readonly ILogger<GetImageInfoJsonHandler> logger;
         private readonly OrchestratorSettings orchestratorSettings;
 
         public GetImageInfoJsonHandler(
@@ -55,7 +55,7 @@ namespace Orchestrator.Features.Images.Requests
             IAuthServicesRepository authServicesRepository,
             IImageOrchestrator orchestrator,
             IOptions<OrchestratorSettings> orchestratorSettings,
-            ILogger<GetImageInfoJson> logger)
+            ILogger<GetImageInfoJsonHandler> logger)
         {
             this.assetTracker = assetTracker;
             this.assetPathGenerator = assetPathGenerator;
@@ -82,10 +82,11 @@ namespace Orchestrator.Features.Images.Requests
 
             if (!asset.RequiresAuth)
             {
+                // TODO - update to use JsonLdBase rather than just a string
                 var infoJson =
                     InfoJsonBuilder.GetImageApi2_1Level1(imageId, asset.Width, asset.Height, asset.OpenThumbs);
                 await orchestrationTask;
-                return IIIFJsonResponse.Open(infoJson);
+                return IIIFJsonResponse.Open(infoJson.AsJson());
             }
             
             var authInfoJson = await GetAuthInfoJson(imageId, asset, assetId);
@@ -106,7 +107,8 @@ namespace Orchestrator.Features.Images.Requests
         }
 
         private string GetImageId(GetImageInfoJson request)
-            => assetPathGenerator.GetFullPathForRequest(request.AssetRequest,
+            => assetPathGenerator.GetFullPathForRequest(
+                request.AssetRequest,
                 (assetRequest, template) => DlcsPathHelpers.GeneratePathFromTemplate(
                     template,
                     assetRequest.RoutePrefix,
