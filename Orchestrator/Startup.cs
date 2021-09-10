@@ -1,4 +1,5 @@
 using System.Net.Http;
+using System.Threading.Tasks;
 using Amazon.S3;
 using API.Client;
 using DLCS.Core.Encryption;
@@ -163,6 +164,11 @@ namespace Orchestrator
                 .UseAuthorization()
                 .UseEndpoints(endpoints =>
                 {
+                    endpoints.MapGet("favicon.ico", context =>
+                    {
+                        context.Response.StatusCode = 404;
+                        return Task.CompletedTask;
+                    });
                     endpoints.MapControllers();
                     endpoints.MapReverseProxy();
                     endpoints.MapImageHandling();
