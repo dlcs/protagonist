@@ -50,10 +50,10 @@ namespace Orchestrator.Tests.Assets
         }
 
         [Theory]
-        [InlineData('I', typeof(OrchestrationImage))]
+        [InlineData(AssetFamily.Image, typeof(OrchestrationImage))]
         //[InlineData('T', typeof(OrchestrationAsset))]
         //[InlineData('F', typeof(OrchestrationFile))]
-        public async Task GetOrchestrationAsset_ReturnsCorrectType(char family, Type expectedType)
+        public async Task GetOrchestrationAsset_ReturnsCorrectType(AssetFamily family, Type expectedType)
         {
             // Arrange
             var assetId = new AssetId(1, 1, "go!");
@@ -96,9 +96,9 @@ namespace Orchestrator.Tests.Assets
         }
         
         [Theory]
-        [InlineData('T')]
-        [InlineData('F')]
-        public async Task GetOrchestrationAssetT_ReturnsOrchestrationAsset(char family)
+        [InlineData(AssetFamily.Timebased)]
+        [InlineData(AssetFamily.File)]
+        public async Task GetOrchestrationAssetT_ReturnsOrchestrationAsset(AssetFamily family)
         {
             // Arrange
             var assetId = new AssetId(1, 1, "go!");
@@ -118,7 +118,7 @@ namespace Orchestrator.Tests.Assets
             // Arrange
             var assetId = new AssetId(1, 1, "go!");
             var sizes = new List<int[]> { new[] { 100, 200 } };
-            A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset { Family = 'I' });
+            A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset { Family = AssetFamily.Image });
             A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
 
             // Act
@@ -130,9 +130,9 @@ namespace Orchestrator.Tests.Assets
         }
         
         [Theory]
-        [InlineData('T')]
-        [InlineData('F')]
-        public async Task GetOrchestrationAssetT_Null_IfWrongTypeAskedFor(char family)
+        [InlineData(AssetFamily.Timebased)]
+        [InlineData(AssetFamily.File)]
+        public async Task GetOrchestrationAssetT_Null_IfWrongTypeAskedFor(AssetFamily family)
         {
             // Arrange
             var assetId = new AssetId(1, 1, "go!");

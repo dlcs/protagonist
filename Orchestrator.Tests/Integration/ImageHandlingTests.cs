@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
 using DLCS.Model.Security;
 using DLCS.Repository.Entities;
 using FluentAssertions;
@@ -79,12 +78,7 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             var id = $"99/1/{nameof(GetInfoJson_OpenImage_Correct)}";
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "",
-                Width = 8000, Height = 8000, Roles = "", Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset(id);
 
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
@@ -98,7 +92,6 @@ namespace Orchestrator.Tests.Integration
             var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
 
             // Assert
-            // TODO - improve these tests when we have IIIF models
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_OpenImage_Correct");
             jsonResponse["height"].ToString().Should().Be("8000");
@@ -113,12 +106,7 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             var id = $"99/1/{nameof(GetInfoJson_OrchestratesImage)}";
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "",
-                Width = 8000, Height = 8000, Roles = "", Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset(id);
 
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
@@ -140,12 +128,7 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             var id = $"99/1/{nameof(GetInfoJson_DoesNotOrchestratesImage_IfQueryParamPassed)}";
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "",
-                Width = 8000, Height = 8000, Roles = "", Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset(id);
 
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
@@ -167,12 +150,7 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             var id = $"99/1/{nameof(GetInfoJson_OpenImage_ForwardedFor_Correct)}";
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "",
-                Width = 8000, Height = 8000, Roles = "", Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset(id);
 
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
@@ -206,12 +184,7 @@ namespace Orchestrator.Tests.Integration
             var id = $"99/1/{nameof(GetInfoJson_RestrictedImage_Correct)}";
             const string roleName = "my-test-role";
             const string authServiceName = "my-auth-service";
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Origin = "", MaxUnauthorised = 500,
-                Width = 8000, Height = 8000, Roles = roleName, Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset(id, roles: roleName, maxUnauthorised: 500);
             await dbFixture.DbContext.Roles.AddAsync(new Role
             {
                 Customer = 99, Id = roleName, Name = "test-role", AuthService = authServiceName
@@ -301,12 +274,7 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_ImageRequiresAuth_RedirectsToDeliverator(string path, string type)
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = $"99/1/test-auth{type}", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset($"99/1/test-auth{type}", roles: "basic", maxUnauthorised: 100);
             await dbFixture.DbContext.SaveChangesAsync();
             var expectedPath = new Uri($"http://deliverator/iiif-img/99/1/test-auth{type}/full/!200,200/0/default.jpg");
             
@@ -328,11 +296,7 @@ namespace Orchestrator.Tests.Integration
                 BucketName = "protagonist-thumbs",
                 ContentBody = "{\"o\": [[200,200]]}",
             });
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/test-uv-thumb",
-                Origin = "/test/space", Family = 'I', MediaType = "image/jpeg", ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/test-uv-thumb", origin: "/test/space");
             await dbFixture.DbContext.SaveChangesAsync();
             var expectedPath = new Uri("http://thumbs/thumbs/99/1/test-uv-thumb/full/!200,200/0/default.jpg");
             
@@ -355,12 +319,8 @@ namespace Orchestrator.Tests.Integration
                 ContentBody = "{\"o\": [[200,200]]}",
             });
 
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/known-thumb", Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/known-thumb", origin: "/test/space", width: 1000,
+                height: 1000);
             await dbFixture.DbContext.SaveChangesAsync();
             var expectedPath = new Uri("http://thumbs/thumbs/99/1/known-thumb/full/!200,200/0/default.jpg");
             
@@ -384,13 +344,7 @@ namespace Orchestrator.Tests.Integration
                 BucketName = "protagonist-thumbs",
                 ContentBody = "{\"o\": [[400,400], [200,200]]}",
             });
-
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000);
             await dbFixture.DbContext.SaveChangesAsync();
             var expectedPath = new Uri($"http://thumbresize/thumbs/{id}/full/!123,123/0/default.jpg");
             
@@ -414,13 +368,7 @@ namespace Orchestrator.Tests.Integration
                 BucketName = "protagonist-thumbs",
                 ContentBody = "{\"o\": [[400,400], [200,200]]}",
             });
-
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000);
             await dbFixture.DbContext.SaveChangesAsync();
             
             // Act
@@ -444,12 +392,7 @@ namespace Orchestrator.Tests.Integration
                 ContentBody = "{\"o\": []}",
             });
 
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000);
             await dbFixture.DbContext.SaveChangesAsync();
             
             // Act
@@ -473,12 +416,7 @@ namespace Orchestrator.Tests.Integration
                 ContentBody = "{\"o\": [[300,300]]}",
             });
 
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000);
             await dbFixture.DbContext.SaveChangesAsync();
             
             // Act
@@ -502,12 +440,7 @@ namespace Orchestrator.Tests.Integration
                 ContentBody = "{\"o\": [[300,300]]}",
             });
 
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = id, Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+            await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000);
             await dbFixture.DbContext.SaveChangesAsync();
             var expectedPath = new Uri($"http://thumbresize/thumbs/{id}/full/!600,600/0/default.jpg");
             
@@ -533,13 +466,9 @@ namespace Orchestrator.Tests.Integration
                 BucketName = "protagonist-thumbs",
                 ContentBody = "{\"o\": []}",
             });
-            
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = $"99/1/{imageName}", Width = 1000,
-                Height = 1000, Origin = "/test/space", Family = 'I', MediaType = "image/jpeg",
-                ThumbnailPolicy = "default"
-            });
+
+            await dbFixture.DbContext.Images.AddTestAsset($"99/1/{imageName}", origin: "/test/space", width: 1000,
+                height: 1000);
             await dbFixture.DbContext.SaveChangesAsync();
 
             // Act

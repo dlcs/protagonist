@@ -89,11 +89,9 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_AssetDoesNotRequireAuth_Returns302ToS3Location()
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/test-noauth", Roles = "",
-                MaxUnauthorised = -1, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
-            });
+            var id = "99/1/test-noauth";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
+                maxUnauthorised: -1, origin: "/test/space");
             await dbFixture.DbContext.SaveChangesAsync();
             var expectedPath =
                 new Uri(
@@ -111,11 +109,9 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_AssetRequiresAuth_Returns401_IfNoAuthProvided()
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/test-auth", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
-            });
+            string id = "99/1/test-auth";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
+                maxUnauthorised: 100, origin: "/test/space", roles: "basic");
             await dbFixture.DbContext.SaveChangesAsync();
 
             // Act
@@ -129,11 +125,9 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_AssetRequiresAuth_Returns401_IfBearerTokenProvided_ButInvalid()
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/bearer-fail", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
-            });
+            var id = "99/1/bearer-fail";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
+                maxUnauthorised: 100, origin: "/test/space", roles: "basic");
             await dbFixture.DbContext.SaveChangesAsync();
             const string bearerToken = "ababababab";
 
@@ -151,11 +145,9 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_AssetRequiresAuth_ProxiesToS3_IfBearerTokenValid()
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/bearer-pass", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
-            });
+            var id = "99/1/bearer-pass";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
+                maxUnauthorised: 100, origin: "/test/space", roles: "basic");
             await dbFixture.DbContext.SaveChangesAsync();
             
             var expectedPath =
@@ -177,11 +169,9 @@ namespace Orchestrator.Tests.Integration
         public async Task Head_AssetRequiresAuth_Returns200_IfBearerTokenValid()
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/bearer-head", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
-            });
+            var id = "99/1/bearer-head";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
+                maxUnauthorised: 100, origin: "/test/space", roles: "basic");
             await dbFixture.DbContext.SaveChangesAsync();
 
             // Act
@@ -198,11 +188,9 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_AssetRequiresAuth_Returns401_IfCookieProvided_ButInvalid()
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/cookie-fail", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
-            });
+            var id = "99/1/cookie-fail";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
+                maxUnauthorised: 100, origin: "/test/space", roles: "basic");
             await dbFixture.DbContext.SaveChangesAsync();
 
             // Act
@@ -219,11 +207,9 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_AssetRequiresAuth_ProxiesToS3_IfCookieTokenValid()
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/cookie-pass", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
-            });
+            var id = "99/1/cookie-pass";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
+                maxUnauthorised: 100, origin: "/test/space", roles: "basic");
             await dbFixture.DbContext.SaveChangesAsync();
             
             var expectedPath =
@@ -245,11 +231,9 @@ namespace Orchestrator.Tests.Integration
         public async Task Head_AssetRequiresAuth_Returns200_IfCookieValid()
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddAsync(new Asset
-            {
-                Created = DateTime.Now, Customer = 99, Space = 1, Id = "99/1/cookie-head", Roles = "basic",
-                MaxUnauthorised = 100, Origin = "/test/space", Family = 'F', MediaType = "video/mpeg"
-            });
+            var id = "99/1/cookie-head";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
+                maxUnauthorised: 100, origin: "/test/space", roles: "basic");
             await dbFixture.DbContext.SaveChangesAsync();
 
             // Act

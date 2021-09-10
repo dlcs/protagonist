@@ -57,7 +57,6 @@ namespace DLCS.Repository.Assets
             // trouble is we do not know how big it is!
             // we'll need to fetch the image dimensions from the database, the Thumbnail policy the image was created with, and compute the sizes.
             // Then sanity check them against the known sizes.
-
             var asset = await assetRepository.GetAsset(rootKey.Key.TrimEnd('/'));
 
             // 404 Not Found Asset

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Collections;
 using FluentAssertions;
@@ -54,6 +55,36 @@ namespace DLCS.Core.Tests.Collections
             var coll = new List<int> {2};
 
             coll.IsNullOrEmpty().Should().BeFalse();
+        }
+
+        [Fact]
+        public void AsList_ReturnsExpected()
+        {
+            var item = DateTime.Now;
+
+            var list = item.AsList();
+
+            list.Should().ContainSingle(i => i == item);
+        }
+        
+        [Fact]
+        public void AsListOf_ThrowsIfCastInvalid()
+        {
+            var item = DateTime.Now;
+
+            Action action = () => item.AsListOf<Exception>();
+
+            action.Should().Throw<InvalidCastException>();
+        }
+        
+        [Fact]
+        public void AsListOf_ReturnsExpected()
+        {
+            var item = DateTime.Now;
+
+            var list = item.AsListOf<object>();
+
+            list.Should().ContainSingle(i => (DateTime)i == item);
         }
     }
 }

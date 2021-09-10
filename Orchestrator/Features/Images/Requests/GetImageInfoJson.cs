@@ -7,8 +7,8 @@ using DLCS.Model.Assets;
 using DLCS.Model.Security;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
+using IIIF.Serialisation;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -16,6 +16,7 @@ using Newtonsoft.Json.Linq;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.Mediatr;
+using Orchestrator.Models;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images.Requests
@@ -23,7 +24,7 @@ namespace Orchestrator.Features.Images.Requests
     /// <summary>
     /// Mediatr request for generating info.json request for specified image.
     /// </summary>
-    public class GetImageInfoJson : IRequest<ImageInfoJsonResponse>, IImageRequest
+    public class GetImageInfoJson : IRequest<IIIFJsonResponse>, IImageRequest
     {
         public string FullPath { get; }
         public bool NoOrchestrationOverride { get; }
@@ -37,39 +38,14 @@ namespace Orchestrator.Features.Images.Requests
         }
     }
 
-    public class ImageInfoJsonResponse
-    {
-        public string? InfoJson { get; private init; }
-        public bool HasInfoJson { get; private init; }
-        public bool RequiresAuth { get; private init; }
-
-        public static ImageInfoJsonResponse Empty = new();
-
-        public static ImageInfoJsonResponse Open(string infoJson) 
-            => new()
-            {
-                InfoJson = infoJson,
-                RequiresAuth = false,
-                HasInfoJson = true
-            };
-
-        public static ImageInfoJsonResponse Restricted(string infoJson) 
-            => new()
-            {
-                InfoJson = infoJson,
-                RequiresAuth = true,
-                HasInfoJson = true
-            };
-    }
-
-    public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, ImageInfoJsonResponse>
+    public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, IIIFJsonResponse>
     {
         private readonly IAssetTracker assetTracker;
         private readonly IAssetPathGenerator assetPathGenerator;
         private readonly IAssetRepository assetRepository;
         private readonly IAuthServicesRepository authServicesRepository;
         private readonly IImageOrchestrator orchestrator;
-        private readonly ILogger<GetImageInfoJson> logger;
+        private readonly ILogger<GetImageInfoJsonHandler> logger;
         private readonly OrchestratorSettings orchestratorSettings;
 
         public GetImageInfoJsonHandler(
@@ -79,7 +55,7 @@ namespace Orchestrator.Features.Images.Requests
             IAuthServicesRepository authServicesRepository,
             IImageOrchestrator orchestrator,
             IOptions<OrchestratorSettings> orchestratorSettings,
-            ILogger<GetImageInfoJson> logger)
+            ILogger<GetImageInfoJsonHandler> logger)
         {
             this.assetTracker = assetTracker;
             this.assetPathGenerator = assetPathGenerator;
@@ -90,13 +66,13 @@ namespace Orchestrator.Features.Images.Requests
             this.orchestratorSettings = orchestratorSettings.Value;
         }
         
-        public async Task<ImageInfoJsonResponse> Handle(GetImageInfoJson request, CancellationToken cancellationToken)
+        public async Task<IIIFJsonResponse> Handle(GetImageInfoJson request, CancellationToken cancellationToken)
         {
             var assetId = request.AssetRequest.GetAssetId();
             var asset = await assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId);
             if (asset == null)
             {
-                return ImageInfoJsonResponse.Empty;
+                return IIIFJsonResponse.Empty;
             }
 
             var orchestrationTask =
@@ -106,15 +82,16 @@ namespace Orchestrator.Features.Images.Requests
 
             if (!asset.RequiresAuth)
             {
+                // TODO - update to use JsonLdBase rather than just a string
                 var infoJson =
                     InfoJsonBuilder.GetImageApi2_1Level1(imageId, asset.Width, asset.Height, asset.OpenThumbs);
                 await orchestrationTask;
-                return ImageInfoJsonResponse.Open(infoJson);
+                return IIIFJsonResponse.Open(infoJson.AsJson());
             }
             
             var authInfoJson = await GetAuthInfoJson(imageId, asset, assetId);
             await orchestrationTask;
-            return ImageInfoJsonResponse.Restricted(authInfoJson);
+            return IIIFJsonResponse.Restricted(authInfoJson);
         }
 
         private Task DoOrchestrationIfRequired(OrchestrationImage orchestrationImage, bool noOrchestrationOverride,
@@ -130,7 +107,8 @@ namespace Orchestrator.Features.Images.Requests
         }
 
         private string GetImageId(GetImageInfoJson request)
-            => assetPathGenerator.GetFullPathForRequest(request.AssetRequest,
+            => assetPathGenerator.GetFullPathForRequest(
+                request.AssetRequest,
                 (assetRequest, template) => DlcsPathHelpers.GeneratePathFromTemplate(
                     template,
                     assetRequest.RoutePrefix,
