@@ -13,6 +13,7 @@
     <PackageReference Include="AWSSDK.Core" Version="3.7.0.45" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.0.1" />
     <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.16" />
+    <PackageReference Include="iiif-net" Version="0.1.0-tags-v0-0-4-0001" />
     <PackageReference Include="LazyCache.AspNetCore" Version="2.1.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="5.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.9.10" />
@@ -24,7 +25,6 @@
   <ItemGroup>
     <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
     <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
-    <ProjectReference Include="..\IIIF\IIIF.csproj" />
   </ItemGroup>
 
 

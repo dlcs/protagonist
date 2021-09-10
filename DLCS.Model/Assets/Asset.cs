@@ -34,7 +34,7 @@ namespace DLCS.Model.Assets
         public bool Ingesting { get; set; }
         public string ImageOptimisationPolicy { get; set; } = "";
         public string ThumbnailPolicy { get; set; }
-        public char Family { get; set; }
+        public AssetFamily Family { get; set; }
         public string MediaType { get; set; }
         public long Duration { get; set; }
 
