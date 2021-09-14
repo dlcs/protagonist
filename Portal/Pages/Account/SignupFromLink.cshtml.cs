@@ -26,32 +26,32 @@ namespace Portal.Pages.Account
         public InputModel? Input { get; set; }
         
         public bool ValidLink { get; set; }
-        public string CreatedMessage { get; set; }
+        public string? CreatedMessage { get; set; }
         
         public class InputModel
         {
             [Required(ErrorMessage = "Display name is required.")]
-            public string DisplayName { get; set; }
+            public string? DisplayName { get; set; }
             
             [RegularExpression(@"^[-a-z]*$", ErrorMessage = "Url component can only have lower-case letters and hyphens, max 30 characters.")]
             [Required(ErrorMessage = "Url component is required.")]
             [StringLength(30, MinimumLength = 3)]
-            public string Slug { get; set; }
+            public string? Slug { get; set; }
             
             [Required(ErrorMessage = "A Valid email address is required.")]
             [EmailAddress]
-            public string Email { get; set; }
+            public string? Email { get; set; }
 
             [Display(Name = "Password")]
             [Required(ErrorMessage = "Password is required.")]
             [DataType(DataType.Password)]
-            public string Password { get; set; }
+            public string? Password { get; set; }
             
             [Display(Name = "Confirm password")]
             [Required(ErrorMessage = "Confirmation Password is required.")]
             [Compare("Password", ErrorMessage = "Password and Confirmation Password must match.")]
             [DataType(DataType.Password)]
-            public string ConfirmPassword { get; set; }
+            public string? ConfirmPassword { get; set; }
             
         }
         

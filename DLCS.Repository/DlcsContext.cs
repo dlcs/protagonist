@@ -50,6 +50,8 @@ namespace DLCS.Repository
         public virtual DbSet<StoragePolicy> StoragePolicies { get; set; }
         public virtual DbSet<ThumbnailPolicy> ThumbnailPolicies { get; set; }
         public virtual DbSet<User> Users { get; set; }
+        
+        public virtual DbSet<SignupLink> SignupLinks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
