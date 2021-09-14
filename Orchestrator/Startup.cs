@@ -19,6 +19,8 @@ using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Configuration;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
+using DLCS.Web.Views;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -39,6 +41,9 @@ using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Serilog;
+
+// Prevent R# flagging View() as not found
+[assembly: AspMvcViewLocationFormat(@"~\Features\Auth\Views\{0}.cshtml")]
 
 namespace Orchestrator
 {
@@ -120,7 +125,8 @@ namespace Orchestrator
             });
 
             services
-                .AddControllers()
+                .AddFeatureFolderViews()
+                .AddControllersWithViews()
                 .SetCompatibilityVersion(CompatibilityVersion.Latest);
             
             services.AddCors(options =>
