@@ -2,8 +2,12 @@
 
 #nullable disable
 
-namespace DLCS.Repository.Entities
+namespace DLCS.Repository.Security
 {
+    /// <summary>
+    /// Represents Cookie/BearerToken that grants the holder access to resources as specified in the related
+    /// SessionUser (from SessionUserId).
+    /// </summary>
     public partial class AuthToken
     {
         public string Id { get; set; }

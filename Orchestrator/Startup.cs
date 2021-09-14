@@ -31,6 +31,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
+using Orchestrator.Features.Auth;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Features.Images.Orchestration.Status;
@@ -93,6 +94,7 @@ namespace Orchestrator
                 .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
                 .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
+                .AddScoped<SessionAuthService>()
                 .AddOriginStrategies()
                 .AddDbContext<DlcsContext>(opts =>
                     opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))

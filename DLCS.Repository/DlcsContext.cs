@@ -1,11 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Enum;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Security;
 using DLCS.Repository.Entities;
+using DLCS.Repository.Security;
+using DLCS.Repository.Serialisation;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using OriginStrategy = DLCS.Repository.Entities.OriginStrategy;
 
 #nullable disable
@@ -14,6 +19,15 @@ namespace DLCS.Repository
 {
     public partial class DlcsContext : DbContext
     {
+        // Deliverator version of DLCS stores serialized values in some db records 
+        private static readonly JsonSerializerSettings JsonSettings = new()
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            NullValueHandling = NullValueHandling.Ignore,
+            Formatting = Formatting.None,
+            Converters = new List<JsonConverter> { new SessionUserRoleSerialiser() }
+        };
+
         public DlcsContext()
         {
         }
@@ -457,7 +471,12 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Created).HasColumnType("timestamp with time zone");
 
-                entity.Property(e => e.Roles).HasMaxLength(4000);
+                entity
+                    .Property(e => e.Roles)
+                    .HasMaxLength(4000)
+                    .HasConversion(
+                        modelValue => JsonConvert.SerializeObject(modelValue, JsonSettings),
+                        dbValue => JsonConvert.DeserializeObject<Dictionary<int, List<string>>>(dbValue));
             });
 
             modelBuilder.Entity<Space>(entity =>

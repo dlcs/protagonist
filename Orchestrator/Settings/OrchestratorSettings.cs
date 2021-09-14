@@ -58,6 +58,8 @@ namespace Orchestrator.Settings
         public ProxySettings Proxy { get; set; }
         
         public CacheSettings Caching { get; set; }
+        
+        public AuthSettings Auth { get; set; }
 
         /// <summary>
         /// Get the local folder where Asset should be saved to
@@ -137,5 +139,24 @@ namespace Orchestrator.Settings
         /// The maximum % size difference for upscaling.
         /// </summary>
         public int UpscaleThreshold { get; set; }
+    }
+
+    public class AuthSettings
+    {
+        /// <summary>
+        /// Format of authToken, used to generate token id.
+        /// {0} is replaced with customer id
+        /// </summary>
+        public string CookieNameFormat { get; set; } = "dlcs-token-{0}";
+        
+        /// <summary>
+        /// A list of domains to set on auth cookie.
+        /// </summary>
+        public List<string> CookieDomains { get; set; } = new();
+
+        /// <summary>
+        /// If true the current domain is automatically added to auth token domains.
+        /// </summary>
+        public bool UseCurrentDomainForCookie { get; set; } = true;
     }
 }
