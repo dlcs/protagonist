@@ -41,11 +41,10 @@ namespace Orchestrator.Tests.Integration
         {
             // NOTE: This is everything except iiif-img and iiif-av routes
             // Arrange
-            var message = new HttpRequestMessage(HttpMethod.Get, path);
             var expectedPath = new Uri($"http://deliverator{path}");
             
             // Act
-            var response = await httpClient.SendAsync(message);
+            var response = await httpClient.GetAsync(path);
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -53,6 +52,16 @@ namespace Orchestrator.Tests.Integration
 
             proxyResponse.Uri.Should().Be(expectedPath);
             proxyResponse.Method.Should().Be(HttpMethod.Get);
+        }
+
+        [Fact]
+        public async Task Favicon_Returns404()
+        {
+            // Act
+            var response = await httpClient.GetAsync("favicon.ico");
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
     }
 }

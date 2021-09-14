@@ -111,6 +111,11 @@ namespace Orchestrator.Settings
         /// Get the root path that thumb handler is listening on
         /// </summary>
         public string ThumbResizePath { get; set; } = "thumbs";
+        
+        /// <summary>
+        /// Get the root path for serving images
+        /// </summary>
+        public string ImagePath { get; set; } = "iiif-img";
 
         /// <summary>
         /// A collection of resize config for serving resized thumbs rather than handling requests via image-server

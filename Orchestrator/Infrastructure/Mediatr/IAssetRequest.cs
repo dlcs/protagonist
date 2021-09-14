@@ -11,7 +11,7 @@ namespace Orchestrator.Infrastructure.Mediatr
     {
         string FullPath { get; }
     }
-    
+
     /// <summary>
     /// Marker interface for any File asset requests
     /// </summary>
@@ -26,5 +26,13 @@ namespace Orchestrator.Infrastructure.Mediatr
     public interface IImageRequest : IAssetRequest
     {
         ImageAssetDeliveryRequest AssetRequest { set; }
+    }
+    
+    /// <summary>
+    /// Marker interface for any asset requests
+    /// </summary>
+    public interface IGenericAssetRequest : IAssetRequest
+    {
+        BaseAssetRequest AssetRequest { set; }
     }
 }

@@ -4,6 +4,7 @@ using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
+using IIIF.Serialisation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -119,7 +120,7 @@ namespace Thumbs
             
             var id = displayUrl.Substring(0, displayUrl.LastIndexOf("/", StringComparison.CurrentCultureIgnoreCase));
             var infoJsonText = InfoJsonBuilder.GetImageApi2_1Level0(id, sizes);
-            await context.Response.WriteAsync(infoJsonText);
+            await context.Response.WriteAsync(infoJsonText.AsJson());
         }
 
         private Task RedirectToInfoJson(HttpContext context, ImageAssetDeliveryRequest imageAssetDeliveryRequest)

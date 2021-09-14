@@ -273,7 +273,10 @@ namespace DLCS.Repository
                 entity.Property(e => e.Family)
                     .IsRequired()
                     //.HasColumnType("char")
-                    .HasDefaultValueSql("'I'::\"char\"");
+                    .HasDefaultValueSql("'I'::\"char\"")
+                    .HasConversion(
+                        v => (char)v,
+                        v => (AssetFamily)v);
 
                 entity.Property(e => e.Finished).HasColumnType("timestamp with time zone");
 

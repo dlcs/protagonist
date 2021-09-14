@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Dapper;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -19,6 +20,7 @@ namespace DLCS.Repository.Assets
         private readonly CacheSettings cacheSettings;
         private readonly IAppCache appCache;
         private readonly ILogger<DapperAssetRepository> logger;
+        private static readonly Asset NullAsset = new() { Id = "__nullasset__" };
 
         public DapperAssetRepository(
             IConfiguration configuration, 
@@ -34,13 +36,8 @@ namespace DLCS.Repository.Assets
 
         public async Task<Asset?> GetAsset(string id)
         {
-            var key = $"asset:{id}";
-            return await appCache.GetOrAddAsync(key, async () =>
-            {
-                logger.LogInformation("Refreshing assetCache from database {Asset}", id);
-                await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-                return await connection.QuerySingleOrDefaultAsync<Asset>(AssetSql, new { Id = id });
-            }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short));
+            var asset = await GetAssetInternal(id);
+            return asset.Id == NullAsset.Id ? null : asset;
         }
 
         public Task<Asset?> GetAsset(AssetId id)
@@ -52,7 +49,54 @@ namespace DLCS.Repository.Assets
             return await connection.QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql,
                 new { Id = assetId.ToString() });
         }
+        
+        private async Task<Asset> GetAssetInternal(string id)
+        {
+            var key = $"asset:{id}";
+            return await appCache.GetOrAddAsync(key, async entry =>
+            {
+                logger.LogInformation("Refreshing assetCache from database {Asset}", id);
+                await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+                dynamic? rawAsset = await connection.QuerySingleOrDefaultAsync(AssetSql, new { Id = id });
+                if (rawAsset == null)
+                {
+                    entry.AbsoluteExpirationRelativeToNow =
+                        TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+                    return NullAsset;
+                }
 
+                return new Asset
+                {
+                    Batch = rawAsset.Batch,
+                    Created = rawAsset.Created,
+                    Customer = rawAsset.Customer,
+                    Duration = rawAsset.Duration,
+                    Error = rawAsset.Error,
+                    Family = (AssetFamily)rawAsset.Family.ToString()[0],
+                    Finished = rawAsset.Finished,
+                    Height = rawAsset.Height,
+                    Id = rawAsset.Id,
+                    Ingesting = rawAsset.Ingesting,
+                    Origin = rawAsset.Origin,
+                    Reference1 = rawAsset.Reference1,
+                    Reference2 = rawAsset.Reference2,
+                    Reference3 = rawAsset.Reference3,
+                    Roles = rawAsset.Roles,
+                    Space = rawAsset.Space,
+                    Tags = rawAsset.Tags,
+                    Width = rawAsset.Width,
+                    MaxUnauthorised = rawAsset.MaxUnauthorised,
+                    MediaType = rawAsset.MediaType,
+                    NumberReference1 = rawAsset.NumberReference1,
+                    NumberReference2 = rawAsset.NumberReference2,
+                    NumberReference3 = rawAsset.NumberReference3,
+                    PreservedUri = rawAsset.PreservedUri,
+                    ThumbnailPolicy = rawAsset.ThumbnailPolicy,
+                    ImageOptimisationPolicy = rawAsset.ImageOptimisationPolicy
+                };
+            }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short));
+        }
+        
         private const string AssetSql = @"
 SELECT ""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Roles"", 
 ""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", 

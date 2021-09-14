@@ -22,7 +22,6 @@ There are a number of shared projects and entry point applications that use thes
 * DLCS.Model - DLCS models and repository interfaces.
 * DLCS.Repository - Repository implementations and `DbContext` for database.
 * DLCS.Web - Classes that are aware of HTTP pipeline (e.g. request/response classes)
-* IIIF - For parsing and processing IIIF requests.
 
 In addition to the above there are a number of `*.Tests` classes for automated tests.
 
