@@ -476,7 +476,7 @@ namespace DLCS.Repository
                     .HasMaxLength(4000)
                     .HasConversion(
                         modelValue => JsonConvert.SerializeObject(modelValue, JsonSettings),
-                        dbValue => JsonConvert.DeserializeObject<Dictionary<int, List<string>>>(dbValue));
+                        dbValue => JsonConvert.DeserializeObject<Dictionary<int, List<string>>>(dbValue, JsonSettings));
             });
 
             modelBuilder.Entity<Space>(entity =>

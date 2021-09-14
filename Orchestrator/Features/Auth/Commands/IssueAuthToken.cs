@@ -77,7 +77,9 @@ namespace Orchestrator.Features.Auth.Commands
             var domains = string.Join(",", authSettings.CookieDomains);
             if (authSettings.UseCurrentDomainForCookie)
             {
-                domains += $",{httpContext.Request.Host.Host}";
+                domains = string.IsNullOrEmpty(domains)
+                    ? httpContext.Request.Host.Host
+                    : $"{domains},{httpContext.Request.Host.Host}";
             }
 
             return domains;

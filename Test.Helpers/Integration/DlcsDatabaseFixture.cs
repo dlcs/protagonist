@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
+using DLCS.Model.Security;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using DotNet.Testcontainers.Containers.Builders;
@@ -57,8 +58,10 @@ namespace Test.Helpers.Integration
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerOriginStrategies\"");
-            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"AuthServices\"");
+            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"AuthServices\" WHERE \"Customer\" != 99");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Roles\"");
+            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"SessionUsers\"");
+            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"AuthTokens\"");
         }
 
         private async Task SeedCustomer()
@@ -77,6 +80,12 @@ namespace Test.Helpers.Integration
                 { Created = DateTime.Now, Id = 1, Customer = customer, Name = "space-1" });
             await DbContext.ThumbnailPolicies.AddAsync(new ThumbnailPolicy
                 { Id = "default", Name = "default", Sizes = "800,400,200" });
+            await DbContext.AuthServices.AddAsync(new AuthService
+            {
+                Customer = customer, Name = "clickthrough", Id = Guid.NewGuid().ToString(),
+                Description = "", Label = "", Profile = "", Ttl = 200, PageDescription = "",
+                PageLabel = "", RoleProvider = "", CallToAction = "", ChildAuthService = ""
+            });
             await DbContext.SaveChangesAsync();
         }
 
