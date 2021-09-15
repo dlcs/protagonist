@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using DLCS.Web.Views;
 using FluentAssertions;
@@ -18,7 +20,7 @@ namespace DLCS.Web.Tests.Views
 
             service.Apply(model);
 
-            model.Properties["feature"].Should().Be(@"Features\Home");
+            model.Properties["feature"].Should().Be($"Features{Path.DirectorySeparatorChar}Home");
         }
     }
 }
