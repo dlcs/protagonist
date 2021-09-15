@@ -19,6 +19,8 @@ using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Configuration;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
+using DLCS.Web.Views;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -29,6 +31,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
+using Orchestrator.Features.Auth;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Features.Images.Orchestration.Status;
@@ -39,6 +42,9 @@ using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Serilog;
+
+// Prevent R# flagging View() as not found
+[assembly: AspMvcViewLocationFormat(@"~\Features\Auth\Views\{0}.cshtml")]
 
 namespace Orchestrator
 {
@@ -88,6 +94,7 @@ namespace Orchestrator
                 .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
                 .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
+                .AddScoped<SessionAuthService>()
                 .AddOriginStrategies()
                 .AddDbContext<DlcsContext>(opts =>
                     opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
@@ -120,7 +127,8 @@ namespace Orchestrator
             });
 
             services
-                .AddControllers()
+                .AddFeatureFolderViews()
+                .AddControllersWithViews()
                 .SetCompatibilityVersion(CompatibilityVersion.Latest);
             
             services.AddCors(options =>

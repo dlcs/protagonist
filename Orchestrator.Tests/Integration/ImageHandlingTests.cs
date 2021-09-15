@@ -216,6 +216,34 @@ namespace Orchestrator.Tests.Integration
             response.Headers.CacheControl.Private.Should().BeTrue();
             response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         }
+        
+        [Fact]
+        public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns403WithoutServices()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns403WithoutServices)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "unknown-role", maxUnauthorised: 500);
+
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[400,400],[200,200]]}"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
+
+            // Assert
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse["services"].Should().BeNull();
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            response.Headers.CacheControl.Public.Should().BeFalse();
+            response.Headers.CacheControl.Private.Should().BeTrue();
+            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        }
 
         [Fact]
         public async Task Get_UnknownCustomer_Returns404()

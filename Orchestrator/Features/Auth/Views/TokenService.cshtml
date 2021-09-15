@@ -1,0 +1,17 @@
+﻿@model dynamic
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>IIIF Authentication Token Service</title>
+</head>
+<body>
+    <p>This window is for cross domain messaging.</p>
+    <script>window.parent.postMessage(@ViewData["Token"], '*');</script>
+</body>
+</html>

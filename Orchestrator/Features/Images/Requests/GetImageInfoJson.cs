@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core;
+using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Security;
@@ -119,6 +120,12 @@ namespace Orchestrator.Features.Images.Requests
         private async Task<string> GetAuthInfoJson(string imageId, OrchestrationImage asset, AssetId assetId)
         {
             var authServices = await GetAuthServices(assetId);
+            if (authServices.IsNullOrEmpty())
+            {
+                logger.LogWarning("Unable to get auth services for {Asset}", assetId);
+                return InfoJsonBuilder.GetImageApi2_1Level1(imageId, asset.Width, asset.Height, asset.OpenThumbs)
+                    .AsJson();
+            }
             var infoJsonServices = GenerateInfoJsonServices(assetId, authServices);
             return InfoJsonBuilder.GetImageApi2_1Level1Auth(imageId, asset.Width, asset.Height, asset.OpenThumbs,
                 infoJsonServices);
