@@ -69,7 +69,7 @@ namespace Orchestrator.Features.Auth
                 return null;
             }
 
-            if (authToken.Expires > DateTime.Now)
+            if (authToken.Expires <= DateTime.Now)
             {
                 logger.LogInformation("AuthToken expired, customer:'{Customer}', cookie:'{CookieId}'",
                     customer, cookieId);

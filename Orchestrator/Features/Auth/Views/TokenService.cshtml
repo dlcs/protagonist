@@ -1,8 +1,4 @@
-﻿@model dynamic
-
-@{
-    Layout = null;
-}
+﻿@model string
 
 <!DOCTYPE html>
 
@@ -12,6 +8,6 @@
 </head>
 <body>
     <p>This window is for cross domain messaging.</p>
-    <script>window.parent.postMessage(@ViewData["Token"], '*');</script>
+    <script>window.parent.postMessage(@Html.Raw(Model), '*');</script>
 </body>
 </html>

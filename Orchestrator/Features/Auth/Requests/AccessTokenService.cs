@@ -8,10 +8,13 @@ namespace Orchestrator.Features.Auth.Requests
     public class AccessTokenService : IRequest<AccessTokenServiceResponse>
     {
         public int Customer { get; }
+        
+        public string? MessageId { get; }
 
-        public AccessTokenService(int customer)
+        public AccessTokenService(int customer, string? messageId)
         {
             Customer = customer;
+            MessageId = messageId;
         }
     }
     
@@ -58,7 +61,8 @@ namespace Orchestrator.Features.Auth.Requests
             return AccessTokenServiceResponse.Success(new AccessTokenResponse
             {
                 AccessToken = authToken.BearerToken,
-                ExpiresIn = authToken.Ttl
+                ExpiresIn = authToken.Ttl,
+                MessageId = request.MessageId
             });
         }
     }
