@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.7.1.15" />
     <PackageReference Include="Dapper" Version="2.0.90" />
-    <PackageReference Include="iiif-net" Version="0.1.0-tags-v0-0-4-0001" />
+    <PackageReference Include="iiif-net" Version="0.1.0-local" />
     <PackageReference Include="LazyCache" Version="2.1.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="5.0.8">
       <PrivateAssets>all</PrivateAssets>

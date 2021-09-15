@@ -34,5 +34,16 @@ namespace Orchestrator.Features.Auth
 
             return BadRequest();
         }
+
+        /// <summary>
+        /// Access Token Service handling
+        /// </summary>
+        [Route("{customer}/token")]
+        [HttpGet]
+        public async Task<IActionResult> Token(int customer, string? messageId, string? origin)
+        {
+            // manually validate cookies
+            return Ok();
+        }
     }
 }
