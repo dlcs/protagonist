@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using DLCS.Repository.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -13,6 +14,8 @@ namespace Orchestrator.Features.Auth
     {
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly AuthSettings authSettings;
+        private const string CookiePrefix = "id=";
+        
         public AuthCookieManager(
             IHttpContextAccessor httpContextAccessor,
             IOptions<AuthSettings> authSettings
@@ -32,13 +35,13 @@ namespace Orchestrator.Features.Auth
         /// Get the cookieValue from CookieId
         /// </summary>
         public string GetCookieValueForId(string cookieId)
-            => $"id={cookieId}";
+            => $"{CookiePrefix}{cookieId}";
 
         /// <summary>
         /// Get the CookieId from cookieValue
         /// </summary>
-        public string GetCookieIdFromValue(string cookieValue)
-            => cookieValue[3..];
+        public string? GetCookieIdFromValue(string cookieValue)
+            => cookieValue.StartsWith(CookiePrefix) ? cookieValue[3..] : null;
 
         /// <summary>
         /// Get Cookie for current customer
@@ -50,7 +53,7 @@ namespace Orchestrator.Features.Auth
                 ? cookieValue
                 : null;
         }
-        
+
         /// <summary>
         /// Add cookie to current Response object, using details from specified AuthToken
         /// </summary>
@@ -62,26 +65,26 @@ namespace Orchestrator.Features.Auth
             var cookieValue = GetCookieValueForId(authToken.CookieId);
             var cookieId = GetAuthCookieKey(authSettings.CookieNameFormat, authToken.Customer);
 
-            httpContext.Response.Cookies.Append(cookieId, cookieValue,
-                new CookieOptions
-                {
-                    Domain = domains,
-                    Expires = DateTimeOffset.Now.AddSeconds(authToken.Ttl),
-                    SameSite = SameSiteMode.None,
-                    Secure = true
-                });
+            foreach (var domain in domains)
+            {
+                httpContext.Response.Cookies.Append(cookieId, cookieValue,
+                    new CookieOptions
+                    {
+                        Domain = domain,
+                        Expires = DateTimeOffset.Now.AddSeconds(authToken.Ttl),
+                        SameSite = SameSiteMode.None,
+                        Secure = true
+                    });
+            }
         }
 
-        private string GetCookieDomainList(HttpContext? httpContext)
+        private List<string> GetCookieDomainList(HttpContext? httpContext)
         {
-            var domains = string.Join(",", authSettings.CookieDomains);
+            var domains = authSettings.CookieDomains;
             if (authSettings.UseCurrentDomainForCookie)
             {
-                domains = string.IsNullOrEmpty(domains)
-                    ? httpContext.Request.Host.Host
-                    : $"{domains},{httpContext.Request.Host.Host}";
+                domains.Add(httpContext.Request.Host.Host);
             }
-
             return domains;
         }
     }
