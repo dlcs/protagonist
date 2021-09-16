@@ -1,0 +1,107 @@
+@page
+@model Portal.Pages.Admin.Signups
+
+@{
+    ViewData["Title"] = "Signup Links";
+}
+
+@if (TempData.ContainsKey("new-signup-id"))
+{
+    var linkId = TempData["new-signup-id"] as string;
+    <div class="alert alert-success">
+        <p>New signup link for <strong>@linkId</strong> created.</p>
+        <p><a asp-page="/account/signupfromlink" asp-route-id="@linkId"
+              class="btn btn-secondary btn-sm copylink">Copy link to clipboard <span data-feather="copy"></span></a></p>
+    </div>
+}
+
+@if (TempData.ContainsKey("deleted-signup-id"))
+{
+    var linkId = TempData["deleted-signup-id"] as string;
+    <div class="alert alert-info">
+        <p>Signup link <strong>@linkId</strong> has been deleted.</p>
+    </div>
+}
+
+<table class="table">
+    <thead>
+    <tr>
+        <th scope="col">Link</th>
+        <th scope="col">Created</th>
+        <th scope="col">Expires</th>
+        <th scope="col">Note</th>
+        <th scope="col">Customer</th>
+        <th scope="col"></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var signup in Model.SignupLinks)
+    {
+        <tr class="@signup.CssClass">
+            <td>                
+                <a asp-page="/account/signupfromlink" asp-route-id="@signup.Id"
+                   class="btn btn-secondary btn-sm copylink">@(signup.Id.Substring(0, 8) + "...") <span data-feather="copy"></span> (copy)</a>
+            </td>
+            <td>@signup.Created</td>
+            <td>@signup.Expires</td>
+            <td>@signup.Note</td>
+            <td>
+                @if (signup.CustomerName != null)
+                {
+                    <a asp-page="/admin/customers" asp-route-id="@signup.CustomerId">@signup.CustomerName</a>
+                }
+            </td>
+            <td>
+                <form method="post" asp-controller="Admin" asp-action="DeleteSignup">
+                    <input type="hidden" value="@signup.Id" name="id">
+                    <button class="btn btn-primary btn-sm" type="submit">Delete link</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<hr/>
+
+<h3>Create new Signup link</h3>
+
+<form asp-controller="Admin" asp-action="CreateSignUp">
+    <div class="form-group row">
+        <label for="expires" class="col-sm-1 col-form-label">Expires</label>
+        <div class="col-sm-8">
+            <input type="date" class="form-control" id="expires" name="expires">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="note" class="col-sm-1 col-form-label">Note</label>
+        <div class="col-sm-8">
+            <input required type="text" class="form-control" id="note" name="note" placeholder="Brief reminder of recipient">
+            <div id="noteHelp" class="form-text">This note is only visible to admin users in the portal.</div>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-sm-1"></div>
+        <div class="col-sm-8">
+            <button type="submit" class="btn btn-primary">Create link</button>
+        </div>
+    </div>
+</form>
+
+
+@section Scripts
+{
+    <script>
+        $(".copylink").on("click", function (ev){
+            ev.preventDefault();
+            const link = this.href;
+            if (navigator.clipboard){
+                navigator.clipboard.writeText(link).then(function() {
+                  alert(link + "\r\ncopied to clipboard.");
+                }, function() {
+                  alert("Could not copy to clipboard:\r\n" + link);
+                });
+            }
+        });
+    </script>
+}
