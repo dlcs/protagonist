@@ -1,11 +1,6 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Repository.Security;
 using MediatR;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Options;
-using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Auth.Commands
 {
@@ -27,18 +22,15 @@ namespace Orchestrator.Features.Auth.Commands
     
     public class IssueAuthTokenHandler : IRequestHandler<IssueAuthToken, AuthTokenResponse>
     {
-        private readonly IHttpContextAccessor httpContextAccessor;
         private readonly SessionAuthService sessionAuthService;
-        private readonly AuthSettings authSettings;
+        private readonly AuthCookieManager authCookieManager;
 
         public IssueAuthTokenHandler(
-            IHttpContextAccessor httpContextAccessor,
             SessionAuthService sessionAuthService,
-            IOptions<AuthSettings> authSettings)
+            AuthCookieManager authCookieManager)
         {
-            this.httpContextAccessor = httpContextAccessor;
             this.sessionAuthService = sessionAuthService;
-            this.authSettings = authSettings.Value;
+            this.authCookieManager = authCookieManager;
         }
         
         public async Task<AuthTokenResponse> Handle(IssueAuthToken request, CancellationToken cancellationToken)
@@ -50,40 +42,11 @@ namespace Orchestrator.Features.Auth.Commands
             
             if (authToken == null) return AuthTokenResponse.Fail();
 
-            SetCookie(authToken);
+            authCookieManager.SetCookieInResponse(authToken);
             return AuthTokenResponse.Success();
         }
 
-        private void SetCookie(AuthToken authToken)
-        {
-            var httpContext = httpContextAccessor.HttpContext;
-            var domains = GetCookiedDomainList(httpContext);
-
-            var cookieValue = $"id={authToken.CookieId}";
-            var cookieId = string.Format(authSettings.CookieNameFormat, authToken.Customer);
-
-            httpContext.Response.Cookies.Append(cookieId, cookieValue,
-                new CookieOptions
-                {
-                    Domain = domains,
-                    Expires = DateTimeOffset.Now.AddSeconds(authToken.Ttl),
-                    SameSite = SameSiteMode.None,
-                    Secure = true
-                });
-        }
-
-        private string? GetCookiedDomainList(HttpContext? httpContext)
-        {
-            var domains = string.Join(",", authSettings.CookieDomains);
-            if (authSettings.UseCurrentDomainForCookie)
-            {
-                domains = string.IsNullOrEmpty(domains)
-                    ? httpContext.Request.Host.Host
-                    : $"{domains},{httpContext.Request.Host.Host}";
-            }
-
-            return domains;
-        }
+        
     }
 
     public class AuthTokenResponse

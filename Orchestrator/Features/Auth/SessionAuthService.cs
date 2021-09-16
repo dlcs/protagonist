@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Security;
 using DLCS.Repository;
@@ -12,6 +13,8 @@ namespace Orchestrator.Features.Auth
 {
     public class SessionAuthService
     {
+        // AuthTokens are not refreshed if they were LastChecked within this threshold
+        private static readonly TimeSpan RefreshThreshold = TimeSpan.FromMinutes(2);
         private readonly DlcsContext dbContext;
         private readonly ILogger<SessionAuthService> logger;
 
@@ -31,7 +34,9 @@ namespace Orchestrator.Features.Auth
         /// <returns>New AuthToken</returns>
         public async Task<AuthToken?> CreateAuthTokenForRole(int customer, string authServiceName)
         {
-            var authService = await GetAuthService(customer, authServiceName);
+            var authService = await dbContext.AuthServices
+                .AsNoTracking()
+                .SingleOrDefaultAsync(authSvc => authSvc.Customer == customer && authSvc.Name == authServiceName);
             
             if (authService == null)
             {
@@ -49,10 +54,38 @@ namespace Orchestrator.Features.Auth
             return authToken;
         }
 
-        private async Task<AuthService?> GetAuthService(int customer, string authServiceName)
-            => await dbContext.AuthServices
-                .AsNoTracking()
-                .SingleOrDefaultAsync(authSvc => authSvc.Customer == customer && authSvc.Name == authServiceName);
+        public async Task<AuthToken?> GetAuthTokenForCookieId(int customer, string cookieId,
+            CancellationToken cancellationToken = default)
+        {
+            var authToken = await dbContext.AuthTokens
+                .SingleOrDefaultAsync(token => token.Customer == customer && token.CookieId == cookieId,
+                    cancellationToken);
+
+            if (authToken == null)
+            {
+                logger.LogInformation(
+                    "Could not find requested authToken for customer:'{Customer}', cookie:'{CookieId}'",
+                    customer, cookieId);
+                return null;
+            }
+
+            if (authToken.Expires <= DateTime.Now)
+            {
+                logger.LogInformation("AuthToken expired, customer:'{Customer}', cookie:'{CookieId}'",
+                    customer, cookieId);
+                return null;
+            }
+
+            // Token was last checked in the past and threshold has passed
+            if (authToken.LastChecked.HasValue && authToken.LastChecked.Value.Add(RefreshThreshold) < DateTime.Now)
+            {
+                authToken.LastChecked = DateTime.Now;
+                authToken.Expires = DateTime.Now.AddSeconds(authToken.Ttl);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            return authToken;
+        }
 
         private async Task<SessionUser> CreateSessionUser(int customer, params string[] authServiceName)
         {
