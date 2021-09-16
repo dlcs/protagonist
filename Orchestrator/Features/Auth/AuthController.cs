@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
+using DLCS.Core.Strings;
 using IIIF.Auth.V1.AccessTokenService;
 using IIIF.Serialisation;
 using MediatR;
@@ -50,7 +51,7 @@ namespace Orchestrator.Features.Auth
             var result = await mediator.Send(new AccessTokenService(customer, messageId));
 
             // If messageId provided, return HTML, else return JSON
-            bool returnHtmlRepresentation = !string.IsNullOrEmpty(messageId);
+            var returnHtmlRepresentation = messageId.HasText();
 
             string jsonResponseObject;
             HttpStatusCode httpStatusCode;
