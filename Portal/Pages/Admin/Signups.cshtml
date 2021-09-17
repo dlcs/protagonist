@@ -38,10 +38,13 @@
     @foreach (var signup in Model.SignupLinks)
     {
         <tr class="@signup.CssClass">
-            <td>                
-                <a asp-page="/account/signupfromlink" asp-route-id="@signup.Id"
-                   class="btn btn-secondary btn-sm copylink">@(signup.Id.Substring(0, 8) + "...") <span data-feather="copy"></span> (copy)</a>
-            </td>
+            <td>             
+                @if (signup.CssClass == "copyable")
+                {
+                    <a asp-page="/Account/SignupFromLink" asp-route-signupCode="@signup.Id"
+                       class="btn btn-secondary btn-sm copylink">@(signup.Id.Substring(0, 8) + "...") (copy <span data-feather="copy"></span>)</a>
+                }
+                </td>
             <td>@signup.Created</td>
             <td>@signup.Expires</td>
             <td>@signup.Note</td>

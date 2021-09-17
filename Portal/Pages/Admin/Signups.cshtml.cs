@@ -25,22 +25,24 @@ namespace Portal.Pages.Admin
         
         public async Task OnGetAsync()
         {
-            SignupLinks = await mediator.Send(new GetAllSignupLinks());
-            foreach (var signup in SignupLinks)
+            var links = await mediator.Send(new GetAllSignupLinks());
+            foreach (var signup in links)
             {
                 if (signup.CustomerName != null)
                 {
-                    signup.CssClass = "activated";
+                    signup.CssClass = "table-success";
                 }
                 else if (signup.Expires < DateTime.Now)
                 {
-                    signup.CssClass = "expired";
+                    signup.CssClass = "table-danger";
                 }
                 else
                 {
-                    signup.CssClass = "";
+                    signup.CssClass = "copyable";
                 }
             }
+
+            SignupLinks = links;
         }
     }
 }

@@ -7,12 +7,23 @@
 
 <div class="row">
     <div class="col-md-9">
-        @if (Model.CreatedMessage != null)
+        @if (TempData["signup-attempt-message"] != null)
         {
-            <div class="alert alert-success" role="alert">
-                You have successfully created an account! 
-                You can now <a href="/account/login">log in</a> with the email and password you just supplied.
-            </div>
+            var message = TempData["signup-attempt-message"] as string;
+            if (message == "Success")
+            {
+                <div class="alert alert-success" role="alert">
+                    You have successfully created an account! 
+                    You can now <a href="/account/login">log in</a> with the email and password you just supplied.
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-danger" role="alert">
+                    UNABLE TO CREATE ACCOUNT<br/>
+                    @message
+                </div>
+            }
         } 
         else if (Model.ValidLink)
         {

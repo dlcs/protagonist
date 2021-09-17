@@ -1,4 +1,6 @@
+using System;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Repository;
 using MediatR;
@@ -26,7 +28,7 @@ namespace Portal.Pages.Account
         public InputModel? Input { get; set; }
         
         public bool ValidLink { get; set; }
-        public string? CreatedMessage { get; set; }
+        public SignupFromLinkResult SignupFromLinkResult { get; set; }
         
         public class InputModel
         {
@@ -88,8 +90,8 @@ namespace Portal.Pages.Account
                 UserPassword = Input.Password,
                 SignUpCode = signupCode
             };
-            // error handling here
-            CreatedMessage = await mediator.Send(signupCommand);
+            SignupFromLinkResult = await mediator.Send(signupCommand);
+            TempData["signup-attempt-message"] = SignupFromLinkResult.Message;
             return Page();
         }
 
@@ -113,8 +115,16 @@ namespace Portal.Pages.Account
 
         private async Task<bool> ValidateSignupCode(string signupCode)
         {
-            // go to database...
-            return await Task.FromResult(true);
+            var signups = await dbContext.SignupLinks.Where(link => link.Id == signupCode).ToListAsync();
+            if (signups.Count == 1)
+            {
+                if (signups[0].CustomerId == null && signups[0].Expires > DateTime.Now)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

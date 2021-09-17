@@ -17,12 +17,12 @@ namespace Portal.Features.Admin.Commands
     /// <summary>
     /// Request to get all available signup links (whether used or not)
     /// </summary>
-    public class GetAllSignupLinks : IRequest<IEnumerable<SignupModel>>
+    public class GetAllSignupLinks : IRequest<List<SignupModel>>
     {
         
     }
 
-    public class GetAllSignupLinksHandler : IRequestHandler<GetAllSignupLinks, IEnumerable<SignupModel>>
+    public class GetAllSignupLinksHandler : IRequestHandler<GetAllSignupLinks, List<SignupModel>>
     {
         private readonly DlcsContext dbContext;
         private readonly ClaimsPrincipal principal;
@@ -38,7 +38,7 @@ namespace Portal.Features.Admin.Commands
             this.logger = logger;
         }
 
-        public async Task<IEnumerable<SignupModel>> Handle(GetAllSignupLinks request, CancellationToken cancellationToken)
+        public async Task<List<SignupModel>> Handle(GetAllSignupLinks request, CancellationToken cancellationToken)
         {
             if (principal.IsAdmin())
             {
@@ -57,7 +57,7 @@ namespace Portal.Features.Admin.Commands
                     Note = signup.link.Note,
                     CustomerName = signup.customer?.Name,
                     CustomerId = signup.customer?.Id
-                });
+                }).ToList();
             }
             throw new InvalidCredentialException("Must be admin to see signups");
         }
