@@ -42,7 +42,11 @@
                 @if (signup.CssClass == "copyable")
                 {
                     <a asp-page="/Account/SignupFromLink" asp-route-signupCode="@signup.Id"
-                       class="btn btn-secondary btn-sm copylink">@(signup.Id.Substring(0, 8) + "...") (copy <span data-feather="copy"></span>)</a>
+                       class="btn btn-outline-primary btn-sm copylink"><small>@(signup.Id)</small> (copy <span data-feather="copy"></span>)</a>
+                }
+                else if (signup.CustomerName != null)
+                {
+                    <small> - REDEEMED</small>
                 }
                 </td>
             <td>@signup.Created</td>
@@ -51,7 +55,7 @@
             <td>
                 @if (signup.CustomerName != null)
                 {
-                    <a asp-page="/admin/customers" asp-route-id="@signup.CustomerId">@signup.CustomerName</a>
+                    <a asp-page="/Admin/Customers/Details" asp-route-id="@signup.CustomerId">@signup.CustomerName</a>
                 }
             </td>
             <td>

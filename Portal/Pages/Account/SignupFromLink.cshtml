@@ -25,6 +25,12 @@
                 </div>
             }
         } 
+        else if (User?.Identity != null && User.Identity.IsAuthenticated)
+        {
+            <div class="alert alert-danger" role="alert">
+                You can't use this sign up link if you are already signed in to the Portal.
+            </div>
+        }
         else if (Model.ValidLink)
         {
             <form method="post">

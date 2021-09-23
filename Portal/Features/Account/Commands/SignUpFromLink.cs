@@ -118,10 +118,16 @@ namespace Portal.Features.Account.Commands
                 result.Message = "Unable to create API key";
             }
 
-            result.Message = "Success";
+            if (result.ApiKey == null)
+            {
+                return result;
+            }
+
             var link = await dbContext.SignupLinks.FindAsync(request.SignUpCode);
             link.CustomerId = result.GetCustomerId();
             await dbContext.SaveChangesAsync(cancellationToken);
+            
+            result.Message = "Success";
             return result;
         }
     }

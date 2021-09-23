@@ -28,7 +28,7 @@ namespace Portal.Pages.Account
         public InputModel? Input { get; set; }
         
         public bool ValidLink { get; set; }
-        public SignupFromLinkResult SignupFromLinkResult { get; set; }
+        private SignupFromLinkResult SignupFromLinkResult { get; set; }
         
         public class InputModel
         {

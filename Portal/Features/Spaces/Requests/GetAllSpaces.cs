@@ -17,6 +17,12 @@ namespace Portal.Features.Spaces.Requests
     /// </summary>
     public class GetAllSpaces : IRequest<IEnumerable<Space>>
     {
+        public GetAllSpaces(int? customerId = null)
+        {
+            CustomerId = customerId;
+        }
+
+        public int? CustomerId { get; set; }
     }
 
     public class GetAllSpacesHandler : IRequestHandler<GetAllSpaces, IEnumerable<Space>>
@@ -35,9 +41,7 @@ namespace Portal.Features.Spaces.Requests
 
         public async Task<IEnumerable<Space>> Handle(GetAllSpaces request, CancellationToken cancellationToken)
         {
-            var customerId = principal.GetCustomerId();
-            // TODO - throw if null
-
+            int? customerId = request.CustomerId ?? principal.GetCustomerId();
             return dbContext.Spaces.AsNoTracking().Where(s => s.Customer == customerId).OrderBy(s => s.Id);
         }
     }
