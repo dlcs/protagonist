@@ -47,6 +47,9 @@ namespace Portal
                 opts.Conventions.AllowAnonymousToPage("/AccessDenied");
                 opts.Conventions.AllowAnonymousToPage("/Error");
                 opts.Conventions.AllowAnonymousToPage("/Index");
+                opts.Conventions.AllowAnonymousToPage("/Features");
+                opts.Conventions.AllowAnonymousToPage("/About");
+                opts.Conventions.AllowAnonymousToPage("/Pricing");
                 opts.Conventions.AuthorizeFolder("/Admin", "Administrators");
             });
 

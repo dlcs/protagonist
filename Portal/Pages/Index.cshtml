@@ -2,9 +2,154 @@
 @model IndexModel
 @{
     ViewData["Title"] = "Home page";
+    Layout = null;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome to DLCS</h1>
-    <p>This is the home page - if you can see this you aren't necessarily logged in...</p>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <title>DLCS: Digital Library Cloud Services, from Digirati</title>
+
+    
+
+    <!-- Bootstrap core CSS -->
+    <link href="~/assets/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/css/portal.css" rel="stylesheet" />
+
+  </head>
+  <body>
+    
+<main>
+
+<div class="container py-3">
+  @await Html.PartialAsync("Shared/_GeneralSiteHeader")
+  
+  
+  <div class="px-4 pt-5 my-5 text-center border-bottom">
+    <h1 class="display-4 fw-bold">Digital Library Cloud Services</h1>
+    <div class="col-lg-6 mx-auto">
+      <p class="lead mb-4">
+        Digirati's DLCS platform hosts your media assets for full IIIF support.
+        Any image becomes a IIIF Image Service. AV resources are transcoded to web-friendly delivery formats.
+        Assets can be arranged in IIIF Manifests for use in viewers and other software.
+      </p>
+      <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
+        <button type="button" class="btn btn-primary btn-lg px-4 me-sm-3">Primary button</button>
+        <button type="button" class="btn btn-outline-secondary btn-lg px-4">Secondary</button>
+      </div>
+    </div>
+    <div class="overflow-hidden" style="max-height: 30vh;">
+      <div class="container px-5">
+        <img src="bootstrap-docs.png" class="img-fluid border rounded-3 shadow-lg mb-4" alt="Example image" width="700" height="500" loading="lazy">
+      </div>
+    </div>
+  </div>
+
+  <div class="b-example-divider"></div>
+
+  
+  @if (User.Identity.IsAuthenticated)
+  {  <div class="container px-4 py-5" id="hanging-icons">
+       <h2 class="pb-2 border-bottom">Hanging icons</h2>
+       <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+         <div class="col d-flex align-items-start">
+           <div class="icon-square bg-light text-dark flex-shrink-0 me-3">
+             <svg class="bi" width="1em" height="1em"><use xlink:href="#toggles2"/></svg>
+           </div>
+           <div>
+             <h2>Featured title</h2>
+             <p>Paragraph of text beneath the heading to explain the heading. We'll add onto it with another sentence and probably just keep going until we run out of words.</p>
+             <a href="#" class="btn btn-primary">
+               Primary button
+             </a>
+           </div>
+         </div>
+         <div class="col d-flex align-items-start">
+           <div class="icon-square bg-light text-dark flex-shrink-0 me-3">
+             <svg class="bi" width="1em" height="1em"><use xlink:href="#cpu-fill"/></svg>
+           </div>
+           <div>
+             <h2>Featured title</h2>
+             <p>Paragraph of text beneath the heading to explain the heading. We'll add onto it with another sentence and probably just keep going until we run out of words.</p>
+             <a href="#" class="btn btn-primary">
+               Primary button
+             </a>
+           </div>
+         </div>
+         <div class="col d-flex align-items-start">
+           <div class="icon-square bg-light text-dark flex-shrink-0 me-3">
+             <svg class="bi" width="1em" height="1em"><use xlink:href="#tools"/></svg>
+           </div>
+           <div>
+             <h2>Featured title</h2>
+             <p>Paragraph of text beneath the heading to explain the heading. We'll add onto it with another sentence and probably just keep going until we run out of words.</p>
+             <a href="#" class="btn btn-primary">
+               Primary button
+             </a>
+           </div>
+         </div>
+       </div>
+     </div>
+  }
+  else
+  {
+    <div class="container my-5">
+      <div class="row p-4 pb-0 pe-lg-0 pt-lg-5 align-items-center rounded-3 border shadow-lg">
+        <div class="col-lg-7 p-3 p-lg-5 pt-lg-3">
+          <h1 class="display-4 fw-bold lh-1">Feature-complete Image API - and beyond</h1>
+          <p class="lead">
+            Any image you register with the DLCS will be made available as a IIIF Image service with all the features
+            supported, and more. DLCS supports tiled (deep zoom) delivery, responsive HTML images, arbitrary cropping and
+            sizing for editorial needs, as well as multiple output image formats now and in the future.
+          </p>
+          <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-4 mb-lg-3">
+            <button type="button" class="btn btn-primary btn-lg px-4 me-md-2 fw-bold">Primary</button>
+            <button type="button" class="btn btn-outline-secondary btn-lg px-4">Default</button>
+          </div>
+        </div>
+        <div class="col-lg-4 offset-lg-1 p-0 overflow-hidden shadow-lg">
+          <img class="rounded-lg-3" src="bootstrap-docs.png" alt="" width="720">
+        </div>
+      </div>
+    </div>
+
+    <div class="b-example-divider mb-0"></div>
+    
+    <div class="container my-5">
+      <div class="row p-4 pb-0 pe-lg-0 pt-lg-5 align-items-center rounded-3 border shadow-lg">
+        <div class="col-lg-7 p-3 p-lg-5 pt-lg-3">
+          <h1 class="display-4 fw-bold lh-1">One asset?<br/>Or 100 million?</h1>
+          <p class="lead">
+            DLCS is a handy tool for ad-hoc IIIF production - just drag images in and create manifests straight away.
+            But it also scales to collections with 100 million images, through its cost-effective tiered storage and
+            delivery strategies.
+          </p>
+          <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-4 mb-lg-3">
+            <button type="button" class="btn btn-primary btn-lg px-4 me-md-2 fw-bold">Primary</button>
+            <button type="button" class="btn btn-outline-secondary btn-lg px-4">Default</button>
+          </div>
+        </div>
+        <div class="col-lg-4 offset-lg-1 p-0 overflow-hidden shadow-lg">
+          <img class="rounded-lg-3" src="bootstrap-docs.png" alt="" width="720">
+        </div>
+      </div>
+    </div>
+
+    <div class="b-example-divider mb-0"></div>
+    }
+  
+  @await Html.PartialAsync("Shared/_GeneralSiteFooter")
 </div>
+</main>
+
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+  <script src="~/assets/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="~/js/portal.js" asp-append-version="true"></script>
+
+      
+  </body>
+</html>
