@@ -75,6 +75,17 @@
           {
             <li class="nav-item">
               <navlink href="/admin" icon="settings">Admin</navlink>
+              @if (Context.Request.Path.StartsWithSegments("/admin", StringComparison.InvariantCultureIgnoreCase))
+              {
+                <ul>
+                  <li class="nav-item">
+                    <navlink href="/admin/signups">Signup links</navlink>
+                  </li>
+                  <li class="nav-item">
+                    <navlink href="/admin/customers">Accounts</navlink>
+                  </li>
+                </ul>
+              }
             </li>
           }
         </ul>

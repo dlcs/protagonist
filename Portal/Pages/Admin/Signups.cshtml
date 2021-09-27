@@ -38,7 +38,7 @@
     @foreach (var signup in Model.SignupLinks)
     {
         <tr class="@signup.CssClass">
-            <td>             
+            <td class="align-middle">             
                 @if (signup.CssClass == "copyable")
                 {
                     <a asp-page="/Account/SignupFromLink" asp-route-signupCode="@signup.Id"
@@ -46,19 +46,23 @@
                 }
                 else if (signup.CustomerName != null)
                 {
-                    <small> - REDEEMED</small>
+                    <small><em> REDEEMED</em></small>
+                } 
+                else if (signup.Expires < DateTime.Now)
+                {
+                    <small><em> EXPIRED</em></small>
                 }
                 </td>
-            <td>@signup.Created</td>
-            <td>@signup.Expires</td>
-            <td>@signup.Note</td>
-            <td>
+            <td class="align-middle">@signup.Created</td>
+            <td class="align-middle">@signup.Expires</td>
+            <td class="align-middle">@signup.Note</td>
+            <td class="align-middle">
                 @if (signup.CustomerName != null)
                 {
                     <a asp-page="/Admin/Customers/Details" asp-route-id="@signup.CustomerId">@signup.CustomerName</a>
                 }
             </td>
-            <td>
+            <td class="align-middle">
                 <form method="post" asp-controller="Admin" asp-action="DeleteSignup">
                     <input type="hidden" value="@signup.Id" name="id">
                     <button class="btn btn-primary btn-sm" type="submit">Delete link</button>

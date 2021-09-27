@@ -6,13 +6,6 @@
   ViewData["Title"] = "Api Keys";
 }
 
-<h2>@ViewData["Title"]</h2>
-<form method="post" asp-page="/Keys/Create" class="row row-cols-lg-auto g-3 align-items-center">
-  <div class="col-4">
-    <button type="submit" class="btn btn-primary">Create new key</button>
-  </div>
-</form>
-
 <div class="row">
   <div class="col-md-3">
     @if (Model.ApiKeys.IsNullOrEmpty())
@@ -46,3 +39,9 @@
     }
   </div>
 </div>
+
+<form method="post" asp-page="/Keys/Create" class="row row-cols-lg-auto g-3 align-items-center">
+  <div class="col-4">
+    <button type="submit" class="btn btn-primary">Create new key</button>
+  </div>
+</form>
