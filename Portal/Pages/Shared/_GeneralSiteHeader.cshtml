@@ -3,8 +3,8 @@
 <header>
 <div class="d-flex flex-column flex-md-row align-items-center pb-3 mb-4 border-bottom">
   <a href="/" class="d-flex align-items-center text-dark text-decoration-none">
-      <img src="~/img/balloon.png" alt="DLCS Balloon logo" width="50" />
-      <span class="fs-4">DLCS</span>
+      <img src="~/img/digirati.svg" alt="Digirati logo" width="100" />
+      <span class="fs-4"></span>
   </a>
 
   <nav class="d-inline-flex mt-2 mt-md-0 ms-md-auto">
@@ -14,7 +14,8 @@
     @if (httpContextAccessor.HttpContext.User.Identity.IsAuthenticated)
     {
         <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm">
-            <button type="submit" class="btn btn-link link-light">Sign out</button>
+            <small>@User.Identity.Name</small>
+            <button type="submit" class="btn btn-link text-decoration-none">Sign out</button>
         </form>
     }
     else
