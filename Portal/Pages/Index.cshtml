@@ -38,6 +38,21 @@
 
         @if (User.Identity.IsAuthenticated)
         {
+          if (Model.Spaces.Count == 0)
+          {
+            <div class="card">
+              <div class="card-header">
+                Getting started
+              </div>
+              <div class="card-body">
+                <h5 class="card-title">Wellcome to the DLCS!</h5>
+                <p class="card-text">As a new user, you can get started by creating a space to assemble content in.</p>
+                <p>Here's a <a href="https://drive.google.com/file/d/14d-HcbftIt1qMhx-qV1jf29Hkn9e03E2/view">very short video</a> to get a feel for it.</p>
+                <a asp-page="/Spaces/Index" class="btn btn-primary">Go to spaces</a>
+              </div>
+            </div>
+          }
+          
   <div class="container px-4 py-5" id="icon-grid">
     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 py-5">
       <div class="col d-flex align-items-start">
