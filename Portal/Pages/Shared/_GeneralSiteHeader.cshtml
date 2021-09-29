@@ -8,9 +8,9 @@
   </a>
 
   <nav class="d-inline-flex mt-2 mt-md-0 ms-md-auto">
-    <a class="me-3 py-2 text-dark text-decoration-none" asp-page="Features">Features</a>
-    <a class="me-3 py-2 text-dark text-decoration-none" asp-page="About">About</a>
-    <a class="me-3 py-2 text-dark text-decoration-none" asp-page="Pricing">Pricing</a>
+    <a class="me-3 py-2 text-dark text-decoration-none" asp-page="/Features">Features</a>
+    <a class="me-3 py-2 text-dark text-decoration-none" asp-page="/About">About</a>
+    <a class="me-3 py-2 text-dark text-decoration-none" asp-page="/Pricing">Pricing</a>
     @if (httpContextAccessor.HttpContext.User.Identity.IsAuthenticated)
     {
         <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm">
