@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Portal.Features.Admin.Commands;
+using Portal.Features.Spaces.Models;
 using Portal.Features.Spaces.Requests;
 using Customer = DLCS.Model.Customers.Customer;
 
@@ -21,12 +22,12 @@ namespace Portal.Pages.Admin.Customers
         
         public Customer Customer { get; set; }
         public IEnumerable<User> Users { get; set; }
-        public IEnumerable<Space> Spaces { get; set; }
+        public PageOfSpaces PageOfSpaces { get; set; }
         
         public async Task<IActionResult> OnGetAsync(int id)
         {
             Customer = await mediator.Send(new GetCustomer(id));
-            Spaces = await mediator.Send(new GetAllSpaces(Customer.Id));
+            PageOfSpaces = await mediator.Send(new GetPageOfSpaces(1, 10, Customer.Id));
             Users = await mediator.Send(new GetUsers(Customer.Id));
             return Page();
         }

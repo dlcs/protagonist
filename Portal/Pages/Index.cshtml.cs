@@ -18,6 +18,8 @@ namespace Portal.Pages
         
         [BindProperty]
         public List<Index.SpaceModel> Spaces { get; set; }
+        
+        public int Total { get; set; }
 
         public IndexModel(IMediator mediator, ILogger<IndexModel> logger)
         {
@@ -29,13 +31,14 @@ namespace Portal.Pages
         {
             if (User.Identity.IsAuthenticated)
             {
-                var spaces = await mediator.Send(new GetAllSpaces());
-                Spaces = spaces.Select(s => new Index.SpaceModel
+                var pageOfSpaces = await mediator.Send(new GetPageOfSpaces(1, 1));
+                Spaces = pageOfSpaces.Spaces.Select(s => new Index.SpaceModel
                 {
                     SpaceId = s.Id,
                     Name = s.Name,
                     Created = s.Created
                 }).ToList();
+                Total = pageOfSpaces.Total;
             }
             else
             {

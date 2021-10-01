@@ -17,6 +17,12 @@
   </div>
 </form>
 
+
+@await Component.InvokeAsync("Pager", new
+{
+    total = @Model.TotalSpaces, pageSize = Model.PageSize, currentPage = Model.PageIndex
+})
+
 <table class="table">
     <thead>
     <tr>
@@ -26,7 +32,7 @@
     </tr>
     </thead>
     <tbody>
-    @foreach (var space in Model.Spaces)
+    @foreach (var space in Model.SpaceModels)
     {
         <tr>
             <th scope="row">@space.SpaceId</th>
@@ -36,3 +42,9 @@
     }
     </tbody>
 </table>
+
+
+@await Component.InvokeAsync("Pager", new
+{
+    total = @Model.TotalSpaces, pageSize = Model.PageSize, currentPage = Model.PageIndex
+})
