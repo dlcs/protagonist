@@ -6,11 +6,13 @@ using API.Client;
 using API.Client.JsonLd;
 using DLCS.Core.Settings;
 using MediatR;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
 using Portal.Features.Spaces.Models;
 using Portal.Features.Spaces.Requests;
+using Portal.ViewComponents;
 
 namespace Portal.Pages.Spaces
 {
@@ -23,6 +25,8 @@ namespace Portal.Pages.Spaces
         
         public SpacePageModel SpacePageModel { get; set; }
         
+        public PagerValues? PagerValues { get; private set; }
+        
         public string Customer { get; set; }
         
         public string Space { get; set; }
@@ -34,20 +38,33 @@ namespace Portal.Pages.Spaces
         {
             this.mediator = mediator;
             DlcsSettings = dlcsSettings.Value;
-            this.Customer = (currentUser.GetCustomerId() ?? -1).ToString();
+            Customer = (currentUser.GetCustomerId() ?? -1).ToString();
         }
         
-        public async Task<IActionResult> OnGetAsync(int id)
+        public async Task<IActionResult> OnGetAsync(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
             Space = id.ToString();
-            SpacePageModel = await mediator.Send(new GetSpaceDetails(id, nameof(Image.Number1)));
+            // At the moment the DLCS API does not provide the option of setting the page size.
+            // So the page size coming back from the Hydra API will override whatever value is set on the query string.
+            // See http://www.hydra-cg.com/spec/latest/core/#example-20-a-hydra-partialcollectionview-splits-a-collection-into-multiple-views
+            SpacePageModel = await mediator.Send(new GetSpaceDetails(id, page, pageSize, nameof(Image.Number1)));
 
             if (SpacePageModel.Space == null)
             {
                 return NotFound();
             }
 
+            SetPager(page, pageSize);
             return Page();
+        }
+
+        private void SetPager(int page, int pageSize)
+        {
+            var partialImageCollection = SpacePageModel.Images;
+            PagerValues = new PagerValues(
+                partialImageCollection?.TotalItems ?? 0,
+                page,
+                partialImageCollection?.PageSize ?? pageSize);
         }
 
         public async Task<IActionResult> OnPostConvert(int spaceId)
@@ -59,7 +76,7 @@ namespace Portal.Pages.Spaces
             return RedirectToPage("/spaces/details", new {id = spaceId});
         }
 
-        public async Task<IActionResult> OnPostReOrder(int spaceId)
+        public async Task<IActionResult> OnPostReOrder(int spaceId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
             var orderDict = new Dictionary<string, int>();
             const string rowIdPrefix = "row-id-";
@@ -74,7 +91,7 @@ namespace Portal.Pages.Spaces
                     orderDict[imageId] = order;
                 }
             }
-            SpacePageModel = await mediator.Send(new GetSpaceDetails(spaceId));
+            SpacePageModel = await mediator.Send(new GetSpaceDetails(spaceId, page, pageSize));
             var images = SpacePageModel.Images;
             if (images != null)
             {

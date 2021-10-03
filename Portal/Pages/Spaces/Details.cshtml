@@ -44,6 +44,11 @@
     }   
 </form>
 
+@await Component.InvokeAsync("Pager", new
+{
+    total = @Model.PagerValues.Total, pageSize = Model.PagerValues.Size, currentPage = Model.PagerValues.Index
+})
+
 <form method="post" asp-page-handler="ReOrder">
     <input type="hidden" value="@spaceId" name="spaceId">
     
@@ -55,68 +60,73 @@
         }
     }
     <table class="@tableClass" id="assetTable">
-    <thead>
-    <tr>
-        <th scope="col"></th>
-        <th scope="col">n1</th>
-        <th scope="col">Name</th>
-        <th scope="col">Created</th>
-    @if (Model.SpacePageModel.IsManifestSpace)
-    {
-        <th>
-            <div class="btn-group-sm" role="group" aria-label="Ordering1" id="saveOrderGroup">
-                <input type="submit" class="btn btn-primary btn-sm" name="save-order" id="saveOrder" value="Save Order"/>
-            </div>
-        </th>
-    }
-    </tr>
-    </thead>
-<tbody>
-@{
-    int rowIndex = 0;
-    foreach (var image in Model.SpacePageModel.Images.Members)
-    {
+        <thead>
         <tr>
-            <td>
-                @if (image.Family == 'I')
-                {
-                    <iiif-thumb
-                        customer-url-part="@Model.Customer"
-                        space-url-part="@Model.Space"
-                        api-image="@image"
-                        class="iiifpreview"
-                        settings="@Model.DlcsSettings"
-                        small="28" large="200"/>
-                }
-            </td>
-            <td>@image.Number1</td>
-            <td>
-                <a asp-page="/Images/Index"
-                   asp-route-space="@Model.Space"
-                   asp-route-image="@image.GetLastPathElement()">@image.GetLastPathElement()</a></td>
-            <td>@image.Created</td>
-        @if (Model.SpacePageModel.IsManifestSpace)
-        {
-            <td>
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-sm btn-outline-primary move" data-move="up">↑</button>
-                    <button type="button" class="btn btn-sm  btn-outline-primary move" data-move="down">↓</button>
-                </div>
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-sm  btn-outline-primary move move-lots" data-move="top">⤒</button>
-                    <button type="button" class="btn btn-sm  btn-outline-primary move move-lots" data-move="bottom">⤓</button>
-                </div>
-                <input type="hidden" name="row-id-@(rowIndex)" value="@image.Id" />
-                <input type="hidden" class="updated-order" name="row-index-@(rowIndex)" value="@(rowIndex++)" />
-            </td>
-        }
+            <th scope="col"></th>
+            <th scope="col">n1</th>
+            <th scope="col">Name</th>
+            <th scope="col">Created</th>
+            @if (Model.SpacePageModel.IsManifestSpace)
+            {
+                <th>
+                    <div class="btn-group-sm" role="group" aria-label="Ordering1" id="saveOrderGroup">
+                        <input type="submit" class="btn btn-primary btn-sm" name="save-order" id="saveOrder" value="Save Order"/>
+                    </div>
+                </th>
+            }
         </tr>
-    }
-}
-</tbody>
-</table>
+        </thead>
+        <tbody>
+        @{
+            int rowIndex = 0;
+            foreach (var image in Model.SpacePageModel.Images.Members)
+            {
+                <tr>
+                    <td>
+                        @if (image.Family == 'I')
+                        {
+                            <iiif-thumb
+                                customer-url-part="@Model.Customer"
+                                space-url-part="@Model.Space"
+                                api-image="@image"
+                                class="iiifpreview"
+                                settings="@Model.DlcsSettings"
+                                small="28" large="200"/>
+                        }
+                    </td>
+                    <td>@image.Number1</td>
+                    <td>
+                        <a asp-page="/Images/Index"
+                           asp-route-space="@Model.Space"
+                           asp-route-image="@image.GetLastPathElement()">@image.GetLastPathElement()</a></td>
+                    <td>@image.Created</td>
+                    @if (Model.SpacePageModel.IsManifestSpace)
+                    {
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary move" data-move="up">↑</button>
+                                <button type="button" class="btn btn-sm  btn-outline-primary move" data-move="down">↓</button>
+                            </div>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm  btn-outline-primary move move-lots" data-move="top">⤒</button>
+                                <button type="button" class="btn btn-sm  btn-outline-primary move move-lots" data-move="bottom">⤓</button>
+                            </div>
+                            <input type="hidden" name="row-id-@(rowIndex)" value="@image.Id" />
+                            <input type="hidden" class="updated-order" name="row-index-@(rowIndex)" value="@(rowIndex++)" />
+                        </td>
+                    }
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
 
 </form>
+
+@await Component.InvokeAsync("Pager", new
+{
+    total = @Model.PagerValues.Total, pageSize = Model.PagerValues.Size, currentPage = Model.PagerValues.Index
+})
 
 @section Scripts
 {

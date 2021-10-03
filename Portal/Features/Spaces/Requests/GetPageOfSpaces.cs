@@ -23,9 +23,9 @@ namespace Portal.Features.Spaces.Requests
             CustomerId = customerId;
         }
 
-        public int? CustomerId { get; set; }
-        public int Page { get; set; }
-        public int PageSize { get; set; }
+        public int? CustomerId { get; private set; }
+        public int Page { get; private set; }
+        public int PageSize { get; private set; }
     }
 
     public class GetAllSpacesHandler : IRequestHandler<GetPageOfSpaces, PageOfSpaces>
@@ -45,16 +45,18 @@ namespace Portal.Features.Spaces.Requests
         public async Task<PageOfSpaces> Handle(GetPageOfSpaces request, CancellationToken cancellationToken)
         {
             int? customerId = request.CustomerId ?? principal.GetCustomerId();
-            var result = new PageOfSpaces();
-            result.Page = request.Page;
-            result.Total = dbContext.Spaces
-                .AsNoTracking()
-                .Count(s => s.Customer == customerId);
-            result.Spaces = dbContext.Spaces.AsNoTracking()
-                .Where(s => s.Customer == customerId)
-                .OrderBy(s => s.Id)
-                .Skip((request.Page - 1) * request.PageSize)
-                .Take(request.PageSize);
+            var result = new PageOfSpaces
+            {
+                Page = request.Page,
+                Total = dbContext.Spaces
+                    .AsNoTracking()
+                    .Count(s => s.Customer == customerId),
+                Spaces = dbContext.Spaces.AsNoTracking()
+                    .Where(s => s.Customer == customerId)
+                    .OrderBy(s => s.Id)
+                    .Skip((request.Page - 1) * request.PageSize)
+                    .Take(request.PageSize)
+            };
             return result;
         }
     }

@@ -20,7 +20,7 @@
 
 @await Component.InvokeAsync("Pager", new
 {
-    total = @Model.TotalSpaces, pageSize = Model.PageSize, currentPage = Model.PageIndex
+    total = @Model.PagerValues.Total, pageSize = Model.PagerValues.Size, currentPage = Model.PagerValues.Index
 })
 
 <table class="table">
@@ -46,5 +46,5 @@
 
 @await Component.InvokeAsync("Pager", new
 {
-    total = @Model.TotalSpaces, pageSize = Model.PageSize, currentPage = Model.PageIndex
+    total = @Model.PagerValues.Total, pageSize = Model.PagerValues.Size, currentPage = Model.PagerValues.Index
 })

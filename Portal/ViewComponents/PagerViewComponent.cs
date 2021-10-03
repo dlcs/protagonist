@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Amazon.SimpleSystemsManagement.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -144,5 +145,20 @@ namespace Portal.ViewComponents
         public int? Page { get; set; }
         public string Href { get; set; }
         public bool Current { get; set; }
+    }
+    
+    
+    public class PagerValues
+    {
+        public PagerValues(int total, int index, int size)
+        {
+            Total = total;
+            Index = index;
+            Size = size;
+        }
+        
+        public int Total { get; set; }
+        public int Index { get; set; }
+        public int Size { get; set; }
     }
 }

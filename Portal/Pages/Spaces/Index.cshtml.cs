@@ -15,14 +15,13 @@ namespace Portal.Pages.Spaces
         private readonly IMediator mediator;
 
         [BindProperty]
-        public IEnumerable<SpaceModel> SpaceModels { get; set; }
-        public int TotalSpaces { get; set; }
-        public int PageIndex { get; set; }
-        public int PageSize { get; set; }
+        public IEnumerable<SpaceModel>? SpaceModels { get; set; }
+
+        public PagerValues? PagerValues { get; private set; }
 
         public class SpaceModel
         {
-            public string Name { get; set; }
+            public string? Name { get; set; }
             public int SpaceId { get; set; }
             public DateTime Created { get; set; }
         }
@@ -34,10 +33,8 @@ namespace Portal.Pages.Spaces
         
         public async Task OnGetAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
-            PageIndex = page;
-            PageSize = pageSize;
             var spaces = await mediator.Send(new GetPageOfSpaces(page, pageSize));
-            TotalSpaces = spaces.Total;
+            PagerValues = new PagerValues(spaces.Total, page, pageSize);
             SpaceModels = spaces.Spaces.Select(s => new SpaceModel
             {
                 SpaceId = s.Id,
