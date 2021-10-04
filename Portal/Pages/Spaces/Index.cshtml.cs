@@ -31,7 +31,7 @@ namespace Portal.Pages.Spaces
             this.mediator = mediator;
         }
         
-        public async Task OnGetAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+        public async Task OnGetAsync([FromQuery] int page = 1, [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize)
         {
             var spaces = await mediator.Send(new GetPageOfSpaces(page, pageSize));
             PagerValues = new PagerValues(spaces.Total, page, pageSize);

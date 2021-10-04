@@ -41,7 +41,7 @@ namespace Portal.Pages.Spaces
             Customer = (currentUser.GetCustomerId() ?? -1).ToString();
         }
         
-        public async Task<IActionResult> OnGetAsync(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+        public async Task<IActionResult> OnGetAsync(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize)
         {
             Space = id.ToString();
             // At the moment the DLCS API does not provide the option of setting the page size.
@@ -76,7 +76,7 @@ namespace Portal.Pages.Spaces
             return RedirectToPage("/spaces/details", new {id = spaceId});
         }
 
-        public async Task<IActionResult> OnPostReOrder(int spaceId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+        public async Task<IActionResult> OnPostReOrder(int spaceId, [FromQuery] int page = 1, [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize)
         {
             var orderDict = new Dictionary<string, int>();
             const string rowIdPrefix = "row-id-";
