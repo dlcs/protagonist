@@ -8,7 +8,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Portal.Behaviours;
 
-namespace Portal.Features.Users.Commands
+namespace Portal.Features.Users.Requests
 {
     /// <summary>
     /// Create a new portal user with specified username and password

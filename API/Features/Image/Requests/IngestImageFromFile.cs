@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace API.Features.Image.Commands
+namespace API.Features.Image.Requests
 {
     /// <summary>
     /// Request object to ingest image directly from a file.

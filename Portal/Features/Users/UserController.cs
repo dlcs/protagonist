@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Portal.Features.Users.Commands;
+using Portal.Features.Users.Requests;
 
 namespace Portal.Features.Users
 {

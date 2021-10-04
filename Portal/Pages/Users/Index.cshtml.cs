@@ -7,7 +7,6 @@ using DLCS.Core.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Portal.Features.Users.Commands;
 using Portal.Features.Users.Requests;
 
 namespace Portal.Pages.Users

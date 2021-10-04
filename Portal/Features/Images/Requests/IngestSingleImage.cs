@@ -11,7 +11,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Portal.Features.Images.Commands
+namespace Portal.Features.Images.Requests
 {
     public class IngestSingleImage : IRequest<AssetJsonLD?>
     {

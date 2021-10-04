@@ -10,7 +10,7 @@ using DLCS.Repository;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace Portal.Features.Admin.Commands
+namespace Portal.Features.Admin.Requests
 {
     public class CreateSignupLink : IRequest<SignupLink>
     {

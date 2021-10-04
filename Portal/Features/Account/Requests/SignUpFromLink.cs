@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 using Portal.Settings;
 using Serilog;
 
-namespace Portal.Features.Account.Commands
+namespace Portal.Features.Account.Requests
 {
 
     public class SignUpFromLink : IRequest<SignupFromLinkResult>

@@ -4,7 +4,7 @@ using DLCS.Repository.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Portal.Features.Admin.Commands;
+using Portal.Features.Admin.Requests;
 using Portal.Features.Spaces.Models;
 using Portal.Features.Spaces.Requests;
 using Customer = DLCS.Model.Customers.Customer;

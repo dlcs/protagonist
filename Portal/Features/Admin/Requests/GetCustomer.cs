@@ -7,7 +7,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Portal.Features.Admin.Commands
+namespace Portal.Features.Admin.Requests
 {
     public class GetCustomer : IRequest<Customer>
     {

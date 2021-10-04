@@ -1,4 +1,3 @@
-using System;
 using System.Security.Authentication;
 using System.Security.Claims;
 using System.Threading;
@@ -9,7 +8,7 @@ using DLCS.Repository;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace Portal.Features.Admin.Commands
+namespace Portal.Features.Admin.Requests
 {
     public class DeleteSignupLink : IRequest
     {

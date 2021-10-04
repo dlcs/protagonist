@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Authentication;
@@ -12,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Portal.Features.Account.Models;
 
-namespace Portal.Features.Admin.Commands
+namespace Portal.Features.Admin.Requests
 {
     /// <summary>
     /// Request to get all available signup links (whether used or not)

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using DLCS.Model.Customers;
 using MediatR;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Portal.Features.Admin.Commands;
+using Portal.Features.Admin.Requests;
 
 namespace Portal.Pages.Admin.Customers
 {
