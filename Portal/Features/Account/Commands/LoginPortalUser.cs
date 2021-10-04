@@ -147,4 +147,5 @@ namespace Portal.Features.Account.Commands
             return new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         }
     }
+    
 }

@@ -6,7 +6,6 @@
     ViewData["Title"] = "Users";
 }
 
-<h2>@ViewData["Title"]</h2>
 @if (TempData.ContainsKey("SuccessMessage"))
 {
     <div class="alert alert-success" role="alert">@TempData["SuccessMessage"].ToString()</div>

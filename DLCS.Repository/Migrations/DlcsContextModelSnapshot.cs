@@ -18,7 +18,7 @@ namespace DLCS.Repository.Migrations
                 .HasPostgresExtension("tablefunc")
                 .HasAnnotation("Relational:Collation", "en_US.UTF-8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63)
-                .HasAnnotation("ProductVersion", "5.0.7")
+                .HasAnnotation("ProductVersion", "5.0.8")
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
             modelBuilder.HasSequence("batch_id_sequence")
@@ -53,8 +53,7 @@ namespace DLCS.Repository.Migrations
                         .HasColumnType("character varying(1000)")
                         .HasDefaultValueSql("NULL::character varying");
 
-                    b.Property<string>("Family")
-                        .IsRequired()
+                    b.Property<char>("Family")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(1)")
                         .HasDefaultValueSql("'I'::\"char\"");
@@ -162,6 +161,27 @@ namespace DLCS.Repository.Migrations
                     b.ToTable("Images");
                 });
 
+            modelBuilder.Entity("DLCS.Model.Assets.ImageLocation", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Nas")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("S3")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ImageLocation");
+                });
+
             modelBuilder.Entity("DLCS.Model.Assets.ThumbnailPolicy", b =>
                 {
                     b.Property<string>("Id")
@@ -183,25 +203,95 @@ namespace DLCS.Repository.Migrations
                     b.ToTable("ThumbnailPolicies");
                 });
 
-            modelBuilder.Entity("DLCS.Repository.Entities.ActivityGroup", b =>
+            modelBuilder.Entity("DLCS.Model.Customers.Customer", b =>
                 {
-                    b.Property<string>("Group")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
 
-                    b.Property<string>("Inhabitant")
+                    b.Property<bool>("AcceptedAgreement")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Administrator")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<DateTime?>("Since")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("Keys")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
-                    b.HasKey("Group");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
-                    b.ToTable("ActivityGroups");
+                    b.HasKey("Id");
+
+                    b.ToTable("Customers");
                 });
 
-            modelBuilder.Entity("DLCS.Repository.Entities.AuthService", b =>
+            modelBuilder.Entity("DLCS.Model.Customers.CustomerOriginStrategy", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Credentials")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("Customer")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Optimised")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Regex")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Strategy")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CustomerOriginStrategies");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Customers.SignupLink", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("CustomerId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("Expires")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SignupLinks");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Security.AuthService", b =>
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(500)
@@ -255,6 +345,24 @@ namespace DLCS.Repository.Migrations
                     b.HasKey("Id", "Customer");
 
                     b.ToTable("AuthServices");
+                });
+
+            modelBuilder.Entity("DLCS.Repository.Entities.ActivityGroup", b =>
+                {
+                    b.Property<string>("Group")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Inhabitant")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("Since")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Group");
+
+                    b.ToTable("ActivityGroups");
                 });
 
             modelBuilder.Entity("DLCS.Repository.Entities.AuthToken", b =>
@@ -373,40 +481,6 @@ namespace DLCS.Repository.Migrations
                     b.ToTable("CustomHeaders");
                 });
 
-            modelBuilder.Entity("DLCS.Repository.Entities.Customer", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("AcceptedAgreement")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("Administrator")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("Created")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("Keys")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Customers");
-                });
-
             modelBuilder.Entity("DLCS.Repository.Entities.CustomerImageServer", b =>
                 {
                     b.Property<int>("Customer")
@@ -420,38 +494,6 @@ namespace DLCS.Repository.Migrations
                     b.HasKey("Customer");
 
                     b.ToTable("CustomerImageServers");
-                });
-
-            modelBuilder.Entity("DLCS.Repository.Entities.CustomerOriginStrategy", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("Credentials")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<int>("Customer")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Optimised")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Regex")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("Strategy")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("CustomerOriginStrategies");
                 });
 
             modelBuilder.Entity("DLCS.Repository.Entities.CustomerStorage", b =>
@@ -502,27 +544,6 @@ namespace DLCS.Repository.Migrations
                     b.HasKey("Type", "Scope", "Customer");
 
                     b.ToTable("EntityCounters");
-                });
-
-            modelBuilder.Entity("DLCS.Repository.Entities.ImageLocation", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("Nas")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("S3")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ImageLocation");
                 });
 
             modelBuilder.Entity("DLCS.Repository.Entities.ImageOptimisationPolicy", b =>

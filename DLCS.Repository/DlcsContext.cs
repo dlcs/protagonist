@@ -64,6 +64,8 @@ namespace DLCS.Repository
         public virtual DbSet<StoragePolicy> StoragePolicies { get; set; }
         public virtual DbSet<ThumbnailPolicy> ThumbnailPolicies { get; set; }
         public virtual DbSet<User> Users { get; set; }
+        
+        public virtual DbSet<SignupLink> SignupLinks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -284,7 +286,7 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Family)
                     .IsRequired()
-                    //.HasColumnType("char")
+                    .HasColumnType("char")
                     .HasDefaultValueSql("'I'::\"char\"")
                     .HasConversion(
                         v => (char)v,

@@ -2,7 +2,9 @@
 
 (function () {
     'use strict'
-    feather.replace()
+    if(feather){
+        feather.replace();
+    }
 })()
 
 document.addEventListener("DOMContentLoaded", function(event) {

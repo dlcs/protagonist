@@ -1,4 +1,5 @@
-﻿<!doctype html>
+﻿@using API.Client
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -27,7 +28,7 @@
   <body>
     
   <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-    <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">The Portal</a>
+    <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="/">DLCS Portal</a>
     <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -70,6 +71,23 @@
           <li class="nav-item">
             <navlink href="/keys" icon="key">API Keys</navlink>
           </li>
+          @if(User.IsInRole(ClaimsPrincipalUtils.Roles.Admin))
+          {
+            <li class="nav-item">
+              <navlink href="/admin" icon="settings">Admin</navlink>
+              @if (Context.Request.Path.StartsWithSegments("/admin", StringComparison.InvariantCultureIgnoreCase))
+              {
+                <ul>
+                  <li class="nav-item">
+                    <navlink href="/admin/signups">Signup links</navlink>
+                  </li>
+                  <li class="nav-item">
+                    <navlink href="/admin/customers">Accounts</navlink>
+                  </li>
+                </ul>
+              }
+            </li>
+          }
         </ul>
 
       </div>

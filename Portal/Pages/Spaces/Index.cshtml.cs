@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Dapper;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Portal.Features.Spaces.Requests;
+using Portal.ViewComponents;
 
 namespace Portal.Pages.Spaces
 {
@@ -15,11 +15,13 @@ namespace Portal.Pages.Spaces
         private readonly IMediator mediator;
 
         [BindProperty]
-        public IEnumerable<SpaceModel> Spaces { get; set; }
+        public IEnumerable<SpaceModel>? SpaceModels { get; set; }
+
+        public PagerValues? PagerValues { get; private set; }
 
         public class SpaceModel
         {
-            public string Name { get; set; }
+            public string? Name { get; set; }
             public int SpaceId { get; set; }
             public DateTime Created { get; set; }
         }
@@ -29,10 +31,11 @@ namespace Portal.Pages.Spaces
             this.mediator = mediator;
         }
         
-        public async Task OnGetAsync()
+        public async Task OnGetAsync([FromQuery] int page = 1, [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize)
         {
-            var spaces = await mediator.Send(new GetAllSpaces());
-            Spaces = spaces.Select(s => new SpaceModel
+            var spaces = await mediator.Send(new GetPageOfSpaces(page, pageSize));
+            PagerValues = new PagerValues(spaces.Total, page, pageSize);
+            SpaceModels = spaces.Spaces.Select(s => new SpaceModel
             {
                 SpaceId = s.Id,
                 Name = s.Name,

@@ -26,8 +26,8 @@ namespace API.Client
         /// </summary>
         public class Roles
         {
-            public static string Customer = "Customer";
-            public static string Admin = "Admin";
+            public const string Customer = "Customer";
+            public const string Admin = "Admin";
         }
         
         /// <summary>
@@ -60,6 +60,16 @@ namespace API.Client
         {
             var customerClaim = claimsPrincipal.Claims.FirstOrDefault(c => c.Type == claimType);
             return customerClaim?.Value;
+        }
+
+        /// <summary>
+        /// Shortcut extension for testing if user is admin
+        /// </summary>
+        /// <param name="claimsPrincipal"></param>
+        /// <returns></returns>
+        public static bool IsAdmin(this ClaimsPrincipal claimsPrincipal)
+        {
+            return claimsPrincipal.IsInRole(Roles.Admin);
         }
         
         
