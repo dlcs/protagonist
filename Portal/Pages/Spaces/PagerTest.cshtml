@@ -1,0 +1,26 @@
+@page
+@model Portal.Pages.Spaces.PagerTest
+
+@{
+    ViewData["Title"] = "Pager Test";
+}
+
+<h1>Pager test</h1>
+<p>(modify these settings on the query string to experiment; they all have defaults if omitted)</p>
+
+<ul>
+    <li>Page: @Model.Page</li>
+    <li>Total: @Model.Total</li>
+    <li>PageSize: @Model.PageSize</li>
+    <li>Window: @Model.Window</li>
+    <li>Ends: @Model.Ends</li>
+</ul>
+
+
+@await Component.InvokeAsync("Pager", new
+{
+    currentPage = Model.Page,
+    total = Model.Total,
+    pageSize = Model.PageSize, 
+    window = Model.Window, ends = Model.Ends
+})

@@ -22,6 +22,8 @@ namespace Portal.Features.Spaces.Requests
     public class GetSpaceDetails : IRequest<SpacePageModel>
     {
         public int SpaceId { get; }
+        public int Page { get; set; }
+        public int PageSize { get; set; }
 
         // TODO - would this be better strongly typed?
         public string? ImageOrderBy { get; }
@@ -31,9 +33,11 @@ namespace Portal.Features.Spaces.Requests
         /// </summary>
         /// <param name="spaceId">Id of space to get details for.</param>
         /// <param name="imageOrderBy">Optional orderBy clause for space images</param>
-        public GetSpaceDetails(int spaceId, string? imageOrderBy = null)
+        public GetSpaceDetails(int spaceId, int page, int pageSize, string? imageOrderBy = null)
         {
             SpaceId = spaceId;
+            Page = page;
+            PageSize = pageSize;
             ImageOrderBy = imageOrderBy;
         }
     }

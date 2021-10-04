@@ -42,6 +42,7 @@
 </table>
 
 <h3>Spaces</h3>
+<p>Total spaces for customer: @Model.PageOfSpaces.Total</p>
 <table class="table">
     <thead>
     <tr>
@@ -51,7 +52,7 @@
     </tr>
     </thead>
     <tbody>
-    @foreach (var space in Model.Spaces)
+    @foreach (var space in Model.PageOfSpaces.Spaces)
     {
         <tr>
             <th scope="row">@space.Id</th>
