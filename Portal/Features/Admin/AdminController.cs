@@ -5,7 +5,7 @@ using API.Client;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Portal.Features.Admin.Commands;
+using Portal.Features.Admin.Requests;
 
 namespace Portal.Features.Admin
 {

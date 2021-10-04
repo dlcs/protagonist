@@ -58,7 +58,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Legacy" />
       <Folder Include="wwwroot\img" />
     </ItemGroup>
 

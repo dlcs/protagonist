@@ -4,7 +4,7 @@ using API.Client;
 using API.Client.JsonLd;
 using MediatR;
 
-namespace Portal.Features.Keys.Commands
+namespace Portal.Features.Keys.Requests
 {
     /// <summary>
     /// Create a new API key for current customer.

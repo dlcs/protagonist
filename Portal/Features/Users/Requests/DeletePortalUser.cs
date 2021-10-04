@@ -4,7 +4,7 @@ using API.Client;
 using MediatR;
 using Portal.Behaviours;
 
-namespace Portal.Features.Users.Commands
+namespace Portal.Features.Users.Requests
 {
     /// <summary>
     /// Delete Portal user by Id

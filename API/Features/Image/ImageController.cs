@@ -3,7 +3,7 @@ using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using API.Client.JsonLd;
-using API.Features.Image.Commands;
+using API.Features.Image.Requests;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 

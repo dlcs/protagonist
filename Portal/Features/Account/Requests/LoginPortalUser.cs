@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Security.Claims;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
@@ -17,7 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Portal.Settings;
 
-namespace Portal.Features.Account.Commands
+namespace Portal.Features.Account.Requests
 {
     public class LoginPortalUser : IRequest<bool>
     {

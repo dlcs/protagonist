@@ -4,10 +4,9 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Portal.Features.Account.Commands;
 using Portal.Features.Account.Models;
 using Portal.Features.Admin;
-using Portal.Features.Admin.Commands;
+using Portal.Features.Admin.Requests;
 
 namespace Portal.Pages.Admin
 {

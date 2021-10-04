@@ -8,7 +8,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using Portal.Features.Images.Commands;
+using Portal.Features.Images.Requests;
 
 namespace Portal.Features.Spaces
 {
