@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
@@ -147,7 +148,7 @@ namespace Orchestrator.Assets
                     return new OrchestrationImage
                     {
                         AssetId = assetId,
-                        RequiresAuth = asset.RequiresAuth,
+                        Roles = asset.RolesList.ToList(),
                         S3Location = getImageLocation.Result?.S3, // TODO - error handling
                         Width = asset.Width,
                         Height = asset.Height,
@@ -157,10 +158,10 @@ namespace Orchestrator.Assets
                 case AssetFamily.File:
                     return new OrchestrationFile
                     {
-                        AssetId = assetId, RequiresAuth = asset.RequiresAuth, Origin = asset.Origin,
+                        AssetId = assetId, Roles = asset.RolesList.ToList(), Origin = asset.Origin,
                     };
                 default:
-                    return new OrchestrationAsset { AssetId = assetId, RequiresAuth = asset.RequiresAuth, };
+                    return new OrchestrationAsset { AssetId = assetId, Roles = asset.RolesList.ToList(), };
             }
         }
     }

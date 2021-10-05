@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using DLCS.Core.Collections;
 using DLCS.Core.Types;
 
 namespace Orchestrator.Assets
@@ -13,11 +14,16 @@ namespace Orchestrator.Assets
         /// Get or set the AssetId for tracked Asset
         /// </summary>
         public AssetId AssetId { get; set; }
-        
+
         /// <summary>
-        /// Get or set boolean indicating whether asset is restricted or not.
+        /// Get boolean indicating whether asset is restricted or not.
         /// </summary>
-        public bool RequiresAuth { get; set; }
+        public bool RequiresAuth => !Roles.IsNullOrEmpty();
+
+        /// <summary>
+        /// Gets list of roles associated with Asset
+        /// </summary>
+        public List<string> Roles { get; set; } = new();
 
         /// <summary>
         /// Version identifier, used to validate saves are against correct version
