@@ -6,7 +6,6 @@ using IIIF.Auth.V1.AccessTokenService;
 using IIIF.Serialisation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Orchestrator.Features.Auth.Commands;
 using Orchestrator.Features.Auth.Requests;
 
 namespace Orchestrator.Features.Auth
