@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
@@ -16,18 +17,21 @@ namespace Orchestrator.Features.TimeBased
     /// <summary>
     /// Reverse-proxy routing logic for /iiif-av/ requests 
     /// </summary>
-    public class TimeBasedRequestHandler : RequestHandlerBase
+    public class TimeBasedRequestHandler
     {
+        private readonly ILogger<TimeBasedRequestHandler> logger;
+        private readonly AssetRequestProcessor assetRequestProcessor;
         private readonly IDeliveratorClient deliveratorClient;
         private readonly ProxySettings proxySettings;
 
         public TimeBasedRequestHandler(
             ILogger<TimeBasedRequestHandler> logger,
-            IAssetTracker assetTracker,
-            IAssetDeliveryPathParser assetDeliveryPathParser,
+            AssetRequestProcessor assetRequestProcessor,
             IDeliveratorClient deliveratorClient,
-            IOptions<ProxySettings> proxySettings) : base(logger, assetTracker, assetDeliveryPathParser)
+            IOptions<ProxySettings> proxySettings)
         {
+            this.logger = logger;
+            this.assetRequestProcessor = assetRequestProcessor;
             this.deliveratorClient = deliveratorClient;
             this.proxySettings = proxySettings.Value;
         }
@@ -40,17 +44,18 @@ namespace Orchestrator.Features.TimeBased
         public async Task<IProxyActionResult> HandleRequest(HttpContext httpContext)
         {
             // TODO - verify RangeRequest
-            var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest<TimeBasedAssetDeliveryRequest>(httpContext);
+            var (assetRequest, statusCode) =
+                await assetRequestProcessor.TryGetAssetDeliveryRequest<TimeBasedAssetDeliveryRequest>(httpContext);
             if (statusCode.HasValue || assetRequest == null)
             {
                 return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
             }
 
             // If "HEAD" then add CORS - is this required here?
-            var asset = await GetAsset(assetRequest);
+            var asset = await assetRequestProcessor.GetAsset(assetRequest);
             if (asset == null)
             {
-                Logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
+                logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
                 return new StatusCodeResult(HttpStatusCode.NotFound);
             }
             
@@ -58,13 +63,13 @@ namespace Orchestrator.Features.TimeBased
                 $"{proxySettings.S3HttpBase}/{proxySettings.StorageBucket}/{assetRequest.GetAssetId()}{assetRequest.TimeBasedRequest}";
             if (!asset.RequiresAuth)
             {
-                Logger.LogDebug("No auth for {Path}, 302 to S3 object {S3}", httpContext.Request.Path, s3Path);
+                logger.LogDebug("No auth for {Path}, 302 to S3 object {S3}", httpContext.Request.Path, s3Path);
                 return new StatusCodeResult(HttpStatusCode.Redirect).WithHeader("Location", s3Path);
             }
 
             if (!await IsAuthenticated(assetRequest.GetAssetId(), httpContext))
             {
-                Logger.LogDebug("User not authenticated for {Path}", httpContext.Request.Path);
+                logger.LogDebug("User not authenticated for {Path}", httpContext.Request.Path);
                 return new StatusCodeResult(HttpStatusCode.Unauthorized);
             }
 
@@ -92,18 +97,18 @@ namespace Orchestrator.Features.TimeBased
             var cookieName = $"dlcs-token-{assetId.Customer}";
             if (httpContext.Request.Cookies.TryGetValue(cookieName, out var cookieValue))
             {
-                Logger.LogDebug("Found cookie: '{CookieName}' for '{ImageId}'", assetId, cookieName);
+                logger.LogDebug("Found cookie: '{CookieName}' for '{ImageId}'", assetId, cookieName);
                 return RequestAuth.WithCookie(cookieName, cookieValue!);
             }
             
             var headerValue = httpContext.Request.GetAuthHeaderValue(AuthenticationHeaderUtils.BearerTokenScheme);
             if (headerValue != null)
             {
-                Logger.LogDebug("Found bearer token for '{ImageId}'", assetId);
+                logger.LogDebug("Found bearer token for '{ImageId}'", assetId);
                 return RequestAuth.WithBearerToken(headerValue.Parameter);
             }
 
-            Logger.LogDebug("No auth found for '{ImageId}'", assetId);
+            logger.LogDebug("No auth found for '{ImageId}'", assetId);
             return new();
         }
     }

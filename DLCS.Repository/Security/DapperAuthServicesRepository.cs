@@ -19,12 +19,12 @@ namespace DLCS.Repository.Security
         private readonly IConfiguration configuration;
         private readonly IAppCache appCache;
         private readonly CacheSettings cacheSettings;
-        private readonly ILogger<DapperCredentialsRepository> logger;
+        private readonly ILogger<DapperAuthServicesRepository> logger;
 
         public DapperAuthServicesRepository(IConfiguration configuration, 
             IAppCache appCache, 
             IOptions<CacheSettings> cacheOptions,
-            ILogger<DapperCredentialsRepository> logger)
+            ILogger<DapperAuthServicesRepository> logger)
         {
             this.configuration = configuration;
             this.appCache = appCache;

@@ -94,8 +94,9 @@ namespace Orchestrator
                 .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
                 .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
-                .AddScoped<SessionAuthService>()
+                .AddScoped<ISessionAuthService, SessionAuthService>()
                 .AddScoped<AuthCookieManager>()
+                .AddSingleton<AssetRequestProcessor>()
                 .AddOriginStrategies()
                 .AddDbContext<DlcsContext>(opts =>
                     opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))

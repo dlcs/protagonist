@@ -54,6 +54,12 @@ namespace Orchestrator.Features.Auth
             return authToken;
         }
 
+        /// <summary>
+        /// Get <see cref="AuthToken"/> for provided cookieId. Expiry will be refreshed.
+        /// </summary>
+        /// <param name="customer">Current customer.</param>
+        /// <param name="cookieId">CookieId to get AuthToken for</param>
+        /// <returns>AuthToken if found and not expired, else null</returns>
         public async Task<AuthToken?> GetAuthTokenForCookieId(int customer, string cookieId,
             CancellationToken cancellationToken = default)
         {
