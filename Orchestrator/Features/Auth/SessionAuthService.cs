@@ -107,7 +107,6 @@ namespace Orchestrator.Features.Auth
                 return null;
             }
 
-            // TODO - do we want to populate SessionUser property?
             return authToken;
         }
 
