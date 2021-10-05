@@ -20,11 +20,11 @@ namespace Orchestrator.Features.Auth.Requests
     
     public class AccessTokenServiceHandler : IRequestHandler<AccessTokenService, AccessTokenServiceResponse>
     {
-        private readonly SessionAuthService sessionAuthService;
+        private readonly ISessionAuthService sessionAuthService;
         private readonly AuthCookieManager authCookieManager;
 
         public AccessTokenServiceHandler(
-            SessionAuthService sessionAuthService,
+            ISessionAuthService sessionAuthService,
             AuthCookieManager authCookieManager)
         {
             this.sessionAuthService = sessionAuthService;

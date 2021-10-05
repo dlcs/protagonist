@@ -19,5 +19,10 @@ namespace DLCS.Repository.Security
         public string SessionUserId { get; set; }
         public string BearerToken { get; set; }
         public int Ttl { get; set; }
+        
+        /// <summary>
+        /// SessionUser associated with this AuthToken
+        /// </summary>
+        public SessionUser? SessionUser { get; set; }
     }
 }
