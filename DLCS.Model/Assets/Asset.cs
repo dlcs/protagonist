@@ -49,12 +49,8 @@ namespace DLCS.Model.Assets
                 {
                     rolesList = Roles.Split(",", StringSplitOptions.RemoveEmptyEntries); 
                 }
-                else
-                {
-                    rolesList = Enumerable.Empty<string>();
-                }
 
-                return rolesList;
+                return rolesList ??= Enumerable.Empty<string>();
             }
         }
         
