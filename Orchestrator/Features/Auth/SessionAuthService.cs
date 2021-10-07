@@ -155,7 +155,7 @@ namespace Orchestrator.Features.Auth
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
 
-            authToken.SessionUser = await dbContext.SessionUsers.FindAsync(authToken.SessionUserId, cancellationToken);
+            authToken.SessionUser = await dbContext.SessionUsers.FindAsync(authToken.SessionUserId);
 
             return authToken;
         }

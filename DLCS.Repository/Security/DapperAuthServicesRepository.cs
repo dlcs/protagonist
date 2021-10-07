@@ -34,13 +34,33 @@ namespace DLCS.Repository.Security
         
         public async Task<IEnumerable<AuthService>> GetAuthServicesForRole(int customer, string role)
         {
-            var cacheKey = $"roles:{customer}:{role}";
+            var cacheKey = $"authsvc:{customer}:{role}";
 
             return await appCache.GetOrAddAsync(cacheKey, async () =>
             {
                 logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
                 return await GetAuthServicesFromDatabase(customer, role);
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
+        }
+
+        public async Task<Role?> GetRole(int customer, string role)
+        {
+            var cacheKey = $"role:{customer}:{role}";
+
+            try
+            {
+                return await appCache.GetOrAddAsync(cacheKey, async () =>
+                {
+                    logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
+                    await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+                    return await connection.QuerySingleOrDefaultAsync<Role>(RoleByIdSql, new { Customer = customer, Role = role });
+                }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
+            }
+            catch (InvalidOperationException e)
+            {
+                logger.LogError(e, "Unable to find role with id {Role} for customer {Customer}", role, customer);
+                return null;
+            }
         }
 
         private async Task<IEnumerable<AuthService>> GetAuthServicesFromDatabase(int customer, string role)
@@ -72,6 +92,10 @@ WITH RECURSIVE cte_auth AS (
 )
 SELECT ""Id"", ""Customer"", ""Name"", ""Profile"", ""Label"", ""Description"", ""PageLabel"", ""PageDescription"", ""CallToAction"", ""TTL"", ""RoleProvider"", ""ChildAuthService""
 FROM cte_auth;
+";
+
+        private const string RoleByIdSql = @"
+SELECT ""Id"", ""Customer"", ""AuthService"", ""Name"", ""Aliases"" FROM ""Roles"" WHERE ""Customer"" = @Customer AND ""Id"" = @Role
 ";
     }
 }

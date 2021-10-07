@@ -14,12 +14,12 @@ namespace Orchestrator.Infrastructure
     /// </summary>
     public class AssetRequestProcessor
     {
-        private readonly ILogger logger;
+        private readonly ILogger<AssetRequestProcessor> logger;
         private readonly IAssetTracker assetTracker;
         private readonly IAssetDeliveryPathParser assetDeliveryPathParser;
 
         public AssetRequestProcessor(
-            ILogger logger,
+            ILogger<AssetRequestProcessor> logger,
             IAssetTracker assetTracker,
             IAssetDeliveryPathParser assetDeliveryPathParser)
         {

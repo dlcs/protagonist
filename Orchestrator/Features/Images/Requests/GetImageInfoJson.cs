@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images.Orchestration;
+using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
 using Orchestrator.Settings;
@@ -43,26 +44,26 @@ namespace Orchestrator.Features.Images.Requests
     {
         private readonly IAssetTracker assetTracker;
         private readonly IAssetPathGenerator assetPathGenerator;
-        private readonly IAssetRepository assetRepository;
         private readonly IAuthServicesRepository authServicesRepository;
         private readonly IImageOrchestrator orchestrator;
+        private readonly AssetAccessValidator accessValidator;
         private readonly ILogger<GetImageInfoJsonHandler> logger;
         private readonly OrchestratorSettings orchestratorSettings;
 
         public GetImageInfoJsonHandler(
             IAssetTracker assetTracker,
             IAssetPathGenerator assetPathGenerator,
-            IAssetRepository assetRepository,
             IAuthServicesRepository authServicesRepository,
             IImageOrchestrator orchestrator,
+            AssetAccessValidator accessValidator,
             IOptions<OrchestratorSettings> orchestratorSettings,
             ILogger<GetImageInfoJsonHandler> logger)
         {
             this.assetTracker = assetTracker;
             this.assetPathGenerator = assetPathGenerator;
-            this.assetRepository = assetRepository;
             this.authServicesRepository = authServicesRepository;
             this.orchestrator = orchestrator;
+            this.accessValidator = accessValidator;
             this.logger = logger;
             this.orchestratorSettings = orchestratorSettings.Value;
         }
@@ -89,10 +90,13 @@ namespace Orchestrator.Features.Images.Requests
                 await orchestrationTask;
                 return IIIFJsonResponse.Open(infoJson.AsJson());
             }
-            
+
+            var accessResult = await accessValidator.TryValidateBearerToken(asset);
             var authInfoJson = await GetAuthInfoJson(imageId, asset, assetId);
             await orchestrationTask;
-            return IIIFJsonResponse.Restricted(authInfoJson);
+            return accessResult == AssetAccessResult.Authorized
+                ? IIIFJsonResponse.Restricted(authInfoJson)
+                : IIIFJsonResponse.Unauthorised(authInfoJson);
         }
 
         private Task DoOrchestrationIfRequired(OrchestrationImage orchestrationImage, bool noOrchestrationOverride,
@@ -119,7 +123,7 @@ namespace Orchestrator.Features.Images.Requests
 
         private async Task<string> GetAuthInfoJson(string imageId, OrchestrationImage asset, AssetId assetId)
         {
-            var authServices = await GetAuthServices(assetId);
+            var authServices = await GetAuthServices(assetId, asset.Roles);
             if (authServices.IsNullOrEmpty())
             {
                 logger.LogWarning("Unable to get auth services for {Asset}", assetId);
@@ -168,12 +172,10 @@ namespace Orchestrator.Features.Images.Requests
             return presentationObject.ToString(Formatting.None);
         }
 
-        private async Task<List<AuthService>> GetAuthServices(AssetId assetId)
+        private async Task<List<AuthService>> GetAuthServices(AssetId assetId, IEnumerable<string> rolesList)
         {
-            var asset = await assetRepository.GetAsset(assetId);
-
             var authServices = new List<AuthService>();
-            foreach (var role in asset.RolesList)
+            foreach (var role in rolesList)
             {
                 authServices.AddRange(await authServicesRepository.GetAuthServicesForRole(assetId.Customer, role));
             }

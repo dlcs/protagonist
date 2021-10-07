@@ -55,7 +55,7 @@ namespace Orchestrator.Infrastructure
                 var infoJsonResponse = await mediator.Send(request, cancellationToken);
                 if (!infoJsonResponse.HasInfoJson) return NotFound();
 
-                if (infoJsonResponse.RequiresAuth)
+                if (infoJsonResponse.IsUnauthorised)
                 {
                     Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 }

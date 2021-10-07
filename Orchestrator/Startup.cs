@@ -37,6 +37,7 @@ using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
+using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.ReverseProxy;
@@ -94,9 +95,11 @@ namespace Orchestrator
                 .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
                 .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
+                .AddScoped<AccessChecker>()
                 .AddScoped<ISessionAuthService, SessionAuthService>()
                 .AddScoped<AuthCookieManager>()
                 .AddSingleton<AssetRequestProcessor>()
+                .AddScoped<AssetAccessValidator>()
                 .AddOriginStrategies()
                 .AddDbContext<DlcsContext>(opts =>
                     opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
