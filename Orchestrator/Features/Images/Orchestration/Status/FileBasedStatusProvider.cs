@@ -45,6 +45,7 @@ namespace Orchestrator.Features.Images.Orchestration.Status
             if (File.Exists(localPath))
             {
                 File.SetLastWriteTimeUtc(localPath, DateTime.UtcNow);
+                return true;
             }
 
             return false;
