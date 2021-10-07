@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images;
+using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Xunit;
@@ -96,7 +97,7 @@ namespace Orchestrator.Tests.Images
 
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new OrchestrationImage {RequiresAuth = true});
+                .Returns(new OrchestrationImage { Roles = new List<string> { "role" } });
             var sut = GetImageRequestHandlerWithMockPathParser();
 
             // Act
@@ -249,8 +250,11 @@ namespace Orchestrator.Tests.Images
         }
 
         private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false,
-            IOptions<OrchestratorSettings> settings = null) 
-            => new(new NullLogger<ImageRequestHandler>(), assetTracker,
-                mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl, settings ?? defaultSettings);
+            IOptions<OrchestratorSettings> settings = null)
+        {
+            var requestProcessor = new AssetRequestProcessor(new NullLogger<AssetRequestProcessor>(), assetTracker,
+                mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl);
+            return new(new NullLogger<ImageRequestHandler>(), requestProcessor, settings ?? defaultSettings);
+        }
     }
 }
