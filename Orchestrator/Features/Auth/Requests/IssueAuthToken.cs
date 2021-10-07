@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using MediatR;
 
-namespace Orchestrator.Features.Auth.Commands
+namespace Orchestrator.Features.Auth.Requests
 {
     /// <summary>
     /// Issue a new authToken and cookie for specified

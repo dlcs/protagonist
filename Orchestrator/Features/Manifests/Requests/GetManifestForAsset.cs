@@ -19,7 +19,7 @@ using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
 using Orchestrator.Settings;
 
-namespace Orchestrator.Features.Manifests
+namespace Orchestrator.Features.Manifests.Requests
 {
     /// <summary>
     /// Mediatr request for generating basic single-item manifest for specified image

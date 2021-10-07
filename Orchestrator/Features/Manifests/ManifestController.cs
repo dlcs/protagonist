@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orchestrator.Features.Manifests.Requests;
 using Orchestrator.Infrastructure;
 
 namespace Orchestrator.Features.Manifests
