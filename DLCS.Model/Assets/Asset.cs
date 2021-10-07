@@ -38,7 +38,7 @@ namespace DLCS.Model.Assets
         public string MediaType { get; set; }
         public long Duration { get; set; }
 
-        private IEnumerable<string> rolesList = null;
+        private IEnumerable<string>? rolesList;
         
         // TODO - map this via Dapper on way out of DB?
         public IEnumerable<string> RolesList
@@ -48,6 +48,10 @@ namespace DLCS.Model.Assets
                 if (rolesList == null && !string.IsNullOrEmpty(Roles))
                 {
                     rolesList = Roles.Split(",", StringSplitOptions.RemoveEmptyEntries); 
+                }
+                else
+                {
+                    rolesList = Enumerable.Empty<string>();
                 }
 
                 return rolesList;
