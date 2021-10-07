@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Repository.Security;
@@ -42,6 +43,19 @@ namespace Test.Helpers.Integration
                     Customer = customer,
                     Expires = expires ?? DateTime.Now.AddSeconds(ttl),
                     Ttl = ttl
+                });
+
+        public static ValueTask<EntityEntry<SessionUser>> AddTestSession(this DbSet<SessionUser> sessionUsers,
+            List<string> roles, int customer = 99)
+            => sessionUsers.AddAsync(
+                new SessionUser
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Created = DateTime.Now,
+                    Roles = new Dictionary<int, List<string>>
+                    {
+                        [customer] = roles
+                    }
                 });
     }
 }
