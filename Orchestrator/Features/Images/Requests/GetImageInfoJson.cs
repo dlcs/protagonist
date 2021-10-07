@@ -26,7 +26,7 @@ namespace Orchestrator.Features.Images.Requests
     /// <summary>
     /// Mediatr request for generating info.json request for specified image.
     /// </summary>
-    public class GetImageInfoJson : IRequest<IIIFJsonResponse>, IImageRequest
+    public class GetImageInfoJson : IRequest<DescriptionResourceResponse>, IImageRequest
     {
         public string FullPath { get; }
         public bool NoOrchestrationOverride { get; }
@@ -40,7 +40,7 @@ namespace Orchestrator.Features.Images.Requests
         }
     }
 
-    public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, IIIFJsonResponse>
+    public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, DescriptionResourceResponse>
     {
         private readonly IAssetTracker assetTracker;
         private readonly IAssetPathGenerator assetPathGenerator;
@@ -68,13 +68,13 @@ namespace Orchestrator.Features.Images.Requests
             this.orchestratorSettings = orchestratorSettings.Value;
         }
         
-        public async Task<IIIFJsonResponse> Handle(GetImageInfoJson request, CancellationToken cancellationToken)
+        public async Task<DescriptionResourceResponse> Handle(GetImageInfoJson request, CancellationToken cancellationToken)
         {
             var assetId = request.AssetRequest.GetAssetId();
             var asset = await assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId);
             if (asset == null)
             {
-                return IIIFJsonResponse.Empty;
+                return DescriptionResourceResponse.Empty;
             }
 
             var orchestrationTask =
@@ -88,15 +88,15 @@ namespace Orchestrator.Features.Images.Requests
                 var infoJson =
                     InfoJsonBuilder.GetImageApi2_1Level1(imageId, asset.Width, asset.Height, asset.OpenThumbs);
                 await orchestrationTask;
-                return IIIFJsonResponse.Open(infoJson.AsJson());
+                return DescriptionResourceResponse.Open(infoJson.AsJson());
             }
 
             var accessResult = await accessValidator.TryValidateBearerToken(assetId.Customer, asset.Roles);
             var authInfoJson = await GetAuthInfoJson(imageId, asset, assetId);
             await orchestrationTask;
             return accessResult == AssetAccessResult.Authorized
-                ? IIIFJsonResponse.Restricted(authInfoJson)
-                : IIIFJsonResponse.Unauthorised(authInfoJson);
+                ? DescriptionResourceResponse.Restricted(authInfoJson)
+                : DescriptionResourceResponse.Unauthorised(authInfoJson);
         }
 
         private Task DoOrchestrationIfRequired(OrchestrationImage orchestrationImage, bool noOrchestrationOverride,
