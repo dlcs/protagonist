@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core;
@@ -15,6 +16,7 @@ using IIIF.Serialisation;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
 using Orchestrator.Settings;
@@ -41,6 +43,7 @@ namespace Orchestrator.Features.Manifests.Requests
         private readonly IAssetRepository assetRepository;
         private readonly IAssetPathGenerator assetPathGenerator;
         private readonly IThumbRepository thumbRepository;
+        private readonly AssetAccessValidator accessValidator;
         private readonly ILogger<GetManifestForAssetHandler> logger;
         private readonly OrchestratorSettings orchestratorSettings;
 
@@ -48,12 +51,14 @@ namespace Orchestrator.Features.Manifests.Requests
             IAssetRepository assetRepository,
             IAssetPathGenerator assetPathGenerator,
             IThumbRepository thumbRepository,
+            AssetAccessValidator accessValidator,
             IOptions<OrchestratorSettings> orchestratorSettings,
             ILogger<GetManifestForAssetHandler> logger)
         {
             this.assetRepository = assetRepository;
             this.assetPathGenerator = assetPathGenerator;
             this.thumbRepository = thumbRepository;
+            this.accessValidator = accessValidator;
             this.orchestratorSettings = orchestratorSettings.Value;
             this.logger = logger;
         }
@@ -70,8 +75,15 @@ namespace Orchestrator.Features.Manifests.Requests
 
             var openThumbs = await thumbRepository.GetOpenSizes(assetId);
             var manifest = GenerateV2Manifest(request.AssetRequest, asset, openThumbs);
-
-            return IIIFJsonResponse.Open(manifest.AsJson());
+            
+            var accessResult = await accessValidator.TryValidateBearerToken(assetId.Customer, asset.RolesList);
+            return accessResult switch
+            {
+                AssetAccessResult.Open => IIIFJsonResponse.Open(manifest.AsJson()),
+                AssetAccessResult.Unauthorized => IIIFJsonResponse.Unauthorised(manifest.AsJson()),
+                AssetAccessResult.Authorized => IIIFJsonResponse.Restricted(manifest.AsJson()),
+                _ => throw new ArgumentOutOfRangeException("Unexpected AssetAccessResult")
+            };
         }
 
         private Manifest GenerateV2Manifest(BaseAssetRequest assetRequest, Asset asset, List<int[]>? openThumbs)

@@ -91,7 +91,7 @@ namespace Orchestrator.Features.Images.Requests
                 return IIIFJsonResponse.Open(infoJson.AsJson());
             }
 
-            var accessResult = await accessValidator.TryValidateBearerToken(asset);
+            var accessResult = await accessValidator.TryValidateBearerToken(assetId.Customer, asset.Roles);
             var authInfoJson = await GetAuthInfoJson(imageId, asset, assetId);
             await orchestrationTask;
             return accessResult == AssetAccessResult.Authorized

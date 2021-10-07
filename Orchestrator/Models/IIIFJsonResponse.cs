@@ -8,7 +8,10 @@
         public bool RequiresAuth { get; private init; }
         public bool IsUnauthorised { get; private init; }
 
-        public static IIIFJsonResponse Empty = new();
+        /// <summary>
+        /// Get empty <see cref="IIIFJsonResponse"/> result, containing no manifest.
+        /// </summary>
+        public static readonly IIIFJsonResponse Empty = new();
 
         /// <summary>
         /// Get <see cref="IIIFJsonResponse"/> for an open asset

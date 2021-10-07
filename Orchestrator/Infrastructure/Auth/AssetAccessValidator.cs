@@ -1,8 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
-using Orchestrator.Assets;
 using Orchestrator.Features.Auth;
 
 namespace Orchestrator.Infrastructure.Auth
@@ -31,15 +33,18 @@ namespace Orchestrator.Infrastructure.Auth
         }
 
         /// <summary>
-        /// Validate whether Bearer token associated with provided request has access to the specified resource.
-        /// This will add SET-COOKIE header to response if the  asset is restricted and the current request has access.
-        /// The Response StatusCode is NOT altered here - use the returned enum to do this downstream.
+        /// Validate whether Bearer token associated with provided request has access to the specified roles for
+        /// customer.
+        /// This will add SET-COOKIE header to response if the  asset is restricted and the current request
+        /// has access. The Response StatusCode is NOT altered here - use the returned enum to do this downstream.
         /// </summary>
-        /// <param name="orchestrationAsset">Current orchestration asset</param>
+        /// <param name="customer">Current customer</param>
+        /// <param name="roles">Roles associated with Asset</param>
         /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
-        public async Task<AssetAccessResult> TryValidateBearerToken(OrchestrationAsset orchestrationAsset)
+        public async Task<AssetAccessResult> TryValidateBearerToken(int customer, IEnumerable<string> roles)
         {
-            if (!orchestrationAsset.RequiresAuth) return AssetAccessResult.Open;
+            var assetRoles = roles.ToList();
+            if (assetRoles.IsNullOrEmpty()) return AssetAccessResult.Open;
 
             var httpContext = httpContextAccessor.HttpContext.ThrowIfNull(nameof(httpContextAccessor.HttpContext))!;
             
@@ -51,7 +56,6 @@ namespace Orchestrator.Infrastructure.Auth
             }
             
             // Get the authToken from bearerToken
-            var customer = orchestrationAsset.AssetId.Customer;
             var authToken =
                 await sessionAuthService.GetAuthTokenForBearerId(customer, bearerToken);
 
@@ -62,9 +66,7 @@ namespace Orchestrator.Infrastructure.Auth
             }
             
             // Validate current user has access for roles for requested asset
-            var canAccess =
-                await accessChecker.CanSessionUserAccessRoles(authToken.SessionUser, customer,
-                    orchestrationAsset.Roles);
+            var canAccess = await accessChecker.CanSessionUserAccessRoles(authToken.SessionUser, customer, assetRoles);
 
             if (!canAccess)
             {
