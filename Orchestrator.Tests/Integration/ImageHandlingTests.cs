@@ -424,21 +424,97 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Theory]
-        [InlineData("iiif-img/99/1/test-authid/full/!200,200/0/default.jpg", "id")]
-        [InlineData("iiif-img/test/1/test-authdisplay/full/!200,200/0/default.jpg", "display")]
-        public async Task Get_ImageRequiresAuth_RedirectsToDeliverator(string path, string type)
+        [InlineData("iiif-img/99/1/test-auth-nocookid/full/!200,200/0/default.jpg", "id")]
+        [InlineData("iiif-img/test/1/test-auth-nocookdisplay/full/!200,200/0/default.jpg", "display")]
+        public async Task Get_ImageRequiresAuth_Returns401_IfNoCookie(string path, string type)
         {
             // Arrange
-            await dbFixture.DbContext.Images.AddTestAsset($"99/1/test-auth{type}", roles: "basic", maxUnauthorised: 100);
+            await dbFixture.DbContext.Images.AddTestAsset($"99/1/test-auth-nocook{type}", roles: "basic",
+                maxUnauthorised: 100);
             await dbFixture.DbContext.SaveChangesAsync();
-            var expectedPath = new Uri($"http://deliverator/iiif-img/99/1/test-auth{type}/full/!200,200/0/default.jpg");
             
             // Act
             var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+        
+        [Theory]
+        [InlineData("iiif-img/99/1/test-auth-invalidcookid/full/!200,200/0/default.jpg", "id")]
+        [InlineData("iiif-img/test/1/test-auth-invalidcookdisplay/full/!200,200/0/default.jpg", "display")]
+        public async Task Get_ImageRequiresAuth_Returns401_IfInvalidCookie(string path, string type)
+        {
+            // Arrange
+            await dbFixture.DbContext.Images.AddTestAsset($"99/1/test-auth-invalidcook{type}", roles: "basic",
+                maxUnauthorised: 100);
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Get, path);
+            request.Headers.Add("Cookie", "dlcs-token-99=blabla;");
+            var response = await httpClient.SendAsync(request);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+        
+        [Theory]
+        [InlineData("iiif-img/99/1/test-auth-expcookid/full/!200,200/0/default.jpg", "id")]
+        [InlineData("iiif-img/test/1/test-auth-expcookdisplay/full/!200,200/0/default.jpg", "display")]
+        public async Task Get_ImageRequiresAuth_Returns401_IfExpiredCookie(string path, string type)
+        {
+            // Arrange
+            var id = $"99/1/test-auth-expcook{type}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 100);
+            var userSession =
+                await dbFixture.DbContext.SessionUsers.AddTestSession(
+                    DlcsDatabaseFixture.ClickThroughAuthService.AsList());
+            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(-1),
+                sessionUserId: userSession.Entity.Id);
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Get, path);
+            request.Headers.Add("Cookie", $"dlcs-token-99=id={authToken.Entity.CookieId};");
+            var response = await httpClient.SendAsync(request);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+        
+        [Theory]
+        [InlineData("iiif-img/99/1/test-auth-cookid/full/max/0/default.jpg", "id")]
+        [InlineData("iiif-img/test/1/test-auth-cookdisplay/full/max/0/default.jpg", "display")]
+        public async Task Get_ImageRequiresAuth_RedirectsToImageServer_AndSetsCookie_IfCookieProvided(string path, string type)
+        {
+            // Arrange
+            var id = $"99/1/test-auth-cook{type}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 100);
+            var userSession =
+                await dbFixture.DbContext.SessionUsers.AddTestSession(
+                    DlcsDatabaseFixture.ClickThroughAuthService.AsList());
+            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(15),
+                sessionUserId: userSession.Entity.Id);
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[400,400], [200,200]]}",
+            });
+            
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Get, path);
+            request.Headers.Add("Cookie", $"dlcs-token-99=id={authToken.Entity.CookieId};");
+            var response = await httpClient.SendAsync(request);
             var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
             
             // Assert
-            proxyResponse.Uri.Should().Be(expectedPath);
+            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/fcgi-bin/iipsrv.fcgi?IIIF");
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Should().ContainKey("Set-Cookie");
         }
 
         [Fact]

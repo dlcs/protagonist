@@ -70,10 +70,11 @@ namespace Orchestrator.Infrastructure.Auth
                 return string.IsNullOrEmpty(bearerToken)
                     ? Task.FromResult<AuthToken?>(null)
                     : sessionAuthService.GetAuthTokenForBearerId(customer, bearerToken);
-            });
+            }, false);
 
         /// <summary>
-        /// Validate whether cookie provided with request has access to the specified roles for customer
+        /// Validate whether cookie provided with request has access to the specified roles for customer.
+        /// If successful, sets Set-Cookie header in response.
         /// </summary>
         /// <param name="customer">Current customer</param>
         /// <param name="roles">Roles associated with Asset</param>
@@ -85,10 +86,10 @@ namespace Orchestrator.Infrastructure.Auth
                 return string.IsNullOrEmpty(cookieId)
                     ? Task.FromResult<AuthToken?>(null)
                     : sessionAuthService.GetAuthTokenForCookieId(customer, cookieId);
-            });
+            }, true);
 
         private async Task<AssetAccessResult> ValidateAccess(int customer, IEnumerable<string> roles,
-            Func<Task<AuthToken?>> getAuthToken)
+            Func<Task<AuthToken?>> getAuthToken, bool setCookieInResponse)
         {
             var assetRoles = roles.ToList();
             if (assetRoles.IsNullOrEmpty()) return AssetAccessResult.Open;
@@ -103,7 +104,17 @@ namespace Orchestrator.Infrastructure.Auth
             
             // Validate current user has access for roles for requested asset
             var canAccess = await accessChecker.CanSessionUserAccessRoles(authToken.SessionUser, customer, assetRoles);
-            return canAccess ? AssetAccessResult.Authorized : AssetAccessResult.Unauthorized;
+            if (canAccess)
+            {
+                if (setCookieInResponse)
+                {
+                    authCookieManager.SetCookieInResponse(authToken);
+                }
+
+                return AssetAccessResult.Authorized;
+            }
+            
+            return AssetAccessResult.Unauthorized;
         }
 
         private string? GetCookieId(int customer)
