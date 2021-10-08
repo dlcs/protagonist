@@ -150,6 +150,8 @@ namespace Portal.ViewComponents
     
     public class PagerValues
     {
+        public PagerValues(){}
+        
         public PagerValues(int total, int index, int size)
         {
             Total = total;
