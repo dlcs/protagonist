@@ -53,21 +53,23 @@ namespace Test.Helpers.Integration
         /// </summary>
         public void CleanUp()
         {
-            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Spaces\" WHERE \"Customer\" != 99");
+            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Spaces\" WHERE \"Customer\" != 99 AND \"Id\" != 1");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerOriginStrategies\"");
-            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"AuthServices\" WHERE \"Customer\" != 99");
-            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Roles\"");
+            DbContext.Database.ExecuteSqlRaw($"DELETE FROM \"AuthServices\" WHERE \"Id\" != '{ClickThroughAuthService}'");
+            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Roles\" WHERE \"Id\" != 'clickthrough'");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"SessionUsers\"");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"AuthTokens\"");
         }
 
+        public const string ClickThroughAuthService = "ba7fd6e2-773b-4ef2-bdb9-c8ee9b46fd54";
+
         private async Task SeedCustomer()
         {
             const int customer = 99;
-            
+
             await DbContext.Customers.AddAsync(new Customer
             {
                 Created = DateTime.Now,
@@ -82,9 +84,14 @@ namespace Test.Helpers.Integration
                 { Id = "default", Name = "default", Sizes = "800,400,200" });
             await DbContext.AuthServices.AddAsync(new AuthService
             {
-                Customer = customer, Name = "clickthrough", Id = Guid.NewGuid().ToString(),
+                Customer = customer, Name = "clickthrough", Id = ClickThroughAuthService,
                 Description = "", Label = "", Profile = "", Ttl = 200, PageDescription = "",
                 PageLabel = "", RoleProvider = "", CallToAction = "", ChildAuthService = ""
+            });
+            await DbContext.Roles.AddAsync(new Role
+            {
+                Customer = customer, Id = "clickthrough", AuthService = ClickThroughAuthService,
+                Name = "test-clickthrough"
             });
             await DbContext.SaveChangesAsync();
         }

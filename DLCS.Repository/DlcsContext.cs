@@ -151,6 +151,8 @@ namespace DLCS.Repository
                     .HasMaxLength(100);
 
                 entity.Property(e => e.Ttl).HasColumnName("TTL");
+
+                entity.Ignore(e => e.SessionUser);
             });
 
             modelBuilder.Entity<Batch>(entity =>

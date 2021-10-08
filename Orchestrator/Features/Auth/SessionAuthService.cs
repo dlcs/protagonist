@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Security;
@@ -11,7 +12,39 @@ using Microsoft.Extensions.Logging;
 
 namespace Orchestrator.Features.Auth
 {
-    public class SessionAuthService
+    /// <summary>
+    /// Contains methods for dealing with AuthToken and SessionUsers.
+    /// </summary>
+    public interface ISessionAuthService
+    {
+        /// <summary>
+        /// Create a new Session and AuthToken for specified customer.
+        /// </summary>
+        /// <param name="customer">Current customer.</param>
+        /// <param name="authServiceName">Name of auth service to add to Session (e.g. "clickthrough")</param>
+        /// <returns>New AuthToken</returns>
+        Task<AuthToken?> CreateAuthTokenForRole(int customer, string authServiceName);
+
+        /// <summary>
+        /// Get <see cref="AuthToken"/> for provided cookieId. Expiry will be refreshed.
+        /// </summary>
+        /// <param name="customer">Current customer.</param>
+        /// <param name="cookieId">CookieId to get AuthToken for</param>
+        /// <returns>AuthToken if found and not expired, else null</returns>
+        Task<AuthToken?> GetAuthTokenForCookieId(int customer, string cookieId,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get <see cref="AuthToken"/> for provided bearer token. Expiry will be refreshed.
+        /// </summary>
+        /// <param name="customer">Current customer.</param>
+        /// <param name="bearerToken">Bearer token to get SessionUser for</param>
+        /// <returns>AuthToken if found and not expired, else null</returns>
+        Task<AuthToken?> GetAuthTokenForBearerId(int customer, string bearerToken,
+            CancellationToken cancellationToken = default);
+    }
+
+    public class SessionAuthService : ISessionAuthService
     {
         // AuthTokens are not refreshed if they were LastChecked within this threshold
         private static readonly TimeSpan RefreshThreshold = TimeSpan.FromMinutes(2);
@@ -54,25 +87,63 @@ namespace Orchestrator.Features.Auth
             return authToken;
         }
 
+        /// <summary>
+        /// Get <see cref="AuthToken"/> for provided cookieId. Expiry will be refreshed.
+        /// </summary>
+        /// <param name="customer">Current customer.</param>
+        /// <param name="cookieId">CookieId to get AuthToken for</param>
+        /// <returns>AuthToken if found and not expired, else null</returns>
         public async Task<AuthToken?> GetAuthTokenForCookieId(int customer, string cookieId,
             CancellationToken cancellationToken = default)
         {
-            var authToken = await dbContext.AuthTokens
-                .SingleOrDefaultAsync(token => token.Customer == customer && token.CookieId == cookieId,
-                    cancellationToken);
+            var authToken =
+                await GetRefreshedAuthToken(customer, token => token.CookieId == cookieId, cancellationToken);
 
             if (authToken == null)
             {
                 logger.LogInformation(
-                    "Could not find requested authToken for customer:'{Customer}', cookie:'{CookieId}'",
+                    "Requested authToken for customer:'{Customer}', cookie:'{CookieId}' not found or expired",
                     customer, cookieId);
+                return null;
+            }
+
+            return authToken;
+        }
+
+        public async Task<AuthToken?> GetAuthTokenForBearerId(int customer, string bearerToken,
+            CancellationToken cancellationToken = default)
+        {
+            var authToken =
+                await GetRefreshedAuthToken(customer, token => token.BearerToken == bearerToken, cancellationToken);
+
+            if (authToken == null)
+            {
+                logger.LogInformation(
+                    "Requested authToken for customer:'{Customer}', bearerToken:'{BearerToken}' not found or expired",
+                    customer, bearerToken);
+                return null;
+            }
+
+            return authToken;
+        }
+
+        private async Task<AuthToken?> GetRefreshedAuthToken(int customer, Expression<Func<AuthToken, bool>> additionalPredicate,
+            CancellationToken cancellationToken)
+        {
+            var authToken = await dbContext.AuthTokens
+                .Where(token => token.Customer == customer)
+                .SingleOrDefaultAsync(additionalPredicate, cancellationToken);
+
+            if (authToken == null)
+            {
+                logger.LogDebug(
+                    "Could not find requested authToken for customer:'{Customer}'", customer);
                 return null;
             }
 
             if (authToken.Expires <= DateTime.Now)
             {
-                logger.LogInformation("AuthToken expired, customer:'{Customer}', cookie:'{CookieId}'",
-                    customer, cookieId);
+                logger.LogDebug("AuthToken expired, customer:'{Customer}'", customer);
                 return null;
             }
 
@@ -83,6 +154,8 @@ namespace Orchestrator.Features.Auth
                 authToken.Expires = DateTime.Now.AddSeconds(authToken.Ttl);
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
+
+            authToken.SessionUser = await dbContext.SessionUsers.FindAsync(authToken.SessionUserId);
 
             return authToken;
         }

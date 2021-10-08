@@ -22,11 +22,11 @@ namespace Orchestrator.Features.Auth.Requests
     
     public class IssueAuthTokenHandler : IRequestHandler<IssueAuthToken, AuthTokenResponse>
     {
-        private readonly SessionAuthService sessionAuthService;
+        private readonly ISessionAuthService sessionAuthService;
         private readonly AuthCookieManager authCookieManager;
 
         public IssueAuthTokenHandler(
-            SessionAuthService sessionAuthService,
+            ISessionAuthService sessionAuthService,
             AuthCookieManager authCookieManager)
         {
             this.sessionAuthService = sessionAuthService;
@@ -45,8 +45,6 @@ namespace Orchestrator.Features.Auth.Requests
             authCookieManager.SetCookieInResponse(authToken);
             return AuthTokenResponse.Success();
         }
-
-        
     }
 
     public class AuthTokenResponse

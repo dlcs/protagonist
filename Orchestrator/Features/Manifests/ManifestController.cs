@@ -30,6 +30,6 @@ namespace Orchestrator.Features.Manifests
         [Route("{customer}/{space}/{image}")]
         [HttpGet]
         public Task<IActionResult> Index(CancellationToken cancellationToken = default)
-            => GenerateIIIFJsonResponse(() => new GetManifestForAsset(HttpContext.Request.Path), cancellationToken);
+            => GenerateIIIFDescriptionResource(() => new GetManifestForAsset(HttpContext.Request.Path), cancellationToken);
     }
 }

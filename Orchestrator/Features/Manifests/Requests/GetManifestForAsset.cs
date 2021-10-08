@@ -24,7 +24,7 @@ namespace Orchestrator.Features.Manifests.Requests
     /// <summary>
     /// Mediatr request for generating basic single-item manifest for specified image
     /// </summary>
-    public class GetManifestForAsset : IRequest<IIIFJsonResponse>, IGenericAssetRequest
+    public class GetManifestForAsset : IRequest<DescriptionResourceResponse>, IGenericAssetRequest
     {
         public string FullPath { get; }
         
@@ -36,7 +36,7 @@ namespace Orchestrator.Features.Manifests.Requests
         }
     }
     
-    public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, IIIFJsonResponse>
+    public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, DescriptionResourceResponse>
     {
         private readonly IAssetRepository assetRepository;
         private readonly IAssetPathGenerator assetPathGenerator;
@@ -58,20 +58,20 @@ namespace Orchestrator.Features.Manifests.Requests
             this.logger = logger;
         }
 
-        public async Task<IIIFJsonResponse> Handle(GetManifestForAsset request, CancellationToken cancellationToken)
+        public async Task<DescriptionResourceResponse> Handle(GetManifestForAsset request, CancellationToken cancellationToken)
         {
             var assetId = request.AssetRequest.GetAssetId();
             var asset = await assetRepository.GetAsset(assetId);
             if (asset is not { Family: AssetFamily.Image })
             {
                 logger.LogDebug("Request iiif-manifest for asset {AssetId} but is not found or not an image", assetId);
-                return IIIFJsonResponse.Empty;
+                return DescriptionResourceResponse.Empty;
             }
 
             var openThumbs = await thumbRepository.GetOpenSizes(assetId);
             var manifest = GenerateV2Manifest(request.AssetRequest, asset, openThumbs);
 
-            return IIIFJsonResponse.Open(manifest.AsJson());
+            return DescriptionResourceResponse.Open(manifest.AsJson());
         }
 
         private Manifest GenerateV2Manifest(BaseAssetRequest assetRequest, Asset asset, List<int[]>? openThumbs)

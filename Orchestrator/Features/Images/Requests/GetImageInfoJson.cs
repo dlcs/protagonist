@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images.Orchestration;
+using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
 using Orchestrator.Settings;
@@ -25,7 +26,7 @@ namespace Orchestrator.Features.Images.Requests
     /// <summary>
     /// Mediatr request for generating info.json request for specified image.
     /// </summary>
-    public class GetImageInfoJson : IRequest<IIIFJsonResponse>, IImageRequest
+    public class GetImageInfoJson : IRequest<DescriptionResourceResponse>, IImageRequest
     {
         public string FullPath { get; }
         public bool NoOrchestrationOverride { get; }
@@ -39,41 +40,41 @@ namespace Orchestrator.Features.Images.Requests
         }
     }
 
-    public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, IIIFJsonResponse>
+    public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, DescriptionResourceResponse>
     {
         private readonly IAssetTracker assetTracker;
         private readonly IAssetPathGenerator assetPathGenerator;
-        private readonly IAssetRepository assetRepository;
         private readonly IAuthServicesRepository authServicesRepository;
         private readonly IImageOrchestrator orchestrator;
+        private readonly AssetAccessValidator accessValidator;
         private readonly ILogger<GetImageInfoJsonHandler> logger;
         private readonly OrchestratorSettings orchestratorSettings;
 
         public GetImageInfoJsonHandler(
             IAssetTracker assetTracker,
             IAssetPathGenerator assetPathGenerator,
-            IAssetRepository assetRepository,
             IAuthServicesRepository authServicesRepository,
             IImageOrchestrator orchestrator,
+            AssetAccessValidator accessValidator,
             IOptions<OrchestratorSettings> orchestratorSettings,
             ILogger<GetImageInfoJsonHandler> logger)
         {
             this.assetTracker = assetTracker;
             this.assetPathGenerator = assetPathGenerator;
-            this.assetRepository = assetRepository;
             this.authServicesRepository = authServicesRepository;
             this.orchestrator = orchestrator;
+            this.accessValidator = accessValidator;
             this.logger = logger;
             this.orchestratorSettings = orchestratorSettings.Value;
         }
         
-        public async Task<IIIFJsonResponse> Handle(GetImageInfoJson request, CancellationToken cancellationToken)
+        public async Task<DescriptionResourceResponse> Handle(GetImageInfoJson request, CancellationToken cancellationToken)
         {
             var assetId = request.AssetRequest.GetAssetId();
             var asset = await assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId);
             if (asset == null)
             {
-                return IIIFJsonResponse.Empty;
+                return DescriptionResourceResponse.Empty;
             }
 
             var orchestrationTask =
@@ -87,12 +88,15 @@ namespace Orchestrator.Features.Images.Requests
                 var infoJson =
                     InfoJsonBuilder.GetImageApi2_1Level1(imageId, asset.Width, asset.Height, asset.OpenThumbs);
                 await orchestrationTask;
-                return IIIFJsonResponse.Open(infoJson.AsJson());
+                return DescriptionResourceResponse.Open(infoJson.AsJson());
             }
-            
+
+            var accessResult = await accessValidator.TryValidateBearerToken(assetId.Customer, asset.Roles);
             var authInfoJson = await GetAuthInfoJson(imageId, asset, assetId);
             await orchestrationTask;
-            return IIIFJsonResponse.Restricted(authInfoJson);
+            return accessResult == AssetAccessResult.Authorized
+                ? DescriptionResourceResponse.Restricted(authInfoJson)
+                : DescriptionResourceResponse.Unauthorised(authInfoJson);
         }
 
         private Task DoOrchestrationIfRequired(OrchestrationImage orchestrationImage, bool noOrchestrationOverride,
@@ -119,7 +123,7 @@ namespace Orchestrator.Features.Images.Requests
 
         private async Task<string> GetAuthInfoJson(string imageId, OrchestrationImage asset, AssetId assetId)
         {
-            var authServices = await GetAuthServices(assetId);
+            var authServices = await GetAuthServices(assetId, asset.Roles);
             if (authServices.IsNullOrEmpty())
             {
                 logger.LogWarning("Unable to get auth services for {Asset}", assetId);
@@ -168,12 +172,10 @@ namespace Orchestrator.Features.Images.Requests
             return presentationObject.ToString(Formatting.None);
         }
 
-        private async Task<List<AuthService>> GetAuthServices(AssetId assetId)
+        private async Task<List<AuthService>> GetAuthServices(AssetId assetId, IEnumerable<string> rolesList)
         {
-            var asset = await assetRepository.GetAsset(assetId);
-
             var authServices = new List<AuthService>();
-            foreach (var role in asset.RolesList)
+            foreach (var role in rolesList)
             {
                 authServices.AddRange(await authServicesRepository.GetAuthServicesForRole(assetId.Customer, role));
             }

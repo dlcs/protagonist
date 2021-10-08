@@ -111,7 +111,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/Get_ManifestForImage_HandlesNoAvailableThumbs");
+            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail").Should().BeNull();
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -137,9 +137,36 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/Get_ManifestForImage_ReturnsManifest");
-            jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>().Should().Be(
-                "http://localhost/thumbs/99/1/Get_ManifestForImage_ReturnsManifest/full/100,100/0/default.jpg");
+            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
+                .Should().Be($"http://localhost/thumbs/{id}/full/100,100/0/default.jpg");
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.CacheControl.Public.Should().BeTrue();
+            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        }
+        
+        [Fact]
+        public async Task Get_ManifestForRestrictedImage_ReturnsManifest()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_ManifestForRestrictedImage_ReturnsManifest)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough");
+            await dbFixture.DbContext.SaveChangesAsync();
+
+            var openSizes = new List<int[]> { new[] { 100, 100 }, new[] { 200, 200 } };
+            await amazonS3.AddSizesJson(id, new ThumbnailSizes(openSizes, null));
+
+            var path = $"iiif-manifest/{id}";
+
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
+                .Should().Be($"http://localhost/thumbs/{id}/full/100,100/0/default.jpg");
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeTrue();

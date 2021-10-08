@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -7,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Security;
 using DLCS.Repository.Entities;
@@ -218,10 +220,10 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns403WithoutServices()
+        public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns401WithoutServices()
         {
             // Arrange
-            var id = $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns403WithoutServices)}";
+            var id = $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns401WithoutServices)}";
             await dbFixture.DbContext.Images.AddTestAsset(id, roles: "unknown-role", maxUnauthorised: 500);
 
             await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -243,6 +245,131 @@ namespace Orchestrator.Tests.Integration
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
             response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        }
+        
+        [Fact]
+        public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfNoBearerTokenProvided()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfNoBearerTokenProvided)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500);
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
+
+            // Assert
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            response.Headers.CacheControl.Public.Should().BeFalse();
+            response.Headers.CacheControl.Private.Should().BeTrue();
+        }
+        
+        [Fact]
+        public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfUnknownBearerTokenProvided()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfUnknownBearerTokenProvided)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500);
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Get, $"iiif-img/{id}/info.json");
+            request.Headers.Add("Authorization", "Bearer __nonsensetoken__");
+            var response = await httpClient.SendAsync(request);
+
+            // Assert
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            response.Headers.CacheControl.Public.Should().BeFalse();
+            response.Headers.CacheControl.Private.Should().BeTrue();
+        }
+        
+        [Fact]
+        public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfExpiredBearerTokenProvided()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfExpiredBearerTokenProvided)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500);
+            var userSession =
+                await dbFixture.DbContext.SessionUsers.AddTestSession(
+                    DlcsDatabaseFixture.ClickThroughAuthService.AsList());
+            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(-1),
+                sessionUserId: userSession.Entity.Id);
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Get, $"iiif-img/{id}/info.json");
+            request.Headers.Add("Authorization", $"Bearer {authToken.Entity.BearerToken}");
+            var response = await httpClient.SendAsync(request);
+
+            // Assert
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            response.Headers.CacheControl.Public.Should().BeFalse();
+            response.Headers.CacheControl.Private.Should().BeTrue();
+        }
+        
+        [Fact]
+        public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns200_AndRefreshesToken_IfValidBearerTokenProvided()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns200_AndRefreshesToken_IfValidBearerTokenProvided)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500);
+            var userSession =
+                await dbFixture.DbContext.SessionUsers.AddTestSession(
+                    DlcsDatabaseFixture.ClickThroughAuthService.AsList());
+            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(1),
+                sessionUserId: userSession.Entity.Id, ttl: 6000, lastChecked: DateTime.Now.AddHours(-1));
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = "protagonist-thumbs",
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            
+            var bearerToken = authToken.Entity.BearerToken;
+            
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Get, $"iiif-img/{id}/info.json");
+            request.Headers.Add("Authorization", $"Bearer {bearerToken}");
+            var response = await httpClient.SendAsync(request);
+
+            // Assert
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.CacheControl.Public.Should().BeFalse();
+            response.Headers.CacheControl.Private.Should().BeTrue();
+            
+            dbFixture.DbContext.AuthTokens.Single(t => t.BearerToken == bearerToken)
+                .Expires.Should().BeAfter(DateTime.Now.AddMinutes(5));
         }
 
         [Fact]

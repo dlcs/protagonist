@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 
@@ -21,18 +22,21 @@ namespace Orchestrator.Features.Images
     /// <summary>
     /// Reverse-proxy routing logic for /iiif-img/ requests 
     /// </summary>
-    public class ImageRequestHandler : RequestHandlerBase
+    public class ImageRequestHandler
     {
+        private readonly ILogger<ImageRequestHandler> logger;
+        private readonly AssetRequestProcessor assetRequestProcessor;
         private readonly IOptions<OrchestratorSettings> orchestratorSettings;
         private readonly Dictionary<string, CompiledRegexThumbUpscaleConfig> upscaleConfig;
         private readonly bool haveUpscaleRules;
 
         public ImageRequestHandler(
             ILogger<ImageRequestHandler> logger,
-            IAssetTracker assetTracker,
-            IAssetDeliveryPathParser assetDeliveryPathParser,
-            IOptions<OrchestratorSettings> orchestratorSettings) : base(logger, assetTracker, assetDeliveryPathParser)
+            AssetRequestProcessor assetRequestProcessor,
+            IOptions<OrchestratorSettings> orchestratorSettings)
         {
+            this.logger = logger;
+            this.assetRequestProcessor = assetRequestProcessor;
             this.orchestratorSettings = orchestratorSettings;
 
             upscaleConfig = orchestratorSettings.Value.Proxy?.ThumbUpscaleConfig?
@@ -49,30 +53,31 @@ namespace Orchestrator.Features.Images
         /// <returns><see cref="IProxyActionResult"/> object containing downstream target</returns>
         public async Task<IProxyActionResult> HandleRequest(HttpContext httpContext)
         {
-            var (assetRequest, statusCode) = await TryGetAssetDeliveryRequest<ImageAssetDeliveryRequest>(httpContext);
+            var (assetRequest, statusCode) =
+                await assetRequestProcessor.TryGetAssetDeliveryRequest<ImageAssetDeliveryRequest>(httpContext);
             if (statusCode.HasValue || assetRequest == null)
             {
                 return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
             }
 
             // If "HEAD" then add CORS - is this required here?
-            var orchestrationAsset = await GetAsset(assetRequest);
+            var orchestrationAsset = await assetRequestProcessor.GetAsset(assetRequest);
             if (orchestrationAsset is not OrchestrationImage orchestrationImage)
             {
-                Logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
+                logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
                 return new StatusCodeResult(HttpStatusCode.NotFound);
             }
 
             if (orchestrationImage.RequiresAuth)
             {
-                Logger.LogDebug("Request for {Path} requires auth, proxying to orchestrator", httpContext.Request.Path);
+                logger.LogDebug("Request for {Path} requires auth, proxying to orchestrator", httpContext.Request.Path);
                 return new ProxyActionResult(ProxyDestination.Orchestrator, orchestrationImage.RequiresAuth,
                     assetRequest.NormalisedFullPath);
             }
 
             if (IsRequestForUVThumb(httpContext, assetRequest))
             {
-                Logger.LogDebug("Request for {Path} looks like UV thumb, proxying to thumbs", httpContext.Request.Path);
+                logger.LogDebug("Request for {Path} looks like UV thumb, proxying to thumbs", httpContext.Request.Path);
                 return new ProxyActionResult(ProxyDestination.Thumbs, orchestrationImage.RequiresAuth,
                     GetUVThumbReplacementPath(orchestrationImage.AssetId));
             }
@@ -95,7 +100,7 @@ namespace Orchestrator.Features.Images
                 var canHandleByThumbResponse = CanRequestBeHandledByThumb(assetRequest, orchestrationImage);
                 if (canHandleByThumbResponse.CanHandle)
                 {
-                    Logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs. IsResize: {IsResize}",
+                    logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs. IsResize: {IsResize}",
                         httpContext.Request.Path, canHandleByThumbResponse.IsResize);
                     
                     var pathReplacement = canHandleByThumbResponse.IsResize
@@ -152,7 +157,7 @@ namespace Orchestrator.Features.Images
             {
                 if (config.CompiledAssetRegex.IsMatch(assetId))
                 {
-                    Logger.LogDebug("ThumbUpscaleConfig {ResizeKey} matches Asset {Asset}", key, assetId);
+                    logger.LogDebug("ThumbUpscaleConfig {ResizeKey} matches Asset {Asset}", key, assetId);
                     var diff = Size.GetSizeIncreasePercent(resizeCandidate.Ideal, resizeCandidate.SmallerSize);
                     if (diff <= config.UpscaleThreshold)
                     {
