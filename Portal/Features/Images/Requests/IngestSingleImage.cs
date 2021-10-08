@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace Portal.Features.Images.Requests
 {
-    public class IngestSingleImage : IRequest<AssetJsonLD?>
+    public class IngestSingleImage : IRequest<Image?>
     {
         public int SpaceId { get; }
         public string ImageId { get; }
@@ -29,7 +29,7 @@ namespace Portal.Features.Images.Requests
         }
     }
     
-    public class IngestImageFromFileHandler : IRequestHandler<IngestSingleImage, AssetJsonLD?>
+    public class IngestImageFromFileHandler : IRequestHandler<IngestSingleImage, Image?>
     {
         private readonly ClaimsPrincipal claimsPrincipal;
         private readonly IBucketReader bucketReader;
@@ -54,7 +54,7 @@ namespace Portal.Features.Images.Requests
             this.spaceRepository = spaceRepository;
         }
         
-        public async Task<AssetJsonLD?> Handle(IngestSingleImage request, CancellationToken cancellationToken)
+        public async Task<Image?> Handle(IngestSingleImage request, CancellationToken cancellationToken)
         {
             // Save to S3
             var objectInBucket = GetObjectInBucket(request);
@@ -77,11 +77,11 @@ namespace Portal.Features.Images.Requests
             => new RegionalisedObjectInBucket(settings.OriginBucket,
                 $"{claimsPrincipal.GetCustomerId()}/{request.SpaceId}/{request.ImageId}", settings.Region);
 
-        private async Task<AssetJsonLD> CreateJsonBody(RegionalisedObjectInBucket objectInBucket, IngestSingleImage request)
+        private async Task<Image> CreateJsonBody(RegionalisedObjectInBucket objectInBucket, IngestSingleImage request)
         {
             var spaceCount =
                 await spaceRepository.GetImageCountForSpace(claimsPrincipal.GetCustomerId().Value, request.SpaceId);
-            return new AssetJsonLD
+            return new Image
             {
                 Origin = objectInBucket.GetHttpUri(),
                 Number1 = spaceCount,
