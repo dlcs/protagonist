@@ -335,10 +335,10 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns200_WithCookie_AndRefreshesToken_IfValidBearerTokenProvided()
+        public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns200_AndRefreshesToken_IfValidBearerTokenProvided()
         {
             // Arrange
-            var id = $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns200_WithCookie_AndRefreshesToken_IfValidBearerTokenProvided)}";
+            var id = $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns200_AndRefreshesToken_IfValidBearerTokenProvided)}";
             await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500);
             var userSession =
                 await dbFixture.DbContext.SessionUsers.AddTestSession(
@@ -368,8 +368,6 @@ namespace Orchestrator.Tests.Integration
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
             
-            response.Headers.Should().ContainKey("Set-Cookie");
-
             dbFixture.DbContext.AuthTokens.Single(t => t.BearerToken == bearerToken)
                 .Expires.Should().BeAfter(DateTime.Now.AddMinutes(5));
         }

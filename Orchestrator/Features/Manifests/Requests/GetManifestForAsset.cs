@@ -75,7 +75,8 @@ namespace Orchestrator.Features.Manifests.Requests
 
             var openThumbs = await thumbRepository.GetOpenSizes(assetId);
             var manifest = GenerateV2Manifest(request.AssetRequest, asset, openThumbs);
-            
+         
+            // TODO - always open
             var accessResult = await accessValidator.TryValidateBearerToken(assetId.Customer, asset.RolesList);
             return accessResult switch
             {

@@ -17,26 +17,21 @@ namespace Orchestrator.Infrastructure.Auth
     {
         private readonly ISessionAuthService sessionAuthService;
         private readonly AccessChecker accessChecker;
-        private readonly AuthCookieManager cookieManager;
         private readonly IHttpContextAccessor httpContextAccessor;
 
         public AssetAccessValidator(
             ISessionAuthService sessionAuthService,
             AccessChecker accessChecker,
-            AuthCookieManager cookieManager,
             IHttpContextAccessor httpContextAccessor)
         {
             this.sessionAuthService = sessionAuthService;
             this.accessChecker = accessChecker;
-            this.cookieManager = cookieManager;
             this.httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
         /// Validate whether Bearer token associated with provided request has access to the specified roles for
         /// customer.
-        /// This will add SET-COOKIE header to response if the  asset is restricted and the current request
-        /// has access. The Response StatusCode is NOT altered here - use the returned enum to do this downstream.
         /// </summary>
         /// <param name="customer">Current customer</param>
         /// <param name="roles">Roles associated with Asset</param>
@@ -73,7 +68,6 @@ namespace Orchestrator.Infrastructure.Auth
                 return AssetAccessResult.Unauthorized;
             }
             
-            cookieManager.SetCookieInResponse(authToken);
             return AssetAccessResult.Authorized;
         }
 
