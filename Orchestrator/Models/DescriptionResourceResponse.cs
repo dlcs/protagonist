@@ -7,7 +7,7 @@
     {
         // TODO - update this to be a JsonLdBase once all values set use iiif-net nuget package
         public string? DescriptionResource { get; private init; }
-        public bool HasInfoJson { get; private init; }
+        public bool HasResource { get; private init; }
         public bool RequiresAuth { get; private init; }
         public bool IsUnauthorised { get; private init; }
 
@@ -24,7 +24,7 @@
             {
                 DescriptionResource = resource,
                 RequiresAuth = false,
-                HasInfoJson = true,
+                HasResource = true,
                 IsUnauthorised = false
             };
 
@@ -36,7 +36,7 @@
             {
                 DescriptionResource = resource,
                 RequiresAuth = true,
-                HasInfoJson = true,
+                HasResource = true,
                 IsUnauthorised = false
             };
         
@@ -48,7 +48,7 @@
             {
                 DescriptionResource = resource,
                 RequiresAuth = true,
-                HasInfoJson = true,
+                HasResource = true,
                 IsUnauthorised = true
             };
     }

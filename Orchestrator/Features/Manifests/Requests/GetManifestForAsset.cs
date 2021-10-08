@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core;
@@ -16,7 +15,6 @@ using IIIF.Serialisation;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
 using Orchestrator.Settings;
@@ -43,7 +41,6 @@ namespace Orchestrator.Features.Manifests.Requests
         private readonly IAssetRepository assetRepository;
         private readonly IAssetPathGenerator assetPathGenerator;
         private readonly IThumbRepository thumbRepository;
-        private readonly AssetAccessValidator accessValidator;
         private readonly ILogger<GetManifestForAssetHandler> logger;
         private readonly OrchestratorSettings orchestratorSettings;
 
@@ -51,14 +48,12 @@ namespace Orchestrator.Features.Manifests.Requests
             IAssetRepository assetRepository,
             IAssetPathGenerator assetPathGenerator,
             IThumbRepository thumbRepository,
-            AssetAccessValidator accessValidator,
             IOptions<OrchestratorSettings> orchestratorSettings,
             ILogger<GetManifestForAssetHandler> logger)
         {
             this.assetRepository = assetRepository;
             this.assetPathGenerator = assetPathGenerator;
             this.thumbRepository = thumbRepository;
-            this.accessValidator = accessValidator;
             this.orchestratorSettings = orchestratorSettings.Value;
             this.logger = logger;
         }
@@ -75,16 +70,8 @@ namespace Orchestrator.Features.Manifests.Requests
 
             var openThumbs = await thumbRepository.GetOpenSizes(assetId);
             var manifest = GenerateV2Manifest(request.AssetRequest, asset, openThumbs);
-         
-            // TODO - always open
-            var accessResult = await accessValidator.TryValidateBearerToken(assetId.Customer, asset.RolesList);
-            return accessResult switch
-            {
-                AssetAccessResult.Open => DescriptionResourceResponse.Open(manifest.AsJson()),
-                AssetAccessResult.Unauthorized => DescriptionResourceResponse.Unauthorised(manifest.AsJson()),
-                AssetAccessResult.Authorized => DescriptionResourceResponse.Restricted(manifest.AsJson()),
-                _ => throw new ArgumentOutOfRangeException("Unexpected AssetAccessResult")
-            };
+
+            return DescriptionResourceResponse.Open(manifest.AsJson());
         }
 
         private Manifest GenerateV2Manifest(BaseAssetRequest assetRequest, Asset asset, List<int[]>? openThumbs)

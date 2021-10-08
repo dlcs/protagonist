@@ -53,7 +53,7 @@ namespace Orchestrator.Infrastructure
             {
                 var request = generateRequest();
                 var infoJsonResponse = await mediator.Send(request, cancellationToken);
-                if (!infoJsonResponse.HasInfoJson) return NotFound();
+                if (!infoJsonResponse.HasResource) return NotFound();
 
                 if (infoJsonResponse.IsUnauthorised)
                 {

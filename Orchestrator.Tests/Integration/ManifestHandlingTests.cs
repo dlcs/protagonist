@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Amazon.S3;
-using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Repository.Assets;
 using FluentAssertions;
@@ -113,7 +111,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/Get_ManifestForImage_HandlesNoAvailableThumbs");
+            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail").Should().BeNull();
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -139,9 +137,9 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/Get_ManifestForImage_ReturnsManifest");
-            jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>().Should().Be(
-                "http://localhost/thumbs/99/1/Get_ManifestForImage_ReturnsManifest/full/100,100/0/default.jpg");
+            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
+                .Should().Be($"http://localhost/thumbs/{id}/full/100,100/0/default.jpg");
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeTrue();
@@ -149,10 +147,10 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_ManifestForRestrictedImage_ReturnsManifest_With401Response_IfNoBearerTokenProvided()
+        public async Task Get_ManifestForRestrictedImage_ReturnsManifest()
         {
             // Arrange
-            var id = $"99/1/{nameof(Get_ManifestForRestrictedImage_ReturnsManifest_With401Response_IfNoBearerTokenProvided)}";
+            var id = $"99/1/{nameof(Get_ManifestForRestrictedImage_ReturnsManifest)}";
             await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough");
             await dbFixture.DbContext.SaveChangesAsync();
 
@@ -167,100 +165,12 @@ namespace Orchestrator.Tests.Integration
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
-            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-            response.Headers.CacheControl.Private.Should().BeTrue();
-        }
-        
-        [Fact]
-        public async Task Get_ManifestForRestrictedImage_ReturnsManifest_With401Response_IfUnknownBearerTokenProvided()
-        {
-            // Arrange
-            var id = $"99/1/{nameof(Get_ManifestForRestrictedImage_ReturnsManifest_With401Response_IfUnknownBearerTokenProvided)}";
-            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough");
-            await dbFixture.DbContext.SaveChangesAsync();
+            jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
+                .Should().Be($"http://localhost/thumbs/{id}/full/100,100/0/default.jpg");
 
-            var openSizes = new List<int[]> { new[] { 100, 100 }, new[] { 200, 200 } };
-            await amazonS3.AddSizesJson(id, new ThumbnailSizes(openSizes, null));
-
-            var path = $"iiif-manifest/{id}";
-
-            // Act
-            var request = new HttpRequestMessage(HttpMethod.Get, path);
-            request.Headers.Add("Authorization", "Bearer __nonsensetoken__");
-            var response = await httpClient.SendAsync(request);
-            
-            // Assert
-            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
-            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-            response.Headers.CacheControl.Private.Should().BeTrue();
-        }
-        
-        [Fact]
-        public async Task Get_ManifestForRestrictedImage_ReturnsManifest_With401Response_IfExpiredBearerTokenProvided()
-        {
-            // Arrange
-            var id = $"99/1/{nameof(Get_ManifestForRestrictedImage_ReturnsManifest_With401Response_IfExpiredBearerTokenProvided)}";
-            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough");
-            var userSession =
-                await dbFixture.DbContext.SessionUsers.AddTestSession(
-                    DlcsDatabaseFixture.ClickThroughAuthService.AsList());
-            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(-1),
-                sessionUserId: userSession.Entity.Id);
-            await dbFixture.DbContext.SaveChangesAsync();
-
-            var openSizes = new List<int[]> { new[] { 100, 100 }, new[] { 200, 200 } };
-            await amazonS3.AddSizesJson(id, new ThumbnailSizes(openSizes, null));
-
-            var path = $"iiif-manifest/{id}";
-
-            // Act
-            var request = new HttpRequestMessage(HttpMethod.Get, path);
-            request.Headers.Add("Authorization", $"Bearer {authToken.Entity.BearerToken}");
-            var response = await httpClient.SendAsync(request);
-            
-            // Assert
-            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
-            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-            response.Headers.CacheControl.Private.Should().BeTrue();
-        }
-        
-        [Fact]
-        public async Task Get_ManifestForRestrictedImage_ReturnsManifest_With200Response_WithCookie_AndRefreshesToken_IfValidBearerTokenProvided()
-        {
-            // Arrange
-            var id = $"99/1/{nameof(Get_ManifestForRestrictedImage_ReturnsManifest_With200Response_WithCookie_AndRefreshesToken_IfValidBearerTokenProvided)}";
-            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough");
-            var userSession =
-                await dbFixture.DbContext.SessionUsers.AddTestSession(
-                    DlcsDatabaseFixture.ClickThroughAuthService.AsList());
-            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(1),
-                sessionUserId: userSession.Entity.Id, ttl: 6000, lastChecked: DateTime.Now.AddHours(-1));
-            await dbFixture.DbContext.SaveChangesAsync();
-
-            var openSizes = new List<int[]> { new[] { 100, 100 }, new[] { 200, 200 } };
-            await amazonS3.AddSizesJson(id, new ThumbnailSizes(openSizes, null));
-
-            var path = $"iiif-manifest/{id}";
-            
-            var bearerToken = authToken.Entity.BearerToken;
-
-            // Act
-            var request = new HttpRequestMessage(HttpMethod.Get, path);
-            request.Headers.Add("Authorization", $"Bearer {bearerToken}");
-            var response = await httpClient.SendAsync(request);
-            
-            // Assert
-            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
-            response.Headers.CacheControl.Private.Should().BeTrue();
-
-            response.Headers.Should().ContainKey("Set-Cookie");
-
-            dbFixture.DbContext.AuthTokens.Single(t => t.BearerToken == bearerToken)
-                .Expires.Should().BeAfter(DateTime.Now.AddMinutes(5));
+            response.Headers.CacheControl.Public.Should().BeTrue();
+            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         }
     }
 }
