@@ -11,11 +11,31 @@ using Orchestrator.Features.Auth;
 
 namespace Orchestrator.Infrastructure.Auth
 {
+    public interface IAssetAccessValidator
+    {
+        /// <summary>
+        /// Validate whether Bearer token associated with provided request has access to the specified roles for
+        /// customer.
+        /// </summary>
+        /// <param name="customer">Current customer</param>
+        /// <param name="roles">Roles associated with Asset</param>
+        /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
+        Task<AssetAccessResult> TryValidateBearerToken(int customer, IEnumerable<string> roles);
+
+        /// <summary>
+        /// Validate whether cookie provided with request has access to the specified roles for customer
+        /// </summary>
+        /// <param name="customer">Current customer</param>
+        /// <param name="roles">Roles associated with Asset</param>
+        /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
+        Task<AssetAccessResult> TryValidateCookie(int customer, IEnumerable<string> roles);
+    }
+
     /// <summary>
     /// Contains logic to validate passed BearerTokens and Cookies with a request for an asset.
     /// Setting status code and cookies depending on result of verification.
     /// </summary>
-    public class AssetAccessValidator
+    public class AssetAccessValidator : IAssetAccessValidator
     {
         private readonly ISessionAuthService sessionAuthService;
         private readonly AccessChecker accessChecker;

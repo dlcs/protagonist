@@ -99,7 +99,7 @@ namespace Orchestrator
                 .AddScoped<ISessionAuthService, SessionAuthService>()
                 .AddScoped<AuthCookieManager>()
                 .AddSingleton<AssetRequestProcessor>()
-                .AddScoped<AssetAccessValidator>()
+                .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
                 .AddOriginStrategies()
                 .AddDbContext<DlcsContext>(opts =>
                     opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))

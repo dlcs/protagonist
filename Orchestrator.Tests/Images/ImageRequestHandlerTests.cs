@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -15,6 +16,7 @@ using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images;
 using Orchestrator.Infrastructure;
+using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Xunit;
@@ -27,6 +29,7 @@ namespace Orchestrator.Tests.Images
         private readonly IAssetDeliveryPathParser assetDeliveryPathParser;
         private readonly IPathCustomerRepository customerRepository;
         private readonly AssetDeliveryPathParser assetDeliveryPathParserImpl;
+        private readonly IAssetAccessValidator accessValidator;
         private readonly IOptions<OrchestratorSettings> defaultSettings;
 
         public ImageRequestHandlerTests()
@@ -34,6 +37,7 @@ namespace Orchestrator.Tests.Images
             assetTracker = A.Fake<IAssetTracker>();
             assetDeliveryPathParser = A.Fake<IAssetDeliveryPathParser>();
             customerRepository = A.Fake<IPathCustomerRepository>();
+            accessValidator = A.Fake<IAssetAccessValidator>();
             assetDeliveryPathParserImpl = new AssetDeliveryPathParser(customerRepository);
             defaultSettings = Options.Create(new OrchestratorSettings());
         }
@@ -89,25 +93,58 @@ namespace Orchestrator.Tests.Images
         }
 
         [Fact]
-        public async Task Handle_Request_ProxiesToOrchestrator_IfAssetRequiresAuth()
+        public async Task Handle_Request_Returns401_IfAssetRequiresAuth_AndUserCannotAccess()
         {
             // Arrange
             var context = new DefaultHttpContext();
             context.Request.Path = "/iiif-img/2/2/test-image/full/!200,200/0/default.jpg";
 
+            var roles = new List<string> { "role" };
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new OrchestrationImage { Roles = new List<string> { "role" } });
+                .Returns(new OrchestrationImage { Roles = roles });
+            A.CallTo(() => accessValidator.TryValidateCookie(2, roles)).Returns(AssetAccessResult.Unauthorized);
             var sut = GetImageRequestHandlerWithMockPathParser();
 
             // Act
-            var result = await sut.HandleRequest(context) as ProxyActionResult;
+            var result = await sut.HandleRequest(context);
             
             // Assert
-            result.Target.Should().Be(ProxyDestination.Orchestrator);
+            result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+
+        [Theory]
+        [InlineData(AssetAccessResult.Open)]
+        [InlineData(AssetAccessResult.Authorized)]
+        public async Task Handle_Request_ProxiesToImageServer_IfAssetRequiresAuth_AndUserAuthorised(
+            AssetAccessResult accessResult)
+        {
+            // Arrange
+            var context = new DefaultHttpContext();
+            context.Request.Path = "/iiif-img/2/2/test-image/full/,900/0/default.jpg";
+
+            var roles = new List<string> { "role" };
+            var assetId = new AssetId(2, 2, "test-image");
+            A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+            A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+                .Returns(new OrchestrationImage
+                    { AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } } });
+            A.CallTo(() => accessValidator.TryValidateCookie(2, roles)).Returns(accessResult);
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    ImageFolderTemplateImageServer = "/path",
+                    Proxy = new ProxySettings { CheckUVThumbs = false }
+                }));
+
+            // Act
+            var result = await sut.HandleRequest(context) as ProxyImageServerResult;
+
+            // Assert
+            result.Target.Should().Be(ProxyDestination.ImageServer);
             result.HasPath.Should().BeTrue();
         }
-        
+
         [Fact]
         public async Task Handle_Request_ProxiesToThumbs_OnNewPath_IfAssetIsForUvThumb()
         {
@@ -254,7 +291,8 @@ namespace Orchestrator.Tests.Images
         {
             var requestProcessor = new AssetRequestProcessor(new NullLogger<AssetRequestProcessor>(), assetTracker,
                 mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl);
-            return new(new NullLogger<ImageRequestHandler>(), requestProcessor, settings ?? defaultSettings);
+            return new(new NullLogger<ImageRequestHandler>(), requestProcessor, accessValidator,
+                settings ?? defaultSettings);
         }
     }
 }

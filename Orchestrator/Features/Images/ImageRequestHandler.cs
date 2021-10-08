@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure;
+using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 
@@ -26,6 +27,7 @@ namespace Orchestrator.Features.Images
     {
         private readonly ILogger<ImageRequestHandler> logger;
         private readonly AssetRequestProcessor assetRequestProcessor;
+        private readonly IAssetAccessValidator assetAccessValidator;
         private readonly IOptions<OrchestratorSettings> orchestratorSettings;
         private readonly Dictionary<string, CompiledRegexThumbUpscaleConfig> upscaleConfig;
         private readonly bool haveUpscaleRules;
@@ -33,10 +35,12 @@ namespace Orchestrator.Features.Images
         public ImageRequestHandler(
             ILogger<ImageRequestHandler> logger,
             AssetRequestProcessor assetRequestProcessor,
+            IAssetAccessValidator assetAccessValidator,
             IOptions<OrchestratorSettings> orchestratorSettings)
         {
             this.logger = logger;
             this.assetRequestProcessor = assetRequestProcessor;
+            this.assetAccessValidator = assetAccessValidator;
             this.orchestratorSettings = orchestratorSettings;
 
             upscaleConfig = orchestratorSettings.Value.Proxy?.ThumbUpscaleConfig?
@@ -70,9 +74,16 @@ namespace Orchestrator.Features.Images
 
             if (orchestrationImage.RequiresAuth)
             {
-                logger.LogDebug("Request for {Path} requires auth, proxying to orchestrator", httpContext.Request.Path);
-                return new ProxyActionResult(ProxyDestination.Orchestrator, orchestrationImage.RequiresAuth,
-                    assetRequest.NormalisedFullPath);
+                var authResult =
+                    await assetAccessValidator.TryValidateCookie(assetRequest.Customer.Id, orchestrationImage.Roles);
+
+                logger.LogDebug("Request for {Path} requires auth, result {AuthResult}", httpContext.Request.Path,
+                    authResult);
+
+                if (authResult == AssetAccessResult.Unauthorized)
+                {
+                    return new StatusCodeResult(HttpStatusCode.Unauthorized);
+                }
             }
 
             if (IsRequestForUVThumb(httpContext, assetRequest))
@@ -91,7 +102,7 @@ namespace Orchestrator.Features.Images
             1 - proxy thumb
             2 - resample next thumb size up
             3 - off to S3-cantaloupe
-            4 - off to filesystem cantaloupe (including orchestration if reqd)
+            4 - off to filesystem cantaloupe (including orchestration if read)
             for 2 and 3 - if the asked-for thumb is not on S3 but is in the thumbnail policy list, save it to S3 on the way out
             ... and use the No 3 S3 cantaloupe, not the orchestrating path
              */

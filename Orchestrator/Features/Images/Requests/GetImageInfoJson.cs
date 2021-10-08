@@ -46,7 +46,7 @@ namespace Orchestrator.Features.Images.Requests
         private readonly IAssetPathGenerator assetPathGenerator;
         private readonly IAuthServicesRepository authServicesRepository;
         private readonly IImageOrchestrator orchestrator;
-        private readonly AssetAccessValidator accessValidator;
+        private readonly IAssetAccessValidator accessValidator;
         private readonly ILogger<GetImageInfoJsonHandler> logger;
         private readonly OrchestratorSettings orchestratorSettings;
 
@@ -55,7 +55,7 @@ namespace Orchestrator.Features.Images.Requests
             IAssetPathGenerator assetPathGenerator,
             IAuthServicesRepository authServicesRepository,
             IImageOrchestrator orchestrator,
-            AssetAccessValidator accessValidator,
+            IAssetAccessValidator accessValidator,
             IOptions<OrchestratorSettings> orchestratorSettings,
             ILogger<GetImageInfoJsonHandler> logger)
         {
