@@ -15,7 +15,7 @@ namespace API.Client
         Task<SimpleCollection<PortalUser>?> GetPortalUsers();
         Task<PortalUser> CreatePortalUser(PortalUser portalUser);
         Task<bool> DeletePortalUser(string portalUserId);
-        Task<AssetJsonLD?> DirectIngestImage(int spaceId, string imageId, AssetJsonLD asset);
+        Task<Image?> DirectIngestImage(int spaceId, string imageId, Image asset);
         Task<HydraImageCollection> PatchImages(HydraImageCollection images, int spaceId);
         
         

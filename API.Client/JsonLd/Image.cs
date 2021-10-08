@@ -5,6 +5,8 @@ namespace API.Client.JsonLd
 {
     public class Image : JsonLdBase
     {
+        public override string Type => "Image";
+        
         [JsonIgnore]
         public string StorageIdentifier { get; set; }
 
@@ -31,10 +33,10 @@ namespace API.Client.JsonLd
         public DateTime? Created { get; set; }
 
         [JsonProperty(Order = 15, PropertyName = "origin")]
-        public string Origin { get; set; }
+        public string? Origin { get; set; }
 
         [JsonProperty(Order = 16, PropertyName = "initialOrigin")]
-        public string InitialOrigin { get; set; }
+        public string? InitialOrigin { get; set; }
 
         [JsonProperty(Order = 17, PropertyName = "maxUnauthorised")]
         public int? MaxUnauthorised { get; set; }
@@ -53,7 +55,7 @@ namespace API.Client.JsonLd
         public bool? Ingesting { get; set; }
 
         [JsonProperty(Order = 40, PropertyName = "error")]
-        public string Error { get; set; }
+        public string? Error { get; set; }
 
         // metadata
 
@@ -61,27 +63,27 @@ namespace API.Client.JsonLd
         public string[] Tags { get; set; }
 
         [JsonProperty(Order = 41, PropertyName = "string1")]
-        public string String1 { get; set; }
+        public string? String1 { get; set; }
 
         [JsonProperty(Order = 42, PropertyName = "string2")]
-        public string String2 { get; set; }
+        public string? String2 { get; set; }
 
         [JsonProperty(Order = 43, PropertyName = "string3")]
-        public string String3 { get; set; }
+        public string? String3 { get; set; }
 
         [JsonProperty(Order = 51, PropertyName = "number1")]
-        public long Number1 { get; set; }
+        public long? Number1 { get; set; }
 
         [JsonProperty(Order = 52, PropertyName = "number2")]
-        public long Number2 { get; set; }
+        public long? Number2 { get; set; }
 
         [JsonProperty(Order = 53, PropertyName = "number3")]
-        public long Number3 { get; set; }
+        public long? Number3 { get; set; }
 
         // Additional properties for time-based media, files etc
         // Metadata?
         [JsonProperty(Order = 110, PropertyName = "duration")]
-        public int Duration { get; set; }
+        public long? Duration { get; set; }
 
         [JsonProperty(Order = 20, PropertyName = "width")]
         public int? Width { get; set; }
@@ -93,10 +95,10 @@ namespace API.Client.JsonLd
         public string Metadata { get; set; } // herein duration, other stuff learnt during transcoding
 
         [JsonProperty(Order = 120, PropertyName = "mediaType")]
-        public string MediaType { get; set; }
+        public string? MediaType { get; set; }
 
         [JsonProperty(Order = 130, PropertyName = "family")]
-        public char Family { get; set; } // i, t, f
+        public char? Family { get; set; } // i, t, f
 
         [JsonProperty(Order = 120, PropertyName = "text")]
         public string Text { get; set; }
@@ -115,10 +117,10 @@ namespace API.Client.JsonLd
         public string Batch { get; set; }
 
         [JsonProperty(Order = 80, PropertyName = "imageOptimisationPolicy")]
-        public string ImageOptimisationPolicy { get; set; }
+        public string? ImageOptimisationPolicy { get; set; }
 
         [JsonProperty(Order = 81, PropertyName = "thumbnailPolicy")]
-        public string ThumbnailPolicy { get; set; }
+        public string? ThumbnailPolicy { get; set; }
 
     }
 }

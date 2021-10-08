@@ -127,12 +127,12 @@ namespace API.Client
             }
         }
 
-        public async Task<AssetJsonLD?> DirectIngestImage(int spaceId, string imageId, AssetJsonLD asset)
+        public async Task<Image?> DirectIngestImage(int spaceId, string imageId, Image asset)
         {
             // TODO - error handling
             var uri = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}";
             var response = await httpClient.PutAsync(uri, ApiBody(asset));
-            return await response.ReadAsJsonAsync<AssetJsonLD>(true, jsonSerializerSettings);
+            return await response.ReadAsJsonAsync<Image>(true, jsonSerializerSettings);
         }
 
         public async Task<HydraImageCollection> PatchImages(HydraImageCollection images, int spaceId)
