@@ -13,7 +13,7 @@ namespace API.Settings
         
         public string PathBase { get; set; }
         
-        public string ApiSalt { get; set; }
+        public string Salt { get; set; }
     }
 
     public class AwsSettings

@@ -2,7 +2,10 @@ using Amazon.S3;
 using API.Auth;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.Model.Customers;
 using DLCS.Model.Storage;
+using DLCS.Repository.Caching;
+using DLCS.Repository.Customers;
 using DLCS.Repository.Storage.S3;
 using DLCS.Web.Configuration;
 using Microsoft.AspNetCore.Builder;
@@ -31,7 +34,11 @@ namespace API
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<ApiSettings>(configuration);
+            var cachingSection = configuration.GetSection("Caching");
+            services.Configure<CacheSettings>(cachingSection);
+            
             var apiSettings = configuration.Get<ApiSettings>();
+            var cacheSettings = cachingSection.Get<CacheSettings>();
             
             services.AddHttpClient();
             services.AddHttpClient("dlcs-api", c =>
@@ -41,6 +48,13 @@ namespace API
             });
 
             services
+                .AddMemoryCache(memoryCacheOptions =>
+                {
+                    memoryCacheOptions.SizeLimit = cacheSettings.MemoryCacheSizeLimit;
+                    memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
+                })
+                .AddLazyCache()
+                .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
                 .ConfigureMediatR()
                 .ConfigureSwagger()
                 .AddAWSService<IAmazonS3>()
@@ -49,7 +63,7 @@ namespace API
             services.AddDlcsDelegatedBasicAuth(options =>
                 {
                     options.Realm = "DLCS-API";
-                    options.Salt = apiSettings.ApiSalt;
+                    options.Salt = apiSettings.Salt;
                 });
             
             services.AddCors(options =>
