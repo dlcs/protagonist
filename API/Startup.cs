@@ -7,6 +7,7 @@ using API.Settings;
 using DLCS.Core.Encryption;
 using DLCS.Model.Customers;
 using DLCS.Model.Storage;
+using DLCS.Repository;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Storage.S3;
@@ -16,6 +17,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -60,6 +62,9 @@ namespace API
                 .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
                 .ConfigureMediatR()
                 .ConfigureSwagger()
+                .AddDbContext<DlcsContext>(opts =>
+                    opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
+                )
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>();
 
