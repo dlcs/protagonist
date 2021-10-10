@@ -1,7 +1,10 @@
+using System.Security.Claims;
 using Amazon.S3;
 using API.Auth;
+using API.Client;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.Core.Encryption;
 using DLCS.Model.Customers;
 using DLCS.Model.Storage;
 using DLCS.Repository.Caching;
@@ -10,6 +13,7 @@ using DLCS.Repository.Storage.S3;
 using DLCS.Web.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
@@ -41,13 +45,12 @@ namespace API
             var cacheSettings = cachingSection.Get<CacheSettings>();
             
             services.AddHttpClient();
-            services.AddHttpClient("dlcs-api", c =>
-            {
-                c.BaseAddress = apiSettings.DLCS.ApiRoot;
-                c.DefaultRequestHeaders.Add("User-Agent", "DLCS-APIv2-Protagonist");
-            });
 
             services
+                .AddHttpContextAccessor()
+                .AddSingleton<IEncryption, SHA256>()
+                .AddSingleton<DeliveratorApiAuth>()
+                .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
                 .AddMemoryCache(memoryCacheOptions =>
                 {
                     memoryCacheOptions.SizeLimit = cacheSettings.MemoryCacheSizeLimit;
