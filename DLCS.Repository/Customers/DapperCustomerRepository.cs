@@ -41,7 +41,23 @@ namespace DLCS.Repository.Customers
             var customer = await GetCustomerInternal(customerId);
             return customer.Id == NullCustomer.Id ? null : customer;
         }
-        
+
+        public async Task<Customer?> GetCustomerForKey(string apiKey, int? onlyForCustomerId)
+        {
+            if (onlyForCustomerId.HasValue)
+            {
+                var customer = await GetCustomer(onlyForCustomerId.Value);
+                if (customer != null && customer.Keys.Contains(apiKey))
+                {
+                    // this key belongs to this customer
+                    return customer; 
+                }
+            }
+            // apiKey isn't associated with customerId. Is it an admin key?
+            var admins = await GetAdminUsers();
+            return admins.SingleOrDefault(a => a.Keys.Contains(apiKey));
+        }
+
         private Task<Customer> GetCustomerInternal(int customerId)
         {
             var key = $"cust:{customerId}";
@@ -56,6 +72,7 @@ namespace DLCS.Repository.Customers
                     return NullCustomer;
                 }
 
+                // TODO: Why can't I replace this with return MapRawCustomer(rawCustomer) ?
                 return new Customer
                 {
                     Administrator = rawCustomer.Administrator,
@@ -68,10 +85,47 @@ namespace DLCS.Repository.Customers
                 };
             }, cacheSettings.GetMemoryCacheOptions());
         }
-        
+
+        private Task<List<Customer>> GetAdminUsers()
+        {
+            const string key = "admin_customers";
+            return appCache.GetOrAddAsync(key, async entry =>
+            {
+                await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+                var rawAdmins = await connection.QueryAsync(AdminCustomersSql);
+                var admins = new List<Customer>();
+                foreach (dynamic rawCustomer in rawAdmins)
+                {
+                    admins.Add(MapRawCustomer(rawCustomer));
+                }
+
+                return admins;
+            }, cacheSettings.GetMemoryCacheOptions());
+        }
+
+        private static Customer MapRawCustomer(dynamic? rawCustomer)
+        {
+            return new()
+            {
+                Administrator = rawCustomer.Administrator,
+                Created = rawCustomer.Created,
+                Id = rawCustomer.Id,
+                Name = rawCustomer.Name,
+                AcceptedAgreement = rawCustomer.AcceptedAgreement,
+                DisplayName = rawCustomer.DisplayName,
+                Keys = rawCustomer.Keys.ToString().Split(',')
+            };
+        }
+
         private const string CustomerSql = @"
 SELECT ""Id"", ""Name"", ""DisplayName"", ""Keys"", ""Administrator"", ""Created"", ""AcceptedAgreement""
   FROM public.""Customers""
   WHERE ""Id""=@Id;";
+        
+        // TODO: make the shared SELECT list a const?
+        private const string AdminCustomersSql = @"
+SELECT ""Id"", ""Name"", ""DisplayName"", ""Keys"", ""Administrator"", ""Created"", ""AcceptedAgreement""
+  FROM public.""Customers""
+  WHERE ""Administrator""=True;";
     }
 }

@@ -46,7 +46,11 @@ namespace API
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>();
 
-            services.AddDlcsDelegatedBasicAuth(options => options.Realm = "DLCS-API");
+            services.AddDlcsDelegatedBasicAuth(options =>
+                {
+                    options.Realm = "DLCS-API";
+                    options.Salt = apiSettings.ApiSalt;
+                });
             
             services.AddCors(options =>
             {

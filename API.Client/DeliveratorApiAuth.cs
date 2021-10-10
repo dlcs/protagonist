@@ -29,8 +29,13 @@ namespace API.Client
             if (customer.Keys.IsNullOrEmpty()) return null;
             
             string apiKey = customer.Keys[0];
-            string apiSecret = encryption.Encrypt(string.Concat(salt, customer.Id, apiKey));
+            var apiSecret = GetApiSecret(customer, salt, apiKey);
             return Convert.ToBase64String(Encoding.ASCII.GetBytes($"{apiKey}:{apiSecret}"));
+        }
+
+        public string GetApiSecret(Customer customer, string salt, string apiKey)
+        {
+            return encryption.Encrypt(string.Concat(salt, customer.Id, apiKey));
         }
     }
 }

@@ -17,5 +17,20 @@ namespace DLCS.Model.Customers
         /// <param name="customerId">Id of customer to get</param>
         /// <returns><see cref="Customer"/> object if found, else null</returns>
         public Task<Customer?> GetCustomer(int customerId);
+
+        /// <summary>
+        /// Return the customer that owns the supplied apiKey.
+        /// This might be the admin user or it might be a regular customer.
+        /// This method will always return the customer that owns the key, but that key owner
+        /// might be an admin user rather than the customer indicated by customerId.
+        /// </summary>
+        /// <param name="apiKey">The required api key</param>
+        /// <param name="onlyForCustomerId">
+        /// If supplied, a customer will only be returned if it either matches
+        /// this customerId, or is an admin key.
+        /// If not supplied, this method can only return the admin user if it returns anything.
+        /// </param>
+        /// <returns></returns>
+        public Task<Customer?> GetCustomerForKey(string apiKey, int? onlyForCustomerId);
     }
 }
