@@ -42,11 +42,11 @@ namespace DLCS.Repository.Customers
             return customer.Id == NullCustomer.Id ? null : customer;
         }
 
-        public async Task<Customer?> GetCustomerForKey(string apiKey, int? onlyForCustomerId)
+        public async Task<Customer?> GetCustomerForKey(string apiKey, int? customerIdHint)
         {
-            if (onlyForCustomerId.HasValue)
+            if (customerIdHint.HasValue)
             {
-                var customer = await GetCustomer(onlyForCustomerId.Value);
+                var customer = await GetCustomer(customerIdHint.Value);
                 if (customer != null && customer.Keys.Contains(apiKey))
                 {
                     // this key belongs to this customer
@@ -54,7 +54,7 @@ namespace DLCS.Repository.Customers
                 }
             }
             // apiKey isn't associated with customerId. Is it an admin key?
-            var admins = await GetAdminUsers();
+            var admins = await GetAdminCustomers();
             return admins.SingleOrDefault(a => a.Keys.Contains(apiKey));
         }
 
@@ -86,12 +86,13 @@ namespace DLCS.Repository.Customers
             }, cacheSettings.GetMemoryCacheOptions());
         }
 
-        private Task<List<Customer>> GetAdminUsers()
+        private Task<List<Customer>> GetAdminCustomers()
         {
             const string key = "admin_customers";
             return appCache.GetOrAddAsync(key, async entry =>
             {
                 await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+                // This allows for more than one admin customer - should it?
                 var rawAdmins = await connection.QueryAsync(AdminCustomersSql);
                 var admins = new List<Customer>();
                 foreach (dynamic rawCustomer in rawAdmins)
