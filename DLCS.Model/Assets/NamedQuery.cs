@@ -1,6 +1,6 @@
 ﻿#nullable disable
 
-namespace DLCS.Repository.Entities
+namespace DLCS.Model.Assets
 {
     public partial class NamedQuery
     {

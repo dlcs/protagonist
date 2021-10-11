@@ -57,5 +57,17 @@ namespace Test.Helpers.Integration
                         [customer] = roles
                     }
                 });
+
+        public static ValueTask<EntityEntry<NamedQuery>> AddTestNamedQuery(this DbSet<NamedQuery> namedQueries,
+            string name, int customer = 99, string template = "manifest=s3&canvas=n2&space=p1", bool global = true)
+            => namedQueries.AddAsync(
+                new NamedQuery
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Customer = customer,
+                    Global = global,
+                    Name = name,
+                    Template = template
+                });
     }
 }
