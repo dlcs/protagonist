@@ -107,7 +107,7 @@ namespace Orchestrator.Features.Images
             1 - proxy thumb
             2 - resample next thumb size up
             3 - off to S3-cantaloupe
-            4 - off to filesystem cantaloupe (including orchestration if read)
+            4 - off to filesystem cantaloupe (including orchestration if required)
             for 2 and 3 - if the asked-for thumb is not on S3 but is in the thumbnail policy list, save it to S3 on the way out
             ... and use the No 3 S3 cantaloupe, not the orchestrating path
              */

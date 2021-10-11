@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using DLCS.Core.Collections;
 using DLCS.Repository.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -78,14 +80,12 @@ namespace Orchestrator.Features.Auth
             }
         }
 
-        private List<string> GetCookieDomainList(HttpContext? httpContext)
+        private IEnumerable<string> GetCookieDomainList(HttpContext? httpContext)
         {
             var domains = authSettings.CookieDomains;
-            if (authSettings.UseCurrentDomainForCookie)
-            {
-                domains.Add(httpContext.Request.Host.Host);
-            }
-            return domains;
+            return authSettings.UseCurrentDomainForCookie
+                ? domains.Union(httpContext.Request.Host.Host.AsList())
+                : domains;
         }
     }
 }

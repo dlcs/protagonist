@@ -212,7 +212,7 @@ namespace Orchestrator.Tests.Integration
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@id"].ToString().Should()
                 .Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_Correct");
-            jsonResponse["services"].Should().NotBeNull();
+            jsonResponse["service"].Should().NotBeNull();
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
