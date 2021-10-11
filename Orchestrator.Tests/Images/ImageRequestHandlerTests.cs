@@ -11,6 +11,7 @@ using FakeItEasy;
 using FluentAssertions;
 using IIIF.ImageApi;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
@@ -31,6 +32,7 @@ namespace Orchestrator.Tests.Images
         private readonly AssetDeliveryPathParser assetDeliveryPathParserImpl;
         private readonly IAssetAccessValidator accessValidator;
         private readonly IOptions<OrchestratorSettings> defaultSettings;
+        private readonly IServiceScopeFactory scopeFactory;
 
         public ImageRequestHandlerTests()
         {
@@ -40,6 +42,11 @@ namespace Orchestrator.Tests.Images
             accessValidator = A.Fake<IAssetAccessValidator>();
             assetDeliveryPathParserImpl = new AssetDeliveryPathParser(customerRepository);
             defaultSettings = Options.Create(new OrchestratorSettings());
+
+            scopeFactory = A.Fake<IServiceScopeFactory>();
+            var scope = A.Fake<IServiceScope>();
+            A.CallTo(() => scopeFactory.CreateScope()).Returns(scope);
+            A.CallTo(() => scope.ServiceProvider.GetService(typeof(IAssetAccessValidator))).Returns(accessValidator);
         }
 
         [Fact]
@@ -291,7 +298,7 @@ namespace Orchestrator.Tests.Images
         {
             var requestProcessor = new AssetRequestProcessor(new NullLogger<AssetRequestProcessor>(), assetTracker,
                 mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl);
-            return new(new NullLogger<ImageRequestHandler>(), requestProcessor, accessValidator,
+            return new(new NullLogger<ImageRequestHandler>(), requestProcessor, scopeFactory,
                 settings ?? defaultSettings);
         }
     }

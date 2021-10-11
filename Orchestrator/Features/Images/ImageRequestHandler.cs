@@ -10,6 +10,7 @@ using DLCS.Repository.Assets;
 using DLCS.Web.Requests.AssetDelivery;
 using IIIF;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
@@ -27,7 +28,7 @@ namespace Orchestrator.Features.Images
     {
         private readonly ILogger<ImageRequestHandler> logger;
         private readonly AssetRequestProcessor assetRequestProcessor;
-        private readonly IAssetAccessValidator assetAccessValidator;
+        private readonly IServiceScopeFactory scopeFactory;
         private readonly IOptions<OrchestratorSettings> orchestratorSettings;
         private readonly Dictionary<string, CompiledRegexThumbUpscaleConfig> upscaleConfig;
         private readonly bool haveUpscaleRules;
@@ -35,12 +36,12 @@ namespace Orchestrator.Features.Images
         public ImageRequestHandler(
             ILogger<ImageRequestHandler> logger,
             AssetRequestProcessor assetRequestProcessor,
-            IAssetAccessValidator assetAccessValidator,
+            IServiceScopeFactory scopeFactory,
             IOptions<OrchestratorSettings> orchestratorSettings)
         {
             this.logger = logger;
             this.assetRequestProcessor = assetRequestProcessor;
-            this.assetAccessValidator = assetAccessValidator;
+            this.scopeFactory = scopeFactory;
             this.orchestratorSettings = orchestratorSettings;
 
             upscaleConfig = orchestratorSettings.Value.Proxy?.ThumbUpscaleConfig?
@@ -74,8 +75,12 @@ namespace Orchestrator.Features.Images
 
             if (orchestrationImage.RequiresAuth)
             {
+                // IAssetAccessValidator is in container with a Lifetime.Scope
+                using var scope = scopeFactory.CreateScope();
+                var assetAccessValidator = scope.ServiceProvider.GetRequiredService<IAssetAccessValidator>();
                 var authResult =
-                    await assetAccessValidator.TryValidateCookie(assetRequest.Customer.Id, orchestrationImage.Roles);
+                    await assetAccessValidator.TryValidateCookie(assetRequest.Customer.Id,
+                        orchestrationImage.Roles);
 
                 logger.LogDebug("Request for {Path} requires auth, result {AuthResult}", httpContext.Request.Path,
                     authResult);
