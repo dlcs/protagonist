@@ -90,7 +90,7 @@ namespace DLCS.Model.Assets
   ""sizes"": [
     $sizes$
   ],
-  ""services"": $services$
+  ""service"": $services$
 }
 ";
             var basicTemplate = InfoJson(serviceEndpoint, sizes, template, width, height);
