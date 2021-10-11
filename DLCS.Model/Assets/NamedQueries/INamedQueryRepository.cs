@@ -1,6 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace DLCS.Model.Assets
+namespace DLCS.Model.Assets.NamedQueries
 {
     public interface INamedQueryRepository
     {
@@ -13,5 +14,7 @@ namespace DLCS.Model.Assets
         /// another customer</param>
         /// <returns><see cref="NamedQuery"/> if found, else null</returns>
         Task<NamedQuery?> GetByName(int customer, string namedQueryName, bool includeGlobal = true);
+
+        Task<IEnumerable<Asset>> GetNamedQueryResults(ResourceMappedAssetQuery query);
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;

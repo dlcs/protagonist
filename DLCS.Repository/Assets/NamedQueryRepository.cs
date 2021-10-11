@@ -1,6 +1,9 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Strings;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +41,55 @@ namespace DLCS.Repository.Assets
                     : await namedQueryQuery.Where(nq => nq.Customer == customer)
                         .FirstOrDefaultAsync();
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
+        }
+
+        public async Task<IEnumerable<Asset>> GetNamedQueryResults(ResourceMappedAssetQuery query)
+        {
+            var imageFilter = dlcsContext.Images.Where(i => i.Customer == query.Customer);
+
+            if (query.String1.HasText())
+            {
+                imageFilter = imageFilter.Where(i => i.Reference1 == query.String1);
+            }
+            if (query.String2.HasText())
+            {
+                imageFilter = imageFilter.Where(i => i.Reference2 == query.String2);
+            }
+            if (query.String3.HasText())
+            {
+                imageFilter = imageFilter.Where(i => i.Reference3 == query.String3);
+            }
+            if (query.Number1.HasValue)
+            {
+                imageFilter = imageFilter.Where(i => i.NumberReference1 == query.Number1);
+            }
+            if (query.Number2.HasValue)
+            {
+                imageFilter = imageFilter.Where(i => i.NumberReference2 == query.Number2);
+            }
+            if (query.Number3.HasValue)
+            {
+                imageFilter = imageFilter.Where(i => i.NumberReference3 == query.Number3);
+            }
+
+            if (query.Space.HasValue)
+            {
+                imageFilter = imageFilter.Where(i => i.Space == query.Space);
+            }
+            else if (query.SpaceName.HasText())
+            {
+                imageFilter = imageFilter.Join(dlcsContext.Spaces, asset => asset.Space, space => space.Id,
+                        (asset, space) => new
+                        {
+                            Image = asset,
+                            SpaceName = space.Name
+                        })
+                    .Where(arg => arg.SpaceName == query.SpaceName)
+                    .Select(arg => arg.Image);
+            }
+
+            var images = await imageFilter.ToListAsync();
+            return images;
         }
     }
 }

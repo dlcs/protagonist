@@ -36,8 +36,8 @@ namespace Orchestrator.Infrastructure
         }
 
         /// <summary>
-        /// Generate <see cref="DescriptionResourceResponse"/> from <see cref="IAssetRequest"/> request. Handles known issues
-        /// parsing asset request and sets appropriate headers on response.
+        /// Generate <see cref="DescriptionResourceResponse"/> from request. Handles known issues parsing asset request
+        /// and sets appropriate headers on response.
         /// </summary>
         /// <param name="generateRequest">Function to generate mediatr request.</param>
         /// <param name="cancellationToken">Current cancellation token.</param>
@@ -47,7 +47,7 @@ namespace Orchestrator.Infrastructure
         /// <returns>IActionResult, will be NotFoundResult ,BadRequestResult or ContentResult if successful</returns>
         protected async Task<IActionResult> GenerateIIIFDescriptionResource<T>(Func<T> generateRequest,
             CancellationToken cancellationToken = default)
-            where T : IRequest<DescriptionResourceResponse>, IAssetRequest
+            where T : IRequest<DescriptionResourceResponse>
         {
             try
             {
