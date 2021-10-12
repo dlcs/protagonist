@@ -43,6 +43,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Helpers", "Test.Helper
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API.Client", "API.Client\API.Client.csproj", "{252F2167-CC85-45A0-9D67-1F8125F64C1D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DLCS.HydraModel", "DLCS.HydraModel\DLCS.HydraModel.csproj", "{5A21949E-7FE2-4022-BAAF-7A570314F6A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hydra", "Hydra\Hydra.csproj", "{AD70A659-1EA7-4DCD-8FA6-265210E5CF25}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -121,6 +125,14 @@ Global
 		{252F2167-CC85-45A0-9D67-1F8125F64C1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{252F2167-CC85-45A0-9D67-1F8125F64C1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{252F2167-CC85-45A0-9D67-1F8125F64C1D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A21949E-7FE2-4022-BAAF-7A570314F6A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A21949E-7FE2-4022-BAAF-7A570314F6A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A21949E-7FE2-4022-BAAF-7A570314F6A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A21949E-7FE2-4022-BAAF-7A570314F6A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD70A659-1EA7-4DCD-8FA6-265210E5CF25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD70A659-1EA7-4DCD-8FA6-265210E5CF25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD70A659-1EA7-4DCD-8FA6-265210E5CF25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD70A659-1EA7-4DCD-8FA6-265210E5CF25}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
