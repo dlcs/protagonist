@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Strings;
@@ -33,13 +34,21 @@ namespace DLCS.Repository.Assets
             var key = $"nq:{customer}:{namedQueryName}:{includeGlobal}";
             return await appCache.GetOrAddAsync(key, async () =>
             {
-                var namedQueryQuery = dlcsContext.NamedQueries.Where(nq => nq.Name == namedQueryName);
-                return includeGlobal
-                    ? await namedQueryQuery.Where(nq => nq.Global || nq.Customer == customer)
-                        .OrderBy(nq => nq.Global)
-                        .FirstOrDefaultAsync()
-                    : await namedQueryQuery.Where(nq => nq.Customer == customer)
-                        .FirstOrDefaultAsync();
+                try
+                {
+                    var namedQueryQuery = dlcsContext.NamedQueries.Where(nq => nq.Name == namedQueryName);
+                    return includeGlobal
+                        ? await namedQueryQuery.Where(nq => nq.Global || nq.Customer == customer)
+                            .OrderBy(nq => nq.Global)
+                            .FirstOrDefaultAsync()
+                        : await namedQueryQuery.Where(nq => nq.Customer == customer)
+                            .FirstOrDefaultAsync();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
         }
 

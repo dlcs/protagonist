@@ -5,10 +5,10 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.Features.NamedQuery.Requests;
+using Orchestrator.Features.NamedQueries.Requests;
 using Orchestrator.Infrastructure;
 
-namespace Orchestrator.Features.NamedQuery
+namespace Orchestrator.Features.NamedQueries
 {
     [Route("iiif-resource")]
     [ApiController]
@@ -26,11 +26,11 @@ namespace Orchestrator.Features.NamedQuery
         /// Get results of named query with specified name. 
         /// </summary>
         /// <returns>IIIF manifest containing results of specified named query</returns>
-        [Route("{customer}/{namedQuery}/{**catchAll}")]
+        [Route("{customer}/{namedQueryName}/{**namedQueryArgs}")]
         [HttpGet]
-        public Task<IActionResult> Index(string customer, string namedQuery, string? catchAll = null,
+        public Task<IActionResult> Index(string customer, string namedQueryName, string? namedQueryArgs = null,
             CancellationToken cancellationToken = default)
-            => GenerateIIIFDescriptionResource(() => new GetNamedQueryResults(customer, namedQuery, catchAll),
+            => GenerateIIIFDescriptionResource(() => new GetNamedQueryResults(customer, namedQueryName, namedQueryArgs),
                 cancellationToken);
     }
 }

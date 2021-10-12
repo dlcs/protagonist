@@ -15,6 +15,11 @@ namespace DLCS.Model.Assets.NamedQueries
         /// <returns><see cref="NamedQuery"/> if found, else null</returns>
         Task<NamedQuery?> GetByName(int customer, string namedQueryName, bool includeGlobal = true);
 
+        /// <summary>
+        /// Return all assets that match criteria defined in <see cref="ResourceMappedAssetQuery"/>
+        /// </summary>
+        /// <param name="query">Object containing query criteria</param>
+        /// <returns>Matching assets, or empty Enumerable if no matches</returns>
         Task<IEnumerable<Asset>> GetNamedQueryResults(ResourceMappedAssetQuery query);
     }
 }

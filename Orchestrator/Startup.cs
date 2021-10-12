@@ -36,7 +36,8 @@ using Orchestrator.Features.Auth;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Features.Images.Orchestration.Status;
-using Orchestrator.Features.NamedQuery.Requests;
+using Orchestrator.Features.NamedQueries;
+using Orchestrator.Features.NamedQueries.Requests;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
@@ -100,6 +101,7 @@ namespace Orchestrator
                 .AddScoped<AccessChecker>()
                 .AddScoped<ISessionAuthService, SessionAuthService>()
                 .AddScoped<AuthCookieManager>()
+                .AddSingleton<INamedQueryParser, BasicNamedQueryParser>()
                 .AddScoped<INamedQueryRepository, NamedQueryRepository>()
                 .AddScoped<NamedQueryConductor>()
                 .AddSingleton<AssetRequestProcessor>()
