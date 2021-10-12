@@ -4,6 +4,7 @@ using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
+using DLCS.Web.Requests;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
@@ -11,6 +12,7 @@ using IIIF.ImageApi.Service;
 using IIIF.Presentation.V2.Annotation;
 using IIIF.Presentation.V2.Strings;
 using IIIF.Presentation.V3.Constants;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Orchestrator.Settings;
 using IIIF2 = IIIF.Presentation.V2;
@@ -33,7 +35,7 @@ namespace Orchestrator.Features.NamedQueries
             this.orchestratorSettings = orchestratorSettings.Value;
         }
         
-        public JsonLdBase GenerateV2Manifest(NamedQueryResult result)
+        public JsonLdBase GenerateV2Manifest(NamedQueryResult result, string rootUrl)
         {
             var manifest = new IIIF2.Manifest
             {
@@ -44,7 +46,7 @@ namespace Orchestrator.Features.NamedQueries
                 }.AsList(),
                 Sequences = new IIIF2.Sequence
                 {
-                    Id = "TODO",
+                    Id = string.Concat(rootUrl, "/iiif-query/sequence/0"),
                     Label = new MetaDataValue("Sequence 0"),
                     Canvases = CreateCanvases(result)
                 }.AsList(),
@@ -56,13 +58,14 @@ namespace Orchestrator.Features.NamedQueries
 
         private List<IIIF2.Canvas> CreateCanvases(NamedQueryResult result)
         {
+            int counter = 0;
             var canvases = result.Results
                 .OrderBy(i => GetCanvasOrderingElement(i, result.Query))
                 .Select(i =>
                 {
                     var fullyQualifiedImageId = GetFullyQualifiedId(i, result.Query.CustomerPathElement);
                     var imageExample = $"{fullyQualifiedImageId}/full/{i.Width},{i.Height}/0/default.jpg";
-                    var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/0");
+                    var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/", ++counter);
                     return new IIIF2.Canvas
                     {
                         Id = canvasId,

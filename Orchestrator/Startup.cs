@@ -104,7 +104,7 @@ namespace Orchestrator
                 .AddSingleton<INamedQueryParser, BasicNamedQueryParser>()
                 .AddScoped<INamedQueryRepository, NamedQueryRepository>()
                 .AddScoped<NamedQueryConductor>()
-                .AddSingleton<IIIFNamedQueryProjector>()
+                .AddScoped<IIIFNamedQueryProjector>()
                 .AddSingleton<AssetRequestProcessor>()
                 .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
                 .AddOriginStrategies()

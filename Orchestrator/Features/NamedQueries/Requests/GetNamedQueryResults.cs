@@ -2,8 +2,10 @@
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Model.PathElements;
+using DLCS.Web.Requests;
 using IIIF.Serialisation;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Orchestrator.Models;
 
 namespace Orchestrator.Features.NamedQueries.Requests
@@ -32,13 +34,18 @@ namespace Orchestrator.Features.NamedQueries.Requests
         private readonly IPathCustomerRepository pathCustomerRepository;
         private readonly NamedQueryConductor namedQueryConductor;
         private readonly IIIFNamedQueryProjector iiifNamedQueryProjector;
+        private readonly IHttpContextAccessor httpContextAccessor;
 
-        public GetNamedQueryResultsHandler(IPathCustomerRepository pathCustomerRepository,
-            NamedQueryConductor namedQueryConductor, IIIFNamedQueryProjector iiifNamedQueryProjector)
+        public GetNamedQueryResultsHandler(
+            IPathCustomerRepository pathCustomerRepository,
+            NamedQueryConductor namedQueryConductor, 
+            IIIFNamedQueryProjector iiifNamedQueryProjector,
+            IHttpContextAccessor httpContextAccessor)
         {
             this.pathCustomerRepository = pathCustomerRepository;
             this.namedQueryConductor = namedQueryConductor;
             this.iiifNamedQueryProjector = iiifNamedQueryProjector;
+            this.httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<DescriptionResourceResponse> Handle(GetNamedQueryResults request, CancellationToken cancellationToken)
@@ -51,7 +58,8 @@ namespace Orchestrator.Features.NamedQueries.Requests
             
             if (namedQueryResult.Results.IsNullOrEmpty()) return DescriptionResourceResponse.Empty;
 
-            var manifest = iiifNamedQueryProjector.GenerateV2Manifest(namedQueryResult);
+            var manifest = iiifNamedQueryProjector.GenerateV2Manifest(namedQueryResult,
+                httpContextAccessor.HttpContext.Request.GetDisplayUrl());
             return DescriptionResourceResponse.Open(manifest.AsJson());
         }
     }
