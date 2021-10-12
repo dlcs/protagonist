@@ -22,22 +22,22 @@ namespace DLCS.Web.Response
             this.pathTemplateOptions = pathTemplateOptions.Value;
         }
 
-        public string GetPathForRequest(BaseAssetRequest assetRequest)
+        public string GetPathForRequest(IBasicPathElements assetRequest)
             => GetForPath(assetRequest, false);
 
-        public string GetFullPathForRequest(BaseAssetRequest assetRequest)
+        public string GetFullPathForRequest(IBasicPathElements assetRequest)
             => GetForPath(assetRequest, true);
 
-        public string GetFullPathForRequest(BaseAssetRequest assetRequest, PathGenerator pathGenerator)
+        public string GetFullPathForRequest(IBasicPathElements assetRequest, PathGenerator pathGenerator)
             => GetPathForRequestInternal(assetRequest, pathGenerator, true);
 
-        private string GetForPath(BaseAssetRequest assetRequest, bool fullRequest)
+        private string GetForPath(IBasicPathElements assetRequest, bool fullRequest)
             => GetPathForRequestInternal(
                 assetRequest, 
                 (request, template) => GeneratePathFromTemplate(request, template),
                 fullRequest);
         
-        private string GetPathForRequestInternal(BaseAssetRequest assetRequest, PathGenerator pathGenerator,
+        private string GetPathForRequestInternal(IBasicPathElements assetRequest, PathGenerator pathGenerator,
             bool fullRequest)
         {
             var request = httpContextAccessor.HttpContext.Request;
@@ -49,7 +49,7 @@ namespace DLCS.Web.Response
             return fullRequest ? GetDisplayUrl(request, host, path) : path;
         }
 
-        private string GeneratePathFromTemplate(BaseAssetRequest assetRequest, string template) 
+        private string GeneratePathFromTemplate(IBasicPathElements assetRequest, string template) 
             => DlcsPathHelpers.GeneratePathFromTemplate(template,
                 prefix: assetRequest.RoutePrefix,
                 customer: assetRequest.CustomerPathValue,

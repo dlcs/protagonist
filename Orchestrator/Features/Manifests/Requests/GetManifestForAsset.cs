@@ -153,11 +153,15 @@ namespace Orchestrator.Features.Manifests.Requests
         private string GetFullyQualifiedId(BaseAssetRequest baseAssetRequest, string prefix)
             => assetPathGenerator.GetFullPathForRequest(
                 baseAssetRequest,
-                (assetRequest, template) => DlcsPathHelpers.GeneratePathFromTemplate(
-                    template,
-                    prefix,
-                    assetRequest.CustomerPathValue,
-                    assetRequest.Space.ToString(),
-                    assetRequest.AssetId));
+                (assetRequest, template) =>
+                {
+                    var request = assetRequest as BaseAssetRequest;
+                    return DlcsPathHelpers.GeneratePathFromTemplate(
+                        template,
+                        prefix,
+                        request.CustomerPathValue,
+                        request.Space.ToString(),
+                        request.AssetId);
+                });
     }
 }

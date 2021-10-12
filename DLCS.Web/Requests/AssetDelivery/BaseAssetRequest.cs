@@ -3,7 +3,7 @@ using DLCS.Model.PathElements;
 
 namespace DLCS.Web.Requests.AssetDelivery
 {
-    public class BaseAssetRequest
+    public class BaseAssetRequest : IBasicPathElements
     {
         /// <summary>
         /// The request root, e.g. "thumbs", "iiif-img" etc.
