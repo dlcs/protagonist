@@ -101,7 +101,7 @@ namespace DLCS.HydraModel
                 {
                     Id = "_:portalRole_collection_retrieve",
                     Method = "GET",
-                    Label = "Retrieves all availabe portal roles. You can add these to the 'roles' collection of any portal users you create.",
+                    Label = "Retrieves all available portal roles. You can add these to the 'roles' collection of any portal users you create.",
                     Returns = Names.Hydra.Collection
                 }
             };

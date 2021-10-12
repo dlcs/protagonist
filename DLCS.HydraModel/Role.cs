@@ -3,7 +3,7 @@ using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
 
-namespace DLCS.HydraModel.Model
+namespace DLCS.HydraModel
 {
     [HydraClass(typeof(RoleClass),
         Description = "A role is used by the DLCS to enforce access control. Images have roles." +

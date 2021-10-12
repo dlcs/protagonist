@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DLCS.HydraModel", "DLCS.Hyd
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hydra", "Hydra\Hydra.csproj", "{AD70A659-1EA7-4DCD-8FA6-265210E5CF25}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DLCS.Mock", "DLCS.Mock\DLCS.Mock.csproj", "{963A0ED4-2836-42F0-9254-E405626EA7CE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -133,6 +135,10 @@ Global
 		{AD70A659-1EA7-4DCD-8FA6-265210E5CF25}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD70A659-1EA7-4DCD-8FA6-265210E5CF25}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD70A659-1EA7-4DCD-8FA6-265210E5CF25}.Release|Any CPU.Build.0 = Release|Any CPU
+		{963A0ED4-2836-42F0-9254-E405626EA7CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{963A0ED4-2836-42F0-9254-E405626EA7CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{963A0ED4-2836-42F0-9254-E405626EA7CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{963A0ED4-2836-42F0-9254-E405626EA7CE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -9,11 +9,11 @@ namespace DLCS.HydraModel
 {
     public class DlcsResource : JSONLDBase
     {
-        [JsonIgnore]
-        protected HydraSettings Settings;
+        [JsonIgnore] private HydraSettings settings;
         
         public void Init(HydraSettings settings, bool setLinks, params object[] urlParams)
         {
+            this.settings = settings;
             var hydraClassAttr = GetType().GetCustomAttributes(true).OfType<HydraClassAttribute>().Single();
             string[] uriTemplates = hydraClassAttr.UriTemplate.Split(new [] {',', ' '},
                 StringSplitOptions.RemoveEmptyEntries);
@@ -80,7 +80,7 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         protected string BaseUrl
         {
-            get { return Settings.BaseUrl; }
+            get { return settings.BaseUrl; }
         }
 
     }
