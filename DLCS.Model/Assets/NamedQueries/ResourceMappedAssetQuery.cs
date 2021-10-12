@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DLCS.Model.PathElements;
 
 namespace DLCS.Model.Assets.NamedQueries
 {
@@ -32,12 +33,13 @@ namespace DLCS.Model.Assets.NamedQueries
         public long? Number1 { get; set; }
         public long? Number2 { get; set; }
         public long? Number3 { get; set; }
-        
-        public int Customer { get; }
 
-        public ResourceMappedAssetQuery(int customer)
+        public CustomerPathElement CustomerPathElement { get; }
+        public int Customer => CustomerPathElement.Id;
+
+        public ResourceMappedAssetQuery(CustomerPathElement customerPathElement)
         {
-            Customer = customer;
+            CustomerPathElement = customerPathElement;
         }
     }
 }

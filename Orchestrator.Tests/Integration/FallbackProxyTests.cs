@@ -30,7 +30,6 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Theory]
-        [InlineData("/iiif-resource/2/1/something")]
         [InlineData("/info/2/1/something")]
         [InlineData("/pdf/2/1/something")]
         [InlineData("/pdf-resource/2/1/something")]

@@ -4,6 +4,7 @@ using System.Linq;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets.NamedQueries;
+using DLCS.Model.PathElements;
 
 namespace Orchestrator.Features.NamedQueries
 {
@@ -15,11 +16,13 @@ namespace Orchestrator.Features.NamedQueries
         /// <summary>
         /// Generate query from specified Args and NamedQuery record
         /// </summary>
-        /// <param name="customer">Customer to run query against.</param>
+        /// <param name="customerPathElement">Customer to run query against.</param>
         /// <param name="namedQueryArgs">Additional args for generating query object.</param>
         /// <param name="namedQueryTemplate">String representing NQ template</param>
         /// <returns><see cref="ResourceMappedAssetQuery"/> object</returns>
-        ResourceMappedAssetQuery GenerateResourceMappedAssetQueryFromRequest(int customer, string? namedQueryArgs,
+        ResourceMappedAssetQuery GenerateResourceMappedAssetQueryFromRequest(
+            CustomerPathElement customerPathElement, 
+            string? namedQueryArgs,
             string namedQueryTemplate);
     }
 
@@ -43,7 +46,9 @@ namespace Orchestrator.Features.NamedQueries
         private const string String2 = "s2";
         private const string String3 = "s3";
 
-        public ResourceMappedAssetQuery GenerateResourceMappedAssetQueryFromRequest(int customer, string? namedQueryArgs,
+        public ResourceMappedAssetQuery GenerateResourceMappedAssetQueryFromRequest(
+            CustomerPathElement customerPathElement, 
+            string? namedQueryArgs,
             string namedQueryTemplate)
         {
             namedQueryTemplate.ThrowIfNullOrWhiteSpace(nameof(namedQueryTemplate));
@@ -55,7 +60,7 @@ namespace Orchestrator.Features.NamedQueries
             var queryArgs = GetQueryArgsList(namedQueryArgs, templatePairing);
 
             // Populate the ResourceMappedAssetQuery object using template + query args
-            var assetQuery = GenerateResourceMappedAssetQuery(customer, templatePairing, queryArgs);
+            var assetQuery = GenerateResourceMappedAssetQuery(customerPathElement, templatePairing, queryArgs);
             return assetQuery;
         }
 
@@ -77,7 +82,8 @@ namespace Orchestrator.Features.NamedQueries
             return queryArgs;
         }
         
-        private ResourceMappedAssetQuery GenerateResourceMappedAssetQuery(int customer, string[] templatePairing,
+        private ResourceMappedAssetQuery GenerateResourceMappedAssetQuery(CustomerPathElement customer, 
+            string[] templatePairing,
             List<string> queryArgs)
         {
             var assetQuery = new ResourceMappedAssetQuery(customer);
