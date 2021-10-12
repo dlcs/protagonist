@@ -60,22 +60,27 @@ namespace DLCS.Repository.Assets
             {
                 imageFilter = imageFilter.Where(i => i.Reference1 == query.String1);
             }
+
             if (query.String2.HasText())
             {
                 imageFilter = imageFilter.Where(i => i.Reference2 == query.String2);
             }
+
             if (query.String3.HasText())
             {
                 imageFilter = imageFilter.Where(i => i.Reference3 == query.String3);
             }
+
             if (query.Number1.HasValue)
             {
                 imageFilter = imageFilter.Where(i => i.NumberReference1 == query.Number1);
             }
+
             if (query.Number2.HasValue)
             {
                 imageFilter = imageFilter.Where(i => i.NumberReference2 == query.Number2);
             }
+
             if (query.Number3.HasValue)
             {
                 imageFilter = imageFilter.Where(i => i.NumberReference3 == query.Number3);

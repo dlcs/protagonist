@@ -289,7 +289,7 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Family)
                     .IsRequired()
-                    .HasColumnType("char")
+                    .HasColumnType("char(1)")
                     .HasDefaultValueSql("'I'::\"char\"")
                     .HasConversion(
                         v => (char)v,
