@@ -1,17 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using DLCS.HydraModel.Settings;
 using DLCS.Mock.ApiApp;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 
@@ -34,7 +27,11 @@ namespace DLCS.Mock
             services.Configure<HydraSettings>(Configuration.GetSection("Hydra"));
             var hydraSettings = Configuration.GetSection("Hydra").Get<HydraSettings>();
             services.AddSingleton<MockModel>(new MockModel(hydraSettings));
-            services.AddControllers().AddNewtonsoftJson(options =>
+            services.AddControllers(options =>
+            {
+                options.Filters.Add(typeof(AddHydraApiHeaderFilter));
+            })
+            .AddNewtonsoftJson(options =>
             {
                 var jsonSettings = options.SerializerSettings;
                 jsonSettings.DateFormatString = Iso8601DateFormatString;
