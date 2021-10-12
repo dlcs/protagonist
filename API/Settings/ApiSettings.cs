@@ -12,6 +12,8 @@ namespace API.Settings
         public AwsSettings AWS { get; set; }
         
         public string PathBase { get; set; }
+        
+        public string Salt { get; set; }
     }
 
     public class AwsSettings

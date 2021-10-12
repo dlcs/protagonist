@@ -13,7 +13,7 @@ namespace API.Auth
             Action<BasicAuthenticationOptions> configureOptions)
             => services
                 .AddAuthentication(BasicAuthenticationDefaults.AuthenticationScheme)
-                .AddScheme<BasicAuthenticationOptions, DlcsDelegatedBasicAuthenticationHandler>(
+                .AddScheme<BasicAuthenticationOptions, DlcsBasicAuthenticationHandler>(
                     BasicAuthenticationDefaults.AuthenticationScheme, configureOptions);
     }
     
@@ -26,6 +26,7 @@ namespace API.Auth
         /// Get or set the Realm for use in auth challenges.
         /// </summary>
         public string Realm { get; set; }
+        public string Salt { get; set; }
     }
     
     /// <summary>

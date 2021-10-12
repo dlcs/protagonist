@@ -1,14 +1,23 @@
+using System.Security.Claims;
 using Amazon.S3;
 using API.Auth;
+using API.Client;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.Core.Encryption;
+using DLCS.Model.Customers;
 using DLCS.Model.Storage;
+using DLCS.Repository;
+using DLCS.Repository.Caching;
+using DLCS.Repository.Customers;
 using DLCS.Repository.Storage.S3;
 using DLCS.Web.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -31,22 +40,39 @@ namespace API
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<ApiSettings>(configuration);
+            var cachingSection = configuration.GetSection("Caching");
+            services.Configure<CacheSettings>(cachingSection);
+            
             var apiSettings = configuration.Get<ApiSettings>();
+            var cacheSettings = cachingSection.Get<CacheSettings>();
             
             services.AddHttpClient();
-            services.AddHttpClient("dlcs-api", c =>
-            {
-                c.BaseAddress = apiSettings.DLCS.ApiRoot;
-                c.DefaultRequestHeaders.Add("User-Agent", "DLCS-APIv2-Protagonist");
-            });
 
             services
+                .AddHttpContextAccessor()
+                .AddSingleton<IEncryption, SHA256>()
+                .AddSingleton<DeliveratorApiAuth>()
+                .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
+                .AddMemoryCache(memoryCacheOptions =>
+                {
+                    memoryCacheOptions.SizeLimit = cacheSettings.MemoryCacheSizeLimit;
+                    memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
+                })
+                .AddLazyCache()
+                .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
                 .ConfigureMediatR()
                 .ConfigureSwagger()
+                .AddDbContext<DlcsContext>(opts =>
+                    opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
+                )
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>();
 
-            services.AddDlcsDelegatedBasicAuth(options => options.Realm = "DLCS-API");
+            services.AddDlcsDelegatedBasicAuth(options =>
+                {
+                    options.Realm = "DLCS-API";
+                    options.Salt = apiSettings.Salt;
+                });
             
             services.AddCors(options =>
             {
