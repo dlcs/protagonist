@@ -1,31 +1,56 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
+using DLCS.Repository.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 using Orchestrator.Features.Auth;
 
 namespace Orchestrator.Infrastructure.Auth
 {
+    public interface IAssetAccessValidator
+    {
+        /// <summary>
+        /// Validate whether Bearer token associated with provided request has access to the specified roles for
+        /// customer.
+        /// </summary>
+        /// <param name="customer">Current customer</param>
+        /// <param name="roles">Roles associated with Asset</param>
+        /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
+        Task<AssetAccessResult> TryValidateBearerToken(int customer, IEnumerable<string> roles);
+
+        /// <summary>
+        /// Validate whether cookie provided with request has access to the specified roles for customer
+        /// </summary>
+        /// <param name="customer">Current customer</param>
+        /// <param name="roles">Roles associated with Asset</param>
+        /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
+        Task<AssetAccessResult> TryValidateCookie(int customer, IEnumerable<string> roles);
+    }
+
     /// <summary>
     /// Contains logic to validate passed BearerTokens and Cookies with a request for an asset.
     /// Setting status code and cookies depending on result of verification.
     /// </summary>
-    public class AssetAccessValidator
+    public class AssetAccessValidator : IAssetAccessValidator
     {
         private readonly ISessionAuthService sessionAuthService;
         private readonly AccessChecker accessChecker;
+        private readonly AuthCookieManager authCookieManager;
         private readonly IHttpContextAccessor httpContextAccessor;
 
         public AssetAccessValidator(
             ISessionAuthService sessionAuthService,
             AccessChecker accessChecker,
+            AuthCookieManager authCookieManager,
             IHttpContextAccessor httpContextAccessor)
         {
             this.sessionAuthService = sessionAuthService;
             this.accessChecker = accessChecker;
+            this.authCookieManager = authCookieManager;
             this.httpContextAccessor = httpContextAccessor;
         }
 
@@ -36,39 +61,66 @@ namespace Orchestrator.Infrastructure.Auth
         /// <param name="customer">Current customer</param>
         /// <param name="roles">Roles associated with Asset</param>
         /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
-        public async Task<AssetAccessResult> TryValidateBearerToken(int customer, IEnumerable<string> roles)
+        public Task<AssetAccessResult> TryValidateBearerToken(int customer, IEnumerable<string> roles)
+            => ValidateAccess(customer, roles, () =>
+            {
+                var httpContext = httpContextAccessor.HttpContext.ThrowIfNull(nameof(httpContextAccessor.HttpContext))!;
+
+                var bearerToken = GetBearerToken(httpContext.Request);
+                return string.IsNullOrEmpty(bearerToken)
+                    ? Task.FromResult<AuthToken?>(null)
+                    : sessionAuthService.GetAuthTokenForBearerId(customer, bearerToken);
+            }, false);
+
+        /// <summary>
+        /// Validate whether cookie provided with request has access to the specified roles for customer.
+        /// If successful, sets Set-Cookie header in response.
+        /// </summary>
+        /// <param name="customer">Current customer</param>
+        /// <param name="roles">Roles associated with Asset</param>
+        /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
+        public Task<AssetAccessResult> TryValidateCookie(int customer, IEnumerable<string> roles)
+            => ValidateAccess(customer, roles, () =>
+            {
+                var cookieId = GetCookieId(customer);
+                return string.IsNullOrEmpty(cookieId)
+                    ? Task.FromResult<AuthToken?>(null)
+                    : sessionAuthService.GetAuthTokenForCookieId(customer, cookieId);
+            }, true);
+
+        private async Task<AssetAccessResult> ValidateAccess(int customer, IEnumerable<string> roles,
+            Func<Task<AuthToken?>> getAuthToken, bool setCookieInResponse)
         {
             var assetRoles = roles.ToList();
             if (assetRoles.IsNullOrEmpty()) return AssetAccessResult.Open;
 
-            var httpContext = httpContextAccessor.HttpContext.ThrowIfNull(nameof(httpContextAccessor.HttpContext))!;
+            var authToken = await getAuthToken();
             
-            var bearerToken = GetBearerToken(httpContext.Request);
-            if (string.IsNullOrEmpty(bearerToken))
-            {
-                // No bearer token, 401 but call underlying (e.g. to render info.json)
-                return AssetAccessResult.Unauthorized;
-            }
-            
-            // Get the authToken from bearerToken
-            var authToken =
-                await sessionAuthService.GetAuthTokenForBearerId(customer, bearerToken);
-
             if (authToken?.SessionUser == null)
             {
-                // Bearer token not found, or expired, 401 but call underlying (e.g. to render info.json)
+                // Authtoken token not found, or expired
                 return AssetAccessResult.Unauthorized;
             }
             
             // Validate current user has access for roles for requested asset
             var canAccess = await accessChecker.CanSessionUserAccessRoles(authToken.SessionUser, customer, assetRoles);
-
-            if (!canAccess)
+            if (canAccess)
             {
-                return AssetAccessResult.Unauthorized;
+                if (setCookieInResponse)
+                {
+                    authCookieManager.SetCookieInResponse(authToken);
+                }
+
+                return AssetAccessResult.Authorized;
             }
             
-            return AssetAccessResult.Authorized;
+            return AssetAccessResult.Unauthorized;
+        }
+
+        private string? GetCookieId(int customer)
+        {
+            var cookieValue = authCookieManager.GetCookieValueForCustomer(customer);
+            return string.IsNullOrEmpty(cookieValue) ? null : authCookieManager.GetCookieIdFromValue(cookieValue);
         }
 
         private string? GetBearerToken(HttpRequest httpRequest)
