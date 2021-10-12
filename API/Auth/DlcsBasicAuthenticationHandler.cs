@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using API.Client;
+using DLCS.Core.Strings;
 using DLCS.Model.Customers;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Authentication;
@@ -76,9 +78,12 @@ namespace API.Auth
                     resourceCustomerId = result;
                 }
             }
-            var authHeader = Encoding.UTF8.GetString(Convert.FromBase64String(headerValue.Parameter));
-            string[] keyAndSecret = authHeader.Split(':');
-            var apiCaller = new {Key = keyAndSecret[0], Secret = keyAndSecret[1]};
+            var apiCaller = GetApiCaller(headerValue);
+            if (apiCaller == null)
+            {
+                return AuthenticateResult.Fail("Invalid credentials");
+            }
+            
             var customerForKey = await customerRepository.GetCustomerForKey(apiCaller.Key, resourceCustomerId);
             if (customerForKey == null)
             {
@@ -137,11 +142,37 @@ namespace API.Auth
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
             return AuthenticateResult.Success(ticket);
         }
-        
+
+        private ApiCaller? GetApiCaller(AuthenticationHeaderValue headerValue)
+        {
+            try
+            {
+                var authHeader = Encoding.UTF8.GetString(Convert.FromBase64String(headerValue.Parameter));
+                string[] keyAndSecret = authHeader.Split(':');
+                var apiCaller = new ApiCaller() {Key = keyAndSecret[0], Secret = keyAndSecret[1]};
+                if (apiCaller.Key.HasText() && apiCaller.Secret.HasText())
+                {
+                    return apiCaller;
+                }
+                return null;
+            }
+            catch
+            {
+                Logger.LogError("Could not parse auth header");
+            }
+            return null;
+        }
+
         protected override Task HandleChallengeAsync(AuthenticationProperties properties)
         {
             Response.Headers["WWW-Authenticate"] = $"Basic realm=\"{Options.Realm}\"";
             return base.HandleChallengeAsync(properties);
         }
+    }
+
+    public class ApiCaller
+    {
+        public string Key { get; set; }
+        public string Secret { get; set; }
     }
 }
