@@ -37,7 +37,7 @@ namespace DLCS.Mock.Controllers
             var vocab = new ApiDocumentation(settings.Vocab, settings.Vocab, classes);
             if (format != null)
             {
-                string docRoot = Path.Combine(hostEnvironment.WebRootPath, "doc");
+                string docRoot = Path.Combine(hostEnvironment.WebRootPath, "api-generated-docs");
                 var result = GetContentResult(vocab, format, docRoot);
                 // If we return this directly we can't set the encoding
                 return Content(result.Content, result.ContentType, Encoding.UTF8);

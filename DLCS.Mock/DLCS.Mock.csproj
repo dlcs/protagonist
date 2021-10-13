@@ -14,7 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="wwwroot\doc" />
+      <Folder Include="wwwroot\api-generated-docs" />
     </ItemGroup>
 
 </Project>
