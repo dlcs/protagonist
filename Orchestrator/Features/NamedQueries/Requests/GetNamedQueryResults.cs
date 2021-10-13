@@ -56,6 +56,11 @@ namespace Orchestrator.Features.NamedQueries.Requests
             var namedQueryResult =
                 await namedQueryConductor.GetNamedQueryResult(request.NamedQuery, customerPathElement,
                     request.NamedQueryArgs);
+
+            if (namedQueryResult.Query is { IsFaulty: true })
+            {
+                return DescriptionResourceResponse.BadRequest();
+            }
             
             if (namedQueryResult.Results.IsNullOrEmpty()) return DescriptionResourceResponse.Empty;
 
