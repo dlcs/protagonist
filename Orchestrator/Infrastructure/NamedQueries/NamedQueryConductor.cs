@@ -36,20 +36,18 @@ namespace Orchestrator.Infrastructure.NamedQueries
             {
                 return NamedQueryResult.Empty();
             }
-
-            // Populate the ResourceMappedAssetQuery object using template + query args
+            
             var assetQuery =
-                basicNamedQueryParser.GenerateResourceMappedAssetQueryFromRequest(customerPathElement, args, namedQuery.Template);
-
-            // Get the images that match NQ results
-            var images = await namedQueryRepository.GetNamedQueryResults(assetQuery);
-            return new NamedQueryResult(assetQuery, images);
+                basicNamedQueryParser.GenerateParsedNamedQueryFromRequest(customerPathElement, args, namedQuery.Template);
+            
+            var matchingImages = await namedQueryRepository.GetNamedQueryResults(assetQuery);
+            return new NamedQueryResult(assetQuery, matchingImages);
         }
     }
 
     public class NamedQueryResult
     { 
-        public ResourceMappedAssetQuery? Query { get; }
+        public ParsedNamedQuery? Query { get; }
         public IEnumerable<Asset> Results { get; private init;  }
 
         public static NamedQueryResult Empty()
@@ -59,7 +57,7 @@ namespace Orchestrator.Infrastructure.NamedQueries
         {
         }
 
-        public NamedQueryResult(ResourceMappedAssetQuery query, IEnumerable<Asset> results)
+        public NamedQueryResult(ParsedNamedQuery query, IEnumerable<Asset> results)
         {
             Query = query;
             Results = results;

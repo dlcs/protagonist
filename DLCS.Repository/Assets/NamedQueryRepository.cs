@@ -52,7 +52,7 @@ namespace DLCS.Repository.Assets
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
         }
 
-        public async Task<IEnumerable<Asset>> GetNamedQueryResults(ResourceMappedAssetQuery query)
+        public async Task<IEnumerable<Asset>> GetNamedQueryResults(ParsedNamedQuery query)
         {
             var imageFilter = dlcsContext.Images.Where(i => i.Customer == query.Customer);
 

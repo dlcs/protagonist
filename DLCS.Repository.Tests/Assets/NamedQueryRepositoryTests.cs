@@ -101,7 +101,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task GetNamedQueryResults_Empty_IfNoMatches()
         {
             // Arrange
-            var query = new ResourceMappedAssetQuery(new CustomerPathElement(1, "notfound"));
+            var query = new ParsedNamedQuery(new CustomerPathElement(1, "notfound"));
 
             // Act
             var result = await sut.GetNamedQueryResults(query);
@@ -114,7 +114,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task GetNamedQueryResults_ReturnsAllForCustomer_IfNoOtherCriteria()
         {
             // Arrange
-            var query = new ResourceMappedAssetQuery(new CustomerPathElement(99, "test"));
+            var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"));
 
             // Act
             var result = await sut.GetNamedQueryResults(query);
@@ -127,7 +127,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task GetNamedQueryResults_FilterByString1()
         {
             // Arrange
-            var query = new ResourceMappedAssetQuery(new CustomerPathElement(99, "test"))
+            var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
             {
                 String1 = "foobar"
             };
@@ -143,7 +143,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task GetNamedQueryResults_FilterByString2()
         {
             // Arrange
-            var query = new ResourceMappedAssetQuery(new CustomerPathElement(99, "test"))
+            var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
             {
                 String2 = "foobar"
             };
@@ -159,7 +159,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task GetNamedQueryResults_FilterByString3()
         {
             // Arrange
-            var query = new ResourceMappedAssetQuery(new CustomerPathElement(99, "test"))
+            var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
             {
                 String3 = "foobar"
             };
@@ -175,7 +175,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task GetNamedQueryResults_FilterByNumber1()
         {
             // Arrange
-            var query = new ResourceMappedAssetQuery(new CustomerPathElement(99, "test"))
+            var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
             {
                 Number1 = 1
             };
@@ -191,7 +191,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task GetNamedQueryResults_FilterByNumber2()
         {
             // Arrange
-            var query = new ResourceMappedAssetQuery(new CustomerPathElement(99, "test"))
+            var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
             {
                 Number2 = 1
             };
@@ -207,7 +207,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task GetNamedQueryResults_FilterByNumber3()
         {
             // Arrange
-            var query = new ResourceMappedAssetQuery(new CustomerPathElement(99, "test"))
+            var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
             {
                 Number3 = 1
             };
@@ -223,7 +223,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task GetNamedQueryResults_FilterBySpace()
         {
             // Arrange
-            var query = new ResourceMappedAssetQuery(new CustomerPathElement(99, "test"))
+            var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
             {
                 Space = 1
             };
@@ -239,7 +239,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task GetNamedQueryResults_FilterBySpaceName()
         {
             // Arrange
-            var query = new ResourceMappedAssetQuery(new CustomerPathElement(99, "test"))
+            var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
             {
                 SpaceName = "space-1"
             };
@@ -255,7 +255,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task GetNamedQueryResults_FilterBySpaceAndSpaceName_SpaceTakesPriority()
         {
             // Arrange
-            var query = new ResourceMappedAssetQuery(new CustomerPathElement(99, "test"))
+            var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
             {
                 Space = 1, SpaceName = "unknown-space"
             };
@@ -271,7 +271,7 @@ namespace DLCS.Repository.Tests.Assets
         public async Task GetNamedQueryResults_FilterByMultipleCriteria()
         {
             // Arrange
-            var query = new ResourceMappedAssetQuery(new CustomerPathElement(99, "test"))
+            var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
             {
                 Space = 1, SpaceName = "unknown-space", String1 = "foo", String2 = "bar", String3 = "baz", Number1 = 5,
                 Number2 = 10, Number3 = 20

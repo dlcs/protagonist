@@ -9,24 +9,6 @@ using DLCS.Model.PathElements;
 namespace Orchestrator.Infrastructure.NamedQueries
 {
     /// <summary>
-    /// Interface for parsing NamedQueries to generate <see cref="ResourceMappedAssetQuery"/>
-    /// </summary>
-    public interface INamedQueryParser
-    {
-        /// <summary>
-        /// Generate query from specified Args and NamedQuery record
-        /// </summary>
-        /// <param name="customerPathElement">Customer to run query against.</param>
-        /// <param name="namedQueryArgs">Additional args for generating query object.</param>
-        /// <param name="namedQueryTemplate">String representing NQ template</param>
-        /// <returns><see cref="ResourceMappedAssetQuery"/> object</returns>
-        ResourceMappedAssetQuery GenerateResourceMappedAssetQueryFromRequest(
-            CustomerPathElement customerPathElement, 
-            string? namedQueryArgs,
-            string namedQueryTemplate);
-    }
-
-    /// <summary>
     /// Basic NQ parser, supporting the following arguments: s1, s2, s3, n1, n2, n3, space, spacename, manifest,
     /// sequence, canvas, # and p*
     /// </summary>
@@ -46,7 +28,7 @@ namespace Orchestrator.Infrastructure.NamedQueries
         private const string String2 = "s2";
         private const string String3 = "s3";
 
-        public ResourceMappedAssetQuery GenerateResourceMappedAssetQueryFromRequest(
+        public ParsedNamedQuery GenerateParsedNamedQueryFromRequest(
             CustomerPathElement customerPathElement, 
             string? namedQueryArgs,
             string namedQueryTemplate)
@@ -59,8 +41,8 @@ namespace Orchestrator.Infrastructure.NamedQueries
             // Get query args - those passed in URL + those appended via #=1 notation in template
             var queryArgs = GetQueryArgsList(namedQueryArgs, templatePairing);
 
-            // Populate the ResourceMappedAssetQuery object using template + query args
-            var assetQuery = GenerateResourceMappedAssetQuery(customerPathElement, templatePairing, queryArgs);
+            // Populate the ParsedNamedQuery object using template + query args
+            var assetQuery = GenerateParsedNamedQuery(customerPathElement, templatePairing, queryArgs);
             return assetQuery;
         }
 
@@ -82,11 +64,11 @@ namespace Orchestrator.Infrastructure.NamedQueries
             return queryArgs;
         }
         
-        private ResourceMappedAssetQuery GenerateResourceMappedAssetQuery(CustomerPathElement customer, 
+        private ParsedNamedQuery GenerateParsedNamedQuery(CustomerPathElement customer, 
             string[] templatePairing,
             List<string> queryArgs)
         {
-            var assetQuery = new ResourceMappedAssetQuery(customer);
+            var assetQuery = new ParsedNamedQuery(customer);
 
             // Iterate through all of the pairs and generate the NQ model
             foreach (var pair in templatePairing)
@@ -94,16 +76,13 @@ namespace Orchestrator.Infrastructure.NamedQueries
                 var elements = pair.Split("=", StringSplitOptions.RemoveEmptyEntries);
                 if (elements.Length != 2) continue;
 
-                assetQuery.Pairs.Add(elements[0], elements[1]);
                 switch (elements[0])
                 {
                     case Space:
-                        assetQuery.Space = Convert.ToInt32(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
-                        assetQuery.ArgumentOrder.Add(pair);
+                        assetQuery.Space = int.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case SpaceName:
                         assetQuery.SpaceName = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
-                        assetQuery.ArgumentOrder.Add(pair);
                         break;
                     case Manifest:
                         assetQuery.Manifest = GetQueryMappingFromTemplateElement(elements[1]);
@@ -116,27 +95,21 @@ namespace Orchestrator.Infrastructure.NamedQueries
                         break;
                     case String1:
                         assetQuery.String1 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
-                        assetQuery.ArgumentOrder.Add(pair);
                         break;
                     case String2:
                         assetQuery.String2 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
-                        assetQuery.ArgumentOrder.Add(pair);
                         break;
                     case String3:
                         assetQuery.String3 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
-                        assetQuery.ArgumentOrder.Add(pair);
                         break;
                     case Number1:
-                        assetQuery.Number1 = Convert.ToInt64(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
-                        assetQuery.ArgumentOrder.Add(pair);
+                        assetQuery.Number1 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case Number2:
-                        assetQuery.Number2 = Convert.ToInt64(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
-                        assetQuery.ArgumentOrder.Add(pair);
+                        assetQuery.Number2 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case Number3:
-                        assetQuery.Number3 = Convert.ToInt64(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
-                        assetQuery.ArgumentOrder.Add(pair);
+                        assetQuery.Number3 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                 }
             }
@@ -144,16 +117,16 @@ namespace Orchestrator.Infrastructure.NamedQueries
             return assetQuery;
         }
         
-        private ResourceMappedAssetQuery.QueryMapping GetQueryMappingFromTemplateElement(string element)
+        private ParsedNamedQuery.QueryMapping GetQueryMappingFromTemplateElement(string element)
             => element switch
             {
-                String1 => ResourceMappedAssetQuery.QueryMapping.String1,
-                String2 => ResourceMappedAssetQuery.QueryMapping.String2,
-                String3 => ResourceMappedAssetQuery.QueryMapping.String3,
-                Number1 => ResourceMappedAssetQuery.QueryMapping.Number1,
-                Number2 => ResourceMappedAssetQuery.QueryMapping.Number2,
-                Number3 => ResourceMappedAssetQuery.QueryMapping.Number3,
-                _ => ResourceMappedAssetQuery.QueryMapping.Unset
+                String1 => ParsedNamedQuery.QueryMapping.String1,
+                String2 => ParsedNamedQuery.QueryMapping.String2,
+                String3 => ParsedNamedQuery.QueryMapping.String3,
+                Number1 => ParsedNamedQuery.QueryMapping.Number1,
+                Number2 => ParsedNamedQuery.QueryMapping.Number2,
+                Number3 => ParsedNamedQuery.QueryMapping.Number3,
+                _ => ParsedNamedQuery.QueryMapping.Unset
             };
 
         private string GetQueryArgumentFromTemplateElement(List<string> args, string element)

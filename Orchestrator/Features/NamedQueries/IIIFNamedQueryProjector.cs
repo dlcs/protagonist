@@ -98,15 +98,15 @@ namespace Orchestrator.Features.NamedQueries
             return canvases;
         }
 
-        private object GetCanvasOrderingElement(Asset image, ResourceMappedAssetQuery query)
+        private object GetCanvasOrderingElement(Asset image, ParsedNamedQuery query)
             => query.Canvas switch
             {
-                ResourceMappedAssetQuery.QueryMapping.Number1 => image.NumberReference1,
-                ResourceMappedAssetQuery.QueryMapping.Number2 => image.NumberReference2,
-                ResourceMappedAssetQuery.QueryMapping.Number3 => image.NumberReference3,
-                ResourceMappedAssetQuery.QueryMapping.String1 => image.Reference1,
-                ResourceMappedAssetQuery.QueryMapping.String2 => image.Reference2,
-                ResourceMappedAssetQuery.QueryMapping.String3 => image.Reference3,
+                ParsedNamedQuery.QueryMapping.Number1 => image.NumberReference1,
+                ParsedNamedQuery.QueryMapping.Number2 => image.NumberReference2,
+                ParsedNamedQuery.QueryMapping.Number3 => image.NumberReference3,
+                ParsedNamedQuery.QueryMapping.String1 => image.Reference1,
+                ParsedNamedQuery.QueryMapping.String2 => image.Reference2,
+                ParsedNamedQuery.QueryMapping.String3 => image.Reference3,
                 _ => 0
             };
 
