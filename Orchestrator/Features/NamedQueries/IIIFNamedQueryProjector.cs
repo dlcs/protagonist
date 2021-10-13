@@ -12,6 +12,7 @@ using IIIF.Presentation.V2.Annotation;
 using IIIF.Presentation.V2.Strings;
 using IIIF.Presentation.V3.Constants;
 using Microsoft.Extensions.Options;
+using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Settings;
 using IIIF2 = IIIF.Presentation.V2;
 

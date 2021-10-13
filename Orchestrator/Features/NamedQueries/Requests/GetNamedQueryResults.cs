@@ -6,6 +6,7 @@ using DLCS.Web.Requests;
 using IIIF.Serialisation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
+using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Models;
 
 namespace Orchestrator.Features.NamedQueries.Requests

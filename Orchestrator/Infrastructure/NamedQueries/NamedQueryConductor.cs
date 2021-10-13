@@ -5,7 +5,7 @@ using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 
-namespace Orchestrator.Features.NamedQueries
+namespace Orchestrator.Infrastructure.NamedQueries
 {
     /// <summary>
     /// Manages orchestration of named query parameters to generate list of results.

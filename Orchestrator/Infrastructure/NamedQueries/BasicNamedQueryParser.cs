@@ -6,7 +6,7 @@ using DLCS.Core.Guard;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 
-namespace Orchestrator.Features.NamedQueries
+namespace Orchestrator.Infrastructure.NamedQueries
 {
     /// <summary>
     /// Interface for parsing NamedQueries to generate <see cref="ResourceMappedAssetQuery"/>

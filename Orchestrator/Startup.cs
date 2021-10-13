@@ -43,6 +43,7 @@ using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.Mediatr;
+using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Serilog;
