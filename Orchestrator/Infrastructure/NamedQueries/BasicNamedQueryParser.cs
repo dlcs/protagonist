@@ -5,6 +5,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
+using Microsoft.Extensions.Logging;
 
 namespace Orchestrator.Infrastructure.NamedQueries
 {
@@ -14,6 +15,7 @@ namespace Orchestrator.Infrastructure.NamedQueries
     /// </summary>
     public class BasicNamedQueryParser : INamedQueryParser
     {
+        private readonly ILogger<BasicNamedQueryParser> logger;
         private const string AdditionalArgMarker = "#";
         private const string Element = "canvas";
         private const string Manifest = "manifest";
@@ -27,6 +29,11 @@ namespace Orchestrator.Infrastructure.NamedQueries
         private const string String1 = "s1";
         private const string String2 = "s2";
         private const string String3 = "s3";
+
+        public BasicNamedQueryParser(ILogger<BasicNamedQueryParser> logger)
+        {
+            this.logger = logger;
+        }
 
         public ParsedNamedQuery GenerateParsedNamedQueryFromRequest(
             CustomerPathElement customerPathElement, 
@@ -71,47 +78,55 @@ namespace Orchestrator.Infrastructure.NamedQueries
             var assetQuery = new ParsedNamedQuery(customer);
 
             // Iterate through all of the pairs and generate the NQ model
-            foreach (var pair in templatePairing)
+            try
             {
-                var elements = pair.Split("=", StringSplitOptions.RemoveEmptyEntries);
-                if (elements.Length != 2) continue;
-
-                switch (elements[0])
+                foreach (var pair in templatePairing)
                 {
-                    case Space:
-                        assetQuery.Space = int.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
-                        break;
-                    case SpaceName:
-                        assetQuery.SpaceName = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
-                        break;
-                    case Manifest:
-                        assetQuery.Manifest = GetQueryMappingFromTemplateElement(elements[1]);
-                        break;
-                    case Sequence:
-                        assetQuery.Sequence = GetQueryMappingFromTemplateElement(elements[1]);
-                        break;
-                    case Element:
-                        assetQuery.Canvas = GetQueryMappingFromTemplateElement(elements[1]);
-                        break;
-                    case String1:
-                        assetQuery.String1 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
-                        break;
-                    case String2:
-                        assetQuery.String2 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
-                        break;
-                    case String3:
-                        assetQuery.String3 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
-                        break;
-                    case Number1:
-                        assetQuery.Number1 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
-                        break;
-                    case Number2:
-                        assetQuery.Number2 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
-                        break;
-                    case Number3:
-                        assetQuery.Number3 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
-                        break;
+                    var elements = pair.Split("=", StringSplitOptions.RemoveEmptyEntries);
+                    if (elements.Length != 2) continue;
+
+                    switch (elements[0])
+                    {
+                        case Space:
+                            assetQuery.Space = int.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                            break;
+                        case SpaceName:
+                            assetQuery.SpaceName = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
+                            break;
+                        case Manifest:
+                            assetQuery.Manifest = GetQueryMappingFromTemplateElement(elements[1]);
+                            break;
+                        case Sequence:
+                            assetQuery.Sequence = GetQueryMappingFromTemplateElement(elements[1]);
+                            break;
+                        case Element:
+                            assetQuery.Canvas = GetQueryMappingFromTemplateElement(elements[1]);
+                            break;
+                        case String1:
+                            assetQuery.String1 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
+                            break;
+                        case String2:
+                            assetQuery.String2 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
+                            break;
+                        case String3:
+                            assetQuery.String3 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
+                            break;
+                        case Number1:
+                            assetQuery.Number1 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                            break;
+                        case Number2:
+                            assetQuery.Number2 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                            break;
+                        case Number3:
+                            assetQuery.Number3 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                            break;
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Error parsing named query for customer {Customer}", customer.Id);
+                assetQuery.SetError(e.Message);
             }
 
             return assetQuery;
@@ -144,13 +159,12 @@ namespace Orchestrator.Infrastructure.NamedQueries
                 {
                     return args[argNumber - 1];
                 }
-                
-                // TODO - this is thrown but ignored in Deliverator
-                throw new ArgumentOutOfRangeException(element, "Not enough query arguments to satisfy template element parameter");
+
+                throw new ArgumentOutOfRangeException(element,
+                    "Not enough query arguments to satisfy template element parameter");
             }
-            
-            // TODO - this is thrown but ignored in Deliverator
-            throw new ArgumentException($"Could not parse template element parameter '{element}'");
+
+            throw new ArgumentException($"Could not parse template element parameter '{element}'", element);
         }
     }
 }

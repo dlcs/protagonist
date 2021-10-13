@@ -108,7 +108,7 @@ namespace DLCS.Model.Assets.NamedQueries
         /// <summary>
         /// Mark this result as containing errors
         /// </summary>
-        public void ContainsErrors(string errorMessage)
+        public void SetError(string errorMessage)
         {
             ErrorMessage = errorMessage.ThrowIfNullOrWhiteSpace(nameof(errorMessage));
             IsFaulty = true;
