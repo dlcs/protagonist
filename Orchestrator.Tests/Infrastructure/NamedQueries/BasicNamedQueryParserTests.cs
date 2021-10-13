@@ -94,6 +94,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
         public static IEnumerable<object[]> ParseNamedQueries => new List<object[]>
         {
             new object[] { "space=p1", "10", new ParsedNamedQuery(Customer) { Space = 10 }, "Space from param" },
+            new object[] { "space=5", "", new ParsedNamedQuery(Customer) { Space = 5 }, "Hardcoded value" },
             new object[] { "space=p1&#=10", "", new ParsedNamedQuery(Customer) { Space = 10 }, "Space from template" },
             new object[]
             {
