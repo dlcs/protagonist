@@ -10,6 +10,7 @@
         public bool HasResource { get; private init; }
         public bool RequiresAuth { get; private init; }
         public bool IsUnauthorised { get; private init; }
+        public bool IsBadRequest { get; private init; }
 
         /// <summary>
         /// Get empty <see cref="DescriptionResourceResponse"/> result, containing no manifest.
@@ -50,6 +51,16 @@
                 RequiresAuth = true,
                 HasResource = true,
                 IsUnauthorised = true
+            };
+
+        /// <summary>
+        /// Get <see cref="DescriptionResourceResponse"/> for a resource that couldn't be generated due to bad client
+        /// request 
+        /// </summary>
+        public static DescriptionResourceResponse BadRequest()
+            => new()
+            {
+                IsBadRequest = true
             };
     }
 }

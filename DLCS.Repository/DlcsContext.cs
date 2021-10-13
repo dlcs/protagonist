@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Enum;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.Security;
 using DLCS.Repository.Entities;
@@ -288,7 +289,7 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Family)
                     .IsRequired()
-                    .HasColumnType("char")
+                    .HasColumnType("char(1)")
                     .HasDefaultValueSql("'I'::\"char\"")
                     .HasConversion(
                         v => (char)v,

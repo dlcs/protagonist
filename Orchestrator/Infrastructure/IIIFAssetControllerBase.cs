@@ -36,8 +36,8 @@ namespace Orchestrator.Infrastructure
         }
 
         /// <summary>
-        /// Generate <see cref="DescriptionResourceResponse"/> from <see cref="IAssetRequest"/> request. Handles known issues
-        /// parsing asset request and sets appropriate headers on response.
+        /// Generate <see cref="DescriptionResourceResponse"/> from request. Handles known issues parsing asset request
+        /// and sets appropriate headers on response.
         /// </summary>
         /// <param name="generateRequest">Function to generate mediatr request.</param>
         /// <param name="cancellationToken">Current cancellation token.</param>
@@ -47,22 +47,24 @@ namespace Orchestrator.Infrastructure
         /// <returns>IActionResult, will be NotFoundResult ,BadRequestResult or ContentResult if successful</returns>
         protected async Task<IActionResult> GenerateIIIFDescriptionResource<T>(Func<T> generateRequest,
             CancellationToken cancellationToken = default)
-            where T : IRequest<DescriptionResourceResponse>, IAssetRequest
+            where T : IRequest<DescriptionResourceResponse>
         {
             try
             {
                 var request = generateRequest();
-                var infoJsonResponse = await mediator.Send(request, cancellationToken);
-                if (!infoJsonResponse.HasResource) return NotFound();
+                var descriptionResource = await mediator.Send(request, cancellationToken);
+                
+                if (descriptionResource.IsBadRequest) return BadRequest();
+                if (!descriptionResource.HasResource) return NotFound();
 
-                if (infoJsonResponse.IsUnauthorised)
+                if (descriptionResource.IsUnauthorised)
                 {
                     Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 }
 
-                SetCacheControl(infoJsonResponse.RequiresAuth);
+                SetCacheControl(descriptionResource.RequiresAuth);
                 HttpContext.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
-                return Content(infoJsonResponse.DescriptionResource, "application/json");
+                return Content(descriptionResource.DescriptionResource, "application/json");
             }
             catch (KeyNotFoundException ex)
             {

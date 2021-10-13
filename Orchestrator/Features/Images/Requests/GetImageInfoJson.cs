@@ -114,12 +114,16 @@ namespace Orchestrator.Features.Images.Requests
         private string GetImageId(GetImageInfoJson request)
             => assetPathGenerator.GetFullPathForRequest(
                 request.AssetRequest,
-                (assetRequest, template) => DlcsPathHelpers.GeneratePathFromTemplate(
-                    template,
-                    assetRequest.RoutePrefix,
-                    assetRequest.CustomerPathValue,
-                    assetRequest.Space.ToString(),
-                    assetRequest.AssetId));
+                (assetRequest, template) =>
+                {
+                    var baseAssetRequest = assetRequest as BaseAssetRequest;
+                    return DlcsPathHelpers.GeneratePathFromTemplate(
+                        template,
+                        baseAssetRequest.RoutePrefix,
+                        baseAssetRequest.CustomerPathValue,
+                        baseAssetRequest.Space.ToString(),
+                        baseAssetRequest.AssetId);
+                });
 
         private async Task<string> GetAuthInfoJson(string imageId, OrchestrationImage asset, AssetId assetId)
         {

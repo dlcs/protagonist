@@ -4,6 +4,7 @@ using Amazon.S3;
 using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Model.Security;
@@ -35,11 +36,14 @@ using Orchestrator.Features.Auth;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Features.Images.Orchestration.Status;
+using Orchestrator.Features.NamedQueries;
+using Orchestrator.Features.NamedQueries.Requests;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.Mediatr;
+using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Serilog;
@@ -98,6 +102,10 @@ namespace Orchestrator
                 .AddScoped<AccessChecker>()
                 .AddScoped<ISessionAuthService, SessionAuthService>()
                 .AddScoped<AuthCookieManager>()
+                .AddSingleton<INamedQueryParser, BasicNamedQueryParser>()
+                .AddScoped<INamedQueryRepository, NamedQueryRepository>()
+                .AddScoped<NamedQueryConductor>()
+                .AddScoped<IIIFNamedQueryProjector>()
                 .AddSingleton<AssetRequestProcessor>()
                 .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
                 .AddOriginStrategies()

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -20,12 +21,20 @@ namespace Test.Helpers.Integration
             string mediaType = "image/jpeg",
             int maxUnauthorised = 0,
             int width = 8000,
-            int height = 8000)
+            int height = 8000,
+            string ref1 = "",
+            string ref2 = "",
+            string ref3 = "",
+            int num1 = 0,
+            int num2 = 0,
+            int num3 = 0)
             => assets.AddAsync(new Asset
             {
                 Created = DateTime.Now, Customer = customer, Space = space, Id = id, Origin = origin,
                 Width = width, Height = height, Roles = roles, Family = family, MediaType = mediaType,
-                ThumbnailPolicy = "default", MaxUnauthorised = maxUnauthorised
+                ThumbnailPolicy = "default", MaxUnauthorised = maxUnauthorised, Reference1 = ref1,
+                Reference2 = ref2, Reference3 = ref3, NumberReference1 = num1, NumberReference2 = num2,
+                NumberReference3 = num3
             });
 
         public static ValueTask<EntityEntry<AuthToken>> AddTestToken(this DbSet<AuthToken> authTokens,
@@ -56,6 +65,18 @@ namespace Test.Helpers.Integration
                     {
                         [customer] = roles
                     }
+                });
+
+        public static ValueTask<EntityEntry<NamedQuery>> AddTestNamedQuery(this DbSet<NamedQuery> namedQueries,
+            string name, int customer = 99, string template = "manifest=s3&canvas=n2&space=p1", bool global = true)
+            => namedQueries.AddAsync(
+                new NamedQuery
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Customer = customer,
+                    Global = global,
+                    Name = name,
+                    Template = template
                 });
     }
 }
