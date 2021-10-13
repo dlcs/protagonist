@@ -1,0 +1,117 @@
+
+<h1>Queue</h1>
+
+<p>The Queue resource allows the DLCS to process very large number of image registration requests.You can post a Collection of images to the Queue for processing (a Hydra collection, see note). This results in the creation of a Batch resource. You can then retrieve these batches to monitor the progress of your images.</p>
+
+<pre>/customers/{0}/queue</pre><br/>
+
+
+<h2>Supported operations</h2>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Returns the queue resource</td><td></td><td>vocab:Queue</td><td></td></tr>
+<tr>
+<td>POST</td><td>Submit an array of Image and get a batch back</td><td>hydra:Collection</td><td>vocab:Batch</td><td>201 Job has been accepted - Batch created and returned</td></tr>
+</table>
+
+
+<h2>Supported properties</h2>
+
+
+<h3>size</h3>
+
+<p>Number of total images in your queue, across all batches</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Queue</td><td>xsd:nonNegativeInteger</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>batches (🔗)</h3>
+
+<p>Collection (paged) of the batches - the separate jobs you have submitted to the queue</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Queue</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/queue/batches</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves all batches for customer</td><td></td><td>hydra:Collection</td><td></td></tr>
+</table>
+
+
+<h3>images (🔗)</h3>
+
+<p>Collection (paged). Merged view of images on the queue, across batches. Typically you'd use this to look at the top or bottom of the queue (first or large page).</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Queue</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/queue/images</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves all images across batches for customer</td><td></td><td>hydra:Collection</td><td></td></tr>
+</table>
+
+
+<h3>recent (🔗)</h3>
+
+<p>Collection (paged) of finished batches which are not marked as superseded. Most recent first.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Queue</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/queue/recent</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves the recent (non superseded) batches for customer.</td><td></td><td>hydra:Collection</td><td></td></tr>
+</table>
+
+
+<h3>active (🔗)</h3>
+
+<p>Collection (paged) of batches that are currently in process.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Queue</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/queue/active</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves the customer's currently running batches.</td><td></td><td>hydra:Collection</td><td></td></tr>
+</table>
+

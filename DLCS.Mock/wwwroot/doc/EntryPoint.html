@@ -1,0 +1,146 @@
+
+<h1>EntryPoint</h1>
+
+<p>The main entry point or homepage of the API.</p>
+
+<pre></pre><br/>
+
+
+<h2>Supported operations</h2>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>The API's main entry point.</td><td></td><td>vocab:EntryPoint</td><td></td></tr>
+</table>
+
+
+<h2>Supported properties</h2>
+
+
+<h3>customers (🔗)</h3>
+
+<p>List of customers to which you have access (usually 1)</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:EntryPoint</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves all Customer entities</td><td></td><td>hydra:Collection</td><td></td></tr>
+</table>
+
+
+<h3>originStrategies (🔗)</h3>
+
+<p>List of available origin strategies that the DLCS can use to fetch your images.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:EntryPoint</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/originStrategies</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves all availabe origin strategies. You must use one of these @id URIs as the OriginStrategy property of any CustomerOriginStrategy resources you create.</td><td></td><td>hydra:Collection</td><td></td></tr>
+</table>
+
+
+<h3>portalRoles (🔗)</h3>
+
+<p>List of all the different roles available to portal users - i.e., the small number of people who log into the portal. These are not the same as the roles end users acquire for accessing protected image services.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:EntryPoint</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/portalRoles</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves all available portal roles. You can add these to the 'roles' collection of any portal users you create.</td><td></td><td>hydra:Collection</td><td></td></tr>
+</table>
+
+
+<h3>imageOptimisationPolicies (🔗)</h3>
+
+<p>List of available optimisation policies the DLCS uses to process your image to provide a IIIF endpoint. We keep a record of the policy used to allow a different policy (e.g., better quality) to be used later.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:EntryPoint</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/imageOptimisationPolicies</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves the policies the DLCS can use or has used in the past to optimise your origin image for IIIF delivery</td><td></td><td>hydra:Collection</td><td></td></tr>
+</table>
+
+
+<h3>thumbnailPolicies (🔗)</h3>
+
+<p>List of all the different roles available to portal users - i.e., the small number of people who log into the portal. These are not the same as the roles end users acquire for accessing protected image services.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:EntryPoint</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/thumbnailPolicies</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves available thumbnail polices - a record of the thumbnails created for an image.</td><td></td><td>hydra:Collection</td><td></td></tr>
+</table>
+
+
+<h3>storagePolicies (🔗)</h3>
+
+<p>Available storage policies that can be associated with a Customer or a Space. They determine the number of images and storage capacity permitted to the Customer or Space.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:EntryPoint</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/storagePolicies</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves available storage polices - maximum image count and storage usage.</td><td></td><td>hydra:Collection</td><td></td></tr>
+</table>
+

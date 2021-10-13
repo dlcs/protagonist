@@ -1,0 +1,42 @@
+
+<h1>StoragePolicy</h1>
+
+<p>A resource that acts as configuration for a customer or space. It is linked to from the storage resource for any customer or space. </p>
+
+<pre>/storagePolicies/{0}</pre><br/>
+
+
+<h2>Supported operations</h2>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieve a Storage policy</td><td></td><td>vocab:StoragePolicy</td><td>200 OK, 404 Not found</td></tr>
+</table>
+
+
+<h2>Supported properties</h2>
+
+
+<h3>maximumNumberOfStoredImages</h3>
+
+<p>The maximum number of images that can be registered, across ALL the Customer's spaces</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:StoragePolicy</td><td>xsd:nonNegativeInteger</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>maximumTotalSizeOfStoredImages</h3>
+
+<p>The DLCS requires storage capacity to service the images registred by customers. This setting governs how much capacity the DLCS can use for a Customer across all the customer's spaces. Capacity is affected by image optimsation policy (higher quality = more storage used) and the absolutesize of the images (pixel dimensions).</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:StoragePolicy</td><td>xsd:nonNegativeInteger</td><td>False</td><td>False</td></tr>
+</table>
+

@@ -1,0 +1,42 @@
+
+<h1>ImageOptimisationPolicy</h1>
+
+<p>An internal record of how the DLCS optimised your image for tile delivery. Provides A URI to identify which policy was used at registration time for each of your images. This will be needed if you ever want to re-register from origin (e.g., go for a higher or lower quality, etc).</p>
+
+<pre>/imageOptimisationPolicies/{0}</pre><br/>
+
+
+<h2>Supported operations</h2>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieve a Image optimisation policy</td><td></td><td>vocab:ImageOptimisationPolicy</td><td>200 OK, 404 Not found</td></tr>
+</table>
+
+
+<h2>Supported properties</h2>
+
+
+<h3>name</h3>
+
+<p>The human readable name of the image policy</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:ImageOptimisationPolicy</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>technicalDetails</h3>
+
+<p>Details of the encoding and tools used. Might not be public.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:ImageOptimisationPolicy</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+

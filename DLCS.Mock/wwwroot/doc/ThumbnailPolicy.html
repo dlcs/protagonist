@@ -1,0 +1,42 @@
+
+<h1>ThumbnailPolicy</h1>
+
+<p>The settings used to create thumbnails for the image at registration time.</p>
+
+<pre>/thumbnailPolicies/{0}</pre><br/>
+
+
+<h2>Supported operations</h2>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieve a Thumbnail policy</td><td></td><td>vocab:ThumbnailPolicy</td><td>200 OK, 404 Not found</td></tr>
+</table>
+
+
+<h2>Supported properties</h2>
+
+
+<h3>name</h3>
+
+<p>The human readable name of the image policy</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:ThumbnailPolicy</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>sizes</h3>
+
+<p>The bounding box size of the thumbnails to create. For each of these sizes, a thumbnail will be created. The longest edge of each thumbnail matches this size.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:ThumbnailPolicy</td><td>xsd:nonNegativeInteger</td><td>False</td><td>False</td></tr>
+</table>
+

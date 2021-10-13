@@ -39,6 +39,7 @@ namespace DLCS.Mock
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                 options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
                 jsonSettings.Formatting = Formatting.Indented;
+                jsonSettings.NullValueHandling = NullValueHandling.Ignore;
             });
             services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo {Title = "DLCS.Mock", Version = "v1"}); });
         }
@@ -54,11 +55,9 @@ namespace DLCS.Mock
             }
 
             app.UseHttpsRedirection();
-
+            app.UseStaticFiles();
             app.UseRouting();
-
             app.UseAuthorization();
-
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }

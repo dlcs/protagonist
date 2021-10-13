@@ -9,13 +9,10 @@ namespace DLCS.Mock.Controllers
     [ApiController]
     public class DlcsApiController : ControllerBase
     {
-        private MockModel model;
-        private HydraSettings settings;
+        private readonly HydraSettings settings;
         
-        public DlcsApiController(
-            IOptions<HydraSettings> options, MockModel model)
+        public DlcsApiController(IOptions<HydraSettings> options)
         {
-            this.model = model;
             settings = options.Value;
         }
         

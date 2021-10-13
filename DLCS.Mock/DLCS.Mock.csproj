@@ -13,4 +13,8 @@
       <ProjectReference Include="..\DLCS.HydraModel\DLCS.HydraModel.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="wwwroot\doc" />
+    </ItemGroup>
+
 </Project>

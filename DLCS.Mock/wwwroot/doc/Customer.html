@@ -1,0 +1,233 @@
+
+<h1>Customer</h1>
+
+<p>A customer represents you, the API user. You only have access to one customer, so it is your effective entry point for the API. The only interation you can have with your Customer resource directly is updating the display name, but it provides links (🔗) tocollections of all the other resources.</p>
+
+<pre>/customers/{0}</pre><br/>
+
+
+<h2>Supported operations</h2>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieve a Customer</td><td></td><td>vocab:Customer</td><td>200 OK, 404 Not found</td></tr>
+</table>
+
+
+<h2>Supported properties</h2>
+
+
+<h3>name</h3>
+
+<p>The URL-friendly name of the customer</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Customer</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>displayName</h3>
+
+<p>The display name of the customer</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Customer</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>portalUsers (🔗)</h3>
+
+<p>Collection of user accounts that can log into the portal. Use this to grant access to others in your organisation</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Customer</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/portalUsers</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves all Portal User</td><td></td><td>hydra:Collection</td><td>200 OK</td></tr>
+<tr>
+<td>POST</td><td>Creates a new Portal User</td><td>vocab:PortalUser</td><td>vocab:PortalUser</td><td>201 Portal User created., 400 Bad Request</td></tr>
+</table>
+
+
+<h3>namedQueries (🔗)</h3>
+
+<p>Collection of all the Named Queries you have configured (plus those provided 'out of the box'). See the NamedQuery topic for further information</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Customer</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/namedQueries</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves all Named Query</td><td></td><td>hydra:Collection</td><td>200 OK</td></tr>
+<tr>
+<td>POST</td><td>Creates a new Named Query</td><td>vocab:NamedQuery</td><td>vocab:NamedQuery</td><td>201 Named Query created., 400 Bad Request</td></tr>
+</table>
+
+
+<h3>originStrategies (🔗)</h3>
+
+<p>Collection of configuration settings for retrieving your registered images from their origin URLs. If your images come from multiple locations you will have multiple origin strategies. See the OriginStrategy topic.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Customer</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/originStrategies</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves all Origin Strategy</td><td></td><td>hydra:Collection</td><td>200 OK</td></tr>
+<tr>
+<td>POST</td><td>Creates a new Origin Strategy</td><td>vocab:OriginStrategy</td><td>vocab:OriginStrategy</td><td>201 Origin Strategy created., 400 Bad Request</td></tr>
+</table>
+
+
+<h3>authServices (🔗)</h3>
+
+<p>Collection of IIIF Authentication services available for use with your images. The images are associated with the auth services via Roles. An AuthService is a means of acquirung a role.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Customer</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/authServices</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves all Auth Service</td><td></td><td>hydra:Collection</td><td>200 OK</td></tr>
+<tr>
+<td>POST</td><td>Creates a new Auth Service</td><td>vocab:AuthService</td><td>vocab:AuthService</td><td>201 Auth Service created., 400 Bad Request</td></tr>
+</table>
+
+
+<h3>roles (🔗)</h3>
+
+<p>Collection of the available roles you can assign to your images. In order for a user to see an image, the user must have the role associated with the image, or one of them. Users interact with an AuthService to acquire a role or roles.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Customer</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/roles</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves all Space</td><td></td><td>hydra:Collection</td><td>200 OK</td></tr>
+<tr>
+<td>POST</td><td>Creates a new Space</td><td>vocab:Space</td><td>vocab:Space</td><td>201 Space created., 400 Bad Request</td></tr>
+</table>
+
+
+<h3>queue (🔗)</h3>
+
+<p>The Customer's view on the DLCS ingest queue. As well as allowing you to query the status of batches you have registered, you can POST new batches to the queue.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Customer</td><td>vocab:Queue</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/queue</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Returns the queue resource</td><td></td><td>vocab:Queue</td><td></td></tr>
+<tr>
+<td>POST</td><td>Submit an array of Image and get a batch back</td><td>hydra:Collection</td><td>vocab:Batch</td><td>201 Job has been accepted - Batch created and returned</td></tr>
+</table>
+
+
+<h3>spaces (🔗)</h3>
+
+<p>Collection of all the Space resources associated with your customer. A space allows you to partition images, have different default roles and tags, etc. See the Space topic.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Customer</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/spaces</pre><br/>
+
+
+<h3>keys (🔗)</h3>
+
+<p>Api keys allocated to this customer. The accompanying secret is only available at creation time. To obtain a key and a secret, make an empty POST to this collection with administrator privileges and the returned Key object will include the generates secret.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Customer</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/keys</pre><br/>
+
+
+<h3>storage (🔗)</h3>
+
+<p>Storage policy for the Customer</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Customer</td><td>vocab:CustomerStorage</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/storage</pre><br/>
+
+
+<h3>acceptedAgreement </h3>
+
+<p>Has the customer accepted the EULA?</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Customer</td><td>xsd:boolean</td><td>True</td><td>False</td></tr>
+</table>
+

@@ -1,0 +1,72 @@
+
+<h1>NamedQuery</h1>
+
+<p><b>UNSTABLE Currently the named query implementation is a placeholder,</b></p>
+<p>A named query is a URI pattern available on dlcs.io (i.e., not this API) that will return a IIIF resource such as a collection, or manifest, or sequence, or canvas. For example:
+
+```
+https://dlcs.io/resources/iiifly/manifest/43/ae678999
+```
+
+This query is is an instance of the following template:
+
+```
+https://dlcs.io/resources/{customer}/{named-query}/{space}/{string1}
+```
+
+This customer (iiifly) has a named query called 'manifest' that takes two parameters - the space and the string1 metadata field. The query is internally defined to use an additional field - number1 -  and to generate a manifest with one sequence, with each canvas in the sequence having one image. The images selected by the query must all have string1=ae678999 in this case, and are ordered by number1.  An image query against the dlcs API returns a collection of DLCS Image objects. a Named Query uses an DLCS image query but then projects these images and  constructs a IIIF resource from them, using the parameters provided. Information on designing and configuring named queries is provided in a special topic.</p>
+
+<pre>/customers/{0}/namedQueries/{1}</pre><br/>
+
+
+<h2>Supported operations</h2>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieve a Named Query</td><td></td><td>vocab:NamedQuery</td><td>200 OK, 404 Not found</td></tr>
+<tr>
+<td>PUT</td><td>create or replace a Named Query</td><td>vocab:NamedQuery</td><td>vocab:NamedQuery</td><td>200 OK, 201 Created Named Query, 404 Not found</td></tr>
+<tr>
+<td>PATCH</td><td>Update the supplied fields of the Named Query</td><td>vocab:NamedQuery</td><td>vocab:NamedQuery</td><td>205 Accepted Named Query, reset view, 400 Bad request, 404 Not found</td></tr>
+<tr>
+<td>DELETE</td><td>Delete the Named Query</td><td></td><td>owl:Nothing</td><td>205 Accepted Named Query, reset view, 404 Not found</td></tr>
+</table>
+
+
+<h2>Supported properties</h2>
+
+
+<h3>name</h3>
+
+<p>The name that appears for the query in the path on https://dlcs.io, e.g., 'manifest'</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:NamedQuery</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>global</h3>
+
+<p>The named query is available to all customers</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:NamedQuery</td><td>xsd:boolean</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>template</h3>
+
+<p>URI template</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:NamedQuery</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+

@@ -1,0 +1,64 @@
+
+<h1>ImageStorage</h1>
+
+<p>Resource that shows how much storage a registered DLCS Image uses. </p>
+
+<pre>/customers/{0}/spaces/{1}/images/{2}/storage</pre><br/>
+
+
+<h2>Supported operations</h2>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieve a Image Storage</td><td></td><td>vocab:ImageStorage</td><td>200 OK, 404 Not found</td></tr>
+</table>
+
+
+<h2>Supported properties</h2>
+
+
+<h3>thumbnailSize</h3>
+
+<p>Storage space taken up by this item's thumbnails</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:ImageStorage</td><td>xsd:nonNegativeInteger</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>size</h3>
+
+<p>Storage space taken up by the DLCS artifacts for this item</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:ImageStorage</td><td>xsd:nonNegativeInteger</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>lastChecked</h3>
+
+<p>When these figures were last computed</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:ImageStorage</td><td>xsd:dateTime</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>checkingInProgress</h3>
+
+<p>If a computation of these figures is currently running</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:ImageStorage</td><td>xsd:boolean</td><td>True</td><td>False</td></tr>
+</table>
+

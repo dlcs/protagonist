@@ -1,0 +1,82 @@
+
+<h1>PortalUser</h1>
+
+<p>A user of the portal. Represents an account for use by a person, rather than by a machine. You can create as many portal user accounts as required. Note that the roles a portal user has relate to DLCS permissions rather than permissions on your image resources.</p>
+
+<pre>/customers/{0}/portalUsers/{1}</pre><br/>
+
+
+<h2>Supported operations</h2>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieve a Portal User</td><td></td><td>vocab:PortalUser</td><td>200 OK, 404 Not found</td></tr>
+<tr>
+<td>PUT</td><td>create or replace a Portal User</td><td>vocab:PortalUser</td><td>vocab:PortalUser</td><td>200 OK, 201 Created Portal User, 404 Not found</td></tr>
+<tr>
+<td>PATCH</td><td>Update the supplied fields of the Portal User</td><td>vocab:PortalUser</td><td>vocab:PortalUser</td><td>205 Accepted Portal User, reset view, 400 Bad request, 404 Not found</td></tr>
+<tr>
+<td>DELETE</td><td>Delete the Portal User</td><td></td><td>owl:Nothing</td><td>205 Accepted Portal User, reset view, 404 Not found</td></tr>
+</table>
+
+
+<h2>Supported properties</h2>
+
+
+<h3>email</h3>
+
+<p>The email address</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:PortalUser</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>created</h3>
+
+<p>Create date</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:PortalUser</td><td>xsd:dateTime</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>roles (🔗)</h3>
+
+<p>Collection of Role resources that the user has. These roles should not be confused with the roles associated with images and authservices, which govern the interactions that end users can have with your image resources. These PortalUser roles govern the actions that your handful of registered DLCS back end users can perform in the portal. </p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:PortalUser</td><td>hydra:Collection</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/portalUsers/{1}/roles</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves all Portal Role</td><td></td><td>hydra:Collection</td><td>200 OK</td></tr>
+<tr>
+<td>POST</td><td>Creates a new Portal Role</td><td>vocab:PortalRole</td><td>vocab:PortalRole</td><td>201 Portal Role created., 400 Bad Request</td></tr>
+</table>
+
+
+<h3>enabled</h3>
+
+<p>Whether the user can log in - for temporary or permanent rescinding of access.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:PortalUser</td><td>xsd:boolean</td><td>False</td><td>False</td></tr>
+</table>
+

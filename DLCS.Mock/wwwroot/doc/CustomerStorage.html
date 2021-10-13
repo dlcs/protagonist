@@ -1,0 +1,78 @@
+
+<h1>CustomerStorage</h1>
+
+<p>Information resource that shows the current storage use for a Customer or for anindividual Space within a customer.</p>
+
+<pre>/customers/{0}/storage, /customers/{0}/spaces/{1}/storage</pre><br/>
+
+
+<h2>Supported operations</h2>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieve a CustomerStorage</td><td></td><td>vocab:CustomerStorage</td><td>200 OK, 404 Not found</td></tr>
+</table>
+
+
+<h2>Supported properties</h2>
+
+
+<h3>numberOfStoredImages</h3>
+
+<p>Number of stored images</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:CustomerStorage</td><td>xsd:integer</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>totalSizeOfStoredImages</h3>
+
+<p>Total storage usage for images excluding thumbnails, in bytes</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:CustomerStorage</td><td>xsd:integer</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>totalSizeOfThumbnails</h3>
+
+<p>Total storage usage for thumbnails, in bytes</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:CustomerStorage</td><td>xsd:integer</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>lastCalculated</h3>
+
+<p>When the DLCS last evaluated storage use to generate this resource</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:CustomerStorage</td><td>xsd:dateTime</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>storagePolicy (🔗)</h3>
+
+<p>When the customer storage resource is for a Customer rather than a space, itwill include this property which configures the total storage permitted across all a Customer's spaces. </p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:CustomerStorage</td><td>vocab:StoragePolicy</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/storage, /customers/{0}/spaces/{1}/storage/storagePolicy</pre><br/>
+

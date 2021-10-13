@@ -1,0 +1,357 @@
+
+<h1>Image</h1>
+
+<p>The Image resource is the DLCS view of an image that you have registered. The job of the DLCS is to offer services on that image, such as IIIF Image API endpoints. As well as the status of the image, the DLCS lets you store arbitrary metadata that you can use to build interesting applications.</p>
+
+<pre>/customers/{0}/spaces/{1}/images/{2}</pre><br/>
+
+
+<h2>Supported operations</h2>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieve a Image</td><td></td><td>vocab:Image</td><td>200 OK, 404 Not found</td></tr>
+<tr>
+<td>PUT</td><td>create or replace a Image</td><td>vocab:Image</td><td>vocab:Image</td><td>200 OK, 201 Created Image, 404 Not found</td></tr>
+<tr>
+<td>PATCH</td><td>Update the supplied fields of the Image</td><td>vocab:Image</td><td>vocab:Image</td><td>205 Accepted Image, reset view, 400 Bad request, 404 Not found</td></tr>
+<tr>
+<td>DELETE</td><td>Delete the Image</td><td></td><td>owl:Nothing</td><td>205 Accepted Image, reset view, 404 Not found</td></tr>
+</table>
+
+
+<h2>Supported properties</h2>
+
+
+<h3>modelId</h3>
+
+<p>The identifier for the image within the space - its URI component. TODO - this shoud not be exposed in the API, use the URI instead?</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>infoJson</h3>
+
+<p>info.json URI - where the IIIF Image API is exposed for this image</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>degradedInfoJson</h3>
+
+<p>Degraded info.json URI - if a user does not have permission to view the full image, but a degraded image is permitted, the DLCS will redirect them to this URI.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>thumbnailInfoJson</h3>
+
+<p>Thumbnail info.json URI</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>thumbnail400</h3>
+
+<p>Direct URI of the 400 pixel thumbnail</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:string</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>created</h3>
+
+<p>Date the image was added</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:dateTime</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>origin</h3>
+
+<p>Origin endpoint from where the original image can be acquired (or was acquired)</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>initialOrigin</h3>
+
+<p>Endpoint to use the first time the image is retrieved. This allows an initial ingest from a short term s3 bucket (for example) but subsequent references from an https URI.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>maxUnauthorised</h3>
+
+<p>Maximum size of request allowed before roles are enforced - relates to the effective WHOLE image size, not the individual tile size. 0 = No open option, -1 (default) = no authorisation</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:integer</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>width</h3>
+
+<p>Tile source width</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:integer</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>height</h3>
+
+<p>Tile source height</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:integer</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>queued</h3>
+
+<p>When the image was added to the queue</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:dateTime</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>dequeued</h3>
+
+<p>When the image was taken off the queue</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:dateTime</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>finished</h3>
+
+<p>When the image processing finished (image ready)</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:dateTime</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>ingesting</h3>
+
+<p>Is the image currently being ingested?</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:boolean</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<h3>error</h3>
+
+<p>Reported errors with this image</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>tags</h3>
+
+<p>Image tags</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>string1</h3>
+
+<p>String reference 1</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>string2</h3>
+
+<p>String reference 2</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>string3</h3>
+
+<p>String reference 3</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>number1</h3>
+
+<p>Number reference 1</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:nonNegativeInteger</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>number2</h3>
+
+<p>Number reference 2</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:nonNegativeInteger</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>number3</h3>
+
+<p>Number reference 3</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>xsd:nonNegativeInteger</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>roles (🔗)</h3>
+
+<p>The role or roles that a user must possess to view this image above maxUnauthorised. These are URIs of roles e.g., https://api.dlcs.io/customers/1/roles/requiresRegistration</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>vocab:Role</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/spaces/{1}/images/{2}/roles</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieves all Role</td><td></td><td>hydra:Collection</td><td>200 OK</td></tr>
+<tr>
+<td>POST</td><td>Creates a new Role</td><td>vocab:Role</td><td>vocab:Role</td><td>201 Role created., 400 Bad Request</td></tr>
+</table>
+
+
+<h3>batch (🔗)</h3>
+
+<p>The batch this image was ingested in (most recently). Might be blank if the batch has been archived or the image as ingested in immediate mode.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>vocab:Batch</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/spaces/{1}/images/{2}/batch</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieve a Batch</td><td></td><td>vocab:Image</td><td>200 OK, 404 Not found</td></tr>
+<tr>
+<td>PUT</td><td>create or replace a Batch</td><td>vocab:Image</td><td>vocab:Image</td><td>200 OK, 201 Created Batch, 404 Not found</td></tr>
+<tr>
+<td>PATCH</td><td>Update the supplied fields of the Batch</td><td>vocab:Image</td><td>vocab:Image</td><td>205 Accepted Batch, reset view, 400 Bad request, 404 Not found</td></tr>
+<tr>
+<td>DELETE</td><td>Delete the Batch</td><td></td><td>owl:Nothing</td><td>205 Accepted Batch, reset view, 404 Not found</td></tr>
+</table>
+
+
+<h3>imageOptimisationPolicy (🔗)</h3>
+
+<p>The image optimisation policy used when this image was last processed (e.g., registered)</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>vocab:ImageOptimisationPolicy</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/spaces/{1}/images/{2}/imageOptimisationPolicy</pre><br/>
+
+
+<h3>thumbnailPolicy (🔗)</h3>
+
+<p>The thumbnail settings used when this image was last processed (e.g., registered)</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:Image</td><td>vocab:ThumbnailPolicy</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/spaces/{1}/images/{2}/thumbnailPolicy</pre><br/>
+

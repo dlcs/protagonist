@@ -1,0 +1,72 @@
+
+<h1>CustomerOriginStrategy</h1>
+
+<p>As a customer you can provide information to the DLCS to allow it to fetch your images from their origin endpoints. Every customer has a default origin strategy, which is for the DLCS to attempt to fetch the image from its origin URL without presenting credentials. This is fine for images that are publicly available, but is unlikely to be appropriate for images you are exposing from your asset management system. You might have a service that is available only to the DLCS, or an FTP site. The DLCS has a predefined set of mechanisms for obtaining resources over HTTP, FTP, S3 etc. In your customer origin strategies you match these predefined strategies to regexes that match your origin URLs and credentials that the DLCS can use when requesting your assets.</p>
+
+<pre>/customers/{0}/originStrategies/{1}</pre><br/>
+
+
+<h2>Supported operations</h2>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>GET</td><td>Retrieve a Origin Strategy</td><td></td><td>vocab:CustomerOriginStrategy</td><td>200 OK, 404 Not found</td></tr>
+<tr>
+<td>PUT</td><td>create or replace a Origin Strategy</td><td>vocab:CustomerOriginStrategy</td><td>vocab:CustomerOriginStrategy</td><td>200 OK, 201 Created Origin Strategy, 404 Not found</td></tr>
+<tr>
+<td>PATCH</td><td>Update the supplied fields of the Origin Strategy</td><td>vocab:CustomerOriginStrategy</td><td>vocab:CustomerOriginStrategy</td><td>205 Accepted Origin Strategy, reset view, 400 Bad request, 404 Not found</td></tr>
+<tr>
+<td>DELETE</td><td>Delete the Origin Strategy</td><td></td><td>owl:Nothing</td><td>205 Accepted Origin Strategy, reset view, 404 Not found</td></tr>
+</table>
+
+
+<h2>Supported properties</h2>
+
+
+<h3>regex</h3>
+
+<p>Regex for matching origin. When the DLCS tries to work out how to fetch from your origin, it uses this regex to match to find the correct strategy.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:CustomerOriginStrategy</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<h3>originStrategy (🔗)</h3>
+
+<p>Link to the origin strategy definition that will be used if the regex is matched.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:CustomerOriginStrategy</td><td>vocab:OriginStrategy</td><td>True</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/originStrategies/{1}/originStrategy</pre><br/>
+
+
+<h3>credentials (🔗)</h3>
+
+<p>JSON object - credentials appropriate to the protocol, will vary. These are stored in S3 and are not available via the API.</p>
+
+<table><tr>
+<th>domain</th><th>range</th><th>readonly</th><th>writeonly</th></tr>
+<tr>
+<td>vocab:CustomerOriginStrategy</td><td>xsd:string</td><td>False</td><td>False</td></tr>
+</table>
+
+
+<pre>/customers/{0}/originStrategies/{1}/credentials</pre><br/>
+
+
+<table><tr>
+<th>Method</th><th>Label</th><th>Expects</th><th>Returns</th><th>Statuses</th></tr>
+<tr>
+<td>PUT</td><td>create or replace customer credential objedt</td><td>vocab:Credentials</td><td>vocab:Credentials</td><td>201 Created</td></tr>
+</table>
+
