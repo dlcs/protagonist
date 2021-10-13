@@ -1,4 +1,3 @@
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -23,12 +22,12 @@ namespace DLCS.HydraModel
         {
         }
 
-        public OriginStrategy(HydraSettings settings, string originStrategyId, string name, bool requiresCredentials)
+        public OriginStrategy(string baseUrl, string originStrategyId, string name, bool requiresCredentials)
         {
             ModelId = originStrategyId;
             Name = name;
             RequiresCredentials = requiresCredentials;
-            Init(settings, true, originStrategyId);
+            Init(baseUrl, true, originStrategyId);
         }
 
         [RdfProperty(Description = "The human readable name of the origin strategy",

@@ -1,4 +1,3 @@
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -25,14 +24,14 @@ namespace DLCS.HydraModel
 
         public CustomerOriginStrategy() { }
 
-        public CustomerOriginStrategy(HydraSettings settings, int customerId, int strategyId, string regex, string credentials, string originStrategy)
+        public CustomerOriginStrategy(string baseUrl, int customerId, int strategyId, string regex, string credentials, string originStrategy)
         {
             CustomerId = customerId;
             ModelId = strategyId;
             Regex = regex;
             Credentials = credentials;
             OriginStrategy = originStrategy;
-            Init(settings, true, customerId, ModelId);
+            Init(baseUrl, true, customerId, ModelId);
         }
 
         [RdfProperty(Description = "Regex for matching origin. When the DLCS tries to work out how to fetch " +

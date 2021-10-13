@@ -1,4 +1,3 @@
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -21,12 +20,12 @@ namespace DLCS.HydraModel
         {
         }
 
-        public ImageOptimisationPolicy(HydraSettings settings, string imageOptimisationPolicyId, string name, string technicalDetails)
+        public ImageOptimisationPolicy(string baseUrl, string imageOptimisationPolicyId, string name, string technicalDetails)
         {
             ModelId = imageOptimisationPolicyId;
             Name = name;
             TechnicalDetails = technicalDetails;
-            Init(settings, true, imageOptimisationPolicyId);
+            Init(baseUrl, true, imageOptimisationPolicyId);
         }
 
         [RdfProperty(Description = "The human readable name of the image policy",

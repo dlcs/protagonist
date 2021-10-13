@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -9,11 +8,12 @@ namespace DLCS.HydraModel
 {
     public class DlcsResource : JSONLDBase
     {
-        [JsonIgnore] private HydraSettings settings;
+        [JsonIgnore]
+        protected string BaseUrl { get; set; }
         
-        public void Init(HydraSettings settings, bool setLinks, params object[] urlParams)
+        public void Init(string baseUrl, bool setLinks, params object[] urlParams)
         {
-            this.settings = settings;
+            BaseUrl = baseUrl;
             var hydraClassAttr = GetType().GetCustomAttributes(true).OfType<HydraClassAttribute>().Single();
             string[] uriTemplates = hydraClassAttr.UriTemplate.Split(new [] {',', ' '},
                 StringSplitOptions.RemoveEmptyEntries);
@@ -66,22 +66,10 @@ namespace DLCS.HydraModel
             return jo;
         }
 
-        public override string Context
-        {
+        public override string Context =>
             // do this better later - prefer not have FullName but makes reflection easier!
-            get { return BaseUrl + "/contexts/" + GetType().FullName + ".jsonld"; } 
-        }
+            BaseUrl + "/contexts/" + GetType().FullName + ".jsonld";
 
-        public override string Type
-        {
-            get { return GetType().Name; }
-        }
-        
-        [JsonIgnore]
-        protected string BaseUrl
-        {
-            get { return settings.BaseUrl; }
-        }
-
+        public override string Type => GetType().Name;
     }
 }

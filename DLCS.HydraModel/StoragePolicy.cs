@@ -1,4 +1,3 @@
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -19,12 +18,12 @@ namespace DLCS.HydraModel
         {
         }
 
-        public StoragePolicy(HydraSettings settings, string storagePolicyId, long maximumNumberOfStoredImages, long maximumTotalSizeOfStoredImages)
+        public StoragePolicy(string baseUrl, string storagePolicyId, long maximumNumberOfStoredImages, long maximumTotalSizeOfStoredImages)
         {
             ModelId = storagePolicyId;
             MaximumNumberOfStoredImages = maximumNumberOfStoredImages;
             MaximumTotalSizeOfStoredImages = maximumTotalSizeOfStoredImages;
-            Init(settings, true, storagePolicyId);
+            Init(baseUrl, true, storagePolicyId);
         }
 
         [RdfProperty(Description = "The maximum number of images that can be registered, across ALL the Customer's spaces",

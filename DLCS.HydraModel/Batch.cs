@@ -1,5 +1,4 @@
 using System;
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -20,7 +19,7 @@ namespace DLCS.HydraModel
 
         public Batch() { }
 
-        public Batch(HydraSettings settings, int modelId, int customerId, DateTime submitted)
+        public Batch(string baseUrl, int modelId, int customerId, DateTime submitted)
         {
 
             ModelId = modelId;
@@ -30,7 +29,7 @@ namespace DLCS.HydraModel
             //Finished = finished;
             //Errors = errors;
             //EstCompletion = estCompletion;
-            Init(settings, true, customerId, ModelId);
+            Init(baseUrl, true, customerId, ModelId);
         }
 
 

@@ -1,5 +1,4 @@
 using System;
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -23,7 +22,7 @@ namespace DLCS.HydraModel
         {
         }
 
-        public Image(HydraSettings settings, int customerId, int space, string imageId, 
+        public Image(string baseUrl, int customerId, int space, string imageId, 
             DateTime created, string origin, string initialOrigin,
             int width, int height, int maxUnauthorised,
             DateTime? queued, DateTime? dequeued, DateTime? finished, bool ingesting, string error,
@@ -35,7 +34,7 @@ namespace DLCS.HydraModel
             ModelId = imageId;
             CustomerId = customerId;
             Space = space;
-            Init(settings, true, customerId, space, ModelId);
+            Init(baseUrl, true, customerId, space, ModelId);
             InfoJson = "https://mock.dlcs.io" + mockDlcsPathTemplate;
             DegradedInfoJson = "https://mock.degraded.dlcs.io" + mockDlcsPathTemplate;
             ThumbnailInfoJson = "https://mock.thumbs.dlcs.io" + mockDlcsPathTemplate;

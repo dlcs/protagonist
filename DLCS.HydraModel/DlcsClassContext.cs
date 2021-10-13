@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Reflection;
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Newtonsoft.Json;
 
@@ -9,18 +8,18 @@ namespace DLCS.HydraModel
 {
     public class DlcsClassContext : HydraClassContext
     {
-        public DlcsClassContext(HydraSettings settings)
+        public DlcsClassContext(string baseUrl)
         {
-            Add("vocab", settings.Vocab);
+            Add("vocab", baseUrl + "/vocab#");
         }
 
-        public DlcsClassContext(HydraSettings settings, Type resourceType) : this(settings)
+        public DlcsClassContext(string baseUrl, Type resourceType) : this(baseUrl)
         {
             AddThroughReflection(resourceType);
         }
 
-        public DlcsClassContext(HydraSettings settings, string typeName) : 
-            this(settings, Assembly.GetExecutingAssembly().GetType(typeName))
+        public DlcsClassContext(string baseUrl, string typeName) : 
+            this(baseUrl, Assembly.GetExecutingAssembly().GetType(typeName))
         {
         }
 

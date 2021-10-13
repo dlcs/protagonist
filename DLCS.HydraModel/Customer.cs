@@ -1,4 +1,3 @@
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -20,12 +19,12 @@ namespace DLCS.HydraModel
         {
         }
 
-        public Customer(HydraSettings settings, int customerId, string name, string displayName)
+        public Customer(string baseUrl, int customerId, string name, string displayName)
         {
             ModelId = customerId;
             Name = name;
             DisplayName = displayName;
-            Init(settings, true, customerId);
+            Init(baseUrl, true, customerId);
         }
         
         [RdfProperty(Description = "The URL-friendly name of the customer", 

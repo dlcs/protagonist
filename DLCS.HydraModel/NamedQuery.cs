@@ -1,4 +1,3 @@
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -34,14 +33,14 @@ namespace DLCS.HydraModel
 
         public NamedQuery() { }
 
-        public NamedQuery(HydraSettings settings, int customerId, string modelId, string name, bool global, string template)
+        public NamedQuery(string baseUrl, int customerId, string modelId, string name, bool global, string template)
         {
             CustomerId = customerId;
             ModelId = modelId;
             Name = name;
             Global = global;
             Template = template;
-            Init(settings, true, customerId, ModelId);
+            Init(baseUrl, true, customerId, ModelId);
         }
 
 

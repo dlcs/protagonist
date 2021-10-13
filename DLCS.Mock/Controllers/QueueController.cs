@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DLCS.HydraModel;
-using DLCS.HydraModel.Settings;
 using DLCS.Mock.ApiApp;
 using Hydra.Collections;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace DLCS.Mock.Controllers
 {
@@ -14,14 +12,11 @@ namespace DLCS.Mock.Controllers
     public class QueueController : ControllerBase
     {
         private readonly MockModel model;
-        private readonly HydraSettings settings;
         
         public QueueController(
-            IOptions<HydraSettings> options, 
             MockModel model)
         {
             this.model = model;
-            settings = options.Value;
         }
         
         [HttpGet]
@@ -43,11 +38,11 @@ namespace DLCS.Mock.Controllers
             List<Image> initialisedImages = new List<Image>();
 
             var newBatchId = model.Batches.Select(b => b.ModelId).Max() + 1;
-            var batch = new Batch(settings, newBatchId, customerId, DateTime.Now);
+            var batch = new Batch(model.BaseUrl, newBatchId, customerId, DateTime.Now);
             model.Batches.Add(batch);
             foreach (var incomingImage in images.Members)
             {
-                var newImage = new Image(settings, customerId, incomingImage.Space, incomingImage.ModelId, 
+                var newImage = new Image(model.BaseUrl, customerId, incomingImage.Space, incomingImage.ModelId, 
                     DateTime.Now, incomingImage.Origin, incomingImage.InitialOrigin,
                     0, 0, incomingImage.MaxUnauthorised, null, null, null, true, null, 
                     incomingImage.Tags, incomingImage.String1, incomingImage.String2, incomingImage.String3,

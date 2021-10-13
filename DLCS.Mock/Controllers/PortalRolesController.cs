@@ -1,11 +1,9 @@
 using System.Linq;
 using DLCS.HydraModel;
-using DLCS.HydraModel.Settings;
 using DLCS.Mock.ApiApp;
 using Hydra.Collections;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace DLCS.Mock.Controllers
 {

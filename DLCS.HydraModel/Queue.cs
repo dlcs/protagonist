@@ -1,4 +1,3 @@
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -19,10 +18,10 @@ namespace DLCS.HydraModel
         {
         }
 
-        public Queue(HydraSettings settings, int customerId)
+        public Queue(string baseUrl, int customerId)
         {
             ModelId = customerId;
-            Init(settings, true, customerId);
+            Init(baseUrl, true, customerId);
         }
 
         [RdfProperty(Description = "Number of total images in your queue, across all batches",

@@ -1,4 +1,3 @@
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -23,13 +22,13 @@ namespace DLCS.HydraModel
 
         public RoleProvider() { }
 
-        public RoleProvider(HydraSettings settings, int customerId, string authServiceId, string configuration, string credentials)
+        public RoleProvider(string baseUrl, int customerId, string authServiceId, string configuration, string credentials)
         {
             CustomerId = customerId;
             ModelId = authServiceId;
             Configuration = configuration;
             Credentials = credentials;
-            Init(settings, true, customerId, ModelId);
+            Init(baseUrl, true, customerId, ModelId);
         }
 
         [RdfProperty(Description = "JSON configuration blob for this particular service",

@@ -1,5 +1,4 @@
 using System;
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -20,14 +19,14 @@ namespace DLCS.HydraModel
 
         public PortalUser() { }
 
-        public PortalUser(HydraSettings settings, int customerId, string userId, string email, DateTime created, bool enabled)
+        public PortalUser(string baseUrl, int customerId, string userId, string email, DateTime created, bool enabled)
         {
             CustomerId = customerId;
             ModelId = userId;
             Email = email;
             Created = created;
             Enabled = enabled;
-            Init(settings, true, customerId, ModelId);
+            Init(baseUrl, true, customerId, ModelId);
         }
 
 

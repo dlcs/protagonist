@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using DLCS.HydraModel;
-using DLCS.HydraModel.Settings;
 using DLCS.Mock.ApiApp;
 using Hydra.Collections;
 using Microsoft.AspNetCore.Http.Extensions;
@@ -15,14 +14,11 @@ namespace DLCS.Mock.Controllers
     public class CustomersController : ControllerBase
     {
         private readonly MockModel model;
-        private readonly HydraSettings settings;
         
         public CustomersController(
-            IOptions<HydraSettings> options, 
             MockModel model)
         {
             this.model = model;
-            settings = options.Value;
         }
         
         [HttpGet]
@@ -148,7 +144,7 @@ namespace DLCS.Mock.Controllers
             // obviously not thread safe..
             var modelId = model.Spaces.Select(s => s.ModelId).Max() + 1;
             var newSpace = new Space(
-                settings, modelId, customerId, space.Name, DateTime.Now, space.DefaultTags, space.DefaultMaxUnauthorised);
+                model.BaseUrl, modelId, customerId, space.Name, DateTime.Now, space.DefaultTags, space.DefaultMaxUnauthorised);
             model.Spaces.Add(newSpace);
             return Created(newSpace.Id, space);
         }

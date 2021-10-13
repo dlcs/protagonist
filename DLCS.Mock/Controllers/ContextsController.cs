@@ -1,24 +1,23 @@
 using DLCS.HydraModel;
-using DLCS.HydraModel.Settings;
+using DLCS.Mock.ApiApp;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace DLCS.Mock.Controllers
 {
     public class ContextsController : ControllerBase
     {
-        private readonly HydraSettings settings;
+        private readonly MockModel model;
             
-        public ContextsController(IOptions<HydraSettings> options)
+        public ContextsController(MockModel model)
         {
-            settings = options.Value;
+            this.model = model;
         }
         
         [HttpGet]
         [Route("/contexts/{typeName}.jsonld")]
         public DlcsClassContext Index(string typeName)
         {
-            return new(settings, typeName);
+            return new(model.BaseUrl, typeName);
         }
     }
 }

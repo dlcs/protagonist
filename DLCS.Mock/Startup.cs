@@ -1,4 +1,3 @@
-using DLCS.HydraModel.Settings;
 using DLCS.Mock.ApiApp;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -24,9 +23,7 @@ namespace DLCS.Mock
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<HydraSettings>(Configuration.GetSection("Hydra"));
-            var hydraSettings = Configuration.GetSection("Hydra").Get<HydraSettings>();
-            services.AddSingleton<MockModel>(new MockModel(hydraSettings));
+            services.AddSingleton<MockModel>();
             services.AddControllers(options =>
             {
                 options.Filters.Add(typeof(AddHydraApiHeaderFilter));

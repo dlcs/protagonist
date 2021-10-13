@@ -2,12 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DLCS.HydraModel;
-using DLCS.HydraModel.Settings;
 using DLCS.Mock.ApiApp;
 using Hydra.Collections;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace DLCS.Mock.Controllers
 {
@@ -15,14 +13,11 @@ namespace DLCS.Mock.Controllers
     public class SpaceImagesController : ControllerBase
     { 
         private readonly MockModel model;
-        private readonly HydraSettings settings;
         
         public SpaceImagesController(
-            IOptions<HydraSettings> options, 
             MockModel model)
         {
             this.model = model;
-            settings = options.Value;
         }
         
         [HttpGet]
@@ -105,7 +100,7 @@ namespace DLCS.Mock.Controllers
         [Route("/customers/{customerId}/spaces/{spaceId}/images/{id}")]
         public Image Image(int customerId, int spaceId, string id, [FromBody]Image incomingImage)
         {
-            var newImage = new Image(settings, customerId, spaceId, incomingImage.ModelId,
+            var newImage = new Image(model.BaseUrl, customerId, spaceId, incomingImage.ModelId,
                     DateTime.Now, incomingImage.Origin, incomingImage.InitialOrigin,
                     0, 0, incomingImage.MaxUnauthorised, null, null, null, true, null,
                     incomingImage.Tags, incomingImage.String1, incomingImage.String2, incomingImage.String3,

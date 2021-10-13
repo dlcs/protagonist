@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -31,7 +30,7 @@ namespace DLCS.HydraModel
 
         public AuthService() { }
 
-        public AuthService(HydraSettings settings, int customerId, string serviceId, string name, string profile, int ttl,
+        public AuthService(string baseUrl, int customerId, string serviceId, string name, string profile, int ttl,
             string label, string description, string pageLabel, string pageDescription, string callToAction)
         {
             CustomerId = customerId;
@@ -44,7 +43,7 @@ namespace DLCS.HydraModel
             PageLabel = pageLabel;
             PageDescription = pageDescription;
             CallToAction = callToAction;
-            Init(settings, true, customerId, ModelId);
+            Init(baseUrl, true, customerId, ModelId);
         }
         
         [RdfProperty(Description = "Name of service",

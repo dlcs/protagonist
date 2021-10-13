@@ -1,4 +1,3 @@
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -18,12 +17,12 @@ namespace DLCS.HydraModel
         {
         }
 
-        public ThumbnailPolicy(HydraSettings settings, string thumbnailPolicyId, string name, int[] sizes)
+        public ThumbnailPolicy(string baseUrl, string thumbnailPolicyId, string name, int[] sizes)
         {
             ModelId = thumbnailPolicyId;
             Name = name;
             Sizes = sizes;
-            Init(settings, true, thumbnailPolicyId);
+            Init(baseUrl, true, thumbnailPolicyId);
         }
 
         [RdfProperty(Description = "The human readable name of the image policy",

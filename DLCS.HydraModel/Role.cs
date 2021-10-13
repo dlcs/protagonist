@@ -1,4 +1,3 @@
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -20,14 +19,14 @@ namespace DLCS.HydraModel
 
         public Role() { }
 
-        public Role(HydraSettings settings, int customerId, string roleId, string name, string label, string[] aliases)
+        public Role(string baseUrl, int customerId, string roleId, string name, string label, string[] aliases)
         {
             CustomerId = customerId;
             ModelId = roleId;
             Name = name;
             Label = label;
             Aliases = aliases;
-            Init(settings, true, customerId, ModelId);
+            Init(baseUrl, true, customerId, ModelId);
         }
 
 

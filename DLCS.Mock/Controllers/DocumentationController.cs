@@ -2,29 +2,26 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using DLCS.HydraModel.Settings;
 using Hydra;
 using DLCS.Mock.ApiApp;
 using Hydra.Model;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-//using WebGrease.Css.Ast.Selectors;
 
 namespace DLCS.Mock.Controllers
 {
     [ApiController]
     public class DocumentationController : ControllerBase
     {
-        private readonly HydraSettings settings;
+        private readonly MockModel model;
+        private readonly IWebHostEnvironment hostEnvironment;
         private static Dictionary<string, object> _supportedClasses;
-        private IWebHostEnvironment hostEnvironment;
 
         public DocumentationController(
-            IOptions<HydraSettings> options,
+            MockModel model,
             IWebHostEnvironment hostEnvironment)
         {
-            settings = options.Value;
+            this.model = model;
             this.hostEnvironment = hostEnvironment;
         }
 
@@ -34,7 +31,8 @@ namespace DLCS.Mock.Controllers
         {
             EnsureClasses();
             var classes = _supportedClasses.Values.Cast<Class>().ToArray();
-            var vocab = new ApiDocumentation(settings.Vocab, settings.Vocab, classes);
+            var vocabId = model.BaseUrl + "/vocab#";
+            var vocab = new ApiDocumentation(vocabId, vocabId, classes);
             if (format != null)
             {
                 string docRoot = Path.Combine(hostEnvironment.WebRootPath, "api-generated-docs");

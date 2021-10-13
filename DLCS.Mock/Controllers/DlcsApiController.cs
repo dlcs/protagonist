@@ -1,19 +1,18 @@
 using DLCS.HydraModel;
-using DLCS.HydraModel.Settings;
 using DLCS.Mock.ApiApp;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace DLCS.Mock.Controllers
 {
     [ApiController]
     public class DlcsApiController : ControllerBase
     {
-        private readonly HydraSettings settings;
+        private readonly MockModel model;
         
-        public DlcsApiController(IOptions<HydraSettings> options)
+        public DlcsApiController(
+            MockModel model)
         {
-            settings = options.Value;
+            this.model = model;
         }
         
         [HttpGet]
@@ -21,7 +20,7 @@ namespace DLCS.Mock.Controllers
         public EntryPoint Index()
         {
             var ep = new EntryPoint();
-            ep.Init(settings, true);
+            ep.Init(model.BaseUrl, true);
             return ep;
         }
         

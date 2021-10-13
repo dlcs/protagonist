@@ -1,5 +1,4 @@
 using System;
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -23,7 +22,7 @@ namespace DLCS.HydraModel
 
         public Space() { }
 
-        public Space(HydraSettings settings, int modelId, int customerId, string name, DateTime created, string[] defaultTags, int defaultMaxUnauthorised)
+        public Space(string baseUrl, int modelId, int customerId, string name, DateTime created, string[] defaultTags, int defaultMaxUnauthorised)
         {
             ModelId = modelId;
             CustomerId = customerId;
@@ -31,7 +30,7 @@ namespace DLCS.HydraModel
             Created = created;
             DefaultTags = defaultTags;
             DefaultMaxUnauthorised = defaultMaxUnauthorised;
-            Init(settings, true, customerId, ModelId);
+            Init(baseUrl, true, customerId, ModelId);
         }
 
 

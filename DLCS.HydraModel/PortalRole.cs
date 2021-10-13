@@ -1,4 +1,3 @@
-using DLCS.HydraModel.Settings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -16,11 +15,11 @@ namespace DLCS.HydraModel
 
         public PortalRole() { }
 
-        public PortalRole(HydraSettings settings, string portalRoleId, string name)
+        public PortalRole(string baseUrl, string portalRoleId, string name)
         {
             ModelId = portalRoleId;
             Name = name;
-            Init(settings, true, portalRoleId);
+            Init(baseUrl, true, portalRoleId);
         }
 
         [RdfProperty(Description = "The human readable name of the origin strategy",
