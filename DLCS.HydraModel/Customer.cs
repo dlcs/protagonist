@@ -6,7 +6,7 @@ namespace DLCS.HydraModel
 {
     [HydraClass(typeof(CustomerClass), 
         Description = "A customer represents you, the API user. You only have access to one customer, " +
-                      "so it is your effective entry point for the API. The only interation you can have with " +
+                      "so it is your effective entry point for the API. The only interaction you can have with " +
                       "your Customer resource directly is updating the display name, but it provides links (🔗) to" +
                       "collections of all the other resources.",
         UriTemplate = "/customers/{0}")]

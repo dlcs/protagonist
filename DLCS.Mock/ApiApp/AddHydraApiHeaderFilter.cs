@@ -7,7 +7,7 @@ namespace DLCS.Mock.ApiApp
 {
     public class AddHydraApiHeaderFilter : ActionFilterAttribute
     {
-        private MockModel model;
+        private readonly MockModel model;
 
         public AddHydraApiHeaderFilter(MockModel model)
         {
