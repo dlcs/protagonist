@@ -28,13 +28,7 @@ namespace DLCS.Model.Assets.NamedQueries
         /// </summary>
         /// <remarks>This is currently not used, needs to be implemented</remarks>
         public QueryMapping Manifest { get; set; } = QueryMapping.Unset;
-        
-        /// <summary>
-        /// Which Asset property to use for specifying Sequence 
-        /// </summary>
-        /// <remarks>This is currently not used, needs to be implemented</remarks>
-        public QueryMapping Sequence { get; set; } = QueryMapping.Unset;
-        
+
         /// <summary>
         /// Which Asset property to use for specifying Canvas sequence 
         /// </summary>

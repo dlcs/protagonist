@@ -17,13 +17,16 @@ namespace Orchestrator.Infrastructure.NamedQueries
     {
         private readonly ILogger<BasicNamedQueryParser> logger;
         private const string AdditionalArgMarker = "#";
+        
+        // IIIF specific
         private const string Element = "canvas";
         private const string Manifest = "manifest";
+
+        // Common/source
         private const string Number1 = "n1";
         private const string Number2 = "n2";
         private const string Number3 = "n3";
         private const string ParameterPrefix = "p";
-        private const string Sequence = "sequence";
         private const string Space = "space";
         private const string SpaceName = "spacename";
         private const string String1 = "s1";
@@ -95,9 +98,6 @@ namespace Orchestrator.Infrastructure.NamedQueries
                             break;
                         case Manifest:
                             assetQuery.Manifest = GetQueryMappingFromTemplateElement(elements[1]);
-                            break;
-                        case Sequence:
-                            assetQuery.Sequence = GetQueryMappingFromTemplateElement(elements[1]);
                             break;
                         case Element:
                             assetQuery.Canvas = GetQueryMappingFromTemplateElement(elements[1]);

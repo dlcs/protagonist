@@ -102,6 +102,7 @@ namespace DLCS.Repository.Assets
                     .Select(arg => arg.Image);
             }
 
+            // NOTE: We may need to revisit and not materialise at this point
             var images = await imageFilter.ToListAsync();
             return images;
         }

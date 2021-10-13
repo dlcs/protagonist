@@ -52,19 +52,19 @@ namespace Orchestrator.Infrastructure
             try
             {
                 var request = generateRequest();
-                var infoJsonResponse = await mediator.Send(request, cancellationToken);
+                var descriptionResource = await mediator.Send(request, cancellationToken);
                 
-                if (infoJsonResponse.IsBadRequest) return BadRequest();
-                if (!infoJsonResponse.HasResource) return NotFound();
+                if (descriptionResource.IsBadRequest) return BadRequest();
+                if (!descriptionResource.HasResource) return NotFound();
 
-                if (infoJsonResponse.IsUnauthorised)
+                if (descriptionResource.IsUnauthorised)
                 {
                     Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 }
 
-                SetCacheControl(infoJsonResponse.RequiresAuth);
+                SetCacheControl(descriptionResource.RequiresAuth);
                 HttpContext.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
-                return Content(infoJsonResponse.DescriptionResource, "application/json");
+                return Content(descriptionResource.DescriptionResource, "application/json");
             }
             catch (KeyNotFoundException ex)
             {

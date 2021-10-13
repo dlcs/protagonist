@@ -103,11 +103,11 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             },
             new object[]
             {
-                "manifest=s1&sequence=n1&canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
+                "manifest=s1&canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
                 new ParsedNamedQuery(Customer)
                 {
                     String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
-                    Sequence = ParsedNamedQuery.QueryMapping.Number1, Canvas = ParsedNamedQuery.QueryMapping.Number2
+                    Canvas = ParsedNamedQuery.QueryMapping.Number2
                 },
                 "All params"
             },
@@ -117,17 +117,17 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
                 new ParsedNamedQuery(Customer)
                 {
                     String1 = "string-1", Number1 = 40, Space = 10, Manifest = ParsedNamedQuery.QueryMapping.String1,
-                    Sequence = ParsedNamedQuery.QueryMapping.Number1, Canvas = ParsedNamedQuery.QueryMapping.Number2
+                    Canvas = ParsedNamedQuery.QueryMapping.Number2
                 },
                 "Extra args are ignored"
             },
             new object[]
             {
-                "manifest=s1&&sequence=n1&n3=&canvas=n2&=10&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
+                "manifest=s1&&n3=&canvas=n2&=10&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
                 new ParsedNamedQuery(Customer)
                 {
                     String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
-                    Sequence = ParsedNamedQuery.QueryMapping.Number1, Canvas = ParsedNamedQuery.QueryMapping.Number2
+                    Canvas = ParsedNamedQuery.QueryMapping.Number2
                 },
                 "Incorrect template pairs are ignored"
             },
