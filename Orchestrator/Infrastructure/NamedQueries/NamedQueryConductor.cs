@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
+using Microsoft.Extensions.Logging;
 
 namespace Orchestrator.Infrastructure.NamedQueries
 {
@@ -13,12 +14,15 @@ namespace Orchestrator.Infrastructure.NamedQueries
     public class NamedQueryConductor
     {
         private readonly INamedQueryRepository namedQueryRepository;
-        private readonly INamedQueryParser basicNamedQueryParser;
+        private readonly INamedQueryParser namedQueryParser;
+        private readonly ILogger<NamedQueryConductor> logger;
 
-        public NamedQueryConductor(INamedQueryRepository namedQueryRepository, INamedQueryParser basicNamedQueryParser)
+        public NamedQueryConductor(INamedQueryRepository namedQueryRepository, INamedQueryParser namedQueryParser,
+            ILogger<NamedQueryConductor> logger)
         {
             this.namedQueryRepository = namedQueryRepository;
-            this.basicNamedQueryParser = basicNamedQueryParser;
+            this.namedQueryParser = namedQueryParser;
+            this.logger = logger;
         }
         
         /// <summary>
@@ -27,7 +31,7 @@ namespace Orchestrator.Infrastructure.NamedQueries
         /// <param name="queryName">Name of NQ to use</param>
         /// <param name="customerPathElement">CustomerPathElement used in request</param>
         /// <param name="args">Collection of NQ args passed in url (e.g. /2/my-images/99</param>
-        public async Task<NamedQueryResult> GetNamedQueryAssetsForRequest(string queryName, 
+        public async Task<NamedQueryResult> GetNamedQueryResult(string queryName, 
             CustomerPathElement customerPathElement,
             string? args)
         {
@@ -37,11 +41,17 @@ namespace Orchestrator.Infrastructure.NamedQueries
                 return NamedQueryResult.Empty();
             }
             
-            var assetQuery =
-                basicNamedQueryParser.GenerateParsedNamedQueryFromRequest(customerPathElement, args, namedQuery.Template);
+            var parsedNamedQuery =
+                namedQueryParser.GenerateParsedNamedQueryFromRequest(customerPathElement, args, namedQuery.Template);
+
+            if (parsedNamedQuery.IsFaulty)
+            {
+                logger.LogInformation("Received faulted ParseNQ for {QueryName} with {QueryArgs}", queryName, args);
+                return new NamedQueryResult(parsedNamedQuery, Enumerable.Empty<Asset>());
+            }
             
-            var matchingImages = await namedQueryRepository.GetNamedQueryResults(assetQuery);
-            return new NamedQueryResult(assetQuery, matchingImages);
+            var matchingImages = await namedQueryRepository.GetNamedQueryResults(parsedNamedQuery);
+            return new NamedQueryResult(parsedNamedQuery, matchingImages);
         }
     }
 

@@ -54,7 +54,7 @@ namespace Orchestrator.Features.NamedQueries.Requests
             var customerPathElement = await pathCustomerRepository.GetCustomer(request.CustomerPathValue);
 
             var namedQueryResult =
-                await namedQueryConductor.GetNamedQueryAssetsForRequest(request.NamedQuery, customerPathElement,
+                await namedQueryConductor.GetNamedQueryResult(request.NamedQuery, customerPathElement,
                     request.NamedQueryArgs);
             
             if (namedQueryResult.Results.IsNullOrEmpty()) return DescriptionResourceResponse.Empty;
