@@ -62,9 +62,9 @@ namespace DLCS.HydraModel
         }
 
 
-        [RdfProperty(Description = "The identifier for the image within the space - its URI component. TODO - this shoud not be exposed in the API, use the URI instead?",
+        [RdfProperty(Description = "The identifier for the image within the space - its URI component. TODO - this should not be exposed in the API, use the URI instead?",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-        [JsonProperty(Order = 10, PropertyName = "modelId")]
+        [JsonProperty(Order = 10, PropertyName = "id")]
         public string ModelId { get; set; }
 
 
