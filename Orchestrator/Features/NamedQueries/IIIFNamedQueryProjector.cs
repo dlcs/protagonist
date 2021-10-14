@@ -29,7 +29,7 @@ using Version = IIIF.Presentation.Version;
 namespace Orchestrator.Features.NamedQueries
 {
     /// <summary>
-    /// Methods for generating IIIF results from 
+    /// Methods for generating IIIF results from NamedQueries
     /// </summary>
     public class IIIFNamedQueryProjector
     {
@@ -58,7 +58,7 @@ namespace Orchestrator.Features.NamedQueries
                 : await GenerateV3Manifest(result, request, namedQueryName);
         
         
-        public async Task<JsonLdBase> GenerateV2Manifest(NamedQueryResult result, HttpRequest request, string namedQueryName)
+        private async Task<JsonLdBase> GenerateV2Manifest(NamedQueryResult result, HttpRequest request, string namedQueryName)
         {
             var rootUrl = HttpRequestX.GetDisplayUrl(request);
             var manifest = new IIIF2.Manifest
@@ -81,7 +81,7 @@ namespace Orchestrator.Features.NamedQueries
             return manifest;
         }
 
-        public async Task<JsonLdBase> GenerateV3Manifest(NamedQueryResult result, HttpRequest request, string namedQueryName)
+        private async Task<JsonLdBase> GenerateV3Manifest(NamedQueryResult result, HttpRequest request, string namedQueryName)
         {
             const string language = "en";
             var manifest = new IIIF3.Manifest
