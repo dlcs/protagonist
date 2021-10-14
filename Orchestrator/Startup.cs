@@ -105,6 +105,7 @@ namespace Orchestrator
                 .AddScoped<AuthCookieManager>()
                 .AddSingleton<INamedQueryParser, BasicNamedQueryParser>()
                 .AddScoped<INamedQueryRepository, NamedQueryRepository>()
+                .AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>()
                 .AddScoped<NamedQueryConductor>()
                 .AddScoped<IIIFNamedQueryProjector>()
                 .AddSingleton<AssetRequestProcessor>()

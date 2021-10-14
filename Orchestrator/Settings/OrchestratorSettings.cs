@@ -67,6 +67,12 @@ namespace Orchestrator.Settings
         /// </summary>
         public Uri ApiRoot { get; set; }
 
+        /// <summary>
+        /// The thumbnail that is the default target size for rendering manifests such as NQs. We won't necessarily
+        /// render a thumbnail of this size but will aim to get as close as possible.
+        /// </summary>
+        public int TargetThumbnailSize { get; set; } = 300;
+
         public ProxySettings Proxy { get; set; }
         
         public CacheSettings Caching { get; set; }

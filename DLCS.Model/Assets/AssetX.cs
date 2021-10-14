@@ -11,7 +11,7 @@ namespace DLCS.Model.Assets
     public static class AssetX
     {
         /// <summary>
-        /// Get a list of all available thumbsizes for asset, based on thumbnail policy. 
+        /// Get a list of all available thumbnail sizes for asset, based on thumbnail policy. 
         /// </summary>
         /// <param name="asset">Asset to extract thumbnails sizes for.</param>
         /// <param name="thumbnailPolicy">The thumbnail policy to use to calculate thumb sizes.</param>
@@ -19,11 +19,12 @@ namespace DLCS.Model.Assets
         /// <param name="includeUnavailable">Whether to include unavailable sizes or not.</param>
         /// <returns>List of available thumbnail <see cref="Size"/></returns>
         public static List<Size> GetAvailableThumbSizes(this Asset asset, ThumbnailPolicy thumbnailPolicy,
-            out (int maxBoundedSize, int maxAvailableWidth, int maxAvailableHeight) maxDimensions, bool includeUnavailable = false)
+            out (int maxBoundedSize, int maxAvailableWidth, int maxAvailableHeight) maxDimensions,
+            bool includeUnavailable = false)
         {
             asset.ThrowIfNull(nameof(asset));
             thumbnailPolicy.ThrowIfNull(nameof(thumbnailPolicy));
-            
+
             var availableSizes = new List<Size>();
 
             var size = new Size(asset.Width, asset.Height);
@@ -34,7 +35,7 @@ namespace DLCS.Model.Assets
 
             foreach (int boundingSize in thumbnailPolicy.SizeList)
             {
-                if (!includeUnavailable && AssetIsUnavailable(asset, boundingSize))
+                if (!includeUnavailable && AssetIsUnavailableForSize(asset, boundingSize))
                 {
                     continue;
                 }
@@ -53,7 +54,7 @@ namespace DLCS.Model.Assets
             return availableSizes;
         }
 
-        private static bool AssetIsUnavailable(Asset asset, int boundingSize)
+        private static bool AssetIsUnavailableForSize(Asset asset, int boundingSize)
             => asset.RequiresAuth && boundingSize > asset.MaxUnauthorised;
     }
 }

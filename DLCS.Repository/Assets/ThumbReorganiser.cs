@@ -73,9 +73,7 @@ namespace DLCS.Repository.Assets
             var boundingSquares = policy.SizeList.OrderByDescending(i => i).ToList();
 
             var thumbnailSizes = new ThumbnailSizes(boundingSquares.Count);
-
-            var existingSizes = GetExistingSizesList(thumbnailSizes, keysInTargetBucket);
-
+            
             foreach (int boundingSquare in boundingSquares)
             {
                 var thumb = Size.Confine(boundingSquare, realSize);
@@ -88,6 +86,8 @@ namespace DLCS.Repository.Assets
                     thumbnailSizes.AddAuth(thumb);
                 }
             }
+
+            var existingSizes = GetExistingSizesList(thumbnailSizes, keysInTargetBucket);
 
             // All the thumbnail jpgs will already exist and need copied up to root
             await CreateThumbnails(rootKey, boundingSquares, thumbnailSizes, existingSizes);

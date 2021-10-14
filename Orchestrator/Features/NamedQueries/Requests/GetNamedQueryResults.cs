@@ -64,7 +64,7 @@ namespace Orchestrator.Features.NamedQueries.Requests
             if (namedQueryResult.Query is { IsFaulty: true }) return DescriptionResourceResponse.BadRequest();
             if (namedQueryResult.Results.IsNullOrEmpty()) return DescriptionResourceResponse.Empty;
 
-            var manifest = iiifNamedQueryProjector.GenerateIIIFPresentation(
+            var manifest = await iiifNamedQueryProjector.GenerateIIIFPresentation(
                 namedQueryResult,
                 httpContextAccessor.HttpContext.Request,
                 request.IIIFPresentationVersion,
