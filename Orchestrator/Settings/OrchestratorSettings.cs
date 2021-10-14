@@ -49,7 +49,19 @@ namespace Orchestrator.Settings
         /// String used for salting requests to API
         /// </summary>
         public string ApiSalt { get; set; }
-        
+
+        /// <summary>
+        /// Default Presentation API Version to conform to when returning resources from 
+        /// </summary>
+        public string DefaultIIIFPresentationVersion { get; set; } = "3.0";
+
+        /// <summary>
+        /// Get default Presentation API Version to conform to when returning resources from as enum.
+        /// Defaults to V3 if unsupported, or unknown version specified
+        /// </summary>
+        public IIIF.Presentation.Version GetDefaultIIIFPresentationVersion() 
+            => DefaultIIIFPresentationVersion[1] == '2' ? IIIF.Presentation.Version.V2 : IIIF.Presentation.Version.V3;
+
         /// <summary>
         /// Root URL for dlcs api
         /// </summary>

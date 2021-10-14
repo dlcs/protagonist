@@ -40,12 +40,14 @@ namespace Orchestrator.Infrastructure
         /// and sets appropriate headers on response.
         /// </summary>
         /// <param name="generateRequest">Function to generate mediatr request.</param>
+        /// <param name="contentType">Content-type header, used for successful response</param>
         /// <param name="cancellationToken">Current cancellation token.</param>
         /// <typeparam name="T">
         /// Type of mediatr request, must be <see cref="IAssetRequest"/> and return <see cref="DescriptionResourceResponse"/>
         /// </typeparam>
         /// <returns>IActionResult, will be NotFoundResult ,BadRequestResult or ContentResult if successful</returns>
         protected async Task<IActionResult> GenerateIIIFDescriptionResource<T>(Func<T> generateRequest,
+            string contentType = "application/json",
             CancellationToken cancellationToken = default)
             where T : IRequest<DescriptionResourceResponse>
         {
@@ -64,7 +66,7 @@ namespace Orchestrator.Infrastructure
 
                 SetCacheControl(descriptionResource.RequiresAuth);
                 HttpContext.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
-                return Content(descriptionResource.DescriptionResource, "application/json");
+                return Content(descriptionResource.DescriptionResource, contentType);
             }
             catch (KeyNotFoundException ex)
             {

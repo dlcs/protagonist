@@ -47,6 +47,6 @@ namespace Orchestrator.Features.Images
         public Task<IActionResult> InfoJson([FromQuery] bool noOrchestrate = false,
             CancellationToken cancellationToken = default)
             => GenerateIIIFDescriptionResource(() => new GetImageInfoJson(HttpContext.Request.Path, noOrchestrate),
-                cancellationToken);
+                cancellationToken: cancellationToken);
     }
 }

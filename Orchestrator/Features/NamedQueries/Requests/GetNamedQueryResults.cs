@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests;
+using IIIF.Presentation;
 using IIIF.Serialisation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -21,12 +22,16 @@ namespace Orchestrator.Features.NamedQueries.Requests
         public string NamedQuery { get; }
         
         public string? NamedQueryArgs { get; }
+        
+        public Version IIIFPresentationVersion { get; }
 
-        public GetNamedQueryResults(string customerPathValue, string namedQuery, string? namedQueryArgs)
+        public GetNamedQueryResults(string customerPathValue, string namedQuery, string? namedQueryArgs,
+            Version version)
         {
             CustomerPathValue = customerPathValue;
             NamedQuery = namedQuery;
             NamedQueryArgs = namedQueryArgs;
+            IIIFPresentationVersion = version;
         }
     }
     
