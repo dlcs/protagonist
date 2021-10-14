@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Model.PathElements;
-using DLCS.Web.Requests;
 using IIIF.Presentation;
 using IIIF.Serialisation;
 using MediatR;
@@ -65,8 +64,12 @@ namespace Orchestrator.Features.NamedQueries.Requests
             if (namedQueryResult.Query is { IsFaulty: true }) return DescriptionResourceResponse.BadRequest();
             if (namedQueryResult.Results.IsNullOrEmpty()) return DescriptionResourceResponse.Empty;
 
-            var manifest = iiifNamedQueryProjector.GenerateV2Manifest(namedQueryResult,
-                httpContextAccessor.HttpContext.Request.GetDisplayUrl());
+            var manifest = iiifNamedQueryProjector.GenerateIIIFPresentation(
+                namedQueryResult,
+                httpContextAccessor.HttpContext.Request,
+                request.IIIFPresentationVersion,
+                request.NamedQuery);
+            
             return DescriptionResourceResponse.Open(manifest.AsJson());
         }
     }
