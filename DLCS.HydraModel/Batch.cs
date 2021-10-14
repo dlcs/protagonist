@@ -17,21 +17,14 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         public int CustomerId { get; set; }
 
-        public Batch() { }
-
         public Batch(string baseUrl, int modelId, int customerId, DateTime submitted)
         {
 
             ModelId = modelId;
             CustomerId = customerId;
             Submitted = submitted;
-            //Count = count;
-            //Finished = finished;
-            //Errors = errors;
-            //EstCompletion = estCompletion;
             Init(baseUrl, true, customerId, ModelId);
         }
-
 
         [RdfProperty(Description = "Date the batch was POSTed to the queue",
             Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
@@ -73,23 +66,23 @@ namespace DLCS.HydraModel
         [HydraLink(Description = "Collection of all the images in the batch",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 20, PropertyName = "images")]
-        public string Images { get; set; }
+        public string? Images { get; set; }
 
         [HydraLink(Description = "Collection of images that have completed processing",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 20, PropertyName = "completedImages")]
-        public string CompletedImages { get; set; }
+        public string? CompletedImages { get; set; }
 
         [HydraLink(Description = "Collection of images that encountered errors",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 20, PropertyName = "errorImages")]
-        public string ErrorImages { get; set; }
+        public string? ErrorImages { get; set; }
 
         [HydraLink(Description = "POST to this to force an update of the batch's superseded property. " +
                                  "Returns JSON object with single success property (boolean). ",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 22, PropertyName = "test")]
-        public string Test { get; set; }
+        public string? Test { get; set; }
     }
 
     public class BatchClass : Class

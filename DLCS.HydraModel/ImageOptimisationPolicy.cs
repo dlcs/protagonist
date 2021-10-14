@@ -15,17 +15,12 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         public string ModelId { get; set; }
 
-
-        public ImageOptimisationPolicy()
-        {
-        }
-
         public ImageOptimisationPolicy(string baseUrl, string imageOptimisationPolicyId, string name, string technicalDetails)
         {
             ModelId = imageOptimisationPolicyId;
+            Init(baseUrl, true, imageOptimisationPolicyId);
             Name = name;
             TechnicalDetails = technicalDetails;
-            Init(baseUrl, true, imageOptimisationPolicyId);
         }
 
         [RdfProperty(Description = "The human readable name of the image policy",

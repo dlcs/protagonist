@@ -15,10 +15,20 @@ namespace DLCS.HydraModel
         public int CustomerId { get; set; }
 
         [JsonIgnore]
-        public int? Space { get; set; }
+        public int? SpaceId { get; set; }
 
-        public CustomerStorage()
+        public CustomerStorage(string baseUrl, int customerId, int? spaceId)
         {
+            CustomerId = customerId;
+            SpaceId = spaceId;
+            if (spaceId.HasValue)
+            {
+                Init(baseUrl, false, customerId, spaceId);
+            }
+            else
+            {
+                Init(baseUrl, false, customerId);
+            }
         }
 
         public CustomerStorage(int customerId, int? spaceId, string storagePolicy,
@@ -26,7 +36,7 @@ namespace DLCS.HydraModel
             DateTime lastCalculated)
         {
             CustomerId = customerId;
-            Space = spaceId;
+            SpaceId = spaceId;
             StoragePolicy = storagePolicy;
             NumberOfStoredImages = numberOfStoredImages;
             TotalSizeOfStoredImages = totalSizeOfStoredImages;
@@ -37,17 +47,17 @@ namespace DLCS.HydraModel
         [RdfProperty(Description = "Number of stored images",
             Range = Names.XmlSchema.Integer, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 20, PropertyName = "numberOfStoredImages")]
-        public long NumberOfStoredImages { get; set; }
+        public long? NumberOfStoredImages { get; set; }
 
         [RdfProperty(Description = "Total storage usage for images excluding thumbnails, in bytes",
             Range = Names.XmlSchema.Integer, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 21, PropertyName = "totalSizeOfStoredImages")]
-        public long TotalSizeOfStoredImages { get; set; }
+        public long? TotalSizeOfStoredImages { get; set; }
 
         [RdfProperty(Description = "Total storage usage for thumbnails, in bytes",
             Range = Names.XmlSchema.Integer, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 22, PropertyName = "totalSizeOfThumbnails")]
-        public long TotalSizeOfThumbnails { get; set; }
+        public long? TotalSizeOfThumbnails { get; set; }
 
         [RdfProperty(Description = "When the DLCS last evaluated storage use to generate this resource",
             Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
@@ -59,7 +69,7 @@ namespace DLCS.HydraModel
                                  "a Customer's spaces. ",
             Range = "vocab:StoragePolicy", ReadOnly = true, WriteOnly = false, SetManually = true)]
         [JsonProperty(Order = 81, PropertyName = "storagePolicy")]
-        public string StoragePolicy { get; set; }
+        public string? StoragePolicy { get; set; }
     }
 
 

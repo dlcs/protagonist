@@ -19,21 +19,12 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         public int SpaceId { get; set; }
 
-        public ImageStorage()
-        {
-            
-        }
-
-        public ImageStorage(int customerId, int spaceId, string imageId,
-            int thumbnailSize, int size, DateTime? lastChecked, bool checkingInProgress)
+        public ImageStorage(string baseUrl, int customerId, int spaceId, string imageId)
         {
             CustomerId = customerId;
             SpaceId = spaceId;
             ModelId = imageId;
-            ThumbnailSize = thumbnailSize;
-            Size = size;
-            LastChecked = lastChecked;
-            CheckingInProgress = checkingInProgress;
+            Init(baseUrl, false, customerId, spaceId, imageId);
         }
 
         [RdfProperty(Description = "Storage space taken up by this item's thumbnails",

@@ -224,8 +224,8 @@ namespace DLCS.Mock.ApiApp
         {
             return new List<NamedQuery>
             {
-                new NamedQuery(BaseUrl, customers.GetByName("iiifly").ModelId, "nq1", "bob", false, "template1-here"),
-                new NamedQuery(BaseUrl, customers.GetByName("iiifly").ModelId, "nq2", "manifest", false, "template2-here")
+                MockHelp.MakeNamedQuery(BaseUrl, customers.GetByName("iiifly").ModelId, "nq1", "bob", false, "template1-here"),
+                MockHelp.MakeNamedQuery(BaseUrl, customers.GetByName("iiifly").ModelId, "nq2", "manifest", false, "template2-here")
             };
         }
 
@@ -234,13 +234,13 @@ namespace DLCS.Mock.ApiApp
         {
             return new List<CustomerOriginStrategy>
             {
-                new CustomerOriginStrategy(BaseUrl, customers.GetByName("wellcome").ModelId, 
+                MockHelp.MakeCustomerOriginStrategy(BaseUrl, customers.GetByName("wellcome").ModelId, 
                     101, "https://wellcomelibrary.org/service/asset(.+)", "s3://wellcome/path-to-origin-creds", 
                     originStrategies.Single(os => os.ModelId == "basic_https").Id),
-                new CustomerOriginStrategy(BaseUrl, customers.GetByName("iiifly").ModelId,
+                MockHelp.MakeCustomerOriginStrategy(BaseUrl, customers.GetByName("iiifly").ModelId,
                     102, "https://example.org/images/(.+)", "s3://test/path-to-origin-creds", 
                     originStrategies.Single(os => os.ModelId == "basic_https").Id),
-                new CustomerOriginStrategy(BaseUrl, customers.GetByName("iiifly").ModelId,
+                MockHelp.MakeCustomerOriginStrategy(BaseUrl, customers.GetByName("iiifly").ModelId,
                     103, "ftps://example.org/images/(.+)", "s3://test/path-to-ftp-creds",
                     originStrategies.Single(os => os.ModelId == "ftps_creds").Id)
             };
@@ -252,28 +252,28 @@ namespace DLCS.Mock.ApiApp
             int iiifly = customers.GetByName("iiifly").ModelId;
             var authServices = new List<AuthService>
             {
-                new AuthService(BaseUrl, wellcome, "wellcome-clickthrough-login", "clickthrough", "http://iiif.io/api/auth/0/login", 0,
+                MockHelp.MakeAuthService(BaseUrl, wellcome, "wellcome-clickthrough-login", "clickthrough", "http://iiif.io/api/auth/0/login", 0,
                     "Terms and Conditions", "<p>clickthrough...</p>", 
                     "Terms and Conditions", "<p>More detailed info</p>", "Accept terms"),
-                new AuthService(BaseUrl, wellcome, "wellcome-clickthrough-token", "clickthrough-token", "http://iiif.io/api/auth/0/token", 1800,
+                MockHelp.MakeAuthService(BaseUrl, wellcome, "wellcome-clickthrough-token", "clickthrough-token", "http://iiif.io/api/auth/0/token", 1800,
                     "token service", null, null, null, null),
-                new AuthService(BaseUrl, wellcome, "wellcome-clickthrough-logout", "clickthrough-logout", "http://iiif.io/api/auth/0/logout", 0,
+                MockHelp.MakeAuthService(BaseUrl, wellcome, "wellcome-clickthrough-logout", "clickthrough-logout", "http://iiif.io/api/auth/0/logout", 0,
                     "Forget terms", null, null, null, null),
 
-                new AuthService(BaseUrl, wellcome, "wellcome-delegated-login", "delegated-login", "http://iiif.io/api/auth/0/login", 0,
+                MockHelp.MakeAuthService(BaseUrl, wellcome, "wellcome-delegated-login", "delegated-login", "http://iiif.io/api/auth/0/login", 0,
                     "Log in to view protected material", "<p>More detailed text for login prompt in UV</p>", 
                     null, null, "Log in"),
-                new AuthService(BaseUrl, wellcome, "wellcome-delegated-token", "delegated-token", "http://iiif.io/api/auth/0/token", 1800,
+                MockHelp.MakeAuthService(BaseUrl, wellcome, "wellcome-delegated-token", "delegated-token", "http://iiif.io/api/auth/0/token", 1800,
                     "token service", null, null, null, null),
-                new AuthService(BaseUrl, wellcome, "wellcome-delegated-logout", "delegated-logout", "http://iiif.io/api/auth/0/logout", 0,
+                MockHelp.MakeAuthService(BaseUrl, wellcome, "wellcome-delegated-logout", "delegated-logout", "http://iiif.io/api/auth/0/logout", 0,
                     "Log out", null, null, null, null),
 
-                new AuthService(BaseUrl, iiifly, "iiifly-clickthrough-login", "clickthrough", "http://iiif.io/api/auth/0/login", 0,
+                MockHelp.MakeAuthService(BaseUrl, iiifly, "iiifly-clickthrough-login", "clickthrough", "http://iiif.io/api/auth/0/login", 0,
                     "Terms and Conditions", "<p>clickthrough...</p>",
                     "Terms and Conditions", "<p>More detailed info</p>", "Accept terms"),
-                new AuthService(BaseUrl, iiifly, "iiifly-clickthrough-token", "clickthrough-token", "http://iiif.io/api/auth/0/token", 1800,
+                MockHelp.MakeAuthService(BaseUrl, iiifly, "iiifly-clickthrough-token", "clickthrough-token", "http://iiif.io/api/auth/0/token", 1800,
                     "token service", null, null, null, null),
-                new AuthService(BaseUrl, iiifly, "iiifly-clickthrough-logout", "clickthrough-logout", "http://iiif.io/api/auth/0/logout", 0,
+                MockHelp.MakeAuthService(BaseUrl, iiifly, "iiifly-clickthrough-logout", "clickthrough-logout", "http://iiif.io/api/auth/0/logout", 0,
                     "Forget terms", null, null, null, null),
             };
 

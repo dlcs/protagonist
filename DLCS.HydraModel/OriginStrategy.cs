@@ -18,16 +18,19 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         public string ModelId { get; set; }
 
-        public OriginStrategy()
+        public OriginStrategy(string baseUrl, string originStrategyId)
         {
+            ModelId = originStrategyId;
+            Init(baseUrl, true, originStrategyId);
         }
-
+         
+        // TODO HERE MOVE TO MOCK HELP
         public OriginStrategy(string baseUrl, string originStrategyId, string name, bool requiresCredentials)
         {
             ModelId = originStrategyId;
+            Init(baseUrl, true, originStrategyId);
             Name = name;
             RequiresCredentials = requiresCredentials;
-            Init(baseUrl, true, originStrategyId);
         }
 
         [RdfProperty(Description = "The human readable name of the origin strategy",
