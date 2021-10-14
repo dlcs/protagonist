@@ -71,7 +71,7 @@ namespace Orchestrator.Settings
         /// The thumbnail that is the default target size for rendering manifests such as NQs. We won't necessarily
         /// render a thumbnail of this size but will aim to get as close as possible.
         /// </summary>
-        public int TargetThumbnailSize { get; set; } = 300;
+        public int TargetThumbnailSize { get; set; } = 200;
 
         public ProxySettings Proxy { get; set; }
         

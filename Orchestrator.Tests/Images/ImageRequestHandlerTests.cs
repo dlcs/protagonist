@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using FakeItEasy;
 using FluentAssertions;
-using IIIF.ImageApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
