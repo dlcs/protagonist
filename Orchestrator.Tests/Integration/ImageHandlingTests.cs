@@ -661,6 +661,20 @@ namespace Orchestrator.Tests.Integration
             proxyResponse.Uri.Should().Be(expectedPath);
         }
         
+        [Fact]
+        public async Task Get_Thumbs_RedirectsToThumbs()
+        {
+            // Arrange
+            var expectedPath = new Uri("http://thumbs/thumbs/99/1/known-thumb/full/!200,200/0/default.jpg");
+            
+            // Act
+            var response = await httpClient.GetAsync("thumbs/99/1/known-thumb/full/!200,200/0/default.jpg");
+            var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+            
+            // Assert
+            proxyResponse.Uri.Should().Be(expectedPath);
+        }
+        
         [Theory]
         [InlineData("iiif-img/99/1/resize/full/!200,200/0/default.jpg", "resize")]
         [InlineData("iiif-img/99/1/full/full/full/0/default.jpg", "full")]
