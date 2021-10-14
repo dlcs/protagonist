@@ -42,7 +42,7 @@ namespace DLCS.Mock.Controllers
             model.Batches.Add(batch);
             foreach (var incomingImage in images.Members)
             {
-                var newImage = new Image(model.BaseUrl, customerId, incomingImage.Space, incomingImage.ModelId, 
+                var newImage = MockHelp.MakeImage(model.BaseUrl, customerId, incomingImage.Space, incomingImage.ModelId, 
                     DateTime.Now, incomingImage.Origin, incomingImage.InitialOrigin,
                     0, 0, incomingImage.MaxUnauthorised, null, null, null, true, null, 
                     incomingImage.Tags, incomingImage.String1, incomingImage.String2, incomingImage.String3,

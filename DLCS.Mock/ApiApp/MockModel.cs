@@ -128,7 +128,8 @@ namespace DLCS.Mock.ApiApp
                     currentCustomer = image.CustomerId;
                     counter = 1;
                     batchSize = r.Next(3, 10);
-                    currentBatch = new Batch(BaseUrl, batchId++, image.CustomerId, image.Created.AddSeconds(-1));
+                    var created = image.Created ?? DateTime.Now;
+                    currentBatch = new Batch(BaseUrl, batchId++, image.CustomerId, created.AddSeconds(-1));
                     imagesInBatch = new List<string>();
                 }
                 imagesInBatch.Add(image.Id);
@@ -166,7 +167,7 @@ namespace DLCS.Mock.ApiApp
                 DateTime? finished = ongoing ? (DateTime?)null : queued.AddSeconds(3608).AddSeconds(i * 7);
                 if (ongoing && i < 4) finished = DateTime.Now.AddSeconds(-60 + 9 * i);
                 var id = Guid.NewGuid().ToString().Substring(0, 8) + i.ToString().PadLeft(5, '0');
-                var image = new Image(BaseUrl, space.CustomerId, space.ModelId, id,
+                var image = MockHelp.MakeImage(BaseUrl, space.CustomerId, space.ModelId, id,
                     DateTime.Now, "https://customer.com/images/" + id + ".tiff", null,
                     r.Next(2000,11000), r.Next(3000,11000), space.DefaultMaxUnauthorised,
                     queued, dequeued, finished, !finished.HasValue, null,
