@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -48,7 +49,7 @@ namespace DLCS.HydraModel
         [RdfProperty(Description = "Default tags to apply to images created in this space",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 12, PropertyName = "defaultTags")]
-        public string[]? DefaultTags { get; set; }
+        public string[] DefaultTags { get; set; }
 
         [RdfProperty(Description = "Default size at which role-based authorisation will be enforced. -1=open, 0=always require auth",
             Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
