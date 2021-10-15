@@ -157,5 +157,15 @@ namespace DLCS.Mock.ApiApp
                 DefaultMaxUnauthorised = defaultMaxUnauthorised
             };
         }
+
+        public static ThumbnailPolicy MakeThumbnailPolicy(
+            string baseUrl, string thumbnailPolicyId, string name, int[] sizes)
+        {
+            return new ThumbnailPolicy(baseUrl, thumbnailPolicyId)
+            {
+                Name = name,
+                Sizes = sizes
+            };
+        }
     }
 }

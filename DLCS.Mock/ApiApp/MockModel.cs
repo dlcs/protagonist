@@ -71,7 +71,7 @@ namespace DLCS.Mock.ApiApp
         {
             return new List<ThumbnailPolicy>
             {
-                new ThumbnailPolicy(BaseUrl, "standard", "standard DLCS thumbs", new[] {1024, 400, 200, 100})
+                MockHelp.MakeThumbnailPolicy(BaseUrl, "standard", "standard DLCS thumbs", new[] {1024, 400, 200, 100})
             };
         }
 
