@@ -23,20 +23,12 @@ namespace DLCS.HydraModel
             ModelId = originStrategyId;
             Init(baseUrl, true, originStrategyId);
         }
-         
-        // TODO HERE MOVE TO MOCK HELP
-        public OriginStrategy(string baseUrl, string originStrategyId, string name, bool requiresCredentials)
-        {
-            ModelId = originStrategyId;
-            Init(baseUrl, true, originStrategyId);
-            Name = name;
-            RequiresCredentials = requiresCredentials;
-        }
+
 
         [RdfProperty(Description = "The human readable name of the origin strategy",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
 
 

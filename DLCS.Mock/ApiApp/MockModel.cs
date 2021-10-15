@@ -97,10 +97,10 @@ namespace DLCS.Mock.ApiApp
         {
             return new List<OriginStrategy>
             {
-                new OriginStrategy(BaseUrl, "default", "No credentials over http/s", false),
-                new OriginStrategy(BaseUrl, "basic_https", "Basic Auth over https", true),
-                new OriginStrategy(BaseUrl, "ftps_creds", "FTPS with credentials", true),
-                new OriginStrategy(BaseUrl, "s3", "Fetch from s3 bucket presenting DLCS identity", true),
+                MockHelp.MakeOriginStrategy(BaseUrl, "default", "No credentials over http/s", false),
+                MockHelp.MakeOriginStrategy(BaseUrl, "basic_https", "Basic Auth over https", true),
+                MockHelp.MakeOriginStrategy(BaseUrl, "ftps_creds", "FTPS with credentials", true),
+                MockHelp.MakeOriginStrategy(BaseUrl, "s3", "Fetch from s3 bucket presenting DLCS identity", true),
             };
         }
 
@@ -202,13 +202,13 @@ namespace DLCS.Mock.ApiApp
         {
             var portalUsers = new List<PortalUser>
             {
-                new PortalUser(BaseUrl, customers.GetByName("admin").ModelId, 
+                MockHelp.MakePortalUser(BaseUrl, customers.GetByName("admin").ModelId, 
                     "8b083aee", "adam.christie@digirati.co.uk", new DateTime(2005, 10, 31), true),
-                new PortalUser(BaseUrl, customers.GetByName("admin").ModelId,
+                MockHelp.MakePortalUser(BaseUrl, customers.GetByName("admin").ModelId,
                     "e3afdce8", "admin@dlcs.io", new DateTime(2016, 1, 1), true),
-                new PortalUser(BaseUrl, customers.GetByName("wellcome").ModelId,
+                MockHelp.MakePortalUser(BaseUrl, customers.GetByName("wellcome").ModelId,
                     "ef132a3f", "r.kiley@wellcome.ac.uk", new DateTime(1961, 10, 31), true),
-                new PortalUser(BaseUrl, customers.GetByName("iiifly").ModelId,
+                MockHelp.MakePortalUser(BaseUrl, customers.GetByName("iiifly").ModelId,
                     "9cee79e8", "tom.crane@digirati.co.uk", new DateTime(2010, 6, 21), true)
             };
 
@@ -301,7 +301,7 @@ namespace DLCS.Mock.ApiApp
             var wellcomeDelegated = authServices.GetByIdPart("wellcome-delegated-login");
             return new List<RoleProvider>
             {
-                new RoleProvider(BaseUrl, wellcomeDelegated.CustomerId, wellcomeDelegated.ModelId, "{ Some CAS or OAuth details }", 
+                MockHelp.MakeRoleProvider(BaseUrl, wellcomeDelegated.CustomerId, wellcomeDelegated.ModelId, "{ Some CAS or OAuth details }", 
                     "s3://wellcome/path-to-sso-backchannel-creds-if-required")
             };
         }
@@ -313,16 +313,15 @@ namespace DLCS.Mock.ApiApp
             
             var roles = new List<Role>
             {
-                new Role(BaseUrl, wellcome, "clickthrough", "Click through",
+                MockHelp.MakeRole(BaseUrl, wellcome, "clickthrough", "Click through",
                     "Role for DLCS-enforced auth with no delegation", new [] { "Requires Registration", "reqreg"}),
-                new Role(BaseUrl, wellcome, "clinical", "Clinical Delegate to wellcomelibrary.org",
+                MockHelp.MakeRole(BaseUrl, wellcome, "clinical", "Clinical Delegate to wellcomelibrary.org",
                     "Role for DLCS-enforced auth with delegation to customer", new [] { "Clinical Images", "Healthcare professional" }),
-                new Role(BaseUrl, wellcome, "staff", "Staff Delegate to wellcomelibrary.org",
+                MockHelp.MakeRole(BaseUrl, wellcome, "staff", "Staff Delegate to wellcomelibrary.org",
                     "Role for DLCS-enforced auth with delegation to customer", new [] { "Wellcome Staff Member" }),
-                new Role(BaseUrl, wellcome, "restricted", "Restricted Delegate to wellcomelibrary.org",
+                MockHelp.MakeRole(BaseUrl, wellcome, "restricted", "Restricted Delegate to wellcomelibrary.org",
                     "Role for DLCS-enforced auth with delegation to customer", new [] { "restricted" }),
-
-                new Role(BaseUrl, iiifly, "clickthrough", "Click through",
+                MockHelp.MakeRole(BaseUrl, iiifly, "clickthrough", "Click through",
                     "Role for DLCS-enforced auth with no delegation", new [] { "acceptterms" }),
             };
 
@@ -341,10 +340,10 @@ namespace DLCS.Mock.ApiApp
             int iiifly = customers.GetByName("iiifly").ModelId;
             var spaces = new List<Space>
             {
-                new Space(BaseUrl, 1, wellcome, "wellcome1", DateTime.Now, null, -1),
-                new Space(BaseUrl, 2, wellcome, "wellcome2", DateTime.Now, null, -1),
-                new Space(BaseUrl, 11, iiifly, "iiifly1", DateTime.Now, null, 400),
-                new Space(BaseUrl, 12, iiifly, "iiifly2", DateTime.Now, new [] {"tag1", "tag2"}, -1)
+                MockHelp.MakeSpace(BaseUrl, 1, wellcome, "wellcome1", DateTime.Now, null, -1),
+                MockHelp.MakeSpace(BaseUrl, 2, wellcome, "wellcome2", DateTime.Now, null, -1),
+                MockHelp.MakeSpace(BaseUrl, 11, iiifly, "iiifly1", DateTime.Now, null, 400),
+                MockHelp.MakeSpace(BaseUrl, 12, iiifly, "iiifly2", DateTime.Now, new [] {"tag1", "tag2"}, -1)
             };
              
             spaceDefaultRoles.Add(
@@ -401,9 +400,9 @@ namespace DLCS.Mock.ApiApp
             }
             foreach (var queue in Queues)
             {
-                if (totalByCustomer.ContainsKey(queue.ModelId))
+                if (totalByCustomer.ContainsKey(queue.CustomerId))
                 {
-                    queue.Size = totalByCustomer[queue.ModelId];
+                    queue.Size = totalByCustomer[queue.CustomerId];
                 }
             }
         }

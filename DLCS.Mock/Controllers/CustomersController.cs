@@ -143,8 +143,8 @@ namespace DLCS.Mock.Controllers
             }
             // obviously not thread safe..
             var modelId = model.Spaces.Select(s => s.ModelId).Max() + 1;
-            var newSpace = new Space(
-                model.BaseUrl, modelId, customerId, space.Name, DateTime.Now, space.DefaultTags, space.DefaultMaxUnauthorised);
+            var newSpace = MockHelp.MakeSpace(model.BaseUrl, modelId, customerId,
+                space.Name, DateTime.Now, space.DefaultTags, space.DefaultMaxUnauthorised);
             model.Spaces.Add(newSpace);
             return Created(newSpace.Id, space);
         }

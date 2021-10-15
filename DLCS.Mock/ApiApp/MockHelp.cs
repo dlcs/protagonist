@@ -98,6 +98,64 @@ namespace DLCS.Mock.ApiApp
                 Template = template
             };
         }
+                 
+        public static OriginStrategy MakeOriginStrategy(
+            string baseUrl, string originStrategyId, string name, bool requiresCredentials)
+        {
+            return new OriginStrategy(baseUrl, originStrategyId)
+            {
+                Name = name,
+                RequiresCredentials = requiresCredentials
+            };
+        }
 
+        public static PortalUser MakePortalUser(
+            string baseUrl, int customerId, string userId,
+            string email, DateTime created, bool enabled)
+        {
+            return new PortalUser(baseUrl, customerId, userId)
+            {
+                Email = email,
+                Created = created,
+                Enabled = enabled
+            };
+        }
+        
+        public static Role MakeRole(
+            string baseUrl, int customerId, string roleId, string name,
+            string label, string[] aliases)
+        {
+            return new Role(baseUrl, customerId, roleId)
+            {
+                Name = name,
+                Label = label,
+                Aliases = aliases
+            };
+        }
+        
+        public static RoleProvider MakeRoleProvider(
+            string baseUrl, int customerId, string authServiceId,
+            string configuration, string credentials)
+        {
+            return new RoleProvider(baseUrl, customerId, authServiceId)
+            {
+                Configuration = configuration,
+                Credentials = credentials
+            };
+        }
+
+        public static Space MakeSpace(
+            string baseUrl, int modelId, int customerId,
+            string name, DateTime? created, string[]? defaultTags, int? defaultMaxUnauthorised)
+        {
+            return new Space(baseUrl, modelId, customerId)
+            {
+
+                Name = name,
+                Created = created,
+                DefaultTags = defaultTags,
+                DefaultMaxUnauthorised = defaultMaxUnauthorised
+            };
+        }
     }
 }

@@ -17,28 +17,27 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         public int CustomerId { get; set; }
 
-        public PortalUser() { }
-
-        public PortalUser(string baseUrl, int customerId, string userId, string email, DateTime created, bool enabled)
+        public PortalUser(string baseUrl, int customerId, string userId)
         {
             CustomerId = customerId;
             ModelId = userId;
-            Email = email;
-            Created = created;
-            Enabled = enabled;
             Init(baseUrl, true, customerId, ModelId);
         }
-
 
         [RdfProperty(Description = "The email address",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "email")]
-        public string Email { get; set; }
+        public string? Email { get; set; }
+        
+        [RdfProperty(Description = "Password for creating or updating a Portal User. Is not returned by the API.",
+            Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = true)]
+        [JsonProperty(Order = 12, PropertyName = "email")]
+        public string? Password { get; set; }
 
         [RdfProperty(Description = "Create date",
             Range = Names.XmlSchema.DateTime, ReadOnly = false, WriteOnly = false)]
-        [JsonProperty(Order = 12, PropertyName = "created")]
-        public DateTime Created { get; set; }
+        [JsonProperty(Order = 13, PropertyName = "created")]
+        public DateTime? Created { get; set; }
 
         [HydraLink(Description = "Collection of Role resources that the user has. These roles should not" +
                                    " be confused with the roles associated with images and authservices, which govern the interactions that" +
@@ -46,12 +45,12 @@ namespace DLCS.HydraModel
                                    " of registered DLCS back end users can perform in the portal. ",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 13, PropertyName = "roles")]
-        public string Roles { get; set; }
+        public string? Roles { get; set; }
 
         [RdfProperty(Description = "Whether the user can log in - for temporary or permanent rescinding of access.",
             Range = Names.XmlSchema.Boolean, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 14, PropertyName = "enabled")]
-        public bool Enabled { get; set; }
+        public bool? Enabled { get; set; }
     }
 
     public class PortalUserClass : Class

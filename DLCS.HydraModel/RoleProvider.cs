@@ -17,29 +17,26 @@ namespace DLCS.HydraModel
     {
         [JsonIgnore]
         public string ModelId { get; set; }
+        
         [JsonIgnore]
         public int CustomerId { get; set; }
 
-        public RoleProvider() { }
-
-        public RoleProvider(string baseUrl, int customerId, string authServiceId, string configuration, string credentials)
+        public RoleProvider(string baseUrl, int customerId, string authServiceId)
         {
             CustomerId = customerId;
             ModelId = authServiceId;
-            Configuration = configuration;
-            Credentials = credentials;
             Init(baseUrl, true, customerId, ModelId);
         }
 
         [RdfProperty(Description = "JSON configuration blob for this particular service",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "configuration")]
-        public string Configuration { get; set; }
+        public string? Configuration { get; set; }
 
         [RdfProperty(Description = "Credentials - not exposed via API, but can be written to by customer.",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = true)]
         [JsonProperty(Order = 12, PropertyName = "credentials")]
-        public string Credentials { get; set; }
+        public string? Credentials { get; set; }
     }
 
     public class RoleProviderClass : Class

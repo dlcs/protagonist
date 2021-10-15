@@ -23,7 +23,7 @@ namespace DLCS.Mock.Controllers
         [Route("/customers/{customerId}/queue")]
         public IActionResult Queue(int customerId)
         {
-            var queue = model.Queues.SingleOrDefault(q => q.ModelId == customerId);
+            var queue = model.Queues.SingleOrDefault(q => q.CustomerId == customerId);
             if (queue == null)
             {
                 return NotFound();
