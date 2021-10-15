@@ -90,14 +90,7 @@ namespace Orchestrator.Features.Images
                     return new StatusCodeResult(HttpStatusCode.Unauthorized);
                 }
             }
-
-            if (IsRequestForUVThumb(httpContext, assetRequest))
-            {
-                logger.LogDebug("Request for {Path} looks like UV thumb, proxying to thumbs", httpContext.Request.Path);
-                return new ProxyActionResult(ProxyDestination.Thumbs, orchestrationImage.RequiresAuth,
-                    GetUVThumbReplacementPath(orchestrationImage.AssetId));
-            }
-
+            
             /*
             Is known thumb size
             Is full and smaller than biggest thumb size
@@ -133,14 +126,6 @@ namespace Orchestrator.Features.Images
 
             return GenerateImageResult(orchestrationImage, assetRequest);
         }
-
-        private bool IsRequestForUVThumb(HttpContext httpContext, ImageAssetDeliveryRequest requestModel)
-            => orchestratorSettings.Value.Proxy.CheckUVThumbs &&
-               requestModel.IIIFImageRequest.ImageRequestPath == "/full/90,/0/default.jpg" &&
-               httpContext.Request.QueryString.Value.Contains("t=");
-
-        private string GetUVThumbReplacementPath(AssetId assetId) =>
-            $"{orchestratorSettings.Value.Proxy.ThumbsPath}/{assetId}/full/{orchestratorSettings.Value.Proxy.UVThumbReplacementPath}/0/default.jpg";
 
         // TODO handle known thumb size that doesn't exist yet - call image-server and save to s3 on way back
         private (bool CanHandle, bool IsResize) CanRequestBeHandledByThumb(ImageAssetDeliveryRequest requestModel, OrchestrationImage orchestrationImage)

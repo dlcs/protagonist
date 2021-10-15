@@ -141,7 +141,7 @@ namespace Orchestrator.Tests.Images
                 settings: Options.Create(new OrchestratorSettings
                 {
                     ImageFolderTemplateImageServer = "/path",
-                    Proxy = new ProxySettings { CheckUVThumbs = false }
+                    Proxy = new()
                 }));
 
             // Act
@@ -152,85 +152,6 @@ namespace Orchestrator.Tests.Images
             result.HasPath.Should().BeTrue();
         }
 
-        [Fact]
-        public async Task Handle_Request_ProxiesToThumbs_OnNewPath_IfAssetIsForUvThumb()
-        {
-            // Arrange
-            var context = new DefaultHttpContext();
-            context.Request.Path = "/iiif-img/2/2/test-image/full/90,/0/default.jpg";
-            context.Request.QueryString = new QueryString("?t=123123");
-
-            A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-            A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new OrchestrationImage {AssetId = new AssetId(2, 2, "test-image")});
-            var sut = GetImageRequestHandlerWithMockPathParser(
-                settings: Options.Create(new OrchestratorSettings
-                {
-                    ImageFolderTemplateImageServer = "/path",
-                    Proxy = new ProxySettings()
-                }));
-
-            // Act
-            var result = await sut.HandleRequest(context) as ProxyActionResult;
-            
-            // Assert
-            result.Target.Should().Be(ProxyDestination.Thumbs);
-            result.HasPath.Should().BeTrue();
-            result.Path.Should().Be("thumbs/2/2/test-image/full/!200,200/0/default.jpg");
-        }
-        
-        [Fact]
-        public async Task Handle_Request_ProxiesToThumbs_OnNewPathFromSettings_IfAssetIsForUvThumb()
-        {
-            // Arrange
-            var context = new DefaultHttpContext();
-            context.Request.Path = "/iiif-img/2/2/test-image/full/90,/0/default.jpg";
-            context.Request.QueryString = new QueryString("?t=123123");
-
-            A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-            A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new OrchestrationImage {AssetId = new AssetId(2, 2, "test-image")});
-            var sut = GetImageRequestHandlerWithMockPathParser(
-                settings: Options.Create(new OrchestratorSettings
-                {
-                    Proxy = new ProxySettings { UVThumbReplacementPath = "!300,500" }
-                }));
-            
-            // Act
-            var result = await sut.HandleRequest(context) as ProxyActionResult;
-            
-            // Assert
-            result.Target.Should().Be(ProxyDestination.Thumbs);
-            result.HasPath.Should().BeTrue();
-            result.Path.Should().Be("thumbs/2/2/test-image/full/!300,500/0/default.jpg");
-        }
-        
-        [Fact]
-        public async Task Handle_Request_ProxiesToImageServer_IfAssetIsForUvThumb_UvThumbDisabled()
-        {
-            // Arrange
-            var context = new DefaultHttpContext();
-            context.Request.Path = "/iiif-img/2/2/test-image/full/90,/0/default.jpg";
-            context.Request.QueryString = new QueryString("?t=123123");
-
-            A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-            A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
-                .Returns(new OrchestrationImage {AssetId = new AssetId(2, 2, "test-image")});
-            var sut = GetImageRequestHandlerWithMockPathParser(
-                settings: Options.Create(new OrchestratorSettings
-                {
-                    ImageFolderTemplateImageServer = "/path",
-                    Proxy = new ProxySettings { CheckUVThumbs = false }
-                }));
-
-            // Act
-            var result = await sut.HandleRequest(context) as ProxyImageServerResult;
-            
-            // Assert
-            result.Target.Should().Be(ProxyDestination.ImageServer);
-            result.HasPath.Should().BeTrue();
-        }
-        
         [Fact]
         public async Task Handle_Request_ProxiesToThumbs_IfFullOrMaxRegion_AndKnownSize()
         {
