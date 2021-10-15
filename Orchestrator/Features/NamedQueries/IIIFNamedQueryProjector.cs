@@ -69,13 +69,16 @@ namespace Orchestrator.Features.NamedQueries
                 {
                     Label = new MetaDataValue("Title"), Value = new MetaDataValue("Created by DLCS") 
                 }.AsList(),
-                Sequences = new IIIF2.Sequence
-                {
-                    Id = string.Concat(rootUrl, "/iiif-query/sequence/0"),
-                    Label = new MetaDataValue("Sequence 0"),
-                    Canvases = await CreateV2Canvases(result)
-                }.AsList(),
             };
+
+            var canvases = await CreateV2Canvases(result);
+            manifest.Sequences = new IIIF2.Sequence
+            {
+                Id = string.Concat(rootUrl, "/iiif-query/sequence/0"),
+                Label = new MetaDataValue("Sequence 0"),
+                Canvases = await CreateV2Canvases(result)
+            }.AsList();
+            manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
 
             manifest.EnsurePresentation2Context();
             return manifest;
@@ -93,7 +96,7 @@ namespace Orchestrator.Features.NamedQueries
 
             var canvases = await CreateV3Canvases(result);
             manifest.Items = canvases;
-            manifest.Thumbnail = canvases.FirstOrDefault()?.Thumbnail;
+            manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
             
             manifest.EnsurePresentation3Context();
             return manifest;
