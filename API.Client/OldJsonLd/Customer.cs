@@ -1,6 +1,6 @@
-namespace API.Client.JsonLd
+namespace API.Client.OldJsonLd
 {
-    public class Customer : JsonLdBase
+    public class Customer : OldJsonLdBase
     {
         public string Name { get; set; }
         public string DisplayName { get; set; }

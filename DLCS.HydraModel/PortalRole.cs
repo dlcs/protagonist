@@ -10,7 +10,9 @@ namespace DLCS.HydraModel
     [Unstable(Note = "Under consideration.")]
     public class PortalRole : DlcsResource
     {
-        public PortalRole() { }
+        public PortalRole()
+        {
+        }
 
         public PortalRole(string baseUrl, string portalRoleId, string name)
         {

@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using API.Client.JsonLd;
 using API.Settings;
 using DLCS.Core;
 using DLCS.Model.Storage;
@@ -28,14 +27,14 @@ namespace API.Features.Image.Requests
         public string ImageId { get; }
         public Stream File { get; }
         
-        public API.Client.JsonLd.Image Body { get; }
+        public DLCS.HydraModel.Image Body { get; }
         
         // TODO - temporary as we forward this on from those the user sent
         public string BasicAuth { get; }
 
         public override string ToString() => $"{CustomerId}/{SpaceId}/{ImageId}";
 
-        public IngestImageFromFile(string customerId, string spaceId, string imageId, Stream file, API.Client.JsonLd.Image body,
+        public IngestImageFromFile(string customerId, string spaceId, string imageId, Stream file, DLCS.HydraModel.Image body,
             string basicAuth)
         {
             CustomerId = customerId;
@@ -87,7 +86,7 @@ namespace API.Features.Image.Requests
             request.Body.Origin = objectInBucket.GetHttpUri();
             var ingestResponse = await CallDlcsIngest(request, cancellationToken);
             var responseBody = await ingestResponse.Content.ReadAsStringAsync();
-            var imageResult = JsonConvert.DeserializeObject<API.Client.JsonLd.Image>(responseBody);
+            var imageResult = JsonConvert.DeserializeObject<Image>(responseBody);
 
             return ResultStatus<DelegatedIngestResponse>.Successful(new DelegatedIngestResponse(
                 ingestResponse.StatusCode,
@@ -123,14 +122,14 @@ namespace API.Features.Image.Requests
 
     public class DelegatedIngestResponse
     {
-        public API.Client.JsonLd.Image? Body { get; }
+        public Image? Body { get; }
         
         // NOTE - this isn't ideal but is temporary
         public HttpStatusCode? DownstreamStatusCode { get; }
 
         public override string ToString() => DownstreamStatusCode?.ToString() ?? "_unknown_";
 
-        public DelegatedIngestResponse(HttpStatusCode? downstreamStatusCode, API.Client.JsonLd.Image? body)
+        public DelegatedIngestResponse(HttpStatusCode? downstreamStatusCode, Image? body)
         {
             DownstreamStatusCode = downstreamStatusCode;
             Body = body;

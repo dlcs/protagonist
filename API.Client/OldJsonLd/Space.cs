@@ -1,9 +1,9 @@
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace API.Client.JsonLd
+namespace API.Client.OldJsonLd
 {
-    public class Space : JsonLdBase
+    public class Space : OldJsonLdBase
     {
         [JsonProperty(PropertyName = "modelId")]
         public int ModelId { get; set; } // the image identifier within the space

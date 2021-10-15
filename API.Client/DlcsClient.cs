@@ -6,8 +6,10 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using API.Client.JsonLd;
+using DLCS.HydraModel;
 using DLCS.Web.Response;
+using Hydra;
+using Hydra.Collections;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -44,7 +46,7 @@ namespace API.Client
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             };
         }
-
+        
         public async Task<Space?> GetSpaceDetails(int spaceId)
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}";
@@ -54,11 +56,11 @@ namespace API.Client
         }
         
         
-        public async Task<HydraImageCollection> GetSpaceImages(int spaceId)
+        public async Task<HydraCollection<Image>> GetSpaceImages(int spaceId)
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images";
             var response = await httpClient.GetAsync(url);
-            var images = await response.ReadAsJsonAsync<HydraImageCollection>(true, jsonSerializerSettings);
+            var images = await response.ReadAsJsonAsync<HydraCollection<Image>>(true, jsonSerializerSettings);
             return images;
         }
 
@@ -74,7 +76,7 @@ namespace API.Client
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/keys";
             var response = await httpClient.GetAsync(url);
-            var apiKeys = await response.ReadAsJsonAsync<SimpleCollection<ApiKey>>();
+            var apiKeys = await response.ReadAsJsonAsync<HydraCollection<ApiKey>>();
             return apiKeys?.Members.Select(m => m.Key);
         }
 
@@ -94,11 +96,11 @@ namespace API.Client
             return image;
         }
         
-        public async Task<SimpleCollection<PortalUser>?> GetPortalUsers()
+        public async Task<HydraCollection<PortalUser>?> GetPortalUsers()
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/portalUsers";
             var response = await httpClient.GetAsync(url);
-            var portalUsers = await response.ReadAsJsonAsync<SimpleCollection<PortalUser>>();
+            var portalUsers = await response.ReadAsJsonAsync<HydraCollection<PortalUser>>();
             return portalUsers;
         }
 
@@ -135,7 +137,7 @@ namespace API.Client
             return await response.ReadAsJsonAsync<Image>(true, jsonSerializerSettings);
         }
 
-        public async Task<HydraImageCollection> PatchImages(HydraImageCollection images, int spaceId)
+        public async Task<HydraCollection<Image>> PatchImages(HydraCollection<Image> images, int spaceId)
         {
             int? customerId = currentUser.GetCustomerId();
             string uri = $"/customers/{customerId}/spaces/{spaceId}/images";
@@ -144,7 +146,7 @@ namespace API.Client
                 image.ModelId = $"{customerId}/{spaceId}/{image.ModelId}";
             }
             var response = await httpClient.PatchAsync(uri, ApiBody(images));
-            var patched = await response.ReadAsJsonAsync<HydraImageCollection>(true, jsonSerializerSettings);
+            var patched = await response.ReadAsJsonAsync<HydraCollection<Image>>(true, jsonSerializerSettings);
             return patched;
         }
 
@@ -153,7 +155,7 @@ namespace API.Client
             throw new NotImplementedException();
         }
 
-        private HttpContent ApiBody(JsonLdBase apiObject)
+        private HttpContent ApiBody(JSONLDBase apiObject)
         {
             var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);
             return new StringContent(jsonString, Encoding.UTF8, "application/json");

@@ -21,8 +21,8 @@ namespace DLCS.Mock.Controllers
         }
         
         [HttpGet]
-        [Route("/customers/{customerId}/spaces/{spaceId}/images/{id}")]
-        public IActionResult Image(int customerId, int spaceId, string id = null)
+        [Route("/customers/{customerId}/spaces/{spaceId}/images/{id?}")]
+        public IActionResult Image(int customerId, int spaceId, string? id = null)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -33,7 +33,7 @@ namespace DLCS.Mock.Controllers
                     images = images.Where(im => im.String1 == string1).ToList();
                 }
                 AutoAdvance(images);
-                var hc = new Collection<Image> {Members = images.ToArray()};
+                var hc = new HydraCollection<Image> {Members = images.ToArray()};
                 //var hc = new Collection<JObject>();
                 //hc.Members = images.Select(im => im.GetCollectionForm()).ToArray();
                 hc.TotalItems = hc.Members.Length;

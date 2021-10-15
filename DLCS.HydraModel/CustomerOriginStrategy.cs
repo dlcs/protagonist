@@ -22,6 +22,10 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         public int CustomerId { get; set; }
 
+        public CustomerOriginStrategy()
+        {
+        }
+        
         public CustomerOriginStrategy(string baseUrl, int customerId, int strategyId)
         {
             CustomerId = customerId;

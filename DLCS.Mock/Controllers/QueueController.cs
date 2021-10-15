@@ -33,7 +33,7 @@ namespace DLCS.Mock.Controllers
 
         [HttpPost]
         [Route("/customers/{customerId}/queue")]
-        public Batch Index(int customerId, [FromBody] Collection<Image> images)
+        public Batch Index(int customerId, [FromBody] HydraCollection<Image> images)
         {
             List<Image> initialisedImages = new List<Image>();
 

@@ -2,8 +2,8 @@
 using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using API.Client.JsonLd;
 using API.Features.Image.Requests;
+using DLCS.HydraModel;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -34,7 +34,7 @@ namespace API.Features.Image
         ///         "file": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAM...."
         ///     }
         /// </remarks>
-        [ProducesResponseType(201, Type = typeof(API.Client.JsonLd.Image))]
+        [ProducesResponseType(201, Type = typeof(DLCS.HydraModel.Image))]
         [ProducesResponseType(400, Type = typeof(ProblemDetails))]
         [HttpPost]
         [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000, ValueLengthLimit = 100_000_000)]

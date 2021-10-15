@@ -19,11 +19,11 @@ namespace DLCS.Mock.Controllers
         
         [HttpGet]
         [Route("/thumbnailPolicies")]
-        public Collection<ThumbnailPolicy> Index()
+        public HydraCollection<ThumbnailPolicy> Index()
         {
             var thumbnailPolicies = model.ThumbnailPolicies.ToArray();
 
-            return new Collection<ThumbnailPolicy>
+            return new HydraCollection<ThumbnailPolicy>
             {
                 IncludeContext = true,
                 Members = thumbnailPolicies,

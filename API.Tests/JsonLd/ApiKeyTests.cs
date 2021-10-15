@@ -1,4 +1,4 @@
-﻿using API.Client.JsonLd;
+﻿using DLCS.HydraModel;
 using FluentAssertions;
 using Xunit;
 

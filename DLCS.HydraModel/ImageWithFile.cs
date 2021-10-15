@@ -8,7 +8,7 @@ namespace DLCS.HydraModel
         
         public byte[]? File { get; set; }
         
-        public Image ToImage() => new Image(BaseUrl, CustomerId, Space, ModelId)
+        public Image ToImage() => new Image(BaseUrl, CustomerId, Space, ModelId!)
         {
             StorageIdentifier = StorageIdentifier,
             Created = Created,

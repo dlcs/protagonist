@@ -1,8 +1,8 @@
 using Newtonsoft.Json;
 
-namespace API.Client.JsonLd
+namespace API.Client.OldJsonLd
 {
-    public class PartialCollectionView : JsonLdBase
+    public class PartialCollectionView : OldJsonLdBase
     {
         public override string Type
         {

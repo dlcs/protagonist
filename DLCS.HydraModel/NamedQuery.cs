@@ -27,11 +27,15 @@ namespace DLCS.HydraModel
     public class NamedQuery : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
         
         [JsonIgnore]
         public int CustomerId { get; set; }
 
+        public NamedQuery()
+        {
+        }
+        
         public NamedQuery(string baseUrl, int customerId, string modelId)
         {
             CustomerId = customerId;

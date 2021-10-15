@@ -1,4 +1,4 @@
-namespace API.Client.JsonLd
+namespace API.Client.OldJsonLd
 {
     public class ImageWithFile : Image
     {

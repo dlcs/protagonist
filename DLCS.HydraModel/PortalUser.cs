@@ -13,10 +13,14 @@ namespace DLCS.HydraModel
     public class PortalUser : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
         [JsonIgnore]
         public int CustomerId { get; set; }
 
+        public PortalUser()
+        {
+        }
+        
         public PortalUser(string baseUrl, int customerId, string userId)
         {
             CustomerId = customerId;

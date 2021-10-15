@@ -11,9 +11,12 @@ namespace DLCS.HydraModel
     public class StoragePolicy : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
 
-
+        public StoragePolicy()
+        {
+        }
+        
         public StoragePolicy(string baseUrl, string storagePolicyId)
         {
             ModelId = storagePolicyId;

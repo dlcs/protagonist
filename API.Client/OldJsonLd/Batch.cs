@@ -1,8 +1,8 @@
 using System;
 
-namespace API.Client.JsonLd
+namespace API.Client.OldJsonLd
 {
-    public class Batch : JsonLdBase
+    public class Batch : OldJsonLdBase
     {
         public int Count { get; set; }
         public int Completed { get; set; }

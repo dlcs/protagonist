@@ -15,6 +15,10 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         public int ModelId { get; set; }
 
+        public Customer()
+        {
+        }
+
         public Customer(string baseUrl, int customerId, string name, string displayName)
         {
             ModelId = customerId;
@@ -26,12 +30,12 @@ namespace DLCS.HydraModel
         [RdfProperty(Description = "The URL-friendly name of the customer", 
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [RdfProperty(Description = "The display name of the customer",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 12, PropertyName = "displayName")]
-        public string DisplayName { get; set; }
+        public string? DisplayName { get; set; }
 
 
         // Hydra link properties - i.e., a link to another resource, rather than a field of the current resource.
@@ -53,7 +57,7 @@ namespace DLCS.HydraModel
         public string? OriginStrategies { get; set; }
 
         [HydraLink(Description = "Collection of IIIF Authentication services available for use with your images. The images are" +
-                                 " associated with the auth services via Roles. An AuthService is a means of acquirung a role.",
+                                 " associated with the auth services via Roles. An AuthService is a means of acquiring a role.",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 15, PropertyName = "authServices")]
         public string? AuthServices { get; set; }

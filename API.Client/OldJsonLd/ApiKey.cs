@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
 
-namespace API.Client.JsonLd
+namespace API.Client.OldJsonLd
 {
-    public class ApiKey : JsonLdBase
+    public class ApiKey : OldJsonLdBase
     {
         /// <summary>
         /// Get the APIKey value from Id. 

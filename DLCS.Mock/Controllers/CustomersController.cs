@@ -23,12 +23,12 @@ namespace DLCS.Mock.Controllers
         
         [HttpGet]
         [Route("/customers")]
-        public Collection<JObject> Index()
+        public HydraCollection<JObject> Index()
         {
             var customers = model.Customers
                 .Select(c => c.GetCollectionForm()).ToArray();
 
-            return new Collection<JObject>
+            return new HydraCollection<JObject>
             {
                 IncludeContext = true,
                 Members = customers,
@@ -52,13 +52,13 @@ namespace DLCS.Mock.Controllers
 
         [HttpGet]
         [Route("/customers/{customerId}/portalUsers")]
-        public Collection<JObject> PortalUsers(int customerId)
+        public HydraCollection<JObject> PortalUsers(int customerId)
         {
             var portalUsers = model.PortalUsers
                 .Where(p => p.CustomerId == customerId)
                 .Select(p => p.GetCollectionForm()).ToArray();
 
-            return new Collection<JObject>
+            return new HydraCollection<JObject>
             {
                 IncludeContext = true,
                 Members = portalUsers,
@@ -83,13 +83,13 @@ namespace DLCS.Mock.Controllers
 
         [HttpGet]
         [Route("/customers/{customerId}/originStrategies")]
-        public Collection<CustomerOriginStrategy> OriginStrategies(int customerId)
+        public HydraCollection<CustomerOriginStrategy> OriginStrategies(int customerId)
         {
             var customerOriginStrategies = model.CustomerOriginStrategies
                 .Where(os => os.CustomerId == customerId)
                 .ToArray();
 
-            return new Collection<CustomerOriginStrategy>
+            return new HydraCollection<CustomerOriginStrategy>
             {
                 IncludeContext = true,
                 Members = customerOriginStrategies,
@@ -114,13 +114,13 @@ namespace DLCS.Mock.Controllers
 
         [HttpGet]
         [Route("/customers/{customerId}/spaces")]
-        public Collection<JObject> Spaces(int customerId)
+        public HydraCollection<JObject> Spaces(int customerId)
         {
             var spaces = model.Spaces
                 .Where(p => p.CustomerId == customerId)
                 .Select(p => p.GetCollectionForm()).ToArray();
 
-            return new Collection<JObject>
+            return new HydraCollection<JObject>
             {
                 IncludeContext = true,
                 Members = spaces,

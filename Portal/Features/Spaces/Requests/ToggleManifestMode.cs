@@ -7,7 +7,7 @@ using DLCS.Repository.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Portal.Behaviours;
-using SpaceX = API.Client.JsonLd.SpaceX;
+using SpaceX = API.Client.OldJsonLd.SpaceX;
 
 namespace Portal.Features.Spaces.Requests
 {

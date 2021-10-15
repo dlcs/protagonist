@@ -1,11 +1,11 @@
 ﻿using System;
 
-namespace API.Client.JsonLd
+namespace API.Client.OldJsonLd
 {
     /// <summary>
     /// Hydra entity representing User of Portal UI.
     /// </summary>
-    public class PortalUser : JsonLdBase
+    public class PortalUser : OldJsonLdBase
     {
         public string Email { get; set; }
         public DateTime? Created { get; set; }

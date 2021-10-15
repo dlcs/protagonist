@@ -1,9 +1,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
-using API.Client.JsonLd;
+using DLCS.HydraModel;
 using MediatR;
-using Portal.Features.Spaces.Models;
 
 namespace Portal.Features.Spaces.Requests
 {

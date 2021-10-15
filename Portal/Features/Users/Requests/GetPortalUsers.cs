@@ -1,7 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
-using API.Client.JsonLd;
+using DLCS.HydraModel;
+using Hydra.Collections;
 using MediatR;
 
 namespace Portal.Features.Users.Requests
@@ -9,11 +10,11 @@ namespace Portal.Features.Users.Requests
     /// <summary>
     /// Get all PortalUsers for current customer
     /// </summary>
-    public class GetPortalUsers : IRequest<SimpleCollection<PortalUser>?>
+    public class GetPortalUsers : IRequest<HydraCollection<PortalUser>?>
     {
     }
     
-    public class GetPortalUsersHandler : IRequestHandler<GetPortalUsers, SimpleCollection<PortalUser>?>
+    public class GetPortalUsersHandler : IRequestHandler<GetPortalUsers, HydraCollection<PortalUser>?>
     {
         private readonly IDlcsClient dlcsClient;
 
@@ -22,7 +23,7 @@ namespace Portal.Features.Users.Requests
             this.dlcsClient = dlcsClient;
         }
         
-        public Task<SimpleCollection<PortalUser>?> Handle(GetPortalUsers request, CancellationToken cancellationToken)
+        public Task<HydraCollection<PortalUser>?> Handle(GetPortalUsers request, CancellationToken cancellationToken)
         {
             var portalUsers = dlcsClient.GetPortalUsers();
             return portalUsers;

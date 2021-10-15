@@ -16,11 +16,15 @@ namespace DLCS.HydraModel
     public class RoleProvider : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
         
         [JsonIgnore]
         public int CustomerId { get; set; }
 
+        public RoleProvider()
+        {
+        }
+        
         public RoleProvider(string baseUrl, int customerId, string authServiceId)
         {
             CustomerId = customerId;

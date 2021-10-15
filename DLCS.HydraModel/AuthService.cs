@@ -21,13 +21,17 @@ namespace DLCS.HydraModel
     {
         // Mock Model fields
         [JsonIgnore]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
         
         [JsonIgnore]
         public int CustomerId { get; set; }
         
         [JsonIgnore]
         public List<AuthService>? ModelNestedServices { get; set; } // provides the nestedServices collection
+
+        public AuthService()
+        {
+        }
 
         public AuthService(string baseUrl, int customerId, string serviceId)
         {

@@ -17,6 +17,10 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         public int? SpaceId { get; set; }
 
+        public CustomerStorage()
+        {
+        }
+
         public CustomerStorage(string baseUrl, int customerId, int? spaceId)
         {
             CustomerId = customerId;

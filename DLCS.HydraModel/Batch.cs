@@ -17,6 +17,10 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         public int CustomerId { get; set; }
 
+        public Batch()
+        {
+        }
+
         public Batch(string baseUrl, int modelId, int customerId, DateTime submitted)
         {
 

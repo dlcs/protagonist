@@ -32,7 +32,7 @@ namespace Portal.Pages.Users
             public string Id { get; set; }
             public string Email { get; set; }
             public DateTime? Created { get; set; }
-            public bool Enabled { get; set; }
+            public bool? Enabled { get; set; }
         }
 
         public class NewUserModel

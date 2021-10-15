@@ -11,13 +11,17 @@ namespace DLCS.HydraModel
     public class ImageStorage : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
 
         [JsonIgnore]
         public int CustomerId { get; set; }
 
         [JsonIgnore]
         public int SpaceId { get; set; }
+
+        public ImageStorage()
+        {
+        }
 
         public ImageStorage(string baseUrl, int customerId, int spaceId, string imageId)
         {

@@ -13,10 +13,14 @@ namespace DLCS.HydraModel
     public class Role : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
         
         [JsonIgnore]
         public int CustomerId { get; set; }
+
+        public Role()
+        {
+        }
 
         public Role(string baseUrl, int customerId, string roleId)
         {

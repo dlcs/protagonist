@@ -2,14 +2,14 @@
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace API.Client.JsonLd
+namespace API.Client.OldJsonLd
 {
     /// <summary>
     /// Base class for JsonLd collections
     /// </summary>
     /// <typeparam name="T">Type of member</typeparam>
-    public class SimpleCollection<T> : JsonLdBase
-        where T : JsonLdBase
+    public class SimpleCollection<T> : OldJsonLdBase
+        where T : OldJsonLdBase
     {
         public override string Type => "Collection";
 

@@ -2,12 +2,12 @@
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace API.Client.JsonLd
+namespace API.Client.OldJsonLd
 {
     /// <summary>
     /// Base class for all JsonLd objects
     /// </summary>
-    public class JsonLdBase
+    public class OldJsonLdBase
     {
         [JsonProperty("@context", Order = 1)]
         public string Context { get; set; } = "http://www.w3.org/ns/hydra/context.jsonld";

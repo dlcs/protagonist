@@ -19,11 +19,11 @@ namespace DLCS.Mock.Controllers
         
         [HttpGet]
         [Route("/portalRoles")]
-        public Collection<PortalRole> Index()
+        public HydraCollection<PortalRole> Index()
         {
             var portalRoles = model.PortalRoles.ToArray();
 
-            return new Collection<PortalRole>
+            return new HydraCollection<PortalRole>
             {
                 IncludeContext = true,
                 Members = portalRoles,
@@ -46,14 +46,14 @@ namespace DLCS.Mock.Controllers
 
         [HttpGet]
         [Route("/customers/{customerId}/portalUsers/{portalUserId}/roles")]
-        public Collection<PortalRole> RolesForUser(int customerId, string portalUserId)
+        public HydraCollection<PortalRole> RolesForUser(int customerId, string portalUserId)
         {
             var userid = Request.GetDisplayUrl().Replace("/roles", "");
             // need to make this use last part.,,
             var roleIdsForUser = model.PortalUserRoles[userid];
             var roles = model.PortalRoles.Where(pr => roleIdsForUser.Contains(pr.Id)).ToArray();
 
-            return new Collection<PortalRole>
+            return new HydraCollection<PortalRole>
             {
                 IncludeContext = true,
                 Members = roles,

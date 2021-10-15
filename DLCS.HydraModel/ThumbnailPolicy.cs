@@ -10,8 +10,11 @@ namespace DLCS.HydraModel
     public class ThumbnailPolicy : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
 
+        public ThumbnailPolicy()
+        {
+        }
 
         public ThumbnailPolicy(string baseUrl, string thumbnailPolicyId)
         {

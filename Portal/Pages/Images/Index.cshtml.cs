@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using System.Threading.Tasks;
-using API.Client.JsonLd;
 using DLCS.Core.Settings;
+using DLCS.HydraModel;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;

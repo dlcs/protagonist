@@ -12,6 +12,10 @@ namespace DLCS.HydraModel
         UriTemplate = "/customers/{0}/spaces/{1}/images/{2}")]
     public class Image : DlcsResource
     {
+        public Image()
+        {
+        }
+        
         public Image(string baseUrl, int customerId, int space, string modelId)
         {
             CustomerId = customerId;
@@ -26,10 +30,10 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         public string? StorageIdentifier { get; set; }
 
-        [RdfProperty(Description = "The identifier for the image within the space - its URI component. TODO - this should not be exposed in the API, use the URI instead?",
+        [RdfProperty(Description = "The identifier for the image within the space - its URI component.",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 10, PropertyName = "id")]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
         
         [JsonProperty(Order = 10, PropertyName = "space")]
         public int Space { get; set; }

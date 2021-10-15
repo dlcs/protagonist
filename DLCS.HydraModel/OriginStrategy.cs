@@ -16,7 +16,11 @@ namespace DLCS.HydraModel
     public class OriginStrategy : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
+
+        public OriginStrategy()
+        {
+        }
 
         public OriginStrategy(string baseUrl, string originStrategyId)
         {

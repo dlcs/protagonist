@@ -1,9 +1,9 @@
 using System;
 using Newtonsoft.Json;
 
-namespace API.Client.JsonLd
+namespace API.Client.OldJsonLd
 {
-    public class Image : JsonLdBase
+    public class Image : OldJsonLdBase
     {
         public override string Type => "Image";
         

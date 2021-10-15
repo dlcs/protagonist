@@ -14,6 +14,10 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         public int CustomerId { get; set; }
 
+        public Queue()
+        {
+        }
+        
         public Queue(string baseUrl, int customerId)
         {
             CustomerId = customerId;

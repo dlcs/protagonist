@@ -18,10 +18,10 @@ namespace DLCS.HydraModel
     {
         [JsonIgnore]
         public int CustomerId { get; set; }
-        
-        [JsonIgnore]
-        public int ModelId { get; set; }
 
+        public Space()
+        {
+        }
 
         public Space(string baseUrl, int modelId, int customerId)
         {
@@ -30,11 +30,11 @@ namespace DLCS.HydraModel
             Init(baseUrl, true, customerId, ModelId);
         }
 
-        // Why was this a public property on Space?
-        // [RdfProperty(Description = "The internal identifier for the space within the customer (uri component)",
-        //     Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
-        // [JsonProperty(Order = 10, PropertyName = "modelId")]
-        // public int ModelId { get; set; }
+        // Space and Image make ModelId part of the public JSON, as the id property.
+        [RdfProperty(Description = "The internal identifier for the space within the customer (uri component)",
+            Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
+        [JsonProperty(Order = 10, PropertyName = "id")]
+        public int ModelId { get; set; }
 
         [RdfProperty(Description = "Space name",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
@@ -49,7 +49,7 @@ namespace DLCS.HydraModel
         [RdfProperty(Description = "Default tags to apply to images created in this space",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 12, PropertyName = "defaultTags")]
-        public string[] DefaultTags { get; set; }
+        public string[]? DefaultTags { get; set; }
 
         [RdfProperty(Description = "Default size at which role-based authorisation will be enforced. -1=open, 0=always require auth",
             Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]

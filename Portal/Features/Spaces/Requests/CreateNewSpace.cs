@@ -1,9 +1,8 @@
-using System;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
-using API.Client.JsonLd;
+using DLCS.HydraModel;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
