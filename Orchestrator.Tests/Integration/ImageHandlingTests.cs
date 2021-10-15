@@ -516,28 +516,6 @@ namespace Orchestrator.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.Should().ContainKey("Set-Cookie");
         }
-
-        [Fact]
-        public async Task Get_ImageIsUVThumb_RewritesSizeAndRedirectsToThumbs()
-        {
-            // Arrange
-            await amazonS3.PutObjectAsync(new PutObjectRequest
-            {
-                Key = "99/1/test-uv-thumb/s.json",
-                BucketName = "protagonist-thumbs",
-                ContentBody = "{\"o\": [[200,200]]}",
-            });
-            await dbFixture.DbContext.Images.AddTestAsset("99/1/test-uv-thumb", origin: "/test/space");
-            await dbFixture.DbContext.SaveChangesAsync();
-            var expectedPath = new Uri("http://thumbs/thumbs/99/1/test-uv-thumb/full/!200,200/0/default.jpg");
-            
-            // Act
-            var response = await httpClient.GetAsync("iiif-img/99/1/test-uv-thumb/full/90,/0/default.jpg?t=1234");
-            var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
-            
-            // Assert
-            proxyResponse.Uri.Should().Be(expectedPath);
-        }
         
         [Fact]
         public async Task Get_ImageIsExactThumbMatch_RedirectsToThumbs()

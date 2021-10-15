@@ -80,16 +80,6 @@ namespace Orchestrator.Settings
         public string ThumbsPath { get; set; } = "thumbs";
 
         /// <summary>
-        /// Get value of whether to check for UV thumbs (90,)
-        /// </summary>
-        public bool CheckUVThumbs { get; set; } = true;
-
-        /// <summary>
-        /// Get Size parameter for any UV thumb redirect.
-        /// </summary>
-        public string UVThumbReplacementPath { get; set; } = "!200,200";
-        
-        /// <summary>
         /// Get https base url for region.
         /// </summary>
         public string S3HttpBase { get; set; }
