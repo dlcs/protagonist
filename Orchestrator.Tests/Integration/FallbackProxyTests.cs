@@ -31,8 +31,6 @@ namespace Orchestrator.Tests.Integration
         
         [Theory]
         [InlineData("/info/2/1/something")]
-        [InlineData("/pdf/2/1/something")]
-        [InlineData("/pdf-resource/2/1/something")]
         [InlineData("/pdf-control/2/1/something")]
         [InlineData("/raw-resource/2/1/something")]
         public async Task Test_FallbackRoute(string path)
