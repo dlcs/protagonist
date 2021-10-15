@@ -28,10 +28,28 @@ namespace DLCS.HydraModel
         //
         // }
 
+        private string? key;
+
         [RdfProperty(Description = "API Key",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 12, PropertyName = "key")]
-        public string Key { get; set; }
+        public string? Key
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(key))
+                {
+                    return key;
+                }
+
+                if (!string.IsNullOrWhiteSpace(Id))
+                {
+                    return GetLastPathElement();
+                }
+                return null;
+            }
+            set => key = value;
+        }
 
 
         [RdfProperty(Description = "API Secret (available at creation time only)",

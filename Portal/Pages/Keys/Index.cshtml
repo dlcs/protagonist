@@ -7,7 +7,7 @@
 }
 
 <div class="row">
-  <div class="col-md-3">
+  <div class="col-md-6">
     @if (Model.ApiKeys.IsNullOrEmpty())
     {
       <div class="alert alert-info" role="alert">
@@ -16,7 +16,7 @@
     }
     else
     {
-      <table class="table">
+      <table class="table col-6">
         <thead>
         <tr>
           <th scope="col">Api Key</th>
