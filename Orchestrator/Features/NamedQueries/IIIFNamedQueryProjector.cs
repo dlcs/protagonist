@@ -110,6 +110,7 @@ namespace Orchestrator.Features.NamedQueries
             {
                 var fullyQualifiedImageId = GetFullyQualifiedId(i, result.Query.CustomerPathElement);
                 var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/", ++counter);
+                var thumbnailSizes = await GetThumbnailSizesForImage(i);
 
                 var canvas = new IIIF3.Canvas
                 {
@@ -125,12 +126,13 @@ namespace Orchestrator.Features.NamedQueries
                             Body = new Image
                             {
                                 Id = GetFullQualifiedImagePath(i, result.Query.CustomerPathElement,
-                                    new Size(i.Width, i.Height), false),
+                                    thumbnailSizes.MaxDerivativeSize, false),
                                 Format = "image/jpeg",
                                 Service = new ImageService2
                                 {
                                     Id = fullyQualifiedImageId,
                                     Profile = ImageService2.Level1Profile,
+                                    Context = ImageService2.Image2Context,
                                     Width = i.Width,
                                     Height = i.Height,
                                 }.AsListOf<IService>()
@@ -139,14 +141,15 @@ namespace Orchestrator.Features.NamedQueries
                     }.AsList()
                 };
 
-                var thumbnailSizes = await GetThumbnailSizesForImage(i);
-                if (!thumbnailSizes.IsNullOrEmpty())
+                
+                if (!thumbnailSizes.OpenThumbnails.IsNullOrEmpty())
                 {
                     canvas.Thumbnail = new IIIF3.Content.Image
                     {
                         Id = GetFullQualifiedThumbServicePath(i, result.Query.CustomerPathElement),
                         Format = "image/jpeg",
-                        Service = GetImageServiceForThumbnail(i, result.Query.CustomerPathElement, thumbnailSizes)
+                        Service = GetImageServiceForThumbnail(i, result.Query.CustomerPathElement,
+                            thumbnailSizes.OpenThumbnails)
                     }.AsListOf<ExternalResource>();
                 }
                 
@@ -164,6 +167,8 @@ namespace Orchestrator.Features.NamedQueries
             {
                 var fullyQualifiedImageId = GetFullyQualifiedId(i, result.Query.CustomerPathElement);
                 var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/", ++counter);
+                var thumbnailSizes = await GetThumbnailSizesForImage(i);
+                
                 var canvas = new IIIF2.Canvas
                 {
                     Id = canvasId,
@@ -176,13 +181,14 @@ namespace Orchestrator.Features.NamedQueries
                         Resource = new IIIF2.ImageResource
                         {
                             Id = GetFullQualifiedImagePath(i, result.Query.CustomerPathElement,
-                                new Size(i.Width, i.Height), false),
+                                thumbnailSizes.MaxDerivativeSize, false),
                             Width = i.Width,
                             Height = i.Height,
                             Service = new ImageService2
                             {
                                 Id = fullyQualifiedImageId,
                                 Profile = ImageService2.Level1Profile,
+                                Context = ImageService2.Image2Context,
                                 Width = i.Width,
                                 Height = i.Height,
                             }.AsListOf<IService>()
@@ -190,13 +196,14 @@ namespace Orchestrator.Features.NamedQueries
                     }.AsList()
                 };
 
-                var thumbnailSizes = await GetThumbnailSizesForImage(i);
-                if (!thumbnailSizes.IsNullOrEmpty())
+                
+                if (!thumbnailSizes.OpenThumbnails.IsNullOrEmpty())
                 {
                     canvas.Thumbnail = new IIIF2.Thumbnail
                     {
                         Id = GetFullQualifiedThumbServicePath(i, result.Query.CustomerPathElement),
-                        Service = GetImageServiceForThumbnail(i, result.Query.CustomerPathElement, thumbnailSizes)
+                        Service = GetImageServiceForThumbnail(i, result.Query.CustomerPathElement,
+                            thumbnailSizes.OpenThumbnails)
                     }.AsList();
                 }
                 
@@ -216,12 +223,32 @@ namespace Orchestrator.Features.NamedQueries
                 Context = ImageService2.Image2Context,
             }.AsListOf<IService>();
 
-        private async Task<List<Size>> GetThumbnailSizesForImage(Asset image)
+        private async Task<ImageSizeDetails> GetThumbnailSizesForImage(Asset image)
         {
             var thumbnailPolicy = await GetThumbnailPolicyForImage(image);
-            return image.GetAvailableThumbSizes(thumbnailPolicy, out _);
+            var thumbnailSizesForImage = image.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions);
+
+            
+            if (thumbnailSizesForImage.IsNullOrEmpty())
+            {
+                var largestThumbnail = thumbnailPolicy.SizeList.OrderByDescending(s => s).First();
+
+                return new ImageSizeDetails
+                {
+                    OpenThumbnails = new List<Size>(0),
+                    IsDerivativeOpen = false,
+                    MaxDerivativeSize = Size.Confine(largestThumbnail, new Size(image.Width, image.Height))
+                };
+            }
+
+            return new ImageSizeDetails
+            {
+                OpenThumbnails = thumbnailSizesForImage,
+                IsDerivativeOpen = true,
+                MaxDerivativeSize = new Size(maxDimensions.maxAvailableWidth, maxDimensions.maxAvailableHeight)
+            };
         }
-        
+
         private async Task<ThumbnailPolicy> GetThumbnailPolicyForImage(Asset image)
         {
             if (ThumbnailPolicies.TryGetValue(image.ThumbnailPolicy, out var thumbnailPolicy))
@@ -295,6 +322,27 @@ namespace Orchestrator.Features.NamedQueries
                 CustomerPathValue = customerPathElement.Id.ToString(),
             };
             return assetPathGenerator.GetFullPathForRequest(thumbRequest);
+        }
+        
+        /// <summary>
+        /// Class containing details of available thumbnail sizes
+        /// </summary>
+        private class ImageSizeDetails
+        {
+            /// <summary>
+            /// List of open availabel thumbnails
+            /// </summary>
+            public List<Size> OpenThumbnails { get; set; }
+            
+            /// <summary>
+            /// The size of the largest derivative, according to thumbnail policy.
+            /// </summary>
+            public Size MaxDerivativeSize { get; set; }
+
+            /// <summary>
+            /// Whether the <see cref="MaxDerivativeSize"/> is open.
+            /// </summary>
+            public bool IsDerivativeOpen { get; set; }
         }
     }
 }
