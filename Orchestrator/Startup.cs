@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Amazon.S3;
@@ -26,6 +27,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,7 +39,6 @@ using Orchestrator.Features.Images;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Features.NamedQueries;
-using Orchestrator.Features.NamedQueries.Requests;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
@@ -104,6 +105,7 @@ namespace Orchestrator
                 .AddScoped<AuthCookieManager>()
                 .AddSingleton<INamedQueryParser, BasicNamedQueryParser>()
                 .AddScoped<INamedQueryRepository, NamedQueryRepository>()
+                .AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>()
                 .AddScoped<NamedQueryConductor>()
                 .AddScoped<IIIFNamedQueryProjector>()
                 .AddSingleton<AssetRequestProcessor>()
@@ -143,15 +145,23 @@ namespace Orchestrator
                 .AddFeatureFolderViews()
                 .AddControllersWithViews()
                 .SetCompatibilityVersion(CompatibilityVersion.Latest);
-            
-            services.AddCors(options =>
-            {
-                options.AddPolicy("CorsPolicy",
-                    builder => builder
-                        .AllowAnyOrigin()
-                        .AllowAnyMethod()
-                        .AllowAnyHeader());
-            });
+
+            services
+                .AddCors(options =>
+                {
+                    options.AddPolicy("CorsPolicy",
+                        builder => builder
+                            .AllowAnyOrigin()
+                            .AllowAnyMethod()
+                            .AllowAnyHeader());
+                })
+                .AddMvcCore(options =>
+                {
+                    var jsonFormatter = options.OutputFormatters.OfType<SystemTextJsonOutputFormatter>()
+                        .FirstOrDefault();
+                    jsonFormatter?.SupportedMediaTypes.Add(IIIF.Presentation.ContentTypes.V2);
+                    jsonFormatter?.SupportedMediaTypes.Add(IIIF.Presentation.ContentTypes.V3);
+                });
             
             DapperMappings.Register();
             

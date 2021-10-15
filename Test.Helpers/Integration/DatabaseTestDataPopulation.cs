@@ -19,7 +19,7 @@ namespace Test.Helpers.Integration
             string origin = "",
             string roles = "",
             string mediaType = "image/jpeg",
-            int maxUnauthorised = 0,
+            int maxUnauthorised = -1,
             int width = 8000,
             int height = 8000,
             string ref1 = "",

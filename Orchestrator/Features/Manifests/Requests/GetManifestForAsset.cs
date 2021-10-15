@@ -80,7 +80,7 @@ namespace Orchestrator.Features.Manifests.Requests
             var manifest = new Manifest
             {
                 Id = fullyQualifiedImageId,
-                Context = IIIF.Presentation.Context.V2,
+                Context = IIIF.Presentation.Context.Presentation2Context,
                 Metadata = new Metadata
                     {
                         Label = new MetaDataValue("origin"),
