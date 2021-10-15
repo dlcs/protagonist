@@ -118,10 +118,10 @@ namespace Orchestrator.Features.NamedQueries
                     Height = i.Height,
                     Items = new AnnotationPage
                     {
-                        Id = $"{canvasId}/anno/1",
+                        Id = $"{canvasId}/page",
                         Items = new PaintingAnnotation
                         {
-                            Id = fullyQualifiedImageId,
+                            Id = $"{canvasId}/page/image",
                             Body = new Image
                             {
                                 Id = GetFullQualifiedImagePath(i, result.Query.CustomerPathElement,
