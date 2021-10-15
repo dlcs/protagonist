@@ -35,7 +35,7 @@ namespace DLCS.HydraModel
         
         [RdfProperty(Description = "Password for creating or updating a Portal User. Is not returned by the API.",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = true)]
-        [JsonProperty(Order = 12, PropertyName = "email")]
+        [JsonProperty(Order = 12, PropertyName = "password")]
         public string? Password { get; set; }
 
         [RdfProperty(Description = "Create date",
