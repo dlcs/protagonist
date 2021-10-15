@@ -143,12 +143,7 @@ namespace Orchestrator.Features.NamedQueries
                     {
                         Id = GetFullQualifiedThumbServicePath(i, result.Query.CustomerPathElement),
                         Format = "image/jpeg",
-                        Service = new ImageService2
-                        {
-                            Id = GetFullQualifiedThumbPath(i, result.Query.CustomerPathElement, thumbnailSizes),
-                            Profile = ImageService2.Level0Profile,
-                            Sizes = thumbnailSizes
-                        }.AsListOf<IService>()
+                        Service = GetImageServiceForThumbnail(i, result.Query.CustomerPathElement, thumbnailSizes)
                     }.AsListOf<ExternalResource>();
                 }
                 
@@ -197,7 +192,8 @@ namespace Orchestrator.Features.NamedQueries
                 {
                     canvas.Thumbnail = new IIIF2.Thumbnail
                     {
-                        Id = GetFullQualifiedThumbServicePath(i, result.Query.CustomerPathElement)
+                        Id = GetFullQualifiedThumbServicePath(i, result.Query.CustomerPathElement),
+                        Service = GetImageServiceForThumbnail(i, result.Query.CustomerPathElement, thumbnailSizes)
                     }.AsList();
                 }
                 
@@ -206,6 +202,16 @@ namespace Orchestrator.Features.NamedQueries
 
             return canvases;
         }
+
+        private List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
+            List<Size> thumbnailSizes) =>
+            new ImageService2
+            {
+                Id = GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes),
+                Profile = ImageService2.Level0Profile,
+                Sizes = thumbnailSizes,
+                Context = ImageService2.Image2Context,
+            }.AsListOf<IService>();
 
         private async Task<List<Size>> GetThumbnailSizesForImage(Asset image)
         {
