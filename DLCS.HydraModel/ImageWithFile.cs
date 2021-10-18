@@ -1,14 +1,19 @@
-namespace API.Client.JsonLd
+namespace DLCS.HydraModel
 {
     public class ImageWithFile : Image
     {
-        public byte[] File { get; set; }
-
-        public Image ToImage() => new Image
+        public ImageWithFile(string baseUrl, int customerId, int space, string modelId) : base(baseUrl, customerId, space, modelId)
         {
-            ModelId = ModelId,
+        }
+        
+        public byte[]? File { get; set; }
+        
+        public Image ToImage() => new Image(BaseUrl, CustomerId, Space, ModelId!)
+        {
+            StorageIdentifier = StorageIdentifier,
             Created = Created,
             Origin = Origin,
+            InitialOrigin = InitialOrigin,
             Tags = Tags,
             Roles = Roles,
             String1 = String1,
@@ -27,9 +32,10 @@ namespace API.Client.JsonLd
             Ingesting = Ingesting,
             ImageOptimisationPolicy = ImageOptimisationPolicy,
             ThumbnailPolicy = ThumbnailPolicy,
-            InitialOrigin = InitialOrigin,
             Family = Family,
-            MediaType = MediaType
+            MediaType = MediaType,
+            Text = Text,
+            TextType = TextType
         };
     }
 }

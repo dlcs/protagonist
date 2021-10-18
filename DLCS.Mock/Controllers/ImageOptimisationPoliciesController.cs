@@ -19,11 +19,11 @@ namespace DLCS.Mock.Controllers
         
         [HttpGet]
         [Route("/imageOptimisationPolicies")]
-        public Collection<ImageOptimisationPolicy> Index()
+        public HydraCollection<ImageOptimisationPolicy> Index()
         {
             var imageOptimisationPolicies = model.ImageOptimisationPolicies.ToArray();
 
-            return new Collection<ImageOptimisationPolicy>
+            return new HydraCollection<ImageOptimisationPolicy>
             {
                 IncludeContext = true,
                 Members = imageOptimisationPolicies,

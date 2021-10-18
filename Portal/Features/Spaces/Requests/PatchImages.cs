@@ -1,18 +1,19 @@
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
-using API.Client.JsonLd;
+using DLCS.HydraModel;
+using Hydra.Collections;
 using MediatR;
 
 namespace Portal.Features.Spaces.Requests
 {
-    public class PatchImages : IRequest<HydraImageCollection>
+    public class PatchImages : IRequest<HydraCollection<Image>>
     {
-        public HydraImageCollection Images { get; set; }
+        public HydraCollection<Image> Images { get; set; }
         public int SpaceId { get; set; }
     }
 
-    public class PatchImagesHandler : IRequestHandler<PatchImages, HydraImageCollection>
+    public class PatchImagesHandler : IRequestHandler<PatchImages, HydraCollection<Image>>
     {
         private readonly IDlcsClient dlcsClient;
 
@@ -22,7 +23,7 @@ namespace Portal.Features.Spaces.Requests
         }
         
         
-        public async Task<HydraImageCollection> Handle(PatchImages request, CancellationToken cancellationToken)
+        public async Task<HydraCollection<Image>> Handle(PatchImages request, CancellationToken cancellationToken)
         {
             return await dlcsClient.PatchImages(request.Images, request.SpaceId);
         }

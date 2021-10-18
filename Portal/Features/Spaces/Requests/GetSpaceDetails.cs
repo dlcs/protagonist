@@ -5,14 +5,16 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
-using API.Client.JsonLd;
 using DLCS.Core;
 using DLCS.Core.Settings;
+using DLCS.HydraModel;
+using Hydra.Collections;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Portal.Features.Spaces.Models;
 using Portal.Settings;
+using Image = DLCS.HydraModel.Image;
 
 namespace Portal.Features.Spaces.Requests
 {
@@ -84,7 +86,7 @@ namespace Portal.Features.Spaces.Requests
             return model;
         }
 
-        private async Task<HydraImageCollection?> GetSpaceImages(GetSpaceDetails request)
+        private async Task<HydraCollection<Image>?> GetSpaceImages(GetSpaceDetails request)
         {
             var images = await dlcsClient.GetSpaceImages(request.SpaceId);
 

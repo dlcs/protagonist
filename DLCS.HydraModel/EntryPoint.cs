@@ -12,13 +12,13 @@ namespace DLCS.HydraModel
         [HydraLink(Description = "List of customers to which you have access (usually 1)", 
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "customers")]
-        public string Customers { get; set; }
+        public string? Customers { get; set; }
 
 
         [HydraLink(Description = "List of available origin strategies that the DLCS can use to fetch your images.",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 12, PropertyName = "originStrategies")]
-        public string OriginStrategies { get; set; }
+        public string? OriginStrategies { get; set; }
 
 
         [HydraLink(Description = "List of all the different roles available to portal users - i.e., the small number of people who log into the portal." +
@@ -26,27 +26,27 @@ namespace DLCS.HydraModel
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 13, PropertyName = "portalRoles")]
 
-        public string PortalRoles { get; set; }
+        public string? PortalRoles { get; set; }
 
         [HydraLink(Description = "List of available optimisation policies the DLCS uses to process your image to provide a IIIF endpoint. " +
                                  "We keep a record of the policy used to allow a different policy (e.g., better quality) to be used later.",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 14, PropertyName = "imageOptimisationPolicies")]
 
-        public string ImageOptimisationPolicies { get; set; }
+        public string? ImageOptimisationPolicies { get; set; }
 
 
         [HydraLink(Description = "List of all the different roles available to portal users - i.e., the small number of people who log into the portal." +
                                  " These are not the same as the roles end users acquire for accessing protected image services.",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 15, PropertyName = "thumbnailPolicies")]
-        public string ThumbnailPolicies { get; set; }
+        public string? ThumbnailPolicies { get; set; }
 
         [HydraLink(Description = "Available storage policies that can be associated with a Customer or a Space. They determine the " +
                                  "number of images and storage capacity permitted to the Customer or Space.",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 18, PropertyName = "storagePolicies")]
-        public string StoragePolicies { get; set; }
+        public string? StoragePolicies { get; set; }
     }
 
     public class EntryPointClass : Class

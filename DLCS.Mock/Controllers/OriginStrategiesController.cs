@@ -19,11 +19,11 @@ namespace DLCS.Mock.Controllers
         
         [HttpGet]
         [Route("/originStrategies")]
-        public Collection<OriginStrategy> Index()
+        public HydraCollection<OriginStrategy> Index()
         {
             var originStrategies = model.OriginStrategies.ToArray();
 
-            return new Collection<OriginStrategy>
+            return new HydraCollection<OriginStrategy>
             {
                 IncludeContext = true,
                 Members = originStrategies,

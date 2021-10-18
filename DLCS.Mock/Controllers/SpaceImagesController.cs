@@ -21,8 +21,8 @@ namespace DLCS.Mock.Controllers
         }
         
         [HttpGet]
-        [Route("/customers/{customerId}/spaces/{spaceId}/images/{id}")]
-        public IActionResult Image(int customerId, int spaceId, string id = null)
+        [Route("/customers/{customerId}/spaces/{spaceId}/images/{id?}")]
+        public IActionResult Image(int customerId, int spaceId, string? id = null)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -33,7 +33,7 @@ namespace DLCS.Mock.Controllers
                     images = images.Where(im => im.String1 == string1).ToList();
                 }
                 AutoAdvance(images);
-                var hc = new Collection<Image> {Members = images.ToArray()};
+                var hc = new HydraCollection<Image> {Members = images.ToArray()};
                 //var hc = new Collection<JObject>();
                 //hc.Members = images.Select(im => im.GetCollectionForm()).ToArray();
                 hc.TotalItems = hc.Members.Length;
@@ -100,7 +100,7 @@ namespace DLCS.Mock.Controllers
         [Route("/customers/{customerId}/spaces/{spaceId}/images/{id}")]
         public Image Image(int customerId, int spaceId, string id, [FromBody]Image incomingImage)
         {
-            var newImage = new Image(model.BaseUrl, customerId, spaceId, incomingImage.ModelId,
+            var newImage = MockHelp.MakeImage(model.BaseUrl, customerId, spaceId, incomingImage.ModelId,
                     DateTime.Now, incomingImage.Origin, incomingImage.InitialOrigin,
                     0, 0, incomingImage.MaxUnauthorised, null, null, null, true, null,
                     incomingImage.Tags, incomingImage.String1, incomingImage.String2, incomingImage.String3,

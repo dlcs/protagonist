@@ -27,19 +27,19 @@ namespace DLCS.HydraModel
     public class NamedQuery : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
+        
         [JsonIgnore]
         public int CustomerId { get; set; }
 
-        public NamedQuery() { }
-
-        public NamedQuery(string baseUrl, int customerId, string modelId, string name, bool global, string template)
+        public NamedQuery()
+        {
+        }
+        
+        public NamedQuery(string baseUrl, int customerId, string modelId)
         {
             CustomerId = customerId;
             ModelId = modelId;
-            Name = name;
-            Global = global;
-            Template = template;
             Init(baseUrl, true, customerId, ModelId);
         }
 
@@ -47,17 +47,17 @@ namespace DLCS.HydraModel
         [RdfProperty(Description = "The name that appears for the query in the path on https://dlcs.io, e.g., 'manifest'",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 10, PropertyName = "name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [RdfProperty(Description = "The named query is available to all customers",
             Range = Names.XmlSchema.Boolean, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "global")]
-        public bool Global { get; set; }
+        public bool? Global { get; set; }
 
         [RdfProperty(Description = "URI template",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "template")]
-        public string Template { get; set; }
+        public string? Template { get; set; }
 
     }
 

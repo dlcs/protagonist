@@ -1,12 +1,14 @@
 using System;
-using API.Client.JsonLd;
+using DLCS.HydraModel;
+using Hydra.Collections;
 
 namespace Portal.Features.Spaces.Models
 {
     public class SpacePageModel
     {
         public Space? Space { get; set; }
-        public HydraImageCollection? Images { get; set; }
+        
+        public HydraCollection<Image>? Images { get; set; }
         
         public Uri? UniversalViewer { get; set; }
         

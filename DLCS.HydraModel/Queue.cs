@@ -12,15 +12,15 @@ namespace DLCS.HydraModel
     public class Queue : DlcsResource
     {
         [JsonIgnore]
-        public int ModelId { get; set; }
+        public int CustomerId { get; set; }
 
         public Queue()
         {
         }
-
+        
         public Queue(string baseUrl, int customerId)
         {
-            ModelId = customerId;
+            CustomerId = customerId;
             Init(baseUrl, true, customerId);
         }
 
@@ -32,25 +32,25 @@ namespace DLCS.HydraModel
         [HydraLink(Description = "Collection (paged) of the batches - the separate jobs you have submitted to the queue",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 12, PropertyName = "batches")]
-        public string Batches { get; set; }
+        public string? Batches { get; set; }
 
         [HydraLink(Description = "Collection (paged). Merged view of images on the queue, across batches. Typically you'd use this to " +
                                  "look at the top or bottom of the queue (first or large page).",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 13, PropertyName = "images")]
-        public string Images { get; set; }
+        public string? Images { get; set; }
 
 
         [HydraLink(Description = "Collection (paged) of finished batches which are not marked as superseded. Most recent first.",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 14, PropertyName = "recent")]
-        public string Recent { get; set; }
+        public string? Recent { get; set; }
 
 
         [HydraLink(Description = "Collection (paged) of batches that are currently in process.",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 15, PropertyName = "active")]
-        public string Active { get; set; }
+        public string? Active { get; set; }
 
     }
 

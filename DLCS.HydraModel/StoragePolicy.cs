@@ -11,20 +11,18 @@ namespace DLCS.HydraModel
     public class StoragePolicy : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
-
+        public string? ModelId { get; set; }
 
         public StoragePolicy()
         {
         }
-
-        public StoragePolicy(string baseUrl, string storagePolicyId, long maximumNumberOfStoredImages, long maximumTotalSizeOfStoredImages)
+        
+        public StoragePolicy(string baseUrl, string storagePolicyId)
         {
             ModelId = storagePolicyId;
-            MaximumNumberOfStoredImages = maximumNumberOfStoredImages;
-            MaximumTotalSizeOfStoredImages = maximumTotalSizeOfStoredImages;
             Init(baseUrl, true, storagePolicyId);
         }
+
 
         [RdfProperty(Description = "The maximum number of images that can be registered, across ALL the Customer's spaces",
             Range = Names.XmlSchema.NonNegativeInteger, ReadOnly = false, WriteOnly = false)]

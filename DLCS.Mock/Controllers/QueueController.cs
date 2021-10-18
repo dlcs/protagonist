@@ -23,7 +23,7 @@ namespace DLCS.Mock.Controllers
         [Route("/customers/{customerId}/queue")]
         public IActionResult Queue(int customerId)
         {
-            var queue = model.Queues.SingleOrDefault(q => q.ModelId == customerId);
+            var queue = model.Queues.SingleOrDefault(q => q.CustomerId == customerId);
             if (queue == null)
             {
                 return NotFound();
@@ -33,7 +33,7 @@ namespace DLCS.Mock.Controllers
 
         [HttpPost]
         [Route("/customers/{customerId}/queue")]
-        public Batch Index(int customerId, [FromBody] Collection<Image> images)
+        public Batch Index(int customerId, [FromBody] HydraCollection<Image> images)
         {
             List<Image> initialisedImages = new List<Image>();
 
@@ -42,7 +42,7 @@ namespace DLCS.Mock.Controllers
             model.Batches.Add(batch);
             foreach (var incomingImage in images.Members)
             {
-                var newImage = new Image(model.BaseUrl, customerId, incomingImage.Space, incomingImage.ModelId, 
+                var newImage = MockHelp.MakeImage(model.BaseUrl, customerId, incomingImage.Space, incomingImage.ModelId, 
                     DateTime.Now, incomingImage.Origin, incomingImage.InitialOrigin,
                     0, 0, incomingImage.MaxUnauthorised, null, null, null, true, null, 
                     incomingImage.Tags, incomingImage.String1, incomingImage.String2, incomingImage.String3,

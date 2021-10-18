@@ -13,8 +13,7 @@ namespace DLCS.HydraModel
     public class ImageOptimisationPolicy : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
-
+        public string? ModelId { get; set; }
 
         public ImageOptimisationPolicy()
         {
@@ -23,20 +22,20 @@ namespace DLCS.HydraModel
         public ImageOptimisationPolicy(string baseUrl, string imageOptimisationPolicyId, string name, string technicalDetails)
         {
             ModelId = imageOptimisationPolicyId;
+            Init(baseUrl, true, imageOptimisationPolicyId);
             Name = name;
             TechnicalDetails = technicalDetails;
-            Init(baseUrl, true, imageOptimisationPolicyId);
         }
 
         [RdfProperty(Description = "The human readable name of the image policy",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [RdfProperty(Description = "Details of the encoding and tools used. Might not be public.",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "technicalDetails")]
-        public string TechnicalDetails { get; set; }
+        public string? TechnicalDetails { get; set; }
     }
 
 

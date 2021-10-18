@@ -1,6 +1,6 @@
 using System;
-using API.Client.JsonLd;
 using DLCS.Core.Settings;
+using DLCS.HydraModel;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace Portal.TagHelpers

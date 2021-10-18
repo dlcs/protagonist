@@ -22,36 +22,36 @@ namespace DLCS.HydraModel
         [JsonIgnore]
         public int CustomerId { get; set; }
 
-        public CustomerOriginStrategy() { }
-
-        public CustomerOriginStrategy(string baseUrl, int customerId, int strategyId, string regex, string credentials, string originStrategy)
+        public CustomerOriginStrategy()
+        {
+        }
+        
+        public CustomerOriginStrategy(string baseUrl, int customerId, int strategyId)
         {
             CustomerId = customerId;
             ModelId = strategyId;
-            Regex = regex;
-            Credentials = credentials;
-            OriginStrategy = originStrategy;
             Init(baseUrl, true, customerId, ModelId);
         }
 
+        
         [RdfProperty(Description = "Regex for matching origin. When the DLCS tries to work out how to fetch " +
                                    "from your origin, it uses this regex to match to find the correct strategy.",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "regex")]
-        public string Regex { get; set; }
+        public string? Regex { get; set; }
 
 
         [HydraLink(Description = "Link to the origin strategy definition that will be used if the regex is matched.",
             Range = "vocab:OriginStrategy", ReadOnly = true, WriteOnly = false, SetManually = true)]
         [JsonProperty(Order = 17, PropertyName = "originStrategy")]
-        public string OriginStrategy { get; set; }
+        public string? OriginStrategy { get; set; }
 
 
         [HydraLink(Description = "JSON object - credentials appropriate to the protocol, will vary. " +
                                    "These are stored in S3 and are not available via the API.",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 20, PropertyName = "credentials")]
-        public string Credentials { get; set; }
+        public string? Credentials { get; set; }
     }
 
     public class CustomerOriginStrategyClass : Class

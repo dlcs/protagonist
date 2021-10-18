@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
-using API.Client.JsonLd;
+using DLCS.HydraModel;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

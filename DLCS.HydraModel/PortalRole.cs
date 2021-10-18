@@ -10,10 +10,9 @@ namespace DLCS.HydraModel
     [Unstable(Note = "Under consideration.")]
     public class PortalRole : DlcsResource
     {
-        [JsonIgnore]
-        public string ModelId { get; set; }
-
-        public PortalRole() { }
+        public PortalRole()
+        {
+        }
 
         public PortalRole(string baseUrl, string portalRoleId, string name)
         {
@@ -22,10 +21,13 @@ namespace DLCS.HydraModel
             Init(baseUrl, true, portalRoleId);
         }
 
+        [JsonIgnore]
+        public string? ModelId { get; set; }
+        
         [RdfProperty(Description = "The human readable name of the origin strategy",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
     }
 

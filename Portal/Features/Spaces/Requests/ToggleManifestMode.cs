@@ -7,7 +7,6 @@ using DLCS.Repository.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Portal.Behaviours;
-using SpaceX = API.Client.JsonLd.SpaceX;
 
 namespace Portal.Features.Spaces.Requests
 {
@@ -56,11 +55,11 @@ namespace Portal.Features.Spaces.Requests
         {
             if (toggleOn)
             {
-                dbSpace.AddTag(SpaceX.ManifestTag);
+                dbSpace.AddTag(DLCS.HydraModel.SpaceX.ManifestTag);
             }
             else
             {
-                dbSpace.RemoveTag(SpaceX.ManifestTag);
+                dbSpace.RemoveTag(DLCS.HydraModel.SpaceX.ManifestTag);
             }
 
             var changeCount = await dbContext.SaveChangesAsync(cancellationToken);

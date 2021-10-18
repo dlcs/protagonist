@@ -5,7 +5,7 @@ namespace Hydra
     /// <summary>
     /// A JSON object with a Hydra context
     /// </summary>
-    public class JSONLDBaseWithHydraContext : JSONLDBase
+    public class JsonLdBaseWithHydraContext : JsonLdBase
     {
         [JsonIgnore]
         public bool IncludeContext { get; set; }

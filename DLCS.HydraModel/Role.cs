@@ -13,19 +13,19 @@ namespace DLCS.HydraModel
     public class Role : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
+        
         [JsonIgnore]
         public int CustomerId { get; set; }
 
-        public Role() { }
+        public Role()
+        {
+        }
 
-        public Role(string baseUrl, int customerId, string roleId, string name, string label, string[] aliases)
+        public Role(string baseUrl, int customerId, string roleId)
         {
             CustomerId = customerId;
             ModelId = roleId;
-            Name = name;
-            Label = label;
-            Aliases = aliases;
             Init(baseUrl, true, customerId, ModelId);
         }
 
@@ -33,23 +33,23 @@ namespace DLCS.HydraModel
         [RdfProperty(Description = "The role name - this might be the same as the ID?",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [RdfProperty(Description = "Label for a slightly longer description of the role",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 12, PropertyName = "label")]
-        public string Label { get; set; }
+        public string? Label { get; set; }
 
         [RdfProperty(Description = "If the DLCS acquires roles from the customer, they might have different names, or change over time. " +
                                    "This allows a customer to release one role name via a roleprovider but use a different name within the DLCS.",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 13, PropertyName = "aliases")]
-        public string[] Aliases { get; set; }
+        public string[]? Aliases { get; set; }
 
         [HydraLink(Description = "The IIIF Auth Service for this role",
             Range = "vocab:AuthService", ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 15, PropertyName = "authService")]
-        public string AuthService { get; set; }
+        public string? AuthService { get; set; }
     }
 
     public class RoleClass : Class

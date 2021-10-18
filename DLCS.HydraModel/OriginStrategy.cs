@@ -16,24 +16,23 @@ namespace DLCS.HydraModel
     public class OriginStrategy : DlcsResource
     {
         [JsonIgnore]
-        public string ModelId { get; set; }
+        public string? ModelId { get; set; }
 
         public OriginStrategy()
         {
         }
 
-        public OriginStrategy(string baseUrl, string originStrategyId, string name, bool requiresCredentials)
+        public OriginStrategy(string baseUrl, string originStrategyId)
         {
             ModelId = originStrategyId;
-            Name = name;
-            RequiresCredentials = requiresCredentials;
             Init(baseUrl, true, originStrategyId);
         }
+
 
         [RdfProperty(Description = "The human readable name of the origin strategy",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
 
 

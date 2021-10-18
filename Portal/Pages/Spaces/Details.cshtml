@@ -1,4 +1,5 @@
 ﻿@page "{id}"
+@using DLCS.HydraModel
 @model Portal.Pages.Spaces.Details
 
 @{
@@ -83,7 +84,7 @@
             {
                 <tr>
                     <td>
-                        @if (image.Family == 'I')
+                        @if (image.Family == AssetFamily.Image)
                         {
                             <iiif-thumb
                                 customer-url-part="@Model.Customer"

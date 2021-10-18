@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 
 namespace DLCS.HydraModel
 {
-    public class DlcsResource : JSONLDBase
+    public class DlcsResource : JsonLdBase
     {
         [JsonIgnore]
         protected string BaseUrl { get; set; }

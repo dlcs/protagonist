@@ -2,11 +2,12 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using API.Client.JsonLd;
 using DLCS.Web.Response;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using DLCS.HydraModel;
+using Hydra;
 
 namespace API.Client
 {
