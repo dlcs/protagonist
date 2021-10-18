@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -103,11 +104,7 @@ namespace Orchestrator
                 .AddScoped<AccessChecker>()
                 .AddScoped<ISessionAuthService, SessionAuthService>()
                 .AddScoped<AuthCookieManager>()
-                .AddSingleton<INamedQueryParser, BasicNamedQueryParser>()
-                .AddScoped<INamedQueryRepository, NamedQueryRepository>()
                 .AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>()
-                .AddScoped<NamedQueryConductor>()
-                .AddScoped<IIIFNamedQueryProjector>()
                 .AddSingleton<AssetRequestProcessor>()
                 .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
                 .AddOriginStrategies()
@@ -115,7 +112,8 @@ namespace Orchestrator
                     opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
                 )
                 .AddMediatR()
-                .AddHttpContextAccessor();
+                .AddHttpContextAccessor()
+                .AddNamedQueries();
 
             var orchestratorAddress = reverseProxySection.Get<ReverseProxySettings>()
                 .GetAddressForProxyTarget(ProxyDestination.Orchestrator);

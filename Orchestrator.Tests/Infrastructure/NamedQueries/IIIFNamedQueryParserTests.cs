@@ -5,18 +5,19 @@ using DLCS.Model.PathElements;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Orchestrator.Infrastructure.NamedQueries;
+using Orchestrator.Infrastructure.NamedQueries.Parsing;
 using Xunit;
 
 namespace Orchestrator.Tests.Infrastructure.NamedQueries
 {
-    public class BasicNamedQueryParserTests
+    public class IIIFNamedQueryParserTests
     {
-        private readonly BasicNamedQueryParser sut;
+        private readonly BaseNamedQueryParser<IIIFParsedNamedQuery> sut;
         private static readonly CustomerPathElement Customer = new(99, "test-customer");
 
-        public BasicNamedQueryParserTests()
+        public IIIFNamedQueryParserTests()
         {
-            sut = new BasicNamedQueryParser(new NullLogger<BasicNamedQueryParser>());
+            sut = new IIIFNamedQueryParser(new NullLogger<IIIFNamedQueryParser>());
         }
 
         [Theory]
@@ -26,7 +27,8 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
         public void GenerateParsedNamedQueryFromRequest_Throws_IfTemplateEmptyOrWhiteSpace(string template)
         {
             // Act
-            Action action = () => sut.GenerateParsedNamedQueryFromRequest(Customer, null, template);
+            Action action = () =>
+                sut.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, null, template);
             
             // Assert
             action.Should()
@@ -42,7 +44,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             string args)
         {
             // Act
-            var result = sut.GenerateParsedNamedQueryFromRequest(Customer, args, template);
+            var result = sut.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args, template);
 
             // Assert
             result.IsFaulty.Should().BeTrue();
@@ -57,7 +59,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             string args)
         {
             // Act
-            var result = sut.GenerateParsedNamedQueryFromRequest(Customer, args, template);
+            var result = sut.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args, template);
 
             // Assert
             result.IsFaulty.Should().BeTrue();
@@ -71,7 +73,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             string args)
         {
             // Act
-            var result = sut.GenerateParsedNamedQueryFromRequest(Customer, args, template);
+            var result = sut.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args, template);
 
             // Assert
             result.IsFaulty.Should().BeTrue();
@@ -84,7 +86,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             ParsedNamedQuery expected, string explanation)
         {
             // Act
-            var result = sut.GenerateParsedNamedQueryFromRequest(Customer, args, template);
+            var result = sut.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args, template);
             
             // Assert
             result.Should().BeEquivalentTo(expected, explanation);
@@ -93,42 +95,42 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
         // Note: This is not a completely exhaustive list
         public static IEnumerable<object[]> ParseNamedQueries => new List<object[]>
         {
-            new object[] { "space=p1", "10", new ParsedNamedQuery(Customer) { Space = 10 }, "Space from param" },
-            new object[] { "space=5", "", new ParsedNamedQuery(Customer) { Space = 5 }, "Hardcoded value" },
-            new object[] { "space=p1&#=10", "", new ParsedNamedQuery(Customer) { Space = 10 }, "Space from template" },
+            new object[] { "space=p1", "10", new IIIFParsedNamedQuery(Customer) { Space = 10 }, "Space from param" },
+            new object[] { "space=5", "", new IIIFParsedNamedQuery(Customer) { Space = 5 }, "Hardcoded value" },
+            new object[] { "space=p1&#=10", "", new IIIFParsedNamedQuery(Customer) { Space = 10 }, "Space from template" },
             new object[]
             {
                 "manifest=s1&spacename=p1", "10",
-                new ParsedNamedQuery(Customer) { SpaceName = "10", Manifest = ParsedNamedQuery.QueryMapping.String1 },
+                new IIIFParsedNamedQuery(Customer) { SpaceName = "10", Manifest = IIIFParsedNamedQuery.QueryMapping.String1 },
                 "Spacename from param"
             },
             new object[]
             {
                 "manifest=s1&canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
-                new ParsedNamedQuery(Customer)
+                new IIIFParsedNamedQuery(Customer)
                 {
-                    String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
-                    Canvas = ParsedNamedQuery.QueryMapping.Number2
+                    String1 = "string-1", Number1 = 40, Space = 1, Manifest = IIIFParsedNamedQuery.QueryMapping.String1,
+                    Canvas = IIIFParsedNamedQuery.QueryMapping.Number2
                 },
                 "All params"
             },
             new object[]
             {
                 "manifest=s1&sequence=n1&canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40/10/100",
-                new ParsedNamedQuery(Customer)
+                new IIIFParsedNamedQuery(Customer)
                 {
-                    String1 = "string-1", Number1 = 40, Space = 10, Manifest = ParsedNamedQuery.QueryMapping.String1,
-                    Canvas = ParsedNamedQuery.QueryMapping.Number2
+                    String1 = "string-1", Number1 = 40, Space = 10, Manifest = IIIFParsedNamedQuery.QueryMapping.String1,
+                    Canvas = IIIFParsedNamedQuery.QueryMapping.Number2
                 },
                 "Extra args are ignored"
             },
             new object[]
             {
                 "manifest=s1&&n3=&canvas=n2&=10&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
-                new ParsedNamedQuery(Customer)
+                new IIIFParsedNamedQuery(Customer)
                 {
-                    String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
-                    Canvas = ParsedNamedQuery.QueryMapping.Number2
+                    String1 = "string-1", Number1 = 40, Space = 1, Manifest = IIIFParsedNamedQuery.QueryMapping.String1,
+                    Canvas = IIIFParsedNamedQuery.QueryMapping.Number2
                 },
                 "Incorrect template pairs are ignored"
             },

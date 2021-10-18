@@ -7,44 +7,40 @@ using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
 
-namespace Orchestrator.Infrastructure.NamedQueries
+namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 {
     /// <summary>
-    /// Basic NQ parser, supporting the following arguments: s1, s2, s3, n1, n2, n3, space, spacename, manifest,
-    /// sequence, canvas, # and p*
+    /// Basic NQ parser, supporting the following arguments: s1, s2, s3, n1, n2, n3, space, spacename, # and p*
     /// </summary>
-    public class BasicNamedQueryParser : INamedQueryParser
+    public abstract class BaseNamedQueryParser<T> : INamedQueryParser
+        where T : ParsedNamedQuery
     {
-        private readonly ILogger<BasicNamedQueryParser> logger;
-        private const string AdditionalArgMarker = "#";
-        
-        // IIIF specific
-        private const string Element = "canvas";
-        private const string Manifest = "manifest";
+        protected readonly ILogger Logger;
 
         // Common/source
-        private const string Number1 = "n1";
-        private const string Number2 = "n2";
-        private const string Number3 = "n3";
-        private const string ParameterPrefix = "p";
-        private const string Space = "space";
-        private const string SpaceName = "spacename";
-        private const string String1 = "s1";
-        private const string String2 = "s2";
-        private const string String3 = "s3";
+        protected const string AdditionalArgMarker = "#";
+        protected const string Number1 = "n1";
+        protected const string Number2 = "n2";
+        protected const string Number3 = "n3";
+        protected const string ParameterPrefix = "p";
+        protected const string Space = "space";
+        protected const string SpaceName = "spacename";
+        protected const string String1 = "s1";
+        protected const string String2 = "s2";
+        protected const string String3 = "s3";
 
-        public BasicNamedQueryParser(ILogger<BasicNamedQueryParser> logger)
+        public BaseNamedQueryParser(ILogger logger)
         {
-            this.logger = logger;
+            Logger = logger;
         }
 
-        public ParsedNamedQuery GenerateParsedNamedQueryFromRequest(
-            CustomerPathElement customerPathElement, 
+        public T GenerateParsedNamedQueryFromRequest<T>(
+            CustomerPathElement customerPathElement,
             string? namedQueryArgs,
-            string namedQueryTemplate)
+            string namedQueryTemplate) where T : ParsedNamedQuery
         {
             namedQueryTemplate.ThrowIfNullOrWhiteSpace(nameof(namedQueryTemplate));
-            
+
             // Split the NQ template into the component parts
             var templatePairing = namedQueryTemplate.Split("&", StringSplitOptions.RemoveEmptyEntries);
 
@@ -53,7 +49,7 @@ namespace Orchestrator.Infrastructure.NamedQueries
 
             // Populate the ParsedNamedQuery object using template + query args
             var assetQuery = GenerateParsedNamedQuery(customerPathElement, templatePairing, queryArgs);
-            return assetQuery;
+            return (assetQuery as T)!;
         }
 
         private static List<string> GetQueryArgsList(string? namedQueryArgs, string[] templatePairing)
@@ -73,12 +69,12 @@ namespace Orchestrator.Infrastructure.NamedQueries
 
             return queryArgs;
         }
-        
-        private ParsedNamedQuery GenerateParsedNamedQuery(CustomerPathElement customer, 
+
+        private T GenerateParsedNamedQuery(CustomerPathElement customer,
             string[] templatePairing,
             List<string> queryArgs)
         {
-            var assetQuery = new ParsedNamedQuery(customer);
+            var assetQuery = GenerateParsedQueryObject(customer);
 
             // Iterate through all of the pairs and generate the NQ model
             try
@@ -96,12 +92,6 @@ namespace Orchestrator.Infrastructure.NamedQueries
                         case SpaceName:
                             assetQuery.SpaceName = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
                             break;
-                        case Manifest:
-                            assetQuery.Manifest = GetQueryMappingFromTemplateElement(elements[1]);
-                            break;
-                        case Element:
-                            assetQuery.Canvas = GetQueryMappingFromTemplateElement(elements[1]);
-                            break;
                         case String1:
                             assetQuery.String1 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
                             break;
@@ -112,39 +102,47 @@ namespace Orchestrator.Infrastructure.NamedQueries
                             assetQuery.String3 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
                             break;
                         case Number1:
-                            assetQuery.Number1 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                            assetQuery.Number1 =
+                                long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                             break;
                         case Number2:
-                            assetQuery.Number2 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                            assetQuery.Number2 =
+                                long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                             break;
                         case Number3:
-                            assetQuery.Number3 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                            assetQuery.Number3 =
+                                long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                             break;
                     }
+
+                    CustomHandling(queryArgs, elements[0], elements[1], assetQuery);
                 }
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Error parsing named query for customer {Customer}", customer.Id);
+                Logger.LogError(e, "Error parsing named query for customer {Customer}", customer.Id);
                 assetQuery.SetError(e.Message);
             }
 
             return assetQuery;
         }
-        
-        private ParsedNamedQuery.QueryMapping GetQueryMappingFromTemplateElement(string element)
-            => element switch
-            {
-                String1 => ParsedNamedQuery.QueryMapping.String1,
-                String2 => ParsedNamedQuery.QueryMapping.String2,
-                String3 => ParsedNamedQuery.QueryMapping.String3,
-                Number1 => ParsedNamedQuery.QueryMapping.Number1,
-                Number2 => ParsedNamedQuery.QueryMapping.Number2,
-                Number3 => ParsedNamedQuery.QueryMapping.Number3,
-                _ => ParsedNamedQuery.QueryMapping.Unset
-            };
 
-        private string GetQueryArgumentFromTemplateElement(List<string> args, string element)
+        /// <summary>
+        /// Adds handling for any custom key/value pairs, in addition to the core s1, s2, p1 etc
+        /// </summary>
+        /// <param name="queryArgs">Collection of query args parsed from request and template</param>
+        /// <param name="key">Key of templatePair </param>
+        /// <param name="value"></param>
+        /// <param name="assetQuery"></param>
+        protected abstract void CustomHandling(List<string> queryArgs, string key, string value, T assetQuery);
+
+        /// <summary>
+        /// Factory method to generate instance of <see cref="ParsedNamedQuery"/>.
+        /// </summary>
+        /// <remarks>Could use Activator.CreateInstance this avoids using reflection</remarks>
+        protected abstract T GenerateParsedQueryObject(CustomerPathElement customerPathElement);
+
+        protected string GetQueryArgumentFromTemplateElement(List<string> args, string element)
         {
             // Arg will be in format p1, p2, p3 etc. Get the index, then extract that element from args list
             if (!element.StartsWith(ParameterPrefix) || element.Length <= 1)
@@ -152,7 +150,7 @@ namespace Orchestrator.Infrastructure.NamedQueries
                 // default to just return the element as a literal
                 return element;
             }
-            
+
             if (int.TryParse(element[1..], out int argNumber))
             {
                 if (args.Count >= argNumber)
