@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 {
     /// <summary>
-    /// Basic NQ parser, supporting the following arguments: s1, s2, s3, n1, n2, n3, space, spacename, # and p*
+    /// Basic NQ parser, supporting the following arguments: s1, s2, s3, n1, n2, n3, space, spacename, canvas, # and p*
     /// </summary>
     public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         where T : ParsedNamedQuery
@@ -19,6 +19,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 
         // Common/source
         protected const string AdditionalArgMarker = "#";
+        protected const string Canvas = "canvas";
         protected const string Number1 = "n1";
         protected const string Number2 = "n2";
         protected const string Number3 = "n3";
@@ -86,6 +87,9 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 
                     switch (elements[0])
                     {
+                        case Canvas:
+                            assetQuery.Canvas = GetQueryMappingFromTemplateElement(elements[1]);
+                            break;
                         case Space:
                             assetQuery.Space = int.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                             break;
@@ -164,5 +168,20 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 
             throw new ArgumentException($"Could not parse template element parameter '{element}'", element);
         }
+
+        /// <summary>
+        /// Convert passed string element (e.g. s1, s2) to <see cref="ParsedNamedQuery.QueryMapping"/>
+        /// </summary>
+        protected ParsedNamedQuery.QueryMapping GetQueryMappingFromTemplateElement(string element)
+            => element switch
+            {
+                String1 => ParsedNamedQuery.QueryMapping.String1,
+                String2 => ParsedNamedQuery.QueryMapping.String2,
+                String3 => ParsedNamedQuery.QueryMapping.String3,
+                Number1 => ParsedNamedQuery.QueryMapping.Number1,
+                Number2 => ParsedNamedQuery.QueryMapping.Number2,
+                Number3 => ParsedNamedQuery.QueryMapping.Number3,
+                _ => ParsedNamedQuery.QueryMapping.Unset
+            };
     }
 }

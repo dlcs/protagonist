@@ -12,7 +12,6 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
         private const string ObjectName = "objectname";
         private const string CoverPage = "coverpage";
         private const string RedactedMessage = "redactedmessage";
-        private const string RolesWhitelist = "roles";
 
         public PdfNamedQueryParser(ILogger<PdfNamedQueryParser> logger) : base(logger)
         {

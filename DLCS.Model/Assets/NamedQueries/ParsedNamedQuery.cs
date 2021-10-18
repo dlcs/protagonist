@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using DLCS.Core.Guard;
+﻿using DLCS.Core.Guard;
 using DLCS.Model.PathElements;
 
 namespace DLCS.Model.Assets.NamedQueries
@@ -10,6 +9,11 @@ namespace DLCS.Model.Assets.NamedQueries
     /// </summary>
     public class ParsedNamedQuery
     {
+        /// <summary>
+        /// Which Asset property to use for specifying Canvas sequence 
+        /// </summary>
+        public QueryMapping Canvas { get; set; } = QueryMapping.Unset;
+        
         /// <summary>
         /// Value of "space" parameter after parsing
         /// </summary>
@@ -83,10 +87,7 @@ namespace DLCS.Model.Assets.NamedQueries
             ErrorMessage = errorMessage.ThrowIfNullOrWhiteSpace(nameof(errorMessage));
             IsFaulty = true;
         }
-    }
-    
-    public class IIIFParsedNamedQuery : ParsedNamedQuery
-    {
+        
         /// <summary>
         /// Enum specifying the source of data for a NQ property
         /// </summary>
@@ -99,33 +100,6 @@ namespace DLCS.Model.Assets.NamedQueries
             Number1,
             Number2,
             Number3
-        }
-
-        /// <summary>
-        /// Which Asset property to use for specifying Manifest 
-        /// </summary>
-        /// <remarks>This is currently not used, needs to be implemented</remarks>
-        public QueryMapping Manifest { get; set; } = QueryMapping.Unset;
-
-        /// <summary>
-        /// Which Asset property to use for specifying Canvas sequence 
-        /// </summary>
-        public QueryMapping Canvas { get; set; } = QueryMapping.Unset;
-
-        public IIIFParsedNamedQuery(CustomerPathElement customerPathElement) : base(customerPathElement)
-        {
-        }
-    }
-
-    public class PdfParsedNamedQuery : ParsedNamedQuery
-    {
-        public string ObjectName { get; set; }
-        public string CoverPage { get; set; }
-        public string RedactedMessage { get; set; }
-        public List<string> RolesWhitelist { get; set; } = new();
-        
-        public PdfParsedNamedQuery(CustomerPathElement customerPathElement) : base(customerPathElement)
-        {
         }
     }
 }

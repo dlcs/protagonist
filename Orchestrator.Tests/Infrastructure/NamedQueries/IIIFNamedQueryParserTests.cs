@@ -4,7 +4,6 @@ using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Infrastructure.NamedQueries.Parsing;
 using Xunit;
 
@@ -101,7 +100,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             new object[]
             {
                 "manifest=s1&spacename=p1", "10",
-                new IIIFParsedNamedQuery(Customer) { SpaceName = "10", Manifest = IIIFParsedNamedQuery.QueryMapping.String1 },
+                new IIIFParsedNamedQuery(Customer) { SpaceName = "10", Manifest = ParsedNamedQuery.QueryMapping.String1 },
                 "Spacename from param"
             },
             new object[]
@@ -109,7 +108,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
                 "manifest=s1&canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
                 new IIIFParsedNamedQuery(Customer)
                 {
-                    String1 = "string-1", Number1 = 40, Space = 1, Manifest = IIIFParsedNamedQuery.QueryMapping.String1,
+                    String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
                     Canvas = IIIFParsedNamedQuery.QueryMapping.Number2
                 },
                 "All params"
@@ -119,7 +118,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
                 "manifest=s1&sequence=n1&canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40/10/100",
                 new IIIFParsedNamedQuery(Customer)
                 {
-                    String1 = "string-1", Number1 = 40, Space = 10, Manifest = IIIFParsedNamedQuery.QueryMapping.String1,
+                    String1 = "string-1", Number1 = 40, Space = 10, Manifest = ParsedNamedQuery.QueryMapping.String1,
                     Canvas = IIIFParsedNamedQuery.QueryMapping.Number2
                 },
                 "Extra args are ignored"
@@ -129,7 +128,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
                 "manifest=s1&&n3=&canvas=n2&=10&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
                 new IIIFParsedNamedQuery(Customer)
                 {
-                    String1 = "string-1", Number1 = 40, Space = 1, Manifest = IIIFParsedNamedQuery.QueryMapping.String1,
+                    String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
                     Canvas = IIIFParsedNamedQuery.QueryMapping.Number2
                 },
                 "Incorrect template pairs are ignored"

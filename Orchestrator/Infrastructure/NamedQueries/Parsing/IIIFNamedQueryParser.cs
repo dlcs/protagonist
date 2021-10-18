@@ -11,7 +11,6 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
     public class IIIFNamedQueryParser : BaseNamedQueryParser<IIIFParsedNamedQuery>
     {
         // IIIF specific
-        private const string Element = "canvas";
         private const string Manifest = "manifest";
 
         public IIIFNamedQueryParser(ILogger<IIIFNamedQueryParser> logger)
@@ -27,25 +26,10 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
                 case Manifest:
                     assetQuery.Manifest = GetQueryMappingFromTemplateElement(value);
                     break;
-                case Element:
-                    assetQuery.Canvas = GetQueryMappingFromTemplateElement(value);
-                    break;
             }
         }
 
         protected override IIIFParsedNamedQuery GenerateParsedQueryObject(CustomerPathElement customerPathElement)
             => new(customerPathElement);
-        
-        private IIIFParsedNamedQuery.QueryMapping GetQueryMappingFromTemplateElement(string element)
-            => element switch
-            {
-                String1 => IIIFParsedNamedQuery.QueryMapping.String1,
-                String2 => IIIFParsedNamedQuery.QueryMapping.String2,
-                String3 => IIIFParsedNamedQuery.QueryMapping.String3,
-                Number1 => IIIFParsedNamedQuery.QueryMapping.Number1,
-                Number2 => IIIFParsedNamedQuery.QueryMapping.Number2,
-                Number3 => IIIFParsedNamedQuery.QueryMapping.Number3,
-                _ => IIIFParsedNamedQuery.QueryMapping.Unset
-            };
     }
 }

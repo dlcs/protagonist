@@ -274,12 +274,12 @@ namespace Orchestrator.Features.NamedQueries
         private object GetCanvasOrderingElement(Asset image, IIIFParsedNamedQuery query)
             => query.Canvas switch
             {
-                IIIFParsedNamedQuery.QueryMapping.Number1 => image.NumberReference1,
-                IIIFParsedNamedQuery.QueryMapping.Number2 => image.NumberReference2,
-                IIIFParsedNamedQuery.QueryMapping.Number3 => image.NumberReference3,
-                IIIFParsedNamedQuery.QueryMapping.String1 => image.Reference1,
-                IIIFParsedNamedQuery.QueryMapping.String2 => image.Reference2,
-                IIIFParsedNamedQuery.QueryMapping.String3 => image.Reference3,
+                ParsedNamedQuery.QueryMapping.Number1 => image.NumberReference1,
+                ParsedNamedQuery.QueryMapping.Number2 => image.NumberReference2,
+                ParsedNamedQuery.QueryMapping.Number3 => image.NumberReference3,
+                ParsedNamedQuery.QueryMapping.String1 => image.Reference1,
+                ParsedNamedQuery.QueryMapping.String2 => image.Reference2,
+                ParsedNamedQuery.QueryMapping.String3 => image.Reference3,
                 _ => 0
             };
 
