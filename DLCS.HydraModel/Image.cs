@@ -169,12 +169,10 @@ namespace DLCS.HydraModel
         [JsonProperty(Order = 82, PropertyName = "metadata")]
         public string? Metadata { get; set; } // herein duration, other stuff learnt during transcoding
         
-        // TODO - this is used by Wellcome DDS but is not documented.
-        // I think it should be a hydra link property
-        [HydraLink(Description = "Storage information - link is present on Deliverator API",
+        [HydraLink(Description = "Storage information - how much space taken up by images and thumbs - link is present on Deliverator API",
             Range = "vocab:AssetStorageInfo", ReadOnly = true, WriteOnly = false, SetManually = true)]
         [JsonProperty(Order = 82, PropertyName = "storage")]
-        public string? Storage { get; set; } // herein duration, other stuff learnt during transcoding
+        public string? Storage { get; set; } 
         
         [RdfProperty(Description = "Media Type (content type)",
             Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
@@ -184,7 +182,7 @@ namespace DLCS.HydraModel
         [RdfProperty(Description = "Asset Family (I for Image, T for time-based, F for File)",
             Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 130, PropertyName = "family")]
-        public char? Family { get; set; } 
+        public AssetFamily? Family { get; set; } 
         
         // TODO - Replace this with https://github.com/dlcs/protagonist/issues/148
         [RdfProperty(Description = "URI of a text source for this asset (e.g., OCR data, captions etc",

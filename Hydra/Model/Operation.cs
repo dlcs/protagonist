@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Hydra.Model
 {
-    public class Operation : JSONLDBaseWithHydraContext
+    public class Operation : JsonLdBaseWithHydraContext
     {
         public override string Type
         {

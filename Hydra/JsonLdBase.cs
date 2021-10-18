@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace Hydra
 {
-    public abstract class JSONLDBase
+    public abstract class JsonLdBase
     {
         [JsonProperty(Order = 1, PropertyName = "@context")]
         public virtual string Context { get; set; }

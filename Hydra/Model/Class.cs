@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace Hydra.Model
 {
-    public abstract class Class : JSONLDBaseWithHydraContext
+    public abstract class Class : JsonLdBaseWithHydraContext
     {
         public abstract void DefineOperations();
 

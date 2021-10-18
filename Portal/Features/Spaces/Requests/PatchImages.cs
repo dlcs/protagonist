@@ -1,10 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
-using API.Client.OldJsonLd;
+using DLCS.HydraModel;
 using Hydra.Collections;
 using MediatR;
-using Image = DLCS.HydraModel.Image;
 
 namespace Portal.Features.Spaces.Requests
 {

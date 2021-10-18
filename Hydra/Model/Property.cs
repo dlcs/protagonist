@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Hydra.Model
 {
-    public class Property : JSONLDBaseWithHydraContext
+    public class Property : JsonLdBaseWithHydraContext
     {
         [JsonProperty(Order = 11, PropertyName = "label")]
         public string Label { get; set; }

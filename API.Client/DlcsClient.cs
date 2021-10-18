@@ -155,7 +155,7 @@ namespace API.Client
             throw new NotImplementedException();
         }
 
-        private HttpContent ApiBody(JSONLDBase apiObject)
+        private HttpContent ApiBody(JsonLdBase apiObject)
         {
             var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);
             return new StringContent(jsonString, Encoding.UTF8, "application/json");
