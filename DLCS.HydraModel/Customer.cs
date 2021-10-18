@@ -19,11 +19,17 @@ namespace DLCS.HydraModel
         {
         }
 
+        public Customer(string baseUrl, int customerId, bool setLinks)
+        {
+            ModelId = customerId;
+            Init(baseUrl, setLinks, customerId);
+        }
+
         public Customer(string baseUrl, int customerId, string name, string displayName)
         {
             ModelId = customerId;
-            Name = name;
             Init(baseUrl, true, customerId);
+            Name = name;
             DisplayName = displayName;
         }
         

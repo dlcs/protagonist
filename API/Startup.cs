@@ -94,6 +94,7 @@ namespace API
                     options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                     options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
                     jsonSettings.Formatting = Formatting.Indented;
+                    jsonSettings.NullValueHandling = NullValueHandling.Ignore;
                 })
                 .SetCompatibilityVersion(CompatibilityVersion.Latest);
 

@@ -37,5 +37,28 @@ namespace DLCS.Web.Requests
                 .Append(queryString)
                 .ToString();
         }
+        
+        /// <summary>
+        /// Similar to GetDisplayUrl but omits path and query string
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public static string GetBaseUrl(this HttpRequest request)
+        {
+            var host = request.Host.Value ?? string.Empty;
+            var scheme = request.Scheme ?? string.Empty;
+            var pathBase = request.PathBase.Value ?? string.Empty;
+
+            // PERF: Calculate string length to allocate correct buffer size for StringBuilder.
+            var length = scheme.Length + SchemeDelimiter.Length + host.Length
+                         + pathBase.Length;
+
+            return new StringBuilder(length)
+                .Append(scheme)
+                .Append(SchemeDelimiter)
+                .Append(host)
+                .Append(pathBase)
+                .ToString();
+        }
     }
 }

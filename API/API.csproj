@@ -32,4 +32,11 @@
       <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Include="favicon.ico">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>

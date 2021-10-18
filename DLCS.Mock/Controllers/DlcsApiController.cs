@@ -14,15 +14,12 @@ namespace DLCS.Mock.Controllers
         {
             this.model = model;
         }
-        
+
         [HttpGet]
         [Route("/")]
         public EntryPoint Index()
         {
-            var ep = new EntryPoint();
-            ep.Init(model.BaseUrl, true);
-            return ep;
+            return new EntryPoint(model.BaseUrl);
         }
-        
     }
 }
