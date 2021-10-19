@@ -6,6 +6,7 @@ using DLCS.Repository.Assets;
 using DLCS.Repository.Caching;
 using FluentAssertions;
 using LazyCache.Mocks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Test.Helpers.Integration;
 using Xunit;
@@ -104,7 +105,7 @@ namespace DLCS.Repository.Tests.Assets
             var query = new ParsedNamedQuery(new CustomerPathElement(1, "notfound"));
 
             // Act
-            var result = await sut.GetNamedQueryResults(query);
+            var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
             // Assert
             result.Should().BeEmpty();
@@ -117,7 +118,7 @@ namespace DLCS.Repository.Tests.Assets
             var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"));
 
             // Act
-            var result = await sut.GetNamedQueryResults(query);
+            var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
             // Assert
             result.Count().Should().Be(8);
@@ -133,7 +134,7 @@ namespace DLCS.Repository.Tests.Assets
             };
 
             // Act
-            var result = await sut.GetNamedQueryResults(query);
+            var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
             // Assert
             result.Single().Id.Should().Be("99/1/1");
@@ -149,7 +150,7 @@ namespace DLCS.Repository.Tests.Assets
             };
 
             // Act
-            var result = await sut.GetNamedQueryResults(query);
+            var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
             // Assert
             result.Single().Id.Should().Be("99/1/2");
@@ -165,7 +166,7 @@ namespace DLCS.Repository.Tests.Assets
             };
 
             // Act
-            var result = await sut.GetNamedQueryResults(query);
+            var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
             // Assert
             result.Single().Id.Should().Be("99/1/3");
@@ -181,7 +182,7 @@ namespace DLCS.Repository.Tests.Assets
             };
 
             // Act
-            var result = await sut.GetNamedQueryResults(query);
+            var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
             // Assert
             result.Single().Id.Should().Be("99/1/4");
@@ -197,7 +198,7 @@ namespace DLCS.Repository.Tests.Assets
             };
 
             // Act
-            var result = await sut.GetNamedQueryResults(query);
+            var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
             // Assert
             result.Single().Id.Should().Be("99/1/5");
@@ -213,7 +214,7 @@ namespace DLCS.Repository.Tests.Assets
             };
 
             // Act
-            var result = await sut.GetNamedQueryResults(query);
+            var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
             // Assert
             result.Single().Id.Should().Be("99/1/6");
@@ -229,7 +230,7 @@ namespace DLCS.Repository.Tests.Assets
             };
             
             // Act
-            var result = await sut.GetNamedQueryResults(query);
+            var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
             // Assert
             result.Count().Should().Be(7);
@@ -245,7 +246,7 @@ namespace DLCS.Repository.Tests.Assets
             };
 
             // Act
-            var result = await sut.GetNamedQueryResults(query);
+            var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
             // Assert
             result.Count().Should().Be(7);
@@ -261,7 +262,7 @@ namespace DLCS.Repository.Tests.Assets
             };
 
             // Act
-            var result = await sut.GetNamedQueryResults(query);
+            var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
             // Assert
             result.Count().Should().Be(7);
@@ -278,7 +279,7 @@ namespace DLCS.Repository.Tests.Assets
             };
 
             // Act
-            var result = await sut.GetNamedQueryResults(query);
+            var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
             // Assert
             result.Single().Id.Should().Be("99/1/8");

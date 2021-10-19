@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
@@ -80,7 +81,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
                     namedQueryParser.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args,
                         namedQuery.Template))
                 .Returns(parsedQuery);
-            A.CallTo(() => namedQueryRepository.GetNamedQueryResults(parsedQuery)).Returns(images);
+            A.CallTo(() => namedQueryRepository.GetNamedQueryResults(parsedQuery)).Returns(images.AsQueryable());
             
             // Act
             var result = await sut.GetNamedQueryResult<IIIFParsedNamedQuery>(queryName, Customer, args);

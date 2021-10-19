@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
@@ -21,6 +22,7 @@ using IIIF.Presentation.V3.Strings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Settings;
 using IIIF2 = IIIF.Presentation.V2;
@@ -52,19 +54,20 @@ namespace Orchestrator.Features.NamedQueries
         /// <summary>
         /// Project NamedQueryResult to IIIF presentation object
         /// </summary>
-        public async Task<JsonLdBase> GenerateIIIFPresentation(NamedQueryResult<IIIFParsedNamedQuery> result, HttpRequest request,
-            Version iiifPresentationVersion, string namedQueryName)
+        public async Task<JsonLdBase> GenerateIIIFPresentation(NamedQueryResult<IIIFParsedNamedQuery> result,
+            HttpRequest request, Version iiifPresentationVersion, string namedQueryName,
+            CancellationToken cancellationToken = default)
         {
             result.Query.ThrowIfNull(nameof(request.Query));
-            
+
             return iiifPresentationVersion == Version.V2
-                ? await GenerateV2Manifest(result.Query, result.Results, request, namedQueryName)
-                : await GenerateV3Manifest(result.Query, result.Results, request, namedQueryName);
+                ? await GenerateV2Manifest(result.Query, result.Results, request, namedQueryName, cancellationToken)
+                : await GenerateV3Manifest(result.Query, result.Results, request, namedQueryName, cancellationToken);
         }
 
-
         private async Task<JsonLdBase> GenerateV2Manifest(IIIFParsedNamedQuery parsedNamedQuery,
-            IEnumerable<Asset> results, HttpRequest request, string namedQueryName)
+            IQueryable<Asset> results, HttpRequest request, string namedQueryName,
+            CancellationToken cancellationToken = default)
         {
             var rootUrl = HttpRequestX.GetDisplayUrl(request);
             var manifest = new IIIF2.Manifest
@@ -77,7 +80,7 @@ namespace Orchestrator.Features.NamedQueries
                 }.AsList(),
             };
 
-            var canvases = await CreateV2Canvases(parsedNamedQuery, results);
+            var canvases = await CreateV2Canvases(parsedNamedQuery, results, cancellationToken);
             var sequence = new IIIF2.Sequence
             {
                 Id = string.Concat(rootUrl, "/iiif-query/sequence/0"),
@@ -92,7 +95,8 @@ namespace Orchestrator.Features.NamedQueries
         }
 
         private async Task<JsonLdBase> GenerateV3Manifest(IIIFParsedNamedQuery parsedNamedQuery,
-            IEnumerable<Asset> results, HttpRequest request, string namedQueryName)
+            IQueryable<Asset> results, HttpRequest request, string namedQueryName,
+            CancellationToken cancellationToken = default)
         {
             const string language = "en";
             var manifest = new IIIF3.Manifest
@@ -102,7 +106,7 @@ namespace Orchestrator.Features.NamedQueries
                 Metadata = new LabelValuePair(language, "Title", "Created by DLCS").AsList(),
             };
 
-            var canvases = await CreateV3Canvases(parsedNamedQuery, results);
+            var canvases = await CreateV3Canvases(parsedNamedQuery, results, cancellationToken);
             manifest.Items = canvases;
             manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
             
@@ -111,11 +115,12 @@ namespace Orchestrator.Features.NamedQueries
         }
 
         private async Task<List<IIIF3.Canvas>> CreateV3Canvases(IIIFParsedNamedQuery parsedNamedQuery,
-            IEnumerable<Asset> results)
+            IQueryable<Asset> results, CancellationToken cancellationToken = default)
         {
             int counter = 0;
-            var canvases = new List<IIIF3.Canvas>(results.Count());
-            foreach (var i in results.OrderBy(i => GetCanvasOrderingElement(i, parsedNamedQuery)))
+            var enumeratedResults = await results.ToListAsync(cancellationToken);
+            var canvases = new List<IIIF3.Canvas>(enumeratedResults.Count);
+            foreach (var i in enumeratedResults.OrderBy(i => GetCanvasOrderingElement(i, parsedNamedQuery)))
             {
                 var fullyQualifiedImageId = GetFullyQualifiedId(i, parsedNamedQuery.CustomerPathElement);
                 var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/", ++counter);
@@ -150,7 +155,6 @@ namespace Orchestrator.Features.NamedQueries
                     }.AsList()
                 };
 
-                
                 if (!thumbnailSizes.OpenThumbnails.IsNullOrEmpty())
                 {
                     canvas.Thumbnail = new IIIF3.Content.Image
@@ -169,11 +173,12 @@ namespace Orchestrator.Features.NamedQueries
         }
 
         private async Task<List<IIIF2.Canvas>> CreateV2Canvases(IIIFParsedNamedQuery parsedNamedQuery,
-            IEnumerable<Asset> results)
+            IQueryable<Asset> results, CancellationToken cancellationToken = default)
         {
             int counter = 0;
-            var canvases = new List<IIIF2.Canvas>(results.Count());
-            foreach (var i in results.OrderBy(i => GetCanvasOrderingElement(i, parsedNamedQuery)))
+            var enumeratedResults = await results.ToListAsync(cancellationToken);
+            var canvases = new List<IIIF2.Canvas>(enumeratedResults.Count);
+            foreach (var i in enumeratedResults.OrderBy(i => GetCanvasOrderingElement(i, parsedNamedQuery)))
             {
                 var fullyQualifiedImageId = GetFullyQualifiedId(i, parsedNamedQuery.CustomerPathElement);
                 var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/", ++counter);
@@ -206,7 +211,6 @@ namespace Orchestrator.Features.NamedQueries
                     }.AsList()
                 };
 
-
                 if (!thumbnailSizes.OpenThumbnails.IsNullOrEmpty())
                 {
                     canvas.Thumbnail = new IIIF2.Thumbnail
@@ -238,7 +242,6 @@ namespace Orchestrator.Features.NamedQueries
             var thumbnailPolicy = await GetThumbnailPolicyForImage(image);
             var thumbnailSizesForImage = image.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions);
 
-            
             if (thumbnailSizesForImage.IsNullOrEmpty())
             {
                 var largestThumbnail = thumbnailPolicy.SizeList.OrderByDescending(s => s).First();

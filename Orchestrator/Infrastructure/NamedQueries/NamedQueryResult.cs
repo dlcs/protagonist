@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 
@@ -11,18 +10,18 @@ namespace Orchestrator.Infrastructure.NamedQueries
     public class NamedQueryResult<T>
         where T : ParsedNamedQuery
     { 
-        public T? Query { get; }
+        public T? Query { get; private init; }
         
-        public IEnumerable<Asset> Results { get; private init;  }
+        public IQueryable<Asset> Results { get; private init;  }
 
-        public static NamedQueryResult<T> Empty()
-            => new() { Results = Enumerable.Empty<Asset>() };
+        public static NamedQueryResult<T> Empty(T? query = null)
+            => new() { Query = query, Results = Enumerable.Empty<Asset>().AsQueryable() };
 
         private NamedQueryResult()
         {
         }
 
-        public NamedQueryResult(T query, IEnumerable<Asset> results)
+        public NamedQueryResult(T query, IQueryable<Asset> results)
         {
             Query = query;
             Results = results;

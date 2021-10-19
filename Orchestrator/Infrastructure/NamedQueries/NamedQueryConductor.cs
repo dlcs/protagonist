@@ -1,6 +1,4 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using DLCS.Model.Assets;
+﻿using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
@@ -45,10 +43,10 @@ namespace Orchestrator.Infrastructure.NamedQueries
             if (parsedNamedQuery.IsFaulty)
             {
                 logger.LogInformation("Received faulted ParseNQ for {QueryName} with {QueryArgs}", queryName, args);
-                return new NamedQueryResult<T>(parsedNamedQuery, Enumerable.Empty<Asset>());
+                return NamedQueryResult<T>.Empty(parsedNamedQuery);
             }
 
-            var matchingImages = await namedQueryRepository.GetNamedQueryResults(parsedNamedQuery);
+            var matchingImages = namedQueryRepository.GetNamedQueryResults(parsedNamedQuery);
             return new NamedQueryResult<T>(parsedNamedQuery, matchingImages);
         }
 
