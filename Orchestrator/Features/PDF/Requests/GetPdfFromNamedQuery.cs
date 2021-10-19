@@ -4,9 +4,7 @@ using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Orchestrator.Infrastructure.NamedQueries;
-using Orchestrator.Models;
 
 namespace Orchestrator.Features.PDF.Requests
 {
@@ -50,11 +48,11 @@ namespace Orchestrator.Features.PDF.Requests
 
             if (namedQueryResult.Query is { IsFaulty: true }) return PdfFromNamedQuery.BadRequest();
 
-            var pdfStream = await pdfNamedQueryService.GetPdfStream(namedQueryResult, cancellationToken);
+            var pdfResult = await pdfNamedQueryService.GetPdfResults(namedQueryResult, request.NamedQuery);
 
-            if (pdfStream == null || pdfStream == Stream.Null) return new PdfFromNamedQuery();
+            if (pdfResult.Status == PdfStatus.InProcess) return PdfFromNamedQuery.InProcess();
 
-            return new PdfFromNamedQuery(pdfStream);
+            return new PdfFromNamedQuery(pdfResult.Stream);
         }
     }
 
@@ -65,8 +63,12 @@ namespace Orchestrator.Features.PDF.Requests
         public bool IsEmpty => PdfStream == Stream.Null;
         
         public bool IsBadRequest { get; private init; }
+        
+        public bool IsInProcess { get; private init; }
 
         public static PdfFromNamedQuery BadRequest() => new() { IsBadRequest = true };
+        
+        public static PdfFromNamedQuery InProcess() => new() { IsInProcess = true };
 
         public PdfFromNamedQuery()
         {

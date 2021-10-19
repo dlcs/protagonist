@@ -78,6 +78,8 @@ namespace Orchestrator.Settings
         public CacheSettings Caching { get; set; }
         
         public AuthSettings Auth { get; set; }
+        
+        public NamedQuerySettings NamedQuery { get; set; }
 
         /// <summary>
         /// Get the local folder where Asset should be saved to
@@ -126,8 +128,6 @@ namespace Orchestrator.Settings
         /// Get the root path for serving images
         /// </summary>
         public string ImagePath { get; set; } = "iiif-img";
-        
-        public NamedQuerySettings NamedQuery { get; set; }
 
         /// <summary>
         /// A collection of resize config for serving resized thumbs rather than handling requests via image-server
@@ -185,5 +185,11 @@ namespace Orchestrator.Settings
         /// Supported replacements are {customer}/{queryname}/{args}
         /// </summary>
         public string PdfControlFileTemplate { get; set; } = "{customer}/{queryname}/{args}";
+
+        /// <summary>
+        /// Number of seconds after which an "InProcess" PDF file is considered stale for.
+        /// After this time has elapsed it will be recreated.
+        /// </summary>
+        public int PdfControlStaleSecs { get; set; } = 600;
     }
 }

@@ -54,19 +54,19 @@ namespace Orchestrator.Features.NamedQueries
         /// <summary>
         /// Project NamedQueryResult to IIIF presentation object
         /// </summary>
-        public async Task<JsonLdBase?> GenerateIIIFPresentation(NamedQueryResult<IIIFParsedNamedQuery> result,
+        public async Task<JsonLdBase?> GenerateIIIFPresentation(NamedQueryResult<IIIFParsedNamedQuery> namedQueryResult,
             HttpRequest request, Version iiifPresentationVersion, string namedQueryName,
             CancellationToken cancellationToken = default)
         {
-            result.Query.ThrowIfNull(nameof(request.Query));
+            namedQueryResult.Query.ThrowIfNull(nameof(request.Query));
             
-            var imageResults = await result.Results.ToListAsync(cancellationToken);
+            var imageResults = await namedQueryResult.Results.ToListAsync(cancellationToken);
 
             if (imageResults.Count == 0) return null;
 
             return iiifPresentationVersion == Version.V2
-                ? await GenerateV2Manifest(result.Query!, imageResults, request, namedQueryName)
-                : await GenerateV3Manifest(result.Query!, imageResults, request, namedQueryName);
+                ? await GenerateV2Manifest(namedQueryResult.Query!, imageResults, request, namedQueryName)
+                : await GenerateV3Manifest(namedQueryResult.Query!, imageResults, request, namedQueryName);
         }
 
         private async Task<JsonLdBase> GenerateV2Manifest(IIIFParsedNamedQuery parsedNamedQuery,
