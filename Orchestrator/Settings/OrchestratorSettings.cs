@@ -126,6 +126,8 @@ namespace Orchestrator.Settings
         /// Get the root path for serving images
         /// </summary>
         public string ImagePath { get; set; } = "iiif-img";
+        
+        public NamedQuerySettings NamedQuery { get; set; }
 
         /// <summary>
         /// A collection of resize config for serving resized thumbs rather than handling requests via image-server
@@ -166,5 +168,22 @@ namespace Orchestrator.Settings
         /// If true the current domain is automatically added to auth token domains.
         /// </summary>
         public bool UseCurrentDomainForCookie { get; set; } = true;
+    }
+
+    /// <summary>
+    /// Settings related to NamedQuery generation and serving
+    /// </summary>
+    public class NamedQuerySettings
+    {
+        /// <summary>
+        /// Name of S3Bucket for storing PDF output
+        /// </summary>
+        public string PdfBucket { get; set; }
+
+        /// <summary>
+        /// String format for pdf control-file key.
+        /// Supported replacements are {customer}/{queryname}/{args}
+        /// </summary>
+        public string PdfControlFileTemplate { get; set; } = "{customer}/{queryname}/{args}";
     }
 }

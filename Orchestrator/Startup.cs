@@ -71,6 +71,7 @@ namespace Orchestrator
                 .Configure<OrchestratorSettings>(configuration)
                 .Configure<ThumbsSettings>(configuration.GetSection("Thumbs"))
                 .Configure<ProxySettings>(configuration.GetSection("Proxy"))
+                .Configure<NamedQuerySettings>(configuration.GetSection("NamedQuery"))
                 .Configure<CacheSettings>(cachingSection)
                 .Configure<ReverseProxySettings>(reverseProxySection);
             

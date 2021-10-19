@@ -63,14 +63,15 @@ namespace Orchestrator.Features.NamedQueries.Requests
                     customerPathElement, request.NamedQueryArgs);
 
             if (namedQueryResult.Query is { IsFaulty: true }) return DescriptionResourceResponse.BadRequest();
-            if (namedQueryResult.Results.IsNullOrEmpty()) return DescriptionResourceResponse.Empty;
 
             var manifest = await iiifNamedQueryProjector.GenerateIIIFPresentation(
                 namedQueryResult,
                 httpContextAccessor.HttpContext.Request,
                 request.IIIFPresentationVersion,
-                request.NamedQuery);
+                request.NamedQuery, cancellationToken);
             
+            if (manifest == null) return DescriptionResourceResponse.Empty;
+
             return DescriptionResourceResponse.Open(manifest.AsJson());
         }
     }
