@@ -7,11 +7,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Orchestrator.Infrastructure.NamedQueries.Parsing;
 using Xunit;
 
-namespace Orchestrator.Tests.Infrastructure.NamedQueries
+namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
 {
     public class IIIFNamedQueryParserTests
     {
-        private readonly BaseNamedQueryParser<IIIFParsedNamedQuery> sut;
+        private readonly IIIFNamedQueryParser sut;
         private static readonly CustomerPathElement Customer = new(99, "test-customer");
 
         public IIIFNamedQueryParserTests()
@@ -82,7 +82,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
         [Theory]
         [MemberData(nameof(ParseNamedQueries))]
         public void GenerateParsedNamedQueryFromRequest_SuccessfullyParses(string template, string args,
-            ParsedNamedQuery expected, string explanation)
+            IIIFParsedNamedQuery expected, string explanation)
         {
             // Act
             var result = sut.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args, template);

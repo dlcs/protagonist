@@ -10,8 +10,9 @@ namespace DLCS.Model.Assets.NamedQueries
     public class ParsedNamedQuery
     {
         /// <summary>
-        /// Which Asset property to use for specifying Canvas sequence 
+        /// Which Asset property to use for specifying Canvas ordering 
         /// </summary>
+        /// <remarks>This property is used for PDFs also so should be renamed.</remarks>
         public QueryMapping Canvas { get; set; } = QueryMapping.Unset;
         
         /// <summary>

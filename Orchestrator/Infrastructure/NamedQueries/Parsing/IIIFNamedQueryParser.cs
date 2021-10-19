@@ -12,6 +12,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
     {
         // IIIF specific
         private const string Manifest = "manifest";
+        
+        // TODO sequenceformat, canvasformat, idformat 
 
         public IIIFNamedQueryParser(ILogger<IIIFNamedQueryParser> logger)
             : base(logger)

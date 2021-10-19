@@ -50,7 +50,16 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 
             // Populate the ParsedNamedQuery object using template + query args
             var assetQuery = GenerateParsedNamedQuery(customerPathElement, templatePairing, queryArgs);
+            PostParsingOperations(assetQuery);
             return (assetQuery as T)!;
+        }
+
+        /// <summary>
+        /// Optional method to call on parsed query after standard parsing has happened.
+        /// </summary>
+        /// <param name="parsedNamedQuery"></param>
+        protected virtual void PostParsingOperations(T parsedNamedQuery)
+        {
         }
 
         private static List<string> GetQueryArgsList(string? namedQueryArgs, string[] templatePairing)
@@ -183,5 +192,22 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
                 Number3 => ParsedNamedQuery.QueryMapping.Number3,
                 _ => ParsedNamedQuery.QueryMapping.Unset
             };
+
+        /// <summary>
+        /// Replace characters in provided template with values set in parsedNamedQuery.
+        /// Supported replacement tokens are {s1}, {s2}, {s3}, {n1}, {n2}, {n3}.
+        /// Replacement tokens removed if no matching value provided in NQ. 
+        /// </summary>
+        protected string? FormatTemplate(string? template, ParsedNamedQuery parsedNamedQuery)
+            => template?
+                .Replace($"{{{String1}}}", parsedNamedQuery.String1)
+                .Replace($"{{{String2}}}", parsedNamedQuery.String2)
+                .Replace($"{{{String3}}}", parsedNamedQuery.String3)
+                .Replace($"{{{Number1}}}",
+                    parsedNamedQuery.Number1.HasValue ? parsedNamedQuery.Number1.ToString() : string.Empty)
+                .Replace($"{{{Number2}}}",
+                    parsedNamedQuery.Number2.HasValue ? parsedNamedQuery.Number2.ToString() : string.Empty)
+                .Replace($"{{{Number3}}}",
+                    parsedNamedQuery.Number3.HasValue ? parsedNamedQuery.Number3.ToString() : string.Empty);
     }
 }

@@ -1,11 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
 
 namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 {
+    /// <summary>
+    /// Named query parser for converting objects to PDF
+    /// </summary>
     public class PdfNamedQueryParser : BaseNamedQueryParser<PdfParsedNamedQuery>
     {
         // PDF Specific
@@ -19,10 +21,27 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 
         protected override void CustomHandling(List<string> queryArgs, string key, string value, PdfParsedNamedQuery assetQuery)
         {
-            throw new NotImplementedException();
+            switch (key)
+            {
+                case ObjectName:
+                    assetQuery.ObjectNameFormat = GetQueryArgumentFromTemplateElement(queryArgs, value);
+                    break;;
+                case CoverPage:
+                    assetQuery.CoverPageFormat = GetQueryArgumentFromTemplateElement(queryArgs, value);
+                    break;;
+                case RedactedMessage:
+                    assetQuery.RedactedMessage = GetQueryArgumentFromTemplateElement(queryArgs, value);
+                    break;;
+            }
         }
 
         protected override PdfParsedNamedQuery GenerateParsedQueryObject(CustomerPathElement customerPathElement)
             => new(customerPathElement);
+
+        protected override void PostParsingOperations(PdfParsedNamedQuery parsedNamedQuery)
+        {
+            parsedNamedQuery.ObjectName = FormatTemplate(parsedNamedQuery.ObjectNameFormat, parsedNamedQuery);
+            parsedNamedQuery.CoverPage = FormatTemplate(parsedNamedQuery.CoverPageFormat, parsedNamedQuery);
+        }
     }
 }
