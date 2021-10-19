@@ -146,7 +146,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
                 "coverpage=https://{s3}&objectname={s3}_{n1}.pdf&n1=p1&s3=p2&#=foo", "10",
                 new PdfParsedNamedQuery(Customer)
                 {
-                    String3 = "foo", Number1 = 10, CoverPageFormat = "https://{s3}", CoverPage = "https://foo",
+                    String3 = "foo", Number1 = 10, CoverPageFormat = "https://{s3}", CoverPageUrl = "https://foo",
                     ObjectNameFormat = "{s3}_{n1}.pdf", ObjectName = "foo_10.pdf",
                     Args = new List<string> { "10", "foo" }
                 },
@@ -157,7 +157,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
                 "coverpage=https://{s3}&objectname={s3}_{n1}.pdf&n1=p1&s3=foo", "10",
                 new PdfParsedNamedQuery(Customer)
                 {
-                    String3 = "foo", Number1 = 10, CoverPageFormat = "https://{s3}", CoverPage = "https://foo",
+                    String3 = "foo", Number1 = 10, CoverPageFormat = "https://{s3}", CoverPageUrl = "https://foo",
                     ObjectNameFormat = "{s3}_{n1}.pdf", ObjectName = "foo_10.pdf", Args = new List<string> { "10" }
                 },
                 "Replacements made from args and hardcoded template"
@@ -167,7 +167,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
                 "coverpage=https://{s3}&objectname={s3}_{n1}.pdf&s3=foo", "",
                 new PdfParsedNamedQuery(Customer)
                 {
-                    String3 = "foo", CoverPageFormat = "https://{s3}", CoverPage = "https://foo",
+                    String3 = "foo", CoverPageFormat = "https://{s3}", CoverPageUrl = "https://foo",
                     ObjectNameFormat = "{s3}_{n1}.pdf", ObjectName = "foo_.pdf"
                 },
                 "Replacements removed if no provided"

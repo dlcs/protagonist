@@ -121,7 +121,7 @@ namespace Orchestrator.Features.NamedQueries
         {
             int counter = 0;
             var canvases = new List<IIIF3.Canvas>(results.Count);
-            foreach (var i in results.OrderBy(i => GetCanvasOrderingElement(i, parsedNamedQuery)))
+            foreach (var i in results.OrderBy(i => NamedQueryProjections.GetCanvasOrderingElement(i, parsedNamedQuery)))
             {
                 var fullyQualifiedImageId = GetFullyQualifiedId(i, parsedNamedQuery.CustomerPathElement);
                 var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/", ++counter);
@@ -178,7 +178,7 @@ namespace Orchestrator.Features.NamedQueries
         {
             int counter = 0;
             var canvases = new List<IIIF2.Canvas>(results.Count);
-            foreach (var i in results.OrderBy(i => GetCanvasOrderingElement(i, parsedNamedQuery)))
+            foreach (var i in results.OrderBy(i => NamedQueryProjections.GetCanvasOrderingElement(i, parsedNamedQuery)))
             {
                 var fullyQualifiedImageId = GetFullyQualifiedId(i, parsedNamedQuery.CustomerPathElement);
                 var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/", ++counter);
@@ -273,18 +273,6 @@ namespace Orchestrator.Features.NamedQueries
             thumbnailPolicies[image.ThumbnailPolicy] = thumbnailPolicyFromDb;
             return thumbnailPolicyFromDb;
         }
-
-        private object GetCanvasOrderingElement(Asset image, IIIFParsedNamedQuery query)
-            => query.Canvas switch
-            {
-                ParsedNamedQuery.QueryMapping.Number1 => image.NumberReference1,
-                ParsedNamedQuery.QueryMapping.Number2 => image.NumberReference2,
-                ParsedNamedQuery.QueryMapping.Number3 => image.NumberReference3,
-                ParsedNamedQuery.QueryMapping.String1 => image.Reference1,
-                ParsedNamedQuery.QueryMapping.String2 => image.Reference2,
-                ParsedNamedQuery.QueryMapping.String3 => image.Reference3,
-                _ => 0
-            };
 
         private string GetFullQualifiedThumbServicePath(Asset asset, CustomerPathElement customerPathElement)
         {

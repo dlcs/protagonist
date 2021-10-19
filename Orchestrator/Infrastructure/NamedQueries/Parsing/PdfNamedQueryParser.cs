@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using DLCS.Core.Collections;
+using DLCS.Core.Strings;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
@@ -44,8 +45,15 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 
         protected override void PostParsingOperations(PdfParsedNamedQuery parsedNamedQuery)
         {
-            parsedNamedQuery.ObjectName = FormatTemplate(parsedNamedQuery.ObjectNameFormat, parsedNamedQuery);
-            parsedNamedQuery.CoverPage = FormatTemplate(parsedNamedQuery.CoverPageFormat, parsedNamedQuery);
+            if (parsedNamedQuery.ObjectNameFormat.HasText())
+            {
+                parsedNamedQuery.ObjectName = FormatTemplate(parsedNamedQuery.ObjectNameFormat, parsedNamedQuery);
+            }
+
+            if (parsedNamedQuery.CoverPageFormat.HasText())
+            {
+                parsedNamedQuery.CoverPageUrl = FormatTemplate(parsedNamedQuery.CoverPageFormat, parsedNamedQuery);
+            }
         }
     }
 }

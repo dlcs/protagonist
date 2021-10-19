@@ -179,6 +179,11 @@ namespace Orchestrator.Settings
         /// Name of S3Bucket for storing PDF output
         /// </summary>
         public string PdfBucket { get; set; }
+        
+        /// <summary>
+        /// Name of S3Bucket for storing thumbnails
+        /// </summary>
+        public string ThumbsBucket { get; set; }
 
         /// <summary>
         /// String format for pdf control-file key.
@@ -191,5 +196,10 @@ namespace Orchestrator.Settings
         /// After this time has elapsed it will be recreated.
         /// </summary>
         public int PdfControlStaleSecs { get; set; } = 600;
+        
+        /// <summary>
+        /// URL of fireball endpoint for PDF generation
+        /// </summary>
+        public string FireballUri { get; set; }
     }
 }
