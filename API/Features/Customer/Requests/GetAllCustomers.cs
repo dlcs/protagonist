@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,7 +33,10 @@ namespace API.Features.Customer.Requests
 
         public async Task<List<DLCS.Model.Customers.Customer>> Handle(GetAllCustomers request, CancellationToken cancellationToken)
         {
-            return await dbContext.Customers.AsNoTracking().ToListAsync(cancellationToken: cancellationToken);
+            return await dbContext.Customers
+                .OrderBy(c => c.Id)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken: cancellationToken);
         }
     }
 }

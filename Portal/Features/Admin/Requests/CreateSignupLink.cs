@@ -27,7 +27,7 @@ namespace Portal.Features.Admin.Requests
         public CreateSignupLinkHandler(
             DlcsContext dbContext, 
             ClaimsPrincipal principal,
-            ILogger<DeleteSignupLinkHandler> logger)
+            ILogger<CreateSignupLinkHandler> logger)
         {
             this.dbContext = dbContext;
             this.principal = principal;
