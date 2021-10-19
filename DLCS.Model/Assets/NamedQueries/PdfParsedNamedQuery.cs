@@ -1,4 +1,5 @@
-﻿using DLCS.Model.PathElements;
+﻿using System.Collections.Generic;
+using DLCS.Model.PathElements;
 
 namespace DLCS.Model.Assets.NamedQueries
 {
@@ -32,5 +33,10 @@ namespace DLCS.Model.Assets.NamedQueries
         /// Message to show on any pages that have items that require auth.
         /// </summary>
         public string? RedactedMessage { get; set; }
+
+        /// <summary>
+        /// A list of all args provided to NQ
+        /// </summary>
+        public List<string> Args { get; set; } = new();
     }
 }

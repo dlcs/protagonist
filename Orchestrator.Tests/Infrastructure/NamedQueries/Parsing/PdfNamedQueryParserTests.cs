@@ -94,13 +94,22 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
         // Note: This is not a completely exhaustive list
         public static IEnumerable<object[]> ParseNamedQueries => new List<object[]>
         {
-            new object[] { "space=p1", "10", new PdfParsedNamedQuery(Customer) { Space = 10 }, "Space from param" },
-            new object[] { "space=5", "", new PdfParsedNamedQuery(Customer) { Space = 5 }, "Hardcoded value" },
-            new object[]
-                { "space=p1&#=10", "", new PdfParsedNamedQuery(Customer) { Space = 10 }, "Space from template" },
             new object[]
             {
-                "spacename=p1", "10", new PdfParsedNamedQuery(Customer) { SpaceName = "10" }, "Spacename from param"
+                "space=p1", "10", new PdfParsedNamedQuery(Customer) { Space = 10, Args = new List<string> { "10" } },
+                "Space from param"
+            },
+            new object[] { "space=5", "", new PdfParsedNamedQuery(Customer) { Space = 5 }, "Hardcoded value" },
+            new object[]
+            {
+                "space=p1&#=10", "", new PdfParsedNamedQuery(Customer) { Space = 10, Args = new List<string> { "10" } },
+                "Space from template"
+            },
+            new object[]
+            {
+                "spacename=p1", "10",
+                new PdfParsedNamedQuery(Customer) { SpaceName = "10", Args = new List<string> { "10" } },
+                "Spacename from param"
             },
             new object[]
             {
@@ -108,7 +117,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
                 new PdfParsedNamedQuery(Customer)
                 {
                     String1 = "string-1", Number1 = 40, Space = 1, RedactedMessage = "you cannot view",
-                    Canvas = ParsedNamedQuery.QueryMapping.String1
+                    Canvas = ParsedNamedQuery.QueryMapping.String1, Args = new List<string> { "string-1", "40", "1" }
                 },
                 "All params except format"
             },
@@ -117,7 +126,8 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
                 "canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40/10/100",
                 new PdfParsedNamedQuery(Customer)
                 {
-                    String1 = "string-1", Number1 = 40, Space = 10, Canvas = ParsedNamedQuery.QueryMapping.Number2
+                    String1 = "string-1", Number1 = 40, Space = 10, Canvas = ParsedNamedQuery.QueryMapping.Number2,
+                    Args = new List<string> { "string-1", "40", "10", "100", "1" }
                 },
                 "Extra args are ignored"
             },
@@ -126,7 +136,8 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
                 "manifest=s1&&n3=&canvas=n2&=10&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
                 new PdfParsedNamedQuery(Customer)
                 {
-                    String1 = "string-1", Number1 = 40, Space = 1, Canvas = ParsedNamedQuery.QueryMapping.Number2
+                    String1 = "string-1", Number1 = 40, Space = 1, Canvas = ParsedNamedQuery.QueryMapping.Number2,
+                    Args = new List<string> { "string-1", "40", "1" }
                 },
                 "Incorrect template pairs are ignored"
             },
@@ -136,7 +147,8 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
                 new PdfParsedNamedQuery(Customer)
                 {
                     String3 = "foo", Number1 = 10, CoverPageFormat = "https://{s3}", CoverPage = "https://foo",
-                    ObjectNameFormat = "{s3}_{n1}.pdf", ObjectName = "foo_10.pdf"
+                    ObjectNameFormat = "{s3}_{n1}.pdf", ObjectName = "foo_10.pdf",
+                    Args = new List<string> { "10", "foo" }
                 },
                 "Replacements made from args and template"
             },
@@ -146,7 +158,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
                 new PdfParsedNamedQuery(Customer)
                 {
                     String3 = "foo", Number1 = 10, CoverPageFormat = "https://{s3}", CoverPage = "https://foo",
-                    ObjectNameFormat = "{s3}_{n1}.pdf", ObjectName = "foo_10.pdf"
+                    ObjectNameFormat = "{s3}_{n1}.pdf", ObjectName = "foo_10.pdf", Args = new List<string> { "10" }
                 },
                 "Replacements made from args and hardcoded template"
             },

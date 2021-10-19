@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DLCS.Core.Collections;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
@@ -19,19 +20,22 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
         {
         }
 
-        protected override void CustomHandling(List<string> queryArgs, string key, string value, PdfParsedNamedQuery assetQuery)
+        protected override void CustomHandling(List<string> queryArgs, string key, string value,
+            PdfParsedNamedQuery assetQuery)
         {
+            if (assetQuery.Args.IsNullOrEmpty()) assetQuery.Args = queryArgs;
+            
             switch (key)
             {
                 case ObjectName:
                     assetQuery.ObjectNameFormat = GetQueryArgumentFromTemplateElement(queryArgs, value);
-                    break;;
+                    break;
                 case CoverPage:
                     assetQuery.CoverPageFormat = GetQueryArgumentFromTemplateElement(queryArgs, value);
-                    break;;
+                    break;
                 case RedactedMessage:
                     assetQuery.RedactedMessage = GetQueryArgumentFromTemplateElement(queryArgs, value);
-                    break;;
+                    break;
             }
         }
 
