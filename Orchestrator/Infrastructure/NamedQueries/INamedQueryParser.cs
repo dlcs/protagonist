@@ -14,11 +14,13 @@ namespace Orchestrator.Infrastructure.NamedQueries
         /// <param name="customerPathElement">Customer to run query against.</param>
         /// <param name="namedQueryArgs">Additional args for generating query object.</param>
         /// <param name="namedQueryTemplate">String representing NQ template</param>
+        /// <param name="namedQueryName">The name of the NQ template</param>
         /// <returns><see cref="ParsedNamedQuery"/> object</returns>
         T GenerateParsedNamedQueryFromRequest<T>(
             CustomerPathElement customerPathElement,
             string? namedQueryArgs,
-            string namedQueryTemplate)
+            string namedQueryTemplate,
+            string namedQueryName)
             where T : ParsedNamedQuery;
     }
 }

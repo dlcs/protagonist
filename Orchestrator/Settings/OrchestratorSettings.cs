@@ -186,10 +186,10 @@ namespace Orchestrator.Settings
         public string ThumbsBucket { get; set; }
 
         /// <summary>
-        /// String format for pdf control-file key.
+        /// String format for generating keys for PDF object storage.
         /// Supported replacements are {customer}/{queryname}/{args}
         /// </summary>
-        public string PdfControlFileTemplate { get; set; } = "{customer}/{queryname}/{args}";
+        public string PdfStorageTemplate { get; set; } = "{customer}/{queryname}/{args}";
 
         /// <summary>
         /// Number of seconds after which an "InProcess" PDF file is considered stale for.

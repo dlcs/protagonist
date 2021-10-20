@@ -38,7 +38,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
         public T GenerateParsedNamedQueryFromRequest<T>(
             CustomerPathElement customerPathElement,
             string? namedQueryArgs,
-            string namedQueryTemplate) where T : ParsedNamedQuery
+            string namedQueryTemplate,
+            string namedQueryName) where T : ParsedNamedQuery
         {
             namedQueryTemplate.ThrowIfNullOrWhiteSpace(nameof(namedQueryTemplate));
 
@@ -50,6 +51,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 
             // Populate the ParsedNamedQuery object using template + query args
             var assetQuery = GenerateParsedNamedQuery(customerPathElement, templatePairing, queryArgs);
+            assetQuery.NamedQueryName = namedQueryName;
             PostParsingOperations(assetQuery);
             return (assetQuery as T)!;
         }

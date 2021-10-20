@@ -52,15 +52,10 @@ namespace Orchestrator.Features.PDF
             
             // TODO - there is a slim chance of this being double triggered - do we want to lock here?
             var parsedNamedQuery = namedQueryResult.Query!;
+
+            var controlFile = await CreateControlFile(enumeratedResults, namedQueryResult.Query);
             
-            var controlFileKey = PdfNamedQueryPathHelpers.GetPdfKey(namedQuerySettings.PdfControlFileTemplate,
-                parsedNamedQuery, queryName, true);
-            var pdfKey = PdfNamedQueryPathHelpers.GetPdfKey(namedQuerySettings.PdfControlFileTemplate,
-                parsedNamedQuery, queryName, false);
-            
-            var controlFile = await CreateControlFile(enumeratedResults, controlFileKey, pdfKey);
-            
-            var fireballResponse = await CreatePdfFile(controlFileKey, pdfKey, parsedNamedQuery, enumeratedResults);
+            var fireballResponse = await CreatePdfFile(parsedNamedQuery, enumeratedResults);
 
             if (!fireballResponse.Success)
             {
@@ -70,25 +65,26 @@ namespace Orchestrator.Features.PDF
             controlFile.Exists = true;
             controlFile.InProcess = false;
             controlFile.SizeBytes = fireballResponse.Size;
-            await UpdatePdfControlFile(controlFileKey, controlFile);
+            await UpdatePdfControlFile(namedQueryResult.Query.ControlFileStorageKey, controlFile);
             return true;
         }
         
-        private async Task<PdfControlFile> CreateControlFile(List<Asset> enumeratedResults, string controlFileKey,
-            string pdfKey)
+        private async Task<PdfControlFile> CreateControlFile(List<Asset> enumeratedResults, 
+            PdfParsedNamedQuery parsedNamedQuery)
         {
-            logger.LogInformation("Creating new pdf-control file at {PdfS3Key}", controlFileKey);
+            logger.LogInformation("Creating new pdf-control file at {PdfControlS3Key}",
+                parsedNamedQuery.ControlFileStorageKey);
             var controlFile = new PdfControlFile
             {
                 Created = DateTime.Now,
-                Key = pdfKey,
+                Key = parsedNamedQuery.PdfStorageKey,
                 Exists = false,
                 InProcess = true,
                 PageCount = enumeratedResults.Count,
                 SizeBytes = 0
             };
 
-            await UpdatePdfControlFile(controlFileKey, controlFile);
+            await UpdatePdfControlFile(parsedNamedQuery.ControlFileStorageKey, controlFile);
             return controlFile;
         }
 
@@ -96,12 +92,14 @@ namespace Orchestrator.Features.PDF
             bucketReader.WriteToBucket(new ObjectInBucket(namedQuerySettings.PdfBucket, controlFileKey),
                 JsonConvert.SerializeObject(controlFile), "application/json");
 
-        private async Task<FireballResponse> CreatePdfFile(string controlFileKey, string pdfKey, PdfParsedNamedQuery? parsedNamedQuery,
+        private async Task<FireballResponse> CreatePdfFile(PdfParsedNamedQuery? parsedNamedQuery, 
             List<Asset> enumeratedResults)
         {
+            var pdfKey = parsedNamedQuery.PdfStorageKey;
+
             try
             {
-                logger.LogInformation("Creating new pdf document at {PdfS3Key}", controlFileKey);
+                logger.LogInformation("Creating new pdf document at {PdfS3Key}", pdfKey);
                 var playbook = GeneratePlaybook(pdfKey, parsedNamedQuery, enumeratedResults);
 
                 var jsonString = JsonConvert.SerializeObject(playbook);
@@ -112,7 +110,7 @@ namespace Orchestrator.Features.PDF
                 var response = await fireballClient.SendAsync(request);
                 var fireballResponse = await response.ReadAsJsonAsync<FireballResponse>(true, jsonSerializerSettings);
                 logger.LogInformation("Created new pdf document at {PdfS3Key} with size in bytes = {SizeBytes}",
-                    controlFileKey, fireballResponse?.Size ?? -1);
+                    pdfKey, fireballResponse?.Size ?? -1);
                 return fireballResponse;
             }
             catch (HttpRequestException ex)

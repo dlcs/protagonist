@@ -38,5 +38,15 @@ namespace DLCS.Model.Assets.NamedQueries
         /// A list of all args provided to NQ
         /// </summary>
         public List<string> Args { get; set; } = new();
+        
+        /// <summary>
+        /// The storage key for generated PDF file 
+        /// </summary>
+        public string PdfStorageKey { get; set; }
+        
+        /// <summary>
+        /// The storage key for PDF control-file file 
+        /// </summary>
+        public string ControlFileStorageKey { get; set; }
     }
 }

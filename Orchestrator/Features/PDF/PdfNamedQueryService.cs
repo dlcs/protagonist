@@ -35,13 +35,9 @@ namespace Orchestrator.Features.PDF
             namedQueryResult.Query.ThrowIfNull(nameof(namedQueryResult.Query));
             
             var parsedNamedQuery = namedQueryResult.Query!;
-            var controlFileKey = PdfNamedQueryPathHelpers.GetPdfKey(namedQuerySettings.PdfControlFileTemplate,
-                namedQueryResult.Query, queryName, true);
-            var pdfKey = PdfNamedQueryPathHelpers.GetPdfKey(namedQuerySettings.PdfControlFileTemplate,
-                parsedNamedQuery, queryName, false);
 
             // Check to see if we can use an existing PDF
-            var pdfResult = await TryGetExistingPdf(controlFileKey, pdfKey);
+            var pdfResult = await TryGetExistingPdf(parsedNamedQuery);
 
             // If it's Found or InProcess then no further processing for now
             if (pdfResult.Status is PdfStatus.Available or PdfStatus.InProcess)
@@ -52,13 +48,14 @@ namespace Orchestrator.Features.PDF
             var success = await pdfCreator.CreatePdf(namedQueryResult, queryName);
             if (!success) return new PdfResult(Stream.Null, PdfStatus.Error);
             
-            var pdf = await LoadPdfObject(pdfKey);
+            var pdf = await LoadPdfObject(parsedNamedQuery.PdfStorageKey);
             if (pdf.Stream != null && pdf.Stream != Stream.Null)
             {
                 return new(pdf.Stream!, PdfStatus.Available);
             }
 
-            logger.LogWarning("PDF file {PdfS3Key} was successfully created but now cannot be loaded", pdfKey);
+            logger.LogWarning("PDF file {PdfS3Key} was successfully created but now cannot be loaded",
+                parsedNamedQuery.PdfStorageKey);
             return new(Stream.Null, PdfStatus.Error);
         }
 
@@ -69,20 +66,24 @@ namespace Orchestrator.Features.PDF
             return await pdfControlObject.DeserializeFromJson<PdfControlFile>();
         }
 
-        private async Task<PdfResult> TryGetExistingPdf(string controlFileKey, string pdfKey)
+        private async Task<PdfResult> TryGetExistingPdf(PdfParsedNamedQuery parsedNamedQuery)
         {
-            var pdfControlFile = await GetPdfControlFile(controlFileKey);
+            var pdfControlFile = await GetPdfControlFile(parsedNamedQuery.ControlFileStorageKey);
             if (pdfControlFile == null) return new(Stream.Null, PdfStatus.NotFound);
-            
+
+            var pdfKey = parsedNamedQuery.PdfStorageKey;
+
             if (pdfControlFile.IsStale(namedQuerySettings.PdfControlStaleSecs))
             {
-                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but PDF not found. Will recreate", pdfKey);
+                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but PDF not found. Will recreate",
+                    pdfKey);
                 return new(Stream.Null, PdfStatus.NotFound);
             }
 
             if (pdfControlFile.InProcess)
             {
-                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but PDF not found. Will recreate", pdfKey);
+                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but PDF not found. Will recreate",
+                    pdfKey);
                 return new(Stream.Null, PdfStatus.InProcess);
             }
 

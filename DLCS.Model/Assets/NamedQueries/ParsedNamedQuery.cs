@@ -54,6 +54,11 @@ namespace DLCS.Model.Assets.NamedQueries
         /// Value of "n3" parameter after parsing
         /// </summary>
         public long? Number3 { get; set; }
+        
+        /// <summary>
+        /// The name of the namedQuery this object was parsed from.
+        /// </summary>
+        public string NamedQueryName { get; set; }
 
         /// <summary>
         /// CustomerPathElement object sent with request

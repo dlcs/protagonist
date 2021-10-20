@@ -48,14 +48,14 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             // Arrange
             const string queryName = "my-query";
             const string args = "/123";
-            var namedQuery = new NamedQuery { Template = "s1=p2" };
+            var namedQuery = new NamedQuery { Template = "s1=p2", Name = "test-query"};
             var faultedQuery = new IIIFParsedNamedQuery(Customer);
             faultedQuery.SetError("Test Error");
             A.CallTo(() => namedQueryRepository.GetByName(Customer.Id, queryName, true))
                 .Returns(namedQuery);
             A.CallTo(() =>
                     namedQueryParser.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args,
-                        namedQuery.Template))
+                        namedQuery.Template, namedQuery.Name))
                 .Returns(faultedQuery);
             
             // Act
@@ -72,14 +72,14 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             // Arrange
             const string queryName = "my-query";
             const string args = "/123";
-            var namedQuery = new NamedQuery { Template = "s1=p2" };
+            var namedQuery = new NamedQuery { Template = "s1=p2", Name = "test-query" };
             var parsedQuery = new IIIFParsedNamedQuery(Customer);
             var images = new List<Asset> { new() { Id = "/1/1/my-image" } };
             A.CallTo(() => namedQueryRepository.GetByName(Customer.Id, queryName, true))
                 .Returns(namedQuery);
             A.CallTo(() =>
                     namedQueryParser.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args,
-                        namedQuery.Template))
+                        namedQuery.Template, namedQuery.Name))
                 .Returns(parsedQuery);
             A.CallTo(() => namedQueryRepository.GetNamedQueryResults(parsedQuery)).Returns(images.AsQueryable());
             

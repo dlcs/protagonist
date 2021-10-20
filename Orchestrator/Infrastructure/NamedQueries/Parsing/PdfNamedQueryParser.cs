@@ -4,6 +4,8 @@ using DLCS.Core.Strings;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Orchestrator.Settings;
 
 namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 {
@@ -12,13 +14,17 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
     /// </summary>
     public class PdfNamedQueryParser : BaseNamedQueryParser<PdfParsedNamedQuery>
     {
+        private readonly NamedQuerySettings namedQuerySettings;
+
         // PDF Specific
         private const string ObjectName = "objectname";
         private const string CoverPage = "coverpage";
         private const string RedactedMessage = "redactedmessage";
 
-        public PdfNamedQueryParser(ILogger<PdfNamedQueryParser> logger) : base(logger)
+        public PdfNamedQueryParser(IOptions<NamedQuerySettings> namedQuerySettings, ILogger<PdfNamedQueryParser> logger)
+            : base(logger)
         {
+            this.namedQuerySettings = namedQuerySettings.Value;
         }
 
         protected override void CustomHandling(List<string> queryArgs, string key, string value,
@@ -54,6 +60,21 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
             {
                 parsedNamedQuery.CoverPageUrl = FormatTemplate(parsedNamedQuery.CoverPageFormat, parsedNamedQuery);
             }
+
+            parsedNamedQuery.PdfStorageKey = GetPdfKey(parsedNamedQuery, false);
+            parsedNamedQuery.ControlFileStorageKey = GetPdfKey(parsedNamedQuery, true);
+        }
+        
+        private string GetPdfKey(PdfParsedNamedQuery parsedNamedQuery, bool isControlFile)
+        {
+            var key = namedQuerySettings.PdfStorageTemplate
+                .Replace("{customer}", parsedNamedQuery.Customer.ToString())
+                .Replace("{queryname}", parsedNamedQuery.NamedQueryName)
+                .Replace("{args}", string.Join("/", parsedNamedQuery.Args));
+            
+            if (parsedNamedQuery.ObjectName.HasText()) key += $"/{parsedNamedQuery.ObjectName}";
+            if (isControlFile) key += ".json";
+            return key;
         }
     }
 }

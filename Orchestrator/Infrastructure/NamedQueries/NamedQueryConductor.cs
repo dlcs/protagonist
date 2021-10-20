@@ -57,7 +57,8 @@ namespace Orchestrator.Infrastructure.NamedQueries
                 ? NamedQueryType.IIIF
                 : NamedQueryType.PDF);
             var parsedNamedQuery =
-                namedQueryParser.GenerateParsedNamedQueryFromRequest<T>(customerPathElement, args, namedQuery.Template);
+                namedQueryParser.GenerateParsedNamedQueryFromRequest<T>(customerPathElement, args, namedQuery.Template,
+                    namedQuery.Name);
             return parsedNamedQuery;
         }
     }

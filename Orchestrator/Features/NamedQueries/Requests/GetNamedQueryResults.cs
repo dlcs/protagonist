@@ -62,6 +62,7 @@ namespace Orchestrator.Features.NamedQueries.Requests
                 await namedQueryConductor.GetNamedQueryResult<IIIFParsedNamedQuery>(request.NamedQuery,
                     customerPathElement, request.NamedQueryArgs);
 
+            if (namedQueryResult.Query == null) return DescriptionResourceResponse.Empty;
             if (namedQueryResult.Query is { IsFaulty: true }) return DescriptionResourceResponse.BadRequest();
 
             var manifest = await iiifNamedQueryProjector.GenerateIIIFPresentation(
@@ -69,8 +70,6 @@ namespace Orchestrator.Features.NamedQueries.Requests
                 httpContextAccessor.HttpContext.Request,
                 request.IIIFPresentationVersion,
                 request.NamedQuery, cancellationToken);
-            
-            if (manifest == null) return DescriptionResourceResponse.Empty;
 
             return DescriptionResourceResponse.Open(manifest.AsJson());
         }
