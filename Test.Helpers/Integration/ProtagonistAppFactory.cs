@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using Amazon.S3;
+using LazyCache;
+using LazyCache.Mocks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -85,6 +87,8 @@ namespace Test.Helpers.Integration
                     {
                         ConfigureS3Services(services);
                     }
+
+                    services.AddSingleton<IAppCache, MockCachingService>();
                 })
                 .UseEnvironment("Testing"); 
         }

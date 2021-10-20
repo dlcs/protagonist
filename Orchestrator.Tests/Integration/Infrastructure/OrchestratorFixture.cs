@@ -50,19 +50,11 @@ namespace Orchestrator.Tests.Integration.Infrastructure
         /// </summary>
         public void WithTestFile()
         {
-            var assembly = GetType().GetTypeInfo().Assembly;
-            ApiStub.Get("/testfile",
-                (request, args) =>
-                    new FileStreamResult(
-                        assembly.GetManifestResourceStream("Orchestrator.Tests.Integration.Files.dummy.pdf"),
-                        "application/pdf"));
+            ApiStub.Get("/testfile", (request, args) => "anything")
+                .Header("Content-Type", "application/pdf");
 
-            ApiStub
-                .Get("/authfile",
-                    (request, args) =>
-                        new FileStreamResult(
-                            assembly.GetManifestResourceStream("Orchestrator.Tests.Integration.Files.dummy.pdf"),
-                            "application/pdf"))
+            ApiStub.Get("/authfile", (request, args) => "anything")
+                .Header("Content-Type", "application/pdf")
                 .IfHeader("Authorization", ValidAuth);
 
             ApiStub.Get("/forbiddenfile", (request, args) => new ForbidResult());

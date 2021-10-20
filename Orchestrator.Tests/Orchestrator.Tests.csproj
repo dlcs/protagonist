@@ -36,14 +36,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Integration\Files" />
-    </ItemGroup>
-
-    <ItemGroup>
       <None Remove="Integration\Files\dummy.pdf" />
-      <EmbeddedResource Include="Integration\Files\dummy.pdf">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </EmbeddedResource>
     </ItemGroup>
 
 </Project>

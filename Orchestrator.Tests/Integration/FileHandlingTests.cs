@@ -5,7 +5,10 @@ using Amazon.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using FluentAssertions;
+using LazyCache;
+using LazyCache.Mocks;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
 using Xunit;
@@ -112,14 +115,14 @@ namespace Orchestrator.Tests.Integration
             response.Content.Headers.ContentLength.Should().BeGreaterThan(0);
         }
         
-        [Fact(Skip = "Issue with Stubbery lifecycle - runs in isolation but fails in group run")]
+        [Fact]
         public async Task Get_BasicAuthHttpOrigin_ReturnsFile()
         {
             // Arrange
             var id = "99/1/Get_BasicAuthHttpOrigin_ReturnsFile";
             await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
                 origin: $"{stubAddress}/authfile");
-            await dbFixture.DbContext.CustomerOriginStrategies.AddRangeAsync(new CustomerOriginStrategy
+            await dbFixture.DbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
             {
                 Credentials = orchestratorFixture.ValidCreds, Customer = 99, Id = "basic-auth-file", 
                 Strategy = OriginStrategyType.BasicHttp, Regex = $"{stubAddress}/authfile"
@@ -141,7 +144,7 @@ namespace Orchestrator.Tests.Integration
             var id = "99/1/Get_BasicAuthHttpOrigin_BadCredentials_Returns404";
             await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
                 origin: $"{stubAddress}/forbiddenfile");
-            await dbFixture.DbContext.CustomerOriginStrategies.AddRangeAsync(new CustomerOriginStrategy
+            await dbFixture.DbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
             {
                 Credentials = orchestratorFixture.ValidCreds, Customer = 99, Id = "basic-forbidden-file", 
                 Strategy = OriginStrategyType.BasicHttp, Regex = $"{stubAddress}/forbiddenfile"
