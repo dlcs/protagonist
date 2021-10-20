@@ -10,20 +10,20 @@ namespace Orchestrator.Infrastructure.NamedQueries
     public class NamedQueryResult<T>
         where T : ParsedNamedQuery
     { 
-        public T? Query { get; private init; }
+        public T? ParsedQuery { get; private init; }
         
         public IQueryable<Asset> Results { get; private init;  }
 
         public static NamedQueryResult<T> Empty(T? query = null)
-            => new() { Query = query, Results = Enumerable.Empty<Asset>().AsQueryable() };
+            => new() { ParsedQuery = query, Results = Enumerable.Empty<Asset>().AsQueryable() };
 
         private NamedQueryResult()
         {
         }
 
-        public NamedQueryResult(T query, IQueryable<Asset> results)
+        public NamedQueryResult(T parsedQuery, IQueryable<Asset> results)
         {
-            Query = query;
+            ParsedQuery = parsedQuery;
             Results = results;
         }
     }

@@ -20,8 +20,13 @@ using Orchestrator.Settings;
 
 namespace Orchestrator.Features.PDF
 {
+    /// <summary>
+    /// Implementation of <see cref="IPdfCreator"/> using Fireball for generation of PDF file.
+    /// </summary>
+    /// <remarks>See https://github.com/fractos/fireball</remarks>
     public class FireballPdfCreator : IPdfCreator
     {
+        private const string PdfEndpoint = "pdf";
         private readonly IBucketReader bucketReader;
         private readonly ILogger<FireballPdfCreator> logger;
         private readonly HttpClient fireballClient;
@@ -46,15 +51,15 @@ namespace Orchestrator.Features.PDF
             };
         }
 
-        public async Task<bool> CreatePdf(NamedQueryResult<PdfParsedNamedQuery> namedQueryResult, string queryName)
+        public async Task<bool> CreatePdf(NamedQueryResult<PdfParsedNamedQuery> namedQueryResult)
         {
             var enumeratedResults = await namedQueryResult.Results.ToListAsync();
-            
-            // TODO - there is a slim chance of this being double triggered - do we want to lock here?
-            var parsedNamedQuery = namedQueryResult.Query!;
 
-            var controlFile = await CreateControlFile(enumeratedResults, namedQueryResult.Query);
-            
+            // TODO - there is a slim chance of this being double triggered - do we want to lock here?
+            var parsedNamedQuery = namedQueryResult.ParsedQuery!;
+
+            var controlFile = await CreateControlFile(enumeratedResults, namedQueryResult.ParsedQuery);
+
             var fireballResponse = await CreatePdfFile(parsedNamedQuery, enumeratedResults);
 
             if (!fireballResponse.Success)
@@ -65,11 +70,11 @@ namespace Orchestrator.Features.PDF
             controlFile.Exists = true;
             controlFile.InProcess = false;
             controlFile.SizeBytes = fireballResponse.Size;
-            await UpdatePdfControlFile(namedQueryResult.Query.ControlFileStorageKey, controlFile);
+            await UpdatePdfControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey, controlFile);
             return true;
         }
-        
-        private async Task<PdfControlFile> CreateControlFile(List<Asset> enumeratedResults, 
+
+        private async Task<PdfControlFile> CreateControlFile(List<Asset> enumeratedResults,
             PdfParsedNamedQuery parsedNamedQuery)
         {
             logger.LogInformation("Creating new pdf-control file at {PdfControlS3Key}",
@@ -92,7 +97,7 @@ namespace Orchestrator.Features.PDF
             bucketReader.WriteToBucket(new ObjectInBucket(namedQuerySettings.PdfBucket, controlFileKey),
                 JsonConvert.SerializeObject(controlFile), "application/json");
 
-        private async Task<FireballResponse> CreatePdfFile(PdfParsedNamedQuery? parsedNamedQuery, 
+        private async Task<FireballResponse> CreatePdfFile(PdfParsedNamedQuery? parsedNamedQuery,
             List<Asset> enumeratedResults)
         {
             var pdfKey = parsedNamedQuery.PdfStorageKey;
@@ -103,7 +108,7 @@ namespace Orchestrator.Features.PDF
                 var playbook = GeneratePlaybook(pdfKey, parsedNamedQuery, enumeratedResults);
 
                 var jsonString = JsonConvert.SerializeObject(playbook);
-                var request = new HttpRequestMessage(HttpMethod.Post, namedQuerySettings.FireballUri)
+                var request = new HttpRequestMessage(HttpMethod.Post, PdfEndpoint)
                 {
                     Content = new StringContent(jsonString, Encoding.UTF8, "application/json")
                 };
@@ -124,8 +129,9 @@ namespace Orchestrator.Features.PDF
 
             return new FireballResponse();
         }
-        
-        private FireballPlaybook GeneratePlaybook(string? pdfKey, PdfParsedNamedQuery? parsedNamedQuery, List<Asset>? enumeratedResults)
+
+        private FireballPlaybook GeneratePlaybook(string? pdfKey, PdfParsedNamedQuery? parsedNamedQuery,
+            List<Asset>? enumeratedResults)
         {
             var playbook = new FireballPlaybook
             {
@@ -160,7 +166,7 @@ namespace Orchestrator.Features.PDF
             return playbook;
         }
     }
-    
+
     public class FireballPlaybook
     {
         [JsonProperty("method")] 

@@ -55,28 +55,27 @@ namespace Orchestrator.Features.NamedQueries
         /// Project NamedQueryResult to IIIF presentation object
         /// </summary>
         public async Task<JsonLdBase?> GenerateIIIFPresentation(NamedQueryResult<IIIFParsedNamedQuery> namedQueryResult,
-            HttpRequest request, Version iiifPresentationVersion, string namedQueryName,
-            CancellationToken cancellationToken = default)
+            HttpRequest request, Version iiifPresentationVersion, CancellationToken cancellationToken = default)
         {
-            namedQueryResult.Query.ThrowIfNull(nameof(request.Query));
+            namedQueryResult.ParsedQuery.ThrowIfNull(nameof(request.Query));
             
             var imageResults = await namedQueryResult.Results.ToListAsync(cancellationToken);
 
             if (imageResults.Count == 0) return null;
 
             return iiifPresentationVersion == Version.V2
-                ? await GenerateV2Manifest(namedQueryResult.Query!, imageResults, request, namedQueryName)
-                : await GenerateV3Manifest(namedQueryResult.Query!, imageResults, request, namedQueryName);
+                ? await GenerateV2Manifest(namedQueryResult.ParsedQuery!, imageResults, request)
+                : await GenerateV3Manifest(namedQueryResult.ParsedQuery!, imageResults, request);
         }
 
         private async Task<JsonLdBase> GenerateV2Manifest(IIIFParsedNamedQuery parsedNamedQuery,
-            List<Asset> results, HttpRequest request, string namedQueryName)
+            List<Asset> results, HttpRequest request)
         {
             var rootUrl = HttpRequestX.GetDisplayUrl(request);
             var manifest = new IIIF2.Manifest
             {
                 Id = UriHelper.GetDisplayUrl(request),
-                Label = new MetaDataValue($"Generated from '{namedQueryName}' named query"),
+                Label = new MetaDataValue($"Generated from '{parsedNamedQuery.NamedQueryName}' named query"),
                 Metadata = new IIIF2.Metadata
                 {
                     Label = new MetaDataValue("Title"), Value = new MetaDataValue("Created by DLCS")
@@ -98,13 +97,13 @@ namespace Orchestrator.Features.NamedQueries
         }
 
         private async Task<JsonLdBase> GenerateV3Manifest(IIIFParsedNamedQuery parsedNamedQuery,
-            List<Asset> results, HttpRequest request, string namedQueryName)
+            List<Asset> results, HttpRequest request)
         {
             const string language = "en";
             var manifest = new IIIF3.Manifest
             {
                 Id = UriHelper.GetDisplayUrl(request),
-                Label = new LanguageMap(language, $"Generated from '{namedQueryName}' named query"),
+                Label = new LanguageMap(language, $"Generated from '{parsedNamedQuery.NamedQueryName}' named query"),
                 Metadata = new LabelValuePair(language, "Title", "Created by DLCS").AsList(),
             };
 

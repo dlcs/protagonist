@@ -1,9 +1,12 @@
 ﻿using System;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.Assets;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Features.NamedQueries;
+using Orchestrator.Features.PDF;
 using Orchestrator.Infrastructure.NamedQueries.Parsing;
+using Orchestrator.Settings;
 
 namespace Orchestrator.Infrastructure.NamedQueries
 {
@@ -30,12 +33,14 @@ namespace Orchestrator.Infrastructure.NamedQueries
     /// </summary>
     public static class ServiceCollectionX
     {
-        public static IServiceCollection AddNamedQueries(this IServiceCollection services)
-            => services
+        public static IServiceCollection AddNamedQueries(this IServiceCollection services, IConfiguration configuration)
+        {
+            services
                 .AddTransient<IIIFNamedQueryParser>()
                 .AddScoped<INamedQueryRepository, NamedQueryRepository>()
                 .AddScoped<NamedQueryConductor>()
                 .AddScoped<IIIFNamedQueryProjector>()
+                .AddScoped<PdfNamedQueryService>()
                 .AddTransient<PdfNamedQueryParser>()
                 .AddScoped<NamedQueryParserResolver>(provider => outputFormat => outputFormat switch
                 {
@@ -43,5 +48,15 @@ namespace Orchestrator.Infrastructure.NamedQueries
                     NamedQueryType.IIIF => provider.GetService<IIIFNamedQueryParser>(),
                     _ => throw new ArgumentOutOfRangeException(nameof(outputFormat), outputFormat, null)
                 });
+            
+            var apiRoot = configuration.Get<NamedQuerySettings>().FireballRoot;
+            services.AddHttpClient<IPdfCreator, FireballPdfCreator>(client =>
+            {
+                client.DefaultRequestHeaders.WithRequestedBy();
+                client.BaseAddress = apiRoot;
+            });
+
+            return services;
+        }
     }
 }

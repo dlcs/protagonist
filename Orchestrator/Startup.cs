@@ -114,7 +114,7 @@ namespace Orchestrator
                 )
                 .AddMediatR()
                 .AddHttpContextAccessor()
-                .AddNamedQueries();
+                .AddNamedQueries(configuration);
 
             var orchestratorAddress = reverseProxySection.Get<ReverseProxySettings>()
                 .GetAddressForProxyTarget(ProxyDestination.Orchestrator);

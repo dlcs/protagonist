@@ -38,7 +38,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             var result = await sut.GetNamedQueryResult<IIIFParsedNamedQuery>(queryName, Customer, null);
             
             // Assert
-            result.Query.Should().BeNull();
+            result.ParsedQuery.Should().BeNull();
             result.Results.Should().BeEmpty();
         }
         
@@ -62,7 +62,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             var result = await sut.GetNamedQueryResult<IIIFParsedNamedQuery>(queryName, Customer,args);
             
             // Assert
-            result.Query.IsFaulty.Should().BeTrue();
+            result.ParsedQuery.IsFaulty.Should().BeTrue();
             result.Results.Should().BeEmpty();
         }
         
@@ -87,7 +87,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             var result = await sut.GetNamedQueryResult<IIIFParsedNamedQuery>(queryName, Customer, args);
             
             // Assert
-            result.Query.Should().Be(parsedQuery);
+            result.ParsedQuery.Should().Be(parsedQuery);
             result.Results.Should().BeEquivalentTo(images);
         }
     }

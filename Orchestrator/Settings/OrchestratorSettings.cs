@@ -198,8 +198,8 @@ namespace Orchestrator.Settings
         public int PdfControlStaleSecs { get; set; } = 600;
         
         /// <summary>
-        /// URL of fireball endpoint for PDF generation
+        /// URL root of fireball service for PDF generation
         /// </summary>
-        public string FireballUri { get; set; }
+        public Uri FireballRoot { get; set; }
     }
 }

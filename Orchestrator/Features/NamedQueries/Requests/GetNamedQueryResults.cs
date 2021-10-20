@@ -62,14 +62,13 @@ namespace Orchestrator.Features.NamedQueries.Requests
                 await namedQueryConductor.GetNamedQueryResult<IIIFParsedNamedQuery>(request.NamedQuery,
                     customerPathElement, request.NamedQueryArgs);
 
-            if (namedQueryResult.Query == null) return DescriptionResourceResponse.Empty;
-            if (namedQueryResult.Query is { IsFaulty: true }) return DescriptionResourceResponse.BadRequest();
+            if (namedQueryResult.ParsedQuery == null) return DescriptionResourceResponse.Empty;
+            if (namedQueryResult.ParsedQuery is { IsFaulty: true }) return DescriptionResourceResponse.BadRequest();
 
             var manifest = await iiifNamedQueryProjector.GenerateIIIFPresentation(
                 namedQueryResult,
                 httpContextAccessor.HttpContext.Request,
-                request.IIIFPresentationVersion,
-                request.NamedQuery, cancellationToken);
+                request.IIIFPresentationVersion, cancellationToken);
 
             return DescriptionResourceResponse.Open(manifest.AsJson());
         }

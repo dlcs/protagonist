@@ -29,12 +29,11 @@ namespace Orchestrator.Features.PDF
             this.logger = logger;
         }
 
-        public async Task<PdfResult> GetPdfResults(NamedQueryResult<PdfParsedNamedQuery> namedQueryResult,
-            string queryName)
+        public async Task<PdfResult> GetPdfResults(NamedQueryResult<PdfParsedNamedQuery> namedQueryResult)
         {
-            namedQueryResult.Query.ThrowIfNull(nameof(namedQueryResult.Query));
+            namedQueryResult.ParsedQuery.ThrowIfNull(nameof(namedQueryResult.ParsedQuery));
             
-            var parsedNamedQuery = namedQueryResult.Query!;
+            var parsedNamedQuery = namedQueryResult.ParsedQuery!;
 
             // Check to see if we can use an existing PDF
             var pdfResult = await TryGetExistingPdf(parsedNamedQuery);
@@ -45,7 +44,7 @@ namespace Orchestrator.Features.PDF
                 return pdfResult;
             }
 
-            var success = await pdfCreator.CreatePdf(namedQueryResult, queryName);
+            var success = await pdfCreator.CreatePdf(namedQueryResult);
             if (!success) return new PdfResult(Stream.Null, PdfStatus.Error);
             
             var pdf = await LoadPdfObject(parsedNamedQuery.PdfStorageKey);

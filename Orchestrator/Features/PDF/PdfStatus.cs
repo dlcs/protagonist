@@ -3,6 +3,11 @@
     public enum PdfStatus
     {
         /// <summary>
+        /// Default status
+        /// </summary>
+        Unknown,
+        
+        /// <summary>
         /// PDF is available to view, either having been freshly created or streamed
         /// </summary>
         Available,

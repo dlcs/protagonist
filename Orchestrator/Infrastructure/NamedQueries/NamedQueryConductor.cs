@@ -36,13 +36,15 @@ namespace Orchestrator.Infrastructure.NamedQueries
             var namedQuery = await namedQueryRepository.GetByName(customerPathElement.Id, queryName);
             if (namedQuery == null)
             {
+                logger.LogDebug("Could not find NQ with name {NamedQueryName} for customer {Customer}",
+                    queryName, customerPathElement.Id);
                 return NamedQueryResult<T>.Empty();
             }
 
             var parsedNamedQuery = ParseNamedQuery<T>(customerPathElement, args, namedQuery);
             if (parsedNamedQuery.IsFaulty)
             {
-                logger.LogInformation("Received faulted ParseNQ for {QueryName} with {QueryArgs}", queryName, args);
+                logger.LogInformation("Error parsing NQ for {QueryName} with {QueryArgs}", queryName, args);
                 return NamedQueryResult<T>.Empty(parsedNamedQuery);
             }
 
