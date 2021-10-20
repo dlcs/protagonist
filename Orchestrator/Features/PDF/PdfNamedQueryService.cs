@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Storage;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.NamedQueries;
@@ -43,8 +44,15 @@ namespace Orchestrator.Features.PDF
             {
                 return pdfResult;
             }
+            
+            var imageResults = await namedQueryResult.Results.ToListAsync();
+            if (imageResults.Count == 0)
+            {
+                logger.LogWarning("No results found for PDF file {PdfS3Key}, aborting", parsedNamedQuery.PdfStorageKey);
+                return new PdfResult(Stream.Null, PdfStatus.NotFound);
+            }
 
-            var success = await pdfCreator.CreatePdf(namedQueryResult);
+            var success = await pdfCreator.CreatePdf(namedQueryResult.ParsedQuery, imageResults);
             if (!success) return new PdfResult(Stream.Null, PdfStatus.Error);
             
             var pdf = await LoadPdfObject(parsedNamedQuery.PdfStorageKey);

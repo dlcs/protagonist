@@ -10,7 +10,6 @@ using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Storage;
 using DLCS.Repository.Storage;
 using DLCS.Web.Response;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -51,16 +50,12 @@ namespace Orchestrator.Features.PDF
             };
         }
 
-        public async Task<bool> CreatePdf(NamedQueryResult<PdfParsedNamedQuery> namedQueryResult)
+        public async Task<bool> CreatePdf(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images)
         {
-            var enumeratedResults = await namedQueryResult.Results.ToListAsync();
-
             // TODO - there is a slim chance of this being double triggered - do we want to lock here?
-            var parsedNamedQuery = namedQueryResult.ParsedQuery!;
+            var controlFile = await CreateControlFile(images, parsedNamedQuery);
 
-            var controlFile = await CreateControlFile(enumeratedResults, namedQueryResult.ParsedQuery);
-
-            var fireballResponse = await CreatePdfFile(parsedNamedQuery, enumeratedResults);
+            var fireballResponse = await CreatePdfFile(parsedNamedQuery, images);
 
             if (!fireballResponse.Success)
             {
@@ -70,7 +65,7 @@ namespace Orchestrator.Features.PDF
             controlFile.Exists = true;
             controlFile.InProcess = false;
             controlFile.SizeBytes = fireballResponse.Size;
-            await UpdatePdfControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey, controlFile);
+            await UpdatePdfControlFile(parsedNamedQuery.ControlFileStorageKey, controlFile);
             return true;
         }
 
@@ -107,7 +102,7 @@ namespace Orchestrator.Features.PDF
                 logger.LogInformation("Creating new pdf document at {PdfS3Key}", pdfKey);
                 var playbook = GeneratePlaybook(pdfKey, parsedNamedQuery, enumeratedResults);
 
-                var jsonString = JsonConvert.SerializeObject(playbook);
+                var jsonString = JsonConvert.SerializeObject(playbook, jsonSerializerSettings);
                 var request = new HttpRequestMessage(HttpMethod.Post, PdfEndpoint)
                 {
                     Content = new StringContent(jsonString, Encoding.UTF8, "application/json")
@@ -169,19 +164,15 @@ namespace Orchestrator.Features.PDF
 
     public class FireballPlaybook
     {
-        [JsonProperty("method")] 
         public string Method { get; set; } = "s3";
         
-        [JsonProperty("output")]
         public string Output { get; set; }
         
-        [JsonProperty("title")]
         public string Title { get; set; }
         
-        [JsonProperty("customTypes")]
         public FireballCustomTypes CustomTypes { get; set; }
 
-        [JsonProperty("pages")] public List<FireballPage> Pages { get; set; } = new();
+        public List<FireballPage> Pages { get; set; } = new();
     }
     
     public class FireballCustomTypes
@@ -195,19 +186,15 @@ namespace Orchestrator.Features.PDF
 
     public class FireballMessageProp
     {
-        [JsonProperty("message")]
         public string Message { get; set; }
     }
 
     public class FireballPage
     {
-        [JsonProperty("type")]
         public string Type { get; set; }
         
-        [JsonProperty("method")]
         public string? Method { get; set; }
         
-        [JsonProperty("Input")]
         public string? Input { get; set; }
 
         public static FireballPage Redacted() => new() { Type = "redacted" };
@@ -221,10 +208,8 @@ namespace Orchestrator.Features.PDF
 
     public class FireballResponse
     {
-        [JsonProperty("success")]
         public bool Success { get; set; }
         
-        [JsonProperty("size")]
         public int Size { get; set; }
     }
 }

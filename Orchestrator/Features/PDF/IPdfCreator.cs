@@ -1,6 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using Orchestrator.Infrastructure.NamedQueries;
 
 namespace Orchestrator.Features.PDF
 {
@@ -12,8 +13,9 @@ namespace Orchestrator.Features.PDF
         /// <summary>
         /// Generate PDF file from results contained in specified named query.
         /// </summary>
-        /// <param name="namedQueryResult">Parsed named query and matching images</param>
+        /// <param name="parsedNamedQuery">Parsed named query</param>
+        /// <param name="images">Matching images</param>
         /// <returns>boolean representing success of creation</returns>
-        Task<bool> CreatePdf(NamedQueryResult<PdfParsedNamedQuery> namedQueryResult);
+        Task<bool> CreatePdf(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images);
     }
 }

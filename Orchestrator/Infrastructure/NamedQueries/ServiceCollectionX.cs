@@ -49,11 +49,11 @@ namespace Orchestrator.Infrastructure.NamedQueries
                     _ => throw new ArgumentOutOfRangeException(nameof(outputFormat), outputFormat, null)
                 });
             
-            var apiRoot = configuration.Get<NamedQuerySettings>().FireballRoot;
+            var fireballRoot = configuration.Get<OrchestratorSettings>().NamedQuery.FireballRoot;
             services.AddHttpClient<IPdfCreator, FireballPdfCreator>(client =>
             {
                 client.DefaultRequestHeaders.WithRequestedBy();
-                client.BaseAddress = apiRoot;
+                client.BaseAddress = fireballRoot;
             });
 
             return services;
