@@ -20,5 +20,17 @@ namespace DLCS.Model.Security
         /// <param name="role">Id of roles to find</param>
         /// <returns>Matching role</returns>
         public Task<Role?> GetRole(int customer, string role);
+        
+        // Below this line reproduces Deliverator IAuthServiceStore
+        AuthService Get(string id);
+        AuthService GetChild(string id);
+        AuthService GetChildByCustomerName(int customer, string name);
+        AuthService GetByCustomerName(int customer, string name);
+        IEnumerable<AuthService> GetByCustomerRole(int customer, string role);
+        IEnumerable<AuthService> GetAll();
+        int CountByCustomer(int customer);
+        IEnumerable<AuthService> GetByCustomer(int customer, int skip = -1, int take = -1);
+        void Put(AuthService authService);
+        void Remove(string id);
     }
 }

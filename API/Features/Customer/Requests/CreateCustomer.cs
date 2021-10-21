@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model;
+using DLCS.Model.Processing;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -29,15 +30,18 @@ namespace API.Features.Customer.Requests
     {
         private readonly DlcsContext dbContext;
         private readonly IEntityCounterRepository entityCounterRepository;
+        private readonly ICustomerQueueRepository customerQueueRepository;
         private readonly ILogger<CreateCustomerHandler> logger;
 
         public CreateCustomerHandler(
             DlcsContext dbContext,
             IEntityCounterRepository entityCounterRepository,
+            ICustomerQueueRepository customerQueueRepository,
             ILogger<CreateCustomerHandler> logger)
         {
             this.dbContext = dbContext;
             this.entityCounterRepository = entityCounterRepository;
+            this.customerQueueRepository = customerQueueRepository;
             this.logger = logger;
         }
         
@@ -82,11 +86,15 @@ namespace API.Features.Customer.Requests
             await dbContext.Customers.AddAsync(customer, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
 
+            // create an entity counter for space IDs [CreateCustomerSpaceEntityCounterBehaviour]
             await entityCounterRepository.Create(customer.Id, "customer", customer.Id.ToString());
             
-            // Deliverator Customers.cs
-            // CreateCustomerQueueBehaviour
-            // UpdateQueueBehaviour
+            // create a Queue [CreateCustomerQueueBehaviour]
+            var queue = new CustomerQueue { Customer = customer.Id };
+            
+            // Save it [UpdateQueueBehaviour]
+            customerQueueRepository.Put(queue);
+            
             // CreateClickthroughAuthServiceBehaviour
             // CreateLogoutAuthServiceBehaviour
             // CreateClickthroughRoleBehaviour
