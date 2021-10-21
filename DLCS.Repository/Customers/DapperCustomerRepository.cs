@@ -34,8 +34,27 @@ namespace DLCS.Repository.Customers
  
         public async Task<Customer?> GetCustomer(int customerId)
         {
-            var customer = await GetCustomerInternal(customerId);
-            return customer.Id == NullCustomer.Id ? null : customer;
+            // Getting customer by Id uses appCache but by name does not.
+            // Should this have an additional "bool preferCache = true" default?
+            bool preferCache = true;
+            if (preferCache)
+            {
+                var customer = await GetCustomerInternal(customerId);
+                return customer.Id == NullCustomer.Id ? null : customer;
+            }
+            else
+            {
+                const string sql = CustomerSelect + @" WHERE ""Id""=@Id;";
+                dynamic? rawCustomer = QuerySingleOrDefaultAsync(sql, new {Id = customerId});
+                return MapRawCustomer(rawCustomer);
+            }
+        }
+
+        public Task<Customer?> GetCustomer(string name)
+        {
+            const string sql = CustomerSelect + @" WHERE ""Name""=@name;";
+            dynamic? rawCustomer = QuerySingleOrDefaultAsync(sql, new {name});
+            return MapRawCustomer(rawCustomer);
         }
 
         public async Task<Customer?> GetCustomerForKey(string apiKey, int? customerIdHint)
@@ -59,7 +78,8 @@ namespace DLCS.Repository.Customers
             var key = $"cust:{customerId}";
             return appCache.GetOrAddAsync(key, async entry =>
             {
-                dynamic? rawCustomer = QuerySingleOrDefaultAsync(CustomerSql, new {Id = customerId});
+                const string sql = CustomerSelect + @" WHERE ""Id""=@Id;";
+                dynamic? rawCustomer = QuerySingleOrDefaultAsync(sql, new {Id = customerId});
                 if (rawCustomer == null)
                 {
                     entry.AbsoluteExpirationRelativeToNow =
@@ -87,7 +107,8 @@ namespace DLCS.Repository.Customers
             return appCache.GetOrAddAsync(key, async entry =>
             {
                 // This allows for more than one admin customer - should it?
-                var rawAdmins = await QueryAsync(AdminCustomersSql);
+                const string sql = CustomerSelect + @" WHERE ""Administrator""=True;";
+                var rawAdmins = await QueryAsync(sql);
                 var admins = new List<Customer>();
                 foreach (dynamic rawCustomer in rawAdmins)
                 {
@@ -98,8 +119,9 @@ namespace DLCS.Repository.Customers
             }, cacheSettings.GetMemoryCacheOptions());
         }
 
-        private static Customer MapRawCustomer(dynamic? rawCustomer)
+        private static Customer? MapRawCustomer(dynamic? rawCustomer)
         {
+            if (rawCustomer == null) return null;
             return new()
             {
                 Administrator = rawCustomer.Administrator,
@@ -112,15 +134,8 @@ namespace DLCS.Repository.Customers
             };
         }
 
-        private const string CustomerSql = @"
+        private const string CustomerSelect = @"
 SELECT ""Id"", ""Name"", ""DisplayName"", ""Keys"", ""Administrator"", ""Created"", ""AcceptedAgreement""
-  FROM public.""Customers""
-  WHERE ""Id""=@Id;";
-        
-        // TODO: make the shared SELECT list a const?
-        private const string AdminCustomersSql = @"
-SELECT ""Id"", ""Name"", ""DisplayName"", ""Keys"", ""Administrator"", ""Created"", ""AcceptedAgreement""
-  FROM public.""Customers""
-  WHERE ""Administrator""=True;";
+  FROM public.""Customers"" ";
     }
 }

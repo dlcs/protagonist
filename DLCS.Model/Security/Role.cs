@@ -8,6 +8,6 @@ namespace DLCS.Model.Security
         public int Customer { get; set; }
         public string AuthService { get; set; }
         public string Name { get; set; }
-        public string Aliases { get; set; }
+        public string[] Aliases { get; set; }
     }
 }

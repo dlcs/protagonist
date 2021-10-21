@@ -446,7 +446,11 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Id).HasMaxLength(500);
 
-                entity.Property(e => e.Aliases).HasMaxLength(1000);
+                entity.Property(e => e.Aliases)
+                    .HasMaxLength(1000)
+                    .HasConversion(
+                        v => string.Join(",", v),
+                        v => v.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray());;
 
                 entity.Property(e => e.AuthService)
                     .IsRequired()

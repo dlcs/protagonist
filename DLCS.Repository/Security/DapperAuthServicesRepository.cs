@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
+using DLCS.Core.Strings;
 using DLCS.Model.Security;
 using DLCS.Repository.Caching;
 using LazyCache;
@@ -92,8 +93,58 @@ FROM cte_auth;
         private const string RoleByIdSql = @"
 SELECT ""Id"", ""Customer"", ""AuthService"", ""Name"", ""Aliases"" FROM ""Roles"" WHERE ""Customer"" = @Customer AND ""Id"" = @Role
 ";
+
+
+        public Role CreateRole(string name, int customer, string authServiceId)
+        {
+            return new()
+            {
+                Id = GetRoleIdFromName(name, customer),
+                Customer = customer,
+                Name = name,
+                AuthService = authServiceId,
+                Aliases = Array.Empty<string>()
+            };
+        }
         
         
+        public AuthService CreateAuthService(int customerId, string profile, string name, int ttl)
+        {            
+            return new AuthService
+            {
+                Id = Guid.NewGuid().ToString(),
+                Customer = customerId,
+                Profile = profile,
+                Name = name,
+                Ttl = ttl,
+                CallToAction = String.Empty,
+                ChildAuthService = String.Empty,
+                Description = String.Empty,
+                Label = String.Empty,
+                PageDescription = String.Empty,
+                PageLabel = String.Empty,
+                RoleProvider = String.Empty
+            };
+        }
+
+        private string GetRoleIdFromName(string name, int customer)
+        {
+            // This is a namespace for roles, not necessarily the current URL
+            const string fqRolePrefix = "https://api.dlcs.io";  
+            string firstCharLowered = name.Trim()[0].ToString().ToLowerInvariant() + name.Substring(1);
+            return $"{fqRolePrefix}/customers/{customer}/roles/{firstCharLowered.ToCamelCase()}";
+        }
+
+        public void SaveAuthService(AuthService authService)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SaveRole(Role role)
+        {
+            throw new NotImplementedException();
+        }
+
         // Interface signature from Deliverator IAuthServiceStore reproduced below
         public AuthService Get(string id)
         {

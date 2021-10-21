@@ -21,7 +21,12 @@ namespace DLCS.Model.Security
         /// <returns>Matching role</returns>
         public Task<Role?> GetRole(int customer, string role);
         
+
+        Role CreateRole(string name, int customer, string authServiceId);
+        AuthService CreateAuthService(int customerId, string profile, string name, int ttl);
         
+        void SaveAuthService(AuthService authService);
+        void SaveRole(Role role);
         
         // Below this line reproduces Deliverator IAuthServiceStore
         AuthService Get(string id);
@@ -32,7 +37,7 @@ namespace DLCS.Model.Security
         IEnumerable<AuthService> GetAll();
         int CountByCustomer(int customer);
         IEnumerable<AuthService> GetByCustomer(int customer, int skip = -1, int take = -1);
-        void Put(AuthService authService);
+        void Put(AuthService authService); // implemented as SaveAuthService
         void Remove(string id);
     }
 }
