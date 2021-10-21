@@ -21,15 +21,16 @@ using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Settings;
+using ExternalResource = IIIF.Presentation.V3.Content.ExternalResource;
 using IIIF2 = IIIF.Presentation.V2;
 using IIIF3 = IIIF.Presentation.V3;
 using Version = IIIF.Presentation.Version;
 
-namespace Orchestrator.Features.NamedQueries
+namespace Orchestrator.Features.Manifests
 {
     /// <summary>
     /// Methods for generating IIIF results from NamedQueries

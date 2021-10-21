@@ -7,12 +7,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.Features.NamedQueries.Requests;
+using Orchestrator.Features.Manifests.Requests;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Conneg;
 using Orchestrator.Settings;
 
-namespace Orchestrator.Features.NamedQueries
+namespace Orchestrator.Features.Manifests
 {
     [Route("iiif-resource")]
     [ApiController]

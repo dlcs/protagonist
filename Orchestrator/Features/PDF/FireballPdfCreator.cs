@@ -52,7 +52,7 @@ namespace Orchestrator.Features.PDF
 
         public async Task<bool> CreatePdf(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images)
         {
-            // TODO - there is a slim chance of this being double triggered - do we want to lock here?
+            // TODO - there is a slim chance of this being double triggered
             try
             {
                 var controlFile = await CreateControlFile(images, parsedNamedQuery);
