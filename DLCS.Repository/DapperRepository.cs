@@ -20,10 +20,36 @@ namespace DLCS.Repository
             await connection.ExecuteAsync(sql, param);
         }
 
-        protected async Task<T> QueryFirstOrDefaultAsync<T>(string sql, object param = null)
+        protected async Task<T?> QueryFirstOrDefaultAsync<T>(string sql, object param = null)
+        {
+            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+            return await connection.QueryFirstOrDefaultAsync<T?>(sql, param);
+        }
+        
+        protected async Task<dynamic?> QueryFirstOrDefaultAsync(string sql, object param = null)
+        {
+            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+            return await connection.QuerySingleOrDefaultAsync(sql, param);
+        }
+        
+        
+        protected async Task<T> QuerySingleOrDefaultAsync<T>(string sql, object param = null)
         {
             await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
             return await connection.QueryFirstOrDefaultAsync<T>(sql, param);
+        }
+        
+        protected async Task<dynamic?> QuerySingleOrDefaultAsync(string sql, object param = null)
+        {
+            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+            return await connection.QuerySingleOrDefaultAsync(sql, param);
+        }
+        
+        
+        protected async Task<T> QuerySingleAsync<T>(string sql, object param = null)
+        {
+            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+            return await connection.QuerySingleAsync<T>(sql, param);
         }
         
         

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Dapper;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository.Caching;
@@ -14,9 +13,8 @@ namespace DLCS.Repository.Assets
     /// <summary>
     /// Implementation of <see cref="IAssetRepository"/> using Dapper for data access.
     /// </summary>
-    public class DapperAssetRepository : IAssetRepository
+    public class DapperAssetRepository : DapperRepository, IAssetRepository
     {
-        private readonly IConfiguration configuration;
         private readonly CacheSettings cacheSettings;
         private readonly IAppCache appCache;
         private readonly ILogger<DapperAssetRepository> logger;
@@ -26,12 +24,11 @@ namespace DLCS.Repository.Assets
             IConfiguration configuration, 
             IAppCache appCache,
             IOptions<CacheSettings> cacheOptions,
-            ILogger<DapperAssetRepository> logger)
+            ILogger<DapperAssetRepository> logger) : base(configuration)
         {
             this.appCache = appCache;
             this.logger = logger;
             cacheSettings = cacheOptions.Value;
-            this.configuration = configuration;
         }
 
         public async Task<Asset?> GetAsset(string id)
@@ -45,9 +42,7 @@ namespace DLCS.Repository.Assets
 
         public async Task<ImageLocation> GetImageLocation(AssetId assetId)
         {
-            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-            return await connection.QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql,
-                new { Id = assetId.ToString() });
+            return await QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql, new {Id = assetId.ToString()});
         }
         
         private async Task<Asset> GetAssetInternal(string id)
@@ -56,8 +51,7 @@ namespace DLCS.Repository.Assets
             return await appCache.GetOrAddAsync(key, async entry =>
             {
                 logger.LogInformation("Refreshing assetCache from database {Asset}", id);
-                await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-                dynamic? rawAsset = await connection.QuerySingleOrDefaultAsync(AssetSql, new { Id = id });
+                dynamic? rawAsset = await QuerySingleOrDefaultAsync(AssetSql, new { Id = id });
                 if (rawAsset == null)
                 {
                     entry.AbsoluteExpirationRelativeToNow =

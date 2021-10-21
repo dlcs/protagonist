@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Dapper;
 using DLCS.Model.Assets;
 using DLCS.Repository.Caching;
 using LazyCache;
@@ -11,20 +10,18 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Assets
 {
-    public class ThumbnailPolicyRepository : IThumbnailPolicyRepository
+    public class ThumbnailPolicyRepository : DapperRepository, IThumbnailPolicyRepository
     {
         private readonly IAppCache appCache;
-        private readonly IConfiguration configuration;
         private readonly CacheSettings cacheSettings;
         private readonly ILogger<ThumbnailPolicyRepository> logger;
 
         public ThumbnailPolicyRepository(IAppCache appCache,
             IConfiguration configuration,
             IOptions<CacheSettings> cacheOptions,
-            ILogger<ThumbnailPolicyRepository> logger)
+            ILogger<ThumbnailPolicyRepository> logger) : base(configuration)
         {
             this.appCache = appCache;
-            this.configuration = configuration;
             this.logger = logger;
             cacheSettings = cacheOptions.Value;
         }
@@ -41,8 +38,7 @@ namespace DLCS.Repository.Assets
             return appCache.GetOrAddAsync(key, async () =>
             {
                 logger.LogInformation("refreshing ThumbnailPolicies from database");
-                await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-                var thumbnailPolicies = await connection.QueryAsync<ThumbnailPolicy>(
+                var thumbnailPolicies = await QueryAsync<ThumbnailPolicy>(
                     "SELECT \"Id\", \"Name\", \"Sizes\" FROM \"ThumbnailPolicies\"");
                 return thumbnailPolicies.ToList();
             }, cacheSettings.GetMemoryCacheOptions());

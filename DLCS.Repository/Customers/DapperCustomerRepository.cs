@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Dapper;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Repository.Caching;
@@ -60,8 +59,7 @@ namespace DLCS.Repository.Customers
             var key = $"cust:{customerId}";
             return appCache.GetOrAddAsync(key, async entry =>
             {
-                await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-                dynamic? rawCustomer = await connection.QuerySingleOrDefaultAsync(CustomerSql, new { Id = customerId });
+                dynamic? rawCustomer = QuerySingleOrDefaultAsync(CustomerSql, new {Id = customerId});
                 if (rawCustomer == null)
                 {
                     entry.AbsoluteExpirationRelativeToNow =
@@ -89,7 +87,7 @@ namespace DLCS.Repository.Customers
             return appCache.GetOrAddAsync(key, async entry =>
             {
                 // This allows for more than one admin customer - should it?
-                var rawAdmins = await QueryAsync<dynamic>(AdminCustomersSql);
+                var rawAdmins = await QueryAsync(AdminCustomersSql);
                 var admins = new List<Customer>();
                 foreach (dynamic rawCustomer in rawAdmins)
                 {

@@ -1,22 +1,18 @@
-using System;
 using System.Threading.Tasks;
-using Dapper;
 using DLCS.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace DLCS.Repository.Entities
 {
-    public class EntityCounterRepository : IEntityCounterRepository
+    public class EntityCounterRepository : DapperRepository, IEntityCounterRepository
     {
-        private readonly IConfiguration configuration;
         private readonly DlcsContext dlcsContext;
 
         public EntityCounterRepository(
             IConfiguration configuration, 
-            DlcsContext dlcsContext)
+            DlcsContext dlcsContext) : base(configuration)
         {
-            this.configuration = configuration;
             this.dlcsContext = dlcsContext;
         }
 
@@ -101,10 +97,10 @@ namespace DLCS.Repository.Entities
         private async Task<long> LongUpdate(string sql, int customer, string entityType, string scope, long initialValue = 1)
         {
             await EnsureCounter(customer, entityType, scope, initialValue);
-            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-            return await connection.QuerySingleAsync<long>(sql, new {customer, entityType, scope});
+            return await QuerySingleAsync<long>(sql, new {customer, entityType, scope});
         }
-        
+
+
         private const string GetNextSql = @"
 UPDATE ""EntityCounters"" SET ""Next"" = ""Next"" + 1
 WHERE ""Type""=@entityType AND ""Scope""=@scope AND ""Customer""=@customer

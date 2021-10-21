@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Dapper;
 using DLCS.Core.Collections;
 using DLCS.Model.Security;
 using DLCS.Repository.Caching;
@@ -14,9 +13,8 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Security
 {
-    public class DapperAuthServicesRepository : IAuthServicesRepository
+    public class DapperAuthServicesRepository : DapperRepository, IAuthServicesRepository
     {
-        private readonly IConfiguration configuration;
         private readonly IAppCache appCache;
         private readonly CacheSettings cacheSettings;
         private readonly ILogger<DapperAuthServicesRepository> logger;
@@ -24,9 +22,8 @@ namespace DLCS.Repository.Security
         public DapperAuthServicesRepository(IConfiguration configuration, 
             IAppCache appCache, 
             IOptions<CacheSettings> cacheOptions,
-            ILogger<DapperAuthServicesRepository> logger)
+            ILogger<DapperAuthServicesRepository> logger) : base(configuration)
         {
-            this.configuration = configuration;
             this.appCache = appCache;
             this.logger = logger;
             cacheSettings = cacheOptions.Value;
@@ -52,8 +49,7 @@ namespace DLCS.Repository.Security
                 return await appCache.GetOrAddAsync(cacheKey, async () =>
                 {
                     logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
-                    await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-                    return await connection.QuerySingleOrDefaultAsync<Role>(RoleByIdSql, new { Customer = customer, Role = role });
+                    return await QuerySingleOrDefaultAsync<Role>(RoleByIdSql, new { Customer = customer, Role = role });
                 }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
             }
             catch (InvalidOperationException e)
@@ -65,8 +61,7 @@ namespace DLCS.Repository.Security
 
         private async Task<IEnumerable<AuthService>> GetAuthServicesFromDatabase(int customer, string role)
         {
-            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-            var result = await connection.QueryAsync<AuthService>(AuthServiceSql,
+            var result = await QueryAsync<AuthService>(AuthServiceSql,
                 new { Customer = customer, Role = role });
 
             var authServices = result.ToList();
@@ -97,5 +92,57 @@ FROM cte_auth;
         private const string RoleByIdSql = @"
 SELECT ""Id"", ""Customer"", ""AuthService"", ""Name"", ""Aliases"" FROM ""Roles"" WHERE ""Customer"" = @Customer AND ""Id"" = @Role
 ";
+        
+        
+        // Interface signature from Deliverator IAuthServiceStore reproduced below
+        public AuthService Get(string id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public AuthService GetChild(string id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public AuthService GetChildByCustomerName(int customer, string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public AuthService GetByCustomerName(int customer, string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<AuthService> GetByCustomerRole(int customer, string role)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<AuthService> GetAll()
+        {
+            throw new NotImplementedException();
+        }
+
+        public int CountByCustomer(int customer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<AuthService> GetByCustomer(int customer, int skip = -1, int take = -1)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Put(AuthService authService)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Remove(string id)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
