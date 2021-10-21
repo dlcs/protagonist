@@ -4,8 +4,14 @@ using System.Threading.Tasks;
 using Amazon.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
+using DLCS.Model.Security;
 using FluentAssertions;
+using LazyCache;
+using LazyCache.Mocks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
 using Xunit;
@@ -13,31 +19,32 @@ using Xunit;
 namespace Orchestrator.Tests.Integration
 {
     /// <summary>
-    /// Test of all requests handled by custom iiif-img handling
+    /// Tests of all /file/ requests
     /// </summary>
     [Trait("Category", "Integration")]
     [Collection(OrchestratorCollection.CollectionName)]
     public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
-        private readonly OrchestratorFixture orchestratorFixture;
         private readonly DlcsDatabaseFixture dbFixture;
         private readonly HttpClient httpClient;
-        private readonly IAmazonS3 amazonS3;
         private readonly string stubAddress;
+        
+        public const string ValidAuth = "Basic dW5hbWU6cHdvcmQ=";
+
+        public string ValidCreds =
+            JsonConvert.SerializeObject(new BasicCredentials { Password = "pword", User = "uname" });
 
         public FileHandlingTests(ProtagonistAppFactory<Startup> factory, OrchestratorFixture orchestratorFixture)
         {
-            this.orchestratorFixture = orchestratorFixture;
             dbFixture = orchestratorFixture.DbFixture;
-            amazonS3 = orchestratorFixture.LocalStackFixture.AmazonS3;
             stubAddress = orchestratorFixture.ApiStub.Address;
             httpClient = factory
                 .WithConnectionString(dbFixture.ConnectionString)
                 .WithLocalStack(orchestratorFixture.LocalStackFixture)
-                .CreateClient(new WebApplicationFactoryClientOptions {AllowAutoRedirect = false});
-            
+                .CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
             dbFixture.CleanUp();
-            orchestratorFixture.WithTestFile();
+            ConfigureStubbery(orchestratorFixture);
         }
 
         [Fact]
@@ -112,16 +119,16 @@ namespace Orchestrator.Tests.Integration
             response.Content.Headers.ContentLength.Should().BeGreaterThan(0);
         }
         
-        [Fact(Skip = "Issue with Stubbery lifecycle - runs in isolation but fails in group run")]
+        [Fact]
         public async Task Get_BasicAuthHttpOrigin_ReturnsFile()
         {
             // Arrange
             var id = "99/1/Get_BasicAuthHttpOrigin_ReturnsFile";
             await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
                 origin: $"{stubAddress}/authfile");
-            await dbFixture.DbContext.CustomerOriginStrategies.AddRangeAsync(new CustomerOriginStrategy
+            await dbFixture.DbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
             {
-                Credentials = orchestratorFixture.ValidCreds, Customer = 99, Id = "basic-auth-file", 
+                Credentials = ValidCreds, Customer = 99, Id = "basic-auth-file", 
                 Strategy = OriginStrategyType.BasicHttp, Regex = $"{stubAddress}/authfile"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -141,9 +148,9 @@ namespace Orchestrator.Tests.Integration
             var id = "99/1/Get_BasicAuthHttpOrigin_BadCredentials_Returns404";
             await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
                 origin: $"{stubAddress}/forbiddenfile");
-            await dbFixture.DbContext.CustomerOriginStrategies.AddRangeAsync(new CustomerOriginStrategy
+            await dbFixture.DbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
             {
-                Credentials = orchestratorFixture.ValidCreds, Customer = 99, Id = "basic-forbidden-file", 
+                Credentials = ValidCreds, Customer = 99, Id = "basic-forbidden-file", 
                 Strategy = OriginStrategyType.BasicHttp, Regex = $"{stubAddress}/forbiddenfile"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -153,6 +160,18 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+        
+        private static void ConfigureStubbery(OrchestratorFixture orchestratorFixture)
+        {
+            orchestratorFixture.ApiStub.Get("/testfile", (request, args) => "anything")
+                .Header("Content-Type", "application/pdf");
+
+            orchestratorFixture.ApiStub.Get("/authfile", (request, args) => "anything")
+                .Header("Content-Type", "application/pdf")
+                .IfHeader("Authorization", ValidAuth);
+
+            orchestratorFixture.ApiStub.Get("/forbiddenfile", (request, args) => new ForbidResult());
         }
     }
 }

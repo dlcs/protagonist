@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Collections;
+using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using IIIF.Presentation;
 using IIIF.Serialisation;
@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Models;
 
-namespace Orchestrator.Features.NamedQueries.Requests
+namespace Orchestrator.Features.Manifests.Requests
 {
     /// <summary>
     /// Mediatr request for generating manifest using a named query.
@@ -58,18 +58,17 @@ namespace Orchestrator.Features.NamedQueries.Requests
             var customerPathElement = await pathCustomerRepository.GetCustomer(request.CustomerPathValue);
 
             var namedQueryResult =
-                await namedQueryConductor.GetNamedQueryResult(request.NamedQuery, customerPathElement,
-                    request.NamedQueryArgs);
+                await namedQueryConductor.GetNamedQueryResult<IIIFParsedNamedQuery>(request.NamedQuery,
+                    customerPathElement, request.NamedQueryArgs);
 
-            if (namedQueryResult.Query is { IsFaulty: true }) return DescriptionResourceResponse.BadRequest();
-            if (namedQueryResult.Results.IsNullOrEmpty()) return DescriptionResourceResponse.Empty;
+            if (namedQueryResult.ParsedQuery == null) return DescriptionResourceResponse.Empty;
+            if (namedQueryResult.ParsedQuery is { IsFaulty: true }) return DescriptionResourceResponse.BadRequest();
 
             var manifest = await iiifNamedQueryProjector.GenerateIIIFPresentation(
                 namedQueryResult,
                 httpContextAccessor.HttpContext.Request,
-                request.IIIFPresentationVersion,
-                request.NamedQuery);
-            
+                request.IIIFPresentationVersion, cancellationToken);
+
             return DescriptionResourceResponse.Open(manifest.AsJson());
         }
     }

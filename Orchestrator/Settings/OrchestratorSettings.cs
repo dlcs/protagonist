@@ -78,6 +78,8 @@ namespace Orchestrator.Settings
         public CacheSettings Caching { get; set; }
         
         public AuthSettings Auth { get; set; }
+        
+        public NamedQuerySettings NamedQuery { get; set; }
 
         /// <summary>
         /// Get the local folder where Asset should be saved to
@@ -166,5 +168,38 @@ namespace Orchestrator.Settings
         /// If true the current domain is automatically added to auth token domains.
         /// </summary>
         public bool UseCurrentDomainForCookie { get; set; } = true;
+    }
+
+    /// <summary>
+    /// Settings related to NamedQuery generation and serving
+    /// </summary>
+    public class NamedQuerySettings
+    {
+        /// <summary>
+        /// Name of S3Bucket for storing PDF output
+        /// </summary>
+        public string PdfBucket { get; set; }
+        
+        /// <summary>
+        /// Name of S3Bucket for storing thumbnails
+        /// </summary>
+        public string ThumbsBucket { get; set; }
+
+        /// <summary>
+        /// String format for generating keys for PDF object storage.
+        /// Supported replacements are {customer}/{queryname}/{args}
+        /// </summary>
+        public string PdfStorageTemplate { get; set; } = "{customer}/{queryname}/{args}";
+
+        /// <summary>
+        /// Number of seconds after which an "InProcess" PDF file is considered stale for.
+        /// After this time has elapsed it will be recreated.
+        /// </summary>
+        public int PdfControlStaleSecs { get; set; } = 600;
+        
+        /// <summary>
+        /// URL root of fireball service for PDF generation
+        /// </summary>
+        public Uri FireballRoot { get; set; }
     }
 }

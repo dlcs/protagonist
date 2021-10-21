@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -38,7 +39,6 @@ using Orchestrator.Features.Auth;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Features.Images.Orchestration.Status;
-using Orchestrator.Features.NamedQueries;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
@@ -70,6 +70,7 @@ namespace Orchestrator
                 .Configure<OrchestratorSettings>(configuration)
                 .Configure<ThumbsSettings>(configuration.GetSection("Thumbs"))
                 .Configure<ProxySettings>(configuration.GetSection("Proxy"))
+                .Configure<NamedQuerySettings>(configuration.GetSection("NamedQuery"))
                 .Configure<CacheSettings>(cachingSection)
                 .Configure<ReverseProxySettings>(reverseProxySection);
             
@@ -103,11 +104,7 @@ namespace Orchestrator
                 .AddScoped<AccessChecker>()
                 .AddScoped<ISessionAuthService, SessionAuthService>()
                 .AddScoped<AuthCookieManager>()
-                .AddSingleton<INamedQueryParser, BasicNamedQueryParser>()
-                .AddScoped<INamedQueryRepository, NamedQueryRepository>()
                 .AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>()
-                .AddScoped<NamedQueryConductor>()
-                .AddScoped<IIIFNamedQueryProjector>()
                 .AddSingleton<AssetRequestProcessor>()
                 .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
                 .AddOriginStrategies()
@@ -115,7 +112,8 @@ namespace Orchestrator
                     opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
                 )
                 .AddMediatR()
-                .AddHttpContextAccessor();
+                .AddHttpContextAccessor()
+                .AddNamedQueries(configuration);
 
             var orchestratorAddress = reverseProxySection.Get<ReverseProxySettings>()
                 .GetAddressForProxyTarget(ProxyDestination.Orchestrator);
