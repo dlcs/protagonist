@@ -16,11 +16,6 @@ namespace Orchestrator.Tests.Integration.Infrastructure
     {
         public DlcsDatabaseFixture DbFixture { get; }
         public LocalStackFixture LocalStackFixture { get; }
-        
-        public const string ValidAuth = "Basic dW5hbWU6cHdvcmQ=";
-
-        public string ValidCreds =
-            JsonConvert.SerializeObject(new BasicCredentials { Password = "pword", User = "uname" });
 
         public ApiStub ApiStub { get; }
 
@@ -43,21 +38,6 @@ namespace Orchestrator.Tests.Integration.Infrastructure
             ApiStub.Dispose();
             await DbFixture.DisposeAsync();
             await LocalStackFixture.DisposeAsync();
-        }
-
-        /// <summary>
-        /// Setup /testfile to return a sample PDF and /authfile to require basic Auth.
-        /// </summary>
-        public void WithTestFile()
-        {
-            ApiStub.Get("/testfile", (request, args) => "anything")
-                .Header("Content-Type", "application/pdf");
-
-            ApiStub.Get("/authfile", (request, args) => "anything")
-                .Header("Content-Type", "application/pdf")
-                .IfHeader("Authorization", ValidAuth);
-
-            ApiStub.Get("/forbiddenfile", (request, args) => new ForbidResult());
         }
     }
 }

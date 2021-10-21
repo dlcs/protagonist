@@ -36,6 +36,18 @@ namespace Test.Helpers.Integration
         }
         
         /// <summary>
+        /// Specify a configuration value to be set in appFactory
+        /// </summary>
+        /// <param name="key">Key of setting to update, in format ("Thumbs:ThumbsBucket")</param>
+        /// <param name="value">Value to set</param>
+        /// <returns>Current instance</returns>
+        public ProtagonistAppFactory<TStartup> WithConfigValue(string key, string value)
+        {
+            configuration[key] = value;
+            return this;
+        }
+        
+        /// <summary>
         /// <see cref="LocalStackFixture"/> to use for replacing AWS services.
         /// </summary>
         /// <param name="fixture"><see cref="LocalStackFixture"/> to use.</param>
@@ -57,7 +69,7 @@ namespace Test.Helpers.Integration
         }
 
         /// <summary>
-        /// <see cref="IDisposable"/> implementation that will be disposed of alongside appfactor
+        /// <see cref="IDisposable"/> implementation that will be disposed of alongside appfactory
         /// </summary>
         public ProtagonistAppFactory<TStartup> WithDisposable(IDisposable disposable)
         {
