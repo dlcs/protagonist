@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Features.Manifests;
 using Orchestrator.Features.PDF;
 using Orchestrator.Infrastructure.NamedQueries.Parsing;
+using Orchestrator.Infrastructure.NamedQueries.Requests;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Infrastructure.NamedQueries
@@ -36,12 +37,13 @@ namespace Orchestrator.Infrastructure.NamedQueries
         public static IServiceCollection AddNamedQueries(this IServiceCollection services, IConfiguration configuration)
         {
             services
-                .AddTransient<IIIFNamedQueryParser>()
+                .AddScoped<IIIFNamedQueryParser>()
                 .AddScoped<INamedQueryRepository, NamedQueryRepository>()
                 .AddScoped<NamedQueryConductor>()
                 .AddScoped<IIIFNamedQueryProjector>()
                 .AddScoped<PdfNamedQueryService>()
-                .AddTransient<PdfNamedQueryParser>()
+                .AddScoped<PdfNamedQueryParser>()
+                .AddScoped<NamedQueryResultGenerator>()
                 .AddScoped<NamedQueryParserResolver>(provider => outputFormat => outputFormat switch
                 {
                     NamedQueryType.PDF => provider.GetService<PdfNamedQueryParser>(),

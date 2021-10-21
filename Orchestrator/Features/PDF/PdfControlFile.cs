@@ -23,7 +23,7 @@ namespace Orchestrator.Features.PDF
         /// <summary>
         /// Whether the related PDF is currently processing.
         /// </summary>
-        [JsonProperty("inprocess")]
+        [JsonProperty("inProcess")]
         public bool InProcess { get; set; }
         
         /// <summary>

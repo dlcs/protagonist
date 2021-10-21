@@ -30,6 +30,9 @@ namespace Orchestrator.Features.PDF
             this.logger = logger;
         }
 
+        /// <summary>
+        /// Get <see cref="PdfResult"/> containing PDF stream and status for specific named query result.
+        /// </summary>
         public async Task<PdfResult> GetPdfResults(NamedQueryResult<PdfParsedNamedQuery> namedQueryResult)
         {
             namedQueryResult.ParsedQuery.ThrowIfNull(nameof(namedQueryResult.ParsedQuery));
@@ -65,8 +68,11 @@ namespace Orchestrator.Features.PDF
                 parsedNamedQuery.PdfStorageKey);
             return new(Stream.Null, PdfStatus.Error);
         }
-
-        private async Task<PdfControlFile?> GetPdfControlFile(string controlFileKey)
+        
+        /// <summary>
+        /// Get <see cref="PdfControlFile"/> stored as specified key.
+        /// </summary>
+        public async Task<PdfControlFile?> GetPdfControlFile(string controlFileKey)
         {
             var pdfControlObject = await LoadPdfObject(controlFileKey);
             if (pdfControlObject.Stream == Stream.Null) return null;
