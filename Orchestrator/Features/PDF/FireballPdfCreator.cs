@@ -53,20 +53,28 @@ namespace Orchestrator.Features.PDF
         public async Task<bool> CreatePdf(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images)
         {
             // TODO - there is a slim chance of this being double triggered - do we want to lock here?
-            var controlFile = await CreateControlFile(images, parsedNamedQuery);
-
-            var fireballResponse = await CreatePdfFile(parsedNamedQuery, images);
-
-            if (!fireballResponse.Success)
+            try
             {
+                var controlFile = await CreateControlFile(images, parsedNamedQuery);
+
+                var fireballResponse = await CreatePdfFile(parsedNamedQuery, images);
+
+                if (!fireballResponse.Success)
+                {
+                    return false;
+                }
+
+                controlFile.Exists = true;
+                controlFile.InProcess = false;
+                controlFile.SizeBytes = fireballResponse.Size;
+                await UpdatePdfControlFile(parsedNamedQuery.ControlFileStorageKey, controlFile);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error creating PDF: {PdfS3Key}", parsedNamedQuery.PdfStorageKey);
                 return false;
             }
-
-            controlFile.Exists = true;
-            controlFile.InProcess = false;
-            controlFile.SizeBytes = fireballResponse.Size;
-            await UpdatePdfControlFile(parsedNamedQuery.ControlFileStorageKey, controlFile);
-            return true;
         }
 
         private async Task<PdfControlFile> CreateControlFile(List<Asset> enumeratedResults,
