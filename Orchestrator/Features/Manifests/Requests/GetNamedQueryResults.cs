@@ -1,6 +1,5 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Collections;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using IIIF.Presentation;
@@ -10,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Models;
 
-namespace Orchestrator.Features.NamedQueries.Requests
+namespace Orchestrator.Features.Manifests.Requests
 {
     /// <summary>
     /// Mediatr request for generating manifest using a named query.

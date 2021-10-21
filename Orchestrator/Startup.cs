@@ -39,7 +39,6 @@ using Orchestrator.Features.Auth;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Features.Images.Orchestration.Status;
-using Orchestrator.Features.NamedQueries;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;

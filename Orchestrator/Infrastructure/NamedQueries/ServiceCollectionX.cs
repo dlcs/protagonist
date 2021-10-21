@@ -3,7 +3,7 @@ using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.Assets;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Orchestrator.Features.NamedQueries;
+using Orchestrator.Features.Manifests;
 using Orchestrator.Features.PDF;
 using Orchestrator.Infrastructure.NamedQueries.Parsing;
 using Orchestrator.Settings;
