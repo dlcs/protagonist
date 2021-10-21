@@ -10,28 +10,9 @@ namespace DLCS.Model.Assets.NamedQueries
     public class ParsedNamedQuery
     {
         /// <summary>
-        /// Enum specifying the source of data for a NQ property
+        /// Which Asset property to use for specifying Canvas ordering 
         /// </summary>
-        public enum QueryMapping
-        {
-            Unset,
-            String1,
-            String2,
-            String3,
-            Number1,
-            Number2,
-            Number3
-        }
-
-        /// <summary>
-        /// Which Asset property to use for specifying Manifest 
-        /// </summary>
-        /// <remarks>This is currently not used, needs to be implemented</remarks>
-        public QueryMapping Manifest { get; set; } = QueryMapping.Unset;
-
-        /// <summary>
-        /// Which Asset property to use for specifying Canvas sequence 
-        /// </summary>
+        /// <remarks>This property is used for PDFs also so should be renamed.</remarks>
         public QueryMapping Canvas { get; set; } = QueryMapping.Unset;
         
         /// <summary>
@@ -73,6 +54,11 @@ namespace DLCS.Model.Assets.NamedQueries
         /// Value of "n3" parameter after parsing
         /// </summary>
         public long? Number3 { get; set; }
+        
+        /// <summary>
+        /// The name of the namedQuery this object was parsed from.
+        /// </summary>
+        public string NamedQueryName { get; set; }
 
         /// <summary>
         /// CustomerPathElement object sent with request
@@ -106,6 +92,20 @@ namespace DLCS.Model.Assets.NamedQueries
         {
             ErrorMessage = errorMessage.ThrowIfNullOrWhiteSpace(nameof(errorMessage));
             IsFaulty = true;
+        }
+        
+        /// <summary>
+        /// Enum specifying the source of data for a NQ property
+        /// </summary>
+        public enum QueryMapping
+        {
+            Unset,
+            String1,
+            String2,
+            String3,
+            Number1,
+            Number2,
+            Number3
         }
     }
 }

@@ -103,18 +103,14 @@ namespace DLCS.Repository.Assets
                 settings.CurrentValue.ThumbsBucket,
                 StorageKeyGenerator.GetSizesJsonPath(GetKeyRoot(assetId))
             );
-            
-            await using var stream = (await bucketReader.GetObjectFromBucket(sizesList)).Stream;
-            if (stream == null || stream == Stream.Null)
+
+            var thumbnailSizesObject = await bucketReader.GetObjectFromBucket(sizesList);
+            var thumbnailSizes = await thumbnailSizesObject.DeserializeFromJson<ThumbnailSizes>();
+            if (thumbnailSizes == null)
             {
                 logger.LogError("Could not find sizes file for asset '{Asset}'", assetId);
                 return null;
             }
-            
-            var serializer = new JsonSerializer();
-            using var sr = new StreamReader(stream);
-            using var jsonTextReader = new JsonTextReader(sr);
-            var thumbnailSizes = serializer.Deserialize<ThumbnailSizes>(jsonTextReader);
             return thumbnailSizes.Open;
         }
 

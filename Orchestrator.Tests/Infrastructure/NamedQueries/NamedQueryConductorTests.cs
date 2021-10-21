@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
@@ -22,7 +23,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
         {
             namedQueryRepository = A.Fake<INamedQueryRepository>();
             namedQueryParser = A.Fake<INamedQueryParser>();
-            sut = new NamedQueryConductor(namedQueryRepository, namedQueryParser,
+            sut = new NamedQueryConductor(namedQueryRepository, _ => namedQueryParser,
                 new NullLogger<NamedQueryConductor>());
         }
 
@@ -34,10 +35,10 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             A.CallTo(() => namedQueryRepository.GetByName(Customer.Id, queryName, true)).Returns<NamedQuery?>(null);
             
             // Act
-            var result = await sut.GetNamedQueryResult(queryName, Customer, null);
+            var result = await sut.GetNamedQueryResult<IIIFParsedNamedQuery>(queryName, Customer, null);
             
             // Assert
-            result.Query.Should().BeNull();
+            result.ParsedQuery.Should().BeNull();
             result.Results.Should().BeEmpty();
         }
         
@@ -47,19 +48,21 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             // Arrange
             const string queryName = "my-query";
             const string args = "/123";
-            var namedQuery = new NamedQuery { Template = "s1=p2" };
-            var faultedQuery = new ParsedNamedQuery(Customer);
+            var namedQuery = new NamedQuery { Template = "s1=p2", Name = "test-query"};
+            var faultedQuery = new IIIFParsedNamedQuery(Customer);
             faultedQuery.SetError("Test Error");
             A.CallTo(() => namedQueryRepository.GetByName(Customer.Id, queryName, true))
                 .Returns(namedQuery);
-            A.CallTo(() => namedQueryParser.GenerateParsedNamedQueryFromRequest(Customer, args, namedQuery.Template))
+            A.CallTo(() =>
+                    namedQueryParser.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args,
+                        namedQuery.Template, namedQuery.Name))
                 .Returns(faultedQuery);
             
             // Act
-            var result = await sut.GetNamedQueryResult(queryName, Customer, args);
+            var result = await sut.GetNamedQueryResult<IIIFParsedNamedQuery>(queryName, Customer,args);
             
             // Assert
-            result.Query.IsFaulty.Should().BeTrue();
+            result.ParsedQuery.IsFaulty.Should().BeTrue();
             result.Results.Should().BeEmpty();
         }
         
@@ -69,20 +72,22 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries
             // Arrange
             const string queryName = "my-query";
             const string args = "/123";
-            var namedQuery = new NamedQuery { Template = "s1=p2" };
-            var parsedQuery = new ParsedNamedQuery(Customer);
+            var namedQuery = new NamedQuery { Template = "s1=p2", Name = "test-query" };
+            var parsedQuery = new IIIFParsedNamedQuery(Customer);
             var images = new List<Asset> { new() { Id = "/1/1/my-image" } };
             A.CallTo(() => namedQueryRepository.GetByName(Customer.Id, queryName, true))
                 .Returns(namedQuery);
-            A.CallTo(() => namedQueryParser.GenerateParsedNamedQueryFromRequest(Customer, args, namedQuery.Template))
+            A.CallTo(() =>
+                    namedQueryParser.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args,
+                        namedQuery.Template, namedQuery.Name))
                 .Returns(parsedQuery);
-            A.CallTo(() => namedQueryRepository.GetNamedQueryResults(parsedQuery)).Returns(images);
+            A.CallTo(() => namedQueryRepository.GetNamedQueryResults(parsedQuery)).Returns(images.AsQueryable());
             
             // Act
-            var result = await sut.GetNamedQueryResult(queryName, Customer, args);
+            var result = await sut.GetNamedQueryResult<IIIFParsedNamedQuery>(queryName, Customer, args);
             
             // Assert
-            result.Query.Should().Be(parsedQuery);
+            result.ParsedQuery.Should().Be(parsedQuery);
             result.Results.Should().BeEquivalentTo(images);
         }
     }

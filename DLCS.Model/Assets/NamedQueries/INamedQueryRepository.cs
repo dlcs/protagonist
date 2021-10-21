@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System.Linq;
 using System.Threading.Tasks;
 
 namespace DLCS.Model.Assets.NamedQueries
@@ -20,6 +20,6 @@ namespace DLCS.Model.Assets.NamedQueries
         /// </summary>
         /// <param name="query">Object containing query criteria</param>
         /// <returns>Matching assets, or empty Enumerable if no matches</returns>
-        Task<IEnumerable<Asset>> GetNamedQueryResults(ParsedNamedQuery query);
+        IQueryable<Asset> GetNamedQueryResults(ParsedNamedQuery query);
     }
 }

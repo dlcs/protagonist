@@ -17,12 +17,12 @@ namespace DLCS.Model.Storage
         /// <summary>
         /// Gets headers associated with this object.
         /// </summary>
-        public ObjectInBucketHeaders Headers { get; }
+        public ObjectInBucketHeaders? Headers { get; }
         
         /// <summary>
         /// <see cref="ObjectInBucket"/> used to fetch this object.
         /// </summary>
-        public ObjectInBucket ObjectInBucket { get; }
+        public ObjectInBucket? ObjectInBucket { get; }
 
         public ObjectFromBucket(ObjectInBucket objectInBucket, Stream? stream, ObjectInBucketHeaders headers)
         {

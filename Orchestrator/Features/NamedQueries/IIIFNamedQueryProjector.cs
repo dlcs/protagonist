@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
+using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
@@ -20,6 +22,7 @@ using IIIF.Presentation.V3.Strings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Settings;
 using IIIF2 = IIIF.Presentation.V2;
@@ -36,7 +39,7 @@ namespace Orchestrator.Features.NamedQueries
         private readonly IAssetPathGenerator assetPathGenerator;
         private readonly IThumbnailPolicyRepository thumbnailPolicyRepository;
         private readonly OrchestratorSettings orchestratorSettings;
-        private readonly Dictionary<string, ThumbnailPolicy> ThumbnailPolicies = new();
+        private readonly Dictionary<string, ThumbnailPolicy> thumbnailPolicies = new();
 
         public IIIFNamedQueryProjector(
             IAssetPathGenerator assetPathGenerator, 
@@ -51,50 +54,60 @@ namespace Orchestrator.Features.NamedQueries
         /// <summary>
         /// Project NamedQueryResult to IIIF presentation object
         /// </summary>
-        public async Task<JsonLdBase> GenerateIIIFPresentation(NamedQueryResult result, HttpRequest request,
-            Version iiifPresentationVersion, string namedQueryName)
-            => iiifPresentationVersion == Version.V2
-                ? await GenerateV2Manifest(result, request, namedQueryName)
-                : await GenerateV3Manifest(result, request, namedQueryName);
-        
-        
-        private async Task<JsonLdBase> GenerateV2Manifest(NamedQueryResult result, HttpRequest request, string namedQueryName)
+        public async Task<JsonLdBase?> GenerateIIIFPresentation(NamedQueryResult<IIIFParsedNamedQuery> namedQueryResult,
+            HttpRequest request, Version iiifPresentationVersion, CancellationToken cancellationToken = default)
+        {
+            namedQueryResult.ParsedQuery.ThrowIfNull(nameof(request.Query));
+            
+            var imageResults = await namedQueryResult.Results.ToListAsync(cancellationToken);
+
+            if (imageResults.Count == 0) return null;
+
+            return iiifPresentationVersion == Version.V2
+                ? await GenerateV2Manifest(namedQueryResult.ParsedQuery!, imageResults, request)
+                : await GenerateV3Manifest(namedQueryResult.ParsedQuery!, imageResults, request);
+        }
+
+        private async Task<JsonLdBase> GenerateV2Manifest(IIIFParsedNamedQuery parsedNamedQuery,
+            List<Asset> results, HttpRequest request)
         {
             var rootUrl = HttpRequestX.GetDisplayUrl(request);
             var manifest = new IIIF2.Manifest
             {
                 Id = UriHelper.GetDisplayUrl(request),
-                Label = new MetaDataValue($"Generated from '{namedQueryName}' named query"),
+                Label = new MetaDataValue($"Generated from '{parsedNamedQuery.NamedQueryName}' named query"),
                 Metadata = new IIIF2.Metadata
                 {
-                    Label = new MetaDataValue("Title"), Value = new MetaDataValue("Created by DLCS") 
+                    Label = new MetaDataValue("Title"), Value = new MetaDataValue("Created by DLCS")
                 }.AsList(),
             };
 
-            var canvases = await CreateV2Canvases(result);
-            manifest.Sequences = new IIIF2.Sequence
+            var canvases = await CreateV2Canvases(parsedNamedQuery, results);
+            var sequence = new IIIF2.Sequence
             {
                 Id = string.Concat(rootUrl, "/iiif-query/sequence/0"),
                 Label = new MetaDataValue("Sequence 0"),
-                Canvases = await CreateV2Canvases(result)
-            }.AsList();
+            };
+            sequence.Canvases = canvases;
             manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
+            manifest.Sequences = sequence.AsList();
 
             manifest.EnsurePresentation2Context();
             return manifest;
         }
 
-        private async Task<JsonLdBase> GenerateV3Manifest(NamedQueryResult result, HttpRequest request, string namedQueryName)
+        private async Task<JsonLdBase> GenerateV3Manifest(IIIFParsedNamedQuery parsedNamedQuery,
+            List<Asset> results, HttpRequest request)
         {
             const string language = "en";
             var manifest = new IIIF3.Manifest
             {
                 Id = UriHelper.GetDisplayUrl(request),
-                Label = new LanguageMap(language, $"Generated from '{namedQueryName}' named query"),
+                Label = new LanguageMap(language, $"Generated from '{parsedNamedQuery.NamedQueryName}' named query"),
                 Metadata = new LabelValuePair(language, "Title", "Created by DLCS").AsList(),
             };
 
-            var canvases = await CreateV3Canvases(result);
+            var canvases = await CreateV3Canvases(parsedNamedQuery, results);
             manifest.Items = canvases;
             manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
             
@@ -102,13 +115,14 @@ namespace Orchestrator.Features.NamedQueries
             return manifest;
         }
 
-        private async Task<List<IIIF3.Canvas>> CreateV3Canvases(NamedQueryResult result)
+        private async Task<List<IIIF3.Canvas>> CreateV3Canvases(IIIFParsedNamedQuery parsedNamedQuery,
+            List<Asset> results)
         {
             int counter = 0;
-            var canvases = new List<IIIF3.Canvas>(result.Results.Count());
-            foreach (var i in result.Results.OrderBy(i => GetCanvasOrderingElement(i, result.Query)))
+            var canvases = new List<IIIF3.Canvas>(results.Count);
+            foreach (var i in results.OrderBy(i => NamedQueryProjections.GetCanvasOrderingElement(i, parsedNamedQuery)))
             {
-                var fullyQualifiedImageId = GetFullyQualifiedId(i, result.Query.CustomerPathElement);
+                var fullyQualifiedImageId = GetFullyQualifiedId(i, parsedNamedQuery.CustomerPathElement);
                 var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/", ++counter);
                 var thumbnailSizes = await GetThumbnailSizesForImage(i);
 
@@ -125,7 +139,7 @@ namespace Orchestrator.Features.NamedQueries
                             Id = $"{canvasId}/page/image",
                             Body = new Image
                             {
-                                Id = GetFullQualifiedImagePath(i, result.Query.CustomerPathElement,
+                                Id = GetFullQualifiedImagePath(i, parsedNamedQuery.CustomerPathElement,
                                     thumbnailSizes.MaxDerivativeSize, false),
                                 Format = "image/jpeg",
                                 Service = new ImageService2
@@ -141,14 +155,13 @@ namespace Orchestrator.Features.NamedQueries
                     }.AsList()
                 };
 
-                
                 if (!thumbnailSizes.OpenThumbnails.IsNullOrEmpty())
                 {
                     canvas.Thumbnail = new IIIF3.Content.Image
                     {
-                        Id = GetFullQualifiedThumbServicePath(i, result.Query.CustomerPathElement),
+                        Id = GetFullQualifiedThumbServicePath(i, parsedNamedQuery.CustomerPathElement),
                         Format = "image/jpeg",
-                        Service = GetImageServiceForThumbnail(i, result.Query.CustomerPathElement,
+                        Service = GetImageServiceForThumbnail(i, parsedNamedQuery.CustomerPathElement,
                             thumbnailSizes.OpenThumbnails)
                     }.AsListOf<ExternalResource>();
                 }
@@ -159,16 +172,17 @@ namespace Orchestrator.Features.NamedQueries
             return canvases;
         }
 
-        private async Task<List<IIIF2.Canvas>> CreateV2Canvases(NamedQueryResult result)
+        private async Task<List<IIIF2.Canvas>> CreateV2Canvases(IIIFParsedNamedQuery parsedNamedQuery,
+            List<Asset> results)
         {
             int counter = 0;
-            var canvases = new List<IIIF2.Canvas>(result.Results.Count());
-            foreach (var i in result.Results.OrderBy(i => GetCanvasOrderingElement(i, result.Query)))
+            var canvases = new List<IIIF2.Canvas>(results.Count);
+            foreach (var i in results.OrderBy(i => NamedQueryProjections.GetCanvasOrderingElement(i, parsedNamedQuery)))
             {
-                var fullyQualifiedImageId = GetFullyQualifiedId(i, result.Query.CustomerPathElement);
+                var fullyQualifiedImageId = GetFullyQualifiedId(i, parsedNamedQuery.CustomerPathElement);
                 var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/", ++counter);
                 var thumbnailSizes = await GetThumbnailSizesForImage(i);
-                
+
                 var canvas = new IIIF2.Canvas
                 {
                     Id = canvasId,
@@ -180,7 +194,7 @@ namespace Orchestrator.Features.NamedQueries
                         On = canvasId,
                         Resource = new IIIF2.ImageResource
                         {
-                            Id = GetFullQualifiedImagePath(i, result.Query.CustomerPathElement,
+                            Id = GetFullQualifiedImagePath(i, parsedNamedQuery.CustomerPathElement,
                                 thumbnailSizes.MaxDerivativeSize, false),
                             Width = i.Width,
                             Height = i.Height,
@@ -196,17 +210,16 @@ namespace Orchestrator.Features.NamedQueries
                     }.AsList()
                 };
 
-                
                 if (!thumbnailSizes.OpenThumbnails.IsNullOrEmpty())
                 {
                     canvas.Thumbnail = new IIIF2.Thumbnail
                     {
-                        Id = GetFullQualifiedThumbServicePath(i, result.Query.CustomerPathElement),
-                        Service = GetImageServiceForThumbnail(i, result.Query.CustomerPathElement,
+                        Id = GetFullQualifiedThumbServicePath(i, parsedNamedQuery.CustomerPathElement),
+                        Service = GetImageServiceForThumbnail(i, parsedNamedQuery.CustomerPathElement,
                             thumbnailSizes.OpenThumbnails)
                     }.AsList();
                 }
-                
+
                 canvases.Add(canvas);
             }
 
@@ -228,7 +241,6 @@ namespace Orchestrator.Features.NamedQueries
             var thumbnailPolicy = await GetThumbnailPolicyForImage(image);
             var thumbnailSizesForImage = image.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions);
 
-            
             if (thumbnailSizesForImage.IsNullOrEmpty())
             {
                 var largestThumbnail = thumbnailPolicy.SizeList.OrderByDescending(s => s).First();
@@ -251,27 +263,15 @@ namespace Orchestrator.Features.NamedQueries
 
         private async Task<ThumbnailPolicy> GetThumbnailPolicyForImage(Asset image)
         {
-            if (ThumbnailPolicies.TryGetValue(image.ThumbnailPolicy, out var thumbnailPolicy))
+            if (thumbnailPolicies.TryGetValue(image.ThumbnailPolicy, out var thumbnailPolicy))
             {
                 return thumbnailPolicy;
             }
 
             var thumbnailPolicyFromDb = await thumbnailPolicyRepository.GetThumbnailPolicy(image.ThumbnailPolicy);
-            ThumbnailPolicies[image.ThumbnailPolicy] = thumbnailPolicyFromDb;
+            thumbnailPolicies[image.ThumbnailPolicy] = thumbnailPolicyFromDb;
             return thumbnailPolicyFromDb;
         }
-
-        private object GetCanvasOrderingElement(Asset image, ParsedNamedQuery query)
-            => query.Canvas switch
-            {
-                ParsedNamedQuery.QueryMapping.Number1 => image.NumberReference1,
-                ParsedNamedQuery.QueryMapping.Number2 => image.NumberReference2,
-                ParsedNamedQuery.QueryMapping.Number3 => image.NumberReference3,
-                ParsedNamedQuery.QueryMapping.String1 => image.Reference1,
-                ParsedNamedQuery.QueryMapping.String2 => image.Reference2,
-                ParsedNamedQuery.QueryMapping.String3 => image.Reference3,
-                _ => 0
-            };
 
         private string GetFullQualifiedThumbServicePath(Asset asset, CustomerPathElement customerPathElement)
         {
