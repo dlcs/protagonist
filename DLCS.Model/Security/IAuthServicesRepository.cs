@@ -21,6 +21,8 @@ namespace DLCS.Model.Security
         /// <returns>Matching role</returns>
         public Task<Role?> GetRole(int customer, string role);
         
+        
+        
         // Below this line reproduces Deliverator IAuthServiceStore
         AuthService Get(string id);
         AuthService GetChild(string id);

@@ -12,9 +12,8 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Customers
 {
-    public class DapperCustomerRepository : ICustomerRepository
+    public class DapperCustomerRepository : DapperRepository, ICustomerRepository
     {
-        private readonly IConfiguration configuration;
         private readonly IAppCache appCache;
         private readonly CacheSettings cacheSettings;
         private static readonly Customer NullCustomer = new() { Id = -99 };
@@ -22,17 +21,15 @@ namespace DLCS.Repository.Customers
         public DapperCustomerRepository(
             IConfiguration configuration,
             IAppCache appCache,
-            IOptions<CacheSettings> cacheSettings)
+            IOptions<CacheSettings> cacheSettings) : base(configuration)
         {
-            this.configuration = configuration;
             this.appCache = appCache;
             this.cacheSettings = cacheSettings.Value;
         }
 
         public async Task<Dictionary<string, int>> GetCustomerIdLookup()
         {
-            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-            var results = await connection.QueryAsync<CustomerPathElement>("SELECT \"Id\", \"Name\" FROM \"Customers\"");
+            var results = await QueryAsync<CustomerPathElement>("SELECT \"Id\", \"Name\" FROM \"Customers\"");
             return results.ToDictionary(cpe => cpe.Name, cpe => cpe.Id);
         }
  
@@ -91,9 +88,8 @@ namespace DLCS.Repository.Customers
             const string key = "admin_customers";
             return appCache.GetOrAddAsync(key, async entry =>
             {
-                await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
                 // This allows for more than one admin customer - should it?
-                var rawAdmins = await connection.QueryAsync(AdminCustomersSql);
+                var rawAdmins = await QueryAsync<dynamic>(AdminCustomersSql);
                 var admins = new List<Customer>();
                 foreach (dynamic rawCustomer in rawAdmins)
                 {

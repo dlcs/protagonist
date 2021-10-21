@@ -4,11 +4,14 @@ using Microsoft.Extensions.Configuration;
 
 namespace DLCS.Repository.Entities
 {
-    public class CustomerQueueRepository : RepositoryBase, ICustomerQueueRepository
+    public class CustomerQueueRepository : DapperRepository, ICustomerQueueRepository
     {
+        private readonly DlcsContext dlcsContext;
+        
         public CustomerQueueRepository(IConfiguration configuration, DlcsContext dlcsContext)
-            : base(configuration, dlcsContext)
+            : base(configuration)
         {
+            this.dlcsContext = dlcsContext;
         }
 
         public async Task<int> GetSize(int customer, string name)
