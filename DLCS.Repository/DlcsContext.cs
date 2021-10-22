@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Enum;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.Security;

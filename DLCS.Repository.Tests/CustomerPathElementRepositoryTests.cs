@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Repository.Caching;
-using DLCS.Repository.Settings;
 using FakeItEasy;
 using FluentAssertions;
 using LazyCache;

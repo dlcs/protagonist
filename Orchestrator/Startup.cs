@@ -5,12 +5,15 @@ using Amazon.S3;
 using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.CustomHeaders;
+using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Model.Security;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Assets.CustomHeaders;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Security;
@@ -95,6 +98,7 @@ namespace Orchestrator
                 .AddSingleton<IAssetTracker, MemoryAssetTracker>()
                 .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
+                .AddSingleton<ICustomHeaderRepository, DapperCustomHeaderRepository>()
                 .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
                 .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
                 .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
