@@ -60,7 +60,7 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns404_IfCustomerNotFound()
+        public async Task GetPdf_Returns404_IfCustomerNotFound()
         {
             // Arrange
             const string path = "pdf/98/test-pdf";
@@ -73,7 +73,7 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns404_IfNQNotFound()
+        public async Task GetPdf_Returns404_IfNQNotFound()
         {
             // Arrange
             const string path = "pdf/99/unknown";
@@ -86,7 +86,7 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns400_IfParametersIncorrect()
+        public async Task GetPdf_Returns400_IfParametersIncorrect()
         {
             // Arrange
             const string path = "pdf/99/test-pdf/too-little-params";
@@ -99,7 +99,7 @@ namespace Orchestrator.Tests.Integration
         }
 
         [Fact]
-        public async Task Get_Returns404_IfNoMatchingRecordsFound()
+        public async Task GetPdf_Returns404_IfNoMatchingRecordsFound()
         {
             // Arrange
             const string path = "pdf/99/test-pdf/non-matching-ref/2/1";
@@ -112,7 +112,7 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns202_WithRetryAfter_IfPdfInProcess()
+        public async Task GetPdf_Returns202_WithRetryAfter_IfPdfInProcess()
         {
             // Arrange
             const string path = "pdf/99/test-pdf/my-ref/1/1";
@@ -128,10 +128,10 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns200_WithExistingPdf_IfPdfControlFileAndPdfExist()
+        public async Task GetPdf_Returns200_WithExistingPdf_IfPdfControlFileAndPdfExist()
         {
             // Arrange
-            var fakePdfContent = nameof(Get_Returns200_WithExistingPdf_IfPdfControlFileAndPdfExist);
+            var fakePdfContent = nameof(GetPdf_Returns200_WithExistingPdf_IfPdfControlFileAndPdfExist);
             const string path = "pdf/99/test-pdf/my-ref/1/1";
             await AddPdfControlFile("99/test-pdf/my-ref/1/1/tester.json",
                 new PdfControlFile { Created = DateTime.Now, InProcess = false });
@@ -147,10 +147,10 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt()
+        public async Task GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt()
         {
             // Arrange
-            var fakePdfContent = nameof(Get_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
+            var fakePdfContent = nameof(GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
             const string pdfStorageKey = "99/test-pdf/my-ref/1/2/tester";
             const string path = "pdf/99/test-pdf/my-ref/1/2";
             
@@ -173,10 +173,10 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns200_WithNewlyCreatedPdf_IfPdfControlFileStale()
+        public async Task GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileStale()
         {
             // Arrange
-            var fakePdfContent = nameof(Get_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
+            var fakePdfContent = nameof(GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
             const string pdfStorageKey = "99/test-pdf/my-ref/1/3/tester";
             const string path = "pdf/99/test-pdf/my-ref/1/3";
             await AddPdfControlFile("99/test-pdf/my-ref/1/3/tester.json",
@@ -199,7 +199,7 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns500_IfPdfCreatedButCannotBeFound()
+        public async Task GetPdf_Returns500_IfPdfCreatedButCannotBeFound()
         {
             // Arrange
             const string path = "pdf/99/test-pdf/my-ref/1/4";
@@ -223,7 +223,7 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns500_IfPdfCreatorUnsuccessful()
+        public async Task GetPdf_Returns500_IfPdfCreatorUnsuccessful()
         {
             // Arrange
             const string path = "pdf/99/test-pdf/my-ref/1/4";
@@ -243,6 +243,81 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        }
+
+        [Fact]
+        public async Task GetPdfControlFile_Returns404_IfCustomerNotFound()
+        {
+            // Arrange
+            const string path = "pdf-control/98/test-pdf";
+
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+        
+        [Fact]
+        public async Task GetPdfControlFile_Returns404_IfNQNotFound()
+        {
+            // Arrange
+            const string path = "pdf-control/99/unknown";
+
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+        
+        [Fact]
+        public async Task GetPdfControlFile_Returns404_IfParametersIncorrect()
+        {
+            // Arrange
+            const string path = "pdf-control/99/test-pdf/too-little-params";
+
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        [Fact]
+        public async Task GetPdfControlFile_Returns404_IfNQValidButNoControlFile()
+        {
+            // Arrange
+            const string path = "pdf-control/99/test-pdf/any-ref/1/2";
+            
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        [Fact]
+        public async Task GetPdfControlFile_Returns200_AndControlFile_IfFound()
+        {
+            // Arrange
+            const string path = "pdf-control/99/test-pdf/any-ref/1/5";
+
+            var pdfControlFile = new PdfControlFile
+            {
+                Created = DateTime.Now, InProcess = false, Exists = true, Key = "the-key", PageCount = 100,
+                SizeBytes = 1024
+            };
+            await AddPdfControlFile("99/test-pdf/any-ref/1/5/tester.json", pdfControlFile);
+            var pdfControlFileJson = JsonConvert.SerializeObject(pdfControlFile);
+            
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            (await response.Content.ReadAsStringAsync()).Should().Be(pdfControlFileJson);
+            response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/json"));
         }
 
         private Task AddPdfControlFile(string key, PdfControlFile controlFile) 
