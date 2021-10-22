@@ -7,9 +7,8 @@ using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Portal.Features.Spaces.Models;
 
-namespace Portal.Features.Spaces.Requests
+namespace API.Features.Space.Requests
 {
     /// <summary>
     /// Request to get details of all spaces available for current user.
@@ -56,7 +55,18 @@ namespace Portal.Features.Spaces.Requests
                     .OrderBy(s => s.Id)
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
+                    .ToList()
             };
+            // In Deliverator the following is a sub-select. But I suspect that this is not significantly slower.
+            var scopes = result.Spaces.Select(s => s.Id.ToString());
+            var counters = dbContext.EntityCounters.AsNoTracking()
+                .Where(ec => ec.Customer == customerId && ec.Type == "space-images")
+                .Where(ec => scopes.Contains(ec.Scope))
+                .ToDictionary(ec => ec.Scope, ec => ec.Next);
+            foreach (var space in result.Spaces)
+            {
+                space.ApproximateNumberOfImages = counters[space.Id.ToString()];
+            }
             return result;
         }
     }

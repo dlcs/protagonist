@@ -510,6 +510,8 @@ namespace DLCS.Repository
                 entity.Property(e => e.Tags)
                     .IsRequired()
                     .HasMaxLength(1000);
+
+                entity.Ignore(e => e.ApproximateNumberOfImages);
             });
 
             modelBuilder.Entity<StoragePolicy>(entity =>

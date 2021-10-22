@@ -46,7 +46,16 @@ namespace API.Client
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             };
         }
-        
+
+        public async Task<HydraCollection<Space>?> GetSpaces(int page, int pageSize, int? customerId = null)
+        {
+            customerId ??= currentUser.GetCustomerId();
+            var url = $"/customers/{customerId}/spaces?page={page}&pageSize={pageSize}";
+            var response = await httpClient.GetAsync(url);
+            var space = await response.ReadAsJsonAsync<HydraCollection<Space>>(true, jsonSerializerSettings);
+            return space;
+        }
+
         public async Task<Space?> GetSpaceDetails(int spaceId)
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}";

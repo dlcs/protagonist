@@ -14,6 +14,8 @@ namespace API.Settings
         public string PathBase { get; set; }
         
         public string Salt { get; set; }
+        
+        public int PageSize { get; set; }
     }
 
     public class AwsSettings

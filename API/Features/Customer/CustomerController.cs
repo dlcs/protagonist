@@ -1,16 +1,16 @@
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Customer.Requests;
-using DLCS.Core.Collections;
+using API.Settings;
 using DLCS.Core.Strings;
 using DLCS.Web.Requests;
 using Hydra.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 
 namespace API.Features.Customer
@@ -20,10 +20,14 @@ namespace API.Features.Customer
     public class CustomerController : Controller
     {
         private readonly IMediator mediator;
+        private readonly ApiSettings settings;
 
-        public CustomerController(IMediator mediator)
+        public CustomerController(
+            IMediator mediator,
+            IOptions<ApiSettings> options)
         {
             this.mediator = mediator;
+            settings = options.Value;
         }
         
         [AllowAnonymous]
@@ -38,8 +42,8 @@ namespace API.Features.Customer
                 IncludeContext = true,
                 Members = dbCustomers.Select(c => c.ToCollectionForm(baseUrl)).ToArray(),
                 TotalItems = dbCustomers.Count,
-                // no paging hence no pageSize here; return all customers.
-                Id = Request.GetDisplayUrl()
+                PageSize = dbCustomers.Count,
+                Id = Request.GetJsonLdId()
             };
         }
 

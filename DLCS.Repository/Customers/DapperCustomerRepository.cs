@@ -45,15 +45,15 @@ namespace DLCS.Repository.Customers
             else
             {
                 const string sql = CustomerSelect + @" WHERE ""Id""=@Id;";
-                dynamic? rawCustomer = QuerySingleOrDefaultAsync(sql, new {Id = customerId});
+                dynamic? rawCustomer = await QuerySingleOrDefaultAsync(sql, new {Id = customerId});
                 return MapRawCustomer(rawCustomer);
             }
         }
 
-        public Task<Customer?> GetCustomer(string name)
+        public async Task<Customer?> GetCustomer(string name)
         {
             const string sql = CustomerSelect + @" WHERE ""Name""=@name;";
-            dynamic? rawCustomer = QuerySingleOrDefaultAsync(sql, new {name});
+            dynamic? rawCustomer = await QuerySingleOrDefaultAsync(sql, new {name});
             return MapRawCustomer(rawCustomer);
         }
 
@@ -79,7 +79,7 @@ namespace DLCS.Repository.Customers
             return appCache.GetOrAddAsync(key, async entry =>
             {
                 const string sql = CustomerSelect + @" WHERE ""Id""=@Id;";
-                dynamic? rawCustomer = QuerySingleOrDefaultAsync(sql, new {Id = customerId});
+                dynamic? rawCustomer = await QuerySingleOrDefaultAsync(sql, new {Id = customerId});
                 if (rawCustomer == null)
                 {
                     entry.AbsoluteExpirationRelativeToNow =

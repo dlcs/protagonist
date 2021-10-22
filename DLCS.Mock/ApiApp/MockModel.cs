@@ -169,7 +169,7 @@ namespace DLCS.Mock.ApiApp
                 var id = Guid.NewGuid().ToString().Substring(0, 8) + i.ToString().PadLeft(5, '0');
                 var image = MockHelp.MakeImage(BaseUrl, space.CustomerId, space.ModelId, id,
                     DateTime.Now, "https://customer.com/images/" + id + ".tiff", null,
-                    r.Next(2000,11000), r.Next(3000,11000), space.DefaultMaxUnauthorised,
+                    r.Next(2000,11000), r.Next(3000,11000), space.MaxUnauthorised,
                     queued, dequeued, finished, !finished.HasValue, null,
                     space.DefaultTags, "b12345678", null, null, i, 0, 0,
                     imageOptimisationPolicies.First().Id, thumbnailPolicies.First().Id);

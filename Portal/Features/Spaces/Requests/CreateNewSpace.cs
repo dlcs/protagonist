@@ -22,7 +22,7 @@ namespace Portal.Features.Spaces.Requests
             public CreateNewSpaceHandler(
                 IDlcsClient dlcsClient, 
                 ClaimsPrincipal principal,
-                ILogger<GetAllSpacesHandler> logger)
+                ILogger<CreateNewSpaceHandler> logger)
             {
                 this.dlcsClient = dlcsClient;
                 this.principal = principal;

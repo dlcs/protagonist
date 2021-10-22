@@ -53,8 +53,16 @@ namespace DLCS.HydraModel
 
         [RdfProperty(Description = "Default size at which role-based authorisation will be enforced. -1=open, 0=always require auth",
             Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
-        [JsonProperty(Order = 14, PropertyName = "defaultMaxUnauthorised")]
-        public int? DefaultMaxUnauthorised { get; set; }
+        [JsonProperty(Order = 14, PropertyName = "maxUnauthorised")]
+        public int? MaxUnauthorised { get; set; }
+        
+        
+        [RdfProperty(Description = "Computed count of the number of images in the space.",
+            Range = Names.XmlSchema.Integer, ReadOnly = true, WriteOnly = false)]
+        [JsonProperty(Order = 14, PropertyName = "approximateNumberOfImages")]
+        public long? ApproximateNumberOfImages { get; set; }
+        
+        
 
         [HydraLink(Description = "Default roles that will be applied to images in this space",
             Range = Names.Hydra.Collection, ReadOnly = false, WriteOnly = false)]

@@ -7,6 +7,7 @@ namespace API.Client
 {
     public interface IDlcsClient
     {
+        Task<HydraCollection<Space>?> GetSpaces(int page, int pageSize, int? customerId = null);
         Task<Space?> GetSpaceDetails(int spaceId);
         Task<HydraCollection<Image>> GetSpaceImages(int spaceId);
         Task<Space?> CreateSpace(Space newSpace);

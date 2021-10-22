@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using API.Client;
+using DLCS.HydraModel;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,7 +14,15 @@ namespace Portal.Pages.Spaces
 {
     public class Index : PageModel
     {
+        private readonly IDlcsClient dlcsClient;
         private readonly IMediator mediator;
+        
+        public Index(
+            IDlcsClient dlcsClient
+            )
+        {
+            this.dlcsClient = dlcsClient;
+        }
 
         [BindProperty]
         public IEnumerable<SpaceModel>? SpaceModels { get; set; }
@@ -26,26 +36,23 @@ namespace Portal.Pages.Spaces
             public DateTime Created { get; set; }
         }
 
-        public Index(IMediator mediator)
-        {
-            this.mediator = mediator;
-        }
         
         public async Task OnGetAsync([FromQuery] int page = 1, [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize)
         {
-            var spaces = await mediator.Send(new GetPageOfSpaces(page, pageSize));
-            PagerValues = new PagerValues(spaces.Total, page, pageSize);
-            SpaceModels = spaces.Spaces.Select(s => new SpaceModel
+            var spaces = await dlcsClient.GetSpaces(page, pageSize);
+            PagerValues = new PagerValues(spaces.TotalItems, page, pageSize);
+            SpaceModels = spaces.Members.Select(s => new SpaceModel
             {
-                SpaceId = s.Id,
+                SpaceId = s.ModelId,
                 Name = s.Name,
-                Created = s.Created
+                Created = s.Created.Value
             });
         }
 
         public async Task<IActionResult> OnPostAsync(string newSpaceName)
         {
-            var newSpace = await mediator.Send(new CreateNewSpace{NewSpaceName = newSpaceName});
+            var space = new Space { Name = newSpaceName };
+            var newSpace = await dlcsClient.CreateSpace(space);
             int? spaceId = newSpace.ModelId;
             if (spaceId <= 0) spaceId = newSpace.GetLastPathElementAsInt();
             TempData["new-space-name"] = newSpace.Name;

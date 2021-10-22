@@ -60,5 +60,15 @@ namespace DLCS.Web.Requests
                 .Append(pathBase)
                 .ToString();
         }
+
+        /// <summary>
+        /// Generate the "@id" property for a JSON-LD API response.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public static string GetJsonLdId(this HttpRequest request)
+        {
+            return GetDisplayUrl(request, request.Path);
+        }
     }
 }

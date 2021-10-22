@@ -17,6 +17,8 @@ namespace DLCS.Repository.Entities
         public bool Keep { get; set; }
         public bool Transform { get; set; }
         public int MaxUnauthorised { get; set; }
+        
+        public long ApproximateNumberOfImages { get; set; }
     }
 
     public static class SpaceX
