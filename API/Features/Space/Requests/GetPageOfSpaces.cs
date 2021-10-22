@@ -54,7 +54,7 @@ namespace API.Features.Space.Requests
                     .Count(s => s.Customer == customerId),
                 Spaces = dbContext.Spaces.AsNoTracking()
                     .Where(s => s.Customer == customerId)
-                    .OrderBy(s => s.Id) // TODO: needs to be orderby request.Orderby
+                    .OrderBy(s => s.Id) 
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
                     .ToList()

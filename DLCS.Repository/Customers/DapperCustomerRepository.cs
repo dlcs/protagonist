@@ -87,17 +87,8 @@ namespace DLCS.Repository.Customers
                     return NullCustomer;
                 }
 
-                // TODO: Why can't I replace this with return MapRawCustomer(rawCustomer) ?
-                return new Customer
-                {
-                    Administrator = rawCustomer.Administrator,
-                    Created = rawCustomer.Created,
-                    Id = rawCustomer.Id,
-                    Name = rawCustomer.Name,
-                    AcceptedAgreement = rawCustomer.AcceptedAgreement,
-                    DisplayName = rawCustomer.DisplayName,
-                    Keys = rawCustomer.Keys.ToString().Split(',')
-                };
+                Customer c = MapRawCustomer(rawCustomer);
+                return c;
             }, cacheSettings.GetMemoryCacheOptions());
         }
 

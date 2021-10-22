@@ -28,11 +28,11 @@ namespace API.Features.Space
         
         
         [HttpGet]
-        public async Task<HydraCollection<DLCS.HydraModel.Space>> Index(int customerId, int page = 1, int pageSize = -1, string orderBy = null)
+        public async Task<HydraCollection<DLCS.HydraModel.Space>> Index(int customerId, int? page = 1, int? pageSize = -1, string? orderBy = null)
         {
             if (pageSize < 0) pageSize = settings.PageSize;
             var baseUrl = Request.GetBaseUrl();
-            var pageOfSpaces = await mediator.Send(new GetPageOfSpaces(page, pageSize, customerId, orderBy));
+            var pageOfSpaces = await mediator.Send(new GetPageOfSpaces(page.Value, pageSize.Value, customerId, orderBy));
             
             var collection = new HydraCollection<DLCS.HydraModel.Space>
             {
@@ -42,7 +42,7 @@ namespace API.Features.Space
                 PageSize = pageSize,
                 Id = Request.GetJsonLdId()
             };
-            PartialCollectionView.AddPaging(collection, page, pageSize);
+            PartialCollectionView.AddPaging(collection, page.Value, pageSize.Value);
             return collection;
         }
         

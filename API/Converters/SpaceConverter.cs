@@ -21,7 +21,7 @@ namespace API.Converters
             {
                 Name = dbSpace.Name,
                 Created = dbSpace.Created,
-                DefaultTags = dbSpace.Tags.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray(), // add a hasconversion?
+                DefaultTags = dbSpace.Tags.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray(), // TODO - add a hasconversion?
                 MaxUnauthorised = dbSpace.MaxUnauthorised,
                 ApproximateNumberOfImages = dbSpace.ApproximateNumberOfImages
             };
