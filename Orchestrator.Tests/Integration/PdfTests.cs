@@ -8,7 +8,6 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using FakeItEasy;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,17 +29,19 @@ namespace Orchestrator.Tests.Integration
         private readonly DlcsDatabaseFixture dbFixture;
         private readonly HttpClient httpClient;
         private readonly IAmazonS3 amazonS3;
-        private readonly IPdfCreator pdfCreator;
+        private readonly FakePdfCreator pdfCreator = new();
 
         public PdfTests(ProtagonistAppFactory<Startup> factory, StorageFixture orchestratorFixture)
         {
-            pdfCreator = A.Fake<IPdfCreator>();
             dbFixture = orchestratorFixture.DbFixture;
             amazonS3 = orchestratorFixture.LocalStackFixture.AmazonS3;
             httpClient = factory
                 .WithConnectionString(dbFixture.ConnectionString)
                 .WithLocalStack(orchestratorFixture.LocalStackFixture)
-                .WithTestServices(services => services.AddTransient<IPdfCreator>(_ => pdfCreator))
+                .WithTestServices(services => services.AddScoped<IPdfCreator>(_ =>
+                {
+                    return pdfCreator;
+                }))
                 .CreateClient(new WebApplicationFactoryClientOptions {AllowAutoRedirect = false});
             
             dbFixture.CleanUp();
@@ -56,6 +57,7 @@ namespace Orchestrator.Tests.Integration
             dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-3-auth", num1: 3, ref1: "my-ref",
                 maxUnauthorised: 10, roles: "default");
             dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-4", num1: 4, ref1: "my-ref");
+            dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-5", num1: 5, ref1: "my-ref");
             dbFixture.DbContext.SaveChanges();
         }
         
@@ -156,12 +158,11 @@ namespace Orchestrator.Tests.Integration
             
             await AddPdfControlFile("99/test-pdf/my-ref/1/2/tester.json",
                 new PdfControlFile { Created = DateTime.Now, InProcess = false });
-            A.CallTo(() =>
-                    pdfCreator.CreatePdf(
-                        A<PdfParsedNamedQuery>.That.Matches(p => p.PdfStorageKey == pdfStorageKey),
-                        A<List<Asset>>._))
-                .Invokes(() => AddPdf(pdfStorageKey, fakePdfContent).Wait())
-                .Returns(true);
+            pdfCreator.AddCallbackFor(pdfStorageKey, () =>
+            {
+                AddPdf(pdfStorageKey, fakePdfContent).Wait();
+                return true;
+            });
 
             // Act
             var response = await httpClient.GetAsync(path);
@@ -182,12 +183,11 @@ namespace Orchestrator.Tests.Integration
             await AddPdfControlFile("99/test-pdf/my-ref/1/3/tester.json",
                 new PdfControlFile { Created = DateTime.Now.AddHours(-1), InProcess = false });
             
-            A.CallTo(() =>
-                    pdfCreator.CreatePdf(
-                        A<PdfParsedNamedQuery>.That.Matches(p => p.PdfStorageKey == pdfStorageKey),
-                        A<List<Asset>>._))
-                .Invokes(() => AddPdf(pdfStorageKey, fakePdfContent).Wait())
-                .Returns(true);
+            pdfCreator.AddCallbackFor(pdfStorageKey, () =>
+            {
+                AddPdf(pdfStorageKey, fakePdfContent).Wait();
+                return true;
+            });
 
             // Act
             var response = await httpClient.GetAsync(path);
@@ -209,11 +209,7 @@ namespace Orchestrator.Tests.Integration
                 new PdfControlFile { Created = DateTime.Now, InProcess = false });
             
             // return True but don't create object
-            A.CallTo(() =>
-                    pdfCreator.CreatePdf(
-                        A<PdfParsedNamedQuery>.That.Matches(p => p.PdfStorageKey == pdfStorageKey),
-                        A<List<Asset>>._))
-                .Returns(true);
+            pdfCreator.AddCallbackFor(pdfStorageKey, () => true);
             
             // Act
             var response = await httpClient.GetAsync(path);
@@ -226,18 +222,14 @@ namespace Orchestrator.Tests.Integration
         public async Task GetPdf_Returns500_IfPdfCreatorUnsuccessful()
         {
             // Arrange
-            const string path = "pdf/99/test-pdf/my-ref/1/4";
-            const string pdfStorageKey = "99/test-pdf/my-ref/1/4/tester";
+            const string path = "pdf/99/test-pdf/my-ref/1/5";
+            const string pdfStorageKey = "99/test-pdf/my-ref/1/5/tester";
             
-            await AddPdfControlFile("99/test-pdf/my-ref/1/4/tester.json",
+            await AddPdfControlFile("99/test-pdf/my-ref/1/5/tester.json",
                 new PdfControlFile { Created = DateTime.Now, InProcess = false });
             
-            A.CallTo(() =>
-                    pdfCreator.CreatePdf(
-                        A<PdfParsedNamedQuery>.That.Matches(p => p.PdfStorageKey == pdfStorageKey),
-                        A<List<Asset>>._))
-                .Returns(false);
-            
+            pdfCreator.AddCallbackFor(pdfStorageKey, () => false);
+
             // Act
             var response = await httpClient.GetAsync(path);
             
@@ -335,5 +327,23 @@ namespace Orchestrator.Tests.Integration
                 BucketName = "protagonist-pdf",
                 ContentBody = fakeContent
             });
+        
+        private class FakePdfCreator : IPdfCreator
+        {
+            private static readonly Dictionary<string, Func<bool>> callbacks = new();
+
+            public void AddCallbackFor(string pdfKey, Func<bool> callback)
+                => callbacks.Add(pdfKey, callback);
+
+            public Task<bool> CreatePdf(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images)
+            {
+                if (callbacks.TryGetValue(parsedNamedQuery.PdfStorageKey, out var cb))
+                {
+                    return Task.FromResult(cb());
+                }
+
+                throw new Exception($"Request with key {parsedNamedQuery.PdfStorageKey} not setup");
+            }
+        }
     }
 }

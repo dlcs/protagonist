@@ -88,15 +88,14 @@ namespace Orchestrator.Features.PDF
 
             if (pdfControlFile.IsStale(namedQuerySettings.PdfControlStaleSecs))
             {
-                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but PDF not found. Will recreate",
+                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but it is stale. Will recreate",
                     pdfKey);
                 return new(Stream.Null, PdfStatus.NotFound);
             }
 
             if (pdfControlFile.InProcess)
             {
-                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but PDF not found. Will recreate",
-                    pdfKey);
+                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but it's in progress", pdfKey);
                 return new(Stream.Null, PdfStatus.InProcess);
             }
 
