@@ -31,5 +31,19 @@ namespace Orchestrator.Tests.Infrastructure.ReverseProxy
             proxyAction.Path.Should().Be("this/is/the/way");
             proxyAction.HasPath.Should().BeTrue();
         }
+
+        [Fact]
+        public void WithHeader_OverritesExisting()
+        {
+            // Arrange
+            var proxyAction = new ProxyActionResult(ProxyDestination.Thumbs, false, "path");
+            const string testHeader = "x-test-header";
+
+            // Act
+            proxyAction.WithHeader(testHeader, "first").WithHeader(testHeader, "second");
+            
+            // Assert
+            proxyAction.Headers[testHeader].ToString().Should().Be("second");
+        }
     }
 }

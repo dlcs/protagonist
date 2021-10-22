@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
+using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using FakeItEasy;
@@ -19,7 +20,7 @@ using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Xunit;
 
-namespace Orchestrator.Tests.Images
+namespace Orchestrator.Tests.Features.Images
 {
     public class ImageRequestHandlerTests
     {
@@ -30,6 +31,7 @@ namespace Orchestrator.Tests.Images
         private readonly IAssetAccessValidator accessValidator;
         private readonly IOptions<OrchestratorSettings> defaultSettings;
         private readonly IServiceScopeFactory scopeFactory;
+        private readonly ICustomHeaderRepository customHeaderRepository;
 
         public ImageRequestHandlerTests()
         {
@@ -38,6 +40,7 @@ namespace Orchestrator.Tests.Images
             customerRepository = A.Fake<IPathCustomerRepository>();
             accessValidator = A.Fake<IAssetAccessValidator>();
             assetDeliveryPathParserImpl = new AssetDeliveryPathParser(customerRepository);
+            customHeaderRepository = A.Fake<ICustomHeaderRepository>();
             defaultSettings = Options.Create(new OrchestratorSettings());
 
             scopeFactory = A.Fake<IServiceScopeFactory>();
@@ -216,7 +219,7 @@ namespace Orchestrator.Tests.Images
         {
             var requestProcessor = new AssetRequestProcessor(new NullLogger<AssetRequestProcessor>(), assetTracker,
                 mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl);
-            return new(new NullLogger<ImageRequestHandler>(), requestProcessor, scopeFactory,
+            return new(new NullLogger<ImageRequestHandler>(), requestProcessor, scopeFactory, customHeaderRepository,
                 settings ?? defaultSettings);
         }
     }
