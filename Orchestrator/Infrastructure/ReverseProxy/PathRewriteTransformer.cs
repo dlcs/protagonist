@@ -11,20 +11,14 @@ namespace Orchestrator.Infrastructure.ReverseProxy
     /// </summary>
     public class PathRewriteTransformer : HttpTransformer
     {
-        private readonly string newPath;
-        private readonly ProxyDestination proxyDestination;
+        private readonly ProxyActionResult proxyAction;
         private readonly bool rewriteWholePath;
-        private readonly bool isRestrictedContent;
 
-        public PathRewriteTransformer(string newPath,
-            ProxyDestination proxyDestination,
-            bool rewriteWholePath = false,
-            bool isRestrictedContent = false)
+        public PathRewriteTransformer(ProxyActionResult proxyAction, bool rewriteWholePath = false)
         {
-            this.newPath = newPath;
-            this.proxyDestination = proxyDestination;
+            this.proxyAction = proxyAction;
             this.rewriteWholePath = rewriteWholePath;
-            this.isRestrictedContent = isRestrictedContent;
+
         }
 
         public override async ValueTask TransformRequestAsync(HttpContext httpContext, HttpRequestMessage proxyRequest,
@@ -34,7 +28,7 @@ namespace Orchestrator.Infrastructure.ReverseProxy
             await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix);
 
             // Assign the custom uri. Be careful about extra slashes when concatenating here.
-            proxyRequest.RequestUri = rewriteWholePath ? new Uri(newPath) : GetNewDestination(destinationPrefix);
+            proxyRequest.RequestUri = rewriteWholePath ? new Uri(proxyAction.Path) : GetNewDestination(destinationPrefix);
             
             // TODO - handle x-forwarded-* headers?
             proxyRequest.Headers.Host = proxyRequest.RequestUri.Authority;
@@ -49,21 +43,19 @@ namespace Orchestrator.Infrastructure.ReverseProxy
             
             EnsureCorsHeaders(httpContext);
             EnsureCacheHeaders(httpContext);
+            SetCustomHeaders(httpContext);
 
             return new ValueTask<bool>(true);
         }
 
         private void EnsureCacheHeaders(HttpContext httpContext)
         {
-            // TODO - read CustomHeaders data and set accordingly
             const string cacheControlHeader = "Cache-Control";
-            if (proxyDestination == ProxyDestination.ImageServer)
-            {
-                var cacheControl = isRestrictedContent
-                    ? "private, max-age=600"
-                    : "public, s-maxage=2419200, max-age=2419200";
-                httpContext.Response.Headers[cacheControlHeader] = cacheControl;
-            }
+            if (proxyAction.Target != ProxyDestination.ImageServer) return;
+            var cacheControl = proxyAction.RequiresAuth
+                ? "private, max-age=600"
+                : "public, s-maxage=2419200, max-age=2419200";
+            httpContext.Response.Headers[cacheControlHeader] = cacheControl;
         }
 
         private static void EnsureCorsHeaders(HttpContext httpContext)
@@ -74,10 +66,18 @@ namespace Orchestrator.Infrastructure.ReverseProxy
                 httpContext.Response.Headers.Add(accessControlAllowOrigin, "*");
             }
         }
+        
+        private void SetCustomHeaders(HttpContext httpContext)
+        {
+            foreach (var (key, value) in proxyAction.Headers)
+            {
+                httpContext.Response.Headers[key] = value;
+            }
+        }
 
         private Uri GetNewDestination(string destinationPrefix)
             => new(destinationPrefix[^1] == '/'
-                ? $"{destinationPrefix}{newPath}"
-                : $"{destinationPrefix}/{newPath}");
+                ? $"{destinationPrefix}{proxyAction.Path}"
+                : $"{destinationPrefix}/{proxyAction.Path}");
     }
 }

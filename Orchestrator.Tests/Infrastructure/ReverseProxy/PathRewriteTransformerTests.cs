@@ -19,7 +19,8 @@ namespace Orchestrator.Tests.Infrastructure.ReverseProxy
             // Arrange
             var request = new HttpRequestMessage();
             var expected = new Uri("http://test.example.com/new/path");
-            var sut = new PathRewriteTransformer("new/path", ProxyDestination.Unknown);
+            var actionResult = new ProxyActionResult(ProxyDestination.Unknown, true, "new/path");
+            var sut = new PathRewriteTransformer(actionResult);
 
             // Act
             await sut.TransformRequestAsync(new DefaultHttpContext(), request, destination);
@@ -34,7 +35,9 @@ namespace Orchestrator.Tests.Infrastructure.ReverseProxy
             // Arrange
             var request = new HttpRequestMessage();
             var expected = new Uri("http://newtest.example.com/new/path");
-            var sut = new PathRewriteTransformer("http://newtest.example.com/new/path", ProxyDestination.Unknown, true);
+            var actionResult =
+                new ProxyActionResult(ProxyDestination.Unknown, true, "http://newtest.example.com/new/path");
+            var sut = new PathRewriteTransformer(actionResult, true);
 
             // Act
             await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com");
@@ -48,7 +51,9 @@ namespace Orchestrator.Tests.Infrastructure.ReverseProxy
         {
             // Arrange
             var request = new HttpRequestMessage();
-            var sut = new PathRewriteTransformer("http://newtest.example.com/new/path", ProxyDestination.Unknown, true);
+            var actionResult =
+                new ProxyActionResult(ProxyDestination.Unknown, true, "http://newtest.example.com/new/path");
+            var sut = new PathRewriteTransformer(actionResult, true);
 
             // Act
             await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com");
@@ -62,7 +67,8 @@ namespace Orchestrator.Tests.Infrastructure.ReverseProxy
         {
             // Arrange
             var request = new HttpRequestMessage();
-            var sut = new PathRewriteTransformer("new/path", ProxyDestination.Unknown);
+            var actionResult = new ProxyActionResult(ProxyDestination.Unknown, true, "new/path");
+            var sut = new PathRewriteTransformer(actionResult);
 
             // Act
             await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com");
@@ -78,7 +84,8 @@ namespace Orchestrator.Tests.Infrastructure.ReverseProxy
         {
             // Arrange
             var request = new HttpRequestMessage();
-            var sut = new PathRewriteTransformer(path, ProxyDestination.Unknown, rewriteWholePath);
+            var actionResult = new ProxyActionResult(ProxyDestination.Unknown, true, path);
+            var sut = new PathRewriteTransformer(actionResult, rewriteWholePath);
 
             // Act
             await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com");
@@ -93,7 +100,8 @@ namespace Orchestrator.Tests.Infrastructure.ReverseProxy
             // Arrange
             var context = new DefaultHttpContext();
             var responseMessage = new HttpResponseMessage();
-            var sut = new PathRewriteTransformer("whatever", ProxyDestination.Unknown);
+            var actionResult = new ProxyActionResult(ProxyDestination.Unknown, true, "whatever");
+            var sut = new PathRewriteTransformer(actionResult);
             
             // Act
             await sut.TransformResponseAsync(context, responseMessage);
@@ -110,7 +118,8 @@ namespace Orchestrator.Tests.Infrastructure.ReverseProxy
             var context = new DefaultHttpContext();
             var responseMessage = new HttpResponseMessage();
             responseMessage.Headers.Add("Access-Control-Allow-Origin", "_value_");
-            var sut = new PathRewriteTransformer("whatever", ProxyDestination.Unknown);
+            var actionResult = new ProxyActionResult(ProxyDestination.Unknown, true, "whatever");
+            var sut = new PathRewriteTransformer(actionResult);
             
             // Act
             await sut.TransformResponseAsync(context, responseMessage);
@@ -127,7 +136,8 @@ namespace Orchestrator.Tests.Infrastructure.ReverseProxy
             var context = new DefaultHttpContext();
             var responseMessage = new HttpResponseMessage();
             responseMessage.Headers.Add("Cache-Control", "max-age=200");
-            var sut = new PathRewriteTransformer("whatever", ProxyDestination.ImageServer, isRestrictedContent: false);
+            var actionResult = new ProxyActionResult(ProxyDestination.ImageServer, false, "whatever");
+            var sut = new PathRewriteTransformer(actionResult);
             
             // Act
             await sut.TransformResponseAsync(context, responseMessage);
@@ -144,7 +154,8 @@ namespace Orchestrator.Tests.Infrastructure.ReverseProxy
             var context = new DefaultHttpContext();
             var responseMessage = new HttpResponseMessage();
             responseMessage.Headers.Add("Cache-Control", "max-age=200");
-            var sut = new PathRewriteTransformer("whatever", ProxyDestination.ImageServer, isRestrictedContent: true);
+            var actionResult = new ProxyActionResult(ProxyDestination.ImageServer, true, "whatever");
+            var sut = new PathRewriteTransformer(actionResult);
             
             // Act
             await sut.TransformResponseAsync(context, responseMessage);
@@ -152,6 +163,28 @@ namespace Orchestrator.Tests.Infrastructure.ReverseProxy
             // Assert
             context.Response.Headers.Should().ContainKey("Cache-Control")
                 .WhoseValue.Single().Should().Be("private, max-age=600");
+        }
+        
+        [Fact]
+        public async Task TransformResponseAsync_SetsCustomHeaders_BasedOnHeadersProp()
+        {
+            // Arrange
+            var context = new DefaultHttpContext();
+            var responseMessage = new HttpResponseMessage();
+            responseMessage.Headers.Add("Cache-Control", "max-age=200");
+            var actionResult = new ProxyActionResult(ProxyDestination.ImageServer, true, "whatever");
+            actionResult.WithHeader("x-test-header", "live forever")
+                .WithHeader("Cache-Control", "max-age=999");
+            var sut = new PathRewriteTransformer(actionResult);
+            
+            // Act
+            await sut.TransformResponseAsync(context, responseMessage);
+            
+            // Assert
+            context.Response.Headers.Should().ContainKey("Cache-Control")
+                .WhoseValue.Single().Should().Be("max-age=999");
+            context.Response.Headers.Should().ContainKey("x-test-header")
+                .WhoseValue.Single().Should().Be("live forever");
         }
     }
 }
