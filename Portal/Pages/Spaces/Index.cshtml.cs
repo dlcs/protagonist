@@ -4,10 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using API.Client;
 using DLCS.HydraModel;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Portal.Features.Spaces.Requests;
 using Portal.ViewComponents;
 
 namespace Portal.Pages.Spaces
@@ -15,7 +13,6 @@ namespace Portal.Pages.Spaces
     public class Index : PageModel
     {
         private readonly IDlcsClient dlcsClient;
-        private readonly IMediator mediator;
         
         public Index(
             IDlcsClient dlcsClient

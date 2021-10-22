@@ -65,9 +65,13 @@ namespace API.Client
         }
         
         
-        public async Task<HydraCollection<Image>> GetSpaceImages(int spaceId)
+        public async Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, string? orderBy = null)
         {
-            var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images";
+            var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images?page={page}&pageSize={pageSize}";
+            if (orderBy != null)
+            {
+                url = $"{url}&orderBy={orderBy}";
+            }
             var response = await httpClient.GetAsync(url);
             var images = await response.ReadAsJsonAsync<HydraCollection<Image>>(true, jsonSerializerSettings);
             return images;

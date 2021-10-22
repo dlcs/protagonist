@@ -9,7 +9,7 @@ namespace API.Client
     {
         Task<HydraCollection<Space>?> GetSpaces(int page, int pageSize, int? customerId = null);
         Task<Space?> GetSpaceDetails(int spaceId);
-        Task<HydraCollection<Image>> GetSpaceImages(int spaceId);
+        Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, string? orderBy = null);
         Task<Space?> CreateSpace(Space newSpace);
         Task<IEnumerable<string>?> GetApiKeys();
         Task<ApiKey> CreateNewApiKey();

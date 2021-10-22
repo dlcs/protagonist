@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.SimpleSystemsManagement.Model;
+using Hydra.Collections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -132,8 +133,6 @@ namespace Portal.ViewComponents
 
     public class PagerModel
     {
-        public const string Ellipsis = "...";
-
         public int TotalPages { get; set; }
         public List<Link> Links { get; set; }
         public Link? Previous { get; set; }

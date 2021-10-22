@@ -15,16 +15,18 @@ namespace API.Features.Space.Requests
     /// </summary>
     public class GetPageOfSpaces : IRequest<PageOfSpaces>
     {
-        public GetPageOfSpaces(int page, int pageSize, int? customerId = null)
+        public GetPageOfSpaces(int page, int pageSize, int? customerId = null, string? orderBy = null)
         {
             Page = page;
             PageSize = pageSize;
             CustomerId = customerId;
+            OrderBy = orderBy;
         }
 
-        public int? CustomerId { get; private set; }
-        public int Page { get; private set; }
-        public int PageSize { get; private set; }
+        public int? CustomerId { get; }
+        public int Page { get; }
+        public int PageSize { get; }
+        public string OrderBy { get; }
     }
 
     public class GetAllSpacesHandler : IRequestHandler<GetPageOfSpaces, PageOfSpaces>
@@ -40,7 +42,7 @@ namespace API.Features.Space.Requests
             this.principal = principal;
             this.logger = logger;
         }
-
+        
         public async Task<PageOfSpaces> Handle(GetPageOfSpaces request, CancellationToken cancellationToken)
         {
             int? customerId = request.CustomerId ?? principal.GetCustomerId();
@@ -52,17 +54,17 @@ namespace API.Features.Space.Requests
                     .Count(s => s.Customer == customerId),
                 Spaces = dbContext.Spaces.AsNoTracking()
                     .Where(s => s.Customer == customerId)
-                    .OrderBy(s => s.Id)
+                    .OrderBy(s => s.Id) // TODO: needs to be orderby request.Orderby
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
                     .ToList()
             };
             // In Deliverator the following is a sub-select. But I suspect that this is not significantly slower.
             var scopes = result.Spaces.Select(s => s.Id.ToString());
-            var counters = dbContext.EntityCounters.AsNoTracking()
+            var counters = await dbContext.EntityCounters.AsNoTracking()
                 .Where(ec => ec.Customer == customerId && ec.Type == "space-images")
                 .Where(ec => scopes.Contains(ec.Scope))
-                .ToDictionary(ec => ec.Scope, ec => ec.Next);
+                .ToDictionaryAsync(ec => ec.Scope, ec => ec.Next, cancellationToken: cancellationToken);
             foreach (var space in result.Spaces)
             {
                 space.ApproximateNumberOfImages = counters[space.Id.ToString()];
