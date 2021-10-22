@@ -30,6 +30,9 @@ namespace Orchestrator.Features.PDF
             this.logger = logger;
         }
 
+        /// <summary>
+        /// Get <see cref="PdfResult"/> containing PDF stream and status for specific named query result.
+        /// </summary>
         public async Task<PdfResult> GetPdfResults(NamedQueryResult<PdfParsedNamedQuery> namedQueryResult)
         {
             namedQueryResult.ParsedQuery.ThrowIfNull(nameof(namedQueryResult.ParsedQuery));
@@ -65,8 +68,11 @@ namespace Orchestrator.Features.PDF
                 parsedNamedQuery.PdfStorageKey);
             return new(Stream.Null, PdfStatus.Error);
         }
-
-        private async Task<PdfControlFile?> GetPdfControlFile(string controlFileKey)
+        
+        /// <summary>
+        /// Get <see cref="PdfControlFile"/> stored as specified key.
+        /// </summary>
+        public async Task<PdfControlFile?> GetPdfControlFile(string controlFileKey)
         {
             var pdfControlObject = await LoadPdfObject(controlFileKey);
             if (pdfControlObject.Stream == Stream.Null) return null;
@@ -82,15 +88,14 @@ namespace Orchestrator.Features.PDF
 
             if (pdfControlFile.IsStale(namedQuerySettings.PdfControlStaleSecs))
             {
-                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but PDF not found. Will recreate",
+                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but it is stale. Will recreate",
                     pdfKey);
                 return new(Stream.Null, PdfStatus.NotFound);
             }
 
             if (pdfControlFile.InProcess)
             {
-                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but PDF not found. Will recreate",
-                    pdfKey);
+                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but it's in progress", pdfKey);
                 return new(Stream.Null, PdfStatus.InProcess);
             }
 

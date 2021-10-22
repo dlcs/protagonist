@@ -8,7 +8,6 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using FakeItEasy;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,17 +29,19 @@ namespace Orchestrator.Tests.Integration
         private readonly DlcsDatabaseFixture dbFixture;
         private readonly HttpClient httpClient;
         private readonly IAmazonS3 amazonS3;
-        private readonly IPdfCreator pdfCreator;
+        private readonly FakePdfCreator pdfCreator = new();
 
         public PdfTests(ProtagonistAppFactory<Startup> factory, StorageFixture orchestratorFixture)
         {
-            pdfCreator = A.Fake<IPdfCreator>();
             dbFixture = orchestratorFixture.DbFixture;
             amazonS3 = orchestratorFixture.LocalStackFixture.AmazonS3;
             httpClient = factory
                 .WithConnectionString(dbFixture.ConnectionString)
                 .WithLocalStack(orchestratorFixture.LocalStackFixture)
-                .WithTestServices(services => services.AddTransient<IPdfCreator>(_ => pdfCreator))
+                .WithTestServices(services => services.AddScoped<IPdfCreator>(_ =>
+                {
+                    return pdfCreator;
+                }))
                 .CreateClient(new WebApplicationFactoryClientOptions {AllowAutoRedirect = false});
             
             dbFixture.CleanUp();
@@ -56,11 +57,12 @@ namespace Orchestrator.Tests.Integration
             dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-3-auth", num1: 3, ref1: "my-ref",
                 maxUnauthorised: 10, roles: "default");
             dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-4", num1: 4, ref1: "my-ref");
+            dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-5", num1: 5, ref1: "my-ref");
             dbFixture.DbContext.SaveChanges();
         }
         
         [Fact]
-        public async Task Get_Returns404_IfCustomerNotFound()
+        public async Task GetPdf_Returns404_IfCustomerNotFound()
         {
             // Arrange
             const string path = "pdf/98/test-pdf";
@@ -73,7 +75,7 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns404_IfNQNotFound()
+        public async Task GetPdf_Returns404_IfNQNotFound()
         {
             // Arrange
             const string path = "pdf/99/unknown";
@@ -86,7 +88,7 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns400_IfParametersIncorrect()
+        public async Task GetPdf_Returns400_IfParametersIncorrect()
         {
             // Arrange
             const string path = "pdf/99/test-pdf/too-little-params";
@@ -99,7 +101,7 @@ namespace Orchestrator.Tests.Integration
         }
 
         [Fact]
-        public async Task Get_Returns404_IfNoMatchingRecordsFound()
+        public async Task GetPdf_Returns404_IfNoMatchingRecordsFound()
         {
             // Arrange
             const string path = "pdf/99/test-pdf/non-matching-ref/2/1";
@@ -112,7 +114,7 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns202_WithRetryAfter_IfPdfInProcess()
+        public async Task GetPdf_Returns202_WithRetryAfter_IfPdfInProcess()
         {
             // Arrange
             const string path = "pdf/99/test-pdf/my-ref/1/1";
@@ -128,10 +130,10 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns200_WithExistingPdf_IfPdfControlFileAndPdfExist()
+        public async Task GetPdf_Returns200_WithExistingPdf_IfPdfControlFileAndPdfExist()
         {
             // Arrange
-            var fakePdfContent = nameof(Get_Returns200_WithExistingPdf_IfPdfControlFileAndPdfExist);
+            var fakePdfContent = nameof(GetPdf_Returns200_WithExistingPdf_IfPdfControlFileAndPdfExist);
             const string path = "pdf/99/test-pdf/my-ref/1/1";
             await AddPdfControlFile("99/test-pdf/my-ref/1/1/tester.json",
                 new PdfControlFile { Created = DateTime.Now, InProcess = false });
@@ -147,21 +149,20 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt()
+        public async Task GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt()
         {
             // Arrange
-            var fakePdfContent = nameof(Get_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
+            var fakePdfContent = nameof(GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
             const string pdfStorageKey = "99/test-pdf/my-ref/1/2/tester";
             const string path = "pdf/99/test-pdf/my-ref/1/2";
             
             await AddPdfControlFile("99/test-pdf/my-ref/1/2/tester.json",
                 new PdfControlFile { Created = DateTime.Now, InProcess = false });
-            A.CallTo(() =>
-                    pdfCreator.CreatePdf(
-                        A<PdfParsedNamedQuery>.That.Matches(p => p.PdfStorageKey == pdfStorageKey),
-                        A<List<Asset>>._))
-                .Invokes(() => AddPdf(pdfStorageKey, fakePdfContent).Wait())
-                .Returns(true);
+            pdfCreator.AddCallbackFor(pdfStorageKey, () =>
+            {
+                AddPdf(pdfStorageKey, fakePdfContent).Wait();
+                return true;
+            });
 
             // Act
             var response = await httpClient.GetAsync(path);
@@ -173,21 +174,20 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns200_WithNewlyCreatedPdf_IfPdfControlFileStale()
+        public async Task GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileStale()
         {
             // Arrange
-            var fakePdfContent = nameof(Get_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
+            var fakePdfContent = nameof(GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
             const string pdfStorageKey = "99/test-pdf/my-ref/1/3/tester";
             const string path = "pdf/99/test-pdf/my-ref/1/3";
             await AddPdfControlFile("99/test-pdf/my-ref/1/3/tester.json",
                 new PdfControlFile { Created = DateTime.Now.AddHours(-1), InProcess = false });
             
-            A.CallTo(() =>
-                    pdfCreator.CreatePdf(
-                        A<PdfParsedNamedQuery>.That.Matches(p => p.PdfStorageKey == pdfStorageKey),
-                        A<List<Asset>>._))
-                .Invokes(() => AddPdf(pdfStorageKey, fakePdfContent).Wait())
-                .Returns(true);
+            pdfCreator.AddCallbackFor(pdfStorageKey, () =>
+            {
+                AddPdf(pdfStorageKey, fakePdfContent).Wait();
+                return true;
+            });
 
             // Act
             var response = await httpClient.GetAsync(path);
@@ -199,7 +199,7 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns500_IfPdfCreatedButCannotBeFound()
+        public async Task GetPdf_Returns500_IfPdfCreatedButCannotBeFound()
         {
             // Arrange
             const string path = "pdf/99/test-pdf/my-ref/1/4";
@@ -209,11 +209,7 @@ namespace Orchestrator.Tests.Integration
                 new PdfControlFile { Created = DateTime.Now, InProcess = false });
             
             // return True but don't create object
-            A.CallTo(() =>
-                    pdfCreator.CreatePdf(
-                        A<PdfParsedNamedQuery>.That.Matches(p => p.PdfStorageKey == pdfStorageKey),
-                        A<List<Asset>>._))
-                .Returns(true);
+            pdfCreator.AddCallbackFor(pdfStorageKey, () => true);
             
             // Act
             var response = await httpClient.GetAsync(path);
@@ -223,26 +219,97 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_Returns500_IfPdfCreatorUnsuccessful()
+        public async Task GetPdf_Returns500_IfPdfCreatorUnsuccessful()
         {
             // Arrange
-            const string path = "pdf/99/test-pdf/my-ref/1/4";
-            const string pdfStorageKey = "99/test-pdf/my-ref/1/4/tester";
+            const string path = "pdf/99/test-pdf/my-ref/1/5";
+            const string pdfStorageKey = "99/test-pdf/my-ref/1/5/tester";
             
-            await AddPdfControlFile("99/test-pdf/my-ref/1/4/tester.json",
+            await AddPdfControlFile("99/test-pdf/my-ref/1/5/tester.json",
                 new PdfControlFile { Created = DateTime.Now, InProcess = false });
             
-            A.CallTo(() =>
-                    pdfCreator.CreatePdf(
-                        A<PdfParsedNamedQuery>.That.Matches(p => p.PdfStorageKey == pdfStorageKey),
-                        A<List<Asset>>._))
-                .Returns(false);
-            
+            pdfCreator.AddCallbackFor(pdfStorageKey, () => false);
+
             // Act
             var response = await httpClient.GetAsync(path);
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        }
+
+        [Fact]
+        public async Task GetPdfControlFile_Returns404_IfCustomerNotFound()
+        {
+            // Arrange
+            const string path = "pdf-control/98/test-pdf";
+
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+        
+        [Fact]
+        public async Task GetPdfControlFile_Returns404_IfNQNotFound()
+        {
+            // Arrange
+            const string path = "pdf-control/99/unknown";
+
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+        
+        [Fact]
+        public async Task GetPdfControlFile_Returns404_IfParametersIncorrect()
+        {
+            // Arrange
+            const string path = "pdf-control/99/test-pdf/too-little-params";
+
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        [Fact]
+        public async Task GetPdfControlFile_Returns404_IfNQValidButNoControlFile()
+        {
+            // Arrange
+            const string path = "pdf-control/99/test-pdf/any-ref/1/2";
+            
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        [Fact]
+        public async Task GetPdfControlFile_Returns200_AndControlFile_IfFound()
+        {
+            // Arrange
+            const string path = "pdf-control/99/test-pdf/any-ref/1/5";
+
+            var pdfControlFile = new PdfControlFile
+            {
+                Created = DateTime.Now, InProcess = false, Exists = true, Key = "the-key", PageCount = 100,
+                SizeBytes = 1024
+            };
+            await AddPdfControlFile("99/test-pdf/any-ref/1/5/tester.json", pdfControlFile);
+            var pdfControlFileJson = JsonConvert.SerializeObject(pdfControlFile);
+            
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            (await response.Content.ReadAsStringAsync()).Should().Be(pdfControlFileJson);
+            response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/json"));
         }
 
         private Task AddPdfControlFile(string key, PdfControlFile controlFile) 
@@ -260,5 +327,23 @@ namespace Orchestrator.Tests.Integration
                 BucketName = "protagonist-pdf",
                 ContentBody = fakeContent
             });
+        
+        private class FakePdfCreator : IPdfCreator
+        {
+            private static readonly Dictionary<string, Func<bool>> callbacks = new();
+
+            public void AddCallbackFor(string pdfKey, Func<bool> callback)
+                => callbacks.Add(pdfKey, callback);
+
+            public Task<bool> CreatePdf(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images)
+            {
+                if (callbacks.TryGetValue(parsedNamedQuery.PdfStorageKey, out var cb))
+                {
+                    return Task.FromResult(cb());
+                }
+
+                throw new Exception($"Request with key {parsedNamedQuery.PdfStorageKey} not setup");
+            }
+        }
     }
 }

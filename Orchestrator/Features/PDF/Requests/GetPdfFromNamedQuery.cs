@@ -2,23 +2,20 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using MediatR;
-using Orchestrator.Infrastructure.NamedQueries;
+using Orchestrator.Infrastructure.NamedQueries.Requests;
 
 namespace Orchestrator.Features.PDF.Requests
 {
     /// <summary>
     /// Mediatr request for generating PDF via named query
     /// </summary>
-    public class GetPdfFromNamedQuery : IRequest<PdfFromNamedQuery>
+    public class GetPdfFromNamedQuery : IBaseNamedQueryRequest, IRequest<PdfFromNamedQuery>
     {
         public string CustomerPathValue { get; }
-        
         public string NamedQuery { get; }
-        
         public string? NamedQueryArgs { get; }
-
+        
         public GetPdfFromNamedQuery(string customerPathValue, string namedQuery, string? namedQueryArgs)
         {
             CustomerPathValue = customerPathValue;
@@ -29,23 +26,20 @@ namespace Orchestrator.Features.PDF.Requests
     
     public class GetPdfFromNamedQueryHandler : IRequestHandler<GetPdfFromNamedQuery, PdfFromNamedQuery>
     {
-        private readonly IPathCustomerRepository pathCustomerRepository;
-        private readonly NamedQueryConductor namedQueryConductor;
         private readonly PdfNamedQueryService pdfNamedQueryService;
+        private readonly NamedQueryResultGenerator namedQueryResultGenerator;
 
         public GetPdfFromNamedQueryHandler(
-            IPathCustomerRepository pathCustomerRepository,
-            NamedQueryConductor namedQueryConductor, 
-            PdfNamedQueryService pdfNamedQueryService
-        )
+            PdfNamedQueryService pdfNamedQueryService,
+            NamedQueryResultGenerator namedQueryResultGenerator)
         {
-            this.pathCustomerRepository = pathCustomerRepository;
-            this.namedQueryConductor = namedQueryConductor;
             this.pdfNamedQueryService = pdfNamedQueryService;
+            this.namedQueryResultGenerator = namedQueryResultGenerator;
         }
+        
         public async Task<PdfFromNamedQuery> Handle(GetPdfFromNamedQuery request, CancellationToken cancellationToken)
         {
-            var namedQueryResult = await GetNamedQueryResult(request);
+            var namedQueryResult = await namedQueryResultGenerator.GetNamedQueryResult<PdfParsedNamedQuery>(request);
 
             if (namedQueryResult.ParsedQuery == null) return new PdfFromNamedQuery(PdfStatus.NotFound);
             if (namedQueryResult.ParsedQuery is { IsFaulty: true }) return PdfFromNamedQuery.BadRequest();
@@ -55,16 +49,6 @@ namespace Orchestrator.Features.PDF.Requests
             return pdfResult.Status == PdfStatus.InProcess
                 ? new PdfFromNamedQuery(PdfStatus.InProcess)
                 : new PdfFromNamedQuery(pdfResult.Stream, pdfResult.Status);
-        }
-
-        private async Task<NamedQueryResult<PdfParsedNamedQuery>> GetNamedQueryResult(GetPdfFromNamedQuery request)
-        {
-            var customerPathElement = await pathCustomerRepository.GetCustomer(request.CustomerPathValue);
-
-            var namedQueryResult =
-                await namedQueryConductor.GetNamedQueryResult<PdfParsedNamedQuery>(request.NamedQuery,
-                    customerPathElement, request.NamedQueryArgs);
-            return namedQueryResult;
         }
     }
 
