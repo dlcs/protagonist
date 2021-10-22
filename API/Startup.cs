@@ -5,11 +5,16 @@ using API.Client;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Encryption;
+using DLCS.Model;
 using DLCS.Model.Customers;
+using DLCS.Model.Processing;
+using DLCS.Model.Security;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
+using DLCS.Repository.Entities;
+using DLCS.Repository.Security;
 using DLCS.Repository.Storage.S3;
 using DLCS.Web.Configuration;
 using Microsoft.AspNetCore.Builder;
@@ -59,7 +64,10 @@ namespace API
                     memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
                 })
                 .AddLazyCache()
+                .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
                 .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
+                .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
+                .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
                 .ConfigureMediatR()
                 .ConfigureSwagger()
                 .AddDbContext<DlcsContext>(opts =>
