@@ -214,6 +214,41 @@ namespace Orchestrator.Tests.Features.Images
             result.HasPath.Should().BeTrue();
         }
 
+        [Fact]
+        public async Task Handle_Request_ProxiesToImageServer_WithCustomHeaders()
+        {
+            // Arrange
+            var context = new DefaultHttpContext();
+            context.Request.Path = "/iiif-img/2/2/test-image/full/max/0/default.jpg";
+
+            A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+            A.CallTo(() => customHeaderRepository.GetForCustomer(2)).Returns(new List<CustomHeader>
+            {
+                new() { Space = 2, Role = null, Key = "x-test-header", Value = "test" },
+                new() { Space = null, Role = null, Key = "x-test-header-2", Value = "test" },
+            });
+            
+            var assetId = new AssetId(2, 2, "test-image");
+            
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    ImageFolderTemplateImageServer = "/path",
+                    Proxy = new ProxySettings()
+                }));
+
+            List<int[]> openSizes = new List<int[]> { new[] { 150, 150 } };
+
+            A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+                .Returns(new OrchestrationImage { AssetId = assetId, OpenThumbs = openSizes });
+
+            // Act
+            var result = await sut.HandleRequest(context) as ProxyImageServerResult;
+            
+            // Assert
+            result.Headers.Should().ContainKeys("x-test-header", "x-test-header-2");
+        }
+
         private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false,
             IOptions<OrchestratorSettings> settings = null)
         {

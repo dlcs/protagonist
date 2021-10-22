@@ -4,8 +4,8 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Repository.Assets;
 using DLCS.Web.Requests.AssetDelivery;
 using IIIF;
@@ -29,6 +29,7 @@ namespace Orchestrator.Features.Images
         private readonly ILogger<ImageRequestHandler> logger;
         private readonly AssetRequestProcessor assetRequestProcessor;
         private readonly IServiceScopeFactory scopeFactory;
+        private readonly ICustomHeaderRepository customHeaderRepository;
         private readonly IOptions<OrchestratorSettings> orchestratorSettings;
         private readonly Dictionary<string, CompiledRegexThumbUpscaleConfig> upscaleConfig;
         private readonly bool haveUpscaleRules;
@@ -37,11 +38,13 @@ namespace Orchestrator.Features.Images
             ILogger<ImageRequestHandler> logger,
             AssetRequestProcessor assetRequestProcessor,
             IServiceScopeFactory scopeFactory,
+            ICustomHeaderRepository customHeaderRepository,
             IOptions<OrchestratorSettings> orchestratorSettings)
         {
             this.logger = logger;
             this.assetRequestProcessor = assetRequestProcessor;
             this.scopeFactory = scopeFactory;
+            this.customHeaderRepository = customHeaderRepository;
             this.orchestratorSettings = orchestratorSettings;
 
             upscaleConfig = orchestratorSettings.Value.Proxy?.ThumbUpscaleConfig?
@@ -124,7 +127,7 @@ namespace Orchestrator.Features.Images
                 }
             }
 
-            return GenerateImageResult(orchestrationImage, assetRequest);
+            return await GenerateImageResult(orchestrationImage, assetRequest);
         }
 
         // TODO handle known thumb size that doesn't exist yet - call image-server and save to s3 on way back
@@ -170,7 +173,7 @@ namespace Orchestrator.Features.Images
             return (false, false);
         }
 
-        private ProxyImageServerResult GenerateImageResult(OrchestrationImage orchestrationImage,
+        private async Task<ProxyImageServerResult> GenerateImageResult(OrchestrationImage orchestrationImage,
             ImageAssetDeliveryRequest requestModel)
         {
             // NOTE - this is for IIP image only
@@ -178,8 +181,20 @@ namespace Orchestrator.Features.Images
             var root = orchestratorSettings.Value.Proxy.ImageServerRoot;
             var imageServerPath =
                 $"{root}/fcgi-bin/iipsrv.fcgi?IIIF={targetPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
-            return new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth,
+            var proxyImageServerResult = new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth,
                 ProxyDestination.ImageServer, imageServerPath);
+            await SetCustomHeaders(orchestrationImage, proxyImageServerResult);
+            return proxyImageServerResult;
+        }
+
+        private async Task SetCustomHeaders(OrchestrationImage orchestrationImage, 
+            ProxyImageServerResult proxyImageServerResult)
+        {
+            // order of precedence (low -> high), same header will be overwritten if present
+            var customerHeaders = (await customHeaderRepository.GetForCustomer(orchestrationImage.AssetId.Customer))
+                .ToList();
+
+            CustomHeaderProcessor.SetProxyImageServerHeaders(customerHeaders, orchestrationImage, proxyImageServerResult);
         }
     }
 
