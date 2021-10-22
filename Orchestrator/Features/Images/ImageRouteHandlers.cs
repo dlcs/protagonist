@@ -39,7 +39,7 @@ namespace Orchestrator.Features.Images
             DefaultTransformer = HttpTransformer.Default;
             
             // TODO - make this configurable, potentially by target
-            RequestOptions = new ForwarderRequestConfig {Timeout = TimeSpan.FromSeconds(100)};  
+            RequestOptions = new ForwarderRequestConfig {ActivityTimeout = TimeSpan.FromSeconds(60)};  
         }
 
         /// <summary>
