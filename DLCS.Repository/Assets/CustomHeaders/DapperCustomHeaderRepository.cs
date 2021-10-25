@@ -46,7 +46,7 @@ namespace DLCS.Repository.Assets.CustomHeaders
         
         private const string CustomHeaderSql = @"
 SELECT ""Id"", ""Customer"", ""Space"", ""Role"", ""Key"", ""Value""
-  FROM public.""CustomerHeaders""
+  FROM public.""CustomHeaders""
   WHERE ""Customer""=@customer;";
     }
 }
