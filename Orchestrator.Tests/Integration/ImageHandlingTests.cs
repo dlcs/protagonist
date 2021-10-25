@@ -692,6 +692,7 @@ namespace Orchestrator.Tests.Integration
 
             await dbFixture.DbContext.Images.AddTestAsset($"99/1/{imageName}", origin: "/test/space", width: 1000,
                 height: 1000);
+            await dbFixture.DbContext.CustomHeaders.AddTestCustomHeader("x-test-key", "foo bar");
             await dbFixture.DbContext.SaveChangesAsync();
 
             // Act
@@ -703,6 +704,7 @@ namespace Orchestrator.Tests.Integration
             response.Headers.CacheControl.Public.Should().BeTrue();
             response.Headers.CacheControl.SharedMaxAge.Should().Be(TimeSpan.FromDays(28));
             response.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromDays(28));
+            response.Headers.Should().ContainKey("x-test-key").WhoseValue.Should().BeEquivalentTo("foo bar");
         }
     }
     
