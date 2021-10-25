@@ -8,6 +8,7 @@ using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
 using IIIF.ImageApi.Service;
+using IIIF.Presentation;
 using IIIF.Presentation.V2;
 using IIIF.Presentation.V2.Annotation;
 using IIIF.Presentation.V2.Strings;
@@ -29,10 +30,13 @@ namespace Orchestrator.Features.Manifests.Requests
         public string FullPath { get; }
         
         public BaseAssetRequest AssetRequest { get; set; }
+        
+        public Version IIIFPresentationVersion { get; }
 
-        public GetManifestForAsset(string path)
+        public GetManifestForAsset(string path, Version iiifVersion)
         {
             FullPath = path;
+            IIIFPresentationVersion = iiifVersion;
         }
     }
     
