@@ -40,7 +40,7 @@ namespace Orchestrator.Tests.Integration
         public ImageHandlingTests(ProtagonistAppFactory<Startup> factory, StorageFixture storageFixture)
         {
             dbFixture = storageFixture.DbFixture;
-            amazonS3 = storageFixture.LocalStackFixture.AmazonS3;
+            amazonS3 = storageFixture.LocalStackFixture.AWSS3ClientFactory();
             httpClient = factory
                 .WithConnectionString(dbFixture.ConnectionString)
                 .WithLocalStack(storageFixture.LocalStackFixture)    

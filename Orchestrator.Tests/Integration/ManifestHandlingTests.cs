@@ -28,7 +28,7 @@ namespace Orchestrator.Tests.Integration
         public ManifestHandlingTests(ProtagonistAppFactory<Startup> factory, StorageFixture storageFixture)
         {
             dbFixture = storageFixture.DbFixture;
-            amazonS3 = storageFixture.LocalStackFixture.AmazonS3;
+            amazonS3 = storageFixture.LocalStackFixture.AWSS3ClientFactory();
             
             httpClient = factory
                 .WithConnectionString(dbFixture.ConnectionString)

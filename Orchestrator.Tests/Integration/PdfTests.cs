@@ -34,7 +34,7 @@ namespace Orchestrator.Tests.Integration
         public PdfTests(ProtagonistAppFactory<Startup> factory, StorageFixture orchestratorFixture)
         {
             dbFixture = orchestratorFixture.DbFixture;
-            amazonS3 = orchestratorFixture.LocalStackFixture.AmazonS3;
+            amazonS3 = orchestratorFixture.LocalStackFixture.AWSS3ClientFactory();
             httpClient = factory
                 .WithConnectionString(dbFixture.ConnectionString)
                 .WithLocalStack(orchestratorFixture.LocalStackFixture)
