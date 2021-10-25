@@ -51,7 +51,7 @@ namespace Orchestrator.Features.Manifests
         /// Get results of named query with specified name as a IIIF Manifest conforming to v2.1.
         /// </summary>
         /// <returns>IIIF manifest containing results of specified named query</returns>
-        [Route("{customer}/{namedQueryName}/v2/{**namedQueryArgs}")]
+        [Route("v2/{customer}/{namedQueryName}/{**namedQueryArgs}")]
         public Task<IActionResult> V2(string customer, string namedQueryName, string? namedQueryArgs = null,
             CancellationToken cancellationToken = default)
             => RenderNamedQuery(customer, namedQueryName, namedQueryArgs, Version.V2, cancellationToken);
@@ -60,7 +60,7 @@ namespace Orchestrator.Features.Manifests
         /// Get results of named query with specified name as a IIIF Manifest conforming to v3.0.
         /// </summary>
         /// <returns>IIIF manifest containing results of specified named query</returns>
-        [Route("{customer}/{namedQueryName}/v3/{**namedQueryArgs}")]
+        [Route("v3/{customer}/{namedQueryName}/{**namedQueryArgs}")]
         public Task<IActionResult> V3(string customer, string namedQueryName, string? namedQueryArgs = null,
             CancellationToken cancellationToken = default)
             => RenderNamedQuery(customer, namedQueryName, namedQueryArgs, Version.V3, cancellationToken);
