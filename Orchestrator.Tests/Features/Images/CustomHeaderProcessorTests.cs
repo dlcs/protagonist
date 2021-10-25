@@ -26,7 +26,7 @@ namespace Orchestrator.Tests.Features.Images
                 new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
             
             // Act
-            CustomHeaderProcessor.SetProxyImageServerHeaders(customerCustomHeaders, orchestrationImage,
+            CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
                 proxyImageServerResult);
             
             // Assert
@@ -43,7 +43,7 @@ namespace Orchestrator.Tests.Features.Images
                 new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
             
             // Act
-            CustomHeaderProcessor.SetProxyImageServerHeaders(customerCustomHeaders, orchestrationImage,
+            CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
                 proxyImageServerResult);
             
             // Assert
@@ -64,7 +64,7 @@ namespace Orchestrator.Tests.Features.Images
                 new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
             
             // Act
-            CustomHeaderProcessor.SetProxyImageServerHeaders(customerCustomHeaders, orchestrationImage,
+            CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
                 proxyImageServerResult);
             
             // Assert
@@ -86,7 +86,7 @@ namespace Orchestrator.Tests.Features.Images
                 new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
             
             // Act
-            CustomHeaderProcessor.SetProxyImageServerHeaders(customerCustomHeaders, orchestrationImage,
+            CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
                 proxyImageServerResult);
             
             // Assert
@@ -109,7 +109,7 @@ namespace Orchestrator.Tests.Features.Images
                 new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
             
             // Act
-            CustomHeaderProcessor.SetProxyImageServerHeaders(customerCustomHeaders, orchestrationImage,
+            CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
                 proxyImageServerResult);
             
             // Assert
@@ -133,7 +133,7 @@ namespace Orchestrator.Tests.Features.Images
                 new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
             
             // Act
-            CustomHeaderProcessor.SetProxyImageServerHeaders(customerCustomHeaders, orchestrationImage,
+            CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
                 proxyImageServerResult);
             
             // Assert
@@ -156,7 +156,7 @@ namespace Orchestrator.Tests.Features.Images
                 new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
             
             // Act
-            CustomHeaderProcessor.SetProxyImageServerHeaders(customerCustomHeaders, orchestrationImage,
+            CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
                 proxyImageServerResult);
             
             // Assert
@@ -180,7 +180,7 @@ namespace Orchestrator.Tests.Features.Images
                 new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
             
             // Act
-            CustomHeaderProcessor.SetProxyImageServerHeaders(customerCustomHeaders, orchestrationImage,
+            CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
                 proxyImageServerResult);
             
             // Assert

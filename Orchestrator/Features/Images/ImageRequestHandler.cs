@@ -121,9 +121,11 @@ namespace Orchestrator.Features.Images
                     var proxyDestination = canHandleByThumbResponse.IsResize
                         ? ProxyDestination.ResizeThumbs
                         : ProxyDestination.Thumbs;
-                    return new ProxyActionResult(proxyDestination,
+                    var proxyResult = new ProxyActionResult(proxyDestination,
                         orchestrationImage.RequiresAuth,
                         httpContext.Request.Path.ToString().Replace("iiif-img", pathReplacement));
+                    await SetCustomHeaders(orchestrationImage, proxyResult);
+                    return proxyResult;
                 }
             }
 
@@ -188,13 +190,13 @@ namespace Orchestrator.Features.Images
         }
 
         private async Task SetCustomHeaders(OrchestrationImage orchestrationImage, 
-            ProxyImageServerResult proxyImageServerResult)
+            ProxyActionResult proxyImageServerResult)
         {
             // order of precedence (low -> high), same header will be overwritten if present
             var customerHeaders = (await customHeaderRepository.GetForCustomer(orchestrationImage.AssetId.Customer))
                 .ToList();
 
-            CustomHeaderProcessor.SetProxyImageServerHeaders(customerHeaders, orchestrationImage, proxyImageServerResult);
+            CustomHeaderProcessor.SetProxyImageHeaders(customerHeaders, orchestrationImage, proxyImageServerResult);
         }
     }
 

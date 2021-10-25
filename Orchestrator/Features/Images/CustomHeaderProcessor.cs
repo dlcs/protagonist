@@ -12,10 +12,10 @@ namespace Orchestrator.Features.Images
     /// </summary>
     public static class CustomHeaderProcessor
     {
-        public static void SetProxyImageServerHeaders(
+        public static void SetProxyImageHeaders(
             List<CustomHeader> customerCustomHeaders,
             OrchestrationImage orchestrationImage,
-            ProxyImageServerResult proxyImageServerResult)
+            ProxyActionResult proxyImageServerResult)
         {
             // order of precedence (low -> high), same header will be overwritten if present
             // no space or role
