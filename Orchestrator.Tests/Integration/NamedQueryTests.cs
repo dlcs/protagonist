@@ -141,14 +141,14 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             const string path = "iiif-resource/v3/99/test-named-query/my-ref/1";
-            const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
+            const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
             
             // Act
             var response = await httpClient.GetAsync(path);
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
-            response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("items").Count().Should().Be(3);
         }
@@ -158,14 +158,14 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             const string path = "iiif-resource/99/test-named-query/my-ref/1";
-            const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
+            const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
             
             // Act
             var response = await httpClient.GetAsync(path);
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
-            response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("items").Count().Should().Be(3);
         }
