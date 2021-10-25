@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Features.Manifests.Requests;
 using Orchestrator.Infrastructure;
-using Orchestrator.Infrastructure.Conneg;
+using Orchestrator.Infrastructure.IIIF.Conneg;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Manifests

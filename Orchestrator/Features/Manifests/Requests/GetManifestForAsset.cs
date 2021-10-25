@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core;
 using DLCS.Core.Collections;
@@ -7,18 +6,20 @@ using DLCS.Model.Assets;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
-using IIIF.ImageApi.Service;
 using IIIF.Presentation;
-using IIIF.Presentation.V2;
-using IIIF.Presentation.V2.Annotation;
 using IIIF.Presentation.V2.Strings;
+using IIIF.Presentation.V3.Strings;
 using IIIF.Serialisation;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
 using Orchestrator.Settings;
+using IIIF2 = IIIF.Presentation.V2;
+using IIIF3 = IIIF.Presentation.V3;
+using Version = IIIF.Presentation.Version;
 
 namespace Orchestrator.Features.Manifests.Requests
 {
@@ -28,9 +29,9 @@ namespace Orchestrator.Features.Manifests.Requests
     public class GetManifestForAsset : IRequest<DescriptionResourceResponse>, IGenericAssetRequest
     {
         public string FullPath { get; }
-        
+
         public BaseAssetRequest AssetRequest { get; set; }
-        
+
         public Version IIIFPresentationVersion { get; }
 
         public GetManifestForAsset(string path, Version iiifVersion)
@@ -39,30 +40,31 @@ namespace Orchestrator.Features.Manifests.Requests
             IIIFPresentationVersion = iiifVersion;
         }
     }
-    
+
     public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, DescriptionResourceResponse>
     {
         private readonly IAssetRepository assetRepository;
         private readonly IAssetPathGenerator assetPathGenerator;
-        private readonly IThumbRepository thumbRepository;
+        private readonly IIIFCanvasFactory canvasFactory;
         private readonly ILogger<GetManifestForAssetHandler> logger;
         private readonly OrchestratorSettings orchestratorSettings;
 
         public GetManifestForAssetHandler(
             IAssetRepository assetRepository,
             IAssetPathGenerator assetPathGenerator,
-            IThumbRepository thumbRepository,
             IOptions<OrchestratorSettings> orchestratorSettings,
+            IIIFCanvasFactory canvasFactory,
             ILogger<GetManifestForAssetHandler> logger)
         {
             this.assetRepository = assetRepository;
             this.assetPathGenerator = assetPathGenerator;
-            this.thumbRepository = thumbRepository;
+            this.canvasFactory = canvasFactory;
             this.orchestratorSettings = orchestratorSettings.Value;
             this.logger = logger;
         }
 
-        public async Task<DescriptionResourceResponse> Handle(GetManifestForAsset request, CancellationToken cancellationToken)
+        public async Task<DescriptionResourceResponse> Handle(GetManifestForAsset request,
+            CancellationToken cancellationToken)
         {
             var assetId = request.AssetRequest.GetAssetId();
             var asset = await assetRepository.GetAsset(assetId);
@@ -72,86 +74,50 @@ namespace Orchestrator.Features.Manifests.Requests
                 return DescriptionResourceResponse.Empty;
             }
 
-            var openThumbs = await thumbRepository.GetOpenSizes(assetId);
-            var manifest = GenerateV2Manifest(request.AssetRequest, asset, openThumbs);
+            JsonLdBase manifest = request.IIIFPresentationVersion == Version.V3
+                ? await GenerateV3Manifest(request.AssetRequest, asset)
+                : await GenerateV2Manifest(request.AssetRequest, asset);
 
             return DescriptionResourceResponse.Open(manifest.AsJson());
         }
 
-        private Manifest GenerateV2Manifest(BaseAssetRequest assetRequest, Asset asset, List<int[]>? openThumbs)
+        private async Task<IIIF3.Manifest> GenerateV3Manifest(BaseAssetRequest assetRequest, Asset asset)
         {
             var fullyQualifiedImageId = GetFullyQualifiedId(assetRequest, orchestratorSettings.Proxy.ImagePath);
-            var manifest = new Manifest
+            var manifest = new IIIF3.Manifest
             {
                 Id = fullyQualifiedImageId,
-                Context = IIIF.Presentation.Context.Presentation2Context,
-                Metadata = new Metadata
-                    {
-                        Label = new MetaDataValue("origin"),
-                        Value = new MetaDataValue(asset.Origin)
-                    }
-                    .AsList(),
-                Sequences = new Sequence
-                {
-                    Id = string.Concat(fullyQualifiedImageId, "/sequence/s0"),
-                    Label = new MetaDataValue("Sequence 0"),
-                    ViewingHint = "paged",
-                    Canvases = CreateCanvases(fullyQualifiedImageId, assetRequest, asset, openThumbs)
-                }.AsList()
+                Context = Context.Presentation3Context,
+                Metadata = new LabelValuePair("en", "origin", asset.Origin).AsList(),
+                Items = await canvasFactory.CreateV3Canvases(asset.AsList(), assetRequest.Customer)
             };
 
             return manifest;
         }
 
-        private List<Canvas> CreateCanvases(string fullyQualifiedImageId, BaseAssetRequest assetRequest, Asset asset, List<int[]>? openThumbs)
+        private async Task<IIIF2.Manifest> GenerateV2Manifest(BaseAssetRequest assetRequest, Asset asset)
         {
-            var fullyQualifiedThumbId = GetFullyQualifiedId(assetRequest, orchestratorSettings.Proxy.ThumbsPath);
-
-            var imageExample = $"{fullyQualifiedImageId}/full/{asset.Width},{asset.Height}/0/default.jpg";
-
-            var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/0");
-            var canvas = new Canvas
+            var fullyQualifiedImageId = GetFullyQualifiedId(assetRequest, orchestratorSettings.Proxy.ImagePath);
+            var manifest = new IIIF2.Manifest
             {
-                Id = canvasId,
-                Label = new MetaDataValue($"Image - {assetRequest.GetAssetId()}"),
-                Height = asset.Height,
-                Width = asset.Width,
-                Images = new ImageAnnotation
-                {
-                    Id = string.Concat(fullyQualifiedImageId, "/imageanno/0"),
-                    On = canvasId,
-                    Resource = new ImageResource
+                Id = fullyQualifiedImageId,
+                Context = Context.Presentation2Context,
+                Metadata = new IIIF2.Metadata
                     {
-                        Id = imageExample,
-                        Width = asset.Width,
-                        Height = asset.Height,
-                        Service = new ImageService2
-                        {
-                            Id = fullyQualifiedImageId,
-                            Profile = ImageService2.Level1Profile,
-                            Width = asset.Width,
-                            Height = asset.Height,
-                        }.AsListOf<IService>()
+                        Label = new MetaDataValue("origin"),
+                        Value = new MetaDataValue(asset.Origin)
                     }
+                    .AsList(),
+                Sequences = new IIIF2.Sequence
+                {
+                    Id = string.Concat(fullyQualifiedImageId, "/sequence/s0"),
+                    Label = new MetaDataValue("Sequence 0"),
+                    ViewingHint = "paged",
+                    Canvases = await canvasFactory.CreateV2Canvases(asset.AsList(), assetRequest.Customer)
                 }.AsList()
             };
 
-            if (!openThumbs.IsNullOrEmpty())
-            {
-                var thumbsService = InfoJsonBuilder.GetImageApi2_1Level0(fullyQualifiedThumbId, openThumbs!);
-                var smallestThumb = thumbsService.Sizes[0];
-
-                string thumbExample =
-                    $"{fullyQualifiedThumbId}/full/{smallestThumb.Width},{smallestThumb.Height}/0/default.jpg";
-                
-                canvas.Thumbnail = new Thumbnail
-                {
-                    Id = thumbExample,
-                    Service = thumbsService.AsListOf<IService>() 
-                }.AsList();
-            }
-
-            return canvas.AsList();
+            return manifest;
         }
 
         private string GetFullyQualifiedId(BaseAssetRequest baseAssetRequest, string prefix)
@@ -167,5 +133,6 @@ namespace Orchestrator.Features.Manifests.Requests
                         request.Space.ToString(),
                         request.AssetId);
                 });
+
     }
 }

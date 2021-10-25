@@ -30,6 +30,8 @@ using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
+using Orchestrator.Infrastructure.Deliverator;
+using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Settings;
@@ -72,6 +74,7 @@ namespace Orchestrator
                 .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
                 .AddScoped<AccessChecker>()
+                .AddScoped<IIIFCanvasFactory>()
                 .AddScoped<ISessionAuthService, SessionAuthService>()
                 .AddScoped<AuthCookieManager>()
                 .AddSingleton<AssetRequestProcessor>()
