@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -6,7 +5,6 @@ using Amazon.S3;
 using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Model.Assets;
-using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Model.Security;
@@ -183,10 +181,14 @@ namespace Orchestrator
                 app.UseDeveloperExceptionPage();
             }
 
+            if (env.IsProduction())
+            {
+                app.UseHttpsRedirection();
+            }
+
             app
                 .HandlePathBase(pathBase, logger)
                 .UseForwardedHeaders()
-                .UseHttpsRedirection()
                 .UseRouting()
                 .UseSerilogRequestLogging()
                 .UseCors("CorsPolicy")
