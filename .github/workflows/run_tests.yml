@@ -28,4 +28,4 @@ jobs:
         run: dotnet build $SOLUTION --configuration $BUILD_CONFIG --no-restore
 
       - name: Test
-        run: dotnet test $SOLUTION --filter 'Category!=Database&Category!=Manual&Category!=Integration' --configuration $BUILD_CONFIG --no-restore --no-build --verbosity normal
+        run: dotnet test $SOLUTION --filter 'Category!=Manual' --configuration $BUILD_CONFIG --no-restore --no-build --verbosity normal
