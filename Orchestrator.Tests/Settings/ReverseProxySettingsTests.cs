@@ -5,7 +5,7 @@ using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Xunit;
 
-namespace Orchestrator.Tests
+namespace Orchestrator.Tests.Settings
 {
     public class ReverseProxySettingsTests
     {
