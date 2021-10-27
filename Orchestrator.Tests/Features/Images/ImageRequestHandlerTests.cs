@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
+using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using FakeItEasy;
@@ -19,7 +20,7 @@ using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Xunit;
 
-namespace Orchestrator.Tests.Images
+namespace Orchestrator.Tests.Features.Images
 {
     public class ImageRequestHandlerTests
     {
@@ -30,6 +31,7 @@ namespace Orchestrator.Tests.Images
         private readonly IAssetAccessValidator accessValidator;
         private readonly IOptions<OrchestratorSettings> defaultSettings;
         private readonly IServiceScopeFactory scopeFactory;
+        private readonly ICustomHeaderRepository customHeaderRepository;
 
         public ImageRequestHandlerTests()
         {
@@ -38,6 +40,7 @@ namespace Orchestrator.Tests.Images
             customerRepository = A.Fake<IPathCustomerRepository>();
             accessValidator = A.Fake<IAssetAccessValidator>();
             assetDeliveryPathParserImpl = new AssetDeliveryPathParser(customerRepository);
+            customHeaderRepository = A.Fake<ICustomHeaderRepository>();
             defaultSettings = Options.Create(new OrchestratorSettings());
 
             scopeFactory = A.Fake<IServiceScopeFactory>();
@@ -211,12 +214,47 @@ namespace Orchestrator.Tests.Images
             result.HasPath.Should().BeTrue();
         }
 
+        [Fact]
+        public async Task Handle_Request_ProxiesToImageServer_WithCustomHeaders()
+        {
+            // Arrange
+            var context = new DefaultHttpContext();
+            context.Request.Path = "/iiif-img/2/2/test-image/full/max/0/default.jpg";
+
+            A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+            A.CallTo(() => customHeaderRepository.GetForCustomer(2)).Returns(new List<CustomHeader>
+            {
+                new() { Space = 2, Role = null, Key = "x-test-header", Value = "test" },
+                new() { Space = null, Role = null, Key = "x-test-header-2", Value = "test" },
+            });
+            
+            var assetId = new AssetId(2, 2, "test-image");
+            
+            var sut = GetImageRequestHandlerWithMockPathParser(
+                settings: Options.Create(new OrchestratorSettings
+                {
+                    ImageFolderTemplateImageServer = "/path",
+                    Proxy = new ProxySettings()
+                }));
+
+            List<int[]> openSizes = new List<int[]> { new[] { 150, 150 } };
+
+            A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+                .Returns(new OrchestrationImage { AssetId = assetId, OpenThumbs = openSizes });
+
+            // Act
+            var result = await sut.HandleRequest(context) as ProxyImageServerResult;
+            
+            // Assert
+            result.Headers.Should().ContainKeys("x-test-header", "x-test-header-2");
+        }
+
         private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false,
             IOptions<OrchestratorSettings> settings = null)
         {
             var requestProcessor = new AssetRequestProcessor(new NullLogger<AssetRequestProcessor>(), assetTracker,
                 mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl);
-            return new(new NullLogger<ImageRequestHandler>(), requestProcessor, scopeFactory,
+            return new(new NullLogger<ImageRequestHandler>(), requestProcessor, scopeFactory, customHeaderRepository,
                 settings ?? defaultSettings);
         }
     }

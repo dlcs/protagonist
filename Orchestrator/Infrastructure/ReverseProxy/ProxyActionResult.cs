@@ -8,7 +8,13 @@ namespace Orchestrator.Infrastructure.ReverseProxy
     /// <summary>
     /// Marker interface for result of proxy processing logic.
     /// </summary>
-    public interface IProxyActionResult {} // TODO -rename this?
+    public interface IProxyActionResult
+    {
+        /// <summary>
+        /// A collection of any Headers to set on response object. 
+        /// </summary>
+        Dictionary<string, StringValues> Headers { get; }
+    } 
 
     /// <summary>
     /// Results for actions that is for image orchestration
@@ -50,7 +56,15 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         /// </summary>
         public bool HasPath => !string.IsNullOrWhiteSpace(Path);
         
+        /// <summary>
+        /// Whether this request requires authentication to view
+        /// </summary>
         public bool RequiresAuth { get; }
+
+        /// <summary>
+        /// A collection of any Headers to set on response object. 
+        /// </summary>
+        public Dictionary<string, StringValues> Headers { get; } = new();
         
         // TODO - differentiate between full + part path?
         public ProxyActionResult(ProxyDestination target, bool requiresAuth, string? path = null)
@@ -70,7 +84,7 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         /// StatusCode to return
         /// </summary>
         public HttpStatusCode StatusCode { get; }
-
+        
         /// <summary>
         /// A collection of any Headers to set on response object. 
         /// </summary>
@@ -80,17 +94,20 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         {
             StatusCode = statusCode;
         }
+    }
 
+    public static class ProxyActionResultsX
+    {
         /// <summary>
         /// Set header to return alongside statusCode
         /// </summary>
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public StatusCodeResult WithHeader(string key, string value)
+        public static IProxyActionResult WithHeader(this IProxyActionResult result, string key, string value)
         {
-            Headers[key] = value;
-            return this;
+            result.Headers[key] = value;
+            return result;
         }
     }
     

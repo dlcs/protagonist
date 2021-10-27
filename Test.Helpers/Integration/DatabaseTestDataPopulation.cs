@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.Security;
 using Microsoft.EntityFrameworkCore;
@@ -77,6 +78,18 @@ namespace Test.Helpers.Integration
                     Global = global,
                     Name = name,
                     Template = template
+                });
+
+        public static ValueTask<EntityEntry<CustomHeader>> AddTestCustomHeader(this DbSet<CustomHeader> customHeaders,
+            string key, string value, int customer = 99, int space = 1)
+            => customHeaders.AddAsync(
+                new CustomHeader
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Customer = customer,
+                    Space = space,
+                    Key = key,
+                    Value = value
                 });
     }
 }

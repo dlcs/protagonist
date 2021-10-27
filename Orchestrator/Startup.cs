@@ -1,19 +1,10 @@
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Amazon.S3;
-using API.Client;
-using DLCS.Core.Encryption;
-using DLCS.Model.Assets;
-using DLCS.Model.Customers;
-using DLCS.Model.PathElements;
-using DLCS.Model.Security;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Caching;
-using DLCS.Repository.Customers;
-using DLCS.Repository.Security;
 using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
 using DLCS.Repository.Strategy.DependencyInjection;
@@ -27,7 +18,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -40,10 +30,8 @@ using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
-using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.NamedQueries;
-using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Serilog;
 
@@ -72,65 +60,31 @@ namespace Orchestrator
                 .Configure<CacheSettings>(cachingSection)
                 .Configure<ReverseProxySettings>(reverseProxySection);
             
-            var cacheSettings = cachingSection.Get<CacheSettings>();
             services
-                .AddMemoryCache(memoryCacheOptions =>
-                {
-                    memoryCacheOptions.SizeLimit = cacheSettings.MemoryCacheSizeLimit;
-                    memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
-                })
-                .AddLazyCache()
-                .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
-                .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
-                .AddSingleton<IAssetRepository, DapperAssetRepository>()
                 .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
                 .AddSingleton<TimeBasedRequestHandler>()
-                .AddSingleton<IEncryption, SHA256>()
-                .AddSingleton<DeliveratorApiAuth>()
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>()
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
-                .AddSingleton<IThumbRepository, ThumbRepository>()
                 .AddSingleton<IAssetTracker, MemoryAssetTracker>()
-                .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
-                .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
-                .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
                 .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
                 .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
                 .AddScoped<AccessChecker>()
                 .AddScoped<ISessionAuthService, SessionAuthService>()
                 .AddScoped<AuthCookieManager>()
-                .AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>()
                 .AddSingleton<AssetRequestProcessor>()
                 .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
+                .AddCaching(cachingSection.Get<CacheSettings>())
                 .AddOriginStrategies()
-                .AddDbContext<DlcsContext>(opts =>
-                    opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
-                )
+                .AddDataAccess(configuration)
                 .AddMediatR()
                 .AddHttpContextAccessor()
-                .AddNamedQueries(configuration);
-
-            var orchestratorAddress = reverseProxySection.Get<ReverseProxySettings>()
-                .GetAddressForProxyTarget(ProxyDestination.Orchestrator);
-            services
-                .AddHttpClient<IDeliveratorClient, DeliveratorClient>(client =>
-                {
-                    client.DefaultRequestHeaders.WithRequestedBy();
-                    client.BaseAddress = orchestratorAddress;
-                })
-                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false });
-
-            var apiRoot = configuration.Get<OrchestratorSettings>().ApiRoot;
-            services
-                .AddHttpClient<IDlcsApiClient, DeliveratorApiClient>(client =>
-                {
-                    client.DefaultRequestHeaders.WithRequestedBy();
-                    client.BaseAddress = apiRoot;
-                });
-
+                .AddNamedQueries(configuration)
+                .AddApiClient(configuration.Get<OrchestratorSettings>())
+                .AddDeliveratorClient(reverseProxySection.Get<ReverseProxySettings>());
+            
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
             services.Configure<ForwardedHeadersOptions>(opts =>
             {
@@ -161,6 +115,7 @@ namespace Orchestrator
             
             DapperMappings.Register();
             
+            // TODO expand healthchecks
             services
                 .AddHealthChecks()
                 .AddNpgSql(configuration.GetPostgresSqlConnection());
