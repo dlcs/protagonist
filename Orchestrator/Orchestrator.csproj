@@ -28,4 +28,8 @@
       <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Infrastructure\Web" />
+    </ItemGroup>
+
 </Project>

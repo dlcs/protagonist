@@ -60,7 +60,7 @@ namespace Orchestrator.Settings
         /// Defaults to V3 if unsupported, or unknown version specified
         /// </summary>
         public IIIF.Presentation.Version GetDefaultIIIFPresentationVersion() 
-            => DefaultIIIFPresentationVersion[1] == '2' ? IIIF.Presentation.Version.V2 : IIIF.Presentation.Version.V3;
+            => DefaultIIIFPresentationVersion[0] == '2' ? IIIF.Presentation.Version.V2 : IIIF.Presentation.Version.V3;
 
         /// <summary>
         /// Root URL for dlcs api

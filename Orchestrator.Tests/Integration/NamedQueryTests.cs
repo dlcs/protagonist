@@ -44,8 +44,8 @@ namespace Orchestrator.Tests.Integration
 
         [Theory]
         [InlineData("iiif-resource/99/unknown-nq")]
-        [InlineData("iiif-resource/99/unknown-nq/v2")]
-        [InlineData("iiif-resource/99/unknown-nq/v3")]
+        [InlineData("iiif-resource/v2/99/unknown-nq")]
+        [InlineData("iiif-resource/v3/99/unknown-nq")]
         public async Task Get_Returns404_IfNQNotFound(string path)
         {
             // Act
@@ -57,8 +57,8 @@ namespace Orchestrator.Tests.Integration
 
         [Theory]
         [InlineData("iiif-resource/98/test-named-query")]
-        [InlineData("iiif-resource/98/test-named-query/v2")]
-        [InlineData("iiif-resource/98/test-named-query/v3")]
+        [InlineData("iiif-resource/v2/98/test-named-query")]
+        [InlineData("iiif-resource/v3/98/test-named-query")]
         public async Task Get_Returns404_IfCustomerNotFound(string path)
         {
             // Act
@@ -70,8 +70,8 @@ namespace Orchestrator.Tests.Integration
         
         [Theory]
         [InlineData("iiif-resource/99/test-named-query/too-little-params")]
-        [InlineData("iiif-resource/99/test-named-query/v2/too-little-params")]
-        [InlineData("iiif-resource/99/test-named-query/v3/too-little-params")]
+        [InlineData("iiif-resource/v2/99/test-named-query/too-little-params")]
+        [InlineData("iiif-resource/v3/99/test-named-query/too-little-params")]
         public async Task Get_Returns400_IfNamedQueryParametersIncorrect(string path)
         {
             // Act
@@ -104,7 +104,7 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_ReturnsV2ManifestWithCorrectCount_ViaDirectPath()
         {
             // Arrange
-            const string path = "iiif-resource/99/test-named-query/v2/my-ref/1";
+            const string path = "iiif-resource/v2/99/test-named-query/my-ref/1";
             const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/2/context.json\"";
             
             // Act
@@ -140,15 +140,15 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_ReturnsV3ManifestWithCorrectCount_ViaDirectPath()
         {
             // Arrange
-            const string path = "iiif-resource/99/test-named-query/v3/my-ref/1";
-            const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
+            const string path = "iiif-resource/v3/99/test-named-query/my-ref/1";
+            const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
             
             // Act
             var response = await httpClient.GetAsync(path);
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
-            response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("items").Count().Should().Be(3);
         }
@@ -158,14 +158,14 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             const string path = "iiif-resource/99/test-named-query/my-ref/1";
-            const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
+            const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
             
             // Act
             var response = await httpClient.GetAsync(path);
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
-            response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("items").Count().Should().Be(3);
         }
