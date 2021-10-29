@@ -1,14 +1,13 @@
 ﻿using System.Net;
 using System.Threading.Tasks;
-using DLCS.Core.Types;
-using DLCS.Web.Auth;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure;
-using Orchestrator.Infrastructure.Deliverator;
+using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 
@@ -21,18 +20,18 @@ namespace Orchestrator.Features.TimeBased
     {
         private readonly ILogger<TimeBasedRequestHandler> logger;
         private readonly AssetRequestProcessor assetRequestProcessor;
-        private readonly IDeliveratorClient deliveratorClient;
+        private readonly IServiceScopeFactory scopeFactory;
         private readonly ProxySettings proxySettings;
 
         public TimeBasedRequestHandler(
             ILogger<TimeBasedRequestHandler> logger,
             AssetRequestProcessor assetRequestProcessor,
-            IDeliveratorClient deliveratorClient,
+            IServiceScopeFactory scopeFactory,
             IOptions<ProxySettings> proxySettings)
         {
             this.logger = logger;
             this.assetRequestProcessor = assetRequestProcessor;
-            this.deliveratorClient = deliveratorClient;
+            this.scopeFactory = scopeFactory;
             this.proxySettings = proxySettings.Value;
         }
 
@@ -52,8 +51,8 @@ namespace Orchestrator.Features.TimeBased
             }
 
             // If "HEAD" then add CORS - is this required here?
-            var asset = await assetRequestProcessor.GetAsset(assetRequest);
-            if (asset == null)
+            var orchestrationAsset = await assetRequestProcessor.GetAsset(assetRequest);
+            if (orchestrationAsset == null)
             {
                 logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
                 return new StatusCodeResult(HttpStatusCode.NotFound);
@@ -61,13 +60,13 @@ namespace Orchestrator.Features.TimeBased
             
             var s3Path =
                 $"{proxySettings.S3HttpBase}/{proxySettings.StorageBucket}/{assetRequest.GetAssetId()}{assetRequest.TimeBasedRequest}";
-            if (!asset.RequiresAuth)
+            if (!orchestrationAsset.RequiresAuth)
             {
                 logger.LogDebug("No auth for {Path}, 302 to S3 object {S3}", httpContext.Request.Path, s3Path);
                 return new StatusCodeResult(HttpStatusCode.Redirect).WithHeader("Location", s3Path);
             }
 
-            if (!await IsAuthenticated(assetRequest.GetAssetId(), httpContext))
+            if (!await IsAuthenticated(assetRequest, orchestrationAsset))
             {
                 logger.LogDebug("User not authenticated for {Path}", httpContext.Request.Path);
                 return new StatusCodeResult(HttpStatusCode.Unauthorized);
@@ -79,54 +78,18 @@ namespace Orchestrator.Features.TimeBased
                 return new StatusCodeResult(HttpStatusCode.OK);
             }
             
-            return new ProxyActionResult(ProxyDestination.S3, asset.RequiresAuth, s3Path);
+            return new ProxyActionResult(ProxyDestination.S3, orchestrationAsset.RequiresAuth, s3Path);
         }
 
-        private async Task<bool> IsAuthenticated(AssetId assetId, HttpContext httpContext)
+        private async Task<bool> IsAuthenticated(TimeBasedAssetDeliveryRequest assetRequest, OrchestrationAsset asset)
         {
-            var requestAuthentication = GetAuthMechanism(assetId, httpContext);
-            if (!requestAuthentication.HasAuth) return false;
+            // IAssetAccessValidator is in container with a Lifetime.Scope
+            using var scope = scopeFactory.CreateScope();
+            var assetAccessValidator = scope.ServiceProvider.GetRequiredService<IAssetAccessValidator>();
+            var authResult =
+                await assetAccessValidator.TryValidate(assetRequest.Customer.Id, asset.Roles, AuthMechanism.All);
 
-            return requestAuthentication.HaveCookie
-                ? await deliveratorClient.VerifyCookieAuth(assetId, httpContext.Request, requestAuthentication.CookieName, requestAuthentication.CookieValue)
-                : await deliveratorClient.VerifyBearerAuth(assetId, requestAuthentication.BearerToken!);
+            return authResult is AssetAccessResult.Open or AssetAccessResult.Authorized;
         }
-        
-        private RequestAuth GetAuthMechanism(AssetId assetId, HttpContext httpContext)
-        {
-            var cookieName = $"dlcs-token-{assetId.Customer}";
-            if (httpContext.Request.Cookies.TryGetValue(cookieName, out var cookieValue))
-            {
-                logger.LogDebug("Found cookie: '{CookieName}' for '{ImageId}'", assetId, cookieName);
-                return RequestAuth.WithCookie(cookieName, cookieValue!);
-            }
-            
-            var headerValue = httpContext.Request.GetAuthHeaderValue(AuthenticationHeaderUtils.BearerTokenScheme);
-            if (headerValue != null)
-            {
-                logger.LogDebug("Found bearer token for '{ImageId}'", assetId);
-                return RequestAuth.WithBearerToken(headerValue.Parameter);
-            }
-
-            logger.LogDebug("No auth found for '{ImageId}'", assetId);
-            return new();
-        }
-    }
-    
-    internal class RequestAuth
-    {
-        public string? BearerToken { get; private init;}
-        public bool HaveBearerToken { get; private init; }
-        public bool HaveCookie { get; private init; }
-        public string CookieValue { get; private init; }
-        public string CookieName { get; private init; }
-            
-        public bool HasAuth => HaveBearerToken || HaveCookie;
-
-        public static RequestAuth WithBearerToken(string bearerToken)
-            => new() { BearerToken = bearerToken, HaveBearerToken = true };
-
-        public static RequestAuth WithCookie(string cookieName, string cookieValue)
-            => new() { HaveCookie = true, CookieName = cookieName, CookieValue = cookieValue };
     }
 }

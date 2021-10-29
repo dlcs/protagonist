@@ -14,21 +14,14 @@ namespace Orchestrator.Infrastructure.Auth
     public interface IAssetAccessValidator
     {
         /// <summary>
-        /// Validate whether Bearer token associated with provided request has access to the specified roles for
-        /// customer.
+        /// Validate whether current request has access to the specified roles for customer. This will try to validate
+        /// via cookie and fallback to Bearer token.
         /// </summary>
         /// <param name="customer">Current customer</param>
         /// <param name="roles">Roles associated with Asset</param>
+        /// <param name="mechanism">Which mechanism to use to authorize user</param>
         /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
-        Task<AssetAccessResult> TryValidateBearerToken(int customer, IEnumerable<string> roles);
-
-        /// <summary>
-        /// Validate whether cookie provided with request has access to the specified roles for customer
-        /// </summary>
-        /// <param name="customer">Current customer</param>
-        /// <param name="roles">Roles associated with Asset</param>
-        /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
-        Task<AssetAccessResult> TryValidateCookie(int customer, IEnumerable<string> roles);
+        Task<AssetAccessResult> TryValidate(int customer, IEnumerable<string> roles, AuthMechanism mechanism);
     }
 
     /// <summary>
@@ -54,14 +47,28 @@ namespace Orchestrator.Infrastructure.Auth
             this.httpContextAccessor = httpContextAccessor;
         }
 
-        /// <summary>
-        /// Validate whether Bearer token associated with provided request has access to the specified roles for
-        /// customer.
-        /// </summary>
-        /// <param name="customer">Current customer</param>
-        /// <param name="roles">Roles associated with Asset</param>
-        /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
-        public Task<AssetAccessResult> TryValidateBearerToken(int customer, IEnumerable<string> roles)
+        public Task<AssetAccessResult> TryValidate(int customer, IEnumerable<string> roles, AuthMechanism mechanism)
+            => mechanism switch
+            {
+                AuthMechanism.All => TryValidateAll(customer, roles),
+                AuthMechanism.Cookie => TryValidateCookie(customer, roles),
+                AuthMechanism.BearerToken => TryValidateBearerToken(customer, roles),
+                _ => throw new ArgumentOutOfRangeException(nameof(mechanism), mechanism, null)
+            };
+        
+        private async Task<AssetAccessResult> TryValidateAll(int customer, IEnumerable<string> roles)
+        {
+            var enumeratedRoles = roles.ToList();
+            var validateCookieResult = await TryValidateCookie(customer, enumeratedRoles);
+            if (validateCookieResult is AssetAccessResult.Open or AssetAccessResult.Authorized)
+            {
+                return validateCookieResult;
+            }
+
+            return await TryValidateBearerToken(customer, enumeratedRoles);
+        }
+        
+        private Task<AssetAccessResult> TryValidateBearerToken(int customer, IEnumerable<string> roles)
             => ValidateAccess(customer, roles, () =>
             {
                 var httpContext = httpContextAccessor.HttpContext.ThrowIfNull(nameof(httpContextAccessor.HttpContext))!;
@@ -72,14 +79,7 @@ namespace Orchestrator.Infrastructure.Auth
                     : sessionAuthService.GetAuthTokenForBearerId(customer, bearerToken);
             }, false);
 
-        /// <summary>
-        /// Validate whether cookie provided with request has access to the specified roles for customer.
-        /// If successful, sets Set-Cookie header in response.
-        /// </summary>
-        /// <param name="customer">Current customer</param>
-        /// <param name="roles">Roles associated with Asset</param>
-        /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
-        public Task<AssetAccessResult> TryValidateCookie(int customer, IEnumerable<string> roles)
+        private Task<AssetAccessResult> TryValidateCookie(int customer, IEnumerable<string> roles)
             => ValidateAccess(customer, roles, () =>
             {
                 var cookieId = GetCookieId(customer);
@@ -148,5 +148,26 @@ namespace Orchestrator.Infrastructure.Auth
         /// Asset is restricted and current user has access
         /// </summary>
         Authorized
+    }
+
+    /// <summary>
+    /// Enum representing different mechanisms for authorising users
+    /// </summary>
+    public enum AuthMechanism
+    {
+        /// <summary>
+        /// Auth user by cookie provided with request
+        /// </summary>
+        Cookie,
+        
+        /// <summary>
+        /// Auth user by bearer token provided with request
+        /// </summary>
+        BearerToken,
+        
+        /// <summary>
+        /// Try all possible methods of validation
+        /// </summary>
+        All
     }
 }

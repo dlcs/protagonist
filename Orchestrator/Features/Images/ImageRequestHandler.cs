@@ -82,8 +82,8 @@ namespace Orchestrator.Features.Images
                 using var scope = scopeFactory.CreateScope();
                 var assetAccessValidator = scope.ServiceProvider.GetRequiredService<IAssetAccessValidator>();
                 var authResult =
-                    await assetAccessValidator.TryValidateCookie(assetRequest.Customer.Id,
-                        orchestrationImage.Roles);
+                    await assetAccessValidator.TryValidate(assetRequest.Customer.Id,
+                        orchestrationImage.Roles, AuthMechanism.Cookie);
 
                 logger.LogDebug("Request for {Path} requires auth, result {AuthResult}", httpContext.Request.Path,
                     authResult);
