@@ -95,6 +95,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(3);
@@ -112,6 +113,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(3);
@@ -131,6 +133,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("items").Count().Should().Be(3);
@@ -148,6 +151,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("items").Count().Should().Be(3);
@@ -165,6 +169,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("items").Count().Should().Be(3);

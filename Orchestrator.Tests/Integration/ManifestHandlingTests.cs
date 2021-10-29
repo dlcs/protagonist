@@ -160,6 +160,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/2/context.json");
@@ -181,6 +182,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/2/context.json");
@@ -205,6 +207,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/3/context.json");
@@ -226,6 +229,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/3/context.json");
@@ -247,6 +251,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/3/context.json");

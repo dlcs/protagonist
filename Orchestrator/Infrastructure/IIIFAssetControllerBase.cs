@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
@@ -65,7 +66,7 @@ namespace Orchestrator.Infrastructure
                 }
 
                 SetCacheControl(descriptionResource.RequiresAuth);
-                HttpContext.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
+                HttpContext.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding", "Accept" };
                 return Content(descriptionResource.DescriptionResource, contentType);
             }
             catch (KeyNotFoundException ex)
