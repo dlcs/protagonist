@@ -14,8 +14,8 @@ namespace Orchestrator.Infrastructure.Auth
     public interface IAssetAccessValidator
     {
         /// <summary>
-        /// Validate whether current request has access to the specified roles for customer. This will try to validate
-        /// via cookie and fallback to Bearer token.
+        /// Validate whether current request has access to the specified roles for customer.
+        /// This will try to validate request using specified <see cref="AuthMechanism"/>
         /// </summary>
         /// <param name="customer">Current customer</param>
         /// <param name="roles">Roles associated with Asset</param>
