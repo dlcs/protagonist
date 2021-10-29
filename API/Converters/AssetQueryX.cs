@@ -8,7 +8,7 @@ namespace API.Converters
     {
         public static IQueryable<Asset> AsOrderedAssetQuery(this IQueryable<Asset> assetQuery, string orderBy)
         {
-            if (string.IsNullOrWhiteSpace(orderBy)) return assetQuery.OrderBy(a => a.Id);
+            if (string.IsNullOrWhiteSpace(orderBy)) return assetQuery.OrderBy(a => a.Created);
             IQueryable<Asset> orderedAssetQuery = orderBy switch
             {
                 nameof(Image.Number1) => assetQuery.OrderBy(a => a.NumberReference1),
@@ -17,9 +17,10 @@ namespace API.Converters
                 nameof(Image.String1) => assetQuery.OrderBy(a => a.Reference1),
                 nameof(Image.String2) => assetQuery.OrderBy(a => a.Reference2),
                 nameof(Image.String3) => assetQuery.OrderBy(a => a.Reference3),
+                nameof(Image.Id) => assetQuery.OrderBy(a => a.Id),
                 nameof(Image.CustomerId) => assetQuery.OrderBy(a => a.Customer),
                 nameof(Image.Space) => assetQuery.OrderBy(a => a.Space),
-                nameof(Image.Created) => assetQuery.OrderBy(a => a.Reference3),
+                nameof(Image.Created) => assetQuery.OrderBy(a => a.Created),
                 nameof(Image.Width) => assetQuery.OrderBy(a => a.Width),
                 nameof(Image.Height) => assetQuery.OrderBy(a => a.Height),
                 nameof(Image.Finished) => assetQuery.OrderBy(a => a.Finished),
@@ -32,7 +33,7 @@ namespace API.Converters
         
         public static IQueryable<Asset> AsOrderedAssetQueryDescending(this IQueryable<Asset> assetQuery, string orderBy)
         {
-            if (string.IsNullOrWhiteSpace(orderBy)) return assetQuery.OrderByDescending(a => a.Id);
+            if (string.IsNullOrWhiteSpace(orderBy)) return assetQuery.OrderByDescending(a => a.Created);
             IQueryable<Asset> orderedAssetQuery = orderBy switch
             {
                 nameof(Image.Number1) => assetQuery.OrderByDescending(a => a.NumberReference1),
@@ -41,14 +42,15 @@ namespace API.Converters
                 nameof(Image.String1) => assetQuery.OrderByDescending(a => a.Reference1),
                 nameof(Image.String2) => assetQuery.OrderByDescending(a => a.Reference2),
                 nameof(Image.String3) => assetQuery.OrderByDescending(a => a.Reference3),
+                nameof(Image.Id) => assetQuery.OrderByDescending(a => a.Id),
                 nameof(Image.CustomerId) => assetQuery.OrderByDescending(a => a.Customer),
                 nameof(Image.Space) => assetQuery.OrderByDescending(a => a.Space),
-                nameof(Image.Created) => assetQuery.OrderByDescending(a => a.Reference3),
+                nameof(Image.Created) => assetQuery.OrderByDescending(a => a.Created),
                 nameof(Image.Width) => assetQuery.OrderByDescending(a => a.Width),
                 nameof(Image.Height) => assetQuery.OrderByDescending(a => a.Height),
                 nameof(Image.Finished) => assetQuery.OrderByDescending(a => a.Finished),
                 nameof(Image.Duration) => assetQuery.OrderByDescending(a => a.Duration),
-                _ => assetQuery.OrderByDescending(a => a.Id)
+                _ => assetQuery.OrderByDescending(a => a.Created)
             };
             return orderedAssetQuery;
         }
