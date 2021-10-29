@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
 using Portal.Features.Spaces.Models;
-using Portal.Features.Spaces.Requests;
 using Portal.Settings;
 using Portal.ViewComponents;
 
@@ -20,7 +19,7 @@ namespace Portal.Pages.Spaces
     [BindProperties]
     public class Details : PageModel
     {
-        private IDlcsClient dlcsClient;
+        private readonly IDlcsClient dlcsClient;
         public DlcsSettings DlcsSettings { get; }
         private readonly PortalSettings portalSettings;
         public SpacePageModel SpacePageModel { get; set; }

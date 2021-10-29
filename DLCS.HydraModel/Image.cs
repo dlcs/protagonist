@@ -41,8 +41,8 @@ namespace DLCS.HydraModel
         [RdfProperty(Description = "info.json URI - where the IIIF Image API is exposed for this image",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "infoJson")]
-        [Obsolete("Use metadata instead; the infoJson is produced from templates at runtime")]
         public string? InfoJson { get; set; }
+        
 
         [RdfProperty(Description = "Degraded info.json URI - if a user does not have permission to view the full image, " +
                                    "but a degraded image is permitted, the DLCS will redirect them to this URI.",
@@ -165,12 +165,12 @@ namespace DLCS.HydraModel
         // TODO - this is used by Wellcome DDS but is not documented.
         // I think it should be a hydra link property
         [HydraLink(Description = "Processing metadata - used by DDS to learn about transcode output time-based media",
-            Range = "vocab:ProcessingMetadata", ReadOnly = true, WriteOnly = false, SetManually = true)]
+            Range = "vocab:ProcessingMetadata", ReadOnly = true, WriteOnly = false, SetManually = false)]
         [JsonProperty(Order = 82, PropertyName = "metadata")]
         public string? Metadata { get; set; } // herein duration, other stuff learnt during transcoding
         
         [HydraLink(Description = "Storage information - how much space taken up by images and thumbs - link is present on Deliverator API",
-            Range = "vocab:AssetStorageInfo", ReadOnly = true, WriteOnly = false, SetManually = true)]
+            Range = "vocab:AssetStorageInfo", ReadOnly = true, WriteOnly = false, SetManually = false)]
         [JsonProperty(Order = 82, PropertyName = "storage")]
         public string? Storage { get; set; } 
         
@@ -196,15 +196,15 @@ namespace DLCS.HydraModel
         public string? TextType { get; set; } // e.g., METS-ALTO, hOCR, TEI, text/plain etc
        
 
-        // Hydra Link properties
-        [HydraLink(Description = "The role or roles that a user must possess to view this image above maxUnauthorised. " +
+        [RdfProperty(Description = "The role or roles that a user must possess to view this image above maxUnauthorised. " +
                                  "These are URIs of roles e.g., https://api.dlcs.io/customers/1/roles/requiresRegistration",
             Range = "vocab:Role", ReadOnly = false, WriteOnly = false, SetManually = true)]
         [JsonProperty(Order = 70, PropertyName = "roles")]
         public string[]? Roles { get; set; }
 
+        // Hydra Link properties
         [HydraLink(Description = "The batch this image was ingested in (most recently). Might be blank if the batch has been archived or the image as ingested in immediate mode.",
-            Range = "vocab:Batch", ReadOnly = true, WriteOnly = false, SetManually = false)]
+            Range = "vocab:Batch", ReadOnly = true, WriteOnly = false, SetManually = true)]
         [JsonProperty(Order = 71, PropertyName = "batch")]
         public string? Batch { get; set; }
         

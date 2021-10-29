@@ -49,15 +49,13 @@ namespace API.Features.Space.Requests
             var result = new PageOfSpaces
             {
                 Page = request.Page,
-                Total = dbContext.Spaces
-                    .AsNoTracking()
-                    .Count(s => s.Customer == customerId),
-                Spaces = dbContext.Spaces.AsNoTracking()
+                Total = await dbContext.Spaces.CountAsync(s => s.Customer == customerId, cancellationToken: cancellationToken),
+                Spaces = await dbContext.Spaces.AsNoTracking()
                     .Where(s => s.Customer == customerId)
-                    .OrderBy(s => s.Id) 
+                    .OrderBy(s => s.Id) // TODO - use request.OrderBy
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
-                    .ToList()
+                    .ToListAsync(cancellationToken: cancellationToken)
             };
             // In Deliverator the following is a sub-select. But I suspect that this is not significantly slower.
             var scopes = result.Spaces.Select(s => s.Id.ToString());

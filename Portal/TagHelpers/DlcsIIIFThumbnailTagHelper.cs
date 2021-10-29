@@ -30,7 +30,7 @@ namespace Portal.TagHelpers
             // TODO - add unveil functionality
             output.Attributes.SetAttribute("src", smallThumb.Src);
             output.Attributes.SetAttribute("data-placement", "auto");
-            output.Attributes.SetAttribute("data-iiif", GetImageApi("iiif-img"));
+            output.Attributes.SetAttribute("data-iiif", ApiImage.InfoJson);
             string title =
                 $"<img src='{largeThumb.Src}' width={largeThumb.Width} height={largeThumb.Height} />";
             output.Attributes.SetAttribute("title", title);
@@ -48,7 +48,7 @@ namespace Portal.TagHelpers
                 };
             }
 
-            var src = $"{GetImageApi("thumbs")}/full/!{Large},{Large}/0/default.jpg";
+            var src = $"{ApiImage.ThumbnailInfoJson}/full/!{Large},{Large}/0/default.jpg";
             if (ApiImage.Width <= boundingSize && ApiImage.Height <= boundingSize)
             {
                 return new Thumbnail
@@ -67,12 +67,6 @@ namespace Portal.TagHelpers
                 Height = (int)Math.Round((ApiImage.Height.Value * scale)),
                 Src = src
             };
-        }
-
-        private string GetImageApi(string type)
-        {
-            var id = ApiImage.GetLastPathElement();
-            return $"{Settings.ResourceRoot}{type}/{CustomerUrlPart}/{SpaceUrlPart}/{id}";
         }
     }
     
