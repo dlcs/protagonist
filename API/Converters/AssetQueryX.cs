@@ -1,58 +1,67 @@
+using System;
 using System.Linq;
+using System.Linq.Expressions;
 using DLCS.Model.Assets;
 using DLCS.HydraModel;
 
 namespace API.Converters
 {
+    /// <summary>
+    /// Extension methods for asset queries.
+    /// </summary>
     public static class AssetQueryX
     {
-        public static IQueryable<Asset> AsOrderedAssetQuery(this IQueryable<Asset> assetQuery, string orderBy)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="assetQuery"></param>
+        /// <param name="orderBy"></param>
+        /// <param name="ascending"></param>
+        /// <returns></returns>
+        public static IQueryable<Asset> AsOrderedAssetQuery(this IQueryable<Asset> assetQuery, string orderBy, bool ascending = true)
         {
-            if (string.IsNullOrWhiteSpace(orderBy)) return assetQuery.OrderBy(a => a.Created);
-            IQueryable<Asset> orderedAssetQuery = orderBy switch
-            {
-                nameof(Image.Number1) => assetQuery.OrderBy(a => a.NumberReference1),
-                nameof(Image.Number2) => assetQuery.OrderBy(a => a.NumberReference2),
-                nameof(Image.Number3) => assetQuery.OrderBy(a => a.NumberReference3),
-                nameof(Image.String1) => assetQuery.OrderBy(a => a.Reference1),
-                nameof(Image.String2) => assetQuery.OrderBy(a => a.Reference2),
-                nameof(Image.String3) => assetQuery.OrderBy(a => a.Reference3),
-                nameof(Image.Id) => assetQuery.OrderBy(a => a.Id),
-                nameof(Image.CustomerId) => assetQuery.OrderBy(a => a.Customer),
-                nameof(Image.Space) => assetQuery.OrderBy(a => a.Space),
-                nameof(Image.Created) => assetQuery.OrderBy(a => a.Created),
-                nameof(Image.Width) => assetQuery.OrderBy(a => a.Width),
-                nameof(Image.Height) => assetQuery.OrderBy(a => a.Height),
-                nameof(Image.Finished) => assetQuery.OrderBy(a => a.Finished),
-                nameof(Image.Duration) => assetQuery.OrderBy(a => a.Duration),
-                _ => assetQuery.OrderBy(a => a.Id)
-            };
-            return orderedAssetQuery;
+            var field = GetPropertyName(orderBy);
+            var lambda = (dynamic)CreateExpression(typeof(Asset), field);
+            return ascending
+                ? Queryable.OrderBy(assetQuery, lambda)
+                : Queryable.OrderByDescending(assetQuery, lambda);
         }
-        
-        
-        public static IQueryable<Asset> AsOrderedAssetQueryDescending(this IQueryable<Asset> assetQuery, string orderBy)
+
+        private static string GetPropertyName(string orderBy)
         {
-            if (string.IsNullOrWhiteSpace(orderBy)) return assetQuery.OrderByDescending(a => a.Created);
-            IQueryable<Asset> orderedAssetQuery = orderBy switch
+            if (string.IsNullOrWhiteSpace(orderBy) || orderBy.Length < 2)
             {
-                nameof(Image.Number1) => assetQuery.OrderByDescending(a => a.NumberReference1),
-                nameof(Image.Number2) => assetQuery.OrderByDescending(a => a.NumberReference2),
-                nameof(Image.Number3) => assetQuery.OrderByDescending(a => a.NumberReference3),
-                nameof(Image.String1) => assetQuery.OrderByDescending(a => a.Reference1),
-                nameof(Image.String2) => assetQuery.OrderByDescending(a => a.Reference2),
-                nameof(Image.String3) => assetQuery.OrderByDescending(a => a.Reference3),
-                nameof(Image.Id) => assetQuery.OrderByDescending(a => a.Id),
-                nameof(Image.CustomerId) => assetQuery.OrderByDescending(a => a.Customer),
-                nameof(Image.Space) => assetQuery.OrderByDescending(a => a.Space),
-                nameof(Image.Created) => assetQuery.OrderByDescending(a => a.Created),
-                nameof(Image.Width) => assetQuery.OrderByDescending(a => a.Width),
-                nameof(Image.Height) => assetQuery.OrderByDescending(a => a.Height),
-                nameof(Image.Finished) => assetQuery.OrderByDescending(a => a.Finished),
-                nameof(Image.Duration) => assetQuery.OrderByDescending(a => a.Duration),
-                _ => assetQuery.OrderByDescending(a => a.Created)
+                return nameof(Image.Created);
+            }
+
+            string pascalCase = char.ToUpperInvariant(orderBy[0]) + orderBy.Substring(1);
+            return pascalCase switch
+            {
+                nameof(Image.Number1) => "NumberReference1",
+                nameof(Image.Number2) => "NumberReference2",
+                nameof(Image.Number3) => "NumberReference3",
+                nameof(Image.String1) => "Reference1",
+                nameof(Image.String2) => "Reference2",
+                nameof(Image.String3) => "Reference3",
+                _ => pascalCase
             };
-            return orderedAssetQuery;
+        }
+
+
+        // Create an Expression from the PropertyName. 
+        // I think Split(".") handles nested properties maybe - seems unnecessary but from an SO post
+        // "x" means nothing when creating the Parameter, it's just used for debug messages
+        private static LambdaExpression CreateExpression(Type type, string propertyName)
+        {
+            var param = Expression.Parameter(type, "x");
+
+            Expression body = param;
+            foreach (var member in propertyName.Split('.'))
+            {
+                body = Expression.PropertyOrField(body, member);
+            }
+
+            return Expression.Lambda(body, param);
         }
     }
 }

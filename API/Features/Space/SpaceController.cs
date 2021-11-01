@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Space.Requests;
 using API.Settings;
+using DLCS.Core.Strings;
 using DLCS.Web.Requests;
 using Hydra.Collections;
 using MediatR;
@@ -60,12 +61,18 @@ namespace API.Features.Space
         
         [HttpGet]
         [Route("{spaceId}/images")]
-        public async Task<HydraCollection<DLCS.HydraModel.Image>> Images(int customerId, int spaceId, int? page = 1, int? pageSize = -1, string? orderBy = null)
+        public async Task<HydraCollection<DLCS.HydraModel.Image>> Images(
+            int customerId, int spaceId,
+            int? page = 1, int? pageSize = -1,
+            string? orderBy = null, string? orderByDescending = null)
         {
             if (pageSize < 0) pageSize = settings.PageSize;
             if (page < 0) page = 1;
+            bool ascending = string.IsNullOrWhiteSpace(orderByDescending);
+            if (!ascending) orderBy = orderByDescending;
             var baseUrl = Request.GetBaseUrl();
-            var pageOfAssets = await mediator.Send(new GetSpaceImages(page.Value, pageSize.Value, spaceId, customerId, orderBy));
+            var imagesRequest = new GetSpaceImages(ascending, page.Value, pageSize.Value, spaceId, customerId, orderBy);
+            var pageOfAssets = await mediator.Send(imagesRequest);
             
             var collection = new HydraCollection<DLCS.HydraModel.Image>
             {

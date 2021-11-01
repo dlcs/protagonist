@@ -14,13 +14,14 @@ namespace API.Features.Space.Requests
 {
     public class GetSpaceImages : IRequest<PageOfAssets>
     {
-        public GetSpaceImages(int page, int pageSize, int spaceId, int? customerId = null, string? orderBy = null)
+        public GetSpaceImages(bool ascending, int page, int pageSize, int spaceId, int? customerId = null, string? orderBy = null)
         {
             Page = page;
             PageSize = pageSize;
             CustomerId = customerId;
             SpaceId = spaceId;
             OrderBy = orderBy;
+            Ascending = ascending;
         }
         
         public int SpaceId { get; set; }
@@ -28,6 +29,7 @@ namespace API.Features.Space.Requests
         public int Page { get; }
         public int PageSize { get; }
         public string OrderBy { get; }
+        public bool Ascending { get; }
     }
 
     public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, PageOfAssets>
@@ -56,7 +58,7 @@ namespace API.Features.Space.Requests
                     a => a.Customer == customerId && a.Space == request.SpaceId, cancellationToken: cancellationToken),
                 Assets = await dbContext.Images.AsNoTracking()
                     .Where(a => a.Customer == customerId && a.Space == request.SpaceId)
-                    .AsOrderedAssetQuery(request.OrderBy)
+                    .AsOrderedAssetQuery(request.OrderBy, request.Ascending)
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
                     .ToListAsync(cancellationToken: cancellationToken)
