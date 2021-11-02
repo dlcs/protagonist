@@ -186,6 +186,29 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
+        public async Task Head_AssetRequiresAuth_Returns401_IfBearerTokenProvided_ButInvalid()
+        {
+            // Arrange
+            var id = "99/1/bearer-head-invalid";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
+                maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
+            var userSession =
+                await dbFixture.DbContext.SessionUsers.AddTestSession(
+                    DlcsDatabaseFixture.ClickThroughAuthService.AsList());
+            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(-15),
+                sessionUserId: userSession.Entity.Id);
+            await dbFixture.DbContext.SaveChangesAsync();
+
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Head, $"/iiif-av/{id}/full/full/max/max/0/default.mp4");
+            request.Headers.Add("Authorization", $"bearer {authToken.Entity.BearerToken}");
+            var response = await httpClient.SendAsync(request);
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+        
+        [Fact]
         public async Task Get_AssetRequiresAuth_Returns401_IfCookieProvided_ButInvalid()
         {
             // Arrange
@@ -255,6 +278,29 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+        
+        [Fact]
+        public async Task Head_AssetRequiresAuth_Returns401_IfCookieProvided_ButInvalid()
+        {
+            // Arrange
+            var id = "99/1/cookie-head-invalid";
+            await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
+                maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
+            var userSession =
+                await dbFixture.DbContext.SessionUsers.AddTestSession(
+                    DlcsDatabaseFixture.ClickThroughAuthService.AsList());
+            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(-15),
+                sessionUserId: userSession.Entity.Id);
+            await dbFixture.DbContext.SaveChangesAsync();
+
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Head, $"/iiif-av/{id}/full/full/max/max/0/default.mp4");
+            request.Headers.Add("Cookie", $"dlcs-token-99=id={authToken.Entity.CookieId};");
+            var response = await httpClient.SendAsync(request);
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
     }
 }
