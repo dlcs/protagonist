@@ -137,13 +137,8 @@ namespace Orchestrator
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                
             }
-
-            if (env.IsProduction())
-            {
-                app.UseHttpsRedirection();
-            }
-
             app
                 .HandlePathBase(pathBase, logger)
                 .UseForwardedHeaders()
