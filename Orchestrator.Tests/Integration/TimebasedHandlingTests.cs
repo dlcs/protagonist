@@ -138,7 +138,7 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_AssetRequiresAuth_ProxiesToS3_IfBearerTokenValid()
+        public async Task Get_AssetRequiresAuth_Returns401_IfBearerTokenValid()
         {
             // Arrange
             var id = "99/1/bearer-pass";
@@ -151,19 +151,14 @@ namespace Orchestrator.Tests.Integration
                 sessionUserId: userSession.Entity.Id);
             await dbFixture.DbContext.SaveChangesAsync();
             
-            var expectedPath =
-                new Uri(
-                    "https://s3-eu-west-1.amazonaws.com/test-dlcs-storage/99/1/bearer-pass/full/full/max/max/0/default.mp4");
-
             // Act
             var request = new HttpRequestMessage(HttpMethod.Get,
                 "/iiif-av/99/1/bearer-pass/full/full/max/max/0/default.mp4");
             request.Headers.Add("Authorization", $"bearer {authToken.Entity.BearerToken}");
             var response = await httpClient.SendAsync(request);
-            var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
 
             // Assert
-            proxyResponse.Uri.Should().Be(expectedPath);
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
         
         [Fact]

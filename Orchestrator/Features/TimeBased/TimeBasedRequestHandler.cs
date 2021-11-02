@@ -66,9 +66,10 @@ namespace Orchestrator.Features.TimeBased
                 return new StatusCodeResult(HttpStatusCode.Redirect).WithHeader("Location", s3Path);
             }
 
-            if (!await IsAuthenticated(assetRequest, orchestrationAsset))
+            if (!await IsAuthenticated(assetRequest, orchestrationAsset, httpContext.Request))
             {
-                logger.LogDebug("User not authenticated for {Path}", httpContext.Request.Path);
+                logger.LogDebug("User not authenticated for {Method} {Path}", httpContext.Request.Method,
+                    httpContext.Request.Path);
                 return new StatusCodeResult(HttpStatusCode.Unauthorized);
             }
 
@@ -81,13 +82,19 @@ namespace Orchestrator.Features.TimeBased
             return new ProxyActionResult(ProxyDestination.S3, orchestrationAsset.RequiresAuth, s3Path);
         }
 
-        private async Task<bool> IsAuthenticated(TimeBasedAssetDeliveryRequest assetRequest, OrchestrationAsset asset)
+        private async Task<bool> IsAuthenticated(TimeBasedAssetDeliveryRequest assetRequest, OrchestrationAsset asset,
+            HttpRequest httpRequest)
         {
             // IAssetAccessValidator is in container with a Lifetime.Scope
             using var scope = scopeFactory.CreateScope();
             var assetAccessValidator = scope.ServiceProvider.GetRequiredService<IAssetAccessValidator>();
+
+            // We can get HEAD or GET requests here, for GET requests we only check Cookies, bearer tokens are ignored
+            var authMechanism = httpRequest.Method == "GET" ? AuthMechanism.Cookie : AuthMechanism.All;
+            logger.LogDebug("Authenticating request for {Method} {Path} via {Mechanism}", httpRequest.Method,
+                httpRequest.Path, authMechanism);
             var authResult =
-                await assetAccessValidator.TryValidate(assetRequest.Customer.Id, asset.Roles, AuthMechanism.All);
+                await assetAccessValidator.TryValidate(assetRequest.Customer.Id, asset.Roles, authMechanism);
 
             return authResult is AssetAccessResult.Open or AssetAccessResult.Authorized;
         }
