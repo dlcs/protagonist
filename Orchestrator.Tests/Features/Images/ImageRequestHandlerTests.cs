@@ -110,7 +110,8 @@ namespace Orchestrator.Tests.Features.Images
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
                 .Returns(new OrchestrationImage { Roles = roles });
-            A.CallTo(() => accessValidator.TryValidateCookie(2, roles)).Returns(AssetAccessResult.Unauthorized);
+            A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie))
+                .Returns(AssetAccessResult.Unauthorized);
             var sut = GetImageRequestHandlerWithMockPathParser();
 
             // Act
@@ -136,7 +137,7 @@ namespace Orchestrator.Tests.Features.Images
             A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
                 .Returns(new OrchestrationImage
                     { AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } } });
-            A.CallTo(() => accessValidator.TryValidateCookie(2, roles)).Returns(accessResult);
+            A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie)).Returns(accessResult);
             var sut = GetImageRequestHandlerWithMockPathParser(
                 settings: Options.Create(new OrchestratorSettings
                 {
