@@ -88,9 +88,19 @@ namespace Portal.Pages.Spaces
         public async Task<IActionResult> OnPostConvert(int spaceId)
         {
             var manifestMode = Request.Form.ContainsKey("manifest-mode");
-            // TODO - handle failure
-            //var result = await mediator.Send(new ToggleManifestMode(spaceId, manifestMode));
-
+            var space = await dlcsClient.GetSpaceDetails(spaceId);
+            if (space != null)
+            {
+                if (manifestMode)
+                {
+                    space.AddDefaultTag(SpaceX.ManifestTag);
+                }
+                else
+                {
+                    space.RemoveDefaultTag(SpaceX.ManifestTag);
+                }
+                await dlcsClient.PatchSpace(space);
+            }
             return RedirectToPage("/spaces/details", new {id = spaceId});
         }
 

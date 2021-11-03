@@ -83,6 +83,7 @@ namespace DLCS.HydraModel
             Range = "vocab:CustomerStorage", ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 28, PropertyName = "storage")]
         public string? Storage { get; set; }
+
     }
 
     public class SpaceClass : Class
@@ -142,5 +143,16 @@ namespace DLCS.HydraModel
         /// <returns></returns>
         public static bool IsManifestSpace(this Space space) 
             => space.DefaultTags.Contains(ManifestTag);
+        
+        
+        public static void AddDefaultTag(this Space space, string tag)
+        {
+            throw new NotImplementedException();
+        }
+        
+        public static void RemoveDefaultTag(this Space space, string tag)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

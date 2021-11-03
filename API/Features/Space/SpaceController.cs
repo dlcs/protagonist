@@ -1,9 +1,10 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
+using API.Client;
 using API.Converters;
 using API.Features.Space.Requests;
 using API.Settings;
-using DLCS.Core.Strings;
 using DLCS.Web.Requests;
 using Hydra.Collections;
 using MediatR;
@@ -47,6 +48,48 @@ namespace API.Features.Space
             PartialCollectionView.AddPaging(collection, page.Value, pageSize.Value);
             return collection;
         }
+
+        /// <summary>
+        /// Create a new space within this customer.
+        /// DLCS assigns identity.
+        /// </summary>
+        /// <param name="customerId"></param>
+        /// <param name="space"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> Index(
+            int customerId, [FromBody] DLCS.HydraModel.Space space)
+        {
+            if (string.IsNullOrWhiteSpace(space.Name))
+            {
+                return BadRequest("A space must have a name.");
+            }
+            if (customerId <= 0)
+            {
+                return BadRequest("Space must be created for an existing Customer.");
+            }
+            
+            var command = new CreateSpace(customerId, space.Name)
+            {
+                // ImageBucket = space.ImageBucket, // not there
+                Roles = space.DefaultRoles,
+                Tags = string.Join(",", space.DefaultTags ?? Array.Empty<string>()),
+                MaxUnauthorised = space.MaxUnauthorised
+            };
+
+            try
+            {
+                var newDbSpace = await mediator.Send(command);
+                var newApiSpace = newDbSpace.ToHydra(Request.GetBaseUrl());
+                return Created(newApiSpace.Id, newApiSpace);
+            }
+            catch (BadRequestException badRequestException)
+            {
+                // Are exceptions the way this info should be passed back to the controller?
+                return BadRequest(badRequestException.Message);
+            }
+        }
+        
         
         
         [HttpGet]

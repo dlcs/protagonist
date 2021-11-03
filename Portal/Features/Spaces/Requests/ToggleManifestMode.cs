@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
@@ -13,6 +14,7 @@ namespace Portal.Features.Spaces.Requests
     /// <summary>
     /// Convert space to normal/manifest mode
     /// </summary>
+    [Obsolete("Now done via DLCS API")]
     public class ToggleManifestMode : IRequest<bool>, IAuditable
     {
         public int SpaceId { get; }

@@ -85,6 +85,14 @@ namespace API.Client
             return space;
         }
 
+        public async Task<Space?> PatchSpace(Space space)
+        {
+            var url = $"/customers/{currentUser.GetCustomerId()}/spaces";
+            var response = await httpClient.PatchAsync(url, ApiBody(space));
+            var patchedSpace = await response.ReadAsJsonAsync<Space>(true, jsonSerializerSettings);
+            return patchedSpace;
+        }
+
         public async Task<IEnumerable<string>?> GetApiKeys()
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/keys";

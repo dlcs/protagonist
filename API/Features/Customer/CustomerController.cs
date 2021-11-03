@@ -47,6 +47,7 @@ namespace API.Features.Customer
             };
         }
 
+        [HttpPost]
         public async Task<IActionResult> Create([FromBody] DLCS.HydraModel.Customer newCustomer)
         {
             // Where should this happen? Some happens in the controller, some in the Mediator handler.
