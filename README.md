@@ -9,7 +9,7 @@
 * [Architectural Considerations](docs/architectural-considerations.md)
 * [Design Principles](docs/rfcs/006-Design-Principles.md)
 * [RFCs](docs/rfcs)
-* [Architecture Diagram](https://raw.githubusercontent.com/dlcs/protagonist/master/docs/c4-container-diagrams/DLCS-2020-l2.png)
+* [Architecture Diagram](https://raw.githubusercontent.com/dlcs/protagonist/master/docs/c4-container-diagrams/DLCS-2021-l2.png)
 
 ## Projects
 
