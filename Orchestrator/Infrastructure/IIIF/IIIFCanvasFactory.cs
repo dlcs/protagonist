@@ -10,6 +10,7 @@ using DLCS.Web.Response;
 using IIIF;
 using IIIF.ImageApi.Service;
 using IIIF.Presentation.V2.Annotation;
+using IIIF.Presentation.V2.Strings;
 using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using Microsoft.Extensions.Options;
@@ -63,6 +64,7 @@ namespace Orchestrator.Infrastructure.IIIF
                         Id = $"{canvasId}/page",
                         Items = new PaintingAnnotation
                         {
+                            Target = new IIIF3.Canvas { Id = canvasId },
                             Id = $"{canvasId}/page/image",
                             Body = new Image
                             {
@@ -86,7 +88,7 @@ namespace Orchestrator.Infrastructure.IIIF
                 {
                     canvas.Thumbnail = new IIIF3.Content.Image
                     {
-                        Id = GetFullQualifiedThumbServicePath(i, customerPathElement),
+                        Id = GetFullQualifiedThumbPath(i, customerPathElement, thumbnailSizes.OpenThumbnails),
                         Format = "image/jpeg",
                         Service = GetImageServiceForThumbnail(i, customerPathElement,
                             thumbnailSizes.OpenThumbnails)
@@ -116,6 +118,7 @@ namespace Orchestrator.Infrastructure.IIIF
                 var canvas = new IIIF2.Canvas
                 {
                     Id = canvasId,
+                    Label = new MetaDataValue($"Canvas {counter}"),
                     Width = i.Width,
                     Height = i.Height,
                     Images = new ImageAnnotation
@@ -144,9 +147,8 @@ namespace Orchestrator.Infrastructure.IIIF
                 {
                     canvas.Thumbnail = new IIIF2.Thumbnail
                     {
-                        Id = GetFullQualifiedThumbServicePath(i, customerPathElement),
-                        Service = GetImageServiceForThumbnail(i, customerPathElement,
-                            thumbnailSizes.OpenThumbnails)
+                        Id = GetFullQualifiedThumbPath(i, customerPathElement, thumbnailSizes.OpenThumbnails),
+                        Service = GetImageServiceForThumbnail(i, customerPathElement, thumbnailSizes.OpenThumbnails)
                     }.AsList();
                 }
 
@@ -160,7 +162,7 @@ namespace Orchestrator.Infrastructure.IIIF
             List<Size> thumbnailSizes) =>
             new ImageService2
             {
-                Id = GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes),
+                Id = GetFullQualifiedThumbServicePath(asset, customerPathElement),
                 Profile = ImageService2.Level0Profile,
                 Sizes = thumbnailSizes,
                 Context = ImageService2.Image2Context,
