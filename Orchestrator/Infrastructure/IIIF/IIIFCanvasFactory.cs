@@ -10,6 +10,7 @@ using DLCS.Web.Response;
 using IIIF;
 using IIIF.ImageApi.Service;
 using IIIF.Presentation.V2.Annotation;
+using IIIF.Presentation.V2.Strings;
 using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using Microsoft.Extensions.Options;
@@ -63,6 +64,7 @@ namespace Orchestrator.Infrastructure.IIIF
                         Id = $"{canvasId}/page",
                         Items = new PaintingAnnotation
                         {
+                            Target = new IIIF3.Canvas { Id = canvasId },
                             Id = $"{canvasId}/page/image",
                             Body = new Image
                             {
@@ -116,6 +118,7 @@ namespace Orchestrator.Infrastructure.IIIF
                 var canvas = new IIIF2.Canvas
                 {
                     Id = canvasId,
+                    Label = new MetaDataValue($"Canvas {counter}"),
                     Width = i.Width,
                     Height = i.Height,
                     Images = new ImageAnnotation
