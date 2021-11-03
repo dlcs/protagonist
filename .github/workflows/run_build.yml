@@ -1,10 +1,16 @@
-name: Run tests
+name: Build, test, publish
 
 on:
+  push:
+    branches: ["main", "develop"]
+    tags: ["v*"]
   pull_request:
+    branches: ["main", "develop"]
+    paths-ignore:
+      - "docs/**"
 
 jobs:
-  run-unit-tests:
+  build-test-publish:
     env:
       BUILD_CONFIG: "Release"
       SOLUTION: "protagonist.sln"
@@ -20,7 +26,7 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: "5.0.x"
-      
+
       - name: Restore dependencies
         run: dotnet restore $SOLUTION
 
@@ -29,3 +35,9 @@ jobs:
 
       - name: Test
         run: dotnet test $SOLUTION --filter 'Category!=Manual' --configuration $BUILD_CONFIG --no-restore --no-build --verbosity normal
+
+  build-orchestrator:
+    uses: dlcs/protagonist/.github/workflows/build_orchestrator.yml@deploy_container
+
+  build-thumbs:
+    uses: dlcs/protagonist/.github/workflows/build_thumbs.yml@deploy_container
