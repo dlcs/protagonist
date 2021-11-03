@@ -86,7 +86,7 @@ namespace Orchestrator.Infrastructure.IIIF
                 {
                     canvas.Thumbnail = new IIIF3.Content.Image
                     {
-                        Id = GetFullQualifiedThumbServicePath(i, customerPathElement),
+                        Id = GetFullQualifiedThumbPath(i, customerPathElement, thumbnailSizes.OpenThumbnails),
                         Format = "image/jpeg",
                         Service = GetImageServiceForThumbnail(i, customerPathElement,
                             thumbnailSizes.OpenThumbnails)
@@ -144,9 +144,8 @@ namespace Orchestrator.Infrastructure.IIIF
                 {
                     canvas.Thumbnail = new IIIF2.Thumbnail
                     {
-                        Id = GetFullQualifiedThumbServicePath(i, customerPathElement),
-                        Service = GetImageServiceForThumbnail(i, customerPathElement,
-                            thumbnailSizes.OpenThumbnails)
+                        Id = GetFullQualifiedThumbPath(i, customerPathElement, thumbnailSizes.OpenThumbnails),
+                        Service = GetImageServiceForThumbnail(i, customerPathElement, thumbnailSizes.OpenThumbnails)
                     }.AsList();
                 }
 
@@ -160,7 +159,7 @@ namespace Orchestrator.Infrastructure.IIIF
             List<Size> thumbnailSizes) =>
             new ImageService2
             {
-                Id = GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes),
+                Id = GetFullQualifiedThumbServicePath(asset, customerPathElement),
                 Profile = ImageService2.Level0Profile,
                 Sizes = thumbnailSizes,
                 Context = ImageService2.Image2Context,

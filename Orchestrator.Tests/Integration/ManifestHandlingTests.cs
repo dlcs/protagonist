@@ -111,7 +111,7 @@ namespace Orchestrator.Tests.Integration
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
-                .Should().Be($"http://localhost/thumbs/{id}");
+                .Should().StartWith($"http://localhost/thumbs/{id}/full");
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeTrue();
@@ -135,7 +135,7 @@ namespace Orchestrator.Tests.Integration
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
-                .Should().Be($"http://localhost/thumbs/{id}");
+                .Should().StartWith($"http://localhost/thumbs/{id}/full");
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeTrue();
