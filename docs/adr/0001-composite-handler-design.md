@@ -5,6 +5,7 @@
   - Daniel Grant
   - Tom Crane
   - Donald Gray
+  - Stephen Fraser
 - Date: 2021-11-03
 
 ## Context and Problem Statement
@@ -66,7 +67,9 @@ DLCS ingestion workflow.
 - Potentially a heavyweight solution, Cantaloupe image server can be
   resource intensive.
 - Results in two image servers deployed within the DLCS - IIPImage and
-  Cantaloupe - with signficant effort to remove IIPImage entirely.
+  Cantaloupe - with significant effort to remove IIPImage entirely.
+- Vendor lock-in, requiring significant effort to migrate away from a 
+  specific image server implementation.
 
 ## Links
 
