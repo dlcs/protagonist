@@ -48,6 +48,7 @@ namespace API.Features.Space.Requests
             this.customerRepository = customerRepository;
             this.entityCounterRepository = entityCounterRepository;
             this.logger = logger;
+            
         }
         
         public async Task<DLCS.Repository.Entities.Space> Handle(CreateSpace request, CancellationToken cancellationToken)
@@ -65,11 +66,10 @@ namespace API.Features.Space.Requests
         {
             var existing = await dbContext.Spaces
                 .Where(s => s.Customer == request.Customer)
-                .SingleOrDefaultAsync(s => s.Name.Equals(request.Name, StringComparison.InvariantCultureIgnoreCase),
-                    cancellationToken: cancellationToken);
+                .SingleOrDefaultAsync(s => s.Name == request.Name, cancellationToken: cancellationToken);
             if (existing != null)
             {
-                throw new BadRequestException("A space with this name (url part) already exists for this customer.");
+                throw new BadRequestException("A space with this name already exists for this customer.");
             }
         }
 
@@ -77,12 +77,13 @@ namespace API.Features.Space.Requests
         {
             var space = new DLCS.Repository.Entities.Space
             {
+                Customer = request.Customer,
                 Id = newModelId,
                 Name = request.Name,
                 Created = DateTime.Now,
                 ImageBucket = request.ImageBucket,
-                Tags = request.Tags,
-                Roles = request.Roles,
+                Tags = request.Tags ?? String.Empty,
+                Roles = request.Roles ?? string.Empty,
                 MaxUnauthorised = request.MaxUnauthorised ?? -1
             };
 
@@ -96,7 +97,8 @@ namespace API.Features.Space.Requests
             DLCS.Repository.Entities.Space existingSpaceInCustomer;
             do
             {
-                newModelId = Convert.ToInt32(entityCounterRepository.GetNext(requestCustomer, "space", requestCustomer.ToString()));
+                var next = await entityCounterRepository.GetNext(requestCustomer, "space", requestCustomer.ToString());
+                newModelId = Convert.ToInt32(next);
                 existingSpaceInCustomer = await dbContext.Spaces.SingleOrDefaultAsync(s => s.Id == newModelId && s.Customer == requestCustomer);
             } while (existingSpaceInCustomer != null);
 

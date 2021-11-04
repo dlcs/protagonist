@@ -148,7 +148,8 @@ namespace API.Features.Customer.Requests
             DLCS.Model.Customers.Customer existingCustomerWithId;
             do
             {
-                newModelId = Convert.ToInt32(entityCounterRepository.GetNext(0, "customer", "0"));
+                var next = await entityCounterRepository.GetNext(0, "customer", "0");
+                newModelId = Convert.ToInt32(next);
                 existingCustomerWithId = await dbContext.Customers.SingleOrDefaultAsync(c => c.Id == newModelId);
             } while (existingCustomerWithId != null);
 

@@ -5,6 +5,10 @@ namespace API
 {
     public class APIException : Exception
     {
+        public virtual int StatusCode { get; set; }
+        
+        public virtual string Label { get; set; }
+        
         public APIException()
         {
         }

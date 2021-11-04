@@ -8,6 +8,10 @@ namespace API
     /// </summary>
     public class BadRequestException : APIException
     {
+        public override int StatusCode => 400;
+
+        public override string Label => "Bad Request";
+
         public BadRequestException()
         {
         }

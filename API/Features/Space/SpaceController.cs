@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using API.Client;
 using API.Converters;
 using API.Features.Space.Requests;
 using API.Settings;
@@ -9,6 +8,7 @@ using DLCS.Web.Requests;
 using Hydra.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Space
@@ -19,13 +19,16 @@ namespace API.Features.Space
     {
         private readonly IMediator mediator;
         private readonly ApiSettings settings;
+        private readonly ILogger<SpaceController> logger;
 
         public SpaceController(
             IMediator mediator,
-            IOptions<ApiSettings> options)
+            IOptions<ApiSettings> options,
+            ILogger<SpaceController> logger)
         {
             this.mediator = mediator;
             settings = options.Value;
+            this.logger = logger;
         }
         
         
@@ -58,8 +61,9 @@ namespace API.Features.Space
         /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> Index(
-            int customerId, [FromBody] DLCS.HydraModel.Space space)
+            [FromRoute] int customerId, [FromBody] DLCS.HydraModel.Space space)
         {
+            logger.LogInformation("API will create a space");
             if (string.IsNullOrWhiteSpace(space.Name))
             {
                 return BadRequest("A space must have a name.");
@@ -86,7 +90,7 @@ namespace API.Features.Space
             catch (BadRequestException badRequestException)
             {
                 // Are exceptions the way this info should be passed back to the controller?
-                return BadRequest(badRequestException.Message);
+                return BadRequest(badRequestException.ToHydra());
             }
         }
         
