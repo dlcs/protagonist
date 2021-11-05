@@ -34,7 +34,7 @@ namespace DLCS.HydraModel
         [RdfProperty(Description = "The internal identifier for the space within the customer (uri component)",
             Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 10, PropertyName = "id")]
-        public int ModelId { get; set; }
+        public int? ModelId { get; set; }
 
         [RdfProperty(Description = "Space name",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]

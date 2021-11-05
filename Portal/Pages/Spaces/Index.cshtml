@@ -5,6 +5,24 @@
     ViewData["Title"] = "Spaces";
 }
 
+@if (TempData["new-space-name"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+     <strong>New space created:</strong> @TempData["new-space-name"]
+     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+
+@if (TempData["error-message"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Error:</strong> @TempData["error-message"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+
 <form method="post" class="row row-cols-lg-auto g-3 align-items-center">
   <div class="col-12">
     <label class="visually-hidden" for="newSpaceName">New space name</label>

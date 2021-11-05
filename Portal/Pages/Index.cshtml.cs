@@ -34,7 +34,7 @@ namespace Portal.Pages
                 // we're not actually displaying these at the moment. Just seeing if any exist for UI.
                 Spaces = spaces.Members.Select(s => new Index.SpaceModel
                 {
-                    SpaceId = s.ModelId,
+                    SpaceId = s.ModelId ?? -1,
                     Name = s.Name
                 }).ToList();
             }
