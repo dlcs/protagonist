@@ -85,6 +85,11 @@ namespace Portal.Pages.Spaces
             model.MiradorViewer = new Uri(string.Concat(portalSettings.MiradorUrl, "?manifest=", namedQuery));
         }
         
+        /// <summary>
+        /// Toggle space between manifest mode and normal mode by adding/removing special tag
+        /// </summary>
+        /// <param name="spaceId"></param>
+        /// <returns></returns>
         public async Task<IActionResult> OnPostConvert(int spaceId)
         {
             var manifestMode = Request.Form.ContainsKey("manifest-mode");
@@ -99,7 +104,14 @@ namespace Portal.Pages.Spaces
                 {
                     space.RemoveDefaultTag(SpaceX.ManifestTag);
                 }
-                await dlcsClient.PatchSpace(space);
+                try
+                {
+                    await dlcsClient.PatchSpace(spaceId, space);
+                }
+                catch (DlcsException dlcsException)
+                {
+                    TempData["error-message"] = dlcsException.Message;
+                }
             }
             return RedirectToPage("/spaces/details", new {id = spaceId});
         }

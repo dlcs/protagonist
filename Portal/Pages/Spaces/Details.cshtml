@@ -7,6 +7,15 @@
     ViewData["Title"] = $"Space {spaceId}: {Model.SpacePageModel.Space.Name}";
 }
 
+@if (TempData["error-message"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Error:</strong> @TempData["error-message"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+
 @section header
 {
     <link href="https://cdn.jsdelivr.net/npm/dropzone@5.9.2/dist/min/dropzone.min.css" rel="stylesheet" />
