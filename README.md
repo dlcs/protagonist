@@ -42,3 +42,9 @@ There are a variety of technologies used across the projects, including:
 * [EFCore](https://github.com/dotnet/efcore) - ORM data-access and migrations.
 * [Dapper](https://github.com/DapperLib/Dapper) - high performance object mapper.
 * [XUnit](https://xunit.net/) - automated test framework.
+
+## Deployment
+
+[Github actions](.github/workflows) are used to build and push new Docker images to github container registry.
+
+The main entry point is [`run_build.yml`](.github/workflows/run_build.yml). This runs `dotnet test` then uses the `build_*.yml` files to handle Docker image creation.

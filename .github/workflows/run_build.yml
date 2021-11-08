@@ -1,0 +1,45 @@
+name: Build, test, publish
+
+on:
+  push:
+    branches: ["main", "develop"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["main", "develop"]
+    paths-ignore:
+      - "docs/**"
+
+jobs:
+  run-tests:
+    env:
+      BUILD_CONFIG: "Release"
+      SOLUTION: "protagonist.sln"
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        id: checkout
+        uses: actions/checkout@v2
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: "5.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore $SOLUTION
+
+      - name: Build
+        run: dotnet build $SOLUTION --configuration $BUILD_CONFIG --no-restore
+
+      - name: Test
+        run: dotnet test $SOLUTION --filter 'Category!=Manual' --configuration $BUILD_CONFIG --no-restore --no-build --verbosity normal
+
+  build-orchestrator:
+    needs: run-tests
+    uses: dlcs/protagonist/.github/workflows/build_orchestrator.yml@deploy_container
+
+  build-thumbs:
+    needs: run-tests
+    uses: dlcs/protagonist/.github/workflows/build_thumbs.yml@deploy_container
