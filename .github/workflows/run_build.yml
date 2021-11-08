@@ -38,8 +38,8 @@ jobs:
 
   build-orchestrator:
     needs: run-tests
-    uses: dlcs/protagonist/.github/workflows/build_orchestrator.yml@deploy_container
+    uses: dlcs/protagonist/.github/workflows/build_orchestrator.yml@develop
 
   build-thumbs:
     needs: run-tests
-    uses: dlcs/protagonist/.github/workflows/build_thumbs.yml@deploy_container
+    uses: dlcs/protagonist/.github/workflows/build_thumbs.yml@develop
