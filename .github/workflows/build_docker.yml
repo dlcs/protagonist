@@ -2,7 +2,7 @@ name: Build and push Thumbs image
 
 on:
   workflow_call:
-    input:
+    inputs:
       image_name:
         description: 'Identifier for output image in gchr.io/dlcs/*'
         required: true
