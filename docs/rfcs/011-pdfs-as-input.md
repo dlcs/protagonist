@@ -4,12 +4,11 @@ Scenario: you have a single (but probably multi-page) PDF, rather than a set of 
 
 One way of doing this would be to allow the DLCS to accept a PDF as input, and have it extract the images for the pages and provide them as independent image services.
 
-## POST a PDF to the DLCS
+## `POST` a PDF to the DLCS
 
-At the moment, you POST a [hydra:Collection](https://www.hydra-cg.com/spec/latest/core/#collections) of Images to the [queue](https://dlcs-book.readthedocs.io/en/latest/API_Reference/queue.html), or PUT a single [Image](https://dlcs-book.readthedocs.io/en/latest/API_Reference/image.html) to its location.
+At the moment, you `POST` a [hydra:Collection](https://www.hydra-cg.com/spec/latest/core/#collections) of Images to the [queue](https://dlcs-book.readthedocs.io/en/latest/API_Reference/queue.html), or PUT a single [Image](https://dlcs-book.readthedocs.io/en/latest/API_Reference/image.html) to its location.
 
-
-Current example of a Collection POSTed to the DLCS queue (here just containing one Image):
+Current example of a `hydra:Collection` `POST`ed to the DLCS queue (here just containing one Image):
 
 ```json
 {
@@ -40,7 +39,6 @@ Current example of a Collection POSTed to the DLCS queue (here just containing o
 
 The response body is an accepted [Batch](https://dlcs-book.readthedocs.io/en/latest/API_Reference/batch.html) - the batch's images haven't been processed yet, but they are in the queue and will be processed in time. This could be a long time; it depends entirely on the number of images in the queue and the resources available to the DLCS to process them. Crucially, it's a very lightweight operation to enqueue things, so bursts of activity at ingest don't overwhelm the DLCS, it is able to spread the more intensive work over as much time as is needed to do it.
 
-
 ```json
 {
   "@context": "https://api.dlcs.io/contexts/Batch.jsonld",
@@ -64,7 +62,6 @@ The `images` property in the above links to a collection of the images in the ba
 The new requirement is that a PDF becomes a set of individual image services.
 
 A PDF here is a bit like a _latent_ Collection. A `hydra:Collection` can have any domain class as members. This suggests we can introduce a new class to the API of the DLCS, stepping back a bit from the specifics of PDF:
-
 
 ### Composite
 
@@ -128,15 +125,15 @@ POST /queue
       "id": "my-pdf-{0:D4}",
       "space": 6,
       "origin": "https://s3-eu-west-1.amazonaws.com/bucketname/key-path/my-pdf.pdf",
-      "string1": "my-id-{0:D4}",
+      "string1": "my-id-{:03d}",
       "string2": "",
       "string3": "",
       "number1": "0",
-      "number2": "{0}",
+      "number2": "{:03d}",
       "number3": "0",
       "roles": [],
       "family": "I",
-      "text": "https://example.org/text/alto/my-pdf/my-pdf-{0:D4}.xml",
+      "text": "https://example.org/text/alto/my-pdf/my-pdf-{:-03d}.xml",
       "textType": "alto",
       "maxUnauthorised": -1,
       "originFormat": "application/pdf",
@@ -146,21 +143,31 @@ POST /queue
 }
 ```
 
-Here, the number1-3 fields are all strings, too. They will be interpreted as numbers unless they contain an identifiable format string, such as `{0:D4}`. This syntax is borrowed from C#: see [padding](https://docs.microsoft.com/en-us/dotnet/standard/base-types/how-to-pad-a-number-with-leading-zeros#to-pad-an-integer-with-a-specific-number-of-leading-zeros) and [composite formatting](https://docs.microsoft.com/en-us/dotnet/standard/base-types/composite-formatting).
+Here, the `number{1-3}` fields are all strings, too. They will be interpreted as numbers unless they contain an identifiable format string, such as `{:03}`. This syntax is borrowed from Python (see https://docs.python.org/3/tutorial/inputoutput.html).
 
 Adopting these formats now seems slightly overkill, but it gives us complete flexibility to extend the formatting mechanism in future in response to emerging use cases.
 
-If the value must itself contain a brace character (`{` or `}`), these should be escaped as [described here](https://docs.microsoft.com/en-us/dotnet/standard/base-types/composite-formatting#escaping-braces).
-
-> Question: using .NET-specific format strings is obviously convenient for the .NET back-end, but should we look for something more universal?
+If the value must itself contain a brace character (`{` or `}`), these should be escaped through the use of double-bracing, i.e. `{{` and `}}` will render as single braces `{` and `}` respectively.
 
 #### Handling Complexity
 
 To avoid overly complicating the `POST /queue` call, any metadata values that cannot be expressed via format strings can be amended with by making a `PATCH /customers/{customer}/spaces/{spaceId}/images/{imageId}` request to update individual images after they have been ingested.
 
-## POST operation
+## `POST` operation
 
-If the above example is POSTED, it will return a batch just like the initial example. Assuming that *my-pdf.pdf* was a 3-page PDF, If we followed that batch's `images` property, we would get a `hydra:Collection` again, and it would look something like this:
+The process of retrieving a PDF from its origin, rasterizing its pages into individual images, pushing each image to a DLCS-managed storage location, and generating the request to `POST` to the DLCS API to process those images are potentially expensive and thus long running operations. It is not reasonable - and is contrary to good API design - to expect a client to wait for these processes to complete before the request completes.
+
+As a result, if the above example is `POST`'ed, it should return almost immediately an empty HTTP `202 Accepted` response, complete with a `Location` header indicating a URI that can be queried to fetch the status of the PDF rasterization process.
+
+The client can then continue to query this URI, and will receive one of the following responses:
+
+| Status     | HTTP Code                  | Headers    | Body                                  | Notes                                                                                                                                                                                 |
+|------------|----------------------------|------------|---------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Processing | `102 Processing`           | None       | None                                  | Indicates that the backend is still processing / rasterizing the PDF ingestion request.                                                                                               |
+| Completed  | `301 Moved Permanently`    | `Location` | None                                  | The processing / rasterization has completed and the returned `Location` header provides a URI served by the DLCS API where the corresponding image ingestion batch can be retrieved. |
+| Errored    | `422 Unprocessable Entity` | None       | ``` {   "Error": "Description"  } ``` | An error occurred during the processing / rasterization of the PDF. The response body contains more details.                                                                          |
+
+Assuming that `my-pdf.pdf` was a 3-page PDF, then once the PDF processing / rasterization has completed and the client is redirected to the DLCS API, and we follow that batch's `images` property, we would get a `hydra:Collection` again, and it would look something like this:
 
 ```json
 {
@@ -229,12 +236,6 @@ If the above example is POSTED, it will return a batch just like the initial exa
 }
 ```
 
-## Issues
-
-The DLCS needs to unpack the PDF to, at the very least, determine the number of images it's going to have to make. It won't be able to return the batch or the batch's `images` property until it has determined how many pages the PDF has. Everything else can be deferred to processing time. In the above, the images have JP2 origins, but the JP2 isn't necessarily there yet - that's where the JP2 the DLCS needs to make for the image will be put, eventually.
-
-The component that processes the PDF is probably a Python component. But the above flow suggests that the main API is the first recipient, because it's a member of a Collection on the queue. The API could very quickly call out to an additional component to do this unpacking, but that component would not be "front of house".
-
 ## Alternative approaches
 
 Cantaloupe can provide an image service for any page of a PDF.
@@ -245,5 +246,3 @@ This approach is attractive might might be too big a step right now.
 ## Development contingencies
 
 The Deliverator API is currently being re-implemented in Protagonist, but this work will take a while to complete. We could require an alternate handler for submissions of PDFs to the queue, e.g., `/pdfqueue` or `pdf.dlcs.xxx/queue`, and have our standalone Python service process this API endpoint, unpack the PDF, and register the PDF's images using the regular, existing API.
-
-
