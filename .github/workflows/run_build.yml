@@ -38,8 +38,14 @@ jobs:
 
   build-orchestrator:
     needs: run-tests
-    uses: dlcs/protagonist/.github/workflows/build_orchestrator.yml@develop
+    uses: dlcs/protagonist/.github/workflows/build_docker.yml@reuse_githubaction
+    with:
+      image_name: "orchestrator"
+      dockerfile: "Dockerfile.Orchestrator"
 
   build-thumbs:
     needs: run-tests
-    uses: dlcs/protagonist/.github/workflows/build_thumbs.yml@develop
+    uses: dlcs/protagonist/.github/workflows/build_docker.yml@reuse_githubaction
+    with:
+      image_name: "thumbs"
+      dockerfile: "Dockerfile.Thumbs"
