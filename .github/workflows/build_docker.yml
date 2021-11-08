@@ -1,14 +1,20 @@
-name: Build and push Orchestrator images
+name: Build and push Thumbs image
 
 on:
   workflow_call:
+    inputs:
+      image_name:
+        description: 'Identifier for output image in gchr.io/dlcs/*'
+        required: true
+        type: string
+      dockerfile:
+        description: 'Dockerfile to use'
+        required: true
+        type: string
   workflow_dispatch:
 
 jobs:
   build-push:
-    env:
-      IMAGE_NAME: "orchestrator"
-      DOCKERFILE: "Dockerfile.Orchestrator"
 
     runs-on: ubuntu-latest
 
@@ -26,7 +32,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: ghcr.io/dlcs/${{ env.IMAGE_NAME }}
+          images: ghcr.io/dlcs/${{ inputs.image_name }}
           tags: |
             type=ref,event=branch
             type=sha,enable=true,prefix=,format=long
@@ -47,7 +53,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ${{ env.DOCKERFILE }}
+          file: ${{ inputs.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
           builder: ${{ steps.buildx.outputs.name }}
           tags: ${{ steps.meta.outputs.tags }}
