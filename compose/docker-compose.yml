@@ -15,7 +15,7 @@ services:
       - $HOME\.aws:/root/.aws:ro
 
   image-server:
-    image: fractos/iipsrv-openjpeg:2.3.1
+    image: ghcr.io/dlcs/iipsrv-openjpeg:2.4.0
     ports:
       - "5025:8080"
     volumes:
