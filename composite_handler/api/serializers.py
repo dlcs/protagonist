@@ -1,0 +1,55 @@
+import json
+import os
+
+from api.models import Submission
+from jsonschema import ValidationError, RefResolver, Draft7Validator
+from rest_framework import serializers
+
+
+def __initialise_json_schemas():
+    schema_dir = os.path.join(os.path.dirname(__file__), 'schemas')
+
+    with open(os.path.join(schema_dir, 'collection.schema.json'), 'r') as collection_schema_file:
+        collection_schema = json.load(collection_schema_file)
+
+    with open(os.path.join(schema_dir, 'member.schema.json'), 'r') as member_schema_file:
+        member_schema = json.load(member_schema_file)
+
+    resolver = RefResolver.from_schema(collection_schema, store={
+        collection_schema['$id']: collection_schema,
+        member_schema['$id']: member_schema
+    })
+
+    return collection_schema, member_schema, resolver
+
+
+_collection_schema, _member_schema, _resolver = __initialise_json_schemas()
+
+
+class SubmissionCollectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Submission
+        fields = "__all__"
+
+    @staticmethod
+    def validate_payload(data):
+        return _validate_json(data, _collection_schema)
+
+
+class SubmissionMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Submission
+        fields = "__all__"
+
+    @staticmethod
+    def validate_payload(data):
+        return _validate_json(data, _member_schema)
+
+
+def _validate_json(json_data, json_schema):
+    try:
+        validator = Draft7Validator(json_schema, resolver=_resolver)
+        validator.validate(json_data, json_schema)
+    except ValidationError as err:
+        raise serializers.ValidationError(err.message)
+    return json_data
