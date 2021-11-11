@@ -31,7 +31,7 @@ namespace Orchestrator.Tests.Features.PDF
         {
             var namedQuerySettings = Options.Create(new NamedQuerySettings
             {
-                PdfBucket = "test-pdf-bucket",
+                OutputBucket = "test-pdf-bucket",
                 ThumbsBucket = "test-thumbs-bucket"
             });
         
@@ -54,7 +54,7 @@ namespace Orchestrator.Tests.Features.PDF
             const string controlFileStorageKey = "controlFileKey";
             var parsedNamedQuery = new PdfParsedNamedQuery(customer)
             {
-                PdfStorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
+                StorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
             };
             var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
 
@@ -82,7 +82,7 @@ namespace Orchestrator.Tests.Features.PDF
             // Arrange
             var parsedNamedQuery = new PdfParsedNamedQuery(customer)
             {
-                PdfStorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
+                StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
             };
             var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
 
@@ -102,7 +102,7 @@ namespace Orchestrator.Tests.Features.PDF
             // Arrange
             var parsedNamedQuery = new PdfParsedNamedQuery(customer)
             {
-                PdfStorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
+                StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
             };
             var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
 
@@ -126,7 +126,7 @@ namespace Orchestrator.Tests.Features.PDF
             const string controlFileStorageKey = "controlFileKey";
             var parsedNamedQuery = new PdfParsedNamedQuery(customer)
             {
-                PdfStorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
+                StorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
             };
             var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
 

@@ -24,7 +24,12 @@ namespace Orchestrator.Infrastructure.NamedQueries
         /// <summary>
         /// NamedQuery will be projected to PDF object
         /// </summary>
-        PDF
+        PDF,
+        
+        /// <summary>
+        /// NamedQuery will be projected to ZIP archive containing images.
+        /// </summary>
+        Zip
     }
         
     public delegate INamedQueryParser  NamedQueryParserResolver(NamedQueryType projectionType);
@@ -41,13 +46,14 @@ namespace Orchestrator.Infrastructure.NamedQueries
                 .AddScoped<INamedQueryRepository, NamedQueryRepository>()
                 .AddScoped<NamedQueryConductor>()
                 .AddScoped<IIIFNamedQueryProjector>()
-                .AddScoped<PdfNamedQueryService>()
+                .AddScoped<StoredNamedQueryService>()
                 .AddScoped<PdfNamedQueryParser>()
                 .AddScoped<NamedQueryResultGenerator>()
                 .AddScoped<NamedQueryParserResolver>(provider => outputFormat => outputFormat switch
                 {
                     NamedQueryType.PDF => provider.GetService<PdfNamedQueryParser>(),
                     NamedQueryType.IIIF => provider.GetService<IIIFNamedQueryParser>(),
+                    NamedQueryType.Zip => provider.GetService<IIIFNamedQueryParser>(),
                     _ => throw new ArgumentOutOfRangeException(nameof(outputFormat), outputFormat, null)
                 });
             

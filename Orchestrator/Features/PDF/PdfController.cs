@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using Orchestrator.Features.PDF.Requests;
+using Orchestrator.Infrastructure.NamedQueries.Models;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.PDF
@@ -51,12 +52,13 @@ namespace Orchestrator.Features.PDF
 
                 // Handle known non-200 status
                 if (result.IsBadRequest) return BadRequest();
-                if (result.Status == PdfStatus.Error) return StatusCode(500);
-                if (result.Status == PdfStatus.InProcess) return InProcess(namedQuerySettings.PdfControlStaleSecs);
+                if (result.Status == PersistedProjectionStatus.Error) return StatusCode(500);
+                if (result.Status == PersistedProjectionStatus.InProcess)
+                    return InProcess(namedQuerySettings.PdfControlStaleSecs);
                 if (result.IsEmpty) return NotFound();
 
                 SetCacheControl();
-                return File(result.PdfStream, "application/pdf");
+                return File(result.DataStream, "application/pdf");
             }
             catch (KeyNotFoundException ex)
             {

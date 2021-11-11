@@ -27,14 +27,14 @@ namespace Orchestrator.Features.PDF.Requests
     
     public class GetPdfControlFileForNamedQueryHandler : IRequestHandler<GetPdfControlFileForNamedQuery, PdfControlFile?>
     {
-        private readonly PdfNamedQueryService pdfNamedQueryService;
+        private readonly StoredNamedQueryService storedNamedQueryService;
         private readonly NamedQueryResultGenerator namedQueryResultGenerator;
 
         public GetPdfControlFileForNamedQueryHandler(
-            PdfNamedQueryService pdfNamedQueryService,
+            StoredNamedQueryService storedNamedQueryService,
             NamedQueryResultGenerator namedQueryResultGenerator)
         {
-            this.pdfNamedQueryService = pdfNamedQueryService;
+            this.storedNamedQueryService = storedNamedQueryService;
             this.namedQueryResultGenerator = namedQueryResultGenerator;
         }
         
@@ -45,7 +45,7 @@ namespace Orchestrator.Features.PDF.Requests
             if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
 
             var pdfControlFile =
-                await pdfNamedQueryService.GetPdfControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey);
+                await storedNamedQueryService.GetControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey);
             return pdfControlFile;
         }
     }

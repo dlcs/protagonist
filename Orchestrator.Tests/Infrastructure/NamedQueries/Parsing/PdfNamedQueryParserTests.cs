@@ -99,7 +99,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
                 sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(Customer, args, template, "my-query");
 
             // Assert
-            result.PdfStorageKey.Should().Be(expected);
+            result.StorageKey.Should().Be(expected);
             result.ControlFileStorageKey.Should().Be($"{expected}.json");
         }
 
@@ -115,7 +115,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
             // Assert
             result.Should().BeEquivalentTo(
                 expected,
-                opts => opts.Excluding(q => q.PdfStorageKey).Excluding(q => q.ControlFileStorageKey),
+                opts => opts.Excluding(q => q.StorageKey).Excluding(q => q.ControlFileStorageKey),
                 explanation);
         }
 

@@ -337,12 +337,12 @@ namespace Orchestrator.Tests.Integration
 
             public Task<bool> CreatePdf(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images)
             {
-                if (callbacks.TryGetValue(parsedNamedQuery.PdfStorageKey, out var cb))
+                if (callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
                 {
                     return Task.FromResult(cb());
                 }
 
-                throw new Exception($"Request with key {parsedNamedQuery.PdfStorageKey} not setup");
+                throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");
             }
         }
     }

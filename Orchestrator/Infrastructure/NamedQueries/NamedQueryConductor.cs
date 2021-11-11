@@ -1,7 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
+using Orchestrator.Infrastructure.NamedQueries.Parsing;
 
 namespace Orchestrator.Infrastructure.NamedQueries
 {
@@ -55,13 +57,20 @@ namespace Orchestrator.Infrastructure.NamedQueries
         private T ParseNamedQuery<T>(CustomerPathElement customerPathElement, string? args, NamedQuery? namedQuery)
             where T : ParsedNamedQuery
         {
-            var namedQueryParser = namedQueryParserResolver(typeof(T) == typeof(IIIFParsedNamedQuery)
-                ? NamedQueryType.IIIF
-                : NamedQueryType.PDF);
+            var namedQueryParser = namedQueryParserResolver(GetNamedQueryParser<T>());
             var parsedNamedQuery =
                 namedQueryParser.GenerateParsedNamedQueryFromRequest<T>(customerPathElement, args, namedQuery.Template,
                     namedQuery.Name);
             return parsedNamedQuery;
+        }
+
+        private NamedQueryType GetNamedQueryParser<T>() where T : ParsedNamedQuery
+        {
+            if (typeof(T) == typeof(IIIFParsedNamedQuery)) return NamedQueryType.IIIF;
+            if (typeof(T) == typeof(PdfNamedQueryParser)) return NamedQueryType.PDF;
+            if (typeof(T) == typeof(ZipNamedQueryParser)) return NamedQueryType.Zip;
+
+            throw new ArgumentOutOfRangeException("Unable to determine NamedQueryType from result type");
         }
     }
 }

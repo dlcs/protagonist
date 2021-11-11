@@ -1,120 +1,123 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
+using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.NamedQueries;
+using Orchestrator.Infrastructure.NamedQueries.Models;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.PDF
 {
-    public class PdfNamedQueryService
+    public class StoredNamedQueryService
     {
         private readonly IBucketReader bucketReader;
-        private readonly IPdfCreator pdfCreator;
-        private readonly ILogger<PdfNamedQueryService> logger;
+        private readonly ILogger logger;
         private readonly NamedQuerySettings namedQuerySettings;
 
-        public PdfNamedQueryService(
+        protected StoredNamedQueryService(
             IBucketReader bucketReader,
             IOptions<NamedQuerySettings> namedQuerySettings,
-            IPdfCreator pdfCreator,
-            ILogger<PdfNamedQueryService> logger)
+            ILogger logger)
         {
             this.bucketReader = bucketReader;
-            this.pdfCreator = pdfCreator;
             this.namedQuerySettings = namedQuerySettings.Value;
             this.logger = logger;
         }
 
         /// <summary>
-        /// Get <see cref="PdfResult"/> containing PDF stream and status for specific named query result.
+        /// Get <see cref="StoredResult"/> containing data stream and status for specific named query result.
         /// </summary>
-        public async Task<PdfResult> GetPdfResults(NamedQueryResult<PdfParsedNamedQuery> namedQueryResult)
+        public async Task<StoredResult> GetResults<T>(NamedQueryResult<T> namedQueryResult,
+            Func<T, List<Asset>, Task<bool>> createResource)
+            where T : StoredParsedNamedQuery
         {
             namedQueryResult.ParsedQuery.ThrowIfNull(nameof(namedQueryResult.ParsedQuery));
-            
+
             var parsedNamedQuery = namedQueryResult.ParsedQuery!;
 
-            // Check to see if we can use an existing PDF
-            var pdfResult = await TryGetExistingPdf(parsedNamedQuery);
+            // Check to see if we can use an existing item
+            var existingResult = await TryGetExistingResource(parsedNamedQuery);
 
-            // If it's Found or InProcess then no further processing for now
-            if (pdfResult.Status is PdfStatus.Available or PdfStatus.InProcess)
+            // If it's Found or InProcess then no further processing for now, returns what's found
+            if (existingResult.Status is PersistedProjectionStatus.Available or PersistedProjectionStatus.InProcess)
             {
-                return pdfResult;
+                return existingResult;
             }
-            
+
             var imageResults = await namedQueryResult.Results.ToListAsync();
             if (imageResults.Count == 0)
             {
-                logger.LogWarning("No results found for PDF file {PdfS3Key}, aborting", parsedNamedQuery.PdfStorageKey);
-                return new PdfResult(Stream.Null, PdfStatus.NotFound);
+                logger.LogWarning("No results found for PDF file {PdfS3Key}, aborting", parsedNamedQuery.StorageKey);
+                return new StoredResult(Stream.Null, PersistedProjectionStatus.NotFound);
             }
 
-            var success = await pdfCreator.CreatePdf(namedQueryResult.ParsedQuery, imageResults);
-            if (!success) return new PdfResult(Stream.Null, PdfStatus.Error);
-            
-            var pdf = await LoadPdfObject(parsedNamedQuery.PdfStorageKey);
+            var success = await createResource(parsedNamedQuery, imageResults);
+            if (!success) return new StoredResult(Stream.Null, PersistedProjectionStatus.Error);
+
+            var pdf = await LoadStoredObject(parsedNamedQuery.StorageKey);
             if (pdf.Stream != null && pdf.Stream != Stream.Null)
             {
-                return new(pdf.Stream!, PdfStatus.Available);
+                return new(pdf.Stream!, PersistedProjectionStatus.Available);
             }
 
-            logger.LogWarning("PDF file {PdfS3Key} was successfully created but now cannot be loaded",
-                parsedNamedQuery.PdfStorageKey);
-            return new(Stream.Null, PdfStatus.Error);
+            logger.LogWarning("File {S3Key} was successfully created but now cannot be loaded",
+                parsedNamedQuery.StorageKey);
+            return new(Stream.Null, PersistedProjectionStatus.Error);
         }
-        
+
         /// <summary>
         /// Get <see cref="PdfControlFile"/> stored as specified key.
         /// </summary>
-        public async Task<PdfControlFile?> GetPdfControlFile(string controlFileKey)
+        public async Task<PdfControlFile?> GetControlFile(string controlFileKey)
         {
-            var pdfControlObject = await LoadPdfObject(controlFileKey);
-            if (pdfControlObject.Stream == Stream.Null) return null;
-            return await pdfControlObject.DeserializeFromJson<PdfControlFile>();
+            var controlObject = await LoadStoredObject(controlFileKey);
+            if (controlObject.Stream == Stream.Null) return null;
+            return await controlObject.DeserializeFromJson<PdfControlFile>();
         }
 
-        private async Task<PdfResult> TryGetExistingPdf(PdfParsedNamedQuery parsedNamedQuery)
+        private async Task<StoredResult> TryGetExistingResource(StoredParsedNamedQuery parsedNamedQuery)
         {
-            var pdfControlFile = await GetPdfControlFile(parsedNamedQuery.ControlFileStorageKey);
-            if (pdfControlFile == null) return new(Stream.Null, PdfStatus.NotFound);
+            var controlFile = await GetControlFile(parsedNamedQuery.ControlFileStorageKey);
+            if (controlFile == null) return new(Stream.Null, PersistedProjectionStatus.NotFound);
 
-            var pdfKey = parsedNamedQuery.PdfStorageKey;
+            var itemKey = parsedNamedQuery.StorageKey;
 
-            if (pdfControlFile.IsStale(namedQuerySettings.PdfControlStaleSecs))
+            if (controlFile.IsStale(namedQuerySettings.PdfControlStaleSecs)) // TODO - allow different values
             {
-                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but it is stale. Will recreate",
-                    pdfKey);
-                return new(Stream.Null, PdfStatus.NotFound);
+                logger.LogWarning("File {S3Key} has valid control-file but it is stale. Will recreate",
+                    itemKey);
+                return new(Stream.Null, PersistedProjectionStatus.NotFound);
             }
 
-            if (pdfControlFile.InProcess)
+            if (controlFile.InProcess)
             {
-                logger.LogWarning("PDF file {PdfS3Key} has valid control-file but it's in progress", pdfKey);
-                return new(Stream.Null, PdfStatus.InProcess);
+                logger.LogWarning("File {S3Key} has valid control-file but it's in progress", itemKey);
+                return new(Stream.Null, PersistedProjectionStatus.InProcess);
             }
 
-            var pdf = await LoadPdfObject(pdfKey);
-            if (pdf.Stream != null && pdf.Stream != Stream.Null)
+            var resource = await LoadStoredObject(itemKey);
+            if (resource.Stream != null && resource.Stream != Stream.Null)
             {
-                return new(pdf.Stream!, PdfStatus.Available);
+                return new(resource.Stream!, PersistedProjectionStatus.Available);
             }
 
-            logger.LogWarning("PDF file {PdfS3Key} has valid control-file but PDF not found. Will recreate", pdfKey);
-            return new(Stream.Null, PdfStatus.NotFound);
+            logger.LogWarning("File {S3Key} has valid control-file but item not found. Will recreate", itemKey);
+            return new(Stream.Null, PersistedProjectionStatus.NotFound);
         }
 
-        private Task<ObjectFromBucket> LoadPdfObject(string key)
+        private Task<ObjectFromBucket> LoadStoredObject(string key)
         {
-            var objectInBucket = new ObjectInBucket(namedQuerySettings.PdfBucket, key);
+            var objectInBucket = new ObjectInBucket(namedQuerySettings.OutputBucket, key);
             return bucketReader.GetObjectFromBucket(objectInBucket);
         }
     }
 
-    public record PdfResult(Stream? Stream, PdfStatus Status);
+    public record StoredResult(Stream? Stream, PersistedProjectionStatus Status);
 }

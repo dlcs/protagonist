@@ -72,7 +72,7 @@ namespace Orchestrator.Features.PDF
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error creating PDF: {PdfS3Key}", parsedNamedQuery.PdfStorageKey);
+                logger.LogError(ex, "Error creating PDF: {PdfS3Key}", parsedNamedQuery.StorageKey);
                 return false;
             }
         }
@@ -85,7 +85,7 @@ namespace Orchestrator.Features.PDF
             var controlFile = new PdfControlFile
             {
                 Created = DateTime.Now,
-                Key = parsedNamedQuery.PdfStorageKey,
+                Key = parsedNamedQuery.StorageKey,
                 Exists = false,
                 InProcess = true,
                 PageCount = enumeratedResults.Count,
@@ -97,13 +97,13 @@ namespace Orchestrator.Features.PDF
         }
 
         private Task UpdatePdfControlFile(string controlFileKey, PdfControlFile? controlFile) =>
-            bucketReader.WriteToBucket(new ObjectInBucket(namedQuerySettings.PdfBucket, controlFileKey),
+            bucketReader.WriteToBucket(new ObjectInBucket(namedQuerySettings.OutputBucket, controlFileKey),
                 JsonConvert.SerializeObject(controlFile), "application/json");
 
         private async Task<FireballResponse> CreatePdfFile(PdfParsedNamedQuery? parsedNamedQuery,
             List<Asset> enumeratedResults)
         {
-            var pdfKey = parsedNamedQuery.PdfStorageKey;
+            var pdfKey = parsedNamedQuery.StorageKey;
 
             try
             {
@@ -138,7 +138,7 @@ namespace Orchestrator.Features.PDF
         {
             var playbook = new FireballPlaybook
             {
-                Output = $"s3://{namedQuerySettings.PdfBucket}/{pdfKey}",
+                Output = $"s3://{namedQuerySettings.OutputBucket}/{pdfKey}",
                 Title = parsedNamedQuery.ObjectName,
                 CustomTypes = new FireballCustomTypes
                 {
