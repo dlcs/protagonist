@@ -16,7 +16,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Infrastructure.Deliverator;
-using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Infrastructure
@@ -53,25 +52,6 @@ namespace Orchestrator.Infrastructure
                 })
                 .AddLazyCache();
 
-        /// <summary>
-        /// Add Deliverator client
-        /// </summary>
-        /// <remarks>This is temporary and will be removed once we have migrated all logic</remarks>
-        public static IServiceCollection AddDeliveratorClient(this IServiceCollection services,
-            ReverseProxySettings reverseProxySettings)
-        {
-            var orchestratorAddress = reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.Orchestrator);
-            services
-                .AddHttpClient<IDeliveratorClient, DeliveratorClient>(client =>
-                {
-                    client.DefaultRequestHeaders.WithRequestedBy();
-                    client.BaseAddress = orchestratorAddress;
-                })
-                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false });
-
-            return services;
-        }
-        
         /// <summary>
         /// Add DLCS API Client dependencies
         /// </summary>

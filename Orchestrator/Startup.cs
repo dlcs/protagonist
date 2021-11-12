@@ -61,7 +61,7 @@ namespace Orchestrator
                 .Configure<NamedQuerySettings>(configuration.GetSection("NamedQuery"))
                 .Configure<CacheSettings>(cachingSection)
                 .Configure<ReverseProxySettings>(reverseProxySection);
-            
+
             services
                 .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
@@ -85,8 +85,7 @@ namespace Orchestrator
                 .AddMediatR()
                 .AddHttpContextAccessor()
                 .AddNamedQueries(configuration)
-                .AddApiClient(configuration.Get<OrchestratorSettings>())
-                .AddDeliveratorClient(reverseProxySection.Get<ReverseProxySettings>());
+                .AddApiClient(configuration.Get<OrchestratorSettings>());
             
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
             services.Configure<ForwardedHeadersOptions>(opts =>
@@ -137,13 +136,8 @@ namespace Orchestrator
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                
             }
-
-            if (env.IsProduction())
-            {
-                app.UseHttpsRedirection();
-            }
-
             app
                 .HandlePathBase(pathBase, logger)
                 .UseForwardedHeaders()
