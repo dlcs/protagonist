@@ -1,9 +1,9 @@
+from api.models import Submission
 from api.serializers import SubmissionCollectionSerializer, SubmissionMemberSerializer
+from django_q.tasks import async_task
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from api.models import Submission
 
 
 class SubmissionAPIQueryView(APIView):
@@ -46,6 +46,12 @@ def _build_submissions_creation_response(request, serializer):
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     serializer.save()
+    async_task(
+        "engine.tasks.process_submission",
+        serializer.data,
+        task_name=serializer.data["id"],
+        hook='engine.hooks.print_result'
+    )
     return Response(
         status=status.HTTP_202_ACCEPTED,
         headers={"Location": _build_uri(request, serializer.data["id"])}

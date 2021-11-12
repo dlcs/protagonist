@@ -36,7 +36,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api.apps.ApiConfig'
+    'api.apps.ApiConfig',
+    'django_q',
 ]
 
 MIDDLEWARE = [
@@ -75,11 +76,11 @@ WSGI_APPLICATION = 'app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_DATABASE', 'compositedb'),
-        'USER': os.environ.get('DB_USER', 'dlcs'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'password'),
-        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
-        'PORT': os.environ.get('DB_PORT', 5432)
+        'NAME': os.environ.get('POSTGRES_DB', 'compositedb'),
+        'USER': os.environ.get('POSTGRES_USER', 'dlcs'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'password'),
+        'HOST': os.environ.get('POSTGRES_HOST', '127.0.0.1'),
+        'PORT': int(os.environ.get('POSTGRES_PORT', 5432))
     }
 }
 
@@ -132,3 +133,25 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.JSONParser',
     ]
 }
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'app_cache',
+    }
+}
+
+Q_CLUSTER = {
+    'workers': int(os.environ.get('ENGINE_WORKER_COUNT', 2)),
+    'timeout': int(os.environ.get('ENGINE_WORKER_TIMEOUT', 3600)),
+    'retry': int(os.environ.get('ENGINE_WORKER_RETRY', 4500)),
+    'max_attempts': int(os.environ.get('ENGINE_WORKER_MAX_ATTEMPTS', 0)),
+    'orm': 'default'
+}
+
+SCRATCH_DIRECTORY = os.environ.get('SCRATCH_DIRECTORY', '/tmp/scratch')
+ORIGIN_CHUNK_SIZE = int(os.environ.get('ORIGIN_CHUNK_SIZE', 8192))
+PDF_RASTERIZER_THREAD_COUNT = int(os.environ.get('PDF_RASTERIZER_THREAD_COUNT', 3))
+PDF_RASTERIZER_DPI = int(os.environ.get('PDF_RASTERIZER_DPI', 300))
+PDF_RASTERIZER_FORMAT = os.environ.get('PDF_RASTERIZER_FORMAT', 'jpg')
+TARGET_S3_BUCKET_NAME = os.environ.get('TARGET_S3_BUCKET_NAME', 'dlcs-composite-images')
