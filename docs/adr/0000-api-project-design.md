@@ -39,7 +39,7 @@ Features/
       - DeleteImage.cs
     Request/
       - GetImages.cs # this 1 command could allow querying by stringX, space, customer etc rather that lots of granular commands. Handler sorts logic
-  /Space 
+  /Space
     - SpaceController.cs
 - Program.cs
 - Startup.cs
