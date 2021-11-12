@@ -57,7 +57,7 @@ The response body is an accepted [Batch](https://dlcs-book.readthedocs.io/en/lat
 }
 ```
 
-The `images` property in the above links to a collection of the images in the batch. 
+The `images` property in the above links to a collection of the images in the batch.
 
 The new requirement is that a PDF becomes a set of individual image services.
 
@@ -89,7 +89,7 @@ A PDF here is a bit like a _latent_ Collection. A `hydra:Collection` can have an
 Submitting a `Composite` to the queue is telling the DLCS "unpack the sequence of images inside the resource, and create a DLCS image for each one, assigning the properties provided to each DLCS image". However, one of those properties - `id` - cannot be the same for each image, and it's likely that at least one of the metadata fields (string1, string2, number1, etc) will need to vary across the images. We achieve this with _format strings_ and _increments_, explained below.
 
 The `Composite` class has the same properties as Image (asset), plus a couple of extra ones.
-Until now, the only permitted `@type` of member of a `hydra:Collection` submitted to the DLCS queue has been `Image`; this has allowed us to omit the type in the first example. 
+Until now, the only permitted `@type` of member of a `hydra:Collection` submitted to the DLCS queue has been `Image`; this has allowed us to omit the type in the first example.
 
 From now however, type should be supplied (although we can assume Image if not provided).
 
@@ -105,7 +105,7 @@ The latter affects how the DLCS assigns properties to the images it will create.
 
 ### Format strings
 
-The `id` property of a Composite _MUST_ contain a format string. Metadata fields (string1, string2, number1, etc) may optionally contain format strings. For any property containing a format string, the DLCS will assign a value for that property obtained by combining the format string with the incrementSeed. 
+The `id` property of a Composite _MUST_ contain a format string. Metadata fields (string1, string2, number1, etc) may optionally contain format strings. For any property containing a format string, the DLCS will assign a value for that property obtained by combining the format string with the incrementSeed.
 
 
 > Note: most DLCS classes have both `id` and `@id` properties. The `@id` property is the fully qualified URL of the resource, whereas the `id` property is the path component of that fully qualified resource that you are providing to make it unique within its `customer` and `space`. Keeping these separate allows domain names to change, or path syntax to change; it also allows you to submit assets to the DLCS without worrying about fully qualified identifiers for them.
