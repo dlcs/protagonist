@@ -32,8 +32,11 @@ services:
     deploy:
       replicas: 3
     env_file: .env
+    environment:
+      - AWS_PROFILE=${AWS_PROFILE}
     volumes:
       - ./scratch:/data/scratch
+      - $HOME/.aws:/srv/dlcs/.aws:ro
     depends_on:
       - migrate
       - init

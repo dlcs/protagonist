@@ -1,7 +1,7 @@
 import json
 import os
 
-from api.models import Submission
+from app.common.models import Member, Collection
 from jsonschema import ValidationError, RefResolver, Draft7Validator
 from rest_framework import serializers
 
@@ -26,24 +26,24 @@ def __initialise_json_schemas():
 _collection_schema, _member_schema, _resolver = __initialise_json_schemas()
 
 
-class SubmissionCollectionSerializer(serializers.ModelSerializer):
+class MemberSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Submission
+        model = Member
+        fields = "__all__"
+
+        @staticmethod
+        def validate_json_data(json_data):
+            return _validate_json(json_data, _member_schema)
+
+
+class CollectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Collection
         fields = "__all__"
 
     @staticmethod
-    def validate_payload(data):
-        return _validate_json(data, _collection_schema)
-
-
-class SubmissionMemberSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Submission
-        fields = "__all__"
-
-    @staticmethod
-    def validate_payload(data):
-        return _validate_json(data, _member_schema)
+    def validate_json_data(json_data):
+        return _validate_json(json_data, _collection_schema)
 
 
 def _validate_json(json_data, json_schema):
