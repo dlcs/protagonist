@@ -7,18 +7,25 @@ from rest_framework import serializers
 
 
 def __initialise_json_schemas():
-    schema_dir = os.path.join(os.path.dirname(__file__), 'schemas')
+    schema_dir = os.path.join(os.path.dirname(__file__), "schemas")
 
-    with open(os.path.join(schema_dir, 'collection.schema.json'), 'r') as collection_schema_file:
+    with open(
+        os.path.join(schema_dir, "collection.schema.json"), "r"
+    ) as collection_schema_file:
         collection_schema = json.load(collection_schema_file)
 
-    with open(os.path.join(schema_dir, 'member.schema.json'), 'r') as member_schema_file:
+    with open(
+        os.path.join(schema_dir, "member.schema.json"), "r"
+    ) as member_schema_file:
         member_schema = json.load(member_schema_file)
 
-    resolver = RefResolver.from_schema(collection_schema, store={
-        collection_schema['$id']: collection_schema,
-        member_schema['$id']: member_schema
-    })
+    resolver = RefResolver.from_schema(
+        collection_schema,
+        store={
+            collection_schema["$id"]: collection_schema,
+            member_schema["$id"]: member_schema,
+        },
+    )
 
     return collection_schema, member_schema, resolver
 

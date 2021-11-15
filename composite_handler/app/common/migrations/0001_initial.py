@@ -9,32 +9,53 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Collection',
+            name="Collection",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('json_data', models.JSONField()),
-                ('customer', models.IntegerField()),
-                ('created_date', models.DateTimeField(auto_now_add=True)),
-                ('last_updated_date', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("json_data", models.JSONField()),
+                ("customer", models.IntegerField()),
+                ("created_date", models.DateTimeField(auto_now_add=True)),
+                ("last_updated_date", models.DateTimeField(auto_now=True)),
             ],
         ),
         migrations.CreateModel(
-            name='Member',
+            name="Member",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('json_data', models.JSONField()),
-                ('status', models.CharField(default='PENDING', max_length=18)),
-                ('image_count', models.IntegerField(blank=True, null=True)),
-                ('dlcs_uri', models.TextField(blank=True, null=True)),
-                ('error', models.TextField(blank=True, null=True)),
-                ('created_date', models.DateTimeField(auto_now_add=True)),
-                ('last_updated_date', models.DateTimeField(auto_now=True)),
-                ('collection', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='common.collection')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("json_data", models.JSONField()),
+                ("status", models.CharField(default="PENDING", max_length=18)),
+                ("image_count", models.IntegerField(blank=True, null=True)),
+                ("dlcs_uri", models.TextField(blank=True, null=True)),
+                ("error", models.TextField(blank=True, null=True)),
+                ("created_date", models.DateTimeField(auto_now_add=True)),
+                ("last_updated_date", models.DateTimeField(auto_now=True)),
+                (
+                    "collection",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="common.collection",
+                    ),
+                ),
             ],
         ),
     ]

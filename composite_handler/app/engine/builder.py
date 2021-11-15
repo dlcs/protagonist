@@ -1,14 +1,17 @@
 class MemberBuilder:
-    STATIC_FIELDS = {
-        "mediaType": "image/jp2"
-    }
+    STATIC_FIELDS = {"mediaType": "image/jp2"}
 
-    STRIP_FIELDS = [
-        "@type", "originFormat", "incrementSeed"
-    ]
+    STRIP_FIELDS = ["@type", "originFormat", "incrementSeed"]
 
     FORMAT_FIELDS = [
-        "id", "string1", "string2", "string3", "number1", "number2", "number3", "text"
+        "id",
+        "string1",
+        "string2",
+        "string3",
+        "number1",
+        "number2",
+        "number3",
+        "text",
     ]
 
     def __init__(self, template):
@@ -35,5 +38,5 @@ class MemberBuilder:
         return {
             "@context": "http://www.w3.org/ns/hydra/context.jsonld",
             "@type": "Collection",
-            "member": self._members
+            "member": self._members,
         }

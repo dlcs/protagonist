@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-p8%3wt_7j(fur$*9m)pi+=9%18_x)zhjl)5)4vk)gcoc=efx-u'
+SECRET_KEY = "django-insecure-p8%3wt_7j(fur$*9m)pi+=9%18_x)zhjl)5)4vk)gcoc=efx-u"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -30,59 +30,59 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'app.api.apps.ApiConfig',
-    'app.common.apps.CommonConfig',
-    'app.engine.apps.EngineConfig',
-    'django_q',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "app.api.apps.ApiConfig",
+    "app.common.apps.CommonConfig",
+    "app.engine.apps.EngineConfig",
+    "django_q",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'app.urls'
+ROOT_URLCONF = "app.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'app.wsgi.application'
+WSGI_APPLICATION = "app.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'compositedb'),
-        'USER': os.environ.get('POSTGRES_USER', 'dlcs'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'password'),
-        'HOST': os.environ.get('POSTGRES_HOST', '127.0.0.1'),
-        'PORT': int(os.environ.get('POSTGRES_PORT', 5432))
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("POSTGRES_DB", "compositedb"),
+        "USER": os.environ.get("POSTGRES_USER", "dlcs"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "password"),
+        "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+        "PORT": int(os.environ.get("POSTGRES_PORT", 5432)),
     }
 }
 
@@ -91,25 +91,25 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -120,40 +120,40 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = "/static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
     ],
-    'DEFAULT_PARSER_CLASSES': [
-        'rest_framework.parsers.JSONParser',
-    ]
+    "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.JSONParser",
+    ],
 }
 
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'app_cache',
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "app_cache",
     }
 }
 
 Q_CLUSTER = {
-    'workers': int(os.environ.get('ENGINE_WORKER_COUNT', 2)),
-    'timeout': int(os.environ.get('ENGINE_WORKER_TIMEOUT', 3600)),
-    'retry': int(os.environ.get('ENGINE_WORKER_RETRY', 4500)),
-    'max_attempts': int(os.environ.get('ENGINE_WORKER_MAX_ATTEMPTS', 0)),
-    'orm': 'default'
+    "workers": int(os.environ.get("ENGINE_WORKER_COUNT", 2)),
+    "timeout": int(os.environ.get("ENGINE_WORKER_TIMEOUT", 3600)),
+    "retry": int(os.environ.get("ENGINE_WORKER_RETRY", 4500)),
+    "max_attempts": int(os.environ.get("ENGINE_WORKER_MAX_ATTEMPTS", 0)),
+    "orm": "default",
 }
 
-SCRATCH_DIRECTORY = os.environ.get('SCRATCH_DIRECTORY', '/tmp/scratch')
-ORIGIN_CHUNK_SIZE = int(os.environ.get('ORIGIN_CHUNK_SIZE', 8192))
-PDF_RASTERIZER_THREAD_COUNT = int(os.environ.get('PDF_RASTERIZER_THREAD_COUNT', 3))
-PDF_RASTERIZER_DPI = int(os.environ.get('PDF_RASTERIZER_DPI', 300))
-PDF_RASTERIZER_FORMAT = os.environ.get('PDF_RASTERIZER_FORMAT', 'jpg')
-TARGET_S3_BUCKET_NAME = os.environ.get('TARGET_S3_BUCKET_NAME', 'dlcs-composite-images')
+SCRATCH_DIRECTORY = os.environ.get("SCRATCH_DIRECTORY", "/tmp/scratch")
+ORIGIN_CHUNK_SIZE = int(os.environ.get("ORIGIN_CHUNK_SIZE", 8192))
+PDF_RASTERIZER_THREAD_COUNT = int(os.environ.get("PDF_RASTERIZER_THREAD_COUNT", 3))
+PDF_RASTERIZER_DPI = int(os.environ.get("PDF_RASTERIZER_DPI", 300))
+PDF_RASTERIZER_FORMAT = os.environ.get("PDF_RASTERIZER_FORMAT", "jpg")
+TARGET_S3_BUCKET_NAME = os.environ.get("TARGET_S3_BUCKET_NAME", "dlcs-composite-images")

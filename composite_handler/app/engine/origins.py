@@ -7,7 +7,6 @@ from app.settings import SCRATCH_DIRECTORY, ORIGIN_CHUNK_SIZE
 
 
 class HttpOrigin:
-
     def __init__(self):
         self._scratch_path = SCRATCH_DIRECTORY
         self._chunk_size = ORIGIN_CHUNK_SIZE
@@ -17,7 +16,7 @@ class HttpOrigin:
         file_path = os.path.join(subfolder_path, "source." + file_extension)
         with requests.get(url, stream=True) as response:
             response.raise_for_status()
-            with open(file_path, 'wb') as file:
+            with open(file_path, "wb") as file:
                 for chunk in response.iter_content(chunk_size=self._chunk_size):
                     file.write(chunk)
         return subfolder_path

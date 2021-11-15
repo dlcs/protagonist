@@ -7,7 +7,6 @@ from pdf2image import convert_from_path
 
 
 class PdfRasterizer:
-
     def __init__(self):
         self._dpi = PDF_RASTERIZER_DPI
         self._fmt = PDF_RASTERIZER_FORMAT
@@ -24,5 +23,5 @@ class PdfRasterizer:
             fmt=self._fmt,
             thread_count=self._thread_count,
             output_file="image-",
-            output_folder=subfolder_path
+            output_folder=subfolder_path,
         )
