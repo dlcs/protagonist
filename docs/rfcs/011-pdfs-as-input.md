@@ -122,7 +122,7 @@ POST /queue
   "member": [
     {
       "@type": "vocab:Composite",
-      "id": "my-pdf-{0:D4}",
+      "id": "my-pdf-{:03d}",
       "space": 6,
       "origin": "https://s3-eu-west-1.amazonaws.com/bucketname/key-path/my-pdf.pdf",
       "string1": "my-id-{:03d}",
