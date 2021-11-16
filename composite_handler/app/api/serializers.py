@@ -1,5 +1,5 @@
 import json
-import os
+import pathlib
 
 from app.common.models import Member, Collection
 from jsonschema import ValidationError, RefResolver, Draft7Validator
@@ -7,16 +7,12 @@ from rest_framework import serializers
 
 
 def __initialise_json_schemas():
-    schema_dir = os.path.join(os.path.dirname(__file__), "schemas")
+    schema_dir = pathlib.Path(__file__).resolve().parent / "schemas"
 
-    with open(
-        os.path.join(schema_dir, "collection.schema.json"), "r"
-    ) as collection_schema_file:
+    with open(schema_dir / "collection.schema.json", "r") as collection_schema_file:
         collection_schema = json.load(collection_schema_file)
 
-    with open(
-        os.path.join(schema_dir, "member.schema.json"), "r"
-    ) as member_schema_file:
+    with open(schema_dir / "member.schema.json", "r") as member_schema_file:
         member_schema = json.load(member_schema_file)
 
     resolver = RefResolver.from_schema(
