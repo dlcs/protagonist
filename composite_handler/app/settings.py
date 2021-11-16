@@ -142,7 +142,7 @@ Q_CLUSTER = {
     "orm": "default",
 }
 
-SCRATCH_DIRECTORY = env("SCRATCH_DIRECTORY", cast=str, default="/tmp/scratch")
+SCRATCH_DIRECTORY = env.path("SCRATCH_DIRECTORY", default="/tmp/scratch")
 
 PDF_RASTERIZER = {
     "thread_count": env("PDF_RASTERIZER_THREAD_COUNT", cast=int, default=3),

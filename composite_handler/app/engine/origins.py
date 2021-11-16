@@ -21,6 +21,6 @@ class HttpOrigin:
         return subfolder_path
 
     def __generate_subfolder_path(self, submission_id):
-        subfolder_path = os.path.join(self._scratch_path, str(submission_id))
+        subfolder_path = self._scratch_path / Path(str(submission_id))
         Path(subfolder_path).mkdir(parents=True, exist_ok=True)
         return subfolder_path
