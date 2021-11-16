@@ -1,15 +1,14 @@
 import os
-import uuid
 from pathlib import Path
 
 import requests
-from app.settings import SCRATCH_DIRECTORY, ORIGIN_CHUNK_SIZE
+from django.conf import settings
 
 
 class HttpOrigin:
     def __init__(self):
-        self._scratch_path = SCRATCH_DIRECTORY
-        self._chunk_size = ORIGIN_CHUNK_SIZE
+        self._scratch_path = settings.SCRATCH_DIRECTORY
+        self._chunk_size = settings.ORIGIN_CONFIG["chunk_size"]
 
     def fetch(self, submission_id, url, file_extension="pdf"):
         subfolder_path = self.__generate_subfolder_path(submission_id)

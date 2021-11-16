@@ -1,16 +1,14 @@
 import os
 
-from app.settings import PDF_RASTERIZER_DPI
-from app.settings import PDF_RASTERIZER_FORMAT
-from app.settings import PDF_RASTERIZER_THREAD_COUNT
+from django.conf import settings
 from pdf2image import convert_from_path
 
 
 class PdfRasterizer:
     def __init__(self):
-        self._dpi = PDF_RASTERIZER_DPI
-        self._fmt = PDF_RASTERIZER_FORMAT
-        self._thread_count = PDF_RASTERIZER_THREAD_COUNT
+        self._dpi = settings.PDF_RASTERIZER["dpi"]
+        self._fmt = settings.PDF_RASTERIZER["format"]
+        self._thread_count = settings.PDF_RASTERIZER["thread_count"]
 
     def rasterize_pdf(self, subfolder_path):
         # Typically, pdf2image will write generated images to a temporary path, after

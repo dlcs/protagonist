@@ -12,9 +12,14 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import os
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+import environ
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Initialise django-environ and attempt to read environment variables from '.env'.
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -75,16 +80,7 @@ WSGI_APPLICATION = "app.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "compositedb"),
-        "USER": os.environ.get("POSTGRES_USER", "dlcs"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "password"),
-        "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
-        "PORT": int(os.environ.get("POSTGRES_PORT", 5432)),
-    }
-}
+DATABASES = {"default": env.db()}
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -136,24 +132,28 @@ REST_FRAMEWORK = {
     ],
 }
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-        "LOCATION": "app_cache",
-    }
-}
+CACHES = {"default": env.cache()}
 
 Q_CLUSTER = {
-    "workers": int(os.environ.get("ENGINE_WORKER_COUNT", 2)),
-    "timeout": int(os.environ.get("ENGINE_WORKER_TIMEOUT", 3600)),
-    "retry": int(os.environ.get("ENGINE_WORKER_RETRY", 4500)),
-    "max_attempts": int(os.environ.get("ENGINE_WORKER_MAX_ATTEMPTS", 0)),
+    "workers": env("ENGINE_WORKER_COUNT", cast=int, default=2),
+    "timeout": env("ENGINE_WORKER_TIMEOUT", cast=int, default=3600),
+    "retry": env("ENGINE_WORKER_RETRY", cast=int, default=4500),
+    "max_attempts": env("ENGINE_WORKER_MAX_ATTEMPTS", cast=int, default=0),
     "orm": "default",
 }
 
-SCRATCH_DIRECTORY = os.environ.get("SCRATCH_DIRECTORY", "/tmp/scratch")
-ORIGIN_CHUNK_SIZE = int(os.environ.get("ORIGIN_CHUNK_SIZE", 8192))
-PDF_RASTERIZER_THREAD_COUNT = int(os.environ.get("PDF_RASTERIZER_THREAD_COUNT", 3))
-PDF_RASTERIZER_DPI = int(os.environ.get("PDF_RASTERIZER_DPI", 300))
-PDF_RASTERIZER_FORMAT = os.environ.get("PDF_RASTERIZER_FORMAT", "jpg")
-TARGET_S3_BUCKET_NAME = os.environ.get("TARGET_S3_BUCKET_NAME", "dlcs-composite-images")
+SCRATCH_DIRECTORY = env("SCRATCH_DIRECTORY", cast=str, default="/tmp/scratch")
+
+PDF_RASTERIZER = {
+    "thread_count": env("PDF_RASTERIZER_THREAD_COUNT", cast=int, default=3),
+    "format": env("PDF_RASTERIZER_FORMAT", cast=str, default="jpg"),
+    "dpi": env("PDF_RASTERIZER_DPI", cast=int, default=300),
+}
+
+ORIGIN_CONFIG = {"chunk_size": env("ORIGIN_CHUNK_SIZE", cast=int, default=8192)}
+
+DLCS_TARGET_CONFIG = {
+    "s3_bucket_name": env(
+        "TARGET_S3_BUCKET_NAME", cast=str, default="dlcs-composite-images"
+    )
+}

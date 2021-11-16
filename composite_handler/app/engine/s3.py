@@ -1,13 +1,13 @@
 import os
 
 import boto3
-from app.settings import TARGET_S3_BUCKET_NAME
+from django.conf import settings
 
 
 class S3Client:
     def __init__(self):
         self._client = boto3.client("s3")
-        self._bucket_name = TARGET_S3_BUCKET_NAME
+        self._bucket_name = settings.DLCS_TARGET_CONFIG["s3_bucket_name"]
         self._bucket_base_url = "https://s3-{0}.amazonaws.com/{1}".format(
             self._client.get_bucket_location(Bucket=self._bucket_name)[
                 "LocationConstraint"
