@@ -34,8 +34,7 @@ class MemberSerializer(serializers.ModelSerializer):
         model = Member
         fields = "__all__"
 
-        @staticmethod
-        def validate_json_data(json_data):
+        def validate_json_data(self, json_data):
             return _validate_json(json_data, _member_schema)
 
 
@@ -44,8 +43,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         model = Collection
         fields = "__all__"
 
-    @staticmethod
-    def validate_json_data(json_data):
+    def validate_json_data(self, json_data):
         return _validate_json(json_data, _collection_schema)
 
 
