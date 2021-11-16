@@ -33,7 +33,7 @@ services:
       replicas: 3
     env_file: .env
     environment:
-      - AWS_PROFILE=${AWS_PROFILE}
+      - AWS_PROFILE=${AWS_PROFILE:-default}
     volumes:
       - ./scratch:/data/scratch
       - $HOME/.aws:/srv/dlcs/.aws:ro
