@@ -28,7 +28,7 @@ class MemberBuilder:
     def build_member(self, dlcs_uri):
         template = dict(self._template)
         for format_field in self.FORMAT_FIELDS:
-            if format_field in template:
+            if format_field in template and isinstance(template[format_field], str):
                 template[format_field] = template[format_field].format(self._index)
         template["origin"] = dlcs_uri
         self._index += 1
