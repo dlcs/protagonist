@@ -44,12 +44,13 @@ namespace DLCS.Repository.Storage.S3
             }
         }
 
-        public async Task<ObjectFromBucket> GetObjectFromBucket(ObjectInBucket objectInBucket)
+        public async Task<ObjectFromBucket> GetObjectFromBucket(ObjectInBucket objectInBucket,
+            CancellationToken cancellationToken = default)
         {
             var getObjectRequest = objectInBucket.AsGetObjectRequest();
             try
             {
-                GetObjectResponse getResponse = await s3Client.GetObjectAsync(getObjectRequest);
+                GetObjectResponse getResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
                 return getResponse.AsObjectInBucket(objectInBucket);
             }
             catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)

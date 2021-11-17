@@ -46,9 +46,10 @@ namespace Orchestrator.Features.Zip.Requests
 
             if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
 
-            var pdfControlFile =
-                await storedNamedQueryService.GetControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey);
-            return pdfControlFile;
+            var controlFile =
+                await storedNamedQueryService.GetControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey,
+                    cancellationToken);
+            return controlFile;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
@@ -29,13 +30,14 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             NamedQuerySettings = namedQuerySettings.Value;
         }
         
-        public async Task<bool> PersistProjection(T parsedNamedQuery, List<Asset> images)
+        public async Task<bool> PersistProjection(T parsedNamedQuery, List<Asset> images,
+            CancellationToken cancellationToken = default)
         {
             try
             {
                 var controlFile = await CreateControlFile(images, parsedNamedQuery);
 
-                var createResponse = await CreateFile(parsedNamedQuery, images);
+                var createResponse = await CreateFile(parsedNamedQuery, images, cancellationToken);
 
                 if (!createResponse.Success)
                 {
@@ -77,6 +79,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             BucketReader.WriteToBucket(new ObjectInBucket(NamedQuerySettings.OutputBucket, controlFileKey),
                 JsonConvert.SerializeObject(controlFile), "application/json");
 
-        protected abstract Task<CreateProjectionResult> CreateFile(T parsedNamedQuery, List<Asset> assets);
+        protected abstract Task<CreateProjectionResult> CreateFile(T parsedNamedQuery, List<Asset> assets,
+            CancellationToken cancellationToken);
     }
 }

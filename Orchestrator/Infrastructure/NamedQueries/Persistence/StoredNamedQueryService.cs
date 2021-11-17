@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets.NamedQueries;
@@ -34,7 +35,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         /// Get <see cref="StoredResult"/> containing data stream and status for specific named query result.
         /// </summary>
         public async Task<StoredResult> GetResults<T>(NamedQueryResult<T> namedQueryResult,
-            IProjectionCreator<T> projectionCreator)
+            IProjectionCreator<T> projectionCreator, CancellationToken cancellationToken)
             where T : StoredParsedNamedQuery
         {
             namedQueryResult.ParsedQuery.ThrowIfNull(nameof(namedQueryResult.ParsedQuery));
@@ -42,7 +43,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             var parsedNamedQuery = namedQueryResult.ParsedQuery!;
 
             // Check to see if we can use an existing item
-            var existingResult = await TryGetExistingResource(parsedNamedQuery);
+            var existingResult = await TryGetExistingResource(parsedNamedQuery, cancellationToken);
 
             // If it's Found or InProcess then no further processing for now, returns what's found
             if (existingResult.Status is PersistedProjectionStatus.Available or PersistedProjectionStatus.InProcess)
@@ -50,19 +51,17 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
                 return existingResult;
             }
 
-            var imageResults = await namedQueryResult.Results.ToListAsync();
+            var imageResults = await namedQueryResult.Results.ToListAsync(cancellationToken);
             if (imageResults.Count == 0)
             {
                 logger.LogWarning("No results found for PDF file {PdfS3Key}, aborting", parsedNamedQuery.StorageKey);
                 return new StoredResult(Stream.Null, PersistedProjectionStatus.NotFound);
             }
-
-            // TODO Get IProjectionCreator for specified type here and call it
-            // var success = await createResource(parsedNamedQuery, imageResults);
-            var success = await projectionCreator.PersistProjection(parsedNamedQuery, imageResults);
+            
+            var success = await projectionCreator.PersistProjection(parsedNamedQuery, imageResults, cancellationToken);
             if (!success) return new StoredResult(Stream.Null, PersistedProjectionStatus.Error);
 
-            var pdf = await LoadStoredObject(parsedNamedQuery.StorageKey);
+            var pdf = await LoadStoredObject(parsedNamedQuery.StorageKey, cancellationToken);
             if (pdf.Stream != null && pdf.Stream != Stream.Null)
             {
                 return new(pdf.Stream!, PersistedProjectionStatus.Available);
@@ -76,21 +75,22 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         /// <summary>
         /// Get <see cref="ControlFile"/> stored as specified key.
         /// </summary>
-        public async Task<ControlFile?> GetControlFile(string controlFileKey)
+        public async Task<ControlFile?> GetControlFile(string controlFileKey, CancellationToken cancellationToken)
         {
-            var controlObject = await LoadStoredObject(controlFileKey);
+            var controlObject = await LoadStoredObject(controlFileKey, cancellationToken);
             if (controlObject.Stream == Stream.Null) return null;
             return await controlObject.DeserializeFromJson<ControlFile>();
         }
 
-        private async Task<StoredResult> TryGetExistingResource(StoredParsedNamedQuery parsedNamedQuery)
+        private async Task<StoredResult> TryGetExistingResource(StoredParsedNamedQuery parsedNamedQuery,
+            CancellationToken cancellationToken)
         {
-            var controlFile = await GetControlFile(parsedNamedQuery.ControlFileStorageKey);
+            var controlFile = await GetControlFile(parsedNamedQuery.ControlFileStorageKey, cancellationToken);
             if (controlFile == null) return new(Stream.Null, PersistedProjectionStatus.NotFound);
 
             var itemKey = parsedNamedQuery.StorageKey;
 
-            if (controlFile.IsStale(namedQuerySettings.PdfControlStaleSecs)) // TODO - allow different values
+            if (controlFile.IsStale(namedQuerySettings.ControlStaleSecs)) // TODO - allow different values
             {
                 logger.LogWarning("File {S3Key} has valid control-file but it is stale. Will recreate",
                     itemKey);
@@ -103,7 +103,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
                 return new(Stream.Null, PersistedProjectionStatus.InProcess);
             }
 
-            var resource = await LoadStoredObject(itemKey);
+            var resource = await LoadStoredObject(itemKey, cancellationToken);
             if (resource.Stream != null && resource.Stream != Stream.Null)
             {
                 return new(resource.Stream!, PersistedProjectionStatus.Available);
@@ -113,10 +113,10 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             return new(Stream.Null, PersistedProjectionStatus.NotFound);
         }
 
-        private Task<ObjectFromBucket> LoadStoredObject(string key)
+        private Task<ObjectFromBucket> LoadStoredObject(string key, CancellationToken cancellationToken)
         {
             var objectInBucket = new ObjectInBucket(namedQuerySettings.OutputBucket, key);
-            return bucketReader.GetObjectFromBucket(objectInBucket);
+            return bucketReader.GetObjectFromBucket(objectInBucket, cancellationToken);
         }
     }
     

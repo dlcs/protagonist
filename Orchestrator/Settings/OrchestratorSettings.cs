@@ -192,20 +192,25 @@ namespace Orchestrator.Settings
         public string PdfStorageTemplate { get; set; } = "{customer}/pdf/{queryname}/{args}";
         
         /// <summary>
-        /// String format for generating keys for PDF object storage.
+        /// String format for generating keys for Zip object storage.
         /// Supported replacements are {customer}/{queryname}/{args}
         /// </summary>
         public string ZipStorageTemplate { get; set; } = "{customer}/zip/{queryname}/{args}";
 
         /// <summary>
-        /// Number of seconds after which an "InProcess" PDF file is considered stale for.
+        /// Number of seconds after which an "InProcess" control file is considered stale for.
         /// After this time has elapsed it will be recreated.
         /// </summary>
-        public int PdfControlStaleSecs { get; set; } = 600;
+        public int ControlStaleSecs { get; set; } = 600;
         
         /// <summary>
         /// URL root of fireball service for PDF generation
         /// </summary>
         public Uri FireballRoot { get; set; }
+
+        /// <summary>
+        /// Folder template for creating local Zip file
+        /// </summary>
+        public string ZipFolderTemplate { get; set; }
     }
 }

@@ -52,7 +52,7 @@ namespace Orchestrator.Features.PDF.Requests
             if (namedQueryResult.ParsedQuery is { IsFaulty: true })
                 return PersistedNamedQueryProjection.BadRequest();
 
-            var pdfResult = await storedNamedQueryService.GetResults(namedQueryResult, pdfCreator);
+            var pdfResult = await storedNamedQueryService.GetResults(namedQueryResult, pdfCreator, cancellationToken);
 
             return pdfResult.Status == PersistedProjectionStatus.InProcess
                 ? new PersistedNamedQueryProjection(PersistedProjectionStatus.InProcess)

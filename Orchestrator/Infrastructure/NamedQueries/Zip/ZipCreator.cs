@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
@@ -28,7 +29,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
         }
 
         protected override async Task<CreateProjectionResult> CreateFile(ZipParsedNamedQuery parsedNamedQuery,
-            List<Asset> assets)
+            List<Asset> assets, CancellationToken cancellationToken)
         {
             var storageKey = parsedNamedQuery.StorageKey;
             var zipFilePath = GetZipFilePath(parsedNamedQuery);
@@ -36,7 +37,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
             try
             {
                 DeleteZipFileIfExists(zipFilePath);
-                await CreateZipFileOnDisk(parsedNamedQuery, assets, storageKey, zipFilePath);
+                await CreateZipFileOnDisk(parsedNamedQuery, assets, storageKey, zipFilePath, cancellationToken);
 
                 return await UploadZipToS3(parsedNamedQuery, zipFilePath);
             }
@@ -65,18 +66,26 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
             };
         }
 
-        private async Task CreateZipFileOnDisk(ZipParsedNamedQuery parsedNamedQuery, List<Asset> assets, string? storageKey,
-            string? zipFilePath)
+        private async Task CreateZipFileOnDisk(ZipParsedNamedQuery parsedNamedQuery, List<Asset> assets,
+            string storageKey, string zipFilePath, CancellationToken cancellationToken)
         {
-            Logger.LogInformation("Creating new zip archive at {S3Key} with {AssetCount} assets",
-                storageKey, assets.Count);
+            Logger.LogInformation("Creating new zip archive for {S3Key} at {LocalPath} with {AssetCount} assets",
+                storageKey, zipFilePath, assets.Count);
 
+            Directory.CreateDirectory(zipFilePath[..zipFilePath.LastIndexOf(Path.DirectorySeparatorChar)]);
             await using var zipToOpen = new FileStream(zipFilePath, FileMode.Create);
             using var zipArchive = new ZipArchive(zipToOpen, ZipArchiveMode.Create);
 
+            int imageCount = 0;
             foreach (var i in assets.OrderBy(i =>
                 NamedQueryProjections.GetCanvasOrderingElement(i, parsedNamedQuery)))
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    Logger.LogWarning("Creation of zip file at {LocalPath} cancelled, aborting", zipFilePath);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+                Logger.LogDebug("Adding image {Image} to {LocalPath}", ++imageCount, zipFilePath);
                 await ProcessImage(i, storageKey, zipArchive);
             }
         }
@@ -111,8 +120,12 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
             }
         }
 
-        // TODO - where should this go?
-        private static string GetZipFilePath(ZipParsedNamedQuery parsedNamedQuery) 
-            => Path.Join(Path.GetTempPath(), $"{parsedNamedQuery.StorageKey}.zip");
+        private string GetZipFilePath(ZipParsedNamedQuery parsedNamedQuery)
+        {
+            var pathSafeStorageKey = $"{parsedNamedQuery.StorageKey}".Replace('/', '_');
+            return NamedQuerySettings.ZipFolderTemplate
+                .Replace("{customer}", parsedNamedQuery.Customer.ToString())
+                .Replace("{storage-key}", pathSafeStorageKey);
+        }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -336,7 +337,8 @@ namespace Orchestrator.Tests.Integration
             public void AddCallbackFor(string pdfKey, Func<bool> callback)
                 => callbacks.Add(pdfKey, callback);
 
-            public Task<bool> PersistProjection(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images)
+            public Task<bool> PersistProjection(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images,
+                CancellationToken cancellationToken = default)
             {
                 if (callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
                 {

@@ -50,11 +50,11 @@ namespace Orchestrator.Features.Zip.Requests
                 return PersistedNamedQueryProjection.BadRequest();
             
             // Stream ZIP 
-            var pdfResult = await storedNamedQueryService.GetResults(namedQueryResult, zipCreator);
+            var zipResult = await storedNamedQueryService.GetResults(namedQueryResult, zipCreator, cancellationToken);
 
-            return pdfResult.Status == PersistedProjectionStatus.InProcess
+            return zipResult.Status == PersistedProjectionStatus.InProcess
                 ? new PersistedNamedQueryProjection(PersistedProjectionStatus.InProcess)
-                : new PersistedNamedQueryProjection(pdfResult.Stream, pdfResult.Status);
+                : new PersistedNamedQueryProjection(zipResult.Stream, zipResult.Status);
         }
     }
 }

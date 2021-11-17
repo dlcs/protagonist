@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
@@ -46,7 +47,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
         }
 
         protected override async Task<CreateProjectionResult> CreateFile(PdfParsedNamedQuery parsedNamedQuery,
-            List<Asset> assets)
+            List<Asset> assets, CancellationToken cancellationToken)
         {
             var pdfKey = parsedNamedQuery.StorageKey;
 
@@ -60,7 +61,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
                 {
                     Content = new StringContent(jsonString, Encoding.UTF8, "application/json")
                 };
-                var response = await fireballClient.SendAsync(request);
+                var response = await fireballClient.SendAsync(request, cancellationToken);
                 var fireballResponse = await response.ReadAsJsonAsync<CreateProjectionResult>(true, jsonSerializerSettings);
                 Logger.LogInformation("Created new pdf document at {PdfS3Key} with size in bytes = {SizeBytes}",
                     pdfKey, fireballResponse?.Size ?? -1);

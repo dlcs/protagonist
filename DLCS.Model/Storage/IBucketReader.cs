@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DLCS.Model.Storage
@@ -11,7 +12,8 @@ namespace DLCS.Model.Storage
         /// <summary>
         /// Get full object from bucket, including content and headers.
         /// </summary>
-        Task<ObjectFromBucket> GetObjectFromBucket(ObjectInBucket objectInBucket);
+        Task<ObjectFromBucket> GetObjectFromBucket(ObjectInBucket objectInBucket,
+            CancellationToken cancellationToken = default);
         
         /// <summary>
         /// Get specified object from bucket.

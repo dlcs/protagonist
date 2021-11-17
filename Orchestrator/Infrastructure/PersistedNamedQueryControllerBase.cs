@@ -63,7 +63,7 @@ namespace Orchestrator.Infrastructure
                 if (result.IsBadRequest) return BadRequest();
                 if (result.Status == PersistedProjectionStatus.Error) return StatusCode(500);
                 if (result.Status == PersistedProjectionStatus.InProcess)
-                    return InProcess(NamedQuerySettings.PdfControlStaleSecs);
+                    return InProcess(NamedQuerySettings.ControlStaleSecs);
                 if (result.IsEmpty) return NotFound();
 
                 SetCacheControl();

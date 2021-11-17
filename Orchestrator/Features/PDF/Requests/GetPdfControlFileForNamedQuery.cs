@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
 using MediatR;
+using Newtonsoft.Json;
 using Orchestrator.Infrastructure.NamedQueries.Persistence;
 using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Infrastructure.NamedQueries.Requests;
@@ -11,7 +12,7 @@ namespace Orchestrator.Features.PDF.Requests
     /// <summary>
     /// Mediatr request for getting PDF control-file for named query
     /// </summary>
-    public class GetPdfControlFileForNamedQuery : IBaseNamedQueryRequest, IRequest<ControlFile?>
+    public class GetPdfControlFileForNamedQuery : IBaseNamedQueryRequest, IRequest<PdfControlFile?>
     {
         public string CustomerPathValue { get; }
 
@@ -27,7 +28,7 @@ namespace Orchestrator.Features.PDF.Requests
         }
     }
     
-    public class GetPdfControlFileForNamedQueryHandler : IRequestHandler<GetPdfControlFileForNamedQuery, ControlFile?>
+    public class GetPdfControlFileForNamedQueryHandler : IRequestHandler<GetPdfControlFileForNamedQuery, PdfControlFile?>
     {
         private readonly StoredNamedQueryService storedNamedQueryService;
         private readonly NamedQueryResultGenerator namedQueryResultGenerator;
@@ -40,16 +41,32 @@ namespace Orchestrator.Features.PDF.Requests
             this.namedQueryResultGenerator = namedQueryResultGenerator;
         }
         
-        public async Task<ControlFile?> Handle(GetPdfControlFileForNamedQuery request, CancellationToken cancellationToken)
+        public async Task<PdfControlFile?> Handle(GetPdfControlFileForNamedQuery request, CancellationToken cancellationToken)
         {
             var namedQueryResult = await namedQueryResultGenerator.GetNamedQueryResult<PdfParsedNamedQuery>(request);
 
             if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
+            
+            var controlFile =
+                await storedNamedQueryService.GetControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey,
+                    cancellationToken);
+            return new PdfControlFile(controlFile);
+        }
+    }
 
-            // TODO - map to object with "pageCount" rather than "itemCount"
-            var pdfControlFile =
-                await storedNamedQueryService.GetControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey);
-            return pdfControlFile;
+    // NOTE - this is for backwards compatibility as "itemCount" property was previously "pageCount"
+    public class PdfControlFile : ControlFile
+    {
+        [JsonProperty("pageCount")] public int PageCount => ItemCount;
+
+        public PdfControlFile(ControlFile controlFile)
+        {
+            Key = controlFile.Key;
+            Exists = controlFile.Exists;
+            InProcess = controlFile.InProcess;
+            Created = controlFile.Created;
+            ItemCount = controlFile.ItemCount;
+            SizeBytes = controlFile.SizeBytes;
         }
     }
 }
