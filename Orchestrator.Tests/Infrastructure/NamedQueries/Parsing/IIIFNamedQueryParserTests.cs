@@ -4,6 +4,7 @@ using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
+using Orchestrator.Infrastructure.NamedQueries.Manifest;
 using Orchestrator.Infrastructure.NamedQueries.Parsing;
 using Xunit;
 

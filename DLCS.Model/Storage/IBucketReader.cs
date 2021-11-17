@@ -26,18 +26,27 @@ namespace DLCS.Model.Storage
         /// <returns></returns>
         Task<string[]> GetMatchingKeys(ObjectInBucket rootKey);
         
-        // TODO - delete these as they are not Reading
+        // TODO - delete these as they are not Reading - move to diff interface, e.g. IBucketWriter?
         /// <summary>
         /// Copy key to new key within same bucket.
         /// </summary>
         Task CopyWithinBucket(string bucket, string sourceKey, string destKey);
         
+        /// <summary>
+        /// Write content from provided string to S3 
+        /// </summary>
+        /// <returns></returns>
         Task WriteToBucket(ObjectInBucket dest, string content, string contentType);
         
         /// <summary>
         /// Write content from provided stream to S3
         /// </summary>
         Task<bool> WriteToBucket(ObjectInBucket dest, Stream content, string? contentType = null);
+
+        /// <summary>
+        /// Write file to S3
+        /// </summary>
+        Task<bool> WriteFileToBucket(ObjectInBucket dest, string filePath, string? contentType = null);
 
         /// <summary>
         /// Delete specified objects underlying storage.

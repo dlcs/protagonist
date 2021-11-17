@@ -1,27 +1,27 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace Orchestrator.Features.PDF
+namespace Orchestrator.Infrastructure.NamedQueries.Persistence.Models
 {
     /// <summary>
     /// The PDF control file is a marker to track the progress of a generated PDF.
     /// </summary>
-    public class PdfControlFile
+    public class ControlFile
     {
         /// <summary>
-        /// The PDF storage key that this control file refers to. 
+        /// The storage key that this control file refers to. 
         /// </summary>
         [JsonProperty("key")]
         public string Key { get; set; }
         
         /// <summary>
-        /// A marker for whether the related PDF file exists in storage.
+        /// A marker for whether the related file exists in storage.
         /// </summary>
         [JsonProperty("exists")]
         public bool Exists { get; set; }
         
         /// <summary>
-        /// Whether the related PDF is currently processing.
+        /// Whether the related file is currently processing.
         /// </summary>
         [JsonProperty("inProcess")]
         public bool InProcess { get; set; }
@@ -33,16 +33,16 @@ namespace Orchestrator.Features.PDF
         public DateTime Created { get; set; }
         
         /// <summary>
-        /// How many pages are in the target PDF (excluding cover page)
+        /// How many assets are in the target resource
         /// </summary>
-        [JsonProperty("pageCount")]
-        public int PageCount { get; set; }
+        [JsonProperty("itemCount")]
+        public int ItemCount { get; set; }
         
         /// <summary>
-        /// The size of the related PDF.
+        /// The size of the related resource
         /// </summary>
         [JsonProperty("sizeBytes")]
-        public int SizeBytes { get; set; }
+        public long SizeBytes { get; set; }
 
         /// <summary>
         /// Check if this is control file is stale (in process for longer than X secs)

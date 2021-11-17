@@ -14,22 +14,20 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Orchestrator.Infrastructure.NamedQueries;
+using Orchestrator.Infrastructure.NamedQueries.Persistence;
+using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Settings;
 
-namespace Orchestrator.Features.PDF
+namespace Orchestrator.Infrastructure.NamedQueries.PDF
 {
     /// <summary>
-    /// Implementation of <see cref="IPdfCreator"/> using Fireball for generation of PDF file.
+    /// Use Fireball for projection of NamedQuery to PDF file
     /// </summary>
     /// <remarks>See https://github.com/fractos/fireball</remarks>
-    public class FireballPdfCreator : IPdfCreator
+    public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
     {
         private const string PdfEndpoint = "pdf";
-        private readonly IBucketReader bucketReader;
-        private readonly ILogger<FireballPdfCreator> logger;
         private readonly HttpClient fireballClient;
-        private readonly NamedQuerySettings namedQuerySettings;
         private readonly JsonSerializerSettings jsonSerializerSettings;
 
         public FireballPdfCreator(
@@ -37,12 +35,9 @@ namespace Orchestrator.Features.PDF
             IOptions<NamedQuerySettings> namedQuerySettings,
             ILogger<FireballPdfCreator> logger,
             HttpClient fireballClient
-        )
+        ) : base(bucketReader, namedQuerySettings, logger)
         {
-            this.bucketReader = bucketReader;
-            this.logger = logger;
             this.fireballClient = fireballClient;
-            this.namedQuerySettings = namedQuerySettings.Value;
             jsonSerializerSettings = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Ignore,
@@ -50,65 +45,15 @@ namespace Orchestrator.Features.PDF
             };
         }
 
-        public async Task<bool> CreatePdf(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images)
-        {
-            // TODO - there is a slim chance of this being double triggered
-            try
-            {
-                var controlFile = await CreateControlFile(images, parsedNamedQuery);
-
-                var fireballResponse = await CreatePdfFile(parsedNamedQuery, images);
-
-                if (!fireballResponse.Success)
-                {
-                    return false;
-                }
-
-                controlFile.Exists = true;
-                controlFile.InProcess = false;
-                controlFile.SizeBytes = fireballResponse.Size;
-                await UpdatePdfControlFile(parsedNamedQuery.ControlFileStorageKey, controlFile);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error creating PDF: {PdfS3Key}", parsedNamedQuery.StorageKey);
-                return false;
-            }
-        }
-
-        private async Task<PdfControlFile> CreateControlFile(List<Asset> enumeratedResults,
-            PdfParsedNamedQuery parsedNamedQuery)
-        {
-            logger.LogInformation("Creating new pdf-control file at {PdfControlS3Key}",
-                parsedNamedQuery.ControlFileStorageKey);
-            var controlFile = new PdfControlFile
-            {
-                Created = DateTime.Now,
-                Key = parsedNamedQuery.StorageKey,
-                Exists = false,
-                InProcess = true,
-                PageCount = enumeratedResults.Count,
-                SizeBytes = 0
-            };
-
-            await UpdatePdfControlFile(parsedNamedQuery.ControlFileStorageKey, controlFile);
-            return controlFile;
-        }
-
-        private Task UpdatePdfControlFile(string controlFileKey, PdfControlFile? controlFile) =>
-            bucketReader.WriteToBucket(new ObjectInBucket(namedQuerySettings.OutputBucket, controlFileKey),
-                JsonConvert.SerializeObject(controlFile), "application/json");
-
-        private async Task<FireballResponse> CreatePdfFile(PdfParsedNamedQuery? parsedNamedQuery,
-            List<Asset> enumeratedResults)
+        protected override async Task<CreateProjectionResult> CreateFile(PdfParsedNamedQuery parsedNamedQuery,
+            List<Asset> assets)
         {
             var pdfKey = parsedNamedQuery.StorageKey;
 
             try
             {
-                logger.LogInformation("Creating new pdf document at {PdfS3Key}", pdfKey);
-                var playbook = GeneratePlaybook(pdfKey, parsedNamedQuery, enumeratedResults);
+                Logger.LogInformation("Creating new pdf document at {PdfS3Key}", pdfKey);
+                var playbook = GeneratePlaybook(pdfKey, parsedNamedQuery, assets);
 
                 var jsonString = JsonConvert.SerializeObject(playbook, jsonSerializerSettings);
                 var request = new HttpRequestMessage(HttpMethod.Post, PdfEndpoint)
@@ -116,29 +61,29 @@ namespace Orchestrator.Features.PDF
                     Content = new StringContent(jsonString, Encoding.UTF8, "application/json")
                 };
                 var response = await fireballClient.SendAsync(request);
-                var fireballResponse = await response.ReadAsJsonAsync<FireballResponse>(true, jsonSerializerSettings);
-                logger.LogInformation("Created new pdf document at {PdfS3Key} with size in bytes = {SizeBytes}",
+                var fireballResponse = await response.ReadAsJsonAsync<CreateProjectionResult>(true, jsonSerializerSettings);
+                Logger.LogInformation("Created new pdf document at {PdfS3Key} with size in bytes = {SizeBytes}",
                     pdfKey, fireballResponse?.Size ?? -1);
                 return fireballResponse;
             }
             catch (HttpRequestException ex)
             {
-                logger.LogError(ex, "Http exception calling fireball to generate PDF {PdfS3Key}", pdfKey);
+                Logger.LogError(ex, "Http exception calling fireball to generate PDF {PdfS3Key}", pdfKey);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Unknown exception calling fireball to generate PDF {PdfS3Key}", pdfKey);
+                Logger.LogError(ex, "Unknown exception calling fireball to generate PDF {PdfS3Key}", pdfKey);
             }
 
-            return new FireballResponse();
+            return new CreateProjectionResult();
         }
 
         private FireballPlaybook GeneratePlaybook(string? pdfKey, PdfParsedNamedQuery? parsedNamedQuery,
-            List<Asset>? enumeratedResults)
+            List<Asset>? assets)
         {
             var playbook = new FireballPlaybook
             {
-                Output = $"s3://{namedQuerySettings.OutputBucket}/{pdfKey}",
+                Output = $"s3://{NamedQuerySettings.OutputBucket}/{pdfKey}",
                 Title = parsedNamedQuery.ObjectName,
                 CustomTypes = new FireballCustomTypes
                 {
@@ -149,20 +94,20 @@ namespace Orchestrator.Features.PDF
             playbook.Pages.Add(FireballPage.Download(parsedNamedQuery.CoverPageUrl));
 
             int pageNumber = 0;
-            foreach (var i in enumeratedResults.OrderBy(i =>
+            foreach (var i in assets.OrderBy(i =>
                 NamedQueryProjections.GetCanvasOrderingElement(i, parsedNamedQuery)))
             {
-                logger.LogDebug("Adding PDF page {PdfPage} to {PdfS3Key} for {Image}", pageNumber++, pdfKey, i.Id);
+                Logger.LogDebug("Adding PDF page {PdfPage} to {PdfS3Key} for {Image}", pageNumber++, pdfKey, i.Id);
                 if (i.Roles.HasText())
                 {
-                    logger.LogDebug("Image {Image} on page {PdfPage} of {PdfS3Key} has roles, redacting", i.Id,
+                    Logger.LogDebug("Image {Image} on page {PdfPage} of {PdfS3Key} has roles, redacting", i.Id,
                         pageNumber++, pdfKey);
                     playbook.Pages.Add(FireballPage.Redacted());
                 }
                 else
                 {
                     playbook.Pages.Add(
-                        FireballPage.Image($"s3://{namedQuerySettings.ThumbsBucket}/{i.GetStorageKey()}/low.jpg"));
+                        FireballPage.Image($"s3://{NamedQuerySettings.ThumbsBucket}/{i.GetStorageKey()}/low.jpg"));
                 }
             }
 
@@ -212,12 +157,5 @@ namespace Orchestrator.Features.PDF
         
         public static FireballPage Image(string url) =>
             new() { Type = "jpg", Method = "s3", Input = url };
-    }
-
-    public class FireballResponse
-    {
-        public bool Success { get; set; }
-        
-        public int Size { get; set; }
     }
 }

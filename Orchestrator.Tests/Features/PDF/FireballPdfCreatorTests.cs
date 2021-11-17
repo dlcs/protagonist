@@ -14,6 +14,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Features.PDF;
+using Orchestrator.Infrastructure.NamedQueries.PDF;
 using Orchestrator.Settings;
 using Test.Helpers.Http;
 using Xunit;
@@ -65,7 +66,7 @@ namespace Orchestrator.Tests.Features.PDF
                 .Throws(new Exception());
             
             // Act
-            var response = await sut.CreatePdf(parsedNamedQuery, images);
+            var response = await sut.PersistProjection(parsedNamedQuery, images);
             
             // Assert
             response.Should().BeFalse();
@@ -89,7 +90,7 @@ namespace Orchestrator.Tests.Features.PDF
             httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadGateway));
             
             // Act
-            var response = await sut.CreatePdf(parsedNamedQuery, images);
+            var response = await sut.PersistProjection(parsedNamedQuery, images);
             
             // Assert
             response.Should().BeFalse();
@@ -112,7 +113,7 @@ namespace Orchestrator.Tests.Features.PDF
             httpHandler.SetResponse(responseMessage);
             
             // Act
-            var response = await sut.CreatePdf(parsedNamedQuery, images);
+            var response = await sut.PersistProjection(parsedNamedQuery, images);
             
             // Assert
             response.Should().BeFalse();
@@ -136,7 +137,7 @@ namespace Orchestrator.Tests.Features.PDF
             httpHandler.SetResponse(responseMessage);
             
             // Act
-            var response = await sut.CreatePdf(parsedNamedQuery, images);
+            var response = await sut.PersistProjection(parsedNamedQuery, images);
             
             // Assert
             response.Should().BeTrue();

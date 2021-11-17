@@ -6,12 +6,12 @@ using Orchestrator.Infrastructure.NamedQueries.Persistence;
 using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Infrastructure.NamedQueries.Requests;
 
-namespace Orchestrator.Features.PDF.Requests
+namespace Orchestrator.Features.Zip.Requests
 {
     /// <summary>
-    /// Mediatr request for getting PDF control-file for named query
+    /// Mediatr request for getting zip control-file for named query
     /// </summary>
-    public class GetPdfControlFileForNamedQuery : IBaseNamedQueryRequest, IRequest<ControlFile?>
+    public class GetZipControlFileForNamedQuery : IBaseNamedQueryRequest, IRequest<ControlFile?>
     {
         public string CustomerPathValue { get; }
 
@@ -19,7 +19,7 @@ namespace Orchestrator.Features.PDF.Requests
 
         public string? NamedQueryArgs { get; }
 
-        public GetPdfControlFileForNamedQuery(string customerPathValue, string namedQuery, string? namedQueryArgs)
+        public GetZipControlFileForNamedQuery(string customerPathValue, string namedQuery, string? namedQueryArgs)
         {
             CustomerPathValue = customerPathValue;
             NamedQuery = namedQuery;
@@ -27,12 +27,12 @@ namespace Orchestrator.Features.PDF.Requests
         }
     }
     
-    public class GetPdfControlFileForNamedQueryHandler : IRequestHandler<GetPdfControlFileForNamedQuery, ControlFile?>
+    public class GetZipControlFileForNamedQueryHandler : IRequestHandler<GetZipControlFileForNamedQuery, ControlFile?>
     {
         private readonly StoredNamedQueryService storedNamedQueryService;
         private readonly NamedQueryResultGenerator namedQueryResultGenerator;
 
-        public GetPdfControlFileForNamedQueryHandler(
+        public GetZipControlFileForNamedQueryHandler(
             StoredNamedQueryService storedNamedQueryService,
             NamedQueryResultGenerator namedQueryResultGenerator)
         {
@@ -40,13 +40,12 @@ namespace Orchestrator.Features.PDF.Requests
             this.namedQueryResultGenerator = namedQueryResultGenerator;
         }
         
-        public async Task<ControlFile?> Handle(GetPdfControlFileForNamedQuery request, CancellationToken cancellationToken)
+        public async Task<ControlFile?> Handle(GetZipControlFileForNamedQuery request, CancellationToken cancellationToken)
         {
-            var namedQueryResult = await namedQueryResultGenerator.GetNamedQueryResult<PdfParsedNamedQuery>(request);
+            var namedQueryResult = await namedQueryResultGenerator.GetNamedQueryResult<ZipParsedNamedQuery>(request);
 
             if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
 
-            // TODO - map to object with "pageCount" rather than "itemCount"
             var pdfControlFile =
                 await storedNamedQueryService.GetControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey);
             return pdfControlFile;

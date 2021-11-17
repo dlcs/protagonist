@@ -6,6 +6,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.NamedQueries.Parsing;
+using Orchestrator.Infrastructure.NamedQueries.PDF;
 using Orchestrator.Settings;
 using Xunit;
 
@@ -88,10 +89,10 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
         }
 
         [Theory]
-        [InlineData("n1=p1&n2=p2&s1=p3&#=foo", "1/2", "99/my-query/1/2/foo/Untitled")]
-        [InlineData("n1=p1&n2=p2&s1=p3&#=foo", "1/2/3/4", "99/my-query/1/2/3/4/foo/Untitled")]
-        [InlineData("n1=p1&n2=p2&objectname=file.pdf", "1/2", "99/my-query/1/2/file.pdf")]
-        [InlineData("s1=p1&objectname=file_{s1}.pdf", "foo-bar", "99/my-query/foo-bar/file_foo-bar.pdf")]
+        [InlineData("n1=p1&n2=p2&s1=p3&#=foo", "1/2", "99/pdf/my-query/1/2/foo/Untitled")]
+        [InlineData("n1=p1&n2=p2&s1=p3&#=foo", "1/2/3/4", "99/pdf/my-query/1/2/3/4/foo/Untitled")]
+        [InlineData("n1=p1&n2=p2&objectname=file.pdf", "1/2", "99/pdf/my-query/1/2/file.pdf")]
+        [InlineData("s1=p1&objectname=file_{s1}.pdf", "foo-bar", "99/pdf/my-query/foo-bar/file_foo-bar.pdf")]
         public void GenerateParsedNamedQueryFromRequest_SetsStorageKeys(string template, string args, string expected)
         {
             // Act

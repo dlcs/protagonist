@@ -135,6 +135,21 @@ namespace DLCS.Repository.Storage.S3
             PutObjectResponse? response = await WriteToBucketInternal(putRequest);
             return response != null;
         }
+        
+        public async Task<bool> WriteFileToBucket(ObjectInBucket dest, string filePath, string? contentType = null)
+        {
+            var putRequest = new PutObjectRequest
+            {
+                BucketName = dest.Bucket,
+                Key = dest.Key,
+                FilePath = filePath,
+            };
+
+            if (!string.IsNullOrEmpty(contentType)) putRequest.ContentType = contentType;
+
+            PutObjectResponse? response = await WriteToBucketInternal(putRequest);
+            return response != null;
+        }
 
         public async Task DeleteFromBucket(params ObjectInBucket[] toDelete)
         {

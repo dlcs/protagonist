@@ -4,9 +4,10 @@ using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orchestrator.Infrastructure.NamedQueries.Persistence;
 using Orchestrator.Settings;
 
-namespace Orchestrator.Infrastructure.NamedQueries.Parsing
+namespace Orchestrator.Infrastructure.NamedQueries.PDF
 {
     /// <summary>
     /// Named query parser for converting objects to PDF

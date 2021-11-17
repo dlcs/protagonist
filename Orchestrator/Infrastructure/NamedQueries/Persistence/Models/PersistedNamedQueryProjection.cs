@@ -1,11 +1,11 @@
 ﻿using System.IO;
 
-namespace Orchestrator.Infrastructure.NamedQueries.Models
+namespace Orchestrator.Infrastructure.NamedQueries.Persistence.Models
 {
     /// <summary>
-    /// Represents the result of a request to generate a PDF from NQ
+    /// Represents the result of a request to generate a persisted resource from NQ
     /// </summary>
-    public class PersistedProjectionFromNamedQuery
+    public class PersistedNamedQueryProjection
     {
         /// <summary>
         /// Stream containing generated projection.
@@ -27,19 +27,19 @@ namespace Orchestrator.Infrastructure.NamedQueries.Models
         /// </summary>
         public bool IsBadRequest { get; private init; }
 
-        public static PersistedProjectionFromNamedQuery BadRequest() => new() { IsBadRequest = true };
+        public static PersistedNamedQueryProjection BadRequest() => new() { IsBadRequest = true };
 
-        public PersistedProjectionFromNamedQuery()
+        public PersistedNamedQueryProjection()
         {
         }
 
-        public PersistedProjectionFromNamedQuery(PersistedProjectionStatus status)
+        public PersistedNamedQueryProjection(PersistedProjectionStatus status)
         {
             DataStream = Stream.Null;
             Status = status;
         }
 
-        public PersistedProjectionFromNamedQuery(Stream? pdfStream, PersistedProjectionStatus status)
+        public PersistedNamedQueryProjection(Stream? pdfStream, PersistedProjectionStatus status)
         {
             DataStream = pdfStream ?? Stream.Null;
             Status = status;

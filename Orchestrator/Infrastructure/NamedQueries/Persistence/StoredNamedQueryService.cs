@@ -1,30 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
-using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.Infrastructure.NamedQueries;
-using Orchestrator.Infrastructure.NamedQueries.Models;
+using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Settings;
 
-namespace Orchestrator.Features.PDF
+namespace Orchestrator.Infrastructure.NamedQueries.Persistence
 {
+    /// <summary>
+    /// Service for handling NQ projections that are created and stored alongside a corresponding control-file.
+    /// </summary>
     public class StoredNamedQueryService
     {
         private readonly IBucketReader bucketReader;
-        private readonly ILogger logger;
+        private readonly ILogger<StoredNamedQueryService> logger;
         private readonly NamedQuerySettings namedQuerySettings;
 
-        protected StoredNamedQueryService(
+        public StoredNamedQueryService(
             IBucketReader bucketReader,
             IOptions<NamedQuerySettings> namedQuerySettings,
-            ILogger logger)
+            ILogger<StoredNamedQueryService> logger)
         {
             this.bucketReader = bucketReader;
             this.namedQuerySettings = namedQuerySettings.Value;
@@ -35,7 +34,7 @@ namespace Orchestrator.Features.PDF
         /// Get <see cref="StoredResult"/> containing data stream and status for specific named query result.
         /// </summary>
         public async Task<StoredResult> GetResults<T>(NamedQueryResult<T> namedQueryResult,
-            Func<T, List<Asset>, Task<bool>> createResource)
+            IProjectionCreator<T> projectionCreator)
             where T : StoredParsedNamedQuery
         {
             namedQueryResult.ParsedQuery.ThrowIfNull(nameof(namedQueryResult.ParsedQuery));
@@ -58,7 +57,9 @@ namespace Orchestrator.Features.PDF
                 return new StoredResult(Stream.Null, PersistedProjectionStatus.NotFound);
             }
 
-            var success = await createResource(parsedNamedQuery, imageResults);
+            // TODO Get IProjectionCreator for specified type here and call it
+            // var success = await createResource(parsedNamedQuery, imageResults);
+            var success = await projectionCreator.PersistProjection(parsedNamedQuery, imageResults);
             if (!success) return new StoredResult(Stream.Null, PersistedProjectionStatus.Error);
 
             var pdf = await LoadStoredObject(parsedNamedQuery.StorageKey);
@@ -73,13 +74,13 @@ namespace Orchestrator.Features.PDF
         }
 
         /// <summary>
-        /// Get <see cref="PdfControlFile"/> stored as specified key.
+        /// Get <see cref="ControlFile"/> stored as specified key.
         /// </summary>
-        public async Task<PdfControlFile?> GetControlFile(string controlFileKey)
+        public async Task<ControlFile?> GetControlFile(string controlFileKey)
         {
             var controlObject = await LoadStoredObject(controlFileKey);
             if (controlObject.Stream == Stream.Null) return null;
-            return await controlObject.DeserializeFromJson<PdfControlFile>();
+            return await controlObject.DeserializeFromJson<ControlFile>();
         }
 
         private async Task<StoredResult> TryGetExistingResource(StoredParsedNamedQuery parsedNamedQuery)
@@ -118,6 +119,6 @@ namespace Orchestrator.Features.PDF
             return bucketReader.GetObjectFromBucket(objectInBucket);
         }
     }
-
+    
     public record StoredResult(Stream? Stream, PersistedProjectionStatus Status);
 }

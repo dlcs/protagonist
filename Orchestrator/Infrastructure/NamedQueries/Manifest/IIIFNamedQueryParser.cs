@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
-using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
+using Orchestrator.Infrastructure.NamedQueries.Parsing;
 
-namespace Orchestrator.Infrastructure.NamedQueries.Parsing
+namespace Orchestrator.Infrastructure.NamedQueries.Manifest
 {
     /// <summary>
     /// Named query parser for rendering objects to IIIF

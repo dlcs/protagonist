@@ -4,9 +4,10 @@ using DLCS.Core.Strings;
 using DLCS.Model.Assets.NamedQueries;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orchestrator.Infrastructure.NamedQueries.Parsing;
 using Orchestrator.Settings;
 
-namespace Orchestrator.Infrastructure.NamedQueries.Parsing
+namespace Orchestrator.Infrastructure.NamedQueries.Persistence
 {
     /// <summary>
     /// Base named query parser for rendering objects that are stored and managed via a control-file.

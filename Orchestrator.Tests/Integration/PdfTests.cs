@@ -12,7 +12,8 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using Orchestrator.Features.PDF;
+using Orchestrator.Infrastructure.NamedQueries.Persistence;
+using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
 using Xunit;
@@ -38,7 +39,7 @@ namespace Orchestrator.Tests.Integration
             httpClient = factory
                 .WithConnectionString(dbFixture.ConnectionString)
                 .WithLocalStack(orchestratorFixture.LocalStackFixture)
-                .WithTestServices(services => services.AddScoped<IPdfCreator>(_ =>
+                .WithTestServices(services => services.AddScoped<IProjectionCreator<PdfParsedNamedQuery>>(_ =>
                 {
                     return pdfCreator;
                 }))
@@ -118,8 +119,8 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             const string path = "pdf/99/test-pdf/my-ref/1/1";
-            await AddPdfControlFile("99/test-pdf/my-ref/1/1/tester.json",
-                new PdfControlFile { Created = DateTime.Now, InProcess = true });
+            await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/1/tester.json",
+                new ControlFile { Created = DateTime.Now, InProcess = true });
 
             // Act
             var response = await httpClient.GetAsync(path);
@@ -135,9 +136,9 @@ namespace Orchestrator.Tests.Integration
             // Arrange
             var fakePdfContent = nameof(GetPdf_Returns200_WithExistingPdf_IfPdfControlFileAndPdfExist);
             const string path = "pdf/99/test-pdf/my-ref/1/1";
-            await AddPdfControlFile("99/test-pdf/my-ref/1/1/tester.json",
-                new PdfControlFile { Created = DateTime.Now, InProcess = false });
-            await AddPdf("99/test-pdf/my-ref/1/1/tester", fakePdfContent);
+            await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/1/tester.json",
+                new ControlFile { Created = DateTime.Now, InProcess = false });
+            await AddPdf("99/pdf/test-pdf/my-ref/1/1/tester", fakePdfContent);
 
             // Act
             var response = await httpClient.GetAsync(path);
@@ -153,11 +154,11 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             var fakePdfContent = nameof(GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
-            const string pdfStorageKey = "99/test-pdf/my-ref/1/2/tester";
+            const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/2/tester";
             const string path = "pdf/99/test-pdf/my-ref/1/2";
             
-            await AddPdfControlFile("99/test-pdf/my-ref/1/2/tester.json",
-                new PdfControlFile { Created = DateTime.Now, InProcess = false });
+            await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/2/tester.json",
+                new ControlFile { Created = DateTime.Now, InProcess = false });
             pdfCreator.AddCallbackFor(pdfStorageKey, () =>
             {
                 AddPdf(pdfStorageKey, fakePdfContent).Wait();
@@ -178,10 +179,10 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             var fakePdfContent = nameof(GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
-            const string pdfStorageKey = "99/test-pdf/my-ref/1/3/tester";
+            const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/3/tester";
             const string path = "pdf/99/test-pdf/my-ref/1/3";
-            await AddPdfControlFile("99/test-pdf/my-ref/1/3/tester.json",
-                new PdfControlFile { Created = DateTime.Now.AddHours(-1), InProcess = false });
+            await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/3/tester.json",
+                new ControlFile { Created = DateTime.Now.AddHours(-1), InProcess = false });
             
             pdfCreator.AddCallbackFor(pdfStorageKey, () =>
             {
@@ -203,10 +204,10 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             const string path = "pdf/99/test-pdf/my-ref/1/4";
-            const string pdfStorageKey = "99/test-pdf/my-ref/1/4/tester";
+            const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/4/tester";
             
-            await AddPdfControlFile("99/test-pdf/my-ref/1/4/tester.json",
-                new PdfControlFile { Created = DateTime.Now, InProcess = false });
+            await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/4/tester.json",
+                new ControlFile { Created = DateTime.Now, InProcess = false });
             
             // return True but don't create object
             pdfCreator.AddCallbackFor(pdfStorageKey, () => true);
@@ -226,7 +227,7 @@ namespace Orchestrator.Tests.Integration
             const string pdfStorageKey = "99/test-pdf/my-ref/1/5/tester";
             
             await AddPdfControlFile("99/test-pdf/my-ref/1/5/tester.json",
-                new PdfControlFile { Created = DateTime.Now, InProcess = false });
+                new ControlFile { Created = DateTime.Now, InProcess = false });
             
             pdfCreator.AddCallbackFor(pdfStorageKey, () => false);
 
@@ -295,12 +296,12 @@ namespace Orchestrator.Tests.Integration
             // Arrange
             const string path = "pdf-control/99/test-pdf/any-ref/1/5";
 
-            var pdfControlFile = new PdfControlFile
+            var pdfControlFile = new ControlFile
             {
-                Created = DateTime.Now, InProcess = false, Exists = true, Key = "the-key", PageCount = 100,
+                Created = DateTime.Now, InProcess = false, Exists = true, Key = "the-key", ItemCount = 100,
                 SizeBytes = 1024
             };
-            await AddPdfControlFile("99/test-pdf/any-ref/1/5/tester.json", pdfControlFile);
+            await AddPdfControlFile("99/pdf/test-pdf/any-ref/1/5/tester.json", pdfControlFile);
             var pdfControlFileJson = JsonConvert.SerializeObject(pdfControlFile);
             
             // Act
@@ -312,11 +313,11 @@ namespace Orchestrator.Tests.Integration
             response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/json"));
         }
 
-        private Task AddPdfControlFile(string key, PdfControlFile controlFile) 
+        private Task AddPdfControlFile(string key, ControlFile controlFile) 
             => amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = key,
-                BucketName = "protagonist-pdf",
+                BucketName = "protagonist-storage",
                 ContentBody = JsonConvert.SerializeObject(controlFile)
             });
         
@@ -324,18 +325,18 @@ namespace Orchestrator.Tests.Integration
             => amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = key,
-                BucketName = "protagonist-pdf",
+                BucketName = "protagonist-storage",
                 ContentBody = fakeContent
             });
         
-        private class FakePdfCreator : IPdfCreator
+        private class FakePdfCreator : IProjectionCreator<PdfParsedNamedQuery>
         {
             private static readonly Dictionary<string, Func<bool>> callbacks = new();
 
             public void AddCallbackFor(string pdfKey, Func<bool> callback)
                 => callbacks.Add(pdfKey, callback);
 
-            public Task<bool> CreatePdf(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images)
+            public Task<bool> PersistProjection(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images)
             {
                 if (callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
                 {
