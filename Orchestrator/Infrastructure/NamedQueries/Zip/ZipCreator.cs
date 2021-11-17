@@ -55,6 +55,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
 
         private async Task<CreateProjectionResult> UploadZipToS3(ZipParsedNamedQuery parsedNamedQuery, string zipFilePath)
         {
+            Logger.LogInformation("Uploading new zip archive to {S3Key}", parsedNamedQuery.StorageKey);
             var objectInBucket = new ObjectInBucket(NamedQuerySettings.OutputBucket, parsedNamedQuery.StorageKey);
             var success = await BucketReader.WriteFileToBucket(objectInBucket, zipFilePath, "application/zip");
             var fileInfo = new FileInfo(zipFilePath);

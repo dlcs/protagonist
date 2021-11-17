@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -56,15 +57,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
                 Logger.LogInformation("Creating new pdf document at {PdfS3Key}", pdfKey);
                 var playbook = GeneratePlaybook(pdfKey, parsedNamedQuery, assets);
 
-                var jsonString = JsonConvert.SerializeObject(playbook, jsonSerializerSettings);
-                var request = new HttpRequestMessage(HttpMethod.Post, PdfEndpoint)
-                {
-                    Content = new StringContent(jsonString, Encoding.UTF8, "application/json")
-                };
-                var response = await fireballClient.SendAsync(request, cancellationToken);
-                var fireballResponse = await response.ReadAsJsonAsync<CreateProjectionResult>(true, jsonSerializerSettings);
-                Logger.LogInformation("Created new pdf document at {PdfS3Key} with size in bytes = {SizeBytes}",
-                    pdfKey, fireballResponse?.Size ?? -1);
+                var fireballResponse = await CallFireball(cancellationToken, playbook, pdfKey);
                 return fireballResponse;
             }
             catch (HttpRequestException ex)
@@ -113,6 +106,23 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
             }
 
             return playbook;
+        }
+        
+        private async Task<CreateProjectionResult?> CallFireball(CancellationToken cancellationToken, FireballPlaybook playbook, string pdfKey)
+        {
+            var jsonString = JsonConvert.SerializeObject(playbook, jsonSerializerSettings);
+            var request = new HttpRequestMessage(HttpMethod.Post, PdfEndpoint)
+            {
+                Content = new StringContent(jsonString, Encoding.UTF8, "application/json")
+            };
+            Logger.LogInformation("Calling fireball to create new pdf document at {PdfS3Key}", pdfKey);
+            var sw = Stopwatch.StartNew();
+            var response = await fireballClient.SendAsync(request, cancellationToken);
+            var fireballResponse = await response.ReadAsJsonAsync<CreateProjectionResult>(true, jsonSerializerSettings);
+            sw.Stop();
+            Logger.LogInformation("Created new pdf document at {PdfS3Key} with size in bytes = {SizeBytes}. Took {Elapsed}ms",
+                pdfKey, fireballResponse?.Size ?? -1, sw.ElapsedMilliseconds);
+            return fireballResponse;
         }
     }
 
