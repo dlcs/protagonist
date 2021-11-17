@@ -13,13 +13,12 @@ using FizzWare.NBuilder;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Orchestrator.Features.PDF;
 using Orchestrator.Infrastructure.NamedQueries.PDF;
 using Orchestrator.Settings;
 using Test.Helpers.Http;
 using Xunit;
 
-namespace Orchestrator.Tests.Features.PDF
+namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
 {
     public class FireballPdfCreatorTests
     {

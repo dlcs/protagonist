@@ -5,12 +5,11 @@ using DLCS.Model.PathElements;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Orchestrator.Infrastructure.NamedQueries.Parsing;
 using Orchestrator.Infrastructure.NamedQueries.PDF;
 using Orchestrator.Settings;
 using Xunit;
 
-namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
+namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
 {
     public class PdfNamedQueryParserTests
     {
