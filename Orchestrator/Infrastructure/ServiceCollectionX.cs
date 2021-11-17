@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net.Http;
 using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Model.Assets;
@@ -15,7 +16,9 @@ using DLCS.Repository.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Orchestrator.Infrastructure.Deliverator;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Infrastructure
@@ -68,6 +71,32 @@ namespace Orchestrator.Infrastructure
                     client.DefaultRequestHeaders.WithRequestedBy();
                     client.BaseAddress = apiRoot;
                 });
+
+            return services;
+        }
+
+        /// <summary>
+        /// Add HealthChecks for Database and downstream image-servers
+        /// </summary>
+        public static IServiceCollection ConfigureHealthChecks(this IServiceCollection services,
+            IConfigurationSection reverseProxySection,
+            IConfiguration configuration)
+        {
+            var reverseProxySettings = reverseProxySection.Get<ReverseProxySettings>();
+            var tagsList = new[] { "detail-only" };
+            var healthChecksBuilder = services
+                .AddHealthChecks()
+                .AddNpgSql(configuration.GetPostgresSqlConnection(), name: "Database")
+                .AddUrlGroup(reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.ImageServer),
+                    name: "Image Server")
+                .AddUrlGroup(new Uri(reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.Thumbs)!, "/ping"),
+                    name: "Thumbs", tags: tagsList);
+            
+            var resizeThumbs = reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.ResizeThumbs);
+            if (resizeThumbs != null)
+            {
+                healthChecksBuilder.AddUrlGroup(new Uri(resizeThumbs, "/ping"), name: "ThumbsResize", tags: tagsList);
+            }
 
             return services;
         }
