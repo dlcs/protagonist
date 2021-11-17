@@ -21,7 +21,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
     /// </summary>
     public class ZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
     {
-        public ZipCreator(IBucketReader bucketReader, IOptions<NamedQuerySettings> namedQuerySettings, ILogger logger) :
+        public ZipCreator(IBucketReader bucketReader, IOptions<NamedQuerySettings> namedQuerySettings,
+            ILogger<ZipCreator> logger) :
             base(bucketReader, namedQuerySettings, logger)
         {
         }

@@ -12,7 +12,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
     /// </summary>
     public class ZipNamedQueryParser : StoredNamedQueryParser<ZipParsedNamedQuery>
     {
-        public ZipNamedQueryParser(IOptions<NamedQuerySettings> namedQuerySettings, ILogger logger) 
+        public ZipNamedQueryParser(IOptions<NamedQuerySettings> namedQuerySettings, ILogger<ZipNamedQueryParser> logger)
             : base(namedQuerySettings, logger)
         {
         }
