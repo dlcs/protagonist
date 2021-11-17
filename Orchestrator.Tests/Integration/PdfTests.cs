@@ -13,6 +13,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using Orchestrator.Features.PDF.Requests;
 using Orchestrator.Infrastructure.NamedQueries.Persistence;
 using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Tests.Integration.Infrastructure;
@@ -294,11 +295,12 @@ namespace Orchestrator.Tests.Integration
             // Arrange
             const string path = "pdf-control/99/test-pdf/any-ref/1/5";
 
-            var pdfControlFile = new ControlFile
+            var controlFile = new ControlFile
             {
                 Created = DateTime.Now, InProcess = false, Exists = true, Key = "the-key", ItemCount = 100,
                 SizeBytes = 1024
             };
+            var pdfControlFile = new PdfControlFile(controlFile);
             await AddPdfControlFile("99/pdf/test-pdf/any-ref/1/5/tester.json", pdfControlFile);
             var pdfControlFileJson = JsonConvert.SerializeObject(pdfControlFile);
             

@@ -50,7 +50,7 @@ namespace Orchestrator.Features.PDF.Requests
             var controlFile =
                 await storedNamedQueryService.GetControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey,
                     cancellationToken);
-            return new PdfControlFile(controlFile);
+            return controlFile == null ? null : new PdfControlFile(controlFile);
         }
     }
 
