@@ -12,3 +12,4 @@ pyrsistent==0.18.0
 pytz==2021.3
 requests==2.26.0
 sqlparse==0.4.2
+tqdm==4.62.3

@@ -156,13 +156,20 @@ SCRATCH_DIRECTORY = env.path("SCRATCH_DIRECTORY", default="/tmp/scratch")
 PDF_RASTERIZER = {
     "thread_count": env("PDF_RASTERIZER_THREAD_COUNT", cast=int, default=3),
     "format": env("PDF_RASTERIZER_FORMAT", cast=str, default="jpg"),
-    "dpi": env("PDF_RASTERIZER_DPI", cast=int, default=300),
+    "dpi": env("PDF_RASTERIZER_DPI", cast=int, default=500),
 }
 
 ORIGIN_CONFIG = {"chunk_size": env("ORIGIN_CHUNK_SIZE", cast=int, default=8192)}
 
-DLCS_TARGET_CONFIG = {
+DLCS = {
+    "api_root": env.url("DLCS_API_ROOT", default="https://api.dlcs.digirati.io"),
+    "api_key": env("DLCS_API_KEY", cast=str, default="UNSET"),
+    "api_secret": env("DLCS_API_SECRET", cast=str, default="UNSET"),
     "s3_bucket_name": env(
-        "TARGET_S3_BUCKET_NAME", cast=str, default="dlcs-composite-images"
-    )
+        "DLCS_S3_BUCKET_NAME", cast=str, default="dlcs-composite-images"
+    ),
+    "s3_object_key_prefix": env(
+        "DLCS_S3_OBJECT_KEY_PREFIX", cast=str, default="composites"
+    ),
+    "s3_upload_threads": env("DLCS_S3_UPLOAD_THREADS", cast=int, default=8),
 }

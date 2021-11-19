@@ -1,5 +1,6 @@
 from app.common.models import Member
 from app.engine.builder import MemberBuilder
+from app.engine.dlcs import DLCS
 from app.engine.origins import HttpOrigin
 from app.engine.rasterizers import PdfRasterizer
 from app.engine.s3 import S3Client
@@ -7,6 +8,7 @@ from app.engine.s3 import S3Client
 http_origin = HttpOrigin()
 pdf_rasterizer = PdfRasterizer()
 s3_client = S3Client()
+dlcs = DLCS()
 
 
 def process_member(member_id):
@@ -34,11 +36,7 @@ def __rasterize_composite(member, pdf_path):
 
 def __push_images_to_dlcs(member, images):
     __update_status(member, "PUSHING_TO_DLCS", image_count=len(images))
-    s3_urls = []
-    for image in images:
-        s3_url = s3_client.put_image(member.id, image.filename)
-        s3_urls.append(s3_url)
-    return s3_urls
+    return s3_client.put_images(member.id, images)
 
 
 def __build_dlcs_request(member, dlcs_uris):
@@ -50,13 +48,12 @@ def __build_dlcs_request(member, dlcs_uris):
 
 
 def __initiate_dlcs_ingest(member, dlcs_request):
-    __update_status(member, "SUBMITTING_TO_DLCS")
-    return {"@id": "https://dlcs.digirati.io/abc123"}
+    return dlcs.ingest(member.collection.customer, dlcs_request)
 
 
 def __build_result(member, dlcs_response):
     __update_status(member, "COMPLETED", dlcs_uri=dlcs_response["@id"])
-    return {"Result": True}
+    return dlcs_response
 
 
 def __process_error(member, error):
