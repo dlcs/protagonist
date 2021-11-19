@@ -1,6 +1,6 @@
+from app.common.dlcs import DLCS
 from app.common.models import Member
 from app.engine.builder import MemberBuilder
-from app.engine.dlcs import DLCS
 from app.engine.origins import HttpOrigin
 from app.engine.rasterizers import PdfRasterizer
 from app.engine.s3 import S3Client
@@ -11,14 +11,14 @@ s3_client = S3Client()
 dlcs = DLCS()
 
 
-def process_member(member_id):
-    member = Member.objects.get(id=member_id)
+def process_member(args):
+    member = Member.objects.get(id=args["id"])
     try:
         pdf_path = __fetch_origin(member, member.json_data["origin"])
         images = __rasterize_composite(member, pdf_path)
         s3_urls = __push_images_to_dlcs(member, images)
         dlcs_request = __build_dlcs_request(member, s3_urls)
-        dlcs_response = __initiate_dlcs_ingest(member, dlcs_request)
+        dlcs_response = __initiate_dlcs_ingest(member, dlcs_request, args["auth"])
         return __build_result(member, dlcs_response)
     except Exception as error:
         __process_error(member, error)
@@ -47,8 +47,8 @@ def __build_dlcs_request(member, dlcs_uris):
     return member_builder.build_collection()
 
 
-def __initiate_dlcs_ingest(member, dlcs_request):
-    return dlcs.ingest(member.collection.customer, dlcs_request)
+def __initiate_dlcs_ingest(member, json, auth):
+    return dlcs.ingest(member.collection.customer, json, auth)
 
 
 def __build_result(member, dlcs_response):

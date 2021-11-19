@@ -163,8 +163,6 @@ ORIGIN_CONFIG = {"chunk_size": env("ORIGIN_CHUNK_SIZE", cast=int, default=8192)}
 
 DLCS = {
     "api_root": env.url("DLCS_API_ROOT", default="https://api.dlcs.digirati.io"),
-    "api_key": env("DLCS_API_KEY", cast=str, default="UNSET"),
-    "api_secret": env("DLCS_API_SECRET", cast=str, default="UNSET"),
     "s3_bucket_name": env(
         "DLCS_S3_BUCKET_NAME", cast=str, default="dlcs-composite-images"
     ),

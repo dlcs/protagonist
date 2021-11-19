@@ -78,17 +78,6 @@
     "id",
     "space",
     "origin",
-    "string1",
-    "string2",
-    "string3",
-    "number1",
-    "number2",
-    "number3",
-    "roles",
-    "family",
-    "text",
-    "maxUnauthorised",
-    "originFormat",
     "incrementSeed"
   ]
 }
