@@ -29,10 +29,10 @@ class S3Client:
             total=len(images),
         ) as progress_bar:
             with ThreadPoolExecutor(max_workers=self._upload_threads) as executor:
-                futures = {
-                    executor.submit(self.__put_image, submission_id, image): image
+                futures = [
+                    executor.submit(self.__put_image, submission_id, image)
                     for image in images
-                }
+                ]
                 for future in as_completed(futures):
                     if future.exception():
                         failed_uploads.append(str(future.exception()))
