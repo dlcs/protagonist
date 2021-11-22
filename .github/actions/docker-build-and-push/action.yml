@@ -8,6 +8,9 @@ inputs:
   dockerfile:
     description: 'Dockerfile to use'
     required: true
+  context:
+    description: 'Docker context for building'
+    required: true
   github-token:
     description: 'The GitHub token used when interacting with GCHR'
     required: true
@@ -47,7 +50,7 @@ runs:
       id: docker_build
       uses: docker/build-push-action@v2
       with:
-        context: .
+        context: ${{ inputs.context }}
         file: ${{ inputs.dockerfile }}
         builder: ${{ steps.buildx.outputs.name }}
         tags: ${{ steps.meta.outputs.tags }}
