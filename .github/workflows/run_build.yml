@@ -51,7 +51,8 @@ jobs:
       dockerfile: "Dockerfile.Thumbs"
 
   build-compositehandler:
+    needs: run-tests
     uses: dlcs/protagonist/.github/workflows/build_docker.yml@develop
     with:
       image_name: "composite-handler"
-      dockerfile: "composite_handler/Dockerfile.CompositeHandler"
+      dockerfile: "Dockerfile.CompositeHandler"
