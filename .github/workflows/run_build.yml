@@ -1,4 +1,4 @@
-name: Build, test, publish
+name: DLCS Build, Test & Publish
 
 on:
   push:
@@ -10,35 +10,40 @@ on:
       - "docs/**"
 
 jobs:
-  run-tests:
+  test-dotnet:
+    runs-on: ubuntu-latest
     env:
       BUILD_CONFIG: "Release"
       SOLUTION: "protagonist.sln"
-
-    runs-on: ubuntu-latest
-
     steps:
-      - name: Check out code
-        id: checkout
+      - id: checkout
         uses: actions/checkout@v2
-
-      - name: Setup .NET
+      - id: setup-dotnet
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: "5.0.x"
-
-      - name: Restore dependencies
+      - id: restore-dotnet-dependencies
         run: dotnet restore $SOLUTION
-
-      - name: Build
+      - id: build-dotnet
         run: dotnet build $SOLUTION --configuration $BUILD_CONFIG --no-restore
-
-      - name: Test
+      - id: test-dotnet
         run: dotnet test $SOLUTION --filter 'Category!=Manual' --configuration $BUILD_CONFIG --no-restore --no-build --verbosity normal
 
-  build-orchestrator:
+  test-compositehandler:
     runs-on: ubuntu-latest
-    needs: run-tests
+    steps:
+      - id: checkout
+        uses: actions/checkout@v2
+      - id: setup-python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - id: pre-commit
+        uses: pre-commit/action@v2.0.3
+
+  build-push-orchestrator:
+    runs-on: ubuntu-latest
+    needs: test-dotnet
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/docker-build-and-push
@@ -49,9 +54,9 @@ jobs:
           context: "."
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  build-thumbs:
+  build-push-thumbs:
     runs-on: ubuntu-latest
-    needs: run-tests
+    needs: test-dotnet
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/docker-build-and-push
@@ -61,8 +66,9 @@ jobs:
           context: "."
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  build-compositehandler:
+  build-push-compositehandler:
     runs-on: ubuntu-latest
+    needs: test-compositehandler
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/docker-build-and-push
