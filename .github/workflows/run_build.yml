@@ -2,10 +2,10 @@ name: Build, test, publish
 
 on:
   push:
-    branches: ["main", "develop"]
-    tags: ["v*"]
+    branches: [ "main", "develop" ]
+    tags: [ "v*" ]
   pull_request:
-    branches: ["main", "develop"]
+    branches: [ "main", "develop" ]
     paths-ignore:
       - "docs/**"
 
@@ -37,22 +37,32 @@ jobs:
         run: dotnet test $SOLUTION --filter 'Category!=Manual' --configuration $BUILD_CONFIG --no-restore --no-build --verbosity normal
 
   build-orchestrator:
+    runs-on: ubuntu-latest
     needs: run-tests
-    uses: dlcs/protagonist/.github/workflows/build_docker.yml@${GITHUB_SHA}
-    with:
-      image_name: "orchestrator"
-      dockerfile: "Dockerfile.Orchestrator"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/workflows/build_docker.yml
+        name: build and push
+        with:
+          image_name: "orchestrator"
+          dockerfile: "Dockerfile.Orchestrator"
 
   build-thumbs:
+    runs-on: ubuntu-latest
     needs: run-tests
-    uses: dlcs/protagonist/.github/workflows/build_docker.yml@${GITHUB_SHA}
-    with:
-      image_name: "thumbs"
-      dockerfile: "Dockerfile.Thumbs"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/workflows/build_docker.yml
+        with:
+          image_name: "thumbs"
+          dockerfile: "Dockerfile.Thumbs"
 
   build-compositehandler:
+    runs-on: ubuntu-latest
     needs: run-tests
-    uses: dlcs/protagonist/.github/workflows/build_docker.yml@${GITHUB_SHA}
-    with:
-      image_name: "composite-handler"
-      dockerfile: "Dockerfile.CompositeHandler"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/workflows/build_docker.yml
+        with:
+          image_name: "composite-handler"
+          dockerfile: "Dockerfile.CompositeHandler"
