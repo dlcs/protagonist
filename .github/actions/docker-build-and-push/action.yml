@@ -27,7 +27,7 @@ runs:
       id: meta
       uses: docker/metadata-action@v3
       with:
-        images: ghcr.io/dlcs/${{ inputs.image_name }}
+        images: ghcr.io/dlcs/${{ inputs.image-name }}
         tags: |
           type=ref,event=branch
           type=ref,event=pr
