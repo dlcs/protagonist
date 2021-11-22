@@ -53,5 +53,5 @@ jobs:
   build-compositehandler:
     uses: dlcs/protagonist/.github/workflows/build_docker.yml@develop
     with:
-      image_name: "thumbs"
+      image_name: "composite-handler"
       dockerfile: "composite_handler/Dockerfile.CompositeHandler"
