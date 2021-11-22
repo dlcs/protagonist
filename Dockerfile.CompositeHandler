@@ -12,7 +12,7 @@ RUN apt-get update && apt-get --yes install apt-utils && apt-get --yes upgrade \
     && useradd --create-home --home-dir /srv/dlcs --shell /bin/bash --uid 1000 dlcs \
     && python -m pip install --upgrade pip
 
-COPY --chown=dlcs:dlcs composite_handler /srv/dlcs
+COPY --chown=dlcs:dlcs . /srv/dlcs
 
 USER dlcs
 WORKDIR /srv/dlcs
