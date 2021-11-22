@@ -37,7 +37,7 @@ jobs:
       - id: setup-python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.x'
+          python-version: '3.9'
       - id: pre-commit
         uses: pre-commit/action@v2.0.3
 
