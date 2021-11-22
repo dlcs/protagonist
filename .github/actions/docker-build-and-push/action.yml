@@ -8,12 +8,14 @@ inputs:
   dockerfile:
     description: 'Dockerfile to use'
     required: true
+  github-token:
+    description: 'The GitHub token used when interacting with GCHR'
+    required: true
 
 runs:
   using: "composite"
   steps:
     - name: Check out code
-      if: github.event_name != 'workflow_dispatch'
       id: checkout
       uses: actions/checkout@v2
 
@@ -39,7 +41,7 @@ runs:
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: {{ inputs.github-token }}
 
     - name: Build and push
       id: docker_build
