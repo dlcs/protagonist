@@ -41,7 +41,7 @@ jobs:
     needs: run-tests
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/workflows/build_docker.yml
+      - uses: ./.github/actions/docker-build-and-push
         name: build and push
         with:
           image_name: "orchestrator"
@@ -52,7 +52,7 @@ jobs:
     needs: run-tests
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/workflows/build_docker.yml
+      - uses: ./.github/actions/docker-build-and-push
         with:
           image_name: "thumbs"
           dockerfile: "Dockerfile.Thumbs"
@@ -62,7 +62,7 @@ jobs:
     needs: run-tests
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/workflows/build_docker.yml
+      - uses: ./.github/actions/docker-build-and-push
         with:
           image_name: "composite-handler"
           dockerfile: "Dockerfile.CompositeHandler"
