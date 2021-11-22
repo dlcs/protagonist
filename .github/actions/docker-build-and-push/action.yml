@@ -41,7 +41,7 @@ runs:
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
-        password: {{ inputs.github-token }}
+        password: ${{ inputs.github-token }}
 
     - name: Build and push
       id: docker_build
