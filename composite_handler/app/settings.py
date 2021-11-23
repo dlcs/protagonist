@@ -45,6 +45,12 @@ INSTALLED_APPS = [
     "app.common.apps.CommonConfig",
     "app.engine.apps.EngineConfig",
     "django_q",
+    "health_check",
+    "health_check.db",
+    "health_check.cache",
+    "health_check.storage",
+    "health_check.contrib.migrations",
+    "health_check.contrib.psutil",
 ]
 
 MIDDLEWARE = [
