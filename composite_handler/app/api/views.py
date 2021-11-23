@@ -8,6 +8,7 @@ from django_q.tasks import async_task
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.conf import settings
 
 logger = logging.Logger(__name__)
 
@@ -20,6 +21,8 @@ class AbstractAPIView(APIView):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._scheme = settings.WEB_SERVER["scheme"]
+        self._hostname = settings.WEB_SERVER["hostname"]
         self._dlcs = DLCS()
 
     def _validate_credentials(self, customer, headers):
@@ -27,21 +30,21 @@ class AbstractAPIView(APIView):
             raise PermissionDenied
         self._dlcs.test_credentials(customer, headers["Authorization"])
 
-    def _build_collection_response_body(self, request, collection):
+    def _build_collection_response_body(self, collection):
         return {
             "id": "{0}://{1}/collections/{2}".format(
-                request.scheme, request.get_host(), collection.id
+                self._scheme, self._hostname, collection.id
             ),
             "members": [
-                self._build_member_response_body(request, member)
+                self._build_member_response_body(member)
                 for member in Member.objects.filter(collection=collection)
             ],
         }
 
-    def _build_member_response_body(self, request, member):
+    def _build_member_response_body(self, member):
         response = {
             "id": "{0}://{1}/collections/{2}/members/{3}".format(
-                request.scheme, request.get_host(), member.collection, member.id
+                self._scheme, self._hostname, member.collection, member.id
             ),
             "status": member.status,
             "last_updated": member.last_updated_date,
@@ -68,7 +71,7 @@ class QueryCollectionAPIView(AbstractAPIView):
         self._validate_credentials(collection.customer, request.headers)
 
         return Response(
-            self._build_collection_response_body(request, collection),
+            self._build_collection_response_body(collection),
             status=status.HTTP_200_OK,
         )
 
@@ -84,7 +87,7 @@ class QueryMemberAPIView(AbstractAPIView):
 
         self._validate_credentials(member.collection.customer, request.headers)
 
-        response_body = self._build_member_response_body(request, member)
+        response_body = self._build_member_response_body(member)
         response_status = (
             status.HTTP_301_MOVED_PERMANENTLY
             if member.status == "COMPLETED"
@@ -128,6 +131,6 @@ class CollectionAPIView(AbstractAPIView):
             )
 
         return Response(
-            self._build_collection_response_body(request, collection),
+            self._build_collection_response_body(collection),
             status=status.HTTP_202_ACCEPTED,
         )

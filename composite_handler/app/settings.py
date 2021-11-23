@@ -159,6 +159,11 @@ Q_CLUSTER = {
 
 SCRATCH_DIRECTORY = env.path("SCRATCH_DIRECTORY", default="/tmp/scratch")
 
+WEB_SERVER = {
+    "scheme": env("WEB_SERVER_SCHEME", cast=str, default="http"),
+    "hostname": env("WEB_SERVER_HOSTNAME", cast=str, default="localhost:8000"),
+}
+
 PDF_RASTERIZER = {
     "thread_count": env("PDF_RASTERIZER_THREAD_COUNT", cast=int, default=3),
     "format": env("PDF_RASTERIZER_FORMAT", cast=str, default="jpg"),
