@@ -27,9 +27,22 @@ class AbstractAPIView(APIView):
             raise PermissionDenied
         self._dlcs.test_credentials(customer, headers["Authorization"])
 
-    def _build_member_response_body(self, member):
+    def _build_collection_response_body(self, request, collection):
+        return {
+            "id": "{0}://{1}/collections/{2}".format(
+                request.scheme, request.get_host(), collection.id
+            ),
+            "members": [
+                self._build_member_response_body(request, member)
+                for member in Member.objects.filter(collection=collection)
+            ],
+        }
+
+    def _build_member_response_body(self, request, member):
         response = {
-            "id": member.id,
+            "id": "{0}://{1}/collections/{2}/members/{3}".format(
+                request.scheme, request.get_host(), member.collection, member.id
+            ),
             "status": member.status,
             "last_updated": member.last_updated_date,
         }
@@ -55,10 +68,7 @@ class QueryCollectionAPIView(AbstractAPIView):
         self._validate_credentials(collection.customer, request.headers)
 
         return Response(
-            [
-                self._build_member_response_body(member)
-                for member in Member.objects.filter(collection=collection)
-            ],
+            self._build_collection_response_body(request, collection),
             status=status.HTTP_200_OK,
         )
 
@@ -74,7 +84,7 @@ class QueryMemberAPIView(AbstractAPIView):
 
         self._validate_credentials(member.collection.customer, request.headers)
 
-        response_body = self._build_member_response_body(member)
+        response_body = self._build_member_response_body(request, member)
         response_status = (
             status.HTTP_301_MOVED_PERMANENTLY
             if member.status == "COMPLETED"
@@ -99,31 +109,25 @@ class CollectionAPIView(AbstractAPIView):
         )
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
-
-        collection_id = serializer.data["id"]
+        collection = serializer.save()
 
         serializers = [
-            MemberSerializer(data={"json_data": member, "collection": collection_id})
-            for member in serializer.data["json_data"]["member"]
+            MemberSerializer(data={"json_data": member, "collection": collection.id})
+            for member in collection.json_data["member"]
         ]
 
         if not all(serializer.is_valid() for serializer in serializers):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         for serializer in serializers:
-            serializer.save()
+            member = serializer.save()
             async_task(
                 "app.engine.tasks.process_member",
-                {"id": serializer.data["id"], "auth": request.headers["Authorization"]},
-                task_name="Submission: [{0}]".format(serializer.data["id"]),
+                {"id": member.id, "auth": request.headers["Authorization"]},
+                task_name="Submission: [{0}]".format(member.id),
             )
 
         return Response(
+            self._build_collection_response_body(request, collection),
             status=status.HTTP_202_ACCEPTED,
-            headers={
-                "Location": "{0}://{1}/collections/{2}".format(
-                    request.scheme, request.get_host(), collection_id
-                )
-            },
         )
