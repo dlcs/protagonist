@@ -1,9 +1,12 @@
+import shutil
+
 from app.common.dlcs import DLCS
 from app.common.models import Member
 from app.engine.builder import MemberBuilder
 from app.engine.origins import HttpOrigin
 from app.engine.rasterizers import PdfRasterizer
 from app.engine.s3 import S3Client
+from django_q.tasks import async_task
 
 http_origin = HttpOrigin()
 pdf_rasterizer = PdfRasterizer()
@@ -11,17 +14,27 @@ s3_client = S3Client()
 dlcs = DLCS()
 
 
+def cleanup_scratch(folder_path):
+    shutil.rmtree(folder_path)
+
+
 def process_member(args):
     member = Member.objects.get(id=args["id"])
     try:
-        pdf_path = __fetch_origin(member, member.json_data["origin"])
-        images = __rasterize_composite(member, pdf_path)
+        folder_path = __fetch_origin(member, member.json_data["origin"])
+        images = __rasterize_composite(member, folder_path)
         s3_urls = __push_images_to_dlcs(member, images)
         dlcs_request = __build_dlcs_request(member, s3_urls)
         dlcs_response = __initiate_dlcs_ingest(member, dlcs_request, args["auth"])
         return __build_result(member, dlcs_response)
     except Exception as error:
         __process_error(member, error)
+    finally:
+        async_task(
+            "app.engine.tasks.cleanup_scratch",
+            folder_path,
+            task_name="Scavenger: [{0}]".format(args["id"]),
+        )
 
 
 def __fetch_origin(member, origin_uri):

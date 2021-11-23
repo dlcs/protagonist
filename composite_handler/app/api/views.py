@@ -116,8 +116,7 @@ class CollectionAPIView(AbstractAPIView):
             async_task(
                 "app.engine.tasks.process_member",
                 {"id": serializer.data["id"], "auth": request.headers["Authorization"]},
-                task_name=serializer.data["id"],
-                hook="app.engine.hooks.print_result",
+                task_name="Submission: [{0}]".format(serializer.data["id"]),
             )
 
         return Response(
