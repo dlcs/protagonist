@@ -27,26 +27,7 @@ class AbstractAPIView(APIView):
             raise PermissionDenied
         self._dlcs.test_credentials(customer, headers["Authorization"])
 
-
-class QueryAPIView(AbstractAPIView):
-    def get(self, request, *args, **kwargs):
-
-        try:
-            collection = Collection.objects.get(id=kwargs["id"])
-        except Collection.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        self._validate_credentials(collection.customer, request.headers)
-
-        return Response(
-            [
-                self._build_member_response(member)
-                for member in Member.objects.filter(collection=collection)
-            ],
-            status=status.HTTP_200_OK,
-        )
-
-    def _build_member_response(self, member):
+    def _build_member_response_body(self, member):
         response = {
             "id": member.id,
             "status": member.status,
@@ -61,6 +42,51 @@ class QueryAPIView(AbstractAPIView):
             response["error"] = member.error
 
         return response
+
+
+class QueryCollectionAPIView(AbstractAPIView):
+    def get(self, request, *args, **kwargs):
+
+        try:
+            collection = Collection.objects.get(id=kwargs["collection_id"])
+        except Collection.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        self._validate_credentials(collection.customer, request.headers)
+
+        return Response(
+            [
+                self._build_member_response_body(member)
+                for member in Member.objects.filter(collection=collection)
+            ],
+            status=status.HTTP_200_OK,
+        )
+
+
+class QueryMemberAPIView(AbstractAPIView):
+    def get(self, request, *args, **kwargs):
+        try:
+            member = Member.objects.get(
+                id=kwargs["member_id"], collection=kwargs["collection_id"]
+            )
+        except Member.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        self._validate_credentials(member.collection.customer, request.headers)
+
+        response_body = self._build_member_response_body(member)
+        response_status = (
+            status.HTTP_301_MOVED_PERMANENTLY
+            if member.status == "COMPLETED"
+            else status.HTTP_422_UNPROCESSABLE_ENTITY
+            if member.status == "ERROR"
+            else status.HTTP_200_OK
+        )
+        response_headers = (
+            {"Location": member.dlcs_uri} if member.status == "COMPLETED" else {}
+        )
+
+        return Response(response_body, response_status, headers=response_headers)
 
 
 class CollectionAPIView(AbstractAPIView):
