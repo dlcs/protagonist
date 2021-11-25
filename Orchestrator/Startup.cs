@@ -30,7 +30,6 @@ using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
-using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.NamedQueries;
@@ -85,7 +84,8 @@ namespace Orchestrator
                 .AddMediatR()
                 .AddHttpContextAccessor()
                 .AddNamedQueries(configuration)
-                .AddApiClient(configuration.Get<OrchestratorSettings>());
+                .AddApiClient(configuration.Get<OrchestratorSettings>())
+                .ConfigureHealthChecks(reverseProxySection, configuration);
             
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
             services.Configure<ForwardedHeadersOptions>(opts =>
@@ -116,11 +116,6 @@ namespace Orchestrator
                 });
             
             DapperMappings.Register();
-            
-            // TODO expand healthchecks
-            services
-                .AddHealthChecks()
-                .AddNpgSql(configuration.GetPostgresSqlConnection());
             
             // Add the reverse proxy to capability to the server
             services
@@ -156,7 +151,7 @@ namespace Orchestrator
                     endpoints.MapReverseProxy();
                     endpoints.MapImageHandling();
                     endpoints.MapTimeBasedHandling();
-                    endpoints.MapHealthChecks("/health");
+                    endpoints.MapConfiguredHealthChecks();
                 });
         }
     }
