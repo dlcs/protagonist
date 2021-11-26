@@ -157,13 +157,53 @@ To avoid overly complicating the `POST /queue` call, any metadata values that ca
 
 The process of retrieving a PDF from its origin, rasterizing its pages into individual images, pushing each image to a DLCS-managed storage location, and generating the request to `POST` to the DLCS API to process those images are potentially expensive and thus long running operations. It is not reasonable - and is contrary to good API design - to expect a client to wait for these processes to complete before the request completes.
 
-As a result, if the above example is `POST`'ed, it should return almost immediately an empty HTTP `202 Accepted` response, complete with a `Location` header indicating a URI that can be queried to fetch the status of the PDF rasterization process.
+As a result, if the above example is `POST`'ed, it should return almost immediately an empty HTTP `202 Accepted` response, complete with a JSON response body describing the processing status of each PDF contained to be processed:
 
-The client can then continue to query this URI, and will receive one of the following responses:
+```json
+{
+  "id": "https://ch.dlcs.io/collections/84d0955c-3573-4582-af57-3805a273685a",
+  "members": [
+    {
+      "id": "https://ch.dlcs.io/collections/84d0955c-3573-4582-af57-3805a273685a/members/81a572ff-5622-44f4-b22b-bc3a1074544d",
+      "status": "PENDING",
+      "last_updated": "2021-11-26T13:23:36.772426Z"
+    },
+    {
+      "id": "https://ch.dlcs.io/collections/84d0955c-3573-4582-af57-3805a273685a/members/d24aa8a8-0ea5-45d7-9d96-ded7f836ae77",
+      "status": "PENDING",
+      "last_updated": "2021-11-26T13:23:36.787751Z"
+    }
+  ]
+}
+```
+
+The client can then continue to query the URI provided in the top level`id` field, and will receive a `200 OK` response with a JSON response body describing the current status of each PDF contained within the original request:
+
+```json
+{
+  "id": "https://ch.dlcs.io/collections/84d0955c-3573-4582-af57-3805a273685a",
+  "members": [
+    {
+      "id": "https://ch.dlcs.io/collections/84d0955c-3573-4582-af57-3805a273685a/members/81a572ff-5622-44f4-b22b-bc3a1074544d",
+      "status": "COMPLETED",
+      "last_updated": "2021-11-26T13:23:36.772426Z",
+      "image_count": 1,
+      "dlcs_uri": "https://api.dlcs.digirati.io/customers/17/queue/batches/570439"
+    },
+    {
+      "id": "https://ch.dlcs.io/collections/84d0955c-3573-4582-af57-3805a273685a/members/d24aa8a8-0ea5-45d7-9d96-ded7f836ae77",
+      "status": "FETCHING_ORIGIN",
+      "last_updated": "2021-11-26T13:23:36.787751Z"
+    }
+  ]
+}
+```
+
+An individual PDF can be queried directly using the `id` provided for that member, and in addition the a JSON response body specific to that PDF, will receive one of the following response codes:
 
 | Status     | HTTP Code                  | Headers    | Body                                  | Notes                                                                                                                                                                                 |
 |------------|----------------------------|------------|---------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Processing | `102 Processing`           | None       | None                                  | Indicates that the backend is still processing / rasterizing the PDF ingestion request.                                                                                               |
+| Processing | `200 OK`                   | None       | None                                  | Indicates that the backend is still processing / rasterizing the PDF ingestion request.                                                                                               |
 | Completed  | `301 Moved Permanently`    | `Location` | None                                  | The processing / rasterization has completed and the returned `Location` header provides a URI served by the DLCS API where the corresponding image ingestion batch can be retrieved. |
 | Errored    | `422 Unprocessable Entity` | None       | ``` {   "Error": "Description"  } ``` | An error occurred during the processing / rasterization of the PDF. The response body contains more details.                                                                          |
 
