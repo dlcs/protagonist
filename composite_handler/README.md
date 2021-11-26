@@ -27,6 +27,8 @@ The project ships with a [`docker-compose.yml`](docker-compose.yml) that can be 
 docker-compose up
 ```
 
+Note that for the Composite Handler to be able to interact with the target S3 bucket, the Docker Compose assumes that the `AWS_PROFILE` environment variable has been set and a valid AWS session is available.
+
 This will create a PostgreSQL instance, bootstrap it with the required tables, deploy a single instance of the API, and three instances of the engine. Requests can then be targetted at `localhost:8000`.
 
 The component can also be run directly, either in an IDE or from the CLI. The component must first be configured either via the creation of a `.env` file (see [`.env.dist`](.env.dist) for an example configuration), or via a set of environment variables (see the [Configuration](#configuration) section).
@@ -42,6 +44,14 @@ Should the required tables not exist in the target database, the following comma
 python manage.py migrate
 python manage.py createcachetable
 ```
+
+Once the API is running, an administrator interface can be accessed via the browser at `http://localhost:8000/admin`. To create an administrator login, run the following command:
+
+```
+python manage.py createsuperuser
+```
+
+The administrator user can be used to browse the database and manage the queue (including deleting tasks and resubmitting failed tasks into the queue).
 
 ## Configuration
 
@@ -68,3 +78,24 @@ The following list of environment variables are supported:
 | `ENGINE_WORKER_TIMEOUT`       | `3600`                         | Engine       | The number of seconds that a task (i.e. the processing of a single PDF) can run for before being terminated and treated as a failure. This value is useful to purging "stuck" tasks which haven't technically failed but are occupying a worker.                             |
 | `ENGINE_WORKER_RETRY`         | `4500`                         | Engine       | The number of seconds since a task was presented for processing before a worker will re-run, regardless of whether it is still running or failed. As such, this value must be higher than `ENGINE_WORKER_TIMEOUT`.                                                           |
 | `ENGINE_WORKER_MAX_ATTEMPTS`  | `0`                            | Engine       | The number of processing attempts a single task will undergo before it is abandoned. Setting this value to `0` will cause a task to be retried forever.                                                                                                                      |
+
+Note that in order to access the S3 bucket, the Composite Handler assumes that valid AWS credentials are available in the environment - this can be in the former of [environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html), or in the form of ambient credentials.
+
+## Building
+
+The project ships with a [`Dockerfile.CompositeHandler`](../Dockerfile.CompositeHandler):
+
+```bash
+docker build -f ../Dockerfile.CompositeHandler -t dlcs/composite-handler:latest .
+```
+
+This will produce a single image that can be used to execute any of the supported Django commands, including running the API and the engine:
+
+```bash
+docker run dlcs/composite-handler:latest python manage.py migrate # Apply any pending DB schema changes
+docker run dlcs/composite-handler:latest python manage.py createcachetable # Create the cache table (if it doesn't exist)
+docker run dlcs/composite-handler:latest python manage.py runserver 0.0.0.0:8000 # Run the API
+docker run dlcs/composite-handler:latest python manage.py qcluster # Run the engine
+docker run dlcs/composite-handler:latest python manage.py qmonitor # Monitor the workers
+```
+
