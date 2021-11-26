@@ -98,4 +98,3 @@ docker run dlcs/composite-handler:latest python manage.py runserver 0.0.0.0:8000
 docker run dlcs/composite-handler:latest python manage.py qcluster # Run the engine
 docker run dlcs/composite-handler:latest python manage.py qmonitor # Monitor the workers
 ```
-
