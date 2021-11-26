@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "app.api.apps.ApiConfig",
     "app.common.apps.CommonConfig",
     "app.engine.apps.EngineConfig",
+    "rest_framework",
     "django_q",
     "health_check",
     "health_check.db",
