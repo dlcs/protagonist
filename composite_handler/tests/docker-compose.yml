@@ -19,7 +19,7 @@ services:
       - DATABASE_URL=postgresql://dlcs:password@postgres:5432/compositedb
       - DLCS_API_ROOT=http://dlcs:8080/
     ports:
-      - "8000:8000"
+      - "8000"
     depends_on:
       - migrate
       - postgres
@@ -30,9 +30,5 @@ services:
       - POSTGRES_USER=dlcs
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=compositedb
-    ports:
-      - "5432:5432"
   dlcs:
     image: mendhak/http-https-echo:22
-    ports:
-      - "8080:8080"

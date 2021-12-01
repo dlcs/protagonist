@@ -34,7 +34,7 @@ def http_service(docker_ip, docker_services):
     docker_services.wait_until_responsive(
         timeout=300,
         pause=1,
-        check=lambda: is_responsive("{}/health-check/".format(url)),
+        check=lambda: is_responsive(f"{url}/health-check/"),
     )
     return url
 
