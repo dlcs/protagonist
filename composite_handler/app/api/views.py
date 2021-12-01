@@ -3,12 +3,12 @@ import logging
 from app.api.serializers import CollectionSerializer, MemberSerializer
 from app.common.dlcs import DLCS
 from app.common.models import Collection, Member
+from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django_q.tasks import async_task
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.conf import settings
 
 logger = logging.Logger(__name__)
 
@@ -32,9 +32,7 @@ class AbstractAPIView(APIView):
 
     def _build_collection_response_body(self, collection):
         return {
-            "id": "{0}://{1}/collections/{2}".format(
-                self._scheme, self._hostname, collection.id
-            ),
+            "id": f"{self._scheme}://{self._hostname}/collections/{collection.id}",
             "members": [
                 self._build_member_response_body(member)
                 for member in Member.objects.filter(collection=collection)
@@ -43,9 +41,7 @@ class AbstractAPIView(APIView):
 
     def _build_member_response_body(self, member):
         response = {
-            "id": "{0}://{1}/collections/{2}/members/{3}".format(
-                self._scheme, self._hostname, member.collection, member.id
-            ),
+            "id": f"{self._scheme}://{self._hostname}/collections/{member.collection}/members/{member.id}",
             "status": member.status,
             "last_updated": member.last_updated_date,
         }
@@ -127,7 +123,7 @@ class CollectionAPIView(AbstractAPIView):
             async_task(
                 "app.engine.tasks.process_member",
                 {"id": member.id, "auth": request.headers["Authorization"]},
-                task_name="Submission: [{0}]".format(member.id),
+                task_name=f"Submission: [{member.id}]",
             )
 
         return Response(

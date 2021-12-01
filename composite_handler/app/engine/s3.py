@@ -24,7 +24,7 @@ class S3Client:
         failed_uploads = []
 
         with tqdm.tqdm(
-            desc="[{0}] Upload images to S3".format(submission_id),
+            desc=f"[{submission_id}] Upload images to S3",
             unit=" image",
             total=len(images),
         ) as progress_bar:
@@ -45,11 +45,7 @@ class S3Client:
         return successful_uploads
 
     def __put_image(self, submission_id, image):
-        object_key = "{0}/{1}/{2}".format(
-            self._object_key_prefix,
-            submission_id,
-            os.path.basename(image.filename),
-        )
+        object_key = f"{self._object_key_prefix}/{submission_id}/{os.path.basename(image.filename)}"
         with open(image.filename, "rb") as file:
             self._client.put_object(Bucket=self._bucket_name, Key=object_key, Body=file)
-        return "{0}/{1}".format(self._bucket_base_url, object_key)
+        return f"{self._bucket_base_url}/{object_key}"

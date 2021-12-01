@@ -174,7 +174,7 @@ PDF_RASTERIZER = {
 ORIGIN_CONFIG = {"chunk_size": env("ORIGIN_CHUNK_SIZE", cast=int, default=8192)}
 
 DLCS = {
-    "api_root": env.url("DLCS_API_ROOT", default="https://api.dlcs.digirati.io"),
+    "api_root": env.url("DLCS_API_ROOT", default="https://api.dlcs.digirati.io/"),
     "s3_bucket_name": env(
         "DLCS_S3_BUCKET_NAME", cast=str, default="dlcs-composite-images"
     ),

@@ -8,7 +8,7 @@ class DLCS:
 
     def test_credentials(self, customer, auth):
         response = requests.get(
-            "{0}customers/{1}".format(self._api_root, customer),
+            f"{self._api_root}customers/{customer}",
             headers={"Content-Type": "application/json", "Authorization": auth},
         )
         if response.status_code == requests.codes.ok:
@@ -18,7 +18,7 @@ class DLCS:
 
     def ingest(self, customer, json, auth):
         response = requests.post(
-            "{0}customers/{1}/queue".format(self._api_root, customer),
+            f"{self._api_root}customers/{customer}/queue",
             headers={"Content-Type": "application/json", "Authorization": auth},
             json=json,
         )

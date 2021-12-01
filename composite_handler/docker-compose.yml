@@ -42,7 +42,10 @@ services:
       - init
   postgres:
     image: postgres:13.3
-    env_file: .env
+    environment:
+      - POSTGRES_USER=dlcs
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=compositedb
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
