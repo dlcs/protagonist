@@ -40,10 +40,6 @@ jobs:
           python-version: '3.9'
       - id: pre-commit
         uses: pre-commit/action@v2.0.3
-      - id: test-python
-        run: |
-          pip install -r composite_handler/tests/pytest_requirements.txt
-          pytest composite_handler/tests/
 
   build-push-orchestrator:
     runs-on: ubuntu-latest

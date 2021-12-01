@@ -10,14 +10,21 @@ class S3Client:
     def __init__(self):
         self._client = boto3.session.Session().client("s3")
         self._bucket_name = settings.DLCS["s3_bucket_name"]
-        self._bucket_base_url = "https://s3-{0}.amazonaws.com/{1}".format(
+        self._bucket_base_url = self.__build_bucket_base_url()
+        self._object_key_prefix = settings.DLCS["s3_object_key_prefix"].strip("/")
+        self._upload_threads = settings.DLCS["s3_upload_threads"]
+
+    def __build_bucket_base_url(self):
+        # Bucket located in 'us-east-1' don't have a location constraint in the hostname
+        location = (
             self._client.get_bucket_location(Bucket=self._bucket_name)[
                 "LocationConstraint"
             ],
-            self._bucket_name,
         )
-        self._object_key_prefix = settings.DLCS["s3_object_key_prefix"].strip("/")
-        self._upload_threads = settings.DLCS["s3_upload_threads"]
+        if location:
+            return f"https://s3-{location}.amazonaws.com/{self._bucket_name}"
+        else:
+            return f"https://s3.amazonaws.com/{self._bucket_name}"
 
     def put_images(self, submission_id, images):
         successful_uploads = []
