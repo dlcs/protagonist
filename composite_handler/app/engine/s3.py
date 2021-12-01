@@ -1,5 +1,6 @@
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
+from itertools import repeat
 
 import boto3
 import tqdm
@@ -26,29 +27,21 @@ class S3Client:
             return f"https://s3.amazonaws.com/{self._bucket_name}"
 
     def put_images(self, submission_id, images):
-        successful_uploads = []
-        failed_uploads = []
+        s3_uris = []
 
         with tqdm.tqdm(
-            desc=f"[{submission_id}] Upload images to S3",
-            unit=" image",
-            total=len(images),
+                desc=f"[{submission_id}] Upload images to S3",
+                unit=" image",
+                total=len(images),
         ) as progress_bar:
             with ThreadPoolExecutor(max_workers=self._upload_threads) as executor:
-                futures = [
-                    executor.submit(self.__put_image, submission_id, image)
-                    for image in images
-                ]
-                for future in as_completed(futures):
-                    if future.exception():
-                        failed_uploads.append(str(future.exception()))
-                    else:
-                        successful_uploads.append(future.result())
+                # It's critical that the list of S3 URI's returned by this method is in the
+                # same order as the list of images provided to it. '.map(...)' gives us that,
+                # whilst '.submit(...)' does not.
+                for s3_uri in executor.map(self.__put_image, repeat(submission_id), images):
+                    s3_uris.append(s3_uri)
                     progress_bar.update(1)
-
-        if len(failed_uploads) > 0:
-            raise Exception("\n".join(failed_uploads))
-        return successful_uploads
+        return s3_uris
 
     def __put_image(self, submission_id, image):
         object_key = f"{self._object_key_prefix}/{submission_id}/{os.path.basename(image.filename)}"
