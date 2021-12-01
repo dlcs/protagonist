@@ -16,11 +16,10 @@ class S3Client:
 
     def __build_bucket_base_url(self):
         # Bucket located in 'us-east-1' don't have a location constraint in the hostname
-        location = (
-            self._client.get_bucket_location(Bucket=self._bucket_name)[
-                "LocationConstraint"
-            ],
-        )
+        location = self._client.get_bucket_location(Bucket=self._bucket_name)[
+            "LocationConstraint"
+        ]
+
         if location:
             return f"https://s3-{location}.amazonaws.com/{self._bucket_name}"
         else:
