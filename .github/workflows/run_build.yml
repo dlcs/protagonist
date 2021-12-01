@@ -42,10 +42,12 @@ jobs:
         uses: pre-commit/action@v2.0.3
       - id: build-python
         run: |
-          docker-compose -f tests/docker-compose-test.yml pull
-          docker-compose -f tests/docker-compose-test.yml build
+          docker-compose -f composite_handler/tests/docker-compose-test.yml pull
+          docker-compose -f composite_handler/tests/docker-compose-test.yml build
       - id: test-python
-        run: cd composite_handler && pip install -r tests/pytest_requirements.txt && pytest tests/
+        run: |
+          pip install -r composite_handlertests/pytest_requirements.txt
+          pytest composite_handler/tests/
       - id: stop-docker-compose
         run: docker-compose -f tests/docker-compose-test.yml down
 

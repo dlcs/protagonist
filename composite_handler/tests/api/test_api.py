@@ -1,4 +1,5 @@
 import json
+import pathlib
 
 import pytest
 import requests
@@ -20,7 +21,9 @@ test_headers = {
     "Authorization": "ABC123",
 }
 
-with open("tests/api/test_data/collection.json") as json_file:
+with open(
+    pathlib.Path(__file__).resolve().parent / "test_data/collection.json"
+) as json_file:
     test_collection = json.load(json_file)
 
 
