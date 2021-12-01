@@ -30,15 +30,17 @@ class S3Client:
         s3_uris = []
 
         with tqdm.tqdm(
-                desc=f"[{submission_id}] Upload images to S3",
-                unit=" image",
-                total=len(images),
+            desc=f"[{submission_id}] Upload images to S3",
+            unit=" image",
+            total=len(images),
         ) as progress_bar:
             with ThreadPoolExecutor(max_workers=self._upload_threads) as executor:
                 # It's critical that the list of S3 URI's returned by this method is in the
                 # same order as the list of images provided to it. '.map(...)' gives us that,
                 # whilst '.submit(...)' does not.
-                for s3_uri in executor.map(self.__put_image, repeat(submission_id), images):
+                for s3_uri in executor.map(
+                    self.__put_image, repeat(submission_id), images
+                ):
                     s3_uris.append(s3_uri)
                     progress_bar.update(1)
         return s3_uris
