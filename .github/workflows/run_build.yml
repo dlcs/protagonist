@@ -40,7 +40,7 @@ jobs:
           python-version: '3.9'
       - id: pre-commit
         uses: pre-commit/action@v2.0.3
-      - id: build-python
+      - id: build-docker-compose
         run: |
           docker-compose -f composite_handler/tests/docker-compose-test.yml pull
           docker-compose -f composite_handler/tests/docker-compose-test.yml build
@@ -49,7 +49,7 @@ jobs:
           pip install -r composite_handler/tests/pytest_requirements.txt
           pytest composite_handler/tests/
       - id: stop-docker-compose
-        run: docker-compose -f tests/docker-compose-test.yml down
+        run: docker-compose -f composite_handler/tests/docker-compose-test.yml down
 
   build-push-orchestrator:
     runs-on: ubuntu-latest
