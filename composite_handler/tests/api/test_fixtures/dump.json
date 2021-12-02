@@ -1,0 +1,204 @@
+[
+    {
+        "model": "common.collection",
+        "pk": "c6683325-a036-4240-beab-74404bc80894",
+        "fields": {
+            "json_data": {
+                "@type": "Collection",
+                "member": [
+                    {
+                        "id": "coins-coinage-341840-{:03d}",
+                        "@type": "vocab:Composite",
+                        "space": 1,
+                        "origin": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                        "number1": "{:03d}",
+                        "string1": "coins-coinage-341840",
+                        "string2": "annual-report-secretary-treasury-state-finances-fiscal-year-ended-june-30-1899-5545",
+                        "string3": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                        "originFormat": "application/pdf",
+                        "incrementSeed": 0
+                    }
+                ],
+                "@context": "http://www.w3.org/ns/hydra/context.jsonld"
+            },
+            "customer": 17,
+            "created_date": "2021-12-02T09:53:40.695Z",
+            "last_updated_date": "2021-12-02T09:53:40.695Z"
+        }
+    },
+    {
+        "model": "common.member",
+        "pk": "3385e3b3-c6aa-4e26-b418-7a000e55d9f2",
+        "fields": {
+            "collection": "c6683325-a036-4240-beab-74404bc80894",
+            "json_data": {
+                "id": "coins-coinage-341840-{:03d}",
+                "@type": "vocab:Composite",
+                "space": 1,
+                "origin": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "number1": "{:03d}",
+                "string1": "coins-coinage-341840",
+                "string2": "annual-report-secretary-treasury-state-finances-fiscal-year-ended-june-30-1899-5545",
+                "string3": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "originFormat": "application/pdf",
+                "incrementSeed": 0
+            },
+            "status": "PENDING",
+            "image_count": null,
+            "dlcs_uri": null,
+            "error": null,
+            "created_date": "2021-12-02T09:53:40.702Z",
+            "last_updated_date": "2021-12-02T09:53:40.702Z"
+        }
+    },
+        {
+        "model": "common.member",
+        "pk": "3c331aa2-4f48-4abb-a8c8-374f57154271",
+        "fields": {
+            "collection": "c6683325-a036-4240-beab-74404bc80894",
+            "json_data": {
+                "id": "coins-coinage-341840-{:03d}",
+                "@type": "vocab:Composite",
+                "space": 1,
+                "origin": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "number1": "{:03d}",
+                "string1": "coins-coinage-341840",
+                "string2": "annual-report-secretary-treasury-state-finances-fiscal-year-ended-june-30-1899-5545",
+                "string3": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "originFormat": "application/pdf",
+                "incrementSeed": 0
+            },
+            "status": "FETCHING_ORIGIN",
+            "image_count": null,
+            "dlcs_uri": null,
+            "error": null,
+            "created_date": "2021-03-10T12:08:58.094Z",
+            "last_updated_date": "2021-06-25T11:07:27.492Z"
+        }
+    },
+        {
+        "model": "common.member",
+        "pk": "5a926951-247a-4875-aca1-70ab2134eee9",
+        "fields": {
+            "collection": "c6683325-a036-4240-beab-74404bc80894",
+            "json_data": {
+                "id": "coins-coinage-341840-{:03d}",
+                "@type": "vocab:Composite",
+                "space": 1,
+                "origin": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "number1": "{:03d}",
+                "string1": "coins-coinage-341840",
+                "string2": "annual-report-secretary-treasury-state-finances-fiscal-year-ended-june-30-1899-5545",
+                "string3": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "originFormat": "application/pdf",
+                "incrementSeed": 0
+            },
+            "status": "RASTERIZING",
+            "image_count": null,
+            "dlcs_uri": null,
+            "error": null,
+            "created_date": "2021-04-04T15:00:37.382Z",
+            "last_updated_date": "2021-10-27T21:31:29.037Z"
+        }
+    },
+        {
+        "model": "common.member",
+        "pk": "87d0461a-d4a4-4159-bff4-548459bc5312",
+        "fields": {
+            "collection": "c6683325-a036-4240-beab-74404bc80894",
+            "json_data": {
+                "id": "coins-coinage-341840-{:03d}",
+                "@type": "vocab:Composite",
+                "space": 1,
+                "origin": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "number1": "{:03d}",
+                "string1": "coins-coinage-341840",
+                "string2": "annual-report-secretary-treasury-state-finances-fiscal-year-ended-june-30-1899-5545",
+                "string3": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "originFormat": "application/pdf",
+                "incrementSeed": 0
+            },
+            "status": "PUSHING_TO_DLCS",
+            "image_count": 783,
+            "dlcs_uri": null,
+            "error": null,
+            "created_date": "2021-04-04T12:36:35.626Z",
+            "last_updated_date": "2021-12-03T06:55:33.591Z"
+        }
+    },
+        {
+        "model": "common.member",
+        "pk": "86c8b2d7-7287-4d6a-9868-2267085eca6d",
+        "fields": {
+            "collection": "c6683325-a036-4240-beab-74404bc80894",
+            "json_data": {
+                "id": "coins-coinage-341840-{:03d}",
+                "@type": "vocab:Composite",
+                "space": 1,
+                "origin": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "number1": "{:03d}",
+                "string1": "coins-coinage-341840",
+                "string2": "annual-report-secretary-treasury-state-finances-fiscal-year-ended-june-30-1899-5545",
+                "string3": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "originFormat": "application/pdf",
+                "incrementSeed": 0
+            },
+            "status": "BUILDING_DLCS_REQUEST",
+            "image_count": 633,
+            "dlcs_uri": null,
+            "error": null,
+            "created_date": "2021-01-26T12:11:32.594Z",
+            "last_updated_date": "2021-03-07T02:54:11.223Z"
+        }
+    },
+        {
+        "model": "common.member",
+        "pk": "fd5057bc-aef2-427f-8233-f9174e2f47a7",
+        "fields": {
+            "collection": "c6683325-a036-4240-beab-74404bc80894",
+            "json_data": {
+                "id": "coins-coinage-341840-{:03d}",
+                "@type": "vocab:Composite",
+                "space": 1,
+                "origin": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "number1": "{:03d}",
+                "string1": "coins-coinage-341840",
+                "string2": "annual-report-secretary-treasury-state-finances-fiscal-year-ended-june-30-1899-5545",
+                "string3": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "originFormat": "application/pdf",
+                "incrementSeed": 0
+            },
+            "status": "COMPLETED",
+            "image_count": 875,
+            "dlcs_uri": "https://api.dlcs.digirati.io/customers/123/batch/45678",
+            "error": null,
+            "created_date": "2021-10-06T13:46:43.400Z",
+            "last_updated_date": "2021-11-27T07:25:50.133Z"
+        }
+    },
+        {
+        "model": "common.member",
+        "pk": "1f1f0f9a-c0f2-420e-8ba8-8b445e3f98e2",
+        "fields": {
+            "collection": "c6683325-a036-4240-beab-74404bc80894",
+            "json_data": {
+                "id": "coins-coinage-341840-{:03d}",
+                "@type": "vocab:Composite",
+                "space": 1,
+                "origin": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "number1": "{:03d}",
+                "string1": "coins-coinage-341840",
+                "string2": "annual-report-secretary-treasury-state-finances-fiscal-year-ended-june-30-1899-5545",
+                "string3": "https://fraser.stlouisfed.org/files/docs/publications/treasar/AR_TREASURY_1899.pdf",
+                "originFormat": "application/pdf",
+                "incrementSeed": 0
+            },
+            "status": "ERROR",
+            "image_count": null,
+            "dlcs_uri": null,
+            "error": "Exception: something bad happened",
+            "created_date": "2021-12-08T11:40:36.716Z",
+            "last_updated_date": "2021-11-12T10:55:06.686Z"
+        }
+    }
+]

@@ -43,6 +43,7 @@ class AbstractAPIView(APIView):
         response = {
             "id": f"{self._scheme}://{self._hostname}/collections/{member.collection}/members/{member.id}",
             "status": member.status,
+            "created": member.created_date,
             "last_updated": member.last_updated_date,
         }
 

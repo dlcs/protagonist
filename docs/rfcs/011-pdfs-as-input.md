@@ -166,11 +166,13 @@ As a result, if the above example is `POST`'ed, it should return almost immediat
     {
       "id": "https://ch.dlcs.io/collections/84d0955c-3573-4582-af57-3805a273685a/members/81a572ff-5622-44f4-b22b-bc3a1074544d",
       "status": "PENDING",
+      "created": "2021-11-26T13:23:36.772426Z",
       "last_updated": "2021-11-26T13:23:36.772426Z"
     },
     {
       "id": "https://ch.dlcs.io/collections/84d0955c-3573-4582-af57-3805a273685a/members/d24aa8a8-0ea5-45d7-9d96-ded7f836ae77",
       "status": "PENDING",
+      "created": "2021-11-26T13:23:36.772426Z",
       "last_updated": "2021-11-26T13:23:36.787751Z"
     }
   ]
@@ -186,6 +188,7 @@ The client can then continue to query the URI provided in the top level`id` fiel
     {
       "id": "https://ch.dlcs.io/collections/84d0955c-3573-4582-af57-3805a273685a/members/81a572ff-5622-44f4-b22b-bc3a1074544d",
       "status": "COMPLETED",
+      "created": "2021-11-26T13:15:18.849333Z",
       "last_updated": "2021-11-26T13:23:36.772426Z",
       "image_count": 1,
       "dlcs_uri": "https://api.dlcs.digirati.io/customers/17/queue/batches/570439"
@@ -193,6 +196,7 @@ The client can then continue to query the URI provided in the top level`id` fiel
     {
       "id": "https://ch.dlcs.io/collections/84d0955c-3573-4582-af57-3805a273685a/members/d24aa8a8-0ea5-45d7-9d96-ded7f836ae77",
       "status": "FETCHING_ORIGIN",
+      "created": "2021-11-26T13:23:11.398093Z",
       "last_updated": "2021-11-26T13:23:36.787751Z"
     }
   ]
