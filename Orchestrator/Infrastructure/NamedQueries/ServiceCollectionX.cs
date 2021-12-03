@@ -68,7 +68,7 @@ namespace Orchestrator.Infrastructure.NamedQueries
                 .AddScoped<PdfNamedQueryParser>()
                 .AddScoped<ZipNamedQueryParser>()
                 .AddScoped<NamedQueryResultGenerator>()
-                .AddScoped<IProjectionCreator<ZipParsedNamedQuery>, ZipCreator>()
+                .AddScoped<IProjectionCreator<ZipParsedNamedQuery>, ImageThumbZipCreator>()
                 .AddScoped<NamedQueryParserResolver>(provider => outputFormat => outputFormat switch
                 {
                     NamedQueryType.PDF => provider.GetService<PdfNamedQueryParser>(),

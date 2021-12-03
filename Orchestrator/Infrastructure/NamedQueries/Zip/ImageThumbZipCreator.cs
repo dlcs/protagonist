@@ -20,10 +20,10 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
     /// <summary>
     /// Project assets to Zip archive.
     /// </summary>
-    public class ZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
+    public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
     {
-        public ZipCreator(IBucketReader bucketReader, IOptions<NamedQuerySettings> namedQuerySettings,
-            ILogger<ZipCreator> logger) :
+        public ImageThumbZipCreator(IBucketReader bucketReader, IOptions<NamedQuerySettings> namedQuerySettings,
+            ILogger<ImageThumbZipCreator> logger) :
             base(bucketReader, namedQuerySettings, logger)
         {
         }
@@ -36,6 +36,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
 
             try
             {
+                // NOTE - if another process is working on this zip file this will throw an exception
                 DeleteZipFileIfExists(zipFilePath);
                 await CreateZipFileOnDisk(parsedNamedQuery, assets, storageKey, zipFilePath, cancellationToken);
 

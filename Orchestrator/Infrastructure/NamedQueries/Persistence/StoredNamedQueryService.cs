@@ -61,10 +61,10 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             var success = await projectionCreator.PersistProjection(parsedNamedQuery, imageResults, cancellationToken);
             if (!success) return new StoredResult(Stream.Null, PersistedProjectionStatus.Error);
 
-            var pdf = await LoadStoredObject(parsedNamedQuery.StorageKey, cancellationToken);
-            if (pdf.Stream != null && pdf.Stream != Stream.Null)
+            var projection = await LoadStoredObject(parsedNamedQuery.StorageKey, cancellationToken);
+            if (projection.Stream != null && projection.Stream != Stream.Null)
             {
-                return new(pdf.Stream!, PersistedProjectionStatus.Available);
+                return new(projection.Stream!, PersistedProjectionStatus.Available);
             }
 
             logger.LogWarning("File {S3Key} was successfully created but now cannot be loaded",
