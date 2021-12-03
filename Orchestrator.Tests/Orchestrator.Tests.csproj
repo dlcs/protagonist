@@ -40,4 +40,9 @@
       <None Remove="Integration\Files\dummy.pdf" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Features\PDF" />
+      <Folder Include="Infrastructure\NamedQueries\Parsing" />
+    </ItemGroup>
+
 </Project>

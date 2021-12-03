@@ -2,6 +2,9 @@
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
 using MediatR;
+using Newtonsoft.Json;
+using Orchestrator.Infrastructure.NamedQueries.Persistence;
+using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Infrastructure.NamedQueries.Requests;
 
 namespace Orchestrator.Features.PDF.Requests
@@ -27,14 +30,14 @@ namespace Orchestrator.Features.PDF.Requests
     
     public class GetPdfControlFileForNamedQueryHandler : IRequestHandler<GetPdfControlFileForNamedQuery, PdfControlFile?>
     {
-        private readonly PdfNamedQueryService pdfNamedQueryService;
+        private readonly StoredNamedQueryService storedNamedQueryService;
         private readonly NamedQueryResultGenerator namedQueryResultGenerator;
 
         public GetPdfControlFileForNamedQueryHandler(
-            PdfNamedQueryService pdfNamedQueryService,
+            StoredNamedQueryService storedNamedQueryService,
             NamedQueryResultGenerator namedQueryResultGenerator)
         {
-            this.pdfNamedQueryService = pdfNamedQueryService;
+            this.storedNamedQueryService = storedNamedQueryService;
             this.namedQueryResultGenerator = namedQueryResultGenerator;
         }
         
@@ -43,10 +46,27 @@ namespace Orchestrator.Features.PDF.Requests
             var namedQueryResult = await namedQueryResultGenerator.GetNamedQueryResult<PdfParsedNamedQuery>(request);
 
             if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
+            
+            var controlFile =
+                await storedNamedQueryService.GetControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey,
+                    cancellationToken);
+            return controlFile == null ? null : new PdfControlFile(controlFile);
+        }
+    }
 
-            var pdfControlFile =
-                await pdfNamedQueryService.GetPdfControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey);
-            return pdfControlFile;
+    // NOTE - this is for backwards compatibility as "itemCount" property was previously "pageCount"
+    public class PdfControlFile : ControlFile
+    {
+        [JsonProperty("pageCount")] public int PageCount => ItemCount;
+
+        public PdfControlFile(ControlFile controlFile)
+        {
+            Key = controlFile.Key;
+            Exists = controlFile.Exists;
+            InProcess = controlFile.InProcess;
+            Created = controlFile.Created;
+            ItemCount = controlFile.ItemCount;
+            SizeBytes = controlFile.SizeBytes;
         }
     }
 }

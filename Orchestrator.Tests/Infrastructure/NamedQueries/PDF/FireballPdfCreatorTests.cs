@@ -13,12 +13,12 @@ using FizzWare.NBuilder;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Orchestrator.Features.PDF;
+using Orchestrator.Infrastructure.NamedQueries.PDF;
 using Orchestrator.Settings;
 using Test.Helpers.Http;
 using Xunit;
 
-namespace Orchestrator.Tests.Features.PDF
+namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
 {
     public class FireballPdfCreatorTests
     {
@@ -31,7 +31,7 @@ namespace Orchestrator.Tests.Features.PDF
         {
             var namedQuerySettings = Options.Create(new NamedQuerySettings
             {
-                PdfBucket = "test-pdf-bucket",
+                OutputBucket = "test-pdf-bucket",
                 ThumbsBucket = "test-thumbs-bucket"
             });
         
@@ -54,7 +54,7 @@ namespace Orchestrator.Tests.Features.PDF
             const string controlFileStorageKey = "controlFileKey";
             var parsedNamedQuery = new PdfParsedNamedQuery(customer)
             {
-                PdfStorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
+                StorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
             };
             var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
 
@@ -65,7 +65,7 @@ namespace Orchestrator.Tests.Features.PDF
                 .Throws(new Exception());
             
             // Act
-            var response = await sut.CreatePdf(parsedNamedQuery, images);
+            var response = await sut.PersistProjection(parsedNamedQuery, images);
             
             // Assert
             response.Should().BeFalse();
@@ -82,14 +82,14 @@ namespace Orchestrator.Tests.Features.PDF
             // Arrange
             var parsedNamedQuery = new PdfParsedNamedQuery(customer)
             {
-                PdfStorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
+                StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
             };
             var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
 
             httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadGateway));
             
             // Act
-            var response = await sut.CreatePdf(parsedNamedQuery, images);
+            var response = await sut.PersistProjection(parsedNamedQuery, images);
             
             // Assert
             response.Should().BeFalse();
@@ -102,7 +102,7 @@ namespace Orchestrator.Tests.Features.PDF
             // Arrange
             var parsedNamedQuery = new PdfParsedNamedQuery(customer)
             {
-                PdfStorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
+                StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
             };
             var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
 
@@ -112,7 +112,7 @@ namespace Orchestrator.Tests.Features.PDF
             httpHandler.SetResponse(responseMessage);
             
             // Act
-            var response = await sut.CreatePdf(parsedNamedQuery, images);
+            var response = await sut.PersistProjection(parsedNamedQuery, images);
             
             // Assert
             response.Should().BeFalse();
@@ -126,7 +126,7 @@ namespace Orchestrator.Tests.Features.PDF
             const string controlFileStorageKey = "controlFileKey";
             var parsedNamedQuery = new PdfParsedNamedQuery(customer)
             {
-                PdfStorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
+                StorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
             };
             var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
 
@@ -136,7 +136,7 @@ namespace Orchestrator.Tests.Features.PDF
             httpHandler.SetResponse(responseMessage);
             
             // Act
-            var response = await sut.CreatePdf(parsedNamedQuery, images);
+            var response = await sut.PersistProjection(parsedNamedQuery, images);
             
             // Assert
             response.Should().BeTrue();

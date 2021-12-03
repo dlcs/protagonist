@@ -4,10 +4,10 @@ using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using Orchestrator.Infrastructure.NamedQueries.Parsing;
+using Orchestrator.Infrastructure.NamedQueries.Manifest;
 using Xunit;
 
-namespace Orchestrator.Tests.Infrastructure.NamedQueries.Parsing
+namespace Orchestrator.Tests.Infrastructure.NamedQueries.Manifest
 {
     public class IIIFNamedQueryParserTests
     {

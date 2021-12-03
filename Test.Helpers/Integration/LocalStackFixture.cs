@@ -70,7 +70,7 @@ namespace Test.Helpers.Integration
             var amazonS3Client = AWSS3ClientFactory();
             await amazonS3Client.PutBucketAsync("protagonist-test-origin");
             await amazonS3Client.PutBucketAsync("protagonist-thumbs");
-            await amazonS3Client.PutBucketAsync("protagonist-pdf");
+            await amazonS3Client.PutBucketAsync("protagonist-storage");
         }
     }
 }

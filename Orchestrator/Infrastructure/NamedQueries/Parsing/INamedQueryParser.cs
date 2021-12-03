@@ -1,7 +1,7 @@
 ﻿using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 
-namespace Orchestrator.Infrastructure.NamedQueries
+namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 {
     /// <summary>
     /// Interface for parsing NamedQueries to generate <see cref="ParsedNamedQuery"/>

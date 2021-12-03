@@ -2,8 +2,9 @@
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
+using Orchestrator.Infrastructure.NamedQueries.Parsing;
 
-namespace Orchestrator.Infrastructure.NamedQueries.Parsing
+namespace Orchestrator.Infrastructure.NamedQueries.Manifest
 {
     /// <summary>
     /// Named query parser for rendering objects to IIIF

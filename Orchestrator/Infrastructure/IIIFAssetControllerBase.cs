@@ -17,7 +17,8 @@ using Orchestrator.Models;
 namespace Orchestrator.Infrastructure
 {
     /// <summary>
-    /// Base class for controllers that generate <see cref="DescriptionResourceResponse"/> from <see cref="IAssetRequest"/> request 
+    /// Base class for controllers that generate <see cref="DescriptionResourceResponse"/> from
+    /// <see cref="IAssetRequest"/> request 
     /// </summary>
     public abstract class IIIFAssetControllerBase : Controller
     {

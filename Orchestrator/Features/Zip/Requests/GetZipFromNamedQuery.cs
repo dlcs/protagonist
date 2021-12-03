@@ -2,22 +2,20 @@
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
 using MediatR;
+using Orchestrator.Features.PDF;
 using Orchestrator.Infrastructure.NamedQueries.Persistence;
 using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Infrastructure.NamedQueries.Requests;
 
-namespace Orchestrator.Features.PDF.Requests
+namespace Orchestrator.Features.Zip.Requests
 {
-    /// <summary>
-    /// Mediatr request for generating PDF via named query
-    /// </summary>
-    public class GetPdfFromNamedQuery : IBaseNamedQueryRequest, IRequest<PersistedNamedQueryProjection>
+    public class GetZipFromNamedQuery : IBaseNamedQueryRequest, IRequest<PersistedNamedQueryProjection>
     {
         public string CustomerPathValue { get; }
         public string NamedQuery { get; }
         public string? NamedQueryArgs { get; }
         
-        public GetPdfFromNamedQuery(string customerPathValue, string namedQuery, string? namedQueryArgs)
+        public GetZipFromNamedQuery(string customerPathValue, string namedQuery, string? namedQueryArgs)
         {
             CustomerPathValue = customerPathValue;
             NamedQuery = namedQuery;
@@ -25,38 +23,38 @@ namespace Orchestrator.Features.PDF.Requests
         }
     }
     
-    public class GetPdfFromNamedQueryHandler : IRequestHandler<GetPdfFromNamedQuery, PersistedNamedQueryProjection>
+    public class GetPdfFromNamedQueryHandler : IRequestHandler<GetZipFromNamedQuery, PersistedNamedQueryProjection>
     {
         private readonly StoredNamedQueryService storedNamedQueryService;
         private readonly NamedQueryResultGenerator namedQueryResultGenerator;
-        private readonly IProjectionCreator<PdfParsedNamedQuery> pdfCreator;
+        private readonly IProjectionCreator<ZipParsedNamedQuery> zipCreator;
 
         public GetPdfFromNamedQueryHandler(
             StoredNamedQueryService storedNamedQueryService,
             NamedQueryResultGenerator namedQueryResultGenerator,
-            IProjectionCreator<PdfParsedNamedQuery> pdfCreator)
+            IProjectionCreator<ZipParsedNamedQuery> zipCreator)
         {
             this.storedNamedQueryService = storedNamedQueryService;
             this.namedQueryResultGenerator = namedQueryResultGenerator;
-            this.pdfCreator = pdfCreator;
+            this.zipCreator = zipCreator;
         }
-
-        public async Task<PersistedNamedQueryProjection> Handle(GetPdfFromNamedQuery request,
-            CancellationToken cancellationToken)
+        
+        public async Task<PersistedNamedQueryProjection> Handle(GetZipFromNamedQuery request, CancellationToken cancellationToken)
         {
             var namedQueryResult =
-                await namedQueryResultGenerator.GetNamedQueryResult<PdfParsedNamedQuery>(request);
+                await namedQueryResultGenerator.GetNamedQueryResult<ZipParsedNamedQuery>(request);
 
             if (namedQueryResult.ParsedQuery == null)
                 return new PersistedNamedQueryProjection(PersistedProjectionStatus.NotFound);
             if (namedQueryResult.ParsedQuery is { IsFaulty: true })
                 return PersistedNamedQueryProjection.BadRequest();
+            
+            // Stream ZIP 
+            var zipResult = await storedNamedQueryService.GetResults(namedQueryResult, zipCreator, cancellationToken);
 
-            var pdfResult = await storedNamedQueryService.GetResults(namedQueryResult, pdfCreator, cancellationToken);
-
-            return pdfResult.Status == PersistedProjectionStatus.InProcess
+            return zipResult.Status == PersistedProjectionStatus.InProcess
                 ? new PersistedNamedQueryProjection(PersistedProjectionStatus.InProcess)
-                : new PersistedNamedQueryProjection(pdfResult.Stream, pdfResult.Status);
+                : new PersistedNamedQueryProjection(zipResult.Stream, zipResult.Status);
         }
     }
 }

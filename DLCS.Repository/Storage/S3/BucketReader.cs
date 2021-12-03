@@ -44,12 +44,13 @@ namespace DLCS.Repository.Storage.S3
             }
         }
 
-        public async Task<ObjectFromBucket> GetObjectFromBucket(ObjectInBucket objectInBucket)
+        public async Task<ObjectFromBucket> GetObjectFromBucket(ObjectInBucket objectInBucket,
+            CancellationToken cancellationToken = default)
         {
             var getObjectRequest = objectInBucket.AsGetObjectRequest();
             try
             {
-                GetObjectResponse getResponse = await s3Client.GetObjectAsync(getObjectRequest);
+                GetObjectResponse getResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
                 return getResponse.AsObjectInBucket(objectInBucket);
             }
             catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
@@ -128,6 +129,21 @@ namespace DLCS.Repository.Storage.S3
                 BucketName = dest.Bucket,
                 Key = dest.Key,
                 InputStream = content,
+            };
+
+            if (!string.IsNullOrEmpty(contentType)) putRequest.ContentType = contentType;
+
+            PutObjectResponse? response = await WriteToBucketInternal(putRequest);
+            return response != null;
+        }
+        
+        public async Task<bool> WriteFileToBucket(ObjectInBucket dest, string filePath, string? contentType = null)
+        {
+            var putRequest = new PutObjectRequest
+            {
+                BucketName = dest.Bucket,
+                Key = dest.Key,
+                FilePath = filePath,
             };
 
             if (!string.IsNullOrEmpty(contentType)) putRequest.ContentType = contentType;
