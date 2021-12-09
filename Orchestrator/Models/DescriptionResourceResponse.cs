@@ -1,4 +1,6 @@
-﻿namespace Orchestrator.Models
+﻿using DLCS.Core.Guard;
+
+namespace Orchestrator.Models
 {
     /// <summary>
     /// Represents the results of a call to get a IIIF DescriptionResource (manifest, info.json etc)
@@ -23,7 +25,7 @@
         public static DescriptionResourceResponse Open(string resource) 
             => new()
             {
-                DescriptionResource = resource,
+                DescriptionResource = resource.ThrowIfNullOrEmpty(resource),
                 RequiresAuth = false,
                 HasResource = true,
                 IsUnauthorised = false
@@ -35,7 +37,7 @@
         public static DescriptionResourceResponse Restricted(string resource) 
             => new()
             {
-                DescriptionResource = resource,
+                DescriptionResource = resource.ThrowIfNullOrEmpty(resource),
                 RequiresAuth = true,
                 HasResource = true,
                 IsUnauthorised = false
@@ -47,7 +49,7 @@
         public static DescriptionResourceResponse Unauthorised(string resource) 
             => new()
             {
-                DescriptionResource = resource,
+                DescriptionResource = resource.ThrowIfNullOrEmpty(resource),
                 RequiresAuth = true,
                 HasResource = true,
                 IsUnauthorised = true

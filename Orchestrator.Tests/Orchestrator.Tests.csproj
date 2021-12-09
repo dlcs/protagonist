@@ -40,8 +40,4 @@
       <None Remove="Integration\Files\dummy.pdf" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Features\PDF" />
-    </ItemGroup>
-
 </Project>

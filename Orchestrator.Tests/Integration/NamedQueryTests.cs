@@ -80,6 +80,16 @@ namespace Orchestrator.Tests.Integration
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
+        
+        [Fact]
+        public async Task Get_Returns404_IfNoMatchingAssets()
+        {
+            // Act
+            var response = await httpClient.GetAsync("iiif-resource/99/test-named-query/not-found-ref/1");
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
 
         [Fact]
         public async Task Get_ReturnsV2ManifestWithCorrectCount_ViaConneg()

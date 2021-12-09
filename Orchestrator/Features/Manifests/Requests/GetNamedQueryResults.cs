@@ -61,7 +61,9 @@ namespace Orchestrator.Features.Manifests.Requests
                 httpContextAccessor.HttpContext.Request,
                 request.IIIFPresentationVersion, cancellationToken);
 
-            return DescriptionResourceResponse.Open(manifest.AsJson());
+            return manifest == null 
+                ? DescriptionResourceResponse.Empty
+                : DescriptionResourceResponse.Open(manifest.AsJson());
         }
     }
 }
