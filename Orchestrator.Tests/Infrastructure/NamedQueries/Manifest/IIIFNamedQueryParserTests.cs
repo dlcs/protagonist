@@ -128,7 +128,8 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Manifest
                 new IIIFParsedNamedQuery(Customer)
                 {
                     String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
-                    Canvas = ParsedNamedQuery.QueryMapping.Number2, NamedQueryName = "my-query"
+                    AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.Number2)},
+                    NamedQueryName = "my-query"
                 },
                 "All params"
             },
@@ -138,7 +139,8 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Manifest
                 new IIIFParsedNamedQuery(Customer)
                 {
                     String1 = "string-1", Number1 = 40, Space = 10, Manifest = ParsedNamedQuery.QueryMapping.String1,
-                    Canvas = ParsedNamedQuery.QueryMapping.Number2, NamedQueryName = "my-query"
+                    AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.Number2)},
+                    NamedQueryName = "my-query"
                 },
                 "Extra args are ignored"
             },
@@ -148,7 +150,8 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.Manifest
                 new IIIFParsedNamedQuery(Customer)
                 {
                     String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
-                    Canvas = ParsedNamedQuery.QueryMapping.Number2, NamedQueryName = "my-query"
+                    AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.Number2)},
+                    NamedQueryName = "my-query"
                 },
                 "Incorrect template pairs are ignored"
             },

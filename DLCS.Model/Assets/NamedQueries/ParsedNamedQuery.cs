@@ -1,4 +1,5 @@
-﻿using DLCS.Core.Guard;
+﻿using System.Collections.Generic;
+using DLCS.Core.Guard;
 using DLCS.Model.PathElements;
 
 namespace DLCS.Model.Assets.NamedQueries
@@ -10,10 +11,9 @@ namespace DLCS.Model.Assets.NamedQueries
     public class ParsedNamedQuery
     {
         /// <summary>
-        /// Which Asset property to use for specifying Canvas ordering 
+        /// Collection of OrderBy clauses to apply to assets.
         /// </summary>
-        /// <remarks>This property is used for PDFs also so should be renamed.</remarks>
-        public QueryMapping Canvas { get; set; } = QueryMapping.Unset;
+        public List<QueryOrder> AssetOrdering { get; set; } = new() { new QueryOrder(QueryMapping.Unset) };
         
         /// <summary>
         /// Value of "space" parameter after parsing
@@ -106,6 +106,27 @@ namespace DLCS.Model.Assets.NamedQueries
             Number1,
             Number2,
             Number3
+        }
+
+        public enum OrderDirection
+        {
+            Ascending,
+            Descending
+        }
+
+        /// <summary>
+        /// Represents an ordering for a NQ, specifying field and direction
+        /// </summary>
+        public class QueryOrder
+        {
+            public QueryMapping QueryMapping { get; }
+            public OrderDirection OrderDirection { get; }
+
+            public QueryOrder(QueryMapping queryMapping, OrderDirection orderDirection = OrderDirection.Ascending)
+            {
+                QueryMapping = queryMapping;
+                OrderDirection = orderDirection;
+            }
         }
     }
 }

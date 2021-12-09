@@ -154,8 +154,8 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
                 new PdfParsedNamedQuery(Customer)
                 {
                     String1 = "string-1", Number1 = 40, Space = 1, RedactedMessage = "you cannot view",
-                    Canvas = ParsedNamedQuery.QueryMapping.String1, Args = new List<string> { "string-1", "40", "1" },
-                    NamedQueryName = "my-query",
+                    AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.String1)}, 
+                    Args = new List<string> { "string-1", "40", "1" }, NamedQueryName = "my-query",
                 },
                 "All params except format"
             },
@@ -164,7 +164,8 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
                 "canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40/10/100",
                 new PdfParsedNamedQuery(Customer)
                 {
-                    String1 = "string-1", Number1 = 40, Space = 10, Canvas = ParsedNamedQuery.QueryMapping.Number2,
+                    String1 = "string-1", Number1 = 40, Space = 10,
+                    AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.Number2)},
                     Args = new List<string> { "string-1", "40", "10", "100", "1" }, NamedQueryName = "my-query",
                 },
                 "Extra args are ignored"
@@ -174,7 +175,8 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
                 "manifest=s1&&n3=&canvas=n2&=10&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
                 new PdfParsedNamedQuery(Customer)
                 {
-                    String1 = "string-1", Number1 = 40, Space = 1, Canvas = ParsedNamedQuery.QueryMapping.Number2,
+                    String1 = "string-1", Number1 = 40, Space = 1, 
+                    AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.Number2)},
                     Args = new List<string> { "string-1", "40", "1" }, NamedQueryName = "my-query",
                 },
                 "Incorrect template pairs are ignored"
@@ -210,6 +212,20 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
                     ObjectNameFormat = "{s3}_{n1}.pdf", ObjectName = "foo_.pdf", NamedQueryName = "my-query",
                 },
                 "Replacements removed if no provided"
+            },
+            new object[]
+            {
+                "assetOrder=n2;s1 desc", "",
+                new PdfParsedNamedQuery(Customer)
+                {
+                    AssetOrdering = new List<ParsedNamedQuery.QueryOrder>
+                    {
+                        new(ParsedNamedQuery.QueryMapping.Number2),
+                        new(ParsedNamedQuery.QueryMapping.String1, ParsedNamedQuery.OrderDirection.Descending)
+                    },
+                    NamedQueryName = "my-query",
+                },
+                "Asset Ordering"
             },
         };
     }

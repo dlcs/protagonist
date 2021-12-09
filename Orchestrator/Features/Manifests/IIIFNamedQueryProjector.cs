@@ -43,15 +43,14 @@ namespace Orchestrator.Features.Manifests
         {
             var parsedNamedQuery = namedQueryResult.ParsedQuery.ThrowIfNull(nameof(request.Query))!;
 
-            var imageResults = (await namedQueryResult.Results.ToListAsync(cancellationToken))
-                .OrderBy(i => NamedQueryProjections.GetCanvasOrderingElement(i, namedQueryResult.ParsedQuery!))
-                .ToList();
+            var assets = await namedQueryResult.Results.ToListAsync(cancellationToken);
+            if (assets.Count == 0) return null;
 
-            if (imageResults.Count == 0) return null;
+            var orderedImages = NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery).ToList();
 
             return iiifPresentationVersion == Version.V2
-                ? await GenerateV2Manifest(parsedNamedQuery, imageResults, request)
-                : await GenerateV3Manifest(parsedNamedQuery, imageResults, request);
+                ? await GenerateV2Manifest(parsedNamedQuery, orderedImages, request)
+                : await GenerateV3Manifest(parsedNamedQuery, orderedImages, request);
         }
 
         private async Task<JsonLdBase> GenerateV2Manifest(IIIFParsedNamedQuery parsedNamedQuery, List<Asset> results,

@@ -79,8 +79,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
             using var zipArchive = new ZipArchive(zipToOpen, ZipArchiveMode.Create);
 
             int imageCount = 0;
-            foreach (var i in assets.OrderBy(i =>
-                NamedQueryProjections.GetCanvasOrderingElement(i, parsedNamedQuery)))
+            foreach (var i in NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery))
             {
                 if (cancellationToken.IsCancellationRequested)
                 {

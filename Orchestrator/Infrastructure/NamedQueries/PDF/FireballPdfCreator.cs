@@ -72,8 +72,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
             return new CreateProjectionResult();
         }
 
-        private FireballPlaybook GeneratePlaybook(string? pdfKey, PdfParsedNamedQuery? parsedNamedQuery,
-            List<Asset>? assets)
+        private FireballPlaybook GeneratePlaybook(string? pdfKey, PdfParsedNamedQuery parsedNamedQuery,
+            List<Asset> assets)
         {
             var playbook = new FireballPlaybook
             {
@@ -88,8 +88,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
             playbook.Pages.Add(FireballPage.Download(parsedNamedQuery.CoverPageUrl));
 
             int pageNumber = 0;
-            foreach (var i in assets.OrderBy(i =>
-                NamedQueryProjections.GetCanvasOrderingElement(i, parsedNamedQuery)))
+            foreach (var i in NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery))
             {
                 Logger.LogDebug("Adding PDF page {PdfPage} to {PdfS3Key} for {Image}", pageNumber++, pdfKey, i.Id);
                 if (i.Roles.HasText())
