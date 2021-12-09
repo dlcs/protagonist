@@ -48,5 +48,10 @@ namespace Orchestrator.Infrastructure.NamedQueries
             => queryOrder.OrderDirection == OrderDirection.Ascending
                 ? assets.OrderBy(a => GetOrderingElement(a, queryOrder.QueryMapping))
                 : assets.OrderByDescending(a => GetOrderingElement(a, queryOrder.QueryMapping));
+        
+        private static IOrderedEnumerable<Asset> AddOrderBy(IOrderedEnumerable<Asset> assets, QueryOrder queryOrder)
+            => queryOrder.OrderDirection == OrderDirection.Ascending
+                ? assets.ThenBy(a => GetOrderingElement(a, queryOrder.QueryMapping))
+                : assets.ThenByDescending(a => GetOrderingElement(a, queryOrder.QueryMapping));
     }
 }

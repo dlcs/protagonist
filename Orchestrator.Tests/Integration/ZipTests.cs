@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -48,7 +49,7 @@ namespace Orchestrator.Tests.Integration
             dbFixture.DbContext.NamedQueries.Add(new NamedQuery
             {
                 Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "test-zip",
-                Template = "canvas=n2&s1=p1&space=p2&n1=p3&objectname=tester.zip"
+                Template = "assetOrder=n2&s1=p1&space=p2&n1=p3&objectname=tester.zip"
             });
 
             dbFixture.DbContext.Images.AddTestAsset("99/1/matching-zip-1", num1: 2, ref1: "my-ref");
@@ -157,7 +158,7 @@ namespace Orchestrator.Tests.Integration
             
             await AddControlFile("99/zip/test-zip/my-ref/1/2/tester.zip.json",
                 new ControlFile { Created = DateTime.Now, InProcess = false });
-            zipCreator.AddCallbackFor(storageKey, () =>
+            zipCreator.AddCallbackFor(storageKey, (query, assets) =>
             {
                 AddZipArchive(storageKey, fakeContent).Wait();
                 return true;
@@ -182,7 +183,7 @@ namespace Orchestrator.Tests.Integration
             await AddControlFile("99/zip/test-zip/my-ref/1/3/tester.json",
                 new ControlFile { Created = DateTime.Now.AddHours(-1), InProcess = false });
             
-            zipCreator.AddCallbackFor(storageKey, () =>
+            zipCreator.AddCallbackFor(storageKey, (query, assets) =>
             {
                 AddZipArchive(storageKey, fakeContent).Wait();
                 return true;
@@ -207,8 +208,8 @@ namespace Orchestrator.Tests.Integration
             await AddControlFile("99/zip/test-zip/my-ref/1/4/tester.zip.json",
                 new ControlFile { Created = DateTime.Now, InProcess = false });
             
-            // return True but don't create object
-            zipCreator.AddCallbackFor(storageKey, () => true);
+            // return True but don't create object in s3
+            zipCreator.AddCallbackFor(storageKey, (query, assets) => true);
             
             // Act
             var response = await httpClient.GetAsync(path);
@@ -222,18 +223,56 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             const string path = "zip/99/test-zip/my-ref/1/5";
-            const string storageKey = "99/test-zip/my-ref/1/5/tester";
+            const string storageKey = "99/zip/test-zip/my-ref/1/5/tester";
             
             await AddControlFile("99/test-zip/my-ref/1/5/tester.json",
                 new ControlFile { Created = DateTime.Now, InProcess = false });
             
-            zipCreator.AddCallbackFor(storageKey, () => false);
+            zipCreator.AddCallbackFor(storageKey, (query, assets) => false);
 
             // Act
             var response = await httpClient.GetAsync(path);
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        }
+
+        [Fact]
+        public async Task GetZip_CorrectlyOrdersAssets()
+        {
+            // Arrange
+            dbFixture.DbContext.NamedQueries.Add(new NamedQuery
+            {
+                Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "ordered-zip",
+                Template = "assetOrder=n1;n2 desc;s1&s2=p1&objectname=tester"
+            });
+            
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/third", num1: 1, num2: 10, ref1: "z", ref2: "ordered");
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/first", num1: 1, num2: 20, ref1: "c", ref2: "ordered");
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/fourth", num1: 2, num2: 10, ref1: "a", ref2: "ordered");
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/second", num1: 1, num2: 10, ref1: "x", ref2: "ordered");
+            await dbFixture.DbContext.SaveChangesAsync();
+
+            var expectedOrder = new[] { "99/1/first", "99/1/second", "99/1/third", "99/1/fourth" };
+
+            const string path = "zip/99/ordered-zip/ordered";
+            const string storageKey = "99/zip/ordered-zip/ordered/tester";
+            
+            await AddControlFile("99/ordered-zip/ordered/tester.json",
+                new ControlFile { Created = DateTime.Now, InProcess = false });
+
+            List<Asset> savedAssets = null;
+            zipCreator.AddCallbackFor(storageKey, (query, assets) =>
+            {
+                savedAssets = assets;
+                return false;
+            });
+
+            // Act
+            await httpClient.GetAsync(path);
+            
+            // Assert
+            savedAssets.Select(s => s.Id).Should().BeEquivalentTo(expectedOrder);
         }
 
         [Fact]
@@ -329,9 +368,13 @@ namespace Orchestrator.Tests.Integration
         
         private class FakeZipCreator : IProjectionCreator<ZipParsedNamedQuery>
         {
-            private static readonly Dictionary<string, Func<bool>> callbacks = new();
+            private static readonly Dictionary<string, Func<ParsedNamedQuery, List<Asset>, bool>> callbacks = new();
 
-            public void AddCallbackFor(string s3Key, Func<bool> callback)
+            /// <summary>
+            /// Add a callback for when zip is to be created and persisted to S3, allows control of success/failure for
+            /// testing
+            /// </summary>
+            public void AddCallbackFor(string s3Key, Func<ParsedNamedQuery, List<Asset>, bool> callback)
                 => callbacks.Add(s3Key, callback);
 
             public Task<bool> PersistProjection(ZipParsedNamedQuery parsedNamedQuery, List<Asset> images,
@@ -339,7 +382,7 @@ namespace Orchestrator.Tests.Integration
             {
                 if (callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
                 {
-                    return Task.FromResult(cb());
+                    return Task.FromResult(cb(parsedNamedQuery, images));
                 }
 
                 throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");

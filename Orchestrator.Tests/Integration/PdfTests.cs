@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -158,7 +159,7 @@ namespace Orchestrator.Tests.Integration
             
             await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/2/tester.json",
                 new ControlFile { Created = DateTime.Now, InProcess = false });
-            pdfCreator.AddCallbackFor(pdfStorageKey, () =>
+            pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
             {
                 AddPdf(pdfStorageKey, fakePdfContent).Wait();
                 return true;
@@ -183,7 +184,7 @@ namespace Orchestrator.Tests.Integration
             await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/3/tester.json",
                 new ControlFile { Created = DateTime.Now.AddHours(-1), InProcess = false });
             
-            pdfCreator.AddCallbackFor(pdfStorageKey, () =>
+            pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
             {
                 AddPdf(pdfStorageKey, fakePdfContent).Wait();
                 return true;
@@ -209,7 +210,7 @@ namespace Orchestrator.Tests.Integration
                 new ControlFile { Created = DateTime.Now, InProcess = false });
             
             // return True but don't create object
-            pdfCreator.AddCallbackFor(pdfStorageKey, () => true);
+            pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) => true);
             
             // Act
             var response = await httpClient.GetAsync(path);
@@ -223,18 +224,57 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             const string path = "pdf/99/test-pdf/my-ref/1/5";
-            const string pdfStorageKey = "99/test-pdf/my-ref/1/5/tester";
+            const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/5/tester";
             
             await AddPdfControlFile("99/test-pdf/my-ref/1/5/tester.json",
                 new ControlFile { Created = DateTime.Now, InProcess = false });
             
-            pdfCreator.AddCallbackFor(pdfStorageKey, () => false);
+            pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) => false);
 
             // Act
             var response = await httpClient.GetAsync(path);
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        }
+        
+        [Fact]
+        public async Task GetPdf_CorrectlyOrdersAssets()
+        {
+            // Arrange
+            // Arrange
+            dbFixture.DbContext.NamedQueries.Add(new NamedQuery
+            {
+                Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "ordered-pdf",
+                Template = "assetOrder=n1;n2 desc;s1&s2=p1&coverpage=https://coverpage.pdf&objectname=tester"
+            });
+            
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/3", num1: 1, num2: 10, ref1: "z", ref2: "possum");
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/1", num1: 1, num2: 20, ref1: "c", ref2: "possum");
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/4", num1: 2, num2: 10, ref1: "a", ref2: "possum");
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/2", num1: 1, num2: 10, ref1: "x", ref2: "possum");
+            await dbFixture.DbContext.SaveChangesAsync();
+
+            var expectedOrder = new[] { "99/1/1", "99/1/2", "99/1/3", "99/1/4" };
+
+            const string path = "pdf/99/ordered-pdf/possum";
+            const string pdfStorageKey = "99/pdf/ordered-pdf/possum/tester";
+            
+            await AddPdfControlFile("99/pdf/ordered-pdf/possum/tester.json",
+                new ControlFile { Created = DateTime.Now, InProcess = false });
+            
+            List<Asset> savedAssets = null;
+            pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
+            {
+                savedAssets = assets;
+                return false;
+            });
+
+            // Act
+            await httpClient.GetAsync(path);
+            
+            // Assert
+            savedAssets.Select(s => s.Id).Should().BeEquivalentTo(expectedOrder);
         }
 
         [Fact]
@@ -331,9 +371,9 @@ namespace Orchestrator.Tests.Integration
         
         private class FakePdfCreator : IProjectionCreator<PdfParsedNamedQuery>
         {
-            private static readonly Dictionary<string, Func<bool>> callbacks = new();
+            private static readonly Dictionary<string, Func<ParsedNamedQuery, List<Asset>, bool>> callbacks = new();
 
-            public void AddCallbackFor(string pdfKey, Func<bool> callback)
+            public void AddCallbackFor(string pdfKey, Func<ParsedNamedQuery, List<Asset>, bool> callback)
                 => callbacks.Add(pdfKey, callback);
 
             public Task<bool> PersistProjection(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images,
@@ -341,7 +381,7 @@ namespace Orchestrator.Tests.Integration
             {
                 if (callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
                 {
-                    return Task.FromResult(cb());
+                    return Task.FromResult(cb(parsedNamedQuery, images));
                 }
 
                 throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");
