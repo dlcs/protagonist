@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
+using DLCS.Model.Auth;
 using DLCS.Model.Customers;
-using DLCS.Model.Security;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using DotNet.Testcontainers.Containers.Builders;

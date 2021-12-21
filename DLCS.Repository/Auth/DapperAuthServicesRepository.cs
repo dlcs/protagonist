@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using DLCS.Core.Collections;
-using DLCS.Model.Security;
+using DLCS.Model.Auth;
 using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.Extensions.Caching.Memory;
@@ -12,7 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DLCS.Repository.Security
+namespace DLCS.Repository.Auth
 {
     public class DapperAuthServicesRepository : IAuthServicesRepository
     {

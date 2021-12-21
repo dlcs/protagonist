@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace DLCS.Model.Security
+namespace DLCS.Model.Auth
 {
     public interface IAuthServicesRepository
     {

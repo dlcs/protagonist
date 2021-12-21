@@ -6,8 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
+using DLCS.Model.Auth;
 using DLCS.Model.Customers;
-using DLCS.Model.Security;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Strategy

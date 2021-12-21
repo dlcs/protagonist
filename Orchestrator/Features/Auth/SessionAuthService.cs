@@ -4,9 +4,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Model.Security;
+using DLCS.Model.Auth;
 using DLCS.Repository;
-using DLCS.Repository.Security;
+using DLCS.Repository.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 

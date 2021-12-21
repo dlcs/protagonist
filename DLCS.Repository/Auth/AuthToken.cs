@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace DLCS.Repository.Security
+namespace DLCS.Repository.Auth
 {
     /// <summary>
     /// Represents Cookie/BearerToken that grants the holder access to resources as specified in the related

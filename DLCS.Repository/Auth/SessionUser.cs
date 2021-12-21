@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 #nullable disable
 
-namespace DLCS.Repository.Security
+namespace DLCS.Repository.Auth
 {
     public partial class SessionUser
     {
