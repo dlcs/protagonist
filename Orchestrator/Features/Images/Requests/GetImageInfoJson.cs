@@ -1,8 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core;
 using DLCS.Core.Collections;
+using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
@@ -155,24 +158,10 @@ namespace Orchestrator.Features.Images.Requests
                 { "label", authServices[0].Label },
                 { "description", authServices[0].Description }
             };
-
+            
             if (authServices.Count > 1)
             {
-                presentationObject["service"] = new JArray(
-                    new JObject
-                    {
-                        { "@id", string.Concat(presentationObject["@id"], "/", authServices[1].Name) },
-                        { "profile", authServices[1].Profile }
-                    },
-                    new JObject
-                    {
-                        {
-                            "@id", authServicesUriFormat
-                                .Replace("{customer}", assetId.Customer.ToString())
-                                .Replace("{behaviour}", "token")
-                        },
-                        { "profile", "http://iiif.io/api/auth/0/token" }
-                    });
+                AddAuthServices(assetId, authServices, presentationObject, authServicesUriFormat);
             }
 
             return presentationObject.ToString(Formatting.None);
@@ -187,6 +176,53 @@ namespace Orchestrator.Features.Images.Requests
             }
 
             return authServices;
+        }
+        
+        private static void AddAuthServices(AssetId assetId, List<AuthService> authServices, 
+            JObject presentationObject, string authServicesUriFormat)
+        {
+            var subServices = new List<JObject>(authServices.Count - 1);
+            JObject subService;
+            foreach (var authService in authServices.Skip(1))
+            {
+                if (authService.Profile == Constants.Profile.Logout)
+                {
+                    subService = new JObject
+                    {
+                        { "@id", string.Concat(presentationObject["@id"], "/logout") },
+                        { "profile", authService.Profile }
+                    };
+                }
+                else if (authService.Profile == Constants.Profile.Token)
+                {
+                    var tokenServiceUri = authServicesUriFormat
+                        .Replace("{customer}", assetId.Customer.ToString())
+                        .Replace("{behaviour}", authService.Name);
+                    
+                    subService = new JObject
+                    {
+                        {"@id", tokenServiceUri},
+                        {"profile", authService.Profile}
+                    };
+                }
+                else
+                {
+                    throw new ArgumentException($"Unknown AuthService profile type: {authService.Profile}");
+                }
+                
+                if (authService.Label.HasText())
+                {
+                    subService.Add("label", authService.Label);
+                }
+                if (authService.Description.HasText())
+                {
+                    subService.Add("description", authService.Description);
+                }
+                
+                subServices.Add(subService);
+            }
+
+            presentationObject["service"] = new JArray(subServices.ToArray());
         }
     }
 }

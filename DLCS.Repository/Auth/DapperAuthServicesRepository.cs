@@ -76,6 +76,14 @@ namespace DLCS.Repository.Auth
                 logger.LogInformation("Found no authServices for customer {Customer}, role {Role}", customer, role);
                 return Enumerable.Empty<AuthService>();
             }
+            
+            // All services have a token service so add to collection
+            authServices.Add(new AuthService
+            {
+                Customer = customer,
+                Name = "token",
+                Profile = Constants.Profile.Token
+            });
 
             return authServices;
         }
