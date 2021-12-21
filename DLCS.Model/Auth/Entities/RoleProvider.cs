@@ -1,6 +1,6 @@
 ﻿#nullable disable
 
-namespace DLCS.Repository.Entities
+namespace DLCS.Model.Auth.Entities
 {
     public partial class RoleProvider
     {

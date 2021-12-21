@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using DLCS.Model.Auth.Entities;
 
 namespace DLCS.Model.Auth
 {
@@ -20,5 +21,7 @@ namespace DLCS.Model.Auth
         /// <param name="role">Id of roles to find</param>
         /// <returns>Matching role</returns>
         public Task<Role?> GetRole(int customer, string role);
+        
+        
     }
 }

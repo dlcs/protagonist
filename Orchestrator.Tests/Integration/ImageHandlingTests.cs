@@ -11,6 +11,7 @@ using Amazon.S3.Model;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Auth;
+using DLCS.Model.Auth.Entities;
 using DLCS.Repository.Entities;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;

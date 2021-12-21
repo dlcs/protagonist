@@ -6,6 +6,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
+using DLCS.Model.Auth.Entities;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF.Serialisation;

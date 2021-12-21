@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Dapper;
 using DLCS.Core.Collections;
 using DLCS.Model.Auth;
+using DLCS.Model.Auth.Entities;
 using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.Extensions.Caching.Memory;

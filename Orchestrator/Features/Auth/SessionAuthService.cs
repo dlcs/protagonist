@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Auth;
+using DLCS.Model.Auth.Entities;
 using DLCS.Repository;
 using DLCS.Repository.Auth;
 using Microsoft.EntityFrameworkCore;
