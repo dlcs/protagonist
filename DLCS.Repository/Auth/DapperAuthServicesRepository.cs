@@ -44,6 +44,28 @@ namespace DLCS.Repository.Auth
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
         }
 
+        public async Task<AuthService?> GetAuthServiceByName(int customer, string name)
+        {
+            var cacheKey = $"authsvc:{customer}:name:{name}";
+
+            try
+            {
+                return await appCache.GetOrAddAsync(cacheKey, async () =>
+                {
+                    logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
+                    await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+                    return await connection.QuerySingleOrDefaultAsync<AuthService>(AuthServiceByNameSql,
+                        new { Customer = customer, Name = name });
+                }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
+            }
+            catch (InvalidOperationException e)
+            {
+                logger.LogError(e, "Unable to find authservice with name {Name} for customer {Customer}", name,
+                    customer);
+                return null;
+            }
+        }
+
         public async Task<Role?> GetRole(int customer, string role)
         {
             var cacheKey = $"role:{customer}:{role}";
@@ -60,6 +82,27 @@ namespace DLCS.Repository.Auth
             catch (InvalidOperationException e)
             {
                 logger.LogError(e, "Unable to find role with id {Role} for customer {Customer}", role, customer);
+                return null;
+            }
+        }
+
+        public async Task<RoleProvider?> GetRoleProvider(string roleProviderId)
+        {
+            var cacheKey = $"rp:{roleProviderId}";
+
+            try
+            {
+                return await appCache.GetOrAddAsync(cacheKey, async () =>
+                {
+                    logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
+                    await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+                    return await connection.QuerySingleOrDefaultAsync<RoleProvider>(RoleProviderByIdSql,
+                        new { Id = roleProviderId });
+                }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Unable to find roleprovider with id {RoleProviderId}", roleProviderId);
                 return null;
             }
         }
@@ -103,8 +146,18 @@ SELECT ""Id"", ""Customer"", ""Name"", ""Profile"", ""Label"", ""Description"", 
 FROM cte_auth;
 ";
 
+        private const string AuthServiceByNameSql = @"
+SELECT ""Id"", ""Customer"", ""Name"", ""Profile"", ""Label"", ""Description"", ""PageLabel"", ""PageDescription"", ""CallToAction"", ""TTL"", ""RoleProvider"", ""ChildAuthService""
+FROM ""AuthServices"" c
+WHERE ""Name"" = @Name AND ""Customer"" = @Customer
+";
+
         private const string RoleByIdSql = @"
 SELECT ""Id"", ""Customer"", ""AuthService"", ""Name"", ""Aliases"" FROM ""Roles"" WHERE ""Customer"" = @Customer AND ""Id"" = @Role
+";
+
+        private const string RoleProviderByIdSql = @"
+SELECT ""Id"", ""Customer"", ""AuthService"", ""Configuration"", ""Credentials"" from ""RoleProviders"" WHERE ""Id"" = @Id 
 ";
     }
 }

@@ -77,6 +77,17 @@ namespace Orchestrator.Features.Auth
             }
         }
 
+        [Route("{customer}/{authService}")]
+        [HttpGet]
+        public async Task<IActionResult> Login(int customer, string authService)
+        {
+            var loginUri = await mediator.Send(new LoginWorkflow(customer, authService));
+
+            return loginUri == null
+                ? new NotFoundResult()
+                : new RedirectResult(loginUri.ToString(), false);
+        }
+
         private HttpStatusCode GetStatusCodeForAccessTokenError(AccessTokenErrorConditions conditions)
             => conditions switch
             {
