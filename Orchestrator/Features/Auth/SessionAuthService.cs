@@ -27,6 +27,14 @@ namespace Orchestrator.Features.Auth
         Task<AuthToken?> CreateAuthTokenForRole(int customer, string authServiceName);
 
         /// <summary>
+        /// Create a new Session and AuthToken for specified authServices.
+        /// </summary>
+        /// <remarks>This assumes we're using a single customer only</remarks>
+        /// <param name="authServices">Collection of authServices</param>
+        /// <returns>new AuthToken</returns>
+        Task<AuthToken?> CreateAuthTokenForAuthServices(params AuthService[] authServices);
+
+        /// <summary>
         /// Get <see cref="AuthToken"/> for provided cookieId. Expiry will be refreshed.
         /// </summary>
         /// <param name="customer">Current customer.</param>
@@ -68,6 +76,7 @@ namespace Orchestrator.Features.Auth
         /// <returns>New AuthToken</returns>
         public async Task<AuthToken?> CreateAuthTokenForRole(int customer, string authServiceName)
         {
+            // TODO - always assumes we're creating a new Session / Token
             var authService = await dbContext.AuthServices
                 .AsNoTracking()
                 .SingleOrDefaultAsync(authSvc => authSvc.Customer == customer && authSvc.Name == authServiceName);
@@ -82,6 +91,18 @@ namespace Orchestrator.Features.Auth
             // Now create a new AuthToken and SessionUser record
             var sessionUser = await CreateSessionUser(customer, authService.Id);
             var authToken = await CreateAuthToken(authService, sessionUser);
+
+            await dbContext.SaveChangesAsync();
+
+            return authToken;
+        }
+        
+        public async Task<AuthToken?> CreateAuthTokenForAuthServices(params AuthService[] authServices)
+        {
+            // TODO - Only handles single customer services
+            var first = authServices.First();
+            var sessionUser = await CreateSessionUser(first.Customer, authServices.Select(s => s.Id).ToArray());
+            var authToken = await CreateAuthToken(first, sessionUser);
 
             await dbContext.SaveChangesAsync();
 

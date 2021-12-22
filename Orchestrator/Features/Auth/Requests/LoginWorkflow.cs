@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Model.Auth;
-using DLCS.Model.Auth.Entities;
+using DLCS.Repository.Auth;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 
 namespace Orchestrator.Features.Auth.Requests
 {
@@ -13,56 +11,31 @@ namespace Orchestrator.Features.Auth.Requests
     /// </summary>
     public class LoginWorkflow : IRequest<Uri?>
     {
-        public int Customer { get; }
+        public int CustomerId { get; }
         
-        public string AuthService { get; }
+        public string AuthServiceName { get; }
 
-        public LoginWorkflow(int customer, string authService)
+        public LoginWorkflow(int customerId, string authServiceName)
         {
-            Customer = customer;
-            AuthService = authService;
+            CustomerId = customerId;
+            AuthServiceName = authServiceName;
         }
     }
     
     public class LoginWorkflowHandler : IRequestHandler<LoginWorkflow, Uri?>
     {
-        private readonly IAuthServicesRepository authServicesRepository;
-        private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IRoleProviderService roleProviderService;
 
-        public LoginWorkflowHandler(
-            IAuthServicesRepository authServicesRepository,
-            IHttpContextAccessor httpContextAccessor)
+        public LoginWorkflowHandler(IRoleProviderService roleProviderService)
         {
-            this.authServicesRepository = authServicesRepository;
-            this.httpContextAccessor = httpContextAccessor;
+            this.roleProviderService = roleProviderService;
         }
         
         public async Task<Uri?> Handle(LoginWorkflow request, CancellationToken cancellationToken)
         {
-            var roleProvider = await GetRoleProviderForAuthService(request);
-            if (roleProvider == null) return null;
-
-            // Parse the config
-            var configuration = GetRoleProviderConfiguration(roleProvider);
+            var configuration =
+                await roleProviderService.GetRoleProviderConfiguration(request.CustomerId, request.AuthServiceName);
             return configuration.Target;
-        }
-
-        private async Task<RoleProvider?> GetRoleProviderForAuthService(LoginWorkflow request)
-        {
-            // Load auth services for this role
-            var authService = await authServicesRepository.GetAuthServiceByName(request.Customer, request.AuthService);
-            if (authService == null) return null;
-
-            // Load RoleProvider for auth-service
-            var roleProvider = await authServicesRepository.GetRoleProvider(authService.RoleProvider);
-            return roleProvider;
-        }
-        
-        private RoleProviderConfiguration GetRoleProviderConfiguration(RoleProvider? roleProvider)
-        {
-            var configBlock = RoleProviderConfigBlock.FromBase64Json(roleProvider.Configuration);
-            var configuration = configBlock.GetForHost(httpContextAccessor.HttpContext.Request.Host.ToString());
-            return configuration;
         }
     }
 }
