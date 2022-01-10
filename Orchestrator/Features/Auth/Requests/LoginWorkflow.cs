@@ -35,7 +35,7 @@ namespace Orchestrator.Features.Auth.Requests
         {
             var configuration =
                 await roleProviderService.GetRoleProviderConfiguration(request.CustomerId, request.AuthServiceName);
-            return configuration.Target;
+            return configuration?.Target;
         }
     }
 }
