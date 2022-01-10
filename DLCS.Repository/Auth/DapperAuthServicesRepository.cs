@@ -125,7 +125,7 @@ namespace DLCS.Repository.Auth
             {
                 Customer = customer,
                 Name = "token",
-                Profile = Constants.Profile.Token
+                Profile = Constants.ProfileV1.Token
             });
 
             return authServices;

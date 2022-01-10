@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core;
@@ -185,7 +186,8 @@ namespace Orchestrator.Features.Images.Requests
             JObject subService;
             foreach (var authService in authServices.Skip(1))
             {
-                if (authService.Profile == Constants.Profile.Logout)
+                if (authService.Profile == Constants.ProfileV1.Logout ||
+                    authService.Profile == Constants.ProfileV0.Logout)
                 {
                     subService = new JObject
                     {
@@ -193,7 +195,8 @@ namespace Orchestrator.Features.Images.Requests
                         { "profile", authService.Profile }
                     };
                 }
-                else if (authService.Profile == Constants.Profile.Token)
+                else if (authService.Profile == Constants.ProfileV1.Token ||
+                         authService.Profile == Constants.ProfileV0.Token)
                 {
                     var tokenServiceUri = authServicesUriFormat
                         .Replace("{customer}", assetId.Customer.ToString())

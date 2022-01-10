@@ -100,6 +100,7 @@ namespace Orchestrator.Features.Auth
         public async Task<AuthToken?> CreateAuthTokenForAuthServices(params AuthService[] authServices)
         {
             // TODO - Only handles single customer services
+            // TODO - What ttl etc to use if multiple auth-services and they differ?
             var first = authServices.First();
             var sessionUser = await CreateSessionUser(first.Customer, authServices.Select(s => s.Id).ToArray());
             var authToken = await CreateAuthToken(first, sessionUser);
