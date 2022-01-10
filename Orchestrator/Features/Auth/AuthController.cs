@@ -116,6 +116,23 @@ namespace Orchestrator.Features.Auth
             return BadRequest();
         }
 
+        /// <summary>
+        /// Log current user out of specified auth-service.
+        /// </summary>
+        /// <param name="customer"></param>
+        /// <param name="authService"></param>
+        /// <returns></returns>
+        [Route("{customer}/{authService}/logout")]
+        [HttpGet]
+        public async Task<IActionResult> Logout(int customer, string authService)
+        {
+            var logoutUri = await mediator.Send(new LogoutAuthService(customer, authService));
+            
+            return logoutUri == null
+                ? View("CloseWindow")
+                : new RedirectResult(logoutUri.ToString(), false);
+        }
+
         private HttpStatusCode GetStatusCodeForAccessTokenError(AccessTokenErrorConditions conditions)
             => conditions switch
             {

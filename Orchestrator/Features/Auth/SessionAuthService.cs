@@ -4,7 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Model.Auth;
+using DLCS.Core.Collections;
 using DLCS.Model.Auth.Entities;
 using DLCS.Repository;
 using DLCS.Repository.Auth;
@@ -25,6 +25,16 @@ namespace Orchestrator.Features.Auth
         /// <param name="authServiceName">Name of auth service to add to Session (e.g. "clickthrough")</param>
         /// <returns>New AuthToken</returns>
         Task<AuthToken?> CreateAuthTokenForRole(int customer, string authServiceName);
+
+        /// <summary>
+        /// Update SessionUser and AuthToken to remove authService from token.
+        /// </summary>
+        /// <param name="customer">Current customer.</param>
+        /// <param name="cookieId">Auth cookie id</param>
+        /// <param name="authServiceId">Id of auth service to remove from Session</param>
+        /// <returns>Updated AuthToken if roles still exist, else none.</returns>
+        Task<AuthToken?> RemoveAuthServiceFromToken(int customer, string cookieId, string authServiceId,
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create a new Session and AuthToken for specified authServices.
@@ -96,7 +106,48 @@ namespace Orchestrator.Features.Auth
 
             return authToken;
         }
-        
+
+        public async Task<AuthToken?> RemoveAuthServiceFromToken(int customer, string cookieId, string authServiceId,
+            CancellationToken cancellationToken = default)
+        {
+            var authToken = await GetAuthTokenForCookieId(customer, cookieId, cancellationToken);
+            if (authToken == null) return authToken;
+
+            var sessionUser = authToken.SessionUser;
+            if (!sessionUser.Roles.TryGetValue(customer, out var customerAuthServices))
+            {
+                return null;
+            }
+
+            // Remove specified AuthService from customer collection
+            customerAuthServices.Remove(authServiceId);
+
+            // Session no longer has access to any auth-services for current customer
+            if (customerAuthServices.IsNullOrEmpty())
+            {
+                if (sessionUser.Roles.Count == 1)
+                {
+                    // There are no more roles for this customer AND there were only roles for this customer
+                    dbContext.SessionUsers.Remove(sessionUser);
+                    dbContext.AuthTokens.Remove(authToken);
+                    authToken = null;
+                }
+                else
+                {
+                    // There are no more roles for this customer but there are other customers so just delete this key
+                    sessionUser.Roles.Remove(customer);
+                }
+            }
+            else
+            {
+                // Session still has roles for this customer
+                sessionUser.Roles[customer] = customerAuthServices;
+            }
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return authToken;
+        }
+
         public async Task<AuthToken?> CreateAuthTokenForAuthServices(params AuthService[] authServices)
         {
             // TODO - Only handles single customer services
@@ -183,7 +234,7 @@ namespace Orchestrator.Features.Auth
             return authToken;
         }
 
-        private async Task<SessionUser> CreateSessionUser(int customer, params string[] authServiceName)
+        private async Task<SessionUser> CreateSessionUser(int customer, params string[] authServiceId)
         {
             var sessionUser = new SessionUser
             {
@@ -191,7 +242,7 @@ namespace Orchestrator.Features.Auth
                 Id = Guid.NewGuid().ToString(),
                 Roles = new Dictionary<int, List<string>>
                 {
-                    [customer] = authServiceName.ToList()
+                    [customer] = authServiceId.ToList()
                 }
             };
 
