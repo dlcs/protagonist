@@ -147,7 +147,7 @@ namespace API.Auth
         {
             try
             {
-                var authHeader = Encoding.UTF8.GetString(Convert.FromBase64String(headerValue.Parameter));
+                var authHeader = headerValue.Parameter.DecodeBase64();
                 string[] keyAndSecret = authHeader.Split(':');
                 var apiCaller = new ApiCaller() {Key = keyAndSecret[0], Secret = keyAndSecret[1]};
                 if (apiCaller.Key.HasText() && apiCaller.Secret.HasText())

@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using DLCS.Model.Auth.Entities;
 
-namespace DLCS.Model.Security
+namespace DLCS.Model.Auth
 {
     public interface IAuthServicesRepository
     {
@@ -14,11 +15,26 @@ namespace DLCS.Model.Security
         public Task<IEnumerable<AuthService>> GetAuthServicesForRole(int customer, string role);
 
         /// <summary>
+        /// Get single Authservice with specified name.
+        /// </summary>
+        /// <param name="customer">Id of customer</param>
+        /// <param name="name">Name of auth-service</param>
+        /// <returns>Matching auth service</returns>
+        public Task<AuthService?> GetAuthServiceByName(int customer, string name);
+
+        /// <summary>
         /// Get list of all Roles matching Ids 
         /// </summary>
         /// <param name="customer">Id of customer</param>
         /// <param name="role">Id of roles to find</param>
         /// <returns>Matching role</returns>
         public Task<Role?> GetRole(int customer, string role);
+
+        /// <summary>
+        /// Get RoleProvider with specified Id
+        /// </summary>
+        /// <param name="roleProviderId">Id of roleProvider</param>
+        /// <returns>Matching RoleProvider</returns>
+        public Task<RoleProvider?> GetRoleProvider(string roleProviderId);
     }
 }

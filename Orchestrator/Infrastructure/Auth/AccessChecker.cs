@@ -2,8 +2,8 @@
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
-using DLCS.Model.Security;
-using DLCS.Repository.Security;
+using DLCS.Model.Auth;
+using DLCS.Repository.Auth;
 
 namespace Orchestrator.Infrastructure.Auth
 {
@@ -32,7 +32,7 @@ namespace Orchestrator.Infrastructure.Auth
                 return false;
             }
 
-            // Check if SessionUser has authService for each asset role
+            // Check if SessionUser has authService for each asset role, if they have any role then they can access
             foreach (var roleId in roleIds)
             {
                 var role = await authServicesRepository.GetRole(customer, roleId);

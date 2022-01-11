@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
-using DLCS.Repository.Security;
+using DLCS.Repository.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 using Orchestrator.Features.Auth;

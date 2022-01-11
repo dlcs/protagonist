@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using System.Threading.Tasks;
-using DLCS.Model.Security;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Stubbery;

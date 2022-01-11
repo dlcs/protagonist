@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Collections;
-using DLCS.Repository.Security;
+using DLCS.Repository.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Orchestrator.Settings;
@@ -77,6 +77,21 @@ namespace Orchestrator.Features.Auth
                         SameSite = SameSiteMode.None,
                         Secure = true
                     });
+            }
+        }
+
+        /// <summary>
+        /// Remove cookie for customer from current Response object 
+        /// </summary>
+        public void RemoveCookieFromResponse(int customerId)
+        {
+            var httpContext = httpContextAccessor.HttpContext;
+            var domains = GetCookieDomainList(httpContext);
+            var cookieId = GetAuthCookieKey(authSettings.CookieNameFormat, customerId);
+            
+            foreach (var domain in domains)
+            {
+                httpContext.Response.Cookies.Delete(cookieId, new CookieOptions { Domain = domain });
             }
         }
 

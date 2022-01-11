@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using DLCS.Model.Customers;
 
-namespace DLCS.Model.Security
+namespace DLCS.Model.Auth
 {
     public interface ICredentialsRepository
     {

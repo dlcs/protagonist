@@ -1,13 +1,13 @@
 ﻿#nullable disable
 
-namespace DLCS.Repository.Entities
+namespace DLCS.Model.Auth.Entities
 {
-    public partial class RoleProvider
+    public partial class Role
     {
         public string Id { get; set; }
         public int Customer { get; set; }
         public string AuthService { get; set; }
-        public string Configuration { get; set; }
-        public string Credentials { get; set; }
+        public string Name { get; set; }
+        public string Aliases { get; set; }
     }
 }

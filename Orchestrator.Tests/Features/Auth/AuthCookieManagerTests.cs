@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using DLCS.Repository.Security;
+using DLCS.Repository.Auth;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;

@@ -4,7 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using DLCS.Core.Collections;
-using DLCS.Model.Security;
+using DLCS.Model.Auth;
+using DLCS.Model.Auth.Entities;
 using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.Extensions.Caching.Memory;
@@ -12,7 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DLCS.Repository.Security
+namespace DLCS.Repository.Auth
 {
     public class DapperAuthServicesRepository : IAuthServicesRepository
     {
@@ -43,6 +44,28 @@ namespace DLCS.Repository.Security
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
         }
 
+        public async Task<AuthService?> GetAuthServiceByName(int customer, string name)
+        {
+            var cacheKey = $"authsvc:{customer}:name:{name}";
+
+            try
+            {
+                return await appCache.GetOrAddAsync(cacheKey, async () =>
+                {
+                    logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
+                    await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+                    return await connection.QuerySingleOrDefaultAsync<AuthService>(AuthServiceByNameSql,
+                        new { Customer = customer, Name = name });
+                }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
+            }
+            catch (InvalidOperationException e)
+            {
+                logger.LogError(e, "Unable to find authservice with name {Name} for customer {Customer}", name,
+                    customer);
+                return null;
+            }
+        }
+
         public async Task<Role?> GetRole(int customer, string role)
         {
             var cacheKey = $"role:{customer}:{role}";
@@ -63,6 +86,27 @@ namespace DLCS.Repository.Security
             }
         }
 
+        public async Task<RoleProvider?> GetRoleProvider(string roleProviderId)
+        {
+            var cacheKey = $"rp:{roleProviderId}";
+
+            try
+            {
+                return await appCache.GetOrAddAsync(cacheKey, async () =>
+                {
+                    logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
+                    await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+                    return await connection.QuerySingleOrDefaultAsync<RoleProvider>(RoleProviderByIdSql,
+                        new { Id = roleProviderId });
+                }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Unable to find roleprovider with id {RoleProviderId}", roleProviderId);
+                return null;
+            }
+        }
+
         private async Task<IEnumerable<AuthService>> GetAuthServicesFromDatabase(int customer, string role)
         {
             await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
@@ -75,6 +119,14 @@ namespace DLCS.Repository.Security
                 logger.LogInformation("Found no authServices for customer {Customer}, role {Role}", customer, role);
                 return Enumerable.Empty<AuthService>();
             }
+            
+            // All services have a token service so add to collection
+            authServices.Add(new AuthService
+            {
+                Customer = customer,
+                Name = "token",
+                Profile = Constants.ProfileV1.Token
+            });
 
             return authServices;
         }
@@ -94,8 +146,18 @@ SELECT ""Id"", ""Customer"", ""Name"", ""Profile"", ""Label"", ""Description"", 
 FROM cte_auth;
 ";
 
+        private const string AuthServiceByNameSql = @"
+SELECT ""Id"", ""Customer"", ""Name"", ""Profile"", ""Label"", ""Description"", ""PageLabel"", ""PageDescription"", ""CallToAction"", ""TTL"", ""RoleProvider"", ""ChildAuthService""
+FROM ""AuthServices"" c
+WHERE ""Name"" = @Name AND ""Customer"" = @Customer
+";
+
         private const string RoleByIdSql = @"
 SELECT ""Id"", ""Customer"", ""AuthService"", ""Name"", ""Aliases"" FROM ""Roles"" WHERE ""Customer"" = @Customer AND ""Id"" = @Role
+";
+
+        private const string RoleProviderByIdSql = @"
+SELECT ""Id"", ""Customer"", ""AuthService"", ""Configuration"", ""Credentials"" from ""RoleProviders"" WHERE ""Id"" = @Id 
 ";
     }
 }

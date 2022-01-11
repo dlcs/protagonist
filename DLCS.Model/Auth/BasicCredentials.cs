@@ -1,4 +1,4 @@
-﻿namespace DLCS.Model.Security
+﻿namespace DLCS.Model.Auth
 {
     /// <summary>
     /// Represents basic username and password credentials. 

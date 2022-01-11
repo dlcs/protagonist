@@ -4,6 +4,7 @@ using Amazon.S3;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Settings;
 using DLCS.Repository.Storage.S3;
@@ -78,6 +79,7 @@ namespace Orchestrator
                 .AddScoped<AuthCookieManager>()
                 .AddSingleton<AssetRequestProcessor>()
                 .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
+                .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
                 .AddCaching(cachingSection.Get<CacheSettings>())
                 .AddOriginStrategies()
                 .AddDataAccess(configuration)
