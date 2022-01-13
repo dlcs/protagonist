@@ -179,7 +179,7 @@ As a result, if the above example is `POST`'ed, it should return almost immediat
 }
 ```
 
-The client can then continue to query the URI provided in the top level`id` field, and will receive a `200 OK` response with a JSON response body describing the current status of each PDF contained within the original request:
+The client can then continue to query the URI provided in the top level `id` field, and will receive a `200 OK` response with a JSON response body describing the current status of each PDF contained within the original request:
 
 ```json
 {
@@ -191,7 +191,9 @@ The client can then continue to query the URI provided in the top level`id` fiel
       "created": "2021-11-26T13:15:18.849333Z",
       "last_updated": "2021-11-26T13:23:36.772426Z",
       "image_count": 1,
-      "dlcs_uri": "https://api.dlcs.digirati.io/customers/17/queue/batches/570439"
+      "dlcs_uris": [
+        "https://api.dlcs.digirati.io/customers/17/queue/batches/570439"
+      ]
     },
     {
       "id": "https://ch.dlcs.io/collections/84d0955c-3573-4582-af57-3805a273685a/members/d24aa8a8-0ea5-45d7-9d96-ded7f836ae77",
@@ -203,15 +205,16 @@ The client can then continue to query the URI provided in the top level`id` fiel
 }
 ```
 
-An individual PDF can be queried directly using the `id` provided for that member, and in addition the a JSON response body specific to that PDF, will receive one of the following response codes:
+An individual PDF can be queried directly using the `id` provided for that member, and in addition to the JSON response body specific to that PDF, the caller will receive one of the following response codes:
 
-| Status     | HTTP Code                  | Headers    | Body                                  | Notes                                                                                                                                                                                 |
-|------------|----------------------------|------------|---------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Processing | `200 OK`                   | None       | None                                  | Indicates that the backend is still processing / rasterizing the PDF ingestion request.                                                                                               |
-| Completed  | `301 Moved Permanently`    | `Location` | None                                  | The processing / rasterization has completed and the returned `Location` header provides a URI served by the DLCS API where the corresponding image ingestion batch can be retrieved. |
-| Errored    | `422 Unprocessable Entity` | None       | ``` {   "Error": "Description"  } ``` | An error occurred during the processing / rasterization of the PDF. The response body contains more details.                                                                          |
+| Status     | HTTP Code                  | Headers    | Body                                  | Notes                                                                                                          |
+|------------|----------------------------|------------|---------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| Processing | `200 OK`                   | None       | None                                  | Indicates that the backend is still processing / rasterizing the PDF ingestion request, or has been completed. |
+| Errored    | `422 Unprocessable Entity` | None       | ``` {   "Error": "Description"  } ``` | An error occurred during the processing / rasterization of the PDF. The response body contains more details.   |
 
-Assuming that `my-pdf.pdf` was a 3-page PDF, then once the PDF processing / rasterization has completed and the client is redirected to the DLCS API, and we follow that batch's `images` property, we would get a `hydra:Collection` again, and it would look something like this:
+Once rasterized, an individual PDF can be split into multiple batches before being submitted to the DLCS for ingestion. The `dlcs_uris` contains an array of URI's representing each of the batches created for that PDF.
+
+Assuming that `my-pdf.pdf` was a 3-page PDF, then once the PDF processing / rasterization has completed and the client is provided with one or more URI's to the DLCS batches that were created for the ingestion of the rasterized images. This would get a `hydra:Collection` again, and it would look something like this:
 
 ```json
 {
