@@ -8,22 +8,35 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('common', '0002_alter_member_status'),
+        ("common", "0002_alter_member_status"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='member',
-            name='dlcs_uri',
+            model_name="member",
+            name="dlcs_uri",
         ),
         migrations.CreateModel(
-            name='DlcsUri',
+            name="DlcsUri",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('dlcs_uri', models.TextField(null=True)),
-                ('created_date', models.DateTimeField(auto_now_add=True)),
-                ('last_updated_date', models.DateTimeField(auto_now=True)),
-                ('member', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='common.member')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("dlcs_uri", models.TextField(null=True)),
+                ("created_date", models.DateTimeField(auto_now_add=True)),
+                ("last_updated_date", models.DateTimeField(auto_now=True)),
+                (
+                    "member",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="common.member"
+                    ),
+                ),
             ],
         ),
     ]
