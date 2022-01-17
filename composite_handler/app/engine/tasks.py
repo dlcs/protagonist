@@ -6,6 +6,7 @@ from app.engine.builder import MemberBuilder
 from app.engine.origins import HttpOrigin
 from app.engine.rasterizers import PdfRasterizer
 from app.engine.s3 import S3Client
+from app.engine.serializers import DLCSBatchSerializer
 from django_q.tasks import async_task
 
 http_origin = HttpOrigin()
@@ -24,9 +25,9 @@ def process_member(args):
         folder_path = __fetch_origin(member, member.json_data["origin"])
         images = __rasterize_composite(member, folder_path)
         s3_urls = __push_images_to_dlcs(member, images)
-        dlcs_request = __build_dlcs_request(member, s3_urls)
-        dlcs_response = __initiate_dlcs_ingest(member, dlcs_request, args["auth"])
-        return __build_result(member, dlcs_response)
+        dlcs_requests = __build_dlcs_requests(member, s3_urls)
+        dlcs_responses = __initiate_dlcs_ingest(member, dlcs_requests, args["auth"])
+        return __build_result(member, dlcs_responses)
     except Exception as error:
         __process_error(member, error)
     finally:
@@ -52,21 +53,26 @@ def __push_images_to_dlcs(member, images):
     return s3_client.put_images(member.id, images)
 
 
-def __build_dlcs_request(member, dlcs_uris):
+def __build_dlcs_requests(member, dlcs_uris):
+    __update_status(member, "BUILDING_DLCS_REQUEST")
     member_builder = MemberBuilder(member.json_data)
     for dlcs_uri in dlcs_uris:
         member_builder.build_member(dlcs_uri)
-    __update_status(member, "BUILDING_DLCS_REQUEST")
-    return member_builder.build_collection()
+    return member_builder.build_collections()
 
 
-def __initiate_dlcs_ingest(member, json, auth):
-    return dlcs.ingest(member.collection.customer, json, auth)
+def __initiate_dlcs_ingest(member, dlcs_requests, auth):
+    dlcs_responses = []
+    for dlcs_request in dlcs_requests:
+        dlcs_responses.append(
+            dlcs.ingest(member.collection.customer, dlcs_request, auth)
+        )
+    return dlcs_responses
 
 
-def __build_result(member, dlcs_response):
-    __update_status(member, "COMPLETED", dlcs_uri=dlcs_response["@id"])
-    return dlcs_response
+def __build_result(member, dlcs_responses):
+    __update_status(member, "COMPLETED", dlcs_responses=dlcs_responses)
+    return dlcs_responses
 
 
 def __process_error(member, error):
@@ -74,12 +80,27 @@ def __process_error(member, error):
     raise error
 
 
-def __update_status(member, status, image_count=None, dlcs_uri=None, error=None):
+def __update_status(member, status, image_count=None, dlcs_responses=None, error=None):
     member.status = status
     if image_count:
         member.image_count = image_count
-    if dlcs_uri:
-        member.dlcs_uri = dlcs_uri
     if error:
         member.error = error
+
+    if dlcs_responses:
+        serializers = [
+            DLCSBatchSerializer(
+                data={
+                    "member": member.id,
+                    "json_data": dlcs_response,
+                    "uri": dlcs_response["@id"],
+                }
+            )
+            for dlcs_response in dlcs_responses
+        ]
+        if not all(serializer.is_valid() for serializer in serializers):
+            raise
+        for serializer in serializers:
+            serializer.save()
+
     member.save()

@@ -66,8 +66,16 @@ test_fixtures = {
             "created": "2021-10-06T13:46:43.400000Z",
             "last_updated": "2021-11-27T07:25:50.133000Z",
             "image_count": 875,
-            "dlcs_uri": "https://api.dlcs.digirati.io/customers/123/batch/45678",
-            "response_code": 301,
+            "dlcs_uris": [
+                "https://api.dlcs.digirati.io/customers/17/queue/batches/570756",
+                "https://api.dlcs.digirati.io/customers/17/queue/batches/570757",
+                "https://api.dlcs.digirati.io/customers/17/queue/batches/570758",
+                "https://api.dlcs.digirati.io/customers/17/queue/batches/570759",
+                "https://api.dlcs.digirati.io/customers/17/queue/batches/570760",
+                "https://api.dlcs.digirati.io/customers/17/queue/batches/570761",
+                "https://api.dlcs.digirati.io/customers/17/queue/batches/570762",
+            ],
+            "response_code": 200,
         },
         "ERROR": {
             "id": "1f1f0f9a-c0f2-420e-8ba8-8b445e3f98e2",
@@ -104,7 +112,7 @@ def test_collection_api_view(http_service):
     assert act_vals["id"]
 
     act_members = act_vals["members"]
-    assert len(act_members) == 6
+    assert len(act_members) == 1
     for act_member in act_members:
         assert "id" in act_member
         assert act_member["status"] == "PENDING"

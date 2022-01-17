@@ -182,4 +182,5 @@ DLCS = {
         "DLCS_S3_OBJECT_KEY_PREFIX", cast=str, default="composites"
     ),
     "s3_upload_threads": env("DLCS_S3_UPLOAD_THREADS", cast=int, default=8),
+    "batch_size": env("DLCS_BATCH_SIZE", cast=int, default=100),
 }

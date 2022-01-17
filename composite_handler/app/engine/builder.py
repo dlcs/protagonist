@@ -1,3 +1,6 @@
+from django.conf import settings
+
+
 class MemberBuilder:
     STATIC_FIELDS = {"mediaType": "image/jp2"}
 
@@ -17,6 +20,7 @@ class MemberBuilder:
     def __init__(self, template):
         self._index = template["incrementSeed"]
         self._template = self.__build_template(template)
+        self.batch_size = settings.DLCS["batch_size"]
         self._members = []
 
     def __build_template(self, original_template):
@@ -34,9 +38,18 @@ class MemberBuilder:
         self._index += 1
         self._members.append(template)
 
-    def build_collection(self):
-        return {
-            "@context": "http://www.w3.org/ns/hydra/context.jsonld",
-            "@type": "Collection",
-            "member": self._members,
-        }
+    def build_collections(self):
+        collections = []
+        for chunked_member in self._chunk_members(self._members, self.batch_size):
+            collections.append(
+                {
+                    "@context": "http://www.w3.org/ns/hydra/context.jsonld",
+                    "@type": "Collection",
+                    "member": chunked_member,
+                }
+            )
+        return collections
+
+    def _chunk_members(self, members, size):
+        for i in range(0, len(members), size):
+            yield members[i : i + size]

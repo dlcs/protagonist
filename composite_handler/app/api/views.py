@@ -2,7 +2,7 @@ import logging
 
 from app.api.serializers import CollectionSerializer, MemberSerializer
 from app.common.dlcs import DLCS
-from app.common.models import Collection, Member
+from app.common.models import Collection, Member, DLCSBatch
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django_q.tasks import async_task
@@ -49,10 +49,12 @@ class AbstractAPIView(APIView):
 
         if member.image_count:
             response["image_count"] = member.image_count
-        if member.dlcs_uri:
-            response["dlcs_uri"] = member.dlcs_uri
         if member.error:
             response["error"] = member.error
+
+        dlcs_batches = DLCSBatch.objects.filter(member=member.id)
+        if len(dlcs_batches) > 0:
+            response["dlcs_uris"] = [dlcs_batch.uri for dlcs_batch in dlcs_batches]
 
         return response
 
@@ -86,17 +88,12 @@ class QueryMemberAPIView(AbstractAPIView):
 
         response_body = self._build_member_response_body(member)
         response_status = (
-            status.HTTP_301_MOVED_PERMANENTLY
-            if member.status == "COMPLETED"
-            else status.HTTP_422_UNPROCESSABLE_ENTITY
+            status.HTTP_422_UNPROCESSABLE_ENTITY
             if member.status == "ERROR"
             else status.HTTP_200_OK
         )
-        response_headers = (
-            {"Location": member.dlcs_uri} if member.status == "COMPLETED" else {}
-        )
 
-        return Response(response_body, response_status, headers=response_headers)
+        return Response(response_body, response_status)
 
 
 class CollectionAPIView(AbstractAPIView):
