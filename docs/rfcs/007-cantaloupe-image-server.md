@@ -25,7 +25,7 @@ Cantaloupe supports multiple different versions of the IIIF Image API, available
 
 `Orchestrator` supports generating IIIF 2.1 and 3.0 manifests (for [single item manifests](https://github.com/dlcs/protagonist/issues/183) and [named queries](https://github.com/dlcs/protagonist/issues/175)) on different paths as well as a canonical path that will return either v2.1 or v3.0 depending on configuration. 
 
-This same path structure and configuration could be used to ensure that the ImageAPI matches the PresentationAPI version.
+This same path structure and configuration could be used to ensure that the ImageAPI matches the PresentationAPI version. See [#248](https://github.com/dlcs/protagonist/issues/248) and [#247](https://github.com/dlcs/protagonist/issues/247).
 
 ## Optimisations
 
@@ -75,6 +75,8 @@ The disadvantages are:
 * Could remove some potential optimisations, like `"OrchestrateOnInfoJson"` optimisation (although this could be accomplished by alternative means).
 * Cache invalidation - if a source image is updated then Cantaloupe cache would need to be cleared. This is not fully solved via Orchestrator approach, see [#233](https://github.com/dlcs/protagonist/issues/233)
 
+Ticket [#241](https://github.com/dlcs/protagonist/issues/241) will look at multiple different setups to decide on most appropriate configuration.
+
 ### Info.json
 
 IIPImage uses a set 256x256 tile size. This fact makes it quick and easy for the DLCS to serve info.json requests from templates.
@@ -85,11 +87,11 @@ Info.json responses are highly cacheable, however the basic info.json generated 
 
 We will need to experiment to see how best to augment the info.json but it seems to make sense to happen at the dotnet level as that has access to all required information.
 
-One option is to store in the DLCS database whether the image source is natively tiled - if it _is_ then Cantaloupe will generated sizes based on the width + height. However, if it _isn't_ then it uses a configuration value and could easily be mimiced by the dotnet code. Given that we generated JPEG2000 derivatives most images _will_ be natively tiled so this may be of limited use.
+Ticket [#246](https://github.com/dlcs/protagonist/issues/246) addresses this issue of leveraging Cantaloupes built in logic while still efficiently delivering info.json files.
 
 ## Future Developments
 
-Cantaloupe has the ability to render individual PDF pages or single frames of a video file. This could lead to some powerful future developments such as [thumbnail services for AV + PDFs](https://github.com/dlcs/protagonist/issues/73).
+Cantaloupe has the ability to render individual PDF pages or single frames of a video file. This could lead to some powerful future developments such as [thumbnail services for AV + PDFs](https://github.com/dlcs/protagonist/issues/73) (see [#249](https://github.com/dlcs/protagonist/issues/249)).
 
 ## Other Considerations
 
