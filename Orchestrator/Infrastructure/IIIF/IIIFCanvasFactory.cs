@@ -13,6 +13,7 @@ using IIIF.Presentation.V2.Annotation;
 using IIIF.Presentation.V2.Strings;
 using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
+using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Options;
 using Orchestrator.Settings;
 using IIIF2 = IIIF.Presentation.V2;
@@ -57,6 +58,7 @@ namespace Orchestrator.Infrastructure.IIIF
                 var canvas = new IIIF3.Canvas
                 {
                     Id = canvasId,
+                    Label = new LanguageMap("en", $"Canvas {counter}"),
                     Width = i.Width,
                     Height = i.Height,
                     Items = new AnnotationPage

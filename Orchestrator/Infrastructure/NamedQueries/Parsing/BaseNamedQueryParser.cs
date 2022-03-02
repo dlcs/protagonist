@@ -6,6 +6,9 @@ using DLCS.Core.Guard;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
+using QueryMapping = DLCS.Model.Assets.NamedQueries.ParsedNamedQuery.QueryMapping;
+using OrderDirection = DLCS.Model.Assets.NamedQueries.ParsedNamedQuery.OrderDirection;
+using QueryOrder = DLCS.Model.Assets.NamedQueries.ParsedNamedQuery.QueryOrder;
 
 namespace Orchestrator.Infrastructure.NamedQueries.Parsing
 {
@@ -16,10 +19,12 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
         where T : ParsedNamedQuery
     {
         protected readonly ILogger Logger;
+        
+        [Obsolete("Canvas is used for backwards compatibility with Deliverator. Favour assetOrder")]
+        protected const string Canvas = "canvas";
 
         // Common/source
         protected const string AdditionalArgMarker = "#";
-        protected const string Canvas = "canvas";
         protected const string Number1 = "n1";
         protected const string Number2 = "n2";
         protected const string Number3 = "n3";
@@ -29,6 +34,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
         protected const string String1 = "s1";
         protected const string String2 = "s2";
         protected const string String3 = "s3";
+        protected const string AssetOrdering = "assetOrder";
 
         public BaseNamedQueryParser(ILogger logger)
         {
@@ -99,7 +105,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
                     switch (elements[0])
                     {
                         case Canvas:
-                            assetQuery.Canvas = GetQueryMappingFromTemplateElement(elements[1]);
+                        case AssetOrdering:
+                            assetQuery.AssetOrdering = GetAssetOrderingFromTemplateElement(elements[1]);
                             break;
                         case Space:
                             assetQuery.Space = int.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
@@ -181,19 +188,64 @@ namespace Orchestrator.Infrastructure.NamedQueries.Parsing
         }
 
         /// <summary>
-        /// Convert passed string element (e.g. s1, s2) to <see cref="ParsedNamedQuery.QueryMapping"/>
+        /// Convert passed string element (e.g. s1, s2) to <see cref="QueryMapping"/>
         /// </summary>
-        protected ParsedNamedQuery.QueryMapping GetQueryMappingFromTemplateElement(string element)
+        protected QueryMapping GetQueryMappingFromTemplateElement(string element)
             => element switch
             {
-                String1 => ParsedNamedQuery.QueryMapping.String1,
-                String2 => ParsedNamedQuery.QueryMapping.String2,
-                String3 => ParsedNamedQuery.QueryMapping.String3,
-                Number1 => ParsedNamedQuery.QueryMapping.Number1,
-                Number2 => ParsedNamedQuery.QueryMapping.Number2,
-                Number3 => ParsedNamedQuery.QueryMapping.Number3,
-                _ => ParsedNamedQuery.QueryMapping.Unset
+                String1 => QueryMapping.String1,
+                String2 => QueryMapping.String2,
+                String3 => QueryMapping.String3,
+                Number1 => QueryMapping.Number1,
+                Number2 => QueryMapping.Number2,
+                Number3 => QueryMapping.Number3,
+                _ => QueryMapping.Unset
             };
+
+        /// <summary>
+        /// Convert ordering element to <see cref="QueryOrder"/>. This can be field(s) with optional direction element
+        /// e.g.
+        ///   n1
+        ///   n2 desc
+        ///   n3+asc
+        ///   n1;n2 desc;s3+asc
+        /// </summary>
+        /// <param name="element"></param>
+        /// <returns></returns>
+        protected List<QueryOrder> GetAssetOrderingFromTemplateElement(string element)
+        {
+            const string fieldDirectionDelimiter = " ";
+            var orderings = element.Split(";");
+            var orderBy = new List<QueryOrder>(orderings.Length);
+
+            void UpdateOrderByCollection(string field, string direction = "asc")
+            {
+                var dir = direction.Equals("desc", StringComparison.OrdinalIgnoreCase)
+                    ? OrderDirection.Descending
+                    : OrderDirection.Ascending;
+                
+                var queryMapping = GetQueryMappingFromTemplateElement(field);
+                orderBy.Add(new QueryOrder(queryMapping, dir));
+            }
+
+            foreach (var ordering in orderings)
+            {
+                var fieldDirection = ordering
+                    .Replace("+", fieldDirectionDelimiter)
+                    .Split(fieldDirectionDelimiter, StringSplitOptions.RemoveEmptyEntries);
+                
+                if (fieldDirection.Length == 1)
+                {
+                    UpdateOrderByCollection(fieldDirection[0]);
+                }
+                else
+                {
+                    UpdateOrderByCollection(fieldDirection[0], fieldDirection[1]);
+                }
+            }
+
+            return orderBy;
+        }
 
         /// <summary>
         /// Replace characters in provided template with values set in parsedNamedQuery.
