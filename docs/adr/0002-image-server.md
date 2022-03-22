@@ -12,6 +12,8 @@ How can we host our image-servers with shared-storage that is fast enough to ser
 
 We have decided on Cantaloupe which can stream resources from S3 directly so this may be an option.
 
+This ADR is relevant to _tile serving_ only. Not the "special-server".
+
 ## Decision Drivers
 
 * Performance - shared storage must be fast enough for image-servers to serve requests from.
@@ -52,9 +54,11 @@ Could leverage S3 [data repositories](https://docs.aws.amazon.com/fsx/latest/Lus
 * Unfamiliar offering.
 * [Availability/durability](https://aws.amazon.com/fsx/lustre/faqs/#Availability_and_durability) during one day and one week are 99.9% and 99.4% respectively. Would need to handle possiblity of expected file not there.
 
-## Cantaloupe on EC2 instances using `S3Source` and caching on own volume.
+## Pros and Cons of the Options
 
-### Positive Consequences
+### Cantaloupe on EC2 instances using `S3Source` and caching on own volume.
+
+#### Positive Consequences
 
 * Low maintenance.
 * Ease of scalability, can add or remove nodes without worrying about cleaning up.
@@ -62,48 +66,48 @@ Could leverage S3 [data repositories](https://docs.aws.amazon.com/fsx/latest/Lus
 * Better performance than IIP, both median and average performance better. No performance spikes and less errors than IIP.
 * Ease of scaling.
 
-### Negative Consequences
+#### Negative Consequences
 
 * `S3Source` is slower than `FilesystemSource`
 * Caches could get out of sync.
 * Slower performance than orchestrating instances.
 
-## Cantaloupe on EC2 instances using shared GlusterFS volume, with Orchestration happening.
+### Cantaloupe on EC2 instances using shared GlusterFS volume, with Orchestration happening.
 
-### Positive Consequences
+#### Positive Consequences
 
 * Good performance.
 * Would allow ease of scaling EC2 instances as each instance would need to attach volume then good to go.
 * Could be multiple AZ, supports multiple different [volume configurations](https://docs.gluster.org/en/latest/Administrator-Guide/Setting-Up-Volumes/).
 
-### Negative Consequences
+#### Negative Consequences
 
 * Maintenance overhead (patching, monitoring etc)
 * More moving parts to manage.
 * Lack of experience managing GlusterFS setup.
 
-## Cantaloupe on EC2 instances sharing an EBS multi-attach volume.
+### Cantaloupe on EC2 instances sharing an EBS multi-attach volume.
 
-### Positive Consequences
+#### Positive Consequences
 
 * Disk performance as EBS needs to be io1 or io2.
 * Conceptually simple, can be treated like a normal mounted EBS volume.
 * Ease of scaling.
 
-### Negative Consequences
+#### Negative Consequences
 
 * Maintenance overhead as need to use cluster-aware filesystem like [gfs2](https://documentation.suse.com/sle-ha/15-SP1/html/SLE-HA-all/cha-ha-gfs2.html) or [ocfs](https://documentation.suse.com/sle-ha/15-SP1/html/SLE-HA-all/cha-ha-ocfs2.html).
 * Possibility of corruption and/or data issues between attached instances if not managed correctly.
 * Relatively new, not generally available in all AWS regions.
 * Single AZ for both volume and connected instances.
 
-## Cantaloupe on single ECS host sharing underlying mounted EBS.
+### Cantaloupe on single ECS host sharing underlying mounted EBS.
 
-### Positive Consequences
+#### Positive Consequences
 
 * Simple + familiar.
 
-### Negative Consequences
+#### Negative Consequences
 
 * Difficulty scaling outwith confines of box.
 * Co-location issues with other services.
