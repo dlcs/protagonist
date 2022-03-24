@@ -85,9 +85,9 @@ namespace API.Client
             return space;
         }
 
-        public async Task<Space?> PatchSpace(Space space)
+        public async Task<Space?> PatchSpace(int spaceId, Space space)
         {
-            var url = $"/customers/{currentUser.GetCustomerId()}/spaces";
+            var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}";
             var response = await httpClient.PatchAsync(url, ApiBody(space));
             var patchedSpace = await response.ReadAsHydraResponseAsync<Space>(jsonSerializerSettings);
             return patchedSpace;
@@ -162,10 +162,23 @@ namespace API.Client
         {
             int? customerId = currentUser.GetCustomerId();
             string uri = $"/customers/{customerId}/spaces/{spaceId}/images";
-            foreach (var image in images.Members)
-            {
-                image.ModelId = $"{customerId}/{spaceId}/{image.ModelId}";
-            }
+            // The old API call (e.g., in Wellcome) required incoming images to have the ModelId
+            // matching the DB ID, e.g., /2/1/my-image-id
+            // But this is not right; the DLCS should construct that DB ID from cust, space, and "modelId"
+            // So where on this payload is the DLCS going to get that information?
+            // From the URL target of the operation:
+            // For this bulk patch targeted at /customers/{customerId}/spaces/{spaceId}/images, 
+            // you can't change {customerId} of the images you are sending (disallowed anyway).
+            // And while you could in theory change the space, you'd end up with the database ID having a different 
+            // space "slot" (2/1/my-image-id) from its space property, which is undesirable.
+            // We'd need a new ID, so there needs to be a dedicated MOVE operation that will create a new resource.
+            // 
+            // Therefore we are NOT going to do this:    (delete from existing impls)
+            // foreach (var image in images.Members)
+            // {
+            //    image.ModelId = $"{customerId}/{spaceId}/{image.ModelId}";
+            // }
+            // ...DLCS will find the images to patch that match {customerId} and {spaceId}
             var response = await httpClient.PatchAsync(uri, ApiBody(images));
             var patched = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>(jsonSerializerSettings);
             return patched;

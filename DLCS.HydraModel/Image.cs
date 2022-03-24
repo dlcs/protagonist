@@ -133,17 +133,17 @@ namespace DLCS.HydraModel
         [RdfProperty(Description = "Number reference 1",
             Range = Names.XmlSchema.NonNegativeInteger, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 51, PropertyName = "number1")]
-        public long? Number1 { get; set; }
+        public int? Number1 { get; set; }
 
         [RdfProperty(Description = "Number reference 2",
             Range = Names.XmlSchema.NonNegativeInteger, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 52, PropertyName = "number2")]
-        public long? Number2 { get; set; }
+        public int? Number2 { get; set; }
 
         [RdfProperty(Description = "Number reference 3",
             Range = Names.XmlSchema.NonNegativeInteger, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 53, PropertyName = "number3")]
-        public long? Number3 { get; set; }
+        public int? Number3 { get; set; }
         
         
         // Asset extents

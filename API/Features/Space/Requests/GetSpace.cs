@@ -29,16 +29,8 @@ namespace API.Features.Space.Requests
         
         public async Task<DLCS.Repository.Entities.Space?> Handle(GetSpace request, CancellationToken cancellationToken)
         {
-            var space = await dbContext.Spaces.AsNoTracking().SingleOrDefaultAsync(s =>
-                s.Customer == request.CustomerId && s.Id == request.SpaceId, cancellationToken: cancellationToken);
-            var counter = await dbContext.EntityCounters.AsNoTracking().SingleOrDefaultAsync(ec =>
-                ec.Customer == request.CustomerId && ec.Type == "space-images" &&
-                ec.Scope == request.SpaceId.ToString(), cancellationToken: cancellationToken);
-            if (space != null && counter != null)
-            {
-                space.ApproximateNumberOfImages = counter.Next;
-            }
-
+            var space = await SpaceRequestHelpers.GetSpaceInternal(
+                dbContext, request.CustomerId, request.SpaceId, cancellationToken);
             return space;
         }
     }

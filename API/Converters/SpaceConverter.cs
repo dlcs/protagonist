@@ -21,11 +21,13 @@ namespace API.Converters
             {
                 Name = dbSpace.Name,
                 Created = dbSpace.Created,
-                DefaultTags = dbSpace.Tags.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray(), // TODO - add a hasconversion?
+                DefaultTags = dbSpace.Tags,
+                DefaultRoles = dbSpace.Roles,
                 MaxUnauthorised = dbSpace.MaxUnauthorised,
                 ApproximateNumberOfImages = dbSpace.ApproximateNumberOfImages
             };
             return space;
         }
+
     }
 }

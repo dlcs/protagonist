@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using DLCS.Core.Collections;
+using DLCS.Core.Strings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -64,10 +66,10 @@ namespace DLCS.HydraModel
         
         
 
-        [HydraLink(Description = "Default roles that will be applied to images in this space",
-            Range = Names.Hydra.Collection, ReadOnly = false, WriteOnly = false)]
+        [RdfProperty(Description = "Default roles that will be applied to images in this space",
+            Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 20, PropertyName = "defaultRoles")]
-        public string? DefaultRoles { get; set; }
+        public string[]? DefaultRoles { get; set; }
 
         [HydraLink(Description = "All the images in the space",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
@@ -147,12 +149,12 @@ namespace DLCS.HydraModel
         
         public static void AddDefaultTag(this Space space, string tag)
         {
-            throw new NotImplementedException();
+            space.DefaultTags = StringArrays.EnsureString(space.DefaultTags, tag);
         }
         
         public static void RemoveDefaultTag(this Space space, string tag)
         {
-            throw new NotImplementedException();
+            space.DefaultTags = StringArrays.RemoveString(space.DefaultTags, tag);
         }
     }
 }

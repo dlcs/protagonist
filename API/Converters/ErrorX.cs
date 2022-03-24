@@ -14,6 +14,16 @@ namespace API.Converters
                 StatusCode = exception.StatusCode
             };
         }
-        
+
+        public static Error Create(string title, string description, int statusCode)
+        {
+            return new()
+            {
+                IncludeContext = true,
+                Title = title,
+                Description = description,
+                StatusCode = statusCode
+            };
+        }
     }
 }

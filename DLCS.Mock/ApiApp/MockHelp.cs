@@ -55,7 +55,7 @@ namespace DLCS.Mock.ApiApp
             int? width, int? height, int? maxUnauthorised,
             DateTime? queued, DateTime? dequeued, DateTime? finished, bool ingesting, string error,
             string[]? tags, string? string1, string? string2, string? string3,
-            long? number1, long? number2, long? number3,
+            int? number1, int? number2, int? number3,
             string imageOptimisationPolicy, string thumbnailPolicy)
         {
             var image = new Image(baseUrl, customerId, space, modelId);

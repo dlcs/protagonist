@@ -66,18 +66,18 @@ namespace API.Features.Space
             logger.LogInformation("API will create a space");
             if (string.IsNullOrWhiteSpace(space.Name))
             {
-                return BadRequest("A space must have a name.");
+                return BadRequest(ErrorX.Create("Invalid Space","A space must have a name.", 400));
             }
             if (customerId <= 0)
             {
-                return BadRequest("Space must be created for an existing Customer.");
+                return BadRequest(ErrorX.Create("Invalid Space","Space must be created for an existing Customer.", 400));
             }
             
             var command = new CreateSpace(customerId, space.Name)
             {
                 // ImageBucket = space.ImageBucket, // not there
                 Roles = space.DefaultRoles,
-                Tags = string.Join(",", space.DefaultTags ?? Array.Empty<string>()),
+                Tags = space.DefaultTags ?? Array.Empty<string>(),
                 MaxUnauthorised = space.MaxUnauthorised
             };
 
@@ -105,33 +105,17 @@ namespace API.Features.Space
             return dbSpace.ToHydra(baseUrl);
         }
         
-        
-        [HttpGet]
-        [Route("{spaceId}/images")]
-        public async Task<HydraCollection<DLCS.HydraModel.Image>> Images(
-            int customerId, int spaceId,
-            int? page = 1, int? pageSize = -1,
-            string? orderBy = null, string? orderByDescending = null)
+        [HttpPatch]
+        [Route("{spaceId}")]
+        public async Task<DLCS.HydraModel.Space> Patch(
+            int customerId, int spaceId, [FromBody] DLCS.HydraModel.Space space)
         {
-            if (pageSize < 0) pageSize = settings.PageSize;
-            if (page < 0) page = 1;
-            bool ascending = string.IsNullOrWhiteSpace(orderByDescending);
-            if (!ascending) orderBy = orderByDescending;
             var baseUrl = Request.GetBaseUrl();
-            var imagesRequest = new GetSpaceImages(ascending, page.Value, pageSize.Value, spaceId, customerId, orderBy);
-            var pageOfAssets = await mediator.Send(imagesRequest);
-            
-            var collection = new HydraCollection<DLCS.HydraModel.Image>
-            {
-                IncludeContext = true,
-                Members = pageOfAssets.Assets.Select(a => a.ToHydra(baseUrl, settings.DLCS.ResourceRoot.ToString())).ToArray(),
-                TotalItems = pageOfAssets.Total,
-                PageSize = pageSize,
-                Id = Request.GetJsonLdId()
-            };
-            PartialCollectionView.AddPaging(collection, page.Value, pageSize.Value);
-            return collection;
+            var dbSpace = await mediator.Send(new PatchSpace(customerId, spaceId, space));
+            return dbSpace.ToHydra(baseUrl);
         }
+        
+        
     }
 
 }

@@ -19,8 +19,8 @@ namespace API.Features.Space.Requests
         public string Name { get; set; }
         public int Customer { get; set; }
         public string? ImageBucket { get; set; } = string.Empty;
-        public string? Tags { get; set; } = string.Empty;
-        public string? Roles { get; set; } = string.Empty;
+        public string[]? Tags { get; set; }
+        public string[]? Roles { get; set; }
         public int? MaxUnauthorised { get; set; }
 
         public CreateSpace(int customer, string name)
@@ -54,7 +54,7 @@ namespace API.Features.Space.Requests
         public async Task<DLCS.Repository.Entities.Space> Handle(CreateSpace request, CancellationToken cancellationToken)
         {
             await ValidateRequest(request);
-            await EnsureSpaceNameNotTaken(request, cancellationToken);
+            await SpaceRequestHelpers.EnsureSpaceNameNotTaken(dbContext, request.Customer, request.Name, cancellationToken);
             int newModelId = await GetIdForNewSpace(request.Customer);
             var space = await CreateNewSpace(request, cancellationToken, newModelId);
             await entityCounterRepository.Create(request.Customer,  "space-images", space.Id.ToString(), 1);
@@ -62,16 +62,6 @@ namespace API.Features.Space.Requests
             return space;
         }
 
-        private async Task EnsureSpaceNameNotTaken(CreateSpace request, CancellationToken cancellationToken)
-        {
-            var existing = await dbContext.Spaces
-                .Where(s => s.Customer == request.Customer)
-                .SingleOrDefaultAsync(s => s.Name == request.Name, cancellationToken: cancellationToken);
-            if (existing != null)
-            {
-                throw new BadRequestException("A space with this name already exists for this customer.");
-            }
-        }
 
         private async Task<DLCS.Repository.Entities.Space> CreateNewSpace(CreateSpace request, CancellationToken cancellationToken, int newModelId)
         {
@@ -82,8 +72,8 @@ namespace API.Features.Space.Requests
                 Name = request.Name,
                 Created = DateTime.Now,
                 ImageBucket = request.ImageBucket,
-                Tags = request.Tags ?? String.Empty,
-                Roles = request.Roles ?? string.Empty,
+                Tags = request.Tags ?? Array.Empty<string>(),
+                Roles = request.Roles ?? Array.Empty<string>(),
                 MaxUnauthorised = request.MaxUnauthorised ?? -1
             };
 

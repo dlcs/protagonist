@@ -505,11 +505,17 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Roles)
                     .IsRequired()
-                    .HasMaxLength(1000);
+                    .HasMaxLength(1000)
+                    .HasConversion(
+                        v => string.Join(",", v),
+                        v => v.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray());
 
                 entity.Property(e => e.Tags)
                     .IsRequired()
-                    .HasMaxLength(1000);
+                    .HasMaxLength(1000)
+                    .HasConversion(
+                        v => string.Join(",", v),
+                        v => v.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray());
 
                 entity.Ignore(e => e.ApproximateNumberOfImages);
             });
