@@ -18,7 +18,19 @@ namespace API.Converters
         /// <returns></returns>
         public static Image ToHydra(this DLCS.Model.Assets.Asset dbAsset, string baseUrl, string resourceBaseUrl)
         {
-            var image = new Image(baseUrl, dbAsset.Customer, dbAsset.Space, dbAsset.Id)
+            // This seems fragile
+            // The database Id/PK is {customer}/{space}/{modelId}
+            // so we need to remove that bit
+            // we can do this in a checking kind of way though:
+            var prefix = $"{dbAsset.Customer}/{dbAsset.Space}/";
+            if (!dbAsset.Id.StartsWith(prefix))
+            {
+                throw new APIException($"Asset {dbAsset.Id} does not start with expected prefix {prefix}");
+            }
+
+            var modelId = dbAsset.Id.Substring(prefix.Length);
+            
+            var image = new Image(baseUrl, dbAsset.Customer, dbAsset.Space, modelId)
             {
                 InfoJson = $"{resourceBaseUrl}iiif-img/{dbAsset.Id}",
                 ThumbnailInfoJson = $"{resourceBaseUrl}thumbs/{dbAsset.Id}",

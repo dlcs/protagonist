@@ -145,5 +145,15 @@ namespace API.Features.Image
             };
             return Ok(output);
         }
+        
+        [HttpGet]
+        [Route("{imageId}")]
+        public async Task<DLCS.HydraModel.Image> Image(int customerId, int spaceId, string imageId)
+        {
+            var resourceRoot = settings.DLCS.ResourceRoot.ToString();
+            var baseUrl = Request.GetBaseUrl();
+            var dbImage = await mediator.Send(new GetImage(customerId, spaceId, imageId));
+            return dbImage.ToHydra(baseUrl, resourceRoot);
+        }
     }
 }

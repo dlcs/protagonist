@@ -9,7 +9,7 @@ using MediatR;
 
 namespace API.Features.Image.Requests
 {
-    public class PatchImage : IRequest<DLCS.Model.Assets.Asset>
+    public class PatchImage : IRequest<Asset>
     {
         public DLCS.HydraModel.Image HydraImage { get; set; }
         public int CustomerId { get; set; }

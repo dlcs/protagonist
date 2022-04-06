@@ -2,6 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Repository;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Image.Requests
 {
@@ -10,7 +11,8 @@ namespace API.Features.Image.Requests
     {
         public static async Task<Asset> GetImageInternal(DlcsContext dbContext, string key, CancellationToken cancellationToken)
         {
-            throw new System.NotImplementedException();
+            var asset = await dbContext.Images.FindAsync(key);
+            return asset;
         }
     }
 }
