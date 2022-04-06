@@ -7,6 +7,7 @@ using API.Settings;
 using DLCS.Core.Encryption;
 using DLCS.Model;
 using DLCS.Model.Customers;
+using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
 using DLCS.Model.Security;
 using DLCS.Model.Storage;
@@ -14,6 +15,7 @@ using DLCS.Repository;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Entities;
+using DLCS.Repository.Messaging;
 using DLCS.Repository.Security;
 using DLCS.Repository.Storage.S3;
 using DLCS.Web.Configuration;
@@ -74,7 +76,8 @@ namespace API
                     opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
                 )
                 .AddAWSService<IAmazonS3>()
-                .AddSingleton<IBucketReader, BucketReader>();
+                .AddSingleton<IBucketReader, BucketReader>()
+                .AddSingleton<IMessageBus, MessageBus>();
 
             services.AddDlcsDelegatedBasicAuth(options =>
                 {

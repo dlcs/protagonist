@@ -24,5 +24,10 @@ namespace DLCS.Model.Messaging
             Asset = asset;
             Created = created;
         }
+
+        public override string ToString()
+        {
+            return $"IngestAssetRequest at {Created} for Asset {Asset.Id}";
+        }
     }
 }
