@@ -129,7 +129,7 @@ namespace DLCS.Repository.Auth
                 Customer = customer,
                 Name = name,
                 AuthService = authServiceId,
-                Aliases = Array.Empty<string>()
+                Aliases = String.Empty
             };
         }
         
