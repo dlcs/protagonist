@@ -2,8 +2,8 @@
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
-using DLCS.Model.Security;
-using DLCS.Repository.Security;
+using DLCS.Model.Auth;
+using DLCS.Repository.Auth;
 
 namespace Orchestrator.Infrastructure.Auth
 {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Collections;
-using DLCS.Repository.Security;
+using DLCS.Repository.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Orchestrator.Settings;

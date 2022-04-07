@@ -2,18 +2,17 @@
 using System.IO;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
+using DLCS.Model.Auth;
 using DLCS.Model.Customers;
-using DLCS.Model.Security;
 using DLCS.Model.Storage;
 using DLCS.Repository.Caching;
-using DLCS.Repository.Settings;
 using LazyCache;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
-namespace DLCS.Repository.Security
+namespace DLCS.Repository.Auth
 {
     /// <summary>
     /// Implementation of <see cref="ICredentialsRepository"/> using Dapper for data access

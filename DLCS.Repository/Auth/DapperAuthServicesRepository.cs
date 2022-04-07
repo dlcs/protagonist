@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
-using DLCS.Model.Security;
+using DLCS.Model.Auth;
+using DLCS.Model.Auth.Entities;
 using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.Extensions.Caching.Memory;
@@ -12,10 +14,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DLCS.Repository.Security
+namespace DLCS.Repository.Auth
 {
     public class DapperAuthServicesRepository : DapperRepository, IAuthServicesRepository
     {
+        private readonly IConfiguration configuration;
         private readonly IAppCache appCache;
         private readonly CacheSettings cacheSettings;
         private readonly ILogger<DapperAuthServicesRepository> logger;
@@ -40,6 +43,27 @@ namespace DLCS.Repository.Security
                 return await GetAuthServicesFromDatabase(customer, role);
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
         }
+        
+        public async Task<AuthService?> GetAuthServiceByName(int customer, string name)
+        {
+            var cacheKey = $"authsvc:{customer}:name:{name}";
+
+            try
+            {
+                return await appCache.GetOrAddAsync(cacheKey, async () =>
+                {
+                    logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
+                    return await QuerySingleOrDefaultAsync<AuthService>(
+                        AuthServiceByNameSql, new {Customer = customer, Name = name});
+                }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
+            }
+            catch (InvalidOperationException e)
+            {
+                logger.LogError(e, "Unable to find authservice with name {Name} for customer {Customer}", name,
+                    customer);
+                return null;
+            }
+        }
 
         public async Task<Role?> GetRole(int customer, string role)
         {
@@ -59,6 +83,26 @@ namespace DLCS.Repository.Security
                 return null;
             }
         }
+        
+        public async Task<RoleProvider?> GetRoleProvider(string roleProviderId)
+        {
+            var cacheKey = $"rp:{roleProviderId}";
+
+            try
+            {
+                return await appCache.GetOrAddAsync(cacheKey, async () =>
+                {
+                    logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
+                    return await QuerySingleOrDefaultAsync<RoleProvider>(
+                        RoleProviderByIdSql, new { Id = roleProviderId });
+                }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Unable to find roleprovider with id {RoleProviderId}", roleProviderId);
+                return null;
+            }
+        }
 
         private async Task<IEnumerable<AuthService>> GetAuthServicesFromDatabase(int customer, string role)
         {
@@ -75,24 +119,6 @@ namespace DLCS.Repository.Security
             return authServices;
         }
 
-        private const string AuthServiceSql = @"
-WITH RECURSIVE cte_auth AS (
-    SELECT p.""Id"", p.""Customer"", p.""Name"", p.""Profile"", p.""Label"", p.""Description"", p.""PageLabel"", p.""PageDescription"", p.""CallToAction"", p.""TTL"", p.""RoleProvider"", p.""ChildAuthService""
-    FROM ""AuthServices"" p
-    INNER JOIN ""Roles"" r on p.""Id"" = r.""AuthService""
-    WHERE r.""Customer"" = @Customer AND r.""Id"" = @Role
-    UNION ALL
-    SELECT c.""Id"", c.""Customer"", c.""Name"", c.""Profile"", c.""Label"", c.""Description"", c.""PageLabel"", c.""PageDescription"", c.""CallToAction"", c.""TTL"", c.""RoleProvider"", c.""ChildAuthService""
-    FROM ""AuthServices"" c
-    INNER JOIN cte_auth ON c.""Id"" = cte_auth.""ChildAuthService""
-)
-SELECT ""Id"", ""Customer"", ""Name"", ""Profile"", ""Label"", ""Description"", ""PageLabel"", ""PageDescription"", ""CallToAction"", ""TTL"", ""RoleProvider"", ""ChildAuthService""
-FROM cte_auth;
-";
-
-        private const string RoleByIdSql = @"
-SELECT ""Id"", ""Customer"", ""AuthService"", ""Name"", ""Aliases"" FROM ""Roles"" WHERE ""Customer"" = @Customer AND ""Id"" = @Role
-";
 
 
         public Role CreateRole(string name, int customer, string authServiceId)
@@ -195,5 +221,34 @@ SELECT ""Id"", ""Customer"", ""AuthService"", ""Name"", ""Aliases"" FROM ""Roles
         {
             throw new NotImplementedException();
         }
+        
+        private const string AuthServiceSql = @"
+WITH RECURSIVE cte_auth AS (
+    SELECT p.""Id"", p.""Customer"", p.""Name"", p.""Profile"", p.""Label"", p.""Description"", p.""PageLabel"", p.""PageDescription"", p.""CallToAction"", p.""TTL"", p.""RoleProvider"", p.""ChildAuthService""
+    FROM ""AuthServices"" p
+    INNER JOIN ""Roles"" r on p.""Id"" = r.""AuthService""
+    WHERE r.""Customer"" = @Customer AND r.""Id"" = @Role
+    UNION ALL
+    SELECT c.""Id"", c.""Customer"", c.""Name"", c.""Profile"", c.""Label"", c.""Description"", c.""PageLabel"", c.""PageDescription"", c.""CallToAction"", c.""TTL"", c.""RoleProvider"", c.""ChildAuthService""
+    FROM ""AuthServices"" c
+    INNER JOIN cte_auth ON c.""Id"" = cte_auth.""ChildAuthService""
+)
+SELECT ""Id"", ""Customer"", ""Name"", ""Profile"", ""Label"", ""Description"", ""PageLabel"", ""PageDescription"", ""CallToAction"", ""TTL"", ""RoleProvider"", ""ChildAuthService""
+FROM cte_auth;
+";
+        
+        private const string AuthServiceByNameSql = @"
+SELECT ""Id"", ""Customer"", ""Name"", ""Profile"", ""Label"", ""Description"", ""PageLabel"", ""PageDescription"", ""CallToAction"", ""TTL"", ""RoleProvider"", ""ChildAuthService""
+FROM ""AuthServices"" c
+WHERE ""Name"" = @Name AND ""Customer"" = @Customer
+";
+
+        private const string RoleByIdSql = @"
+SELECT ""Id"", ""Customer"", ""AuthService"", ""Name"", ""Aliases"" FROM ""Roles"" WHERE ""Customer"" = @Customer AND ""Id"" = @Role
+";
+
+        private const string RoleProviderByIdSql = @"
+SELECT ""Id"", ""Customer"", ""AuthService"", ""Configuration"", ""Credentials"" from ""RoleProviders"" WHERE ""Id"" = @Id 
+";
     }
 }

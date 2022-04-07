@@ -1,6 +1,6 @@
 ﻿#nullable disable
 
-namespace DLCS.Model.Security
+namespace DLCS.Model.Auth.Entities
 {
     public partial class Role
     {
