@@ -1,24 +1,22 @@
-﻿using System.IO;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using MediatR;
-using Orchestrator.Infrastructure.NamedQueries;
+using Orchestrator.Infrastructure.NamedQueries.Persistence;
+using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
+using Orchestrator.Infrastructure.NamedQueries.Requests;
 
 namespace Orchestrator.Features.PDF.Requests
 {
     /// <summary>
     /// Mediatr request for generating PDF via named query
     /// </summary>
-    public class GetPdfFromNamedQuery : IRequest<PdfFromNamedQuery>
+    public class GetPdfFromNamedQuery : IBaseNamedQueryRequest, IRequest<PersistedNamedQueryProjection>
     {
         public string CustomerPathValue { get; }
-        
         public string NamedQuery { get; }
-        
         public string? NamedQueryArgs { get; }
-
+        
         public GetPdfFromNamedQuery(string customerPathValue, string namedQuery, string? namedQueryArgs)
         {
             CustomerPathValue = customerPathValue;
@@ -27,88 +25,38 @@ namespace Orchestrator.Features.PDF.Requests
         }
     }
     
-    public class GetPdfFromNamedQueryHandler : IRequestHandler<GetPdfFromNamedQuery, PdfFromNamedQuery>
+    public class GetPdfFromNamedQueryHandler : IRequestHandler<GetPdfFromNamedQuery, PersistedNamedQueryProjection>
     {
-        private readonly IPathCustomerRepository pathCustomerRepository;
-        private readonly NamedQueryConductor namedQueryConductor;
-        private readonly PdfNamedQueryService pdfNamedQueryService;
+        private readonly StoredNamedQueryService storedNamedQueryService;
+        private readonly NamedQueryResultGenerator namedQueryResultGenerator;
+        private readonly IProjectionCreator<PdfParsedNamedQuery> pdfCreator;
 
         public GetPdfFromNamedQueryHandler(
-            IPathCustomerRepository pathCustomerRepository,
-            NamedQueryConductor namedQueryConductor, 
-            PdfNamedQueryService pdfNamedQueryService
-        )
+            StoredNamedQueryService storedNamedQueryService,
+            NamedQueryResultGenerator namedQueryResultGenerator,
+            IProjectionCreator<PdfParsedNamedQuery> pdfCreator)
         {
-            this.pathCustomerRepository = pathCustomerRepository;
-            this.namedQueryConductor = namedQueryConductor;
-            this.pdfNamedQueryService = pdfNamedQueryService;
-        }
-        public async Task<PdfFromNamedQuery> Handle(GetPdfFromNamedQuery request, CancellationToken cancellationToken)
-        {
-            var namedQueryResult = await GetNamedQueryResult(request);
-
-            if (namedQueryResult.ParsedQuery == null) return new PdfFromNamedQuery(PdfStatus.NotFound);
-            if (namedQueryResult.ParsedQuery is { IsFaulty: true }) return PdfFromNamedQuery.BadRequest();
-
-            var pdfResult = await pdfNamedQueryService.GetPdfResults(namedQueryResult);
-
-            return pdfResult.Status == PdfStatus.InProcess
-                ? new PdfFromNamedQuery(PdfStatus.InProcess)
-                : new PdfFromNamedQuery(pdfResult.Stream, pdfResult.Status);
+            this.storedNamedQueryService = storedNamedQueryService;
+            this.namedQueryResultGenerator = namedQueryResultGenerator;
+            this.pdfCreator = pdfCreator;
         }
 
-        private async Task<NamedQueryResult<PdfParsedNamedQuery>> GetNamedQueryResult(GetPdfFromNamedQuery request)
+        public async Task<PersistedNamedQueryProjection> Handle(GetPdfFromNamedQuery request,
+            CancellationToken cancellationToken)
         {
-            var customerPathElement = await pathCustomerRepository.GetCustomer(request.CustomerPathValue);
-
             var namedQueryResult =
-                await namedQueryConductor.GetNamedQueryResult<PdfParsedNamedQuery>(request.NamedQuery,
-                    customerPathElement, request.NamedQueryArgs);
-            return namedQueryResult;
-        }
-    }
+                await namedQueryResultGenerator.GetNamedQueryResult<PdfParsedNamedQuery>(request);
 
-    /// <summary>
-    /// Represents the result of a request to generate a PDF from NQ
-    /// </summary>
-    public class PdfFromNamedQuery
-    {
-        /// <summary>
-        /// Stream containing PDF data.
-        /// </summary>
-        public Stream PdfStream { get; } = Stream.Null;
+            if (namedQueryResult.ParsedQuery == null)
+                return new PersistedNamedQueryProjection(PersistedProjectionStatus.NotFound);
+            if (namedQueryResult.ParsedQuery is { IsFaulty: true })
+                return PersistedNamedQueryProjection.BadRequest();
 
-        /// <summary>
-        /// Overall status of PDF request
-        /// </summary>
-        public PdfStatus Status { get; } = PdfStatus.Unknown;
+            var pdfResult = await storedNamedQueryService.GetResults(namedQueryResult, pdfCreator, cancellationToken);
 
-        /// <summary>
-        /// Whether this result object has data
-        /// </summary>
-        public bool IsEmpty => PdfStream == Stream.Null;
-        
-        /// <summary>
-        /// Whether this request could not be satisfied as a result of a bad request
-        /// </summary>
-        public bool IsBadRequest { get; private init; }
-
-        public static PdfFromNamedQuery BadRequest() => new() { IsBadRequest = true };
-        
-        public PdfFromNamedQuery()
-        {
-        }
-        
-        public PdfFromNamedQuery(PdfStatus status)
-        {
-            PdfStream = Stream.Null;
-            Status = status;
-        }
-
-        public PdfFromNamedQuery(Stream? pdfStream, PdfStatus status)
-        {
-            PdfStream = pdfStream ?? Stream.Null;
-            Status = status;
+            return pdfResult.Status == PersistedProjectionStatus.InProcess
+                ? new PersistedNamedQueryProjection(PersistedProjectionStatus.InProcess)
+                : new PersistedNamedQueryProjection(pdfResult.Stream, pdfResult.Status);
         }
     }
 }

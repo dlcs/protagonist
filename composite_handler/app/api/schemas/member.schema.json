@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "member.schema.json",
+  "type": "object",
+  "properties": {
+    "@type": {
+      "$id": "",
+      "type": "string",
+      "enum": [
+        "vocab:Composite"
+      ]
+    },
+    "id": {
+      "type": "string"
+    },
+    "space": {
+      "type": "integer"
+    },
+    "origin": {
+      "type": "string",
+      "format": "uri"
+    },
+    "string1": {
+      "type": "string"
+    },
+    "string2": {
+      "type": "string"
+    },
+    "string3": {
+      "type": "string"
+    },
+    "number1": {
+      "type": [
+        "integer",
+        "string"
+      ]
+    },
+    "number2": {
+      "type": [
+        "integer",
+        "string"
+      ]
+    },
+    "number3": {
+      "type": [
+        "integer",
+        "string"
+      ]
+    },
+    "roles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "family": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "maxUnauthorised": {
+      "type": "number"
+    },
+    "originFormat": {
+      "type": "string",
+      "enum": [
+        "application/pdf"
+      ]
+    },
+    "incrementSeed": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "@type",
+    "id",
+    "space",
+    "origin",
+    "incrementSeed"
+  ]
+}

@@ -119,7 +119,7 @@ namespace Test.Helpers.Integration
             services.Remove(new ServiceDescriptor(typeof(IAmazonS3),
                 a => a.GetService(typeof(IAmazonS3)), ServiceLifetime.Singleton));
             
-            services.AddSingleton<IAmazonS3>(p => localStack.AmazonS3);
+            services.AddScoped<IAmazonS3>(p => localStack.AWSS3ClientFactory());
         }
     }
 }

@@ -11,7 +11,7 @@
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.10" />
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
       <PackageReference Include="xunit" Version="2.4.1" />
-      <PackageReference Include="Yarp.ReverseProxy" Version="1.0.0-preview.12.21328.2" />
+      <PackageReference Include="Yarp.ReverseProxy" Version="1.0.0-rc.1.21520.4" />
     </ItemGroup>
 
     <ItemGroup>

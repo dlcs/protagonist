@@ -32,7 +32,7 @@ namespace Orchestrator.Tests.Integration
             dbFixture.DbContext.NamedQueries.Add(new NamedQuery
             {
                 Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "test-named-query",
-                Template = "canvas=n1&s1=p1&space=p2"
+                Template = "assetOrdering=n1&s1=p1&space=p2"
             });
 
             dbFixture.DbContext.Images.AddTestAsset("99/1/matching-1", num1: 2, ref1: "my-ref");
@@ -44,8 +44,8 @@ namespace Orchestrator.Tests.Integration
 
         [Theory]
         [InlineData("iiif-resource/99/unknown-nq")]
-        [InlineData("iiif-resource/99/unknown-nq/v2")]
-        [InlineData("iiif-resource/99/unknown-nq/v3")]
+        [InlineData("iiif-resource/v2/99/unknown-nq")]
+        [InlineData("iiif-resource/v3/99/unknown-nq")]
         public async Task Get_Returns404_IfNQNotFound(string path)
         {
             // Act
@@ -57,8 +57,8 @@ namespace Orchestrator.Tests.Integration
 
         [Theory]
         [InlineData("iiif-resource/98/test-named-query")]
-        [InlineData("iiif-resource/98/test-named-query/v2")]
-        [InlineData("iiif-resource/98/test-named-query/v3")]
+        [InlineData("iiif-resource/v2/98/test-named-query")]
+        [InlineData("iiif-resource/v3/98/test-named-query")]
         public async Task Get_Returns404_IfCustomerNotFound(string path)
         {
             // Act
@@ -70,8 +70,8 @@ namespace Orchestrator.Tests.Integration
         
         [Theory]
         [InlineData("iiif-resource/99/test-named-query/too-little-params")]
-        [InlineData("iiif-resource/99/test-named-query/v2/too-little-params")]
-        [InlineData("iiif-resource/99/test-named-query/v3/too-little-params")]
+        [InlineData("iiif-resource/v2/99/test-named-query/too-little-params")]
+        [InlineData("iiif-resource/v3/99/test-named-query/too-little-params")]
         public async Task Get_Returns400_IfNamedQueryParametersIncorrect(string path)
         {
             // Act
@@ -79,6 +79,16 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+        
+        [Fact]
+        public async Task Get_Returns404_IfNoMatchingAssets()
+        {
+            // Act
+            var response = await httpClient.GetAsync("iiif-resource/99/test-named-query/not-found-ref/1");
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
         [Fact]
@@ -95,6 +105,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(3);
@@ -104,7 +115,7 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_ReturnsV2ManifestWithCorrectCount_ViaDirectPath()
         {
             // Arrange
-            const string path = "iiif-resource/99/test-named-query/v2/my-ref/1";
+            const string path = "iiif-resource/v2/99/test-named-query/my-ref/1";
             const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/2/context.json\"";
             
             // Act
@@ -112,6 +123,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(3);
@@ -131,6 +143,7 @@ namespace Orchestrator.Tests.Integration
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
             response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("items").Count().Should().Be(3);
@@ -140,15 +153,16 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_ReturnsV3ManifestWithCorrectCount_ViaDirectPath()
         {
             // Arrange
-            const string path = "iiif-resource/99/test-named-query/v3/my-ref/1";
-            const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
+            const string path = "iiif-resource/v3/99/test-named-query/my-ref/1";
+            const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
             
             // Act
             var response = await httpClient.GetAsync(path);
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
-            response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
+            response.Headers.Vary.Should().Contain("Accept");
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("items").Count().Should().Be(3);
         }
@@ -158,16 +172,50 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             const string path = "iiif-resource/99/test-named-query/my-ref/1";
-            const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
+            const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
             
             // Act
             var response = await httpClient.GetAsync(path);
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
-            response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
+            response.Headers.Vary.Should().Contain("Accept");
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse.SelectToken("items").Count().Should().Be(3);
+        }
+        
+        [Fact]
+        public async Task Get_ReturnsManifestWithCorrectlyOrderedItems()
+        {
+            // Arrange
+            dbFixture.DbContext.NamedQueries.Add(new NamedQuery
+            {
+                Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "ordered-manifest",
+                Template = "assetOrder=n1;n2 desc;s1&s2=p1"
+            });
+            
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/third", num1: 1, num2: 10, ref1: "z", ref2: "grace");
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/first", num1: 1, num2: 20, ref1: "c", ref2: "grace");
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/fourth", num1: 2, num2: 10, ref1: "a", ref2: "grace");
+            await dbFixture.DbContext.Images.AddTestAsset("99/1/second", num1: 1, num2: 10, ref1: "x", ref2: "grace");
+            await dbFixture.DbContext.SaveChangesAsync();
+
+            var expectedOrder = new[] { "99/1/first", "99/1/second", "99/1/third", "99/1/fourth" };
+
+            const string path = "iiif-resource/99/ordered-manifest/grace";
+            
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+
+            var count = 0;
+            foreach (var token in jsonResponse.SelectToken("items"))
+            {
+                token["id"].Value<string>().Should().Contain(expectedOrder[count++]);
+            }
         }
     }
 }

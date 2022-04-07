@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Customers;
@@ -51,8 +52,10 @@ namespace DLCS.Repository.Tests.Strategy
                 new RegionalisedObjectInBucket("test-storage", "2/1/ratts-of-the-capital", "eu-west-1");
             var regionalisedString = objectInBucket.ToString();
             A.CallTo(() =>
-                bucketReader.GetObjectFromBucket(
-                    A<ObjectInBucket>.That.Matches(a => a.ToString() == regionalisedString))).Returns(response);
+                    bucketReader.GetObjectFromBucket(
+                        A<ObjectInBucket>.That.Matches(a => a.ToString() == regionalisedString),
+                        A<CancellationToken>._))
+                .Returns(response);
 
             // Act
             var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
@@ -60,7 +63,8 @@ namespace DLCS.Repository.Tests.Strategy
             // Assert
             A.CallTo(() =>
                     bucketReader.GetObjectFromBucket(
-                        A<ObjectInBucket>.That.Matches(a => a.ToString() == regionalisedString)))
+                        A<ObjectInBucket>.That.Matches(a => a.ToString() == regionalisedString),
+                        A<CancellationToken>._))
                 .MustHaveHappened();
             result.Stream.Should().NotBeNull().And.Subject.Should().NotBeSameAs(Stream.Null);
             result.ContentLength.Should().Be(contentLength);
@@ -77,7 +81,8 @@ namespace DLCS.Repository.Tests.Strategy
             );
             
             const string originUri = "s3://eu-west-1/test-storage/2/1/repelish";
-            A.CallTo(() => bucketReader.GetObjectFromBucket(A<ObjectInBucket>._)).Returns(response);
+            A.CallTo(() => bucketReader.GetObjectFromBucket(A<ObjectInBucket>._, A<CancellationToken>._))
+                .Returns(response);
 
             // Act
             var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
@@ -93,7 +98,7 @@ namespace DLCS.Repository.Tests.Strategy
         {
             // Arrange
             const string originUri = "s3://eu-west-1/test-storage/2/1/repelish";
-            A.CallTo(() => bucketReader.GetObjectFromBucket(A<ObjectInBucket>._))
+            A.CallTo(() => bucketReader.GetObjectFromBucket(A<ObjectInBucket>._, A<CancellationToken>._))
                 .ThrowsAsync(new Exception());
             
             // Act

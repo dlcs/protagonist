@@ -21,7 +21,7 @@ namespace DLCS.Core.Strings
             => encoded.HasText()
                 ? Encoding.UTF8.GetString(Convert.FromBase64String(encoded))
                 : encoded;
-        
+       
         /// <summary>
         /// converts "Some list of strings" to "someListOfStrings"
         /// </summary>

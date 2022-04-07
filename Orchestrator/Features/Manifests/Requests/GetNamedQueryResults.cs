@@ -1,12 +1,11 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using IIIF.Presentation;
 using IIIF.Serialisation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
-using Orchestrator.Infrastructure.NamedQueries;
+using Orchestrator.Infrastructure.NamedQueries.Requests;
 using Orchestrator.Models;
 
 namespace Orchestrator.Features.Manifests.Requests
@@ -14,7 +13,7 @@ namespace Orchestrator.Features.Manifests.Requests
     /// <summary>
     /// Mediatr request for generating manifest using a named query.
     /// </summary>
-    public class GetNamedQueryResults : IRequest<DescriptionResourceResponse>
+    public class GetNamedQueryResults : IBaseNamedQueryRequest, IRequest<DescriptionResourceResponse>
     {
         public string CustomerPathValue { get; }
         
@@ -36,30 +35,23 @@ namespace Orchestrator.Features.Manifests.Requests
     
     public class GetNamedQueryResultsHandler : IRequestHandler<GetNamedQueryResults, DescriptionResourceResponse>
     {
-        private readonly IPathCustomerRepository pathCustomerRepository;
-        private readonly NamedQueryConductor namedQueryConductor;
         private readonly IIIFNamedQueryProjector iiifNamedQueryProjector;
+        private readonly NamedQueryResultGenerator namedQueryResultGenerator;
         private readonly IHttpContextAccessor httpContextAccessor;
 
         public GetNamedQueryResultsHandler(
-            IPathCustomerRepository pathCustomerRepository,
-            NamedQueryConductor namedQueryConductor, 
             IIIFNamedQueryProjector iiifNamedQueryProjector,
+            NamedQueryResultGenerator namedQueryResultGenerator,
             IHttpContextAccessor httpContextAccessor)
         {
-            this.pathCustomerRepository = pathCustomerRepository;
-            this.namedQueryConductor = namedQueryConductor;
             this.iiifNamedQueryProjector = iiifNamedQueryProjector;
+            this.namedQueryResultGenerator = namedQueryResultGenerator;
             this.httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<DescriptionResourceResponse> Handle(GetNamedQueryResults request, CancellationToken cancellationToken)
         {
-            var customerPathElement = await pathCustomerRepository.GetCustomer(request.CustomerPathValue);
-
-            var namedQueryResult =
-                await namedQueryConductor.GetNamedQueryResult<IIIFParsedNamedQuery>(request.NamedQuery,
-                    customerPathElement, request.NamedQueryArgs);
+            var namedQueryResult = await namedQueryResultGenerator.GetNamedQueryResult<IIIFParsedNamedQuery>(request);
 
             if (namedQueryResult.ParsedQuery == null) return DescriptionResourceResponse.Empty;
             if (namedQueryResult.ParsedQuery is { IsFaulty: true }) return DescriptionResourceResponse.BadRequest();
@@ -69,7 +61,9 @@ namespace Orchestrator.Features.Manifests.Requests
                 httpContextAccessor.HttpContext.Request,
                 request.IIIFPresentationVersion, cancellationToken);
 
-            return DescriptionResourceResponse.Open(manifest.AsJson());
+            return manifest == null 
+                ? DescriptionResourceResponse.Empty
+                : DescriptionResourceResponse.Open(manifest.AsJson());
         }
     }
 }

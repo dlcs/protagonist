@@ -86,6 +86,29 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             imageRequest.IIIFImageRequest.ImageRequestPath.Should().Be("/full/!800,400/0/default.jpg");
         }
         
+        [Fact]
+        public async Task Parse_ImageRequest_WithCustomerNameStartingV_IsNotParsedAsVersioned()
+        {
+            // Arrange
+            const string path = "/iiif-img/v33/1/the-astronaut/full/!800,400/0/default.jpg";
+            var customer = new CustomerPathElement(99, "v33");
+            A.CallTo(() => pathCustomerRepository.GetCustomer("v33"))
+                .Returns(customer);
+
+            // Act
+            var imageRequest = await sut.Parse<ImageAssetDeliveryRequest>(path);
+
+            // Assert
+            imageRequest.RoutePrefix.Should().Be("iiif-img");
+            imageRequest.CustomerPathValue.Should().Be("v33");
+            imageRequest.Customer.Should().Be(customer);
+            imageRequest.BasePath.Should().Be("/iiif-img/v33/1/");
+            imageRequest.Space.Should().Be(1);
+            imageRequest.AssetPath.Should().Be("the-astronaut/full/!800,400/0/default.jpg");
+            imageRequest.AssetId.Should().Be("the-astronaut");
+            imageRequest.IIIFImageRequest.ImageRequestPath.Should().Be("/full/!800,400/0/default.jpg");
+        }
+        
         [Theory]
         [InlineData("test-customer")]
         [InlineData("99")]
@@ -110,6 +133,33 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             imageRequest.IIIFImageRequest.ImageRequestPath.Should().Be("/full/!800,400/0/default.jpg");
             imageRequest.NormalisedBasePath.Should().Be("/iiif-img/99/1/");
             imageRequest.NormalisedFullPath.Should().Be("/iiif-img/99/1/the-astronaut/full/!800,400/0/default.jpg");
+        }
+        
+        [Theory]
+        [InlineData("v2", "test-customer")]
+        [InlineData("v3", "99")]
+        public async Task Parse_VersionedImageRequest_SetsNormalisedPath(string version, string customerPathValue)
+        {
+            // Arrange
+            var path = $"/iiif-img/{version}/{customerPathValue}/1/the-astronaut/full/!800,400/0/default.jpg";
+            var customer = new CustomerPathElement(99, "test-customer");
+            A.CallTo(() => pathCustomerRepository.GetCustomer(A<string>._)).Returns(customer);
+
+            // Act
+            var imageRequest = await sut.Parse<ImageAssetDeliveryRequest>(path);
+
+            // Assert
+            imageRequest.RoutePrefix.Should().Be("iiif-img");
+            imageRequest.CustomerPathValue.Should().Be(customerPathValue);
+            imageRequest.Customer.Should().Be(customer);
+            imageRequest.BasePath.Should().Be($"/iiif-img/{version}/{customerPathValue}/1/");
+            imageRequest.Space.Should().Be(1);
+            imageRequest.AssetPath.Should().Be("the-astronaut/full/!800,400/0/default.jpg");
+            imageRequest.AssetId.Should().Be("the-astronaut");
+            imageRequest.IIIFImageRequest.ImageRequestPath.Should().Be("/full/!800,400/0/default.jpg");
+            imageRequest.NormalisedBasePath.Should().Be($"/iiif-img/{version}/99/1/");
+            imageRequest.NormalisedFullPath.Should()
+                .Be($"/iiif-img/{version}/99/1/the-astronaut/full/!800,400/0/default.jpg");
         }
         
         [Theory]

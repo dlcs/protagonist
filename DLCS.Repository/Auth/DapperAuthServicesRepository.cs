@@ -43,7 +43,8 @@ namespace DLCS.Repository.Auth
                 return await GetAuthServicesFromDatabase(customer, role);
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
         }
-        
+
+
         public async Task<AuthService?> GetAuthServiceByName(int customer, string name)
         {
             var cacheKey = $"authsvc:{customer}:name:{name}";
@@ -55,6 +56,7 @@ namespace DLCS.Repository.Auth
                     logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
                     return await QuerySingleOrDefaultAsync<AuthService>(
                         AuthServiceByNameSql, new {Customer = customer, Name = name});
+
                 }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
             }
             catch (InvalidOperationException e)
@@ -83,7 +85,8 @@ namespace DLCS.Repository.Auth
                 return null;
             }
         }
-        
+
+
         public async Task<RoleProvider?> GetRoleProvider(string roleProviderId)
         {
             var cacheKey = $"rp:{roleProviderId}";
@@ -95,6 +98,7 @@ namespace DLCS.Repository.Auth
                     logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
                     return await QuerySingleOrDefaultAsync<RoleProvider>(
                         RoleProviderByIdSql, new { Id = roleProviderId });
+
                 }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
             }
             catch (Exception e)
@@ -108,18 +112,23 @@ namespace DLCS.Repository.Auth
         {
             var result = await QueryAsync<AuthService>(AuthServiceSql,
                 new { Customer = customer, Role = role });
-
             var authServices = result.ToList();
             if (authServices.IsNullOrEmpty())
             {
                 logger.LogInformation("Found no authServices for customer {Customer}, role {Role}", customer, role);
                 return Enumerable.Empty<AuthService>();
             }
+                       
+            // All services have a token service so add to collection
+            authServices.Add(new AuthService
+            {
+                Customer = customer,
+                Name = "token",
+                Profile = Constants.ProfileV1.Token
+            });
 
             return authServices;
         }
-
-
 
         public Role CreateRole(string name, int customer, string authServiceId)
         {
@@ -236,7 +245,7 @@ WITH RECURSIVE cte_auth AS (
 SELECT ""Id"", ""Customer"", ""Name"", ""Profile"", ""Label"", ""Description"", ""PageLabel"", ""PageDescription"", ""CallToAction"", ""TTL"", ""RoleProvider"", ""ChildAuthService""
 FROM cte_auth;
 ";
-        
+
         private const string AuthServiceByNameSql = @"
 SELECT ""Id"", ""Customer"", ""Name"", ""Profile"", ""Label"", ""Description"", ""PageLabel"", ""PageDescription"", ""CallToAction"", ""TTL"", ""RoleProvider"", ""ChildAuthService""
 FROM ""AuthServices"" c

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -18,32 +19,29 @@ namespace Orchestrator.Tests.Integration
     /// Test of all iiif-manifest handling
     /// </summary>
     [Trait("Category", "Integration")]
-    [Collection(StorageCollection.CollectionName)]
+    [Collection(DatabaseCollection.CollectionName)]
     public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         private readonly DlcsDatabaseFixture dbFixture;
         private readonly HttpClient httpClient;
-        private readonly IAmazonS3 amazonS3;
 
-        public ManifestHandlingTests(ProtagonistAppFactory<Startup> factory, StorageFixture storageFixture)
+        public ManifestHandlingTests(ProtagonistAppFactory<Startup> factory, DlcsDatabaseFixture databaseFixture)
         {
-            dbFixture = storageFixture.DbFixture;
-            amazonS3 = storageFixture.LocalStackFixture.AmazonS3;
+            dbFixture = databaseFixture;
             
             httpClient = factory
                 .WithConnectionString(dbFixture.ConnectionString)
-                .WithLocalStack(storageFixture.LocalStackFixture)
                 .CreateClient();
             
             dbFixture.CleanUp();
         }
         
-        [Fact]
-        public async Task Get_UnknownCustomer_Returns404()
+        [Theory]
+        [InlineData("iiif-manifest/1/1/my-asset")]
+        [InlineData("iiif-manifest/v2/1/1/my-asset")]
+        [InlineData("iiif-manifest/v3/1/1/my-asset")]
+        public async Task Get_UnknownCustomer_Returns404(string path)
         {
-            // Arrange
-            const string path = "iiif-manifest/1/1/my-asset";
-
             // Act
             var response = await httpClient.GetAsync(path);
             
@@ -51,12 +49,12 @@ namespace Orchestrator.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
         
-        [Fact]
-        public async Task Get_UnknownSpace_Returns404()
+        [Theory]
+        [InlineData("iiif-manifest/99/5/my-asset")]
+        [InlineData("iiif-manifest/v2/99/5/my-asset")]
+        [InlineData("iiif-manifest/v3/99/5/my-asset")]
+        public async Task Get_UnknownSpace_Returns404(string path)
         {
-            // Arrange
-            const string path = "iiif-manifest/99/5/my-asset";
-
             // Act
             var response = await httpClient.GetAsync(path);
             
@@ -64,12 +62,12 @@ namespace Orchestrator.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
         
-        [Fact]
-        public async Task Get_UnknownImage_Returns404()
+        [Theory]
+        [InlineData("iiif-manifest/99/1/my-asset")]
+        [InlineData("iiif-manifest/v2/99/1/my-asset")]
+        [InlineData("iiif-manifest/v3/99/1/my-asset")]
+        public async Task Get_UnknownImage_Returns404(string path)
         {
-            // Arrange
-            const string path = "iiif-manifest/99/1/my-asset";
-
             // Act
             var response = await httpClient.GetAsync(path);
             
@@ -97,40 +95,14 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_ManifestForImage_HandlesNoAvailableThumbs()
-        {
-            // Arrange
-            var id = $"99/1/{nameof(Get_ManifestForImage_HandlesNoAvailableThumbs)}";
-            await dbFixture.DbContext.Images.AddTestAsset(id);
-            await dbFixture.DbContext.SaveChangesAsync();
-            
-            var path = $"iiif-manifest/{id}";
-
-            // Act
-            var response = await httpClient.GetAsync(path);
-            
-            // Assert
-            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
-            jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail").Should().BeNull();
-
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-            response.Headers.CacheControl.Public.Should().BeTrue();
-            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
-        }
-        
-        [Fact]
         public async Task Get_ManifestForImage_ReturnsManifest()
         {
             // Arrange
             var id = $"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}";
-            await dbFixture.DbContext.Images.AddTestAsset(id);
+            await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin");
             await dbFixture.DbContext.SaveChangesAsync();
-
-            var openSizes = new List<int[]> { new[] { 100, 100 }, new[] { 200, 200 } };
-            await amazonS3.AddSizesJson(id, new ThumbnailSizes(openSizes, null));
-
-            var path = $"iiif-manifest/{id}";
+            
+            var path = $"iiif-manifest/v2/{id}";
 
             // Act
             var response = await httpClient.GetAsync(path);
@@ -139,7 +111,7 @@ namespace Orchestrator.Tests.Integration
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
-                .Should().Be($"http://localhost/thumbs/{id}/full/100,100/0/default.jpg");
+                .Should().StartWith($"http://localhost/thumbs/{id}/full");
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeTrue();
@@ -151,13 +123,10 @@ namespace Orchestrator.Tests.Integration
         {
             // Arrange
             var id = $"99/1/{nameof(Get_ManifestForRestrictedImage_ReturnsManifest)}";
-            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough");
+            await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", origin: "testorigin");
             await dbFixture.DbContext.SaveChangesAsync();
 
-            var openSizes = new List<int[]> { new[] { 100, 100 }, new[] { 200, 200 } };
-            await amazonS3.AddSizesJson(id, new ThumbnailSizes(openSizes, null));
-
-            var path = $"iiif-manifest/{id}";
+            var path = $"iiif-manifest/v2/{id}";
 
             // Act
             var response = await httpClient.GetAsync(path);
@@ -166,11 +135,127 @@ namespace Orchestrator.Tests.Integration
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
-                .Should().Be($"http://localhost/thumbs/{id}/full/100,100/0/default.jpg");
+                .Should().StartWith($"http://localhost/thumbs/{id}/full");
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeTrue();
             response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        }
+
+        [Fact]
+        public async Task Get_ReturnsV2Manifest_ViaConneg()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_ReturnsV2Manifest_ViaConneg)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin");
+            await dbFixture.DbContext.SaveChangesAsync();
+            var path = $"iiif-manifest/{id}";
+            
+            const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/2/context.json\"";
+            
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Get, path);
+            request.Headers.Add("Accept", iiif2);
+            var response = await httpClient.SendAsync(request);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/2/context.json");
+            jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(1);
+        }
+        
+        [Fact]
+        public async Task Get_ReturnsV2Manifest_ViaDirectPath()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_ReturnsV2Manifest_ViaDirectPath)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin");
+            await dbFixture.DbContext.SaveChangesAsync();
+            var path = $"iiif-manifest/v2/{id}";
+            const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/2/context.json\"";
+            
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/2/context.json");
+            jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(1);
+        }
+        
+        [Fact]
+        public async Task Get_ReturnsV3Manifest_ViaConneg()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_ReturnsV3Manifest_ViaConneg)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin");
+            await dbFixture.DbContext.SaveChangesAsync();
+            var path = $"iiif-manifest/{id}";
+            
+            const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
+            
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Get, path);
+            request.Headers.Add("Accept", iiif3);
+            var response = await httpClient.SendAsync(request);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/3/context.json");
+            jsonResponse.SelectToken("items").Count().Should().Be(1);
+        }
+        
+        [Fact]
+        public async Task Get_ReturnsV3Manifest_ViaDirectPath()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_ReturnsV3Manifest_ViaDirectPath)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin");
+            await dbFixture.DbContext.SaveChangesAsync();
+            var path = $"iiif-manifest/{id}";
+            const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
+            
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/3/context.json");
+            jsonResponse.SelectToken("items").Count().Should().Be(1);
+        }
+        
+        [Fact]
+        public async Task Get_ReturnsV3ManifestWithCorrectCount_AsCanonical()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_ReturnsV3ManifestWithCorrectCount_AsCanonical)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin");
+            await dbFixture.DbContext.SaveChangesAsync();
+            var path = $"iiif-manifest/{id}";
+            const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
+            
+            // Act
+            var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Vary.Should().Contain("Accept");
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/3/context.json");
+            jsonResponse.SelectToken("items").Count().Should().Be(1);
         }
     }
 }

@@ -1,0 +1,25 @@
+{
+  "@context": "http://www.w3.org/ns/hydra/context.jsonld",
+  "@type": "Collection",
+  "member": [
+    {
+      "@type": "vocab:Composite",
+      "id": "apollo-17-flight-plan-{:03d}",
+      "space": 1,
+      "origin": "https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf",
+      "string1": "apollo-17",
+      "string2": "flight-plan",
+      "string3": "{:03d}",
+      "number1": 0,
+      "number2": 0,
+      "number3": 0,
+      "roles": [],
+      "family": "I",
+      "text": "https://example.org/text/alto/nasa/apollo-17/flight-plan.xml",
+      "textType": "alto",
+      "maxUnauthorised": -1,
+      "originFormat": "application/pdf",
+      "incrementSeed": 0
+    }
+  ]
+}

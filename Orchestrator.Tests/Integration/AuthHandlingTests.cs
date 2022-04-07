@@ -50,7 +50,7 @@ namespace Orchestrator.Tests.Integration
         }
 
         [Fact]
-        public async Task Get_Clickthrough_UnknownRole_Returns404()
+        public async Task Get_UnknownRole_Returns404()
         {
             // Arrange
             const string path = "auth/99/passanger";

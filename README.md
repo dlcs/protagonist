@@ -9,7 +9,7 @@
 * [Architectural Considerations](docs/architectural-considerations.md)
 * [Design Principles](docs/rfcs/006-Design-Principles.md)
 * [RFCs](docs/rfcs)
-* [Architecture Diagram](https://raw.githubusercontent.com/dlcs/protagonist/master/docs/c4-container-diagrams/DLCS-2020-l2.png)
+* [Architecture Diagram](https://raw.githubusercontent.com/dlcs/protagonist/master/docs/c4-container-diagrams/DLCS-2021-l2.png)
 
 ## Projects
 
@@ -42,3 +42,9 @@ There are a variety of technologies used across the projects, including:
 * [EFCore](https://github.com/dotnet/efcore) - ORM data-access and migrations.
 * [Dapper](https://github.com/DapperLib/Dapper) - high performance object mapper.
 * [XUnit](https://xunit.net/) - automated test framework.
+
+## Deployment
+
+[Github actions](.github/workflows) are used to build and push new Docker images to github container registry.
+
+The main entry point is [`run_build.yml`](.github/workflows/run_build.yml). This runs `dotnet test` then uses the parameterised `build_docker.yml` files to handle Docker image creation.

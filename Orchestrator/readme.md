@@ -1,25 +1,40 @@
 ﻿# Orchestrator
 
-Orchestrator is a reverse-proxy that handles requests for all assets (image, timebased and files).
+Orchestrator is a reverse-proxy that handles requests for all assets (image, timebased, files), description resources (info.json, single item manifests and named-query projections) and PDF generation.
 
 ## Technology :robot:
 
 * [YARP](https://microsoft.github.io/reverse-proxy/) - native dotnet reverse-proxy.
 * [Dapper](https://github.com/DapperLib/Dapper) - high performance object mapper, prefered in place of EF for performance.
 
-## Routes
+## YARP Routes
+
+In addition to standard controller route handling the following YARP configuration is used:
 
 ### Custom Handling
 
-The following routes are handled by custom logic and YARP's [Direct Forwarding](https://microsoft.github.io/reverse-proxy/articles/direct-forwarding.html) behaviour:
+The below routes are handled by custom logic and YARP's [Direct Forwarding](https://microsoft.github.io/reverse-proxy/articles/direct-forwarding.html) behaviour:
 
 #### `/iiif-img/{customer}/{space}/{image}/{**assetRequest}`
 
-Handle image requests. Will redirect to `/thumbs/` for known thumbnails and handle authentication.
+Handle image asset requests. Will:
+
+* Validate access for restricted assets.
+* Proxy `thumbs` for known thumbnail sizes.
+* Proxy `thumbsresize` for requests that can be served by resizing thumbs.
+* Ensure asset copied to fast disk and proxy `image-server` for other sizes and tile requests. Image requests will have "CustomHeader" headers appended as required.
+
+Decision logic in `ImageRequestHandler` and routing logic in `ImageRouteHandler`. 
 
 #### `/iiif-av/{customer}/{space}/{image}/{**assetRequest}`
 
-Handle requests for TimeBased assets. Handles authentication and proxies media files from S3.
+Handle requests for TimeBased assets. Will:
+
+* Validate access for restricted assets.
+* Redirect to s3 for open assets.
+* Proxy s3 for restricted assets.
+
+Decision logic in `TimeBasedRequestHandler` and routing logic in `TimeBasedRouteHandlers`. 
 
 ### Standard Proxied Routes
 
@@ -35,15 +50,18 @@ The following routes are defined for YARP to handle:
 
 ## Clusters
 
-3 YARP Clusters are used:
+The following YARP Clusters are used:
 
 * deliverator - legacy DLCS orchestrator implementation.
 * image_server - IIIF image-server.
 * thumbs - Protagonist thumbs service.
+* thumbsresize - Protagonist thumbs service, configured to resize thumbs on the fly.
+
+> Note: `thumbs` and `thumbsresize` can reference the same uri if required.
 
 ## Deployment
 
-See Dockerfile.Orchestrator in the solution root for deployment artifacts.
+See `Dockerfile.Orchestrator` in the solution root for deployment artifacts.
 
 ```bash
 cd..

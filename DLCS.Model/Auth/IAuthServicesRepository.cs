@@ -37,7 +37,6 @@ namespace DLCS.Model.Auth
         /// <returns>Matching RoleProvider</returns>
         public Task<RoleProvider?> GetRoleProvider(string roleProviderId);
         
-        
         Role CreateRole(string name, int customer, string authServiceId);
         AuthService CreateAuthService(int customerId, string profile, string name, int ttl);
         

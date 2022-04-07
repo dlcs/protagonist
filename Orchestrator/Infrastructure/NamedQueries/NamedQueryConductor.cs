@@ -55,9 +55,7 @@ namespace Orchestrator.Infrastructure.NamedQueries
         private T ParseNamedQuery<T>(CustomerPathElement customerPathElement, string? args, NamedQuery? namedQuery)
             where T : ParsedNamedQuery
         {
-            var namedQueryParser = namedQueryParserResolver(typeof(T) == typeof(IIIFParsedNamedQuery)
-                ? NamedQueryType.IIIF
-                : NamedQueryType.PDF);
+            var namedQueryParser = namedQueryParserResolver(NamedQueryTypeDeriver.GetNamedQueryParser<T>());
             var parsedNamedQuery =
                 namedQueryParser.GenerateParsedNamedQueryFromRequest<T>(customerPathElement, args, namedQuery.Template,
                     namedQuery.Name);

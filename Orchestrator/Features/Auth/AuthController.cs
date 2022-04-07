@@ -2,6 +2,7 @@
 using System.Net;
 using System.Threading.Tasks;
 using DLCS.Core.Strings;
+using DLCS.Web.Constraints;
 using IIIF.Auth.V1.AccessTokenService;
 using IIIF.Serialisation;
 using MediatR;
@@ -24,8 +25,6 @@ namespace Orchestrator.Features.Auth
         /// <summary>
         /// Handle clickthrough auth request - create a new auth cookie and return View for user to close
         /// </summary>
-        /// <param name="customer"></param>
-        /// <returns></returns>
         [Route("{customer}/clickthrough")]
         [HttpGet]
         public async Task<IActionResult> Clickthrough(int customer)
@@ -42,6 +41,7 @@ namespace Orchestrator.Features.Auth
 
         /// <summary>
         /// Access Token Service handling
+        /// See https://iiif.io/api/auth/1.0/#access-token-service
         /// </summary>
         [Route("{customer}/token")]
         [HttpGet]
@@ -75,6 +75,62 @@ namespace Orchestrator.Features.Auth
                 Response.StatusCode = (int)httpStatusCode;
                 return Content(jsonResponseObject, "application/json");
             }
+        }
+
+        /// <summary>
+        /// Initiate login for auth service
+        /// </summary>
+        /// <param name="customer">Customer Id</param>
+        /// <param name="authService">Name of authService to initiate.</param>
+        /// <returns>Redirect to downstream role-provider login service</returns>
+        [Route("{customer}/{authService}")]
+        [HttpGet]
+        public async Task<IActionResult> InitiateAuthService(int customer, string authService)
+        {
+            var loginUri = await mediator.Send(new LoginWorkflow(customer, authService));
+
+            return loginUri == null
+                ? new NotFoundResult()
+                : new RedirectResult(loginUri.ToString(), false);
+        }
+
+        /// <summary>
+        /// Handle GET request from role-provider, creating new session for specified token parameter
+        /// </summary>
+        /// <param name="customer">Customer Id</param>
+        /// <param name="authService">Name of authService.</param>
+        /// <param name="token">Role-provider token</param>
+        /// <returns></returns>
+        [Route("{customer}/{authService}")]
+        [HttpGet]
+        public async Task<IActionResult> RoleProviderToken(int customer, string authService,
+            [RequiredFromQuery] string token)
+        {
+            var result = await mediator.Send(new ProcessRoleProviderToken(customer, authService, token));
+
+            if (result.CookieCreated)
+            {
+                return View("CloseWindow");
+            }
+
+            return BadRequest();
+        }
+
+        /// <summary>
+        /// Log current user out of specified auth-service.
+        /// </summary>
+        /// <param name="customer"></param>
+        /// <param name="authService"></param>
+        /// <returns></returns>
+        [Route("{customer}/{authService}/logout")]
+        [HttpGet]
+        public async Task<IActionResult> Logout(int customer, string authService)
+        {
+            var logoutUri = await mediator.Send(new LogoutAuthService(customer, authService));
+            
+            return logoutUri == null
+                ? View("CloseWindow")
+                : new RedirectResult(logoutUri.ToString(), false);
         }
 
         private HttpStatusCode GetStatusCodeForAccessTokenError(AccessTokenErrorConditions conditions)

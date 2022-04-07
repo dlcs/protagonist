@@ -80,6 +80,21 @@ namespace Orchestrator.Features.Auth
             }
         }
 
+        /// <summary>
+        /// Remove cookie for customer from current Response object 
+        /// </summary>
+        public void RemoveCookieFromResponse(int customerId)
+        {
+            var httpContext = httpContextAccessor.HttpContext;
+            var domains = GetCookieDomainList(httpContext);
+            var cookieId = GetAuthCookieKey(authSettings.CookieNameFormat, customerId);
+            
+            foreach (var domain in domains)
+            {
+                httpContext.Response.Cookies.Delete(cookieId, new CookieOptions { Domain = domain });
+            }
+        }
+
         private IEnumerable<string> GetCookieDomainList(HttpContext? httpContext)
         {
             var domains = authSettings.CookieDomains;

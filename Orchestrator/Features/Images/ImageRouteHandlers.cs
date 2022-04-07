@@ -39,7 +39,7 @@ namespace Orchestrator.Features.Images
             DefaultTransformer = HttpTransformer.Default;
             
             // TODO - make this configurable, potentially by target
-            RequestOptions = new ForwarderRequestConfig {Timeout = TimeSpan.FromSeconds(100)};  
+            RequestOptions = new ForwarderRequestConfig {ActivityTimeout = TimeSpan.FromSeconds(60)};  
         }
 
         /// <summary>
@@ -111,10 +111,7 @@ namespace Orchestrator.Features.Images
             var root = reverseProxySettings.Value.GetAddressForProxyTarget(proxyAction.Target).ToString();
 
             var transformer = proxyAction.HasPath
-                ? new PathRewriteTransformer(
-                    proxyAction.Path, 
-                    proxyAction.Target, 
-                    proxyAction.Path.StartsWith("http"))
+                ? new PathRewriteTransformer(proxyAction, proxyAction.Path.StartsWith("http"))
                 : DefaultTransformer;
             
             var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions,

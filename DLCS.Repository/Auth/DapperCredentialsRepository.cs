@@ -47,7 +47,8 @@ namespace DLCS.Repository.Auth
 
             return appCache.GetOrAddAsync(cacheKey, () =>
             {
-                logger.LogDebug("Refreshing CustomerOriginStrategy credentials for {customerOriginStrategy}",
+
+                logger.LogDebug("Refreshing CustomerOriginStrategy credentials for {CustomerOriginStrategy}",
                     customerOriginStrategy.Id);
                 return GetBasicCredentials(credentials, customerOriginStrategy.Id);
             }, cacheSettings.GetMemoryCacheOptions(priority: CacheItemPriority.Low));
@@ -69,18 +70,21 @@ namespace DLCS.Repository.Auth
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error getting credentials for customerOriginStrategy {customerOriginStrategy}", id);
+                logger.LogError(ex, "Error getting credentials for customerOriginStrategy {CustomerOriginStrategy}", id);
                 throw;
             }
         }
         
         private static bool CredentialsAreForS3(string credentials) => credentials.StartsWith("s3://");
 
-        private async Task<BasicCredentials> GetBasicCredentialsFromBucket(string credentials)
+        private async Task<BasicCredentials?> GetBasicCredentialsFromBucket(string credentials)
         {
             var objectInBucket = RegionalisedObjectInBucket.Parse(credentials);
             var credentialStream = await bucketReader.GetObjectContentFromBucket(objectInBucket);
-            using var reader = new StreamReader(credentialStream);
+            
+            if ((credentialStream ?? Stream.Null) == Stream.Null) return null;
+            
+            using var reader = new StreamReader(credentialStream!);
             using var jsonReader = new JsonTextReader(reader);
             return jsonSerializer.Deserialize<BasicCredentials>(jsonReader);
         }
