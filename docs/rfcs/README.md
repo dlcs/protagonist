@@ -6,5 +6,5 @@
 4. [Named Queries](004-Named-Queries.md)
 5. [Access Control](005-Access-Control.md)
 6. [Design Principles](006-Design-Principles.md)
-7. [PDFs and other documents as input](011-pdfs-as-input.md)
-
+7. [More Access Control - OIDC/OAuth2](008-more-access-control-oidc-oauth.md)
+8. [PDFs and other documents as input](011-pdfs-as-input.md)
