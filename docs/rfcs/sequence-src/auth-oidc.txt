@@ -18,6 +18,7 @@ Browser->Authorization Server: POST (credentials)
 Authorization Server-->DLCS: Authorization Code
 DLCS->Authorization Server: Authorization Code + Client Id + Secret
 Authorization Server-->DLCS:ID Token
+DLCS->DLCS:Validate token signature\nand check expiry
 note left of DLCS:
     The DLCS will parse claims from ID token
     to assign specific roles to current user
@@ -33,7 +34,6 @@ note over DLCS:
     renders...
     window.close()
 end note
-deactivate DLCS
 note right of Browser:
     Browser now has a cookie it can present on
     *simple* (in CORS terms) web requests for

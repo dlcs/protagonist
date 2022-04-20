@@ -1,14 +1,14 @@
-# Open Id Connect / OAuth
+# OpenID Connect / OAuth 2.0
 
 [RFC 005-Access-Control](005-Access-Control.md) outlines how we can use a RoleProvider service to _authenticate_ users and allow the DLCS to _authorize_ their access to image resources.
 
-This document follows on from this to look at how we can use oauth2/oidc as an alternative method of role provisioning.
+This document follows on from this to look at how we can use OIDC as an alternative method of role provisioning.
 
-## DLCS as Oauth 2.0 Client
+## DLCS as OAuth 2.0 Client
 
 The preference would be for the DLCS to be a direct _Client_ of an OAuth2.0 _Authorization Server_, rather than going via a _role-provider-like_ middleman using the [`Authorization Code Flow`](https://oauth.net/2/grant-types/authorization-code/):
 
-![Authorization Code Flow](sequence-src/auth-oauth.png "Authorization Code Flow")
+![Authorization Code Flow](sequence-src/auth-oidc.png "Authorization Code Flow")
 
 The goal is to get an `id_token` with custom claims that the DLCS can then map to DLCS-specific roles via configuration.
 
@@ -41,25 +41,25 @@ Where:
 * `roles` - URL to POST token to to fetch current user roles (`"credentials"` in the form `{"username": "xxx", "password": "xxx"}` supported to use as basic-auth credentials).
 * `logout` - URL to log user out and end their session.
 
-#### Role Provider - OAuth2
+#### Role Provider - OIDC
 
 An alternative configuration block could be (this example uses values from the Wellcome [auth-test](https://github.com/wellcomecollection/iiif-builder/tree/master/src/AuthTest) application):
 
 ```json
 {
     "default": {
-        "config": "oauth2",
+        "config": "oidc",
         "provider": "auth0",
-        "domain": "<domain>.eu.auth0.com",
+        "domain": "<domain>",
         "scopes": "weco:patron_role",
         "claimType": "https://wellcomecollection.org/patron_role",
         "mapping": {
           "Reader": ["https://api.dlcs.io/customers/2/roles/clickthrough"],
-            "Staff": [
-              "https://api.dlcs.io/customers/2/roles/clickthrough",
-                "https://api.dlcs.io/customers/2/roles/clinicalImages",
-                "https://api.dlcs.io/customers/2/roles/restrictedFiles"
-            ]
+          "Staff": [
+            "https://api.dlcs.io/customers/2/roles/clickthrough",
+            "https://api.dlcs.io/customers/2/roles/clinicalImages",
+            "https://api.dlcs.io/customers/2/roles/restrictedFiles"
+          ]
         },
         "unknownValueBehaviour": "Throw|UseClaim|Fallback",
         "fallbackMapping": ["https://api.dlcs.io/customers/2/roles/fallback"]
@@ -69,7 +69,7 @@ An alternative configuration block could be (this example uses values from the W
 
 Where:
 * `<key>` is either `"default"`, or a specific hostname. If the current host matches the hostname then that config block is used, else it falls back to `"default"`.
-* `config` - The type of configuration, this introduces `"oauth2"` in addition to current `"cas"`.
+* `config` - The type of configuration, this introduces `"oidc"` in addition to current `"cas"`.
 * `provider` - The identity provider. Ideally behaviour shouldn't change based on provider but it could be handy to know, even if just for logging purposes.
 * `domain` - The domain of Authorization Server
 * `scopes` - The custom scopes to request (assuming `openid profile` would be requested).
@@ -84,6 +84,12 @@ Where:
 Any secrets can be stored in the `roleprovider.credentials` column, e.g. `{"clientId": "xxx", "clientSecret": "yyy"}`
 
 _Note: The above values are based on Auth0 implementation, we may need to store different values for alternative identity providers. For example, rather than `domain` only we may need specific routes (e.g. routes for `login`, `logout`, `token` etc)_
+
+##### RBAC
+
+Rather than using a specific claim and mapping it to a DLCS specific role, and alternative that could be extended in the future is the use of RBAC in the IAM implementation being used and for the DLCS roles to be returned.
+
+The above suggested configuration might still stand without mappings as the roles coming down would be use as-is.
 
 ## DLCS Session
 
