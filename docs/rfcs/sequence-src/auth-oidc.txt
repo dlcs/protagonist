@@ -1,0 +1,44 @@
+title DLCS Auth - Single Sign On Integration (oauth2)
+
+note right of Browser:
+    A client of DLCS only via
+    IIIF Auth Interaction patterns
+end note
+note over Browser:
+    window.open()
+end note
+Browser->DLCS: GET dlcs.io/loginService
+DLCS->Authorization Server:Authorization Code request
+Authorization Server->Browser: Redirect to login
+note left of Browser: 
+    User fills out
+    login form
+end note
+Browser->Authorization Server: POST (credentials)
+Authorization Server-->DLCS: Authorization Code
+DLCS->Authorization Server: Authorization Code + Client Id + Secret
+Authorization Server-->DLCS:ID Token
+DLCS->DLCS:Validate token signature\nand check expiry
+note left of DLCS:
+    The DLCS will parse claims from ID token
+    to assign specific roles to current user
+end note
+DLCS->DLCS: establish DLCS session
+note right of DLCS:
+    This session is maintained by the
+    Orchestrator. It knows what roles
+    the user has, and the roles required
+    to access the requested image.
+end note
+note over DLCS:
+    renders...
+    window.close()
+end note
+note right of Browser:
+    Browser now has a cookie it can present on
+    *simple* (in CORS terms) web requests for
+    IIIF Images, videos, etc; DLCS knows what 
+    roles that cookie is entitled to, and what
+    roles the requested image or video has.
+end note
+Browser->DLCS: (follow IIIF Auth Interaction patterns)

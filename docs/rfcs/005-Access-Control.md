@@ -3,7 +3,7 @@
 ## Context
 
 This document is about access control for assets and services for those assets, not for the APIs of the DLCS itself.
-This means the IIIF Auth API, in its current and future versions, rather than the REST HTTP API used to create and administer the assets. The IIFI API is comsumed (indirectly) by end-users, via IIIF Clients in the browser. The REST API is consumed by systems integration workflows, tools, and possibly browser-based content creation tools.
+This means the IIIF Auth API, in its current and future versions, rather than the REST HTTP API used to create and administer the assets. The IIIF API is consumed (indirectly) by end-users, via IIIF Clients in the browser. The REST API is consumed by systems integration workflows, tools, and possibly browser-based content creation tools.
 
 ## Providing the IIIF Auth API
 
@@ -45,7 +45,9 @@ In this example the CAS protocol is shown, but the indirection here means that a
 
 ![Auth with SSO](sequence-src/auth-sso.png "Auth with SSO")
 
+### Example Implementation
 
+A basic Role-Provider implementation, written in Flask and useful for testing scenarios, is available in the following repository - https://github.com/dlcs/role-provider-demo/
 
 ## TODO
 
