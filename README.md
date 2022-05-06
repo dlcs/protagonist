@@ -10,6 +10,7 @@
 * [Design Principles](docs/rfcs/006-Design-Principles.md)
 * [RFCs](docs/rfcs)
 * [Architecture Diagram](https://raw.githubusercontent.com/dlcs/protagonist/master/docs/c4-container-diagrams/DLCS-2021-l2.png)
+* [Public API Documentation](https://dlcs-book.readthedocs.io/en/latest/)
 
 ## Projects
 
