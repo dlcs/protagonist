@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using API.Settings;
 using DLCS.Core;
+using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Web.Requests;
 using MediatR;
@@ -86,7 +87,7 @@ namespace API.Features.Image.Requests
             request.Body.Origin = objectInBucket.GetHttpUri();
             var ingestResponse = await CallDlcsIngest(request, cancellationToken);
             var responseBody = await ingestResponse.Content.ReadAsStringAsync();
-            var imageResult = JsonConvert.DeserializeObject<ImageController>(responseBody);
+            var imageResult = JsonConvert.DeserializeObject<Asset>(responseBody);
 
             return ResultStatus<DelegatedIngestResponse>.Successful(new DelegatedIngestResponse(
                 ingestResponse.StatusCode,
@@ -122,14 +123,14 @@ namespace API.Features.Image.Requests
 
     public class DelegatedIngestResponse
     {
-        public ImageController? Body { get; }
+        public Asset? Body { get; }
         
         // NOTE - this isn't ideal but is temporary
         public HttpStatusCode? DownstreamStatusCode { get; }
 
         public override string ToString() => DownstreamStatusCode?.ToString() ?? "_unknown_";
 
-        public DelegatedIngestResponse(HttpStatusCode? downstreamStatusCode, ImageController? body)
+        public DelegatedIngestResponse(HttpStatusCode? downstreamStatusCode, Asset? body)
         {
             DownstreamStatusCode = downstreamStatusCode;
             Body = body;

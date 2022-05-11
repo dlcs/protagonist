@@ -54,7 +54,7 @@ namespace API.Features.Image
         /// </remarks>
         [ProducesResponseType(201, Type = typeof(DLCS.HydraModel.Image))]
         [ProducesResponseType(400, Type = typeof(ProblemDetails))]
-        [HttpPost]
+        [HttpPost]  // This should be a PUT? But then it will be the same op to same location as a normal asset without File.
         [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000, ValueLengthLimit = 100_000_000)]
         [Route("{imageId}")]
         public async Task<IActionResult> IngestBytes([FromRoute] string customerId, [FromRoute] string spaceId,
@@ -116,6 +116,9 @@ namespace API.Features.Image
             {
                 if (images.Members.Any(image => image.ModelId == null))
                 {
+                    // And this ModelId is NOT the customer/space/id construct that the DB has for a primary key.
+                    // It used to be... but we're not going to do that.
+                    // Test if ModelId starts with cust/space and throw if it does?
                     return BadRequest(ErrorX.Create("Missing identifier","All assets must have a ModelId", 400));
                 }
                 foreach (var hydraImage in images.Members)
