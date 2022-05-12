@@ -441,7 +441,7 @@ namespace DLCS.Repository.Tests.Assets
         [Fact]
         public async Task EnsureNewLayout_HandlesDuplicateMaxSize()
         {
-            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            var rootKey = new ObjectInBucket("the-bucket", "2/1/the-astronaut/");
             A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
                 .Returns(new[]
                 {
