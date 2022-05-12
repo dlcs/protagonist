@@ -8,7 +8,7 @@ namespace API.Converters
         {
             return new()
             {
-                IncludeContext = true,
+                WithContext = true,
                 Title = exception.Label,
                 Description = exception.Message,
                 StatusCode = exception.StatusCode
@@ -19,7 +19,7 @@ namespace API.Converters
         {
             return new()
             {
-                IncludeContext = true,
+                WithContext = true,
                 Title = title,
                 Description = description,
                 StatusCode = statusCode

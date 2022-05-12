@@ -39,7 +39,7 @@ namespace API.Features.Customer
             
             return new HydraCollection<JObject>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = dbCustomers.Select(c => c.ToCollectionForm(baseUrl)).ToArray(),
                 TotalItems = dbCustomers.Count,
                 PageSize = dbCustomers.Count,

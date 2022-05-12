@@ -42,7 +42,7 @@ namespace API.Features.Space
             
             var collection = new HydraCollection<DLCS.HydraModel.Space>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = pageOfSpaces.Spaces.Select(s => s.ToHydra(baseUrl)).ToArray(),
                 TotalItems = pageOfSpaces.Total,
                 PageSize = pageSize,

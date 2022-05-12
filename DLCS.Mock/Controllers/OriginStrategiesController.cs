@@ -25,7 +25,7 @@ namespace DLCS.Mock.Controllers
 
             return new HydraCollection<OriginStrategy>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = originStrategies,
                 TotalItems = originStrategies.Length,
                 Id = Request.GetDisplayUrl()

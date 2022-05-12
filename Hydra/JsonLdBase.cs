@@ -7,8 +7,16 @@ namespace Hydra
     public abstract class JsonLdBase
     {
         [JsonProperty(Order = 1, PropertyName = "@context")]
-        public virtual string Context { get; set; }
+        public virtual string? Context
+        {
+            get => InternalContext;
+            set => InternalContext = value;
+        }
 
+        [JsonIgnore]
+        protected string? InternalContext;
+
+        
         [JsonProperty(Order = 2, PropertyName = "@id")]
         public string? Id { get; set; }
 

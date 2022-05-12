@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
@@ -7,13 +8,16 @@ using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using API.Client;
 using DLCS.Core.Strings;
+using DLCS.HydraModel;
 using DLCS.Model.Customers;
 using DLCS.Web.Auth;
+using Hydra.Collections;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 
 namespace API.Auth
 {
@@ -57,6 +61,18 @@ namespace API.Auth
             var endpoint = Context.GetEndpoint();
             if (endpoint?.Metadata?.GetMetadata<IAllowAnonymous>() != null)
                 return AuthenticateResult.NoResult();
+
+            // Added this for temporary debugging
+            // if (Request.Method == "PATCH")
+            // {
+            //     var body = new StreamReader(Request.Body);
+            //     var requestBody = await body.ReadToEndAsync();
+            //     HydraCollection<Image>? b =
+            //         JsonConvert.DeserializeObject<HydraCollection<Image>>(requestBody);
+            //     // Logger.LogInformation(requestBody);
+            // }
+                
+            
             
             // ...but any not marked must have the auth header
             if (!Request.Headers.ContainsKey("Authorization"))

@@ -20,7 +20,7 @@ using Microsoft.Extensions.Options;
 
 namespace API.Features.Image
 {
-    [Route("/customers/{customerId}/spaces/{spaceId}/images/")]
+    [Route("/customers/{customerId}/spaces/{spaceId}/images")]
     [ApiController]
     public class ImageController : Controller
     {
@@ -93,7 +93,7 @@ namespace API.Features.Image
             
             var collection = new HydraCollection<DLCS.HydraModel.Image>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = pageOfAssets.Assets.Select(a => a.ToHydra(baseUrl, resourceRoot)).ToArray(),
                 TotalItems = pageOfAssets.Total,
                 PageSize = pageSize,
@@ -106,9 +106,10 @@ namespace API.Features.Image
 
         [HttpPatch]
         public async Task<IActionResult> Images(
-            int customerId, int spaceId,
+            [FromRoute] int customerId, [FromRoute] int spaceId,
             [FromBody] HydraCollection<DLCS.HydraModel.Image> images)
         {
+            
             var patchedAssets = new List<Asset>();
             
             // Should there be a size limit on how many assets can be patched in a single go?
@@ -141,7 +142,7 @@ namespace API.Features.Image
             
             var output = new HydraCollection<DLCS.HydraModel.Image>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = patchedAssets.Select(a => a.ToHydra(baseUrl, resourceRoot)).ToArray(),
                 TotalItems = patchedAssets.Count,
                 Id = Request.GetDisplayUrl() + "?patch_" + Guid.NewGuid()

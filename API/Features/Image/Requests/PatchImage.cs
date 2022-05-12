@@ -41,7 +41,7 @@ namespace API.Features.Image.Requests
         public async Task<Asset> Handle(PatchImage request, CancellationToken cancellationToken)
         {
             var key = $"{request.CustomerId}/{request.SpaceId}/{request.ModelId}";
-            var dbImage = await dbContext.Images.FindAsync(key, cancellationToken);
+            var dbImage = await dbContext.Images.FindAsync(new object[] {key}, cancellationToken);
             if (dbImage == null)
             {
                 var apiEx = new APIException("Asset to be patched is unknown to DLCS")

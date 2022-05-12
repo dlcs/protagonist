@@ -25,7 +25,7 @@ namespace Portal.Pages.Spaces
         public SpacePageModel SpacePageModel { get; set; }
         public PagerValues? PagerValues { get; private set; }
         public string Customer { get; set; }
-        public string Space { get; set; }
+        public int SpaceId { get; set; }
 
         public Details(
             IDlcsClient dlcsClient,
@@ -41,12 +41,14 @@ namespace Portal.Pages.Spaces
         
         public async Task<IActionResult> OnGetAsync(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize)
         {
-            var space = await dlcsClient.GetSpaceDetails(id);
+            SpaceId = id;
+            var space = await dlcsClient.GetSpaceDetails(SpaceId);
             if (space == null)
             {
                 return NotFound();
             }
-            var images = await dlcsClient.GetSpaceImages(page, pageSize, id, nameof(Image.Number1));
+
+            var images = await dlcsClient.GetSpaceImages(page, pageSize, SpaceId, nameof(Image.Number1));
             var model = new SpacePageModel
             {
                 Space = space,

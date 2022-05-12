@@ -30,7 +30,7 @@ namespace DLCS.Mock.Controllers
 
             return new HydraCollection<JObject>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = customers,
                 TotalItems = customers.Length,
                 Id = Request.GetDisplayUrl()
@@ -60,7 +60,7 @@ namespace DLCS.Mock.Controllers
 
             return new HydraCollection<JObject>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = portalUsers,
                 TotalItems = portalUsers.Length,
                 Id = Request.GetDisplayUrl()
@@ -91,7 +91,7 @@ namespace DLCS.Mock.Controllers
 
             return new HydraCollection<CustomerOriginStrategy>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = customerOriginStrategies,
                 TotalItems = customerOriginStrategies.Length,
                 Id = Request.GetDisplayUrl()
@@ -122,7 +122,7 @@ namespace DLCS.Mock.Controllers
 
             return new HydraCollection<JObject>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = spaces,
                 TotalItems = spaces.Length,
                 Id = Request.GetDisplayUrl()

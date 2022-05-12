@@ -1,7 +1,9 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using DLCS.Core.Collections;
 using DLCS.Web.Response;
+using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
 
@@ -14,7 +16,7 @@ namespace API.Client
         {
             if ((int) response.StatusCode < 400)
             {
-                return await response.ReadAsJsonAsync<T>(true, settings);
+                return await response.ReadWithHydraContext<T>(true, settings);
             }
 
             Error? error;
@@ -31,6 +33,19 @@ namespace API.Client
                 throw new DlcsException(error.Description);
             }
             throw new DlcsException("Unable to process error condition");
+        }
+
+        private static async Task<T?> ReadWithHydraContext<T>(
+            this HttpResponseMessage response,
+            bool ensureSuccess,
+            JsonSerializerSettings? settings)
+        {
+            var json = await response.ReadAsJsonAsync<T>(ensureSuccess, settings);
+            if (json is JsonLdBaseWithHydraContext hydra)
+            {
+                hydra.WithContext = true;
+            }
+            return json;
         }
     }
 }
