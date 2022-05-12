@@ -40,6 +40,8 @@ namespace API.Features.Image.Requests
 
         public async Task<Asset> Handle(PatchImage request, CancellationToken cancellationToken)
         {
+            // Deliverator version throws exception if you try to change customer, space, family.
+            // This currently ignores those (not patchable but won't error)
             var key = $"{request.CustomerId}/{request.SpaceId}/{request.ModelId}";
             var dbImage = await dbContext.Images.FindAsync(new object[] {key}, cancellationToken);
             if (dbImage == null)
@@ -121,6 +123,10 @@ namespace API.Features.Image.Requests
                 dbImage.ImageOptimisationPolicy = hydraImage.ImageOptimisationPolicy;
                 requiresReingest = true; // YES, because we've changed the way this image should be processed
             }
+            
+            // In Deliverator, this removes the imagelocation from in-memory and possibly other ImageLocationStores
+            var ilEntry = dbContext.Entry(new ImageLocation { Id = key });
+            dbContext.Remove(ilEntry);
             
             await dbContext.SaveChangesAsync(cancellationToken);
             

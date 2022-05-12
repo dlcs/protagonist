@@ -109,6 +109,7 @@ namespace API.Features.Image
             [FromRoute] int customerId, [FromRoute] int spaceId,
             [FromBody] HydraCollection<DLCS.HydraModel.Image> images)
         {
+            // DELIVERATOR: https://github.com/digirati-co-uk/deliverator/blob/master/API/Architecture/Request/API/Entities/CustomerSpaceImages.cs#L147
             
             var patchedAssets = new List<Asset>();
             
