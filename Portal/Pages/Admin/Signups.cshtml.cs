@@ -31,7 +31,7 @@ namespace Portal.Pages.Admin
                 {
                     signup.CssClass = "table-success";
                 }
-                else if (signup.Expires < DateTime.Now)
+                else if (signup.Expires < DateTime.UtcNow)
                 {
                     signup.CssClass = "table-danger";
                 }

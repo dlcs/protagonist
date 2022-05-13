@@ -48,6 +48,6 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence.Models
         /// Check if this is control file is stale (in process for longer than X secs)
         /// </summary>
         public bool IsStale(int staleSecs)
-            => InProcess && DateTime.Now.Subtract(Created).TotalSeconds > staleSecs;
+            => InProcess && DateTime.UtcNow.Subtract(Created).TotalSeconds > staleSecs;
     }
 }

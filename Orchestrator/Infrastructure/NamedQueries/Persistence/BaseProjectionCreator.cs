@@ -63,7 +63,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             Logger.LogInformation("Creating new control file: {ControlS3Key}", parsedNamedQuery.ControlFileStorageKey);
             var controlFile = new ControlFile
             {
-                Created = DateTime.Now,
+                Created = DateTime.UtcNow,
                 Key = parsedNamedQuery.StorageKey,
                 Exists = false,
                 InProcess = true,
