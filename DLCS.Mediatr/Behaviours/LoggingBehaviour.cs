@@ -11,7 +11,7 @@ namespace DLCS.Mediatr.Behaviours
     /// Will use ToString() property to log details
     /// </summary>
     public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-        where TRequest : ITimedRequest
+        where TRequest : IRequest<TResponse>, ITimedRequest
     {
         private readonly ILogger<LoggingBehavior<TRequest, TResponse>> logger;
 

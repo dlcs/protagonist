@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.1.15" />
-    <PackageReference Include="Dapper" Version="2.0.90" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.9.2" />
+    <PackageReference Include="Dapper" Version="2.0.123" />
     <PackageReference Include="iiif-net" Version="0.1.0-tags-v0-0-6-0001" />
-    <PackageReference Include="LazyCache" Version="2.1.3" />
+    <PackageReference Include="LazyCache" Version="2.4.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
