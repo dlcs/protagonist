@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net.Http;
 using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Model.Assets;
@@ -16,7 +15,9 @@ using DLCS.Repository.Customers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Orchestrator.Assets;
+using Orchestrator.Features.Images.Orchestration;
+using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
@@ -73,6 +74,25 @@ namespace Orchestrator.Infrastructure
                 });
 
             return services;
+        }
+
+        /// <summary>
+        /// Add required caching dependencies
+        /// </summary>
+        public static IServiceCollection AddOrchestration(this IServiceCollection services,
+            OrchestratorSettings settings)
+        {
+            var serviceCollection = services
+                .AddSingleton<IAssetTracker, MemoryAssetTracker>()
+                .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
+                .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
+                .AddSingleton<IOrchestrationQueue>(_ =>
+                    new BoundedChannelOrchestrationQueue(settings.OrchestrateOnInfoJsonMaxCapacity));
+
+            if (settings.OrchestrateOnInfoJson)
+                serviceCollection.AddHostedService<OrchestrationQueueMonitor>();
+            
+            return serviceCollection;
         }
 
         /// <summary>

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core;
@@ -50,7 +49,7 @@ namespace Orchestrator.Features.Images.Requests
         private readonly IAssetTracker assetTracker;
         private readonly IAssetPathGenerator assetPathGenerator;
         private readonly IAuthServicesRepository authServicesRepository;
-        private readonly IImageOrchestrator orchestrator;
+        private readonly IOrchestrationQueue orchestrationQueue;
         private readonly IAssetAccessValidator accessValidator;
         private readonly ILogger<GetImageInfoJsonHandler> logger;
         private readonly OrchestratorSettings orchestratorSettings;
@@ -59,7 +58,7 @@ namespace Orchestrator.Features.Images.Requests
             IAssetTracker assetTracker,
             IAssetPathGenerator assetPathGenerator,
             IAuthServicesRepository authServicesRepository,
-            IImageOrchestrator orchestrator,
+            IOrchestrationQueue orchestrationQueue,
             IAssetAccessValidator accessValidator,
             IOptions<OrchestratorSettings> orchestratorSettings,
             ILogger<GetImageInfoJsonHandler> logger)
@@ -67,7 +66,7 @@ namespace Orchestrator.Features.Images.Requests
             this.assetTracker = assetTracker;
             this.assetPathGenerator = assetPathGenerator;
             this.authServicesRepository = authServicesRepository;
-            this.orchestrator = orchestrator;
+            this.orchestrationQueue = orchestrationQueue;
             this.accessValidator = accessValidator;
             this.logger = logger;
             this.orchestratorSettings = orchestratorSettings.Value;
@@ -105,16 +104,16 @@ namespace Orchestrator.Features.Images.Requests
                 : DescriptionResourceResponse.Unauthorised(authInfoJson);
         }
 
-        private Task DoOrchestrationIfRequired(OrchestrationImage orchestrationImage, bool noOrchestrationOverride,
+        private ValueTask DoOrchestrationIfRequired(OrchestrationImage orchestrationImage, bool noOrchestrationOverride,
             CancellationToken cancellationToken)
         {
             if (noOrchestrationOverride || !orchestratorSettings.OrchestrateOnInfoJson)
             {
-                return Task.CompletedTask;
+                return ValueTask.CompletedTask;
             }
 
             logger.LogDebug("Info.json starting orchestration for asset {Asset}", orchestrationImage.AssetId);
-            return orchestrator.OrchestrateImage(orchestrationImage, cancellationToken);
+            return orchestrationQueue.QueueRequest(orchestrationImage, cancellationToken);
         }
 
         private string GetImageId(GetImageInfoJson request)
