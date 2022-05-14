@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -7,6 +9,7 @@ using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 
 namespace DLCS.Repository.Assets
 {
@@ -15,17 +18,21 @@ namespace DLCS.Repository.Assets
     /// </summary>
     public class DapperAssetRepository : DapperRepository, IAssetRepository
     {
+        // This repository uses both Dapper and EF...
+        private readonly DlcsContext dlcsContext;
         private readonly CacheSettings cacheSettings;
         private readonly IAppCache appCache;
         private readonly ILogger<DapperAssetRepository> logger;
         private static readonly Asset NullAsset = new() { Id = "__nullasset__" };
 
         public DapperAssetRepository(
+            DlcsContext dlcsContext,
             IConfiguration configuration, 
             IAppCache appCache,
             IOptions<CacheSettings> cacheOptions,
             ILogger<DapperAssetRepository> logger) : base(configuration)
         {
+            this.dlcsContext = dlcsContext;
             this.appCache = appCache;
             this.logger = logger;
             cacheSettings = cacheOptions.Value;
@@ -44,7 +51,25 @@ namespace DLCS.Repository.Assets
         {
             return await QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql, new {Id = assetId.ToString()});
         }
-        
+
+        public async Task<PageOfAssets> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize, 
+            string orderBy, bool ascending, CancellationToken cancellationToken)
+        {
+            var result = new PageOfAssets
+            {
+                Page = page,
+                Total = await dlcsContext.Images.CountAsync(
+                    a => a.Customer == customerId && a.Space == spaceId, cancellationToken: cancellationToken),
+                Assets = await dlcsContext.Images.AsNoTracking()
+                    .Where(a => a.Customer == customerId && a.Space == spaceId)
+                    .AsOrderedAssetQuery(orderBy, ascending)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync(cancellationToken: cancellationToken)
+            };
+            return result;
+        }
+
         private async Task<Asset> GetAssetInternal(string id)
         {
             var key = $"asset:{id}";

@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 
@@ -24,5 +25,11 @@ namespace DLCS.Repository.Assets
 
         public async Task<ImageLocation> GetImageLocation(AssetId assetId)
             => await dlcsContext.ImageLocations.FindAsync(assetId.ToString());
+
+        public Task<PageOfAssets> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize, string orderBy, bool ascending,
+            CancellationToken cancellationToken)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

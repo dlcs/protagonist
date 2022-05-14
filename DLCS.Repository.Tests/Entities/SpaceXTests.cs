@@ -1,4 +1,5 @@
 ﻿using System;
+using DLCS.Model.Spaces;
 using DLCS.Repository.Entities;
 using FluentAssertions;
 using Xunit;

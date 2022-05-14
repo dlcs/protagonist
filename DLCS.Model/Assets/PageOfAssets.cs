@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 
-namespace API.Features.Image
+namespace DLCS.Model.Assets
 {
     public class PageOfAssets
     {
-        public List<DLCS.Model.Assets.Asset> Assets { get; set; }
+        public List<Asset> Assets { get; set; }
         public int Page { get; set; }
         public int Total { get; set; }
     }

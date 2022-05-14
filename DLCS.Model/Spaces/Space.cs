@@ -1,10 +1,9 @@
-﻿using System;
-using System.Linq;
+﻿#nullable disable
+
+using System;
 using DLCS.Core.Collections;
 
-#nullable disable
-
-namespace DLCS.Repository.Entities
+namespace DLCS.Model.Spaces
 {
     public partial class Space
     {

@@ -1,13 +1,9 @@
-using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
-using API.Converters;
-using API.Features.Image;
-using DLCS.Repository;
+using DLCS.Model.Assets;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace API.Features.Space.Requests
@@ -34,16 +30,16 @@ namespace API.Features.Space.Requests
 
     public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, PageOfAssets>
     {
-        private readonly DlcsContext dbContext;
+        private readonly IAssetRepository assetRepository;
         private readonly ClaimsPrincipal principal;
         private readonly ILogger logger;
         
         public GetSpaceImagesHandler(
-            DlcsContext dbContext, 
+            IAssetRepository assetRepository, 
             ClaimsPrincipal principal,
             ILogger<GetAllSpacesHandler> logger)
         {
-            this.dbContext = dbContext;
+            this.assetRepository = assetRepository;
             this.principal = principal;
             this.logger = logger;
         }
@@ -51,18 +47,16 @@ namespace API.Features.Space.Requests
         public async Task<PageOfAssets> Handle(GetSpaceImages request, CancellationToken cancellationToken)
         {
             int? customerId = request.CustomerId ?? principal.GetCustomerId();
-            var result = new PageOfAssets
+            if (customerId == null)
             {
-                Page = request.Page,
-                Total = await dbContext.Images.CountAsync(
-                    a => a.Customer == customerId && a.Space == request.SpaceId, cancellationToken: cancellationToken),
-                Assets = await dbContext.Images.AsNoTracking()
-                    .Where(a => a.Customer == customerId && a.Space == request.SpaceId)
-                    .AsOrderedAssetQuery(request.OrderBy, request.Ascending)
-                    .Skip((request.Page - 1) * request.PageSize)
-                    .Take(request.PageSize)
-                    .ToListAsync(cancellationToken: cancellationToken)
-            };
+                throw new BadRequestException("No customer Id supplied");
+            }
+            
+            var result = await assetRepository.GetPageOfAssets(
+                customerId.Value, request.SpaceId,
+                request.Page, request.PageSize,
+                request.OrderBy, request.Ascending,
+                cancellationToken);
             return result;
         }
     }

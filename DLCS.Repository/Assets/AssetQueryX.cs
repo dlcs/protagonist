@@ -2,9 +2,8 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using DLCS.Model.Assets;
-using DLCS.HydraModel;
 
-namespace API.Converters
+namespace DLCS.Repository.Assets
 {
     /// <summary>
     /// Extension methods for asset queries.
@@ -29,20 +28,21 @@ namespace API.Converters
 
         private static string GetPropertyName(string orderBy)
         {
+            // This needs to be moved because it knows about hydra name values.
             if (string.IsNullOrWhiteSpace(orderBy) || orderBy.Length < 2)
             {
-                return nameof(Image.Created);
+                return "Created";
             }
 
             string pascalCase = char.ToUpperInvariant(orderBy[0]) + orderBy.Substring(1);
             return pascalCase switch
             {
-                nameof(Image.Number1) => "NumberReference1",
-                nameof(Image.Number2) => "NumberReference2",
-                nameof(Image.Number3) => "NumberReference3",
-                nameof(Image.String1) => "Reference1",
-                nameof(Image.String2) => "Reference2",
-                nameof(Image.String3) => "Reference3",
+                "Number1" => "NumberReference1",
+                "Number2" => "NumberReference2",
+                "Number3" => "NumberReference3",
+                "String1" => "Reference1",
+                "String2" => "Reference2",
+                "String3" => "Reference3",
                 _ => pascalCase
             };
         }

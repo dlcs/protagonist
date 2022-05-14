@@ -11,21 +11,19 @@ namespace API.Features.Image.Requests
 {
     public class PatchImage : IRequest<Asset>
     {
-        public DLCS.HydraModel.Image HydraImage { get; set; }
+        public Asset Asset { get; set; }
         public int CustomerId { get; set; }
         public int SpaceId { get; set; }
-        public string ModelId { get; set; }
         
-        public PatchImage(int customerId, int spaceId, string modelId, DLCS.HydraModel.Image hydraImage)
+        public PatchImage(int customerId, int spaceId, Asset asset)
         {
-            CustomerId = customerId;
-            SpaceId = spaceId;
-            ModelId = modelId;
-            HydraImage = hydraImage;
+            CustomerId = customerId; // CustomerId must be the same as asset.customerId
+            SpaceId = spaceId; // For now, spaceId must be the same - because it's part of the DB key.
+            Asset = asset;
         }
     }
 
-    public class PatchImageHandler : IRequestHandler<PatchImage, DLCS.Model.Assets.Asset>
+    public class PatchImageHandler : IRequestHandler<PatchImage, Asset>
     {
         private readonly DlcsContext dbContext;
         private readonly IMessageBus messageBus;
@@ -34,7 +32,7 @@ namespace API.Features.Image.Requests
             DlcsContext dlcsContext,
             IMessageBus messageBus)
         {
-            this.dbContext = dlcsContext;
+            dbContext = dlcsContext;
             this.messageBus = messageBus;
         }
 
@@ -42,96 +40,103 @@ namespace API.Features.Image.Requests
         {
             // Deliverator version throws exception if you try to change customer, space, family.
             // This currently ignores those (not patchable but won't error)
-            var key = $"{request.CustomerId}/{request.SpaceId}/{request.ModelId}";
-            var dbImage = await dbContext.Images.FindAsync(new object[] {key}, cancellationToken);
+            var patch = request.Asset;
+            
+            
+            var dbImage = await dbContext.Images.FindAsync(new object[] {patch.Id}, cancellationToken);
             if (dbImage == null)
             {
                 var apiEx = new APIException("Asset to be patched is unknown to DLCS")
                 {
-                    Label = "No asset for key " + key, StatusCode = 400
+                    Label = "No asset for key " + request.Asset.Id, StatusCode = 400
                 };
                 throw apiEx;
             }
 
-            var before = (Asset) dbImage.ShallowCopy();
-            var hydraImage = request.HydraImage;
-            bool requiresReingest = false;
-
-            // Should the DLCS metadata DB cols BE NULLABLE?
-            // The below allows you to omit a value and skip patching.
-            if (hydraImage.String1 != null)
+            // Validate the asset's ID
+            if (dbImage.Customer != request.CustomerId || dbImage.Space != request.SpaceId)
             {
-                dbImage.Reference1 = hydraImage.String1;
-            }
-            if (hydraImage.String2 != null)
-            {
-                dbImage.Reference2 = hydraImage.String2;
-            }
-            if (hydraImage.String3 != null)
-            {
-                dbImage.Reference3 = hydraImage.String3;
-            }
-            if (hydraImage.Number1 != null)
-            {
-                dbImage.NumberReference1 = hydraImage.Number1.Value;
-            }
-            if (hydraImage.Number2 != null)
-            {
-                dbImage.NumberReference2 = hydraImage.Number2.Value;
-            }
-            if (hydraImage.Number3 != null)
-            {
-                dbImage.NumberReference3 = hydraImage.Number3.Value;
-            }
-
-            if (hydraImage.Origin != null && hydraImage.Origin != dbImage.Origin)
-            {
-                dbImage.Origin = hydraImage.Origin;
-                requiresReingest = true;
-            }
-
-            if (hydraImage.Tags != null)
-            {
-                // We can't put a HasConversion into EF DlcsContext because Dapper needs to map this too.
-                dbImage.Tags = string.Join(",", hydraImage.Tags);
+                var apiEx = new APIException("Asset to be patched has different Customer or Space from request")
+                {
+                    Label = $"Request: {request.CustomerId}/{request.SpaceId}, DB: {dbImage.Customer}/{dbImage.Space}",
+                    StatusCode = 400
+                };
+                throw apiEx;
             }
             
-            if (hydraImage.Roles != null)
+            var before = dbImage.ShallowCopy();
+            bool requiresReingest = false;
+
+            // DISCUSS: Should the DLCS metadata DB cols BE NULLABLE?
+            // The below allows you to omit a value and skip patching.
+            // We need to be very clear what an incoming null value means. The below doesn't allow you to set 
+            // a value to null, to remove it from the API response.
+            // Deliverator version: https://github.com/digirati-co-uk/deliverator/blob/master/DLCS.Application/Behaviour/API/ApplyImagePatchBehaviour.cs#L19
+            
+            // This?
+            dbImage.Reference1 = patch.Reference1;
+            dbImage.Reference2 = patch.Reference2;
+            dbImage.Reference3 = patch.Reference3;
+            dbImage.NumberReference1 = patch.NumberReference1;
+            dbImage.NumberReference2 = patch.NumberReference2;
+            dbImage.NumberReference3 = patch.NumberReference3;
+            
+            // Or this?
+            // if (patch.Reference1 != null)
+            // {
+            //     dbImage.Reference1 = patch.Reference1;
+            // } // etc
+
+            if (patch.Origin.HasText() && patch.Origin != dbImage.Origin)
+            {
+                dbImage.Origin = patch.Origin;
+                requiresReingest = true;
+            }
+            
+            // This illustrates the problem; it needs to be nullable. Caller might supply "" to clear tags.
+            if (patch.Tags != null) 
             {
                 // We can't put a HasConversion into EF DlcsContext because Dapper needs to map this too.
-                dbImage.Roles = string.Join(",", hydraImage.Roles);
+                dbImage.Tags = patch.Tags;
+            }
+            
+            if (patch.Roles != null)
+            {
+                // We can't put a HasConversion into EF DlcsContext because Dapper needs to map this too.
+                dbImage.Roles = patch.Roles;
             }
 
-            if (hydraImage.MaxUnauthorised != null)
+            // Here too - if the JSON payload of the patch doesn't supply this, patch.MaxUnauthorised will be 0
+            // which might inadvertently clear a set value.
+            dbImage.MaxUnauthorised = patch.MaxUnauthorised;
+
+            // This on the other hand is OK, because a missing or "" value should not clear the value the asset has.
+            if (patch.MediaType.HasText())
             {
-                dbImage.MaxUnauthorised = hydraImage.MaxUnauthorised.Value;
+                dbImage.MediaType = patch.MediaType;
             }
 
-            if (hydraImage.MediaType != null)
+            if (patch.ThumbnailPolicy.HasText() && patch.ThumbnailPolicy != dbImage.ThumbnailPolicy)
             {
-                dbImage.MediaType = hydraImage.MediaType;
-            }
-
-            if (hydraImage.ThumbnailPolicy.HasText() && hydraImage.ThumbnailPolicy != dbImage.ThumbnailPolicy)
-            {
-                dbImage.ThumbnailPolicy = hydraImage.ThumbnailPolicy;
+                dbImage.ThumbnailPolicy = patch.ThumbnailPolicy;
                 // requiresReingest = true; NO, because we'll re-create thumbs on demand - "backfill"
             }
             
-            if (hydraImage.ImageOptimisationPolicy.HasText() && hydraImage.ImageOptimisationPolicy != dbImage.ImageOptimisationPolicy)
+            if (patch.ImageOptimisationPolicy.HasText() && patch.ImageOptimisationPolicy != dbImage.ImageOptimisationPolicy)
             {
-                dbImage.ImageOptimisationPolicy = hydraImage.ImageOptimisationPolicy;
+                dbImage.ImageOptimisationPolicy = patch.ImageOptimisationPolicy;
                 requiresReingest = true; // YES, because we've changed the way this image should be processed
             }
             
             // In Deliverator, this removes the imagelocation from in-memory and possibly other ImageLocationStores
-            var ilEntry = dbContext.Entry(new ImageLocation { Id = key });
+            var ilEntry = dbContext.Entry(new ImageLocation { Id = patch.Id });
             dbContext.Remove(ilEntry);
             
             await dbContext.SaveChangesAsync(cancellationToken);
             
-            var after = await ImageRequestHelpers.GetImageInternal(dbContext, key, cancellationToken);
+            var after = await ImageRequestHelpers.GetImageInternal(dbContext, patch.Id, cancellationToken);
             messageBus.SendAssetModifiedNotification(before, after);
+            // So should the 
             if (requiresReingest)
             {
                 messageBus.SendIngestAssetRequest(new IngestAssetRequest(after, DateTime.Now));

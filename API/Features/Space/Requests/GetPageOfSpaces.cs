@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
+using DLCS.Model.Spaces;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -31,14 +32,14 @@ namespace API.Features.Space.Requests
 
     public class GetAllSpacesHandler : IRequestHandler<GetPageOfSpaces, PageOfSpaces>
     {
-        private readonly DlcsContext dbContext;
+        private readonly ISpaceRepository spaceRepository;
         private readonly ClaimsPrincipal principal;
         private readonly ILogger logger;
 
-        public GetAllSpacesHandler(DlcsContext dbContext, ClaimsPrincipal principal,
+        public GetAllSpacesHandler(ISpaceRepository spaceRepository, ClaimsPrincipal principal,
             ILogger<GetAllSpacesHandler> logger)
         {
-            this.dbContext = dbContext;
+            this.spaceRepository = spaceRepository;
             this.principal = principal;
             this.logger = logger;
         }
@@ -46,28 +47,16 @@ namespace API.Features.Space.Requests
         public async Task<PageOfSpaces> Handle(GetPageOfSpaces request, CancellationToken cancellationToken)
         {
             int? customerId = request.CustomerId ?? principal.GetCustomerId();
-            var result = new PageOfSpaces
+            if (customerId == null)
             {
-                Page = request.Page,
-                Total = await dbContext.Spaces.CountAsync(s => s.Customer == customerId, cancellationToken: cancellationToken),
-                Spaces = await dbContext.Spaces.AsNoTracking()
-                    .Where(s => s.Customer == customerId)
-                    .OrderBy(s => s.Id) // TODO - use request.OrderBy
-                    .Skip((request.Page - 1) * request.PageSize)
-                    .Take(request.PageSize)
-                    .ToListAsync(cancellationToken: cancellationToken)
-            };
-            // In Deliverator the following is a sub-select. But I suspect that this is not significantly slower.
-            var scopes = result.Spaces.Select(s => s.Id.ToString());
-            var counters = await dbContext.EntityCounters.AsNoTracking()
-                .Where(ec => ec.Customer == customerId && ec.Type == "space-images")
-                .Where(ec => scopes.Contains(ec.Scope))
-                .ToDictionaryAsync(ec => ec.Scope, ec => ec.Next, cancellationToken: cancellationToken);
-            foreach (var space in result.Spaces)
-            {
-                space.ApproximateNumberOfImages = counters[space.Id.ToString()];
+                throw new BadRequestException("No customer Id supplied");
             }
+            var result = await spaceRepository.GetPageOfSpaces(customerId.Value, request.Page, request.PageSize, cancellationToken);
             return result;
         }
+        
+        
+
+
     }
 }

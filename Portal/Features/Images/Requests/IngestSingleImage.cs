@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using API.Client;
 using DLCS.Core.Settings;
 using DLCS.HydraModel;
+using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository.Spaces;
 using MediatR;

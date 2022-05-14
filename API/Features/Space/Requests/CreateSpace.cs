@@ -1,12 +1,8 @@
-using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Model;
 using DLCS.Model.Customers;
-using DLCS.Repository;
+using DLCS.Model.Spaces;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace API.Features.Space.Requests
@@ -14,7 +10,7 @@ namespace API.Features.Space.Requests
     /// <summary>
     /// See Deliverator: API/Architecture/Request/API/Entities/CustomerSpaces.cs
     /// </summary>
-    public class CreateSpace : IRequest<DLCS.Repository.Entities.Space>
+    public class CreateSpace : IRequest<DLCS.Model.Spaces.Space>
     {
         public string Name { get; set; }
         public int Customer { get; set; }
@@ -31,71 +27,40 @@ namespace API.Features.Space.Requests
     }
 
 
-    public class CreateSpaceHandler : IRequestHandler<CreateSpace, DLCS.Repository.Entities.Space>
+    public class CreateSpaceHandler : IRequestHandler<CreateSpace, DLCS.Model.Spaces.Space>
     {
-        private readonly DlcsContext dbContext;
+        private readonly ISpaceRepository spaceRepository;
         private readonly ICustomerRepository customerRepository;
-        private readonly IEntityCounterRepository entityCounterRepository;
         private readonly ILogger<CreateSpaceHandler> logger;
 
         public CreateSpaceHandler(
-            DlcsContext dbContext,
+            ISpaceRepository spaceRepository,
             ICustomerRepository customerRepository,
-            IEntityCounterRepository entityCounterRepository,
             ILogger<CreateSpaceHandler> logger)
         {
-            this.dbContext = dbContext;
+            this.spaceRepository = spaceRepository;
             this.customerRepository = customerRepository;
-            this.entityCounterRepository = entityCounterRepository;
             this.logger = logger;
             
         }
         
-        public async Task<DLCS.Repository.Entities.Space> Handle(CreateSpace request, CancellationToken cancellationToken)
+        public async Task<DLCS.Model.Spaces.Space> Handle(CreateSpace request, CancellationToken cancellationToken)
         {
             await ValidateRequest(request);
-            await SpaceRequestHelpers.EnsureSpaceNameNotTaken(dbContext, request.Customer, request.Name, cancellationToken);
-            int newModelId = await GetIdForNewSpace(request.Customer);
-            var space = await CreateNewSpace(request, cancellationToken, newModelId);
-            await entityCounterRepository.Create(request.Customer,  "space-images", space.Id.ToString(), 1);
-            await dbContext.SaveChangesAsync(cancellationToken);
-            return space;
-        }
-
-
-        private async Task<DLCS.Repository.Entities.Space> CreateNewSpace(CreateSpace request, CancellationToken cancellationToken, int newModelId)
-        {
-            var space = new DLCS.Repository.Entities.Space
+            var existing = await spaceRepository.GetSpace(request.Customer, request.Name, cancellationToken);
+            if (existing != null)
             {
-                Customer = request.Customer,
-                Id = newModelId,
-                Name = request.Name,
-                Created = DateTime.Now,
-                ImageBucket = request.ImageBucket,
-                Tags = request.Tags ?? Array.Empty<string>(),
-                Roles = request.Roles ?? Array.Empty<string>(),
-                MaxUnauthorised = request.MaxUnauthorised ?? -1
-            };
+                throw new BadRequestException("A space with this name already exists.");
+            }
 
-            await dbContext.Spaces.AddAsync(space, cancellationToken);
-            return space;
+            var newSpace = await spaceRepository.CreateSpace(
+                request.Customer, request.Name, request.ImageBucket, 
+                request.Tags, request.Roles, request.MaxUnauthorised,
+                cancellationToken);
+
+            return newSpace;
         }
-
-        private async Task<int> GetIdForNewSpace(int requestCustomer)
-        {
-            int newModelId;
-            DLCS.Repository.Entities.Space existingSpaceInCustomer;
-            do
-            {
-                var next = await entityCounterRepository.GetNext(requestCustomer, "space", requestCustomer.ToString());
-                newModelId = Convert.ToInt32(next);
-                existingSpaceInCustomer = await dbContext.Spaces.SingleOrDefaultAsync(s => s.Id == newModelId && s.Customer == requestCustomer);
-            } while (existingSpaceInCustomer != null);
-
-            return newModelId;
-        }
-
-
+        
         private async Task ValidateRequest(CreateSpace request)
         {
             var customer = await customerRepository.GetCustomer(request.Customer);

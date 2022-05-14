@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace DLCS.Core.Strings
@@ -10,7 +11,7 @@ namespace DLCS.Core.Strings
         /// </summary>
         /// <param name="str">String to check</param>
         /// <returns>true if string contains content; else false</returns>
-        public static bool HasText(this string str) => !string.IsNullOrWhiteSpace(str);
+        public static bool HasText([NotNullWhen(true)] this string? str) => !string.IsNullOrWhiteSpace(str);
 
         /// <summary>
         /// Decode base64 encoded string back to UTF8 representation

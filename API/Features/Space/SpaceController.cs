@@ -94,8 +94,6 @@ namespace API.Features.Space
             }
         }
         
-        
-        
         [HttpGet]
         [Route("{spaceId}")]
         public async Task<DLCS.HydraModel.Space> Index(int customerId, int spaceId)
@@ -111,7 +109,17 @@ namespace API.Features.Space
             int customerId, int spaceId, [FromBody] DLCS.HydraModel.Space space)
         {
             var baseUrl = Request.GetBaseUrl();
-            var dbSpace = await mediator.Send(new PatchSpace(customerId, spaceId, space));
+            var patchSpace = new PatchSpace
+            {
+                CustomerId = customerId,
+                SpaceId = spaceId,
+                Name = space.Name,
+                MaxUnauthorised = space.MaxUnauthorised,
+                Tags = space.DefaultTags,
+                Roles = space.DefaultRoles
+            };
+            
+            var dbSpace = await mediator.Send(patchSpace);
             return dbSpace.ToHydra(baseUrl);
         }
         

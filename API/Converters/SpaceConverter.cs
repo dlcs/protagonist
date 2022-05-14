@@ -15,7 +15,7 @@ namespace API.Converters
         /// <param name="dbSpace"></param>
         /// <param name="baseUrl"></param>
         /// <returns></returns>
-        public static Space ToHydra(this DLCS.Repository.Entities.Space dbSpace, string baseUrl)
+        public static Space ToHydra(this DLCS.Model.Spaces.Space dbSpace, string baseUrl)
         {
             var space = new Space(baseUrl, dbSpace.Id, dbSpace.Customer)
             {
