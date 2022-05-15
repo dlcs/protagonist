@@ -19,7 +19,7 @@ namespace API.Converters
         /// Converts the EF model object to an API resource.
         /// </summary>
         /// <param name="dbAsset"></param>
-        /// <param name="baseUrl"></param>
+        /// <param name="baseUrl">The API base URL</param>
         /// <param name="resourceBaseUrl">The base URI for image services and other public-facing resources</param>
         /// <returns></returns>
         public static Image ToHydra(this Asset dbAsset, string baseUrl, string resourceBaseUrl)
@@ -81,6 +81,19 @@ namespace API.Converters
             if (!modelId.HasText())
             {
                 modelId = hydraImage.Id.GetLastPathElement();
+            }
+
+            if (!modelId.HasText())
+            {
+                throw new APIException("Hydra Image does not have a ModelId");
+            }
+            
+            // This is a silent test for backwards compatibility with Deliverator.
+            // DDS sends Patch ModelIDs in full ID form:
+            var testPrefix = $"{hydraImage.CustomerId}/{hydraImage.Space}/";
+            if (modelId.StartsWith(testPrefix))
+            {
+                modelId = modelId.Substring(testPrefix.Length);
             }
 
             var assetId = new AssetId(hydraImage.CustomerId, hydraImage.Space, modelId);

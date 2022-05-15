@@ -6,17 +6,20 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Encryption;
 using DLCS.Model;
+using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
 using DLCS.Model.Storage;
 using DLCS.Repository;
+using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
+using DLCS.Repository.Storage;
 using DLCS.Repository.Storage.S3;
 using DLCS.Web.Configuration;
 using Microsoft.AspNetCore.Builder;
@@ -70,6 +73,8 @@ namespace API
                 .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
                 .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
+                .AddScoped<IStorageRepository, DapperCustomerStorageRepository>()
+                .AddScoped<IAssetRepository, DapperAssetRepository>()
                 .ConfigureMediatR()
                 .ConfigureSwagger()
                 .AddDbContext<DlcsContext>(opts =>

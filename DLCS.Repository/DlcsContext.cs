@@ -13,6 +13,7 @@ using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
 using DLCS.Model.Spaces;
+using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Serialisation;

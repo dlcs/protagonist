@@ -82,7 +82,7 @@ namespace Portal
                 .AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditBehaviour<,>))
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>()
-                .AddTransient<ISpaceRepository, SpaceRepository>();
+                .AddTransient<ISpaceRepository, SpaceRepository>(); // This shouldn't be here... use API
 
             services.AddDbContext<DlcsContext>(opts =>
                 opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))

@@ -1,8 +1,8 @@
-﻿using System;
+﻿#nullable disable
 
-#nullable disable
+using System;
 
-namespace DLCS.Repository.Entities
+namespace DLCS.Model.Storage
 {
     public partial class CustomerStorage
     {

@@ -129,8 +129,7 @@ namespace API.Features.Image
                 if (images.Members.Any(image => image.ModelId == null))
                 {
                     // And this ModelId is NOT the customer/space/id construct that the DB has for a primary key.
-                    // It used to be... but we're not going to do that.
-                    // Test if ModelId starts with cust/space and throw if it does?
+                    // It used to be... but we're not going to do that. hydraImage.ToDlcsModel() silently corrects this form.
                     return BadRequest(ErrorX.Create("Missing identifier", 
                         "All assets must have a ModelId", 400));
                 }
@@ -192,45 +191,46 @@ namespace API.Features.Image
             var assetId = new AssetId(customerId, spaceId, imageId);
             var putAsset = hydraAsset.ToDlcsModel();
             putAsset.Id = assetId.ToString();
+            
             // It has to have that ID! That's where it's being put, regardless of the incoming Hydra object's Id.
             // Shall we validate that the incoming object is the same ID?
+            // We could omit the following check, just override it/allow it to be missing:
             if (!hydraAsset.Id.EndsWith(putAsset.Id))
             {
                 throw new BadRequestException(
                     $"Incoming asset Id '{hydraAsset.Id}' does not match PUT URL '{Request.GetDisplayUrl()}'");
             }
 
+            var request = new PutImage(putAsset);
+            var dbAsset = await mediator.Send(request);
             
+            var baseUrl = Request.GetBaseUrl();
+            var resourceRoot = settings.DLCS.ResourceRoot.ToString();
+            return dbAsset.ToHydra(baseUrl, resourceRoot);
+
+            // DISCUSS
             // now - how much of this logic happens here with multiple Mediatr requests?
             // Or is it all one PutImageRequest?
-            
-            
+            // Same with the patch operation above. We can validate here in the controller that the space exists.
+            // But should the Mediatr handler do that too? What if we called the Mediatr handler from somewhere else,
+            // not an API controller? How much do we assume?
+
             // tbc.
-            
-            
-            // We are going to need to have cached versions of all these policies, but just memoryCache for API I think
+
+            // DISCUSS
+            // Controllers know about Hydra coming in and Mediatr commands going "out".
+            // Controllers don't have references to repositories.
+            // Mediatr requests/commands don't know about Hydra objects, they deal in DLCS.Model. 
+            // Mediatr Handle methods don't make direct DBContext calls, they go to a repository.
+            // (This is not consistent across what I've done so far, I don't know if it's right)
+            // All three layers know about DLCS Model classes, but
+            //  - the controllers just convert them to/from Hydra,
+            //  - the Mediatr request package them to repository calls, sometimes multiple repositories
+            //  - the repositories make db requests.
+
+            // So the logic below lives in the Mediatr and we just have (cf SpaceController)
 
 
-            // Deliverator Logic:
-            // LoadSpaceBehaviour - need the space to exist (space cache?)
-            // LoadImageBehaviour - see if already exists
-            // LoadCustomerStorageBehaviour - if a new image, CustomerStorageCalculation
-            // LoadStoragePolicyBehaviour - get the storage policy
-            // EnforceStoragePolicyForNumberOfImagesBehaviour
-            // ValidateImageUpsertBehaviour
-            // Load default ImageOptimisationPolicies and ThumbnailPolicies
-            // LoadAllImageOptimisationPoliciesBehaviour
-            // LoadAllThumbnailPoliciesBehaviour
-            // SelectImageOptimisationPolicyForImageBehaviour - whether image, audio or video
-            // SelectThumbnailPolicyForImageBehaviour - image, audio or video
-            // UpdateImageBehaviour - store in DB
-            // CreateSkeletonImageLocationBehaviour
-            // UpdateImageLocationBehaviour
-            // if Image:
-            // CallImageIngestEndpointBehaviour
-            // LoadImageBehaviour (reload)
-            // return 200 or 201 or 500
-            // else
 
 
 

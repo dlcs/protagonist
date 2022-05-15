@@ -42,7 +42,12 @@ namespace API.Features.Image.Requests
             // This currently ignores those (not patchable but won't error)
             var patch = request.Asset;
             
-            
+            // DISCUSS:
+            // This Mediatr Handle is using the DBContext directly.
+            // Should it be doing that?
+            // Or should it go to a repository? With EF the dbContext _is_ the repository;
+            // do we always need to delegate to a repository when it's a one liner like this?
+            // Compare this to PatchSpace which works differently.
             var dbImage = await dbContext.Images.FindAsync(new object[] {patch.Id}, cancellationToken);
             if (dbImage == null)
             {
