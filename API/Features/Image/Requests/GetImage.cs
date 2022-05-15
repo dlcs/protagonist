@@ -1,12 +1,13 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Repository;
 using MediatR;
 
 namespace API.Features.Image.Requests
 {
-    public class GetImage : IRequest<DLCS.Model.Assets.Asset>
+    public class GetImage : IRequest<Asset>
     {
         public GetImage(AssetId assetId)
         {
@@ -18,17 +19,16 @@ namespace API.Features.Image.Requests
     
     public class GetImageHandler : IRequestHandler<GetImage, DLCS.Model.Assets.Asset?>
     {
-        private readonly DlcsContext dbContext;
+        private readonly IAssetRepository assetRepository;
 
-        public GetImageHandler(DlcsContext dlcsContext)
+        public GetImageHandler(IAssetRepository assetRepository)
         {
-            this.dbContext = dlcsContext;
+            this.assetRepository = assetRepository;
         }
         
-        public async Task<DLCS.Model.Assets.Asset?> Handle(GetImage request, CancellationToken cancellationToken)
+        public async Task<Asset?> Handle(GetImage request, CancellationToken cancellationToken)
         {
-            var image = await ImageRequestHelpers.GetImageInternal(
-                dbContext, request.AssetId.ToString(), cancellationToken);
+            var image = await assetRepository.GetAsset(request.AssetId);
             return image;
         }
     }

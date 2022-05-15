@@ -138,8 +138,8 @@ namespace API.Features.Image.Requests
             dbContext.Remove(ilEntry);
             
             await dbContext.SaveChangesAsync(cancellationToken);
-            
-            var after = await ImageRequestHelpers.GetImageInternal(dbContext, patch.Id, cancellationToken);
+
+            var after = await dbContext.Images.FindAsync(patch.Id, cancellationToken);
             messageBus.SendAssetModifiedNotification(before, after);
             // So should the 
             if (requiresReingest)
