@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -20,10 +19,10 @@ namespace DLCS.Repository.Assets
     public class ThumbReorganiser : IThumbReorganiser
     {
         private static readonly Regex ExistingThumbsRegex =
-            new Regex(@".*\/full\/(\d+,\d+)\/.*", RegexOptions.Compiled);
+            new(@".*\/full\/(\d+,\d+)\/.*", RegexOptions.Compiled);
 
         private readonly IBucketReader bucketReader;
-        private readonly ILogger<ThumbRepository> logger;
+        private readonly ILogger<ThumbReorganiser> logger;
         private readonly IAssetRepository assetRepository;
         private readonly IThumbnailPolicyRepository thumbnailPolicyRepository;
         private readonly AsyncKeyedLock asyncLocker = new();
@@ -31,7 +30,7 @@ namespace DLCS.Repository.Assets
 
         public ThumbReorganiser(
             IBucketReader bucketReader,
-            ILogger<ThumbRepository> logger,
+            ILogger<ThumbReorganiser> logger,
             IAssetRepository assetRepository,
             IThumbnailPolicyRepository thumbnailPolicyRepository)
         {
@@ -161,7 +160,7 @@ namespace DLCS.Repository.Assets
                 var sizeCandidates = existingSizes.Where(s => s.MaxDimension == maxDimension).ToList();
                 if (sizeCandidates.IsNullOrEmpty())
                 {
-                    logger.LogWarning("Unable to find thumb with max dimension {maxDimension} for rootKey '{rootKey}'",
+                    logger.LogWarning("Unable to find thumb with max dimension {MaxDimension} for rootKey '{RootKey}'",
                         maxDimension, rootKey);
                     continue;
                 }
@@ -175,7 +174,7 @@ namespace DLCS.Repository.Assets
 
                 if (toCopy == null)
                 {
-                    logger.LogWarning("Unable to find thumb with max dimension {maxDimension} for rootKey '{rootKey}'",
+                    logger.LogWarning("Unable to find thumb with max dimension {MaxDimension} for rootKey '{RootKey}'",
                         maxDimension, rootKey);
                     continue;
                 }
@@ -202,14 +201,14 @@ namespace DLCS.Repository.Assets
 
             if (s3ObjectKeys.IsNullOrEmpty()) return;
 
-            List<ObjectInBucket> toDelete = new List<ObjectInBucket>(s3ObjectKeys.Length);
+            List<ObjectInBucket> toDelete = new(s3ObjectKeys.Length);
 
             foreach (var key in s3ObjectKeys)
             {
                 string item = key.Replace(rootKey.Key, string.Empty);
                 if (BoundedThumbRegex.IsMatch(item) || item == oldSizesJsonKey)
                 {
-                    logger.LogDebug($"Deleting legacy confined-thumb object: '{key}'");
+                    logger.LogDebug("Deleting legacy confined-thumb object: '{Key}'", key);
                     toDelete.Add(new ObjectInBucket(rootKey.Bucket, key));
                 }
             }
@@ -218,11 +217,6 @@ namespace DLCS.Repository.Assets
             {
                 await bucketReader.DeleteFromBucket(toDelete.ToArray());
             }
-        }
-
-        public void DeleteOldLayout()
-        {
-            throw new NotImplementedException("Not yet! Need to be sure of all the others first!");
         }
     }
 
