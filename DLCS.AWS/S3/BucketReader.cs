@@ -6,11 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.AWS.S3.Models;
 using DLCS.Core.Exceptions;
-using DLCS.Model.Storage;
 using Microsoft.Extensions.Logging;
 
-namespace DLCS.Repository.Storage.S3
+namespace DLCS.AWS.S3
 {
     public class BucketReader : IBucketReader
     {

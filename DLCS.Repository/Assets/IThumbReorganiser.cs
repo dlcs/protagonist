@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using DLCS.Model.Storage;
+using DLCS.AWS.S3.Models;
 
 namespace DLCS.Repository.Assets
 {

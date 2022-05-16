@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;

@@ -1,15 +1,14 @@
 using System.Collections.Generic;
 using Amazon.S3;
+using DLCS.AWS.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
-using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Settings;
-using DLCS.Repository.Storage.S3;
 using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;

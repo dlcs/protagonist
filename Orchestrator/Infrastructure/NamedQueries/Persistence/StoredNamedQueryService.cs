@@ -1,9 +1,10 @@
 ﻿using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DLCS.AWS\DLCS.AWS.csproj" />
     <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
     <ProjectReference Include="..\DLCS.Model\DLCS.Model.csproj" />
   </ItemGroup>

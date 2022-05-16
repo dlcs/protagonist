@@ -2,7 +2,7 @@
 using System.IO;
 using DLCS.Core.Guard;
 
-namespace DLCS.Model.Storage
+namespace DLCS.AWS.S3.Models
 {
     /// <summary>
     /// Represents an object that has been fetched from a bucket.

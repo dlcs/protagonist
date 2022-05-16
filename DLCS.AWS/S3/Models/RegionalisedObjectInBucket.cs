@@ -1,7 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using DLCS.Core.Guard;
 
-namespace DLCS.Model.Storage
+namespace DLCS.AWS.S3.Models
 {
     public class RegionalisedObjectInBucket : ObjectInBucket
     {

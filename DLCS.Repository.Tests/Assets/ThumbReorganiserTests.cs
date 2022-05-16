@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.Model.Assets;
-using DLCS.Model.Storage;
 using DLCS.Repository.Assets;
 using FakeItEasy;
 using FluentAssertions;

@@ -1,8 +1,9 @@
 ﻿using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.AWS.S3.Models;
 
-namespace DLCS.Model.Storage
+namespace DLCS.AWS.S3
 {
     /// <summary>
     /// Interface wrapping interactions with cloud blob storage.

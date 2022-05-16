@@ -2,9 +2,10 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Storage;
 using DLCS.Repository.Settings;
 using DLCS.Repository.Storage;
 using IIIF.ImageApi;

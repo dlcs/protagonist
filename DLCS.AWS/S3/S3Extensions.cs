@@ -1,7 +1,7 @@
 ﻿using Amazon.S3.Model;
-using DLCS.Model.Storage;
+using DLCS.AWS.S3.Models;
 
-namespace DLCS.Repository.Storage.S3
+namespace DLCS.AWS.S3
 {
     public static class S3Extensions
     {

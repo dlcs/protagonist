@@ -1,13 +1,12 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.S3;
-using DLCS.Model.Storage;
+using DLCS.AWS.S3;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Settings;
-using DLCS.Repository.Storage.S3;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Configuration;
 using DLCS.Web.Requests.AssetDelivery;

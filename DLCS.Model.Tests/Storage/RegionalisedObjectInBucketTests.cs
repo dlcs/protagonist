@@ -1,5 +1,5 @@
 ﻿using System;
-using DLCS.Model.Storage;
+using DLCS.AWS.S3.Models;
 using FluentAssertions;
 using Xunit;
 
