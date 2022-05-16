@@ -16,5 +16,7 @@ namespace DLCS.Model.Assets
             int customerId, int spaceId, int page, int pageSize, 
             string orderBy, bool ascending,
             CancellationToken cancellationToken);
+
+        Task Put(Asset putAsset);
     }
 }

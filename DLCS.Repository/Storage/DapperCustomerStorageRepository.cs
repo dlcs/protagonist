@@ -56,6 +56,7 @@ FROM public.""StoragePolicies""  WHERE ""Id""=@Id;";
 
         public async Task<CustomerStorage?> GetCustomerStorage(int customerId, int spaceId, bool createOnDemand, CancellationToken cancellationToken)
         {
+            // TODO: this is wrong, this is not how the customer storage works
             string sql = CustomerStorageSqlBase + @" AND ""Space""=@Space";
             var customerStorage = await QueryFirstOrDefaultAsync<CustomerStorage>(sql, new { Customer = customerId, Space = spaceId });
             if (customerStorage == null && createOnDemand)
@@ -75,6 +76,8 @@ FROM public.""CustomerStorage""  WHERE ""Customer""=@Customer;";
         public async Task<CustomerStorageSummary> GetCustomerStorageSummary(int customerId)
         {
             // Is it quicker to do ths in the database? Depends how many spaces the customer has.
+            
+            // TODO: this logic is not correct!
             var spaceStorageList =
                 await QueryAsync<CustomerStorage>(CustomerStorageSqlBase, new { Customer = customerId });
             var summary = new CustomerStorageSummary
@@ -89,6 +92,15 @@ FROM public.""CustomerStorage""  WHERE ""Customer""=@Customer;";
             }
 
             return summary;
+        }
+
+        public async Task<ImageCountStorageMetric> GetImageCounts(int putAssetCustomer)
+        {
+            // TODO: this is fake for now
+            return await Task.FromResult(new ImageCountStorageMetric
+            {
+                CurrentNumberOfStoredImages = 1, MaximumNumberOfStoredImages = 1000
+            });
         }
     }
 }

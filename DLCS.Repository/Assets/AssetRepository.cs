@@ -31,5 +31,10 @@ namespace DLCS.Repository.Assets
         {
             throw new System.NotImplementedException();
         }
+
+        public Task Put(Asset putAsset)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

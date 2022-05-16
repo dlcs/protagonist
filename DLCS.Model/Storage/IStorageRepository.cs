@@ -25,5 +25,6 @@ namespace DLCS.Model.Storage
             CancellationToken cancellationToken);
 
         public Task<CustomerStorageSummary> GetCustomerStorageSummary(int customerId);
+        public Task<ImageCountStorageMetric> GetImageCounts(int putAssetCustomer);
     }
 }

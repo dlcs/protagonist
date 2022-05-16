@@ -26,7 +26,7 @@ namespace DLCS.Repository.Assets
             cacheSettings = cacheOptions.Value;
         }
         
-        public async Task<ThumbnailPolicy> GetThumbnailPolicy(string thumbnailPolicyId)
+        public async Task<ThumbnailPolicy?> GetThumbnailPolicy(string thumbnailPolicyId)
         {
             var thumbnailPolicies = await GetThumbnailPolicies();
             return thumbnailPolicies.SingleOrDefault(p => p.Id == thumbnailPolicyId);

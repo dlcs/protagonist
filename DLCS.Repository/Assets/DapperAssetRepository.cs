@@ -70,6 +70,13 @@ namespace DLCS.Repository.Assets
             return result;
         }
 
+        public Task Put(Asset putAsset)
+        {
+            // putAsset has not been obtained from a DB context.
+            // TODO: what does this have in common with Patch?
+            throw new NotImplementedException();
+        }
+
         private async Task<Asset> GetAssetInternal(string id)
         {
             var key = $"asset:{id}";
