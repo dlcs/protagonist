@@ -34,11 +34,6 @@
         public class Constants
         {
             /// <summary>
-            /// Key of the json file that contains available sizes.
-            /// </summary>
-            public const string SizesJsonKey = "s.json";
-
-            /// <summary>
             /// S3 slug where open thumbnails are stored.
             /// </summary>
             public const string OpenSlug = "open";

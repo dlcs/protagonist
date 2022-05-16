@@ -1,11 +1,20 @@
 ﻿using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using thumbConsts =  DLCS.Repository.Settings.ThumbsSettings.Constants;
 
-namespace DLCS.Repository.Storage
+namespace DLCS.AWS.S3
 {
     public static class StorageKeyGenerator
     {
+        /// <summary>
+        /// Key of the json file that contains available sizes
+        /// </summary>
+        public const string SizesJsonKey = "s.json";
+        
+        /// <summary>
+        /// Key of the largest pre-generated thumbnail
+        /// </summary>
+        public const string LargestThumbKey = "low.jpg";
+        
         /// <summary>
         /// Get the storage key for specified space/customer/key
         /// </summary>
@@ -33,9 +42,17 @@ namespace DLCS.Repository.Storage
             => GetStorageKey(asset.Customer, asset.Space, asset.GetUniqueName());
         
         /// <summary>
-        /// Get path for s.json file. ({key}/s.json) 
+        /// Get path for s.json file. ({assetKey}/s.json) 
         /// </summary>
-        public static string GetSizesJsonPath(string key)
-            => string.Concat(key, thumbConsts.SizesJsonKey);
+        public static string GetSizesJsonPath(string assetKey)
+            => string.Concat(assetKey, SizesJsonKey);
+
+        /// <summary>
+        /// Get path for low.jpg file. ({assetKey}/low.jpg) 
+        /// </summary>
+        public static string GetLargestThumbPath(string assetKey)
+            => assetKey[^1] == '/'
+                ? string.Concat(assetKey, LargestThumbKey)
+                : string.Concat(assetKey, "/", LargestThumbKey);
     }
 }

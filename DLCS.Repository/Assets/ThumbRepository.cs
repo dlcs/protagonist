@@ -7,7 +7,6 @@ using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository.Settings;
-using DLCS.Repository.Storage;
 using IIIF.ImageApi;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

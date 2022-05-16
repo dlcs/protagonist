@@ -24,7 +24,7 @@ namespace DLCS.AWS.S3.Models
         /// </summary>
         public ObjectInBucket? ObjectInBucket { get; }
 
-        public ObjectFromBucket(ObjectInBucket objectInBucket, Stream? stream, ObjectInBucketHeaders headers)
+        public ObjectFromBucket(ObjectInBucket objectInBucket, Stream? stream, ObjectInBucketHeaders? headers)
         {
             ObjectInBucket = objectInBucket.ThrowIfNull(nameof(objectInBucket));
             Stream = stream ?? Stream.Null;
@@ -34,12 +34,12 @@ namespace DLCS.AWS.S3.Models
 
     public class ObjectInBucketHeaders
     {
-        public string CacheControl { get; set; }
-        public string ContentDisposition { get; set; }
-        public string ContentEncoding { get; set; }
+        public string? CacheControl { get; set; }
+        public string? ContentDisposition { get; set; }
+        public string? ContentEncoding { get; set; }
         public long? ContentLength { get; set; }
-        public string ContentMD5 { get; set; }
-        public string ContentType { get; set; }
+        public string? ContentMD5 { get; set; }
+        public string? ContentType { get; set; }
         public DateTime? ExpiresUtc { get; set; }
     }
 }

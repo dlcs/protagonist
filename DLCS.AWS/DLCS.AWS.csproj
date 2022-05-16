@@ -8,12 +8,17 @@
 
     <ItemGroup>
       <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
+      <ProjectReference Include="..\DLCS.Model\DLCS.Model.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="AWSSDK.S3" Version="3.7.9.2" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Settings" />
     </ItemGroup>
 
 </Project>

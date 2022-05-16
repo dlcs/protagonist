@@ -7,7 +7,6 @@ using DLCS.AWS.S3.Models;
 using DLCS.Core.Collections;
 using DLCS.Core.Threading;
 using DLCS.Model.Assets;
-using DLCS.Repository.Storage;
 using IIIF;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -105,7 +104,7 @@ namespace DLCS.Repository.Assets
         }
 
         private static bool HasCurrentLayout(ObjectInBucket rootKey, string[] keysInTargetBucket) =>
-            keysInTargetBucket.Contains($"{rootKey.Key}{thumbConsts.SizesJsonKey}");
+            keysInTargetBucket.Contains(StorageKeyGenerator.GetSizesJsonPath(rootKey.Key ?? string.Empty));
 
         private static Size GetMaxAvailableThumb(Asset asset, ThumbnailPolicy policy)
         {
@@ -137,7 +136,7 @@ namespace DLCS.Repository.Assets
             var largestSize = boundingSquares[0];
             var largestSlug = thumbnailSizes.Auth.IsNullOrEmpty() ? thumbConsts.OpenSlug : thumbConsts.AuthorisedSlug;
             copyTasks.Add(bucketWriter.CopyWithinBucket(rootKey.Bucket,
-                $"{rootKey.Key}low.jpg",
+                StorageKeyGenerator.GetLargestThumbPath(rootKey.Key!),
                 $"{rootKey.Key}{largestSlug}/{largestSize}.jpg"));
 
             copyTasks.AddRange(ProcessThumbBatch(rootKey, thumbnailSizes.Auth, thumbConsts.AuthorisedSlug, largestSize,

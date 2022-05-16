@@ -58,7 +58,7 @@ namespace DLCS.AWS.S3
                 CacheControl = headersCollection.CacheControl,
                 ContentDisposition = headersCollection.ContentDisposition,
                 ContentEncoding = headersCollection.ContentEncoding,
-                ContentLength = headersCollection.ContentLength == -1L ? (long?) null : headersCollection.ContentLength,
+                ContentLength = headersCollection.ContentLength == -1L ? null : headersCollection.ContentLength,
                 ContentMD5 = headersCollection.ContentMD5,
                 ContentType = headersCollection.ContentType,
                 ExpiresUtc = headersCollection.ExpiresUtc

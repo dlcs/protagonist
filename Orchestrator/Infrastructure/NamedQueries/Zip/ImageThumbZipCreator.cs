@@ -9,7 +9,6 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Repository.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.NamedQueries.Persistence;
@@ -101,7 +100,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
             }
 
             var largestThumb = new ObjectInBucket(NamedQuerySettings.ThumbsBucket,
-                $"{image.GetStorageKey()}/low.jpg");
+                StorageKeyGenerator.GetLargestThumbPath(image.GetStorageKey()));
             var largestThumbStream = await BucketReader.GetObjectContentFromBucket(largestThumb);
             if (largestThumbStream == null || largestThumbStream == Stream.Null)
             {

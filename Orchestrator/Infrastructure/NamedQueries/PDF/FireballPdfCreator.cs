@@ -10,7 +10,6 @@ using DLCS.AWS.S3;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Repository.Storage;
 using DLCS.Web.Response;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -100,8 +99,9 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
                 }
                 else
                 {
+                    var lowJpg = StorageKeyGenerator.GetLargestThumbPath(i.GetStorageKey());
                     playbook.Pages.Add(
-                        FireballPage.Image($"s3://{NamedQuerySettings.ThumbsBucket}/{i.GetStorageKey()}/low.jpg"));
+                        FireballPage.Image($"s3://{NamedQuerySettings.ThumbsBucket}/{lowJpg}"));
                 }
             }
 
