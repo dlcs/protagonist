@@ -33,7 +33,7 @@ namespace Portal.Features.Images.Requests
     public class IngestImageFromFileHandler : IRequestHandler<IngestSingleImage, Image?>
     {
         private readonly ClaimsPrincipal claimsPrincipal;
-        private readonly IBucketReader bucketReader;
+        private readonly IBucketWriter bucketWriter;
         private readonly DlcsSettings settings;
         private readonly IDlcsClient dlcsClient;
         private readonly ILogger<IngestImageFromFileHandler> logger;
@@ -41,14 +41,14 @@ namespace Portal.Features.Images.Requests
 
         public IngestImageFromFileHandler(
             ClaimsPrincipal claimsPrincipal,
-            IBucketReader bucketReader,
+            IBucketWriter bucketWriter,
             IOptions<DlcsSettings> settings,
             IDlcsClient dlcsClient,
             ILogger<IngestImageFromFileHandler> logger,
             ISpaceRepository spaceRepository)
         {
             this.claimsPrincipal = claimsPrincipal;
-            this.bucketReader = bucketReader;
+            this.bucketWriter = bucketWriter;
             this.settings = settings.Value;
             this.dlcsClient = dlcsClient;
             this.logger = logger;
@@ -59,7 +59,7 @@ namespace Portal.Features.Images.Requests
         {
             // Save to S3
             var objectInBucket = GetObjectInBucket(request);
-            var bucketSuccess = await bucketReader.WriteToBucket(objectInBucket, request.File, request.MediaType);
+            var bucketSuccess = await bucketWriter.WriteToBucket(objectInBucket, request.File, request.MediaType);
             
             if (!bucketSuccess)
             {

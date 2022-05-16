@@ -52,18 +52,18 @@ namespace API.Features.Image.Requests
     /// </summary>
     public class IngestImageFromFileHandler : IRequestHandler<IngestImageFromFile, ResultStatus<DelegatedIngestResponse>>
     {
-        private readonly IBucketReader bucketReader;
+        private readonly IBucketWriter bucketWriter;
         private readonly IHttpClientFactory clientFactory;
         private readonly ILogger<IngestImageFromFileHandler> logger;
         private readonly ApiSettings settings;
 
         public IngestImageFromFileHandler(
-            IBucketReader bucketReader, 
+            IBucketWriter bucketWriter, 
             IOptions<ApiSettings> settings,
             IHttpClientFactory clientFactory,
             ILogger<IngestImageFromFileHandler> logger)
         {
-            this.bucketReader = bucketReader;
+            this.bucketWriter = bucketWriter;
             this.clientFactory = clientFactory;
             this.logger = logger;
             this.settings = settings.Value;
@@ -75,7 +75,7 @@ namespace API.Features.Image.Requests
         {
             // Save to S3
             var objectInBucket = GetObjectInBucket(request);
-            var bucketSuccess = await bucketReader.WriteToBucket(objectInBucket, request.File, request.Body.MediaType);
+            var bucketSuccess = await bucketWriter.WriteToBucket(objectInBucket, request.File, request.Body.MediaType);
 
             if (!bucketSuccess)
             {

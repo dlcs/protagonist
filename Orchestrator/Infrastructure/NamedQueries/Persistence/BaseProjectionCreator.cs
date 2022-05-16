@@ -18,15 +18,18 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         where T : StoredParsedNamedQuery
     {
         protected readonly IBucketReader BucketReader;
+        protected readonly IBucketWriter BucketWriter;
         protected readonly ILogger Logger;
         protected readonly NamedQuerySettings NamedQuerySettings;
 
         public BaseProjectionCreator(
             IBucketReader bucketReader,
+            IBucketWriter bucketWriter,
             IOptions<NamedQuerySettings> namedQuerySettings,
             ILogger logger)
         {
             BucketReader = bucketReader;
+            BucketWriter = bucketWriter;
             Logger = logger;
             NamedQuerySettings = namedQuerySettings.Value;
         }
@@ -77,7 +80,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         }
 
         private Task UpdateControlFile(string controlFileKey, ControlFile? controlFile) =>
-            BucketReader.WriteToBucket(new ObjectInBucket(NamedQuerySettings.OutputBucket, controlFileKey),
+            BucketWriter.WriteToBucket(new ObjectInBucket(NamedQuerySettings.OutputBucket, controlFileKey),
                 JsonConvert.SerializeObject(controlFile), "application/json");
 
         protected abstract Task<CreateProjectionResult> CreateFile(T parsedNamedQuery, List<Asset> assets,

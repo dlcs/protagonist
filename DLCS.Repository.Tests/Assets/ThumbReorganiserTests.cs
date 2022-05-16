@@ -15,18 +15,20 @@ namespace DLCS.Repository.Tests.Assets
     public class ThumbReorganiserTests
     {
         private readonly IBucketReader bucketReader;
-        private readonly ILogger<ThumbRepository> logger;
+        private readonly ILogger<ThumbReorganiser> logger;
         private readonly IAssetRepository assetRepository;
         private readonly IThumbnailPolicyRepository thumbPolicyRepository;
         private readonly ThumbReorganiser sut;
+        private readonly IBucketWriter bucketWriter;
 
         public ThumbReorganiserTests()
         {
             bucketReader = A.Fake<IBucketReader>();
-            logger = A.Fake<ILogger<ThumbRepository>>();
+            bucketWriter = A.Fake<IBucketWriter>();
+            logger = A.Fake<ILogger<ThumbReorganiser>>();
             assetRepository = A.Fake<IAssetRepository>();
             thumbPolicyRepository = A.Fake<IThumbnailPolicyRepository>();
-            sut = new ThumbReorganiser(bucketReader, logger, assetRepository, thumbPolicyRepository);
+            sut = new ThumbReorganiser(bucketReader, bucketWriter, logger, assetRepository, thumbPolicyRepository);
         }
 
         [Fact]
@@ -72,17 +74,17 @@ namespace DLCS.Repository.Tests.Assets
             
             // move jpg per thumbnail size
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket", 
+                    bucketWriter.CopyWithinBucket("the-bucket", 
                         "2/1/the-astronaut/low.jpg",
                         "2/1/the-astronaut/open/400.jpg"))
                 .MustHaveHappened();
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket",
+                    bucketWriter.CopyWithinBucket("the-bucket",
                         "2/1/the-astronaut/full/100,200/0/default.jpg",
                         "2/1/the-astronaut/open/200.jpg"))
                 .MustHaveHappened();
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket", 
+                    bucketWriter.CopyWithinBucket("the-bucket", 
                         "2/1/the-astronaut/full/50,100/0/default.jpg",
                         "2/1/the-astronaut/open/100.jpg"))
                 .MustHaveHappened();
@@ -90,7 +92,7 @@ namespace DLCS.Repository.Tests.Assets
             // create sizes.json
             const string expected = "{\"o\":[[200,400],[100,200],[50,100]],\"a\":[]}";
             A.CallTo(() =>
-                    bucketReader.WriteToBucket(
+                    bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
                         "application/json"))
@@ -123,17 +125,17 @@ namespace DLCS.Repository.Tests.Assets
 
             // move jpg per thumbnail size
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket", 
+                    bucketWriter.CopyWithinBucket("the-bucket", 
                         "2/1/the-astronaut/low.jpg",
                         "2/1/the-astronaut/auth/400.jpg"))
                 .MustHaveHappened();
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket",
+                    bucketWriter.CopyWithinBucket("the-bucket",
                         "2/1/the-astronaut/full/100,200/0/default.jpg",
                         "2/1/the-astronaut/auth/200.jpg"))
                 .MustHaveHappened();
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket", 
+                    bucketWriter.CopyWithinBucket("the-bucket", 
                         "2/1/the-astronaut/full/50,100/0/default.jpg",
                         "2/1/the-astronaut/auth/100.jpg"))
                 .MustHaveHappened();
@@ -141,7 +143,7 @@ namespace DLCS.Repository.Tests.Assets
             // create sizes.json
             const string expected = "{\"o\":[],\"a\":[[200,400],[100,200],[50,100]]}";
             A.CallTo(() =>
-                    bucketReader.WriteToBucket(
+                    bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
                         "application/json"))
@@ -176,22 +178,22 @@ namespace DLCS.Repository.Tests.Assets
 
             // move jpg per thumbnail size
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket",
+                    bucketWriter.CopyWithinBucket("the-bucket",
                         "2/1/the-astronaut/low.jpg",
                         "2/1/the-astronaut/auth/1024.jpg"))
                 .MustHaveHappened();
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket", 
+                    bucketWriter.CopyWithinBucket("the-bucket", 
                         "2/1/the-astronaut/full/200,400/0/default.jpg",
                         "2/1/the-astronaut/auth/400.jpg"))
                 .MustHaveHappened();
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket",
+                    bucketWriter.CopyWithinBucket("the-bucket",
                         "2/1/the-astronaut/full/100,200/0/default.jpg",
                         "2/1/the-astronaut/open/200.jpg"))
                 .MustHaveHappened();
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket", 
+                    bucketWriter.CopyWithinBucket("the-bucket", 
                         "2/1/the-astronaut/full/50,100/0/default.jpg",
                         "2/1/the-astronaut/open/100.jpg"))
                 .MustHaveHappened();
@@ -199,7 +201,7 @@ namespace DLCS.Repository.Tests.Assets
             // create sizes.json
             const string expected = "{\"o\":[[100,200],[50,100]],\"a\":[[512,1024],[200,400]]}";
             A.CallTo(() =>
-                    bucketReader.WriteToBucket(
+                    bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
                         "application/json"))
@@ -232,23 +234,23 @@ namespace DLCS.Repository.Tests.Assets
 
             // move jpg per thumbnail size
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket",
+                    bucketWriter.CopyWithinBucket("the-bucket",
                         "2/1/the-astronaut/low.jpg",
                         "2/1/the-astronaut/auth/1024.jpg"))
                 .MustHaveHappened();
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket", 
+                    bucketWriter.CopyWithinBucket("the-bucket", 
                         "2/1/the-astronaut/full/201,400/0/default.jpg",
                         "2/1/the-astronaut/auth/400.jpg"))
                 .MustHaveHappened();
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket",
+                    bucketWriter.CopyWithinBucket("the-bucket",
                         "2/1/the-astronaut/full/99,200/0/default.jpg",
                         "2/1/the-astronaut/open/200.jpg"))
                 .MustHaveHappened();
             // this shouldn't happen as matching key not found
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket", 
+                    bucketWriter.CopyWithinBucket("the-bucket", 
                         "2/1/the-astronaut/full/50,100/0/default.jpg",
                         "2/1/the-astronaut/open/100.jpg"))
                 .MustNotHaveHappened();
@@ -256,7 +258,7 @@ namespace DLCS.Repository.Tests.Assets
             // create sizes.json
             const string expected = "{\"o\":[[100,200],[50,100]],\"a\":[[512,1024],[200,400]]}";
             A.CallTo(() =>
-                    bucketReader.WriteToBucket(
+                    bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
                         "application/json"))
@@ -289,23 +291,23 @@ namespace DLCS.Repository.Tests.Assets
             
             // move jpg per thumbnail size
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket",
+                    bucketWriter.CopyWithinBucket("the-bucket",
                         "2/1/the-astronaut/low.jpg",
                         "2/1/the-astronaut/auth/1024.jpg"))
                 .MustHaveHappened();
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket", 
+                    bucketWriter.CopyWithinBucket("the-bucket", 
                         "2/1/the-astronaut/full/400,201/0/default.jpg",
                         "2/1/the-astronaut/auth/400.jpg"))
                 .MustHaveHappened();
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket",
+                    bucketWriter.CopyWithinBucket("the-bucket",
                         "2/1/the-astronaut/full/200,99/0/default.jpg",
                         "2/1/the-astronaut/open/200.jpg"))
                 .MustHaveHappened();
             // this shouldn't happen as matching key not found
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket", 
+                    bucketWriter.CopyWithinBucket("the-bucket", 
                         "2/1/the-astronaut/full/50,100/0/default.jpg",
                         "2/1/the-astronaut/open/100.jpg"))
                 .MustNotHaveHappened();
@@ -313,7 +315,7 @@ namespace DLCS.Repository.Tests.Assets
             // create sizes.json
             const string expected = "{\"o\":[[100,200],[50,100]],\"a\":[[512,1024],[200,400]]}";
             A.CallTo(() =>
-                    bucketReader.WriteToBucket(
+                    bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
                         "application/json"))
@@ -346,7 +348,7 @@ namespace DLCS.Repository.Tests.Assets
                 "the-bucket:::2/1/the-astronaut/100.jpg", "the-bucket:::2/1/the-astronaut/sizes.json"
             };
 
-            A.CallTo(() => bucketReader.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(a =>
+            A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(a =>
                 expectedDeletions.Contains(a[0].ToString()) && expectedDeletions.Contains(a[1].ToString())
             ))).MustHaveHappened();
         }
@@ -366,10 +368,10 @@ namespace DLCS.Repository.Tests.Assets
                 .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
             
             // Once called, add sizes.json to return list of bucket contents
-            A.CallTo(() => bucketReader.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._))
+            A.CallTo(() => bucketWriter.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._))
                 .Invokes(() => fakeBucketContents.Add("2/1/the-astronaut/s.json"));
 
-            A.CallTo(() => bucketReader.CopyWithinBucket(A<string>._, A<string>._, A<string>._))
+            A.CallTo(() => bucketWriter.CopyWithinBucket(A<string>._, A<string>._, A<string>._))
                 .Invokes(async () => await Task.Delay(500));
 
             var ensure1 = Task.Factory.StartNew(() => sut.EnsureNewLayout(rootKey));
@@ -401,11 +403,11 @@ namespace DLCS.Repository.Tests.Assets
                 .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
             
             // Once called, add sizes.json to return list of bucket contents
-            A.CallTo(() => bucketReader.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._))
+            A.CallTo(() => bucketWriter.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._))
                 .Invokes((ObjectInBucket dest, string content, string contentType) =>
                     fakeBucketContents.Add(dest.Key + "sizes.json"));
 
-            A.CallTo(() => bucketReader.CopyWithinBucket(A<string>._, A<string>._, A<string>._))
+            A.CallTo(() => bucketWriter.CopyWithinBucket(A<string>._, A<string>._, A<string>._))
                 .Invokes(async () => await Task.Delay(500));
 
             var ensure1 = Task.Factory.StartNew(() => sut.EnsureNewLayout(key1));
@@ -465,12 +467,12 @@ namespace DLCS.Repository.Tests.Assets
             
             // move jpg per thumbnail size
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket", 
+                    bucketWriter.CopyWithinBucket("the-bucket", 
                         "2/1/the-astronaut/low.jpg",
                         "2/1/the-astronaut/open/1024.jpg"))
                 .MustHaveHappened();
             A.CallTo(() =>
-                    bucketReader.CopyWithinBucket("the-bucket",
+                    bucketWriter.CopyWithinBucket("the-bucket",
                         "2/1/the-astronaut/full/216,400/0/default.jpg",
                         "2/1/the-astronaut/open/400.jpg"))
                 .MustHaveHappened(1, Times.Exactly);
@@ -478,7 +480,7 @@ namespace DLCS.Repository.Tests.Assets
             // create sizes.json
             const string expected = "{\"o\":[[552,1024],[216,400]],\"a\":[]}";
             A.CallTo(() =>
-                    bucketReader.WriteToBucket(
+                    bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
                         "application/json"))

@@ -79,7 +79,8 @@ namespace Portal
                 .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
                 .AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditBehaviour<,>))
                 .AddAWSService<IAmazonS3>()
-                .AddSingleton<IBucketReader, BucketReader>()
+                .AddSingleton<IBucketReader, S3BucketReader>()
+                .AddSingleton<IBucketWriter, S3BucketWriter>()
                 .AddTransient<ISpaceRepository, SpaceRepository>();
 
             services.AddDbContext<DlcsContext>(opts =>

@@ -34,10 +34,11 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
 
         public FireballPdfCreator(
             IBucketReader bucketReader,
+            IBucketWriter bucketWriter,
             IOptions<NamedQuerySettings> namedQuerySettings,
             ILogger<FireballPdfCreator> logger,
             HttpClient fireballClient
-        ) : base(bucketReader, namedQuerySettings, logger)
+        ) : base(bucketReader, bucketWriter, namedQuerySettings, logger)
         {
             this.fireballClient = fireballClient;
             jsonSerializerSettings = new JsonSerializerSettings

@@ -40,7 +40,8 @@ namespace Thumbs
             services.AddLazyCache();
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
             services.AddAWSService<IAmazonS3>();
-            services.AddSingleton<IBucketReader, BucketReader>();
+            services.AddSingleton<IBucketReader, S3BucketReader>();
+            services.AddSingleton<IBucketWriter, S3BucketWriter>();
             services.AddSingleton<AssetDeliveryPathParser>();
             services.AddSingleton<ICustomerRepository, DapperCustomerRepository>();
             services.AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>();

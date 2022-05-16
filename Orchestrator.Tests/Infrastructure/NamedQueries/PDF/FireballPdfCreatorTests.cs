@@ -27,6 +27,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
         private readonly ControllableHttpMessageHandler httpHandler;
         private readonly FireballPdfCreator sut;
         private readonly CustomerPathElement customer = new(99, "Test-Customer");
+        private readonly IBucketWriter bucketWriter;
 
         public FireballPdfCreatorTests()
         {
@@ -37,6 +38,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             });
         
             bucketReader = A.Fake<IBucketReader>();
+            bucketWriter = A.Fake<IBucketWriter>();
             
             httpHandler = new ControllableHttpMessageHandler();
             var httpClient = new HttpClient(httpHandler)
@@ -44,8 +46,8 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
                 BaseAddress = new Uri("https://fireball")
             };
 
-            sut = new FireballPdfCreator(bucketReader, namedQuerySettings, new NullLogger<FireballPdfCreator>(),
-                httpClient);
+            sut = new FireballPdfCreator(bucketReader, bucketWriter, namedQuerySettings,
+                new NullLogger<FireballPdfCreator>(), httpClient);
         }
 
         [Fact]
@@ -59,7 +61,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             };
             var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
 
-            A.CallTo(() => bucketReader
+            A.CallTo(() => bucketWriter
                     .WriteToBucket(
                         A<ObjectInBucket>.That.Matches(b => b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
                         A<string>._, A<string>._))
@@ -70,7 +72,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             
             // Assert
             response.Should().BeFalse();
-            A.CallTo(() => bucketReader
+            A.CallTo(() => bucketWriter
                     .WriteToBucket(
                         A<ObjectInBucket>.That.Matches(b => b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
                         A<string>._, A<string>._))
@@ -142,7 +144,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             // Assert
             response.Should().BeTrue();
             httpHandler.CallsMade.Should().Contain("https://fireball/pdf");
-            A.CallTo(() => bucketReader
+            A.CallTo(() => bucketWriter
                     .WriteToBucket(
                         A<ObjectInBucket>.That.Matches(b =>
                             b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),

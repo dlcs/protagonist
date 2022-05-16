@@ -65,7 +65,8 @@ namespace API
                     opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
                 )
                 .AddAWSService<IAmazonS3>()
-                .AddSingleton<IBucketReader, BucketReader>();
+                .AddSingleton<IBucketReader, S3BucketReader>()
+                .AddSingleton<IBucketWriter, S3BucketWriter>();
 
             services.AddDlcsDelegatedBasicAuth(options =>
                 {

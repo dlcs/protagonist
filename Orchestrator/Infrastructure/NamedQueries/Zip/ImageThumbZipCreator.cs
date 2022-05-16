@@ -23,9 +23,9 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
     /// </summary>
     public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
     {
-        public ImageThumbZipCreator(IBucketReader bucketReader, IOptions<NamedQuerySettings> namedQuerySettings,
-            ILogger<ImageThumbZipCreator> logger) :
-            base(bucketReader, namedQuerySettings, logger)
+        public ImageThumbZipCreator(IBucketReader bucketReader, IBucketWriter bucketWriter, 
+            IOptions<NamedQuerySettings> namedQuerySettings, ILogger<ImageThumbZipCreator> logger) :
+            base(bucketReader, bucketWriter, namedQuerySettings, logger)
         {
         }
 
@@ -59,7 +59,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
         {
             Logger.LogInformation("Uploading new zip archive to {S3Key}", parsedNamedQuery.StorageKey);
             var objectInBucket = new ObjectInBucket(NamedQuerySettings.OutputBucket, parsedNamedQuery.StorageKey);
-            var success = await BucketReader.WriteFileToBucket(objectInBucket, zipFilePath, "application/zip");
+            var success = await BucketWriter.WriteFileToBucket(objectInBucket, zipFilePath, "application/zip");
             var fileInfo = new FileInfo(zipFilePath);
 
             return new CreateProjectionResult

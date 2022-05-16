@@ -22,6 +22,7 @@ namespace DLCS.Repository.Assets
             new(@".*\/full\/(\d+,\d+)\/.*", RegexOptions.Compiled);
 
         private readonly IBucketReader bucketReader;
+        private readonly IBucketWriter bucketWriter;
         private readonly ILogger<ThumbReorganiser> logger;
         private readonly IAssetRepository assetRepository;
         private readonly IThumbnailPolicyRepository thumbnailPolicyRepository;
@@ -30,11 +31,13 @@ namespace DLCS.Repository.Assets
 
         public ThumbReorganiser(
             IBucketReader bucketReader,
+            IBucketWriter bucketWriter,
             ILogger<ThumbReorganiser> logger,
             IAssetRepository assetRepository,
             IThumbnailPolicyRepository thumbnailPolicyRepository)
         {
             this.bucketReader = bucketReader;
+            this.bucketWriter = bucketWriter;
             this.logger = logger;
             this.assetRepository = assetRepository;
             this.thumbnailPolicyRepository = thumbnailPolicyRepository;
@@ -133,7 +136,7 @@ namespace DLCS.Repository.Assets
             // low.jpg becomes the first in this list
             var largestSize = boundingSquares[0];
             var largestSlug = thumbnailSizes.Auth.IsNullOrEmpty() ? thumbConsts.OpenSlug : thumbConsts.AuthorisedSlug;
-            copyTasks.Add(bucketReader.CopyWithinBucket(rootKey.Bucket,
+            copyTasks.Add(bucketWriter.CopyWithinBucket(rootKey.Bucket,
                 $"{rootKey.Key}low.jpg",
                 $"{rootKey.Key}{largestSlug}/{largestSize}.jpg"));
 
@@ -179,7 +182,7 @@ namespace DLCS.Repository.Assets
                     continue;
                 }
 
-                yield return bucketReader.CopyWithinBucket(rootKey.Bucket,
+                yield return bucketWriter.CopyWithinBucket(rootKey.Bucket,
                     $"{rootKey.Key}full/{toCopy.Width},{toCopy.Height}/0/default.jpg",
                     $"{rootKey.Key}{slug}/{maxDimension}.jpg");
             }
@@ -188,7 +191,7 @@ namespace DLCS.Repository.Assets
         private async Task CreateSizesJson(ObjectInBucket rootKey, ThumbnailSizes thumbnailSizes)
         {
             var sizesDest = rootKey.CloneWithKey(StorageKeyGenerator.GetSizesJsonPath(rootKey.Key));
-            await bucketReader.WriteToBucket(sizesDest, JsonConvert.SerializeObject(thumbnailSizes),
+            await bucketWriter.WriteToBucket(sizesDest, JsonConvert.SerializeObject(thumbnailSizes),
                 "application/json");
         }
 
@@ -215,7 +218,7 @@ namespace DLCS.Repository.Assets
 
             if (toDelete.Count > 0)
             {
-                await bucketReader.DeleteFromBucket(toDelete.ToArray());
+                await bucketWriter.DeleteFromBucket(toDelete.ToArray());
             }
         }
     }
