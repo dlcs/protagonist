@@ -20,20 +20,20 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         protected readonly IBucketWriter BucketWriter;
         protected readonly ILogger Logger;
         protected readonly NamedQuerySettings NamedQuerySettings;
-        protected readonly IBucketKeyGenerator BucketKeyGenerator;
+        protected readonly IStorageKeyGenerator StorageKeyGenerator;
 
         public BaseProjectionCreator(
             IBucketReader bucketReader,
             IBucketWriter bucketWriter,
             IOptions<NamedQuerySettings> namedQuerySettings,
-            IBucketKeyGenerator bucketKeyGenerator,
+            IStorageKeyGenerator storageKeyGenerator,
             ILogger logger)
         {
             BucketReader = bucketReader;
             BucketWriter = bucketWriter;
             Logger = logger;
             NamedQuerySettings = namedQuerySettings.Value;
-            BucketKeyGenerator = bucketKeyGenerator;
+            StorageKeyGenerator = storageKeyGenerator;
         }
         
         public async Task<bool> PersistProjection(T parsedNamedQuery, List<Asset> images,
@@ -82,7 +82,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         }
 
         private Task UpdateControlFile(string controlFileKey, ControlFile? controlFile) =>
-            BucketWriter.WriteToBucket(BucketKeyGenerator.GetOutputLocation(controlFileKey),
+            BucketWriter.WriteToBucket(StorageKeyGenerator.GetOutputLocation(controlFileKey),
                 JsonConvert.SerializeObject(controlFile), "application/json");
 
         protected abstract Task<CreateProjectionResult> CreateFile(T parsedNamedQuery, List<Asset> assets,

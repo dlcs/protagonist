@@ -24,7 +24,7 @@ namespace DLCS.Repository.Assets
         private readonly ILogger<ThumbReorganiser> logger;
         private readonly IAssetRepository assetRepository;
         private readonly IThumbnailPolicyRepository thumbnailPolicyRepository;
-        private readonly IBucketKeyGenerator bucketKeyGenerator;
+        private readonly IStorageKeyGenerator storageKeyGenerator;
         private readonly AsyncKeyedLock asyncLocker = new();
         private static readonly Regex BoundedThumbRegex = new("^[0-9]+.jpg$");
 
@@ -34,14 +34,14 @@ namespace DLCS.Repository.Assets
             ILogger<ThumbReorganiser> logger,
             IAssetRepository assetRepository,
             IThumbnailPolicyRepository thumbnailPolicyRepository,
-            IBucketKeyGenerator bucketKeyGenerator)
+            IStorageKeyGenerator storageKeyGenerator)
         {
             this.bucketReader = bucketReader;
             this.bucketWriter = bucketWriter;
             this.logger = logger;
             this.assetRepository = assetRepository;
             this.thumbnailPolicyRepository = thumbnailPolicyRepository;
-            this.bucketKeyGenerator = bucketKeyGenerator;
+            this.storageKeyGenerator = storageKeyGenerator;
         }
         
         public async Task<ReorganiseResult> EnsureNewLayout(AssetId assetId)
@@ -49,7 +49,7 @@ namespace DLCS.Repository.Assets
             // Create lock on assetId unique value (bucket + target key)
             using var processLock = await asyncLocker.LockAsync(assetId.ToString());
             
-            var rootKey = bucketKeyGenerator.GetThumbnailsRoot(assetId);
+            var rootKey = storageKeyGenerator.GetThumbnailsRoot(assetId);
             var keysInTargetBucket = await bucketReader.GetMatchingKeys(rootKey);
             if (HasCurrentLayout(assetId, keysInTargetBucket))
             {
@@ -108,7 +108,7 @@ namespace DLCS.Repository.Assets
 
         private bool HasCurrentLayout(AssetId assetId, string[] keysInTargetBucket)
         {
-            var thumbsSizesJsonKey = bucketKeyGenerator.GetThumbsSizesJsonLocation(assetId);
+            var thumbsSizesJsonKey = storageKeyGenerator.GetThumbsSizesJsonLocation(assetId);
             return keysInTargetBucket.Contains(thumbsSizesJsonKey.Key);
         }
 
@@ -143,8 +143,8 @@ namespace DLCS.Repository.Assets
             var largestIsOpen = thumbnailSizes.Auth.IsNullOrEmpty();
 
             copyTasks.Add(bucketWriter.CopyObject(
-                bucketKeyGenerator.GetLargestThumbnailLocation(assetId),
-                bucketKeyGenerator.GetThumbnailLocation(assetId, largestSize, largestIsOpen)));
+                storageKeyGenerator.GetLargestThumbnailLocation(assetId),
+                storageKeyGenerator.GetThumbnailLocation(assetId, largestSize, largestIsOpen)));
 
             copyTasks.AddRange(ProcessThumbBatch(assetId, false, thumbnailSizes.Auth, largestSize, existingSizes));
             copyTasks.AddRange(ProcessThumbBatch(assetId, true, thumbnailSizes.Open, largestSize, existingSizes));
@@ -187,15 +187,15 @@ namespace DLCS.Repository.Assets
                 }
 
                 yield return bucketWriter.CopyObject(
-                    bucketKeyGenerator.GetLegacyThumbnailLocation(assetId, toCopy.Width, toCopy.Height),
-                    bucketKeyGenerator.GetThumbnailLocation(assetId, maxDimension, isOpen)
+                    storageKeyGenerator.GetLegacyThumbnailLocation(assetId, toCopy.Width, toCopy.Height),
+                    storageKeyGenerator.GetThumbnailLocation(assetId, maxDimension, isOpen)
                 );
             }
         }
 
         private async Task CreateSizesJson(AssetId assetId, ThumbnailSizes thumbnailSizes)
         {
-            var sizesDest = bucketKeyGenerator.GetThumbsSizesJsonLocation(assetId);
+            var sizesDest = storageKeyGenerator.GetThumbsSizesJsonLocation(assetId);
             await bucketWriter.WriteToBucket(sizesDest, JsonConvert.SerializeObject(thumbnailSizes),
                 "application/json");
         }

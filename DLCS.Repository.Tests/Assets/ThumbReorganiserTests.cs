@@ -19,7 +19,7 @@ namespace DLCS.Repository.Tests.Assets
     {
         private readonly IBucketReader bucketReader;
         private readonly IAssetRepository assetRepository;
-        private readonly IBucketKeyGenerator bucketKeyGenerator;
+        private readonly IStorageKeyGenerator storageKeyGenerator;
         private readonly IThumbnailPolicyRepository thumbPolicyRepository;
         private readonly ThumbReorganiser sut;
         private readonly IBucketWriter bucketWriter;
@@ -30,12 +30,12 @@ namespace DLCS.Repository.Tests.Assets
             bucketWriter = A.Fake<IBucketWriter>();
             assetRepository = A.Fake<IAssetRepository>();
             thumbPolicyRepository = A.Fake<IThumbnailPolicyRepository>();
-            bucketKeyGenerator = new S3BucketKeyGenerator(Options.Create(new S3Settings
+            storageKeyGenerator = new S3StorageKeyGenerator(Options.Create(new S3Settings
             {
                 ThumbsBucket = "the-bucket"
             }));
             sut = new ThumbReorganiser(bucketReader, bucketWriter, new NullLogger<ThumbReorganiser>(), assetRepository,
-                thumbPolicyRepository, bucketKeyGenerator);
+                thumbPolicyRepository, storageKeyGenerator);
         }
 
         [Fact]

@@ -37,8 +37,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
             IOptions<NamedQuerySettings> namedQuerySettings,
             ILogger<FireballPdfCreator> logger,
             HttpClient fireballClient,
-            IBucketKeyGenerator bucketKeyGenerator
-        ) : base(bucketReader, bucketWriter, namedQuerySettings, bucketKeyGenerator, logger)
+            IStorageKeyGenerator storageKeyGenerator
+        ) : base(bucketReader, bucketWriter, namedQuerySettings, storageKeyGenerator, logger)
         {
             this.fireballClient = fireballClient;
             jsonSerializerSettings = new JsonSerializerSettings
@@ -78,7 +78,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
         {
             var playbook = new FireballPlaybook
             {
-                Output = BucketKeyGenerator.GetOutputLocation(pdfKey).GetS3Uri(),
+                Output = StorageKeyGenerator.GetOutputLocation(pdfKey).GetS3Uri(),
                 Title = parsedNamedQuery.ObjectName,
                 CustomTypes = new FireballCustomTypes
                 {
@@ -100,7 +100,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
                 }
                 else
                 {
-                    var largestThumb = BucketKeyGenerator.GetLargestThumbnailLocation(i.GetAssetId());
+                    var largestThumb = StorageKeyGenerator.GetLargestThumbnailLocation(i.GetAssetId());
                     playbook.Pages.Add(FireballPage.Image(largestThumb.GetS3Uri()));
                 }
             }

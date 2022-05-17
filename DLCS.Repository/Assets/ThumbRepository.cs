@@ -23,20 +23,20 @@ namespace DLCS.Repository.Assets
         private readonly IBucketReader bucketReader;
         private readonly IOptionsMonitor<ThumbsSettings> settings;
         private readonly IThumbReorganiser thumbReorganiser;
-        private readonly IBucketKeyGenerator bucketKeyGenerator;
+        private readonly IStorageKeyGenerator storageKeyGenerator;
 
         public ThumbRepository(
             ILogger<ThumbRepository> logger,
             IBucketReader bucketReader,
             IOptionsMonitor<ThumbsSettings> settings, 
             IThumbReorganiser thumbReorganiser,
-            IBucketKeyGenerator bucketKeyGenerator)
+            IStorageKeyGenerator storageKeyGenerator)
         {
             this.logger = logger;
             this.bucketReader = bucketReader;
             this.settings = settings;
             this.thumbReorganiser = thumbReorganiser;
-            this.bucketKeyGenerator = bucketKeyGenerator;
+            this.storageKeyGenerator = storageKeyGenerator;
         }
 
         public async Task<ThumbnailResponse> GetThumbnail(AssetId assetId, ImageRequest imageRequest)
@@ -47,7 +47,7 @@ namespace DLCS.Repository.Assets
             
             if (sizeCandidate.KnownSize)
             {
-                var location = bucketKeyGenerator.GetThumbnailLocation(assetId, sizeCandidate.LongestEdge!.Value);
+                var location = storageKeyGenerator.GetThumbnailLocation(assetId, sizeCandidate.LongestEdge!.Value);
                 var objectFromBucket = await bucketReader.GetObjectFromBucket(location);
                 return ThumbnailResponse.ExactSize(objectFromBucket.Stream);
             }
@@ -100,7 +100,7 @@ namespace DLCS.Repository.Assets
                 return null;
             }
 
-            ObjectInBucket sizesList = bucketKeyGenerator.GetThumbsSizesJsonLocation(assetId);
+            ObjectInBucket sizesList = storageKeyGenerator.GetThumbsSizesJsonLocation(assetId);
 
             var thumbnailSizesObject = await bucketReader.GetObjectFromBucket(sizesList);
             var thumbnailSizes = await thumbnailSizesObject.DeserializeFromJson<ThumbnailSizes>();
@@ -141,7 +141,7 @@ namespace DLCS.Repository.Assets
             logger.LogDebug("Resize the {Size} thumbnail for {Path}", toResize.MaxDimension,
                 imageRequest.OriginalPath);
 
-            var largestKey = bucketKeyGenerator.GetThumbnailLocation(assetId, toResize.MaxDimension);
+            var largestKey = storageKeyGenerator.GetThumbnailLocation(assetId, toResize.MaxDimension);
             var thumbnail = (await bucketReader.GetObjectFromBucket(largestKey)).Stream;
             var memStream = new MemoryStream();
             using var image = await Image.LoadAsync(thumbnail);

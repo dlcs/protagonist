@@ -44,7 +44,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             };
 
             var bucketKeyGenerator =
-                new S3BucketKeyGenerator(Options.Create(new S3Settings
+                new S3StorageKeyGenerator(Options.Create(new S3Settings
                 {
                     OutputBucket = "test-pdf-bucket",
                     ThumbsBucket = "test-thumbs-bucket"
