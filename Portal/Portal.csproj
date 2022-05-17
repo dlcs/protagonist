@@ -8,7 +8,6 @@
     <ItemGroup>
       <PackageReference Include="Amazon.Extensions.Configuration.SystemsManager" Version="2.1.0" />
       <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="6.0.3" />
-      <PackageReference Include="AWSSDK.S3" Version="3.7.9.2" />
       <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.150" />
       <PackageReference Include="Destructurama.Attributed" Version="2.0.0" />
       <PackageReference Include="MediatR" Version="10.0.1" />
