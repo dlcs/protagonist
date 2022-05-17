@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.AWS.Settings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
@@ -31,11 +32,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
 
         public FireballPdfCreatorTests()
         {
-            var namedQuerySettings = Options.Create(new NamedQuerySettings
-            {
-                OutputBucket = "test-pdf-bucket",
-                ThumbsBucket = "test-thumbs-bucket"
-            });
+            var namedQuerySettings = Options.Create(new NamedQuerySettings());
         
             bucketReader = A.Fake<IBucketReader>();
             bucketWriter = A.Fake<IBucketWriter>();
@@ -46,8 +43,15 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
                 BaseAddress = new Uri("https://fireball")
             };
 
+            var bucketKeyGenerator =
+                new S3BucketKeyGenerator(Options.Create(new S3Settings
+                {
+                    OutputBucket = "test-pdf-bucket",
+                    ThumbsBucket = "test-thumbs-bucket"
+                }));
+
             sut = new FireballPdfCreator(bucketReader, bucketWriter, namedQuerySettings,
-                new NullLogger<FireballPdfCreator>(), httpClient);
+                new NullLogger<FireballPdfCreator>(), httpClient, bucketKeyGenerator);
         }
 
         [Fact]
@@ -87,7 +91,12 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             {
                 StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
             };
-            var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
+            var images = Builder<Asset>
+                .CreateListOfSize(10)
+                .All()
+                .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
+                .Build()
+                .ToList();
 
             httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadGateway));
             
@@ -107,7 +116,12 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             {
                 StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
             };
-            var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
+            var images = Builder<Asset>
+                .CreateListOfSize(10)
+                .All()
+                .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
+                .Build()
+                .ToList();
 
             var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
             responseMessage.Content =
@@ -131,7 +145,12 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             {
                 StorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
             };
-            var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
+            var images = Builder<Asset>
+                .CreateListOfSize(10)
+                .All()
+                .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
+                .Build()
+                .ToList();
 
             var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
             responseMessage.Content =

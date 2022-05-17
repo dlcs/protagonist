@@ -181,18 +181,6 @@ namespace Orchestrator.Settings
     public class NamedQuerySettings
     {
         /// <summary>
-        /// Name of S3Bucket for storing namedquery PDF output
-        /// </summary>
-        [Obsolete]
-        public string OutputBucket { get; set; }
-
-        /// <summary>
-        /// Name of S3Bucket for storing thumbnails
-        /// </summary>
-        [Obsolete]
-        public string ThumbsBucket { get; set; }
-
-        /// <summary>
         /// String format for generating keys for PDF object storage.
         /// Supported replacements are {customer}/{queryname}/{args}
         /// </summary>

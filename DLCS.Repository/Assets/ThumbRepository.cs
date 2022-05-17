@@ -47,7 +47,7 @@ namespace DLCS.Repository.Assets
             
             if (sizeCandidate.KnownSize)
             {
-                var location = bucketKeyGenerator.GetThumbnailKey(assetId, sizeCandidate.LongestEdge!.Value);
+                var location = bucketKeyGenerator.GetThumbnailLocation(assetId, sizeCandidate.LongestEdge!.Value);
                 var objectFromBucket = await bucketReader.GetObjectFromBucket(location);
                 return ThumbnailResponse.ExactSize(objectFromBucket.Stream);
             }
@@ -100,7 +100,7 @@ namespace DLCS.Repository.Assets
                 return null;
             }
 
-            ObjectInBucket sizesList = bucketKeyGenerator.GetThumbsSizesJsonKey(assetId);
+            ObjectInBucket sizesList = bucketKeyGenerator.GetThumbsSizesJsonLocation(assetId);
 
             var thumbnailSizesObject = await bucketReader.GetObjectFromBucket(sizesList);
             var thumbnailSizes = await thumbnailSizesObject.DeserializeFromJson<ThumbnailSizes>();
@@ -141,7 +141,7 @@ namespace DLCS.Repository.Assets
             logger.LogDebug("Resize the {Size} thumbnail for {Path}", toResize.MaxDimension,
                 imageRequest.OriginalPath);
 
-            var largestKey = bucketKeyGenerator.GetThumbnailKey(assetId, toResize.MaxDimension);
+            var largestKey = bucketKeyGenerator.GetThumbnailLocation(assetId, toResize.MaxDimension);
             var thumbnail = (await bucketReader.GetObjectFromBucket(largestKey)).Stream;
             var memStream = new MemoryStream();
             using var image = await Image.LoadAsync(thumbnail);

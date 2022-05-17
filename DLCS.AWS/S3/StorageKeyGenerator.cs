@@ -92,8 +92,6 @@ namespace DLCS.AWS.S3
         /// </summary>
         public const string AuthorisedSlug = "auth";
 
-        public string GetThumbnailBucket() => s3Options.ThumbsBucket;
-
         /// <summary>
         /// Get the storage key for specified space/customer/key
         /// </summary>
@@ -112,54 +110,57 @@ namespace DLCS.AWS.S3
         public string GetStorageKey(AssetId assetId)
             => GetStorageKey(assetId.Customer, assetId.Space, assetId.Asset);
         
-        public ObjectInBucket GetThumbnailKey(AssetId assetId, int longestEdge, bool open = true)
+        public ObjectInBucket GetThumbnailLocation(AssetId assetId, int longestEdge, bool open = true)
         {
             var accessPrefix = open ? OpenSlug : AuthorisedSlug;
             var key = $"{GetStorageKey(assetId)}/{accessPrefix}/{longestEdge}.jpg";
             return new ObjectInBucket(s3Options.ThumbsBucket, key);
         }
 
-        public ObjectInBucket GetLegacyThumbnailKey(AssetId assetId, int width, int height)
+        public ObjectInBucket GetLegacyThumbnailLocation(AssetId assetId, int width, int height)
         {
             var key = $"{GetStorageKey(assetId)}/full/{width},{height}/0/default.jpg";
             return new ObjectInBucket(s3Options.ThumbsBucket, key);
         }
 
-        public ObjectInBucket GetThumbsSizesJsonKey(AssetId assetId)
+        public ObjectInBucket GetThumbsSizesJsonLocation(AssetId assetId)
         {
             var key = $"{GetStorageKey(assetId)}/{SizesJsonKey}";
             return new ObjectInBucket(s3Options.ThumbsBucket, key);
         }
 
-        public ObjectInBucket GetLargestThumbsKey(AssetId assetId)
+        public ObjectInBucket GetLargestThumbnailLocation(AssetId assetId)
         {
             var key = $"{GetStorageKey(assetId)}/{LargestThumbKey}";
             return new ObjectInBucket(s3Options.ThumbsBucket, key);
         }
 
-        public ObjectInBucket GetThumbsRoot(AssetId assetId)
+        public ObjectInBucket GetThumbnailsRoot(AssetId assetId)
         {
             var key = $"{GetStorageKey(assetId)}/";
             return new ObjectInBucket(s3Options.ThumbsBucket, key);
         }
+
+        public ObjectInBucket GetOutputLocation(string key)
+            => new(s3Options.OutputBucket, key);
     }
 
     public interface IBucketKeyGenerator
     {
-        string GetThumbnailBucket();
-        
         string GetStorageKey(int customer, int space, string assetKey);
         
         string GetStorageKey(AssetId assetId);
 
-        ObjectInBucket GetThumbnailKey(AssetId assetId, int longestEdge, bool open = true);
+        ObjectInBucket GetThumbnailLocation(AssetId assetId, int longestEdge, bool open = true);
 
-        ObjectInBucket GetLegacyThumbnailKey(AssetId assetId, int width, int height);
+        ObjectInBucket GetLegacyThumbnailLocation(AssetId assetId, int width, int height);
 
-        ObjectInBucket GetThumbsSizesJsonKey(AssetId assetId);
+        ObjectInBucket GetThumbsSizesJsonLocation(AssetId assetId);
         
-        ObjectInBucket GetLargestThumbsKey(AssetId assetId);
+        ObjectInBucket GetLargestThumbnailLocation(AssetId assetId);
 
-        ObjectInBucket GetThumbsRoot(AssetId assetId);
+        ObjectInBucket GetThumbnailsRoot(AssetId assetId);
+
+        ObjectInBucket GetOutputLocation(string key);
     }
 }

@@ -21,15 +21,18 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         private readonly IBucketReader bucketReader;
         private readonly ILogger<StoredNamedQueryService> logger;
         private readonly NamedQuerySettings namedQuerySettings;
+        private readonly IBucketKeyGenerator bucketKeyGenerator;
 
         public StoredNamedQueryService(
             IBucketReader bucketReader,
             IOptions<NamedQuerySettings> namedQuerySettings,
-            ILogger<StoredNamedQueryService> logger)
+            ILogger<StoredNamedQueryService> logger, 
+            IBucketKeyGenerator bucketKeyGenerator)
         {
             this.bucketReader = bucketReader;
             this.namedQuerySettings = namedQuerySettings.Value;
             this.logger = logger;
+            this.bucketKeyGenerator = bucketKeyGenerator;
         }
 
         /// <summary>
@@ -116,8 +119,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
 
         private Task<ObjectFromBucket> LoadStoredObject(string key, CancellationToken cancellationToken)
         {
-            var objectInBucket = new ObjectInBucket(namedQuerySettings.OutputBucket, key);
-            return bucketReader.GetObjectFromBucket(objectInBucket, cancellationToken);
+            var outputLocation = bucketKeyGenerator.GetOutputLocation(key);
+            return bucketReader.GetObjectFromBucket(outputLocation, cancellationToken);
         }
     }
     

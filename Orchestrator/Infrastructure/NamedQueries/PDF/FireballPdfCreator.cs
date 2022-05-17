@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
@@ -36,8 +36,9 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
             IBucketWriter bucketWriter,
             IOptions<NamedQuerySettings> namedQuerySettings,
             ILogger<FireballPdfCreator> logger,
-            HttpClient fireballClient
-        ) : base(bucketReader, bucketWriter, namedQuerySettings, logger)
+            HttpClient fireballClient,
+            IBucketKeyGenerator bucketKeyGenerator
+        ) : base(bucketReader, bucketWriter, namedQuerySettings, bucketKeyGenerator, logger)
         {
             this.fireballClient = fireballClient;
             jsonSerializerSettings = new JsonSerializerSettings
@@ -72,12 +73,12 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
             return new CreateProjectionResult();
         }
 
-        private FireballPlaybook GeneratePlaybook(string? pdfKey, PdfParsedNamedQuery parsedNamedQuery,
+        private FireballPlaybook GeneratePlaybook(string pdfKey, PdfParsedNamedQuery parsedNamedQuery,
             List<Asset> assets)
         {
             var playbook = new FireballPlaybook
             {
-                Output = $"s3://{NamedQuerySettings.OutputBucket}/{pdfKey}",
+                Output = BucketKeyGenerator.GetOutputLocation(pdfKey).GetS3Uri(),
                 Title = parsedNamedQuery.ObjectName,
                 CustomTypes = new FireballCustomTypes
                 {
@@ -99,9 +100,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
                 }
                 else
                 {
-                    var lowJpg = StorageKeyGenerator.GetLargestThumbPath(i.GetStorageKey());
-                    playbook.Pages.Add(
-                        FireballPage.Image($"s3://{NamedQuerySettings.ThumbsBucket}/{lowJpg}"));
+                    var largestThumb = BucketKeyGenerator.GetLargestThumbnailLocation(i.GetAssetId());
+                    playbook.Pages.Add(FireballPage.Image(largestThumb.GetS3Uri()));
                 }
             }
 

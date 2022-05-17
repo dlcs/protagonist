@@ -49,7 +49,7 @@ namespace DLCS.Repository.Assets
             // Create lock on assetId unique value (bucket + target key)
             using var processLock = await asyncLocker.LockAsync(assetId.ToString());
             
-            var rootKey = bucketKeyGenerator.GetThumbsRoot(assetId);
+            var rootKey = bucketKeyGenerator.GetThumbnailsRoot(assetId);
             var keysInTargetBucket = await bucketReader.GetMatchingKeys(rootKey);
             if (HasCurrentLayout(assetId, keysInTargetBucket))
             {
@@ -108,7 +108,7 @@ namespace DLCS.Repository.Assets
 
         private bool HasCurrentLayout(AssetId assetId, string[] keysInTargetBucket)
         {
-            var thumbsSizesJsonKey = bucketKeyGenerator.GetThumbsSizesJsonKey(assetId);
+            var thumbsSizesJsonKey = bucketKeyGenerator.GetThumbsSizesJsonLocation(assetId);
             return keysInTargetBucket.Contains(thumbsSizesJsonKey.Key);
         }
 
@@ -143,8 +143,8 @@ namespace DLCS.Repository.Assets
             var largestIsOpen = thumbnailSizes.Auth.IsNullOrEmpty();
 
             copyTasks.Add(bucketWriter.CopyObject(
-                bucketKeyGenerator.GetLargestThumbsKey(assetId),
-                bucketKeyGenerator.GetThumbnailKey(assetId, largestSize, largestIsOpen)));
+                bucketKeyGenerator.GetLargestThumbnailLocation(assetId),
+                bucketKeyGenerator.GetThumbnailLocation(assetId, largestSize, largestIsOpen)));
 
             copyTasks.AddRange(ProcessThumbBatch(assetId, false, thumbnailSizes.Auth, largestSize, existingSizes));
             copyTasks.AddRange(ProcessThumbBatch(assetId, true, thumbnailSizes.Open, largestSize, existingSizes));
@@ -187,15 +187,15 @@ namespace DLCS.Repository.Assets
                 }
 
                 yield return bucketWriter.CopyObject(
-                    bucketKeyGenerator.GetLegacyThumbnailKey(assetId, toCopy.Width, toCopy.Height),
-                    bucketKeyGenerator.GetThumbnailKey(assetId, maxDimension, isOpen)
+                    bucketKeyGenerator.GetLegacyThumbnailLocation(assetId, toCopy.Width, toCopy.Height),
+                    bucketKeyGenerator.GetThumbnailLocation(assetId, maxDimension, isOpen)
                 );
             }
         }
 
         private async Task CreateSizesJson(AssetId assetId, ThumbnailSizes thumbnailSizes)
         {
-            var sizesDest = bucketKeyGenerator.GetThumbsSizesJsonKey(assetId);
+            var sizesDest = bucketKeyGenerator.GetThumbsSizesJsonLocation(assetId);
             await bucketWriter.WriteToBucket(sizesDest, JsonConvert.SerializeObject(thumbnailSizes),
                 "application/json");
         }

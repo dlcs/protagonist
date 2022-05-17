@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
-using DLCS.AWS.S3.Models;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using Microsoft.Extensions.Logging;
@@ -21,17 +20,20 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         protected readonly IBucketWriter BucketWriter;
         protected readonly ILogger Logger;
         protected readonly NamedQuerySettings NamedQuerySettings;
+        protected readonly IBucketKeyGenerator BucketKeyGenerator;
 
         public BaseProjectionCreator(
             IBucketReader bucketReader,
             IBucketWriter bucketWriter,
             IOptions<NamedQuerySettings> namedQuerySettings,
+            IBucketKeyGenerator bucketKeyGenerator,
             ILogger logger)
         {
             BucketReader = bucketReader;
             BucketWriter = bucketWriter;
             Logger = logger;
             NamedQuerySettings = namedQuerySettings.Value;
+            BucketKeyGenerator = bucketKeyGenerator;
         }
         
         public async Task<bool> PersistProjection(T parsedNamedQuery, List<Asset> images,
@@ -80,7 +82,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         }
 
         private Task UpdateControlFile(string controlFileKey, ControlFile? controlFile) =>
-            BucketWriter.WriteToBucket(new ObjectInBucket(NamedQuerySettings.OutputBucket, controlFileKey),
+            BucketWriter.WriteToBucket(BucketKeyGenerator.GetOutputLocation(controlFileKey),
                 JsonConvert.SerializeObject(controlFile), "application/json");
 
         protected abstract Task<CreateProjectionResult> CreateFile(T parsedNamedQuery, List<Asset> assets,
