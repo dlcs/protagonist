@@ -46,6 +46,32 @@ namespace DLCS.AWS.S3
             }
         }
 
+        public async Task CopyObject(ObjectInBucket source, ObjectInBucket destination)
+        {
+            logger.LogDebug("Copying {Source} to {Destination}", source, destination);
+            try
+            {
+                var request = new CopyObjectRequest
+                {
+                    SourceBucket = source.Bucket,
+                    SourceKey = source.Key,
+                    DestinationBucket = destination.Bucket,
+                    DestinationKey = destination.Key
+                };
+                CopyObjectResponse response = await s3Client.CopyObjectAsync(request);
+            }
+            catch (AmazonS3Exception e)
+            {
+                logger.LogWarning(e, "Error encountered on server. Message:'{Message}' when writing an object",
+                    e.Message);
+            }
+            catch (Exception e)
+            {
+                logger.LogWarning(e, "Unknown encountered on server. Message:'{Message}' when writing an object",
+                    e.Message);
+            }
+        }
+
         public async Task WriteToBucket(ObjectInBucket dest, string content, string contentType)
         {
             // 1. Put object-specify only key name for the new object.

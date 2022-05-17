@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using DLCS.AWS.S3.Models;
+using DLCS.Core.Types;
 
 namespace DLCS.Repository.Assets
 {
@@ -8,9 +8,9 @@ namespace DLCS.Repository.Assets
         /// <summary>
         /// Ensure S3 bucket has new thumbnail layout.
         /// </summary>
-        /// <param name="rootKey"><see cref="ObjectInBucket"/> representing root folder for thumbs</param>
+        /// <param name="assetId"><see cref="AssetId"/> to create new layout for</param>
         /// <returns><see cref="ReorganiseResult"/> enum representing result</returns>
-        Task<ReorganiseResult> EnsureNewLayout(ObjectInBucket rootKey);
+        Task<ReorganiseResult> EnsureNewLayout(AssetId assetId);
     }
 
     /// <summary>
@@ -18,7 +18,7 @@ namespace DLCS.Repository.Assets
     /// </summary>
     public class NonOrganisingReorganiser : IThumbReorganiser
     {
-        public Task<ReorganiseResult> EnsureNewLayout(ObjectInBucket rootKey) 
+        public Task<ReorganiseResult> EnsureNewLayout(AssetId assetId)
             => Task.FromResult(ReorganiseResult.Unknown);
     }
 }

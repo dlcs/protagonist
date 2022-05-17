@@ -128,7 +128,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
 
     public class FireballPlaybook
     {
-        public string Method { get; set; } = "s3";
+        public string Method { get; set; } = "s3";  // TODO - should this have any say in prefix for adding low.jpg
         
         public string Output { get; set; }
         

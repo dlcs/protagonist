@@ -3,7 +3,7 @@ using DLCS.Model.Assets;
 using FluentAssertions;
 using Xunit;
 
-namespace DLCS.Repository.Tests.Storage
+namespace DLCS.AWS.Tests.S3
 {
     public class StorageKeyGeneratorTests
     {
