@@ -1,0 +1,52 @@
+version: '3'
+
+volumes:
+  dlcs_postgres_data: {}
+  dlcs_postgres_data_backups: {}
+  dlcs_localstack_tmp: {}
+
+services:
+  image-server:
+    image: ghcr.io/dlcs/iipsrv-openjpeg:2.4.0
+    ports:
+      - "5025:8080"
+    volumes:
+      - $HOME\Docker\scratch:/nas
+    entrypoint: /operations.sh
+
+  fireball:
+    image: fractos/fireball:1304a21459c2b6157abc46d3808512b578bd78b5
+    ports:
+      - "5030:80"
+    environment:
+      - FIREBALL_DOWNLOAD_POOL_SIZE=100
+      - FIREBALL_WORK_FOLDER=/scratch/fireball
+    volumes:
+      - $HOME\Docker\scratch\fireball:/scratch/fireball
+      - $HOME\.aws:/root/.aws
+    env_file:
+      - .env
+
+  localstack:
+    build:
+      context: ./localstack
+      dockerfile: Dockerfile
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - HOSTNAME_EXTERNAL=localstack
+      - DATA_DIR=/tmp/localstack/data
+    volumes:
+      - dlcs_localstack_tmp:/tmp/localstack
+
+  postgres:
+    image: postgres:14
+    hostname: postgres
+    ports:
+      - "5452:5432"
+    volumes:
+      - dlcs_postgres_data:/var/lib/postgresql/data
+      - dlcs_postgres_data_backups:/backups
+    env_file:
+      - .env

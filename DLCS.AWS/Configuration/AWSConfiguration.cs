@@ -79,18 +79,6 @@ namespace DLCS.AWS.Configuration
                     return new AmazonS3Client(new BasicAWSCredentials("foo", "bar"), amazonS3Config);
                 }, lifetime);
                 services.Add(serviceDescriptor);
-                /*services.AddSingleton<IAmazonS3>(_ =>
-                {
-                    var amazonS3Config = new AmazonS3Config
-                    {
-                        UseHttp = true,
-                        RegionEndpoint = RegionEndpoint.USEast1,
-                        ServiceURL =
-                            awsSettings.S3?.ServiceUrl.ThrowIfNullOrWhiteSpace(nameof(awsSettings.S3.ServiceUrl)),
-                        ForcePathStyle = true
-                    };
-                    return new AmazonS3Client(new BasicAWSCredentials("foo", "bar"), amazonS3Config);
-                });*/
             }
             else
             {
