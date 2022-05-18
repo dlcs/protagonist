@@ -3,6 +3,7 @@ WORKDIR /src
 
 COPY ["Thumbs/Thumbs.csproj", "Thumbs/"]
 COPY ["DLCS.Core/DLCS.Core.csproj", "DLCS.Core/"]
+COPY ["DLCS.AWS/DLCS.AWS.csproj", "DLCS.AWS/"]
 COPY ["DLCS.Repository/DLCS.Repository.csproj", "DLCS.Repository/"]
 COPY ["DLCS.Model/DLCS.Model.csproj", "DLCS.Model/"]
 COPY ["DLCS.Web/DLCS.Web.csproj", "DLCS.Web/"]
