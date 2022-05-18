@@ -64,9 +64,7 @@ namespace API
                 .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
                 .ConfigureMediatR()
                 .ConfigureSwagger()
-                .AddDbContext<DlcsContext>(opts =>
-                    opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
-                );
+                .AddDlcsContext(configuration);
 
             services
                 .AddSingleton<IBucketReader, S3BucketReader>()

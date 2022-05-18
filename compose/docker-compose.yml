@@ -15,6 +15,8 @@ services:
       - "5034:443"
     env_file:
       - .env
+    environment:
+      - RunMigrations=true
     volumes:
       - $HOME\Docker\scratch:/nas
       - $HOME\.aws:/root/.aws:ro

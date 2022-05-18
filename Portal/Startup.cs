@@ -83,9 +83,7 @@ namespace Portal
                 .AddSingleton<IBucketWriter, S3BucketWriter>()
                 .AddTransient<ISpaceRepository, SpaceRepository>();
 
-            services.AddDbContext<DlcsContext>(opts =>
-                opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
-            );
+            services.AddDlcsContext(configuration);
 
             services.AddHttpClient<IDlcsClient, DlcsClient>(GetHttpClientSettings);
             services.AddHttpClient<AdminDlcsClient>(GetHttpClientSettings);
