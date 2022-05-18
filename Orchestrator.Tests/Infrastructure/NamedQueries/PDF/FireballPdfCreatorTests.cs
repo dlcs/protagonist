@@ -44,10 +44,14 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             };
 
             var bucketKeyGenerator =
-                new S3StorageKeyGenerator(Options.Create(new S3Settings
+                new S3StorageKeyGenerator(Options.Create(new AWSSettings
                 {
-                    OutputBucket = "test-pdf-bucket",
-                    ThumbsBucket = "test-thumbs-bucket"
+                    S3 = new S3Settings
+                    {
+
+                        OutputBucket = "test-pdf-bucket",
+                        ThumbsBucket = "test-thumbs-bucket"
+                    }
                 }));
 
             sut = new FireballPdfCreator(bucketReader, bucketWriter, namedQuerySettings,

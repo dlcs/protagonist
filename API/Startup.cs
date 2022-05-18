@@ -4,6 +4,7 @@ using API.Auth;
 using API.Client;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.Core.Encryption;
 using DLCS.Model.Customers;
@@ -30,10 +31,12 @@ namespace API
     {
         private const string Iso8601DateFormatString = "O";
         private readonly IConfiguration configuration;
-        
-        public Startup(IConfiguration configuration)
+        private readonly IWebHostEnvironment webHostEnvironment;
+
+        public Startup(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             this.configuration = configuration;
+            this.webHostEnvironment = webHostEnvironment;
         }
         
         public void ConfigureServices(IServiceCollection services)
@@ -63,10 +66,14 @@ namespace API
                 .ConfigureSwagger()
                 .AddDbContext<DlcsContext>(opts =>
                     opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
-                )
-                .AddAWSService<IAmazonS3>()
+                );
+
+            services
                 .AddSingleton<IBucketReader, S3BucketReader>()
-                .AddSingleton<IBucketWriter, S3BucketWriter>();
+                .AddSingleton<IBucketWriter, S3BucketWriter>()
+                .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
+                .SetupAWS(configuration, webHostEnvironment)
+                .WithAmazonS3();
 
             services.AddDlcsDelegatedBasicAuth(options =>
                 {
@@ -94,8 +101,7 @@ namespace API
                     options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                     options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
                     jsonSettings.Formatting = Formatting.Indented;
-                })
-                .SetCompatibilityVersion(CompatibilityVersion.Latest);
+                });
 
             services
                 .AddHealthChecks()

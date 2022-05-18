@@ -11,9 +11,9 @@ namespace DLCS.AWS.S3
     {
         private readonly S3Settings s3Options;
 
-        public S3StorageKeyGenerator(IOptions<S3Settings> s3Options)
+        public S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions)
         {
-            this.s3Options = s3Options.Value;
+            s3Options = awsOptions.Value.S3;
         }
         
         /// <summary>

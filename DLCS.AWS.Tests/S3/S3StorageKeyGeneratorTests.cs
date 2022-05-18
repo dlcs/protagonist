@@ -14,10 +14,13 @@ namespace DLCS.AWS.Tests.S3
 
         public S3StorageKeyGeneratorTests()
         {
-            sut = new S3StorageKeyGenerator(Options.Create<S3Settings>(new S3Settings
+            sut = new S3StorageKeyGenerator(Options.Create<AWSSettings>(new AWSSettings
             {
-                OutputBucket = "test-output",
-                ThumbsBucket = "test-thumbs",
+                S3 = new S3Settings
+                {
+                    OutputBucket = "test-output",
+                    ThumbsBucket = "test-thumbs",
+                }
             }));
         }
         

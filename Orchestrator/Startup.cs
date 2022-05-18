@@ -40,11 +40,14 @@ namespace Orchestrator
     public class Startup
     {
         private readonly IConfiguration configuration;
-        public Startup(IConfiguration configuration)
+        private readonly IWebHostEnvironment webHostEnvironment;
+
+        public Startup(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             this.configuration = configuration;
+            this.webHostEnvironment = webHostEnvironment;
         }
-        
+
         public void ConfigureServices(IServiceCollection services)
         {
             var reverseProxySection = configuration.GetSection("ReverseProxy");
@@ -63,9 +66,6 @@ namespace Orchestrator
                 .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
                 .AddSingleton<TimeBasedRequestHandler>()
-                .AddAWSService<IAmazonS3>()
-                .AddSingleton<IBucketReader, S3BucketReader>()
-                .AddSingleton<IBucketWriter, S3BucketWriter>()
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
                 .AddScoped<AccessChecker>()
@@ -83,7 +83,8 @@ namespace Orchestrator
                 .AddNamedQueries(configuration)
                 .AddOrchestration(orchestratorSettings)
                 .AddApiClient(orchestratorSettings)
-                .ConfigureHealthChecks(reverseProxySection, configuration);
+                .ConfigureHealthChecks(reverseProxySection, configuration)
+                .AddAws(configuration, webHostEnvironment);
             
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
             services.Configure<ForwardedHeadersOptions>(opts =>

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Amazon.S3;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
@@ -26,22 +27,20 @@ namespace Thumbs
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
-            Configuration = configuration;
+            this.configuration = configuration;
+            this.webHostEnvironment = webHostEnvironment;
         }
 
-        public IConfiguration Configuration { get; }
+        private readonly IConfiguration configuration;
+        private readonly IWebHostEnvironment webHostEnvironment;
 
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHealthChecks()
-                .AddNpgSql(Configuration.GetPostgresSqlConnection());
+                .AddNpgSql(configuration.GetPostgresSqlConnection());
             services.AddLazyCache();
-            services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
-            services.AddAWSService<IAmazonS3>();
-            services.AddSingleton<IBucketReader, S3BucketReader>();
-            services.AddSingleton<IBucketWriter, S3BucketWriter>();
             services.AddSingleton<AssetDeliveryPathParser>();
             services.AddSingleton<ICustomerRepository, DapperCustomerRepository>();
             services.AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>();
@@ -52,9 +51,16 @@ namespace Thumbs
             services.AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>();
 
             services
-                .Configure<ThumbsSettings>(Configuration.GetSection("Thumbs"))
-                .Configure<PathTemplateOptions>(Configuration.GetSection("PathRules"))
-                .Configure<CacheSettings>(Configuration.GetSection("Caching"));
+                .AddSingleton<IBucketReader, S3BucketReader>()
+                .AddSingleton<IBucketWriter, S3BucketWriter>()
+                .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
+                .SetupAWS(configuration, webHostEnvironment)
+                .WithAmazonS3();
+
+            services
+                .Configure<ThumbsSettings>(configuration.GetSection("Thumbs"))
+                .Configure<PathTemplateOptions>(configuration.GetSection("PathRules"))
+                .Configure<CacheSettings>(configuration.GetSection("Caching"));
 
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
             services.Configure<ForwardedHeadersOptions>(opts =>
@@ -89,7 +95,7 @@ namespace Thumbs
             app.UseRouting();
             // TODO: Consider better caching solutions
             app.UseResponseCaching();
-            var respondsTo = Configuration.GetValue<string>("RespondsTo", "thumbs");
+            var respondsTo = configuration.GetValue<string>("RespondsTo", "thumbs");
             var logger = loggerFactory.CreateLogger<Startup>();
             logger.LogInformation("ThumbsMiddleware mapped to '/{RespondsTo}/*'", respondsTo);
             app.UseEndpoints(endpoints =>

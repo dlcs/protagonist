@@ -30,10 +30,8 @@ namespace DLCS.Repository.Tests.Assets
             bucketWriter = A.Fake<IBucketWriter>();
             assetRepository = A.Fake<IAssetRepository>();
             thumbPolicyRepository = A.Fake<IThumbnailPolicyRepository>();
-            storageKeyGenerator = new S3StorageKeyGenerator(Options.Create(new S3Settings
-            {
-                ThumbsBucket = "the-bucket"
-            }));
+            storageKeyGenerator = new S3StorageKeyGenerator(
+                Options.Create(new AWSSettings { S3 = new S3Settings { ThumbsBucket = "the-bucket" } }));
             sut = new ThumbReorganiser(bucketReader, bucketWriter, new NullLogger<ThumbReorganiser>(), assetRepository,
                 thumbPolicyRepository, storageKeyGenerator);
         }
