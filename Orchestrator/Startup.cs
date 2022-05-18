@@ -17,17 +17,13 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Orchestrator.Assets;
 using Orchestrator.Features.Auth;
 using Orchestrator.Features.Images;
-using Orchestrator.Features.Images.Orchestration;
-using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
@@ -62,6 +58,8 @@ namespace Orchestrator
                 .Configure<CacheSettings>(cachingSection)
                 .Configure<ReverseProxySettings>(reverseProxySection);
 
+            var orchestratorSettings = configuration.Get<OrchestratorSettings>();
+            
             services
                 .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
@@ -69,9 +67,6 @@ namespace Orchestrator
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, BucketReader>()
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
-                .AddSingleton<IAssetTracker, MemoryAssetTracker>()
-                .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
-                .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
                 .AddScoped<AccessChecker>()
                 .AddScoped<IIIFCanvasFactory>()
@@ -86,7 +81,8 @@ namespace Orchestrator
                 .AddMediatR()
                 .AddHttpContextAccessor()
                 .AddNamedQueries(configuration)
-                .AddApiClient(configuration.Get<OrchestratorSettings>())
+                .AddOrchestration(orchestratorSettings)
+                .AddApiClient(orchestratorSettings)
                 .ConfigureHealthChecks(reverseProxySection, configuration);
             
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
