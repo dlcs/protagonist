@@ -25,14 +25,14 @@ namespace DLCS.Repository.Assets
 
         public async Task<ImageLocation> GetImageLocation(AssetId assetId)
             => await dlcsContext.ImageLocations.FindAsync(assetId.ToString());
-
+        
         public Task<PageOfAssets> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize, string orderBy, bool ascending,
             CancellationToken cancellationToken)
         {
             throw new System.NotImplementedException();
         }
 
-        public Task Put(Asset putAsset)
+        public Task Put(Asset putAsset, CancellationToken cancellationToken, string operation)
         {
             throw new System.NotImplementedException();
         }

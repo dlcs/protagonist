@@ -14,4 +14,8 @@
     <PackageReference Include="iiif-net" Version="0.1.0-tags-v0-0-6-0001" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Messaging\LegacyCompatibility" />
+  </ItemGroup>
+
 </Project>

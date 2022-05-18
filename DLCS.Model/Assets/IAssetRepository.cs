@@ -17,6 +17,6 @@ namespace DLCS.Model.Assets
             string orderBy, bool ascending,
             CancellationToken cancellationToken);
 
-        Task Put(Asset putAsset);
+        public Task Put(Asset putAsset, CancellationToken cancellationToken, string operation);
     }
 }

@@ -14,6 +14,7 @@ using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests;
 using Hydra.Collections;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -21,6 +22,9 @@ using Microsoft.Extensions.Options;
 
 namespace API.Features.Image
 {
+    /// <summary>
+    /// DISCUSS: return a Hydra Error body? Or a ProblemDetails?
+    /// </summary>
     [Route("/customers/{customerId}/spaces/{spaceId}/images")]
     [ApiController]
     public class ImageController : Controller
@@ -29,6 +33,12 @@ namespace API.Features.Image
         private readonly ApiSettings settings;
         private readonly ILogger<ImageController> logger;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="mediator"></param>
+        /// <param name="options"></param>
+        /// <param name="logger"></param>
         public ImageController(
             IMediator mediator,
             IOptions<ApiSettings> options,
@@ -39,6 +49,8 @@ namespace API.Features.Image
             this.logger = logger;
         }
 
+        
+        
         /// <summary>
         /// Ingest specified file bytes to DLCS.
         /// "File" property should be base64 encoded image. 
@@ -61,6 +73,10 @@ namespace API.Features.Image
         public async Task<IActionResult> IngestBytes([FromRoute] string customerId, [FromRoute] string spaceId,
             [FromRoute] string imageId, [FromBody] ImageWithFile asset)
         {
+            
+            
+            
+            
             var claimsIdentity = User.Identity as ClaimsIdentity;
             var claim = claimsIdentity?.FindFirst("DlcsAuth").Value;
             var command = new IngestImageFromFile(customerId, spaceId, imageId,
@@ -79,6 +95,7 @@ namespace API.Features.Image
         
         
         [HttpGet]
+        [ProducesResponseType(200, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
         public async Task<HydraCollection<DLCS.HydraModel.Image>> Images(
             int customerId, int spaceId,
             int? page = 1, int? pageSize = -1,
@@ -107,6 +124,8 @@ namespace API.Features.Image
 
 
         [HttpPatch]
+        [ProducesResponseType(200, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
+        [ProducesResponseType(400, Type = typeof(Error))]
         public async Task<IActionResult> Images(
             [FromRoute] int customerId, [FromRoute] int spaceId,
             [FromBody] HydraCollection<DLCS.HydraModel.Image> images)
@@ -165,6 +184,7 @@ namespace API.Features.Image
         }
         
         [HttpGet]
+        [ProducesResponseType(200, Type = typeof(DLCS.HydraModel.Image))]
         [Route("{imageId}")]
         public async Task<DLCS.HydraModel.Image> Image(int customerId, int spaceId, string imageId)
         {
@@ -176,11 +196,20 @@ namespace API.Features.Image
             return dbImage.ToHydra(baseUrl, resourceRoot);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="customerId"></param>
+        /// <param name="spaceId"></param>
+        /// <param name="imageId"></param>
+        /// <param name="hydraAsset"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
         [ProducesResponseType(201, Type = typeof(DLCS.HydraModel.Image))]
         [ProducesResponseType(400, Type = typeof(ProblemDetails))]
         [HttpPut]
         [Route("{imageId}")]
-        public async Task<DLCS.HydraModel.Image> Image(
+        public async Task<IActionResult> Image(
             [FromRoute] int customerId,
             [FromRoute] int spaceId,
             [FromRoute] string imageId,
@@ -195,18 +224,30 @@ namespace API.Features.Image
             // It has to have that ID! That's where it's being put, regardless of the incoming Hydra object's Id.
             // Shall we validate that the incoming object is the same ID?
             // We could omit the following check, just override it/allow it to be missing:
-            if (!hydraAsset.Id.EndsWith(putAsset.Id))
+            if (hydraAsset.Id == null || !hydraAsset.Id.EndsWith(putAsset.Id))
             {
                 throw new BadRequestException(
                     $"Incoming asset Id '{hydraAsset.Id}' does not match PUT URL '{Request.GetDisplayUrl()}'");
             }
 
             var request = new PutImage(putAsset);
-            var dbAsset = await mediator.Send(request);
+            var putImageResult = await mediator.Send(request);
+            if (putImageResult.Asset != null && putImageResult.StatusCode is HttpStatusCode.OK or HttpStatusCode.Created)
+            {
+                var baseUrl = Request.GetBaseUrl();
+                var resourceRoot = settings.DLCS.ResourceRoot.ToString();
+                var hydraResponse = putImageResult.Asset.ToHydra(baseUrl, resourceRoot);
+                switch (putImageResult.StatusCode)
+                {
+                    case HttpStatusCode.OK:
+                        return Ok(hydraResponse);
+                    case HttpStatusCode.Created:
+                        return Created(hydraResponse.Id, hydraResponse);
+                }
+            }
             
-            var baseUrl = Request.GetBaseUrl();
-            var resourceRoot = settings.DLCS.ResourceRoot.ToString();
-            return dbAsset.ToHydra(baseUrl, resourceRoot);
+            return Problem(putImageResult.Message, putAsset.Id, 
+                    (int?)putImageResult.StatusCode, "PUT of Asset failed");
 
             // DISCUSS
             // now - how much of this logic happens here with multiple Mediatr requests?
@@ -229,12 +270,6 @@ namespace API.Features.Image
             //  - the repositories make db requests.
 
             // So the logic below lives in the Mediatr and we just have (cf SpaceController)
-
-
-
-
-
-
         }
     }
 }

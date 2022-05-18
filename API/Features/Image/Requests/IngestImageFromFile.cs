@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using API.Settings;
 using DLCS.Core;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Web.Requests;
@@ -22,28 +23,21 @@ namespace API.Features.Image.Requests
     /// </summary>
     public class IngestImageFromFile : IRequest<ResultStatus<DelegatedIngestResponse>>
     {
-        // NOTE - these 3 will often come together, maybe have something to handle as a group
-        public string CustomerId { get; }
-        public string SpaceId { get; }
-        public string ImageId { get; }
+        public AssetId AssetId { get; }
         public Stream File { get; }
-        
         public DLCS.HydraModel.Image Body { get; }
         
         // TODO - temporary as we forward this on from those the user sent
-        public string BasicAuth { get; }
+        //public string BasicAuth { get; }
 
-        public override string ToString() => $"{CustomerId}/{SpaceId}/{ImageId}";
+        public override string ToString() => AssetId.ToString();
 
-        public IngestImageFromFile(string customerId, string spaceId, string imageId, Stream file, DLCS.HydraModel.Image body,
+        public IngestImageFromFile(AssetId assetId, Stream file, DLCS.HydraModel.Image body,
             string basicAuth)
         {
-            CustomerId = customerId;
-            SpaceId = spaceId;
-            ImageId = imageId;
+            AssetId = assetId;
             File = file;
             Body = body;
-            BasicAuth = basicAuth;
         }
     }
     
@@ -104,7 +98,7 @@ namespace API.Features.Image.Requests
                 });
 
             var client = clientFactory.CreateClient("dlcs-api");
-            var requestUri = $"/customers/{request.CustomerId}/spaces/{request.SpaceId}/images/{request.ImageId}";
+            var requestUri = request.AssetId.ToApiResourcePath();
             
             logger.LogDebug($"Ingesting '{ingestJson}' at '{requestUri}'");
 
@@ -118,7 +112,7 @@ namespace API.Features.Image.Requests
 
         private RegionalisedObjectInBucket GetObjectInBucket(IngestImageFromFile request)
             => new RegionalisedObjectInBucket(settings.DLCS.OriginBucket,
-                $"{request.CustomerId}/{request.SpaceId}/{request.ImageId}", settings.AWS.Region);
+                request.AssetId.ToString(), settings.AWS.Region);
     }
 
     public class DelegatedIngestResponse

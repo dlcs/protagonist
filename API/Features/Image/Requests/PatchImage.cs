@@ -25,14 +25,14 @@ namespace API.Features.Image.Requests
 
     public class PatchImageHandler : IRequestHandler<PatchImage, Asset>
     {
-        private readonly DlcsContext dbContext;
+        private readonly IAssetRepository assetRepository;
         private readonly IMessageBus messageBus;
 
         public PatchImageHandler(
-            DlcsContext dlcsContext,
+            IAssetRepository assetRepository,
             IMessageBus messageBus)
         {
-            dbContext = dlcsContext;
+            this.assetRepository = assetRepository;
             this.messageBus = messageBus;
         }
 
@@ -42,13 +42,8 @@ namespace API.Features.Image.Requests
             // This currently ignores those (not patchable but won't error)
             var patch = request.Asset;
             
-            // DISCUSS:
-            // This Mediatr Handle is using the DBContext directly.
-            // Should it be doing that?
-            // Or should it go to a repository? With EF the dbContext _is_ the repository;
-            // do we always need to delegate to a repository when it's a one liner like this?
-            // Compare this to PatchSpace which works differently.
-            var dbImage = await dbContext.Images.FindAsync(new object[] {patch.Id}, cancellationToken);
+            // can't pass cancellationToken here; this is currently a Dapper repository.
+            var dbImage = await assetRepository.GetAsset(patch.Id);
             if (dbImage == null)
             {
                 var apiEx = new APIException("Asset to be patched is unknown to DLCS")
@@ -134,17 +129,14 @@ namespace API.Features.Image.Requests
             }
             
             // In Deliverator, this removes the imagelocation from in-memory and possibly other ImageLocationStores
-            var ilEntry = dbContext.Entry(new ImageLocation { Id = patch.Id });
-            dbContext.Remove(ilEntry);
-            
-            await dbContext.SaveChangesAsync(cancellationToken);
+            // this operation parameter is temporary while we figure out whether the behaviour actually needs to be different for put/patch.
+            await assetRepository.Put(dbImage, cancellationToken, "PATCH");
 
-            var after = await dbContext.Images.FindAsync(patch.Id, cancellationToken);
-            messageBus.SendAssetModifiedNotification(before, after);
-            // So should the 
+            var after = await assetRepository.GetAsset(patch.Id);
+            await messageBus.SendAssetModifiedNotification(before, after);
             if (requiresReingest)
             {
-                messageBus.SendIngestAssetRequest(new IngestAssetRequest(after, DateTime.Now));
+                await messageBus.SendIngestAssetRequest(new IngestAssetRequest(after, DateTime.Now));
             }
             return after;
         }

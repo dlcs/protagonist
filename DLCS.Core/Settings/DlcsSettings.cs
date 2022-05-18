@@ -40,6 +40,8 @@ namespace DLCS.Core.Settings
         /// </summary>
         public string SpaceManifestQuery { get; set; }
         
+        public Uri EngineDirectIngestUri { get; set; }
+        
         
         /// <summary>
         /// 

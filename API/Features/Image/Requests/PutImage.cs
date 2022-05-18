@@ -1,3 +1,5 @@
+using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Settings;
@@ -11,7 +13,7 @@ using Microsoft.Extensions.Options;
 namespace API.Features.Image.Requests
 {
     // maybe name this `PutAsset` ?
-    public class PutImage : IRequest<Asset>
+    public class PutImage : IRequest<PutImageResult>
     {
         public Asset Asset { get; set; }
         
@@ -21,7 +23,14 @@ namespace API.Features.Image.Requests
         }
     }
 
-    public class PutImageHandler : IRequestHandler<PutImage, Asset>
+    public class PutImageResult
+    {
+        public Asset? Asset { get; set; }
+        public HttpStatusCode? StatusCode { get; set; }
+        public string? Message { get; set; }
+    }
+
+    public class PutImageHandler : IRequestHandler<PutImage, PutImageResult>
     {
         private ISpaceRepository spaceRepository;
         private IAssetRepository assetRepository;
@@ -49,46 +58,78 @@ namespace API.Features.Image.Requests
             this.settings = dlcsSettings.Value;
         }
 
-        public async Task<Asset> Handle(PutImage request, CancellationToken cancellationToken)
+        public async Task<PutImageResult> Handle(PutImage request, CancellationToken cancellationToken)
         {
             var putAsset = request.Asset;
-            // DELIVERATOR: https://github.com/digirati-co-uk/deliverator/blob/master/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L74
+
+            // temporary happy path just for images
+            if (putAsset.Family != AssetFamily.Image)
+            {
+                return new PutImageResult
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    Message = "Just images for the moment!!!"
+                };
+            }
             
+            // DELIVERATOR: https://github.com/digirati-co-uk/deliverator/blob/master/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L74
             // We are going to need to have cached versions of all these policies, but just memoryCache for API I think
+            // appCache inside repositories.
             
             // Deliverator Logic:
             // LoadSpaceBehaviour - need the space to exist (space cache?)
             var targetSpace = await spaceRepository.GetSpace(putAsset.Customer, putAsset.Space, cancellationToken);
             if (targetSpace == null)
             {
-                throw new BadRequestException(
-                    $"Target space for asset PUT does not exist: {putAsset.Customer}/{putAsset.Space}");
+                return new PutImageResult
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    Message = $"Target space for asset PUT does not exist: {putAsset.Customer}/{putAsset.Space}"
+                };
             }
             
             // LoadImageBehaviour - see if already exists
-            var existingAsset = await assetRepository.GetAsset(putAsset.Id);
-            if (existingAsset == null)
+            Asset? existingAsset;
+            try
             {
-                // LoadCustomerStorageBehaviour - if a new image, CustomerStorageCalculation
-                // LoadStoragePolicyBehaviour - get the storage policy
-                // EnforceStoragePolicyForNumberOfImagesBehaviour
-                // This is a temporary simple solution
-                // will use this policy, somewhere... go back through deliverator.
-                var storagePolicy = settings.IngestDefaults.StoragePolicy;
-                var counts = await storageRepository.GetImageCounts(putAsset.Customer);
-                if (counts.CurrentNumberOfStoredImages >= counts.MaximumNumberOfStoredImages)
+                existingAsset = await assetRepository.GetAsset(putAsset.Id);
+                if (existingAsset == null)
                 {
-                    throw new BadRequestException(
-                        $"Cannot add more assets: maximum is {counts.MaximumNumberOfStoredImages}");
+                    // LoadCustomerStorageBehaviour - if a new image, CustomerStorageCalculation
+                    // LoadStoragePolicyBehaviour - get the storage policy
+                    // EnforceStoragePolicyForNumberOfImagesBehaviour
+                    // This is a temporary simple solution
+                    // will use this policy, somewhere... go back through deliverator.
+                    var storagePolicy = settings.IngestDefaults.StoragePolicy;
+                    var counts = await storageRepository.GetImageCounts(putAsset.Customer);
+                    if (counts.CurrentNumberOfStoredImages >= counts.MaximumNumberOfStoredImages)
+                    {
+                        return new PutImageResult
+                        {
+                            StatusCode = HttpStatusCode.InsufficientStorage,
+                            Message = $"This operation will fall outside of your storage policy for number of images: maximum is {counts.MaximumNumberOfStoredImages}"
+                        };
+                    }
                 }
-                
+            }
+            catch (Exception e)
+            {
+                return new PutImageResult
+                {
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    Message = e.Message
+                };
             }
 
             var validationResult = AssetValidator.ValidateImageUpsert(existingAsset, putAsset);
             if (!validationResult.Success)
             {
                 // ValidateImageUpsertBehaviour
-                throw new BadRequestException(validationResult.ErrorMessage);
+                return new PutImageResult
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    Message = validationResult.ErrorMessage
+                };
             }
 
             if (existingAsset == null)
@@ -97,17 +138,37 @@ namespace API.Features.Image.Requests
                 await SelectThumbnailPolicy(putAsset);
             }
 
-            await assetRepository.Put(putAsset);
-
             // UpdateImageBehaviour - store in DB
-            // CreateSkeletonImageLocationBehaviour
-            // UpdateImageLocationBehaviour
-            // if Image:
-            // CallImageIngestEndpointBehaviour
+            await assetRepository.Put(putAsset, cancellationToken, "PUT");
+
+            // TODO: This is incomplete, it only deals with images for now
+            // needs the equivalent  Conditions.ControlStateNotEquals(name: "image.family", value: "I")
+            //                                              ^^^
+            if (putAsset.Family == AssetFamily.Image)
+            {
+                // synchronous call to engine load-balancer
+                var ingestAssetRequest = new IngestAssetRequest(putAsset, DateTime.UtcNow);
+                var statusCode = await messageBus.SendImmediateIngestAssetRequest(ingestAssetRequest, false);
+                // The above is a synchronous call, engine will process and return
+                if (statusCode == HttpStatusCode.Created || statusCode == HttpStatusCode.OK)
+                {
+                    var dbAsset = await assetRepository.GetAsset(putAsset.Id);
+                    return new PutImageResult
+                    {
+                        Asset = dbAsset,
+                        StatusCode = statusCode
+                    };
+                }
+            }
+            // 
             // LoadImageBehaviour (reload)
             // return 200 or 201 or 500
             // else
-
+            return new PutImageResult
+            {
+                StatusCode = HttpStatusCode.NotImplemented,
+                Message = "This handler has a limited implementation for now."
+            };
         }
 
         private async Task SelectThumbnailPolicy(Asset putAsset)
