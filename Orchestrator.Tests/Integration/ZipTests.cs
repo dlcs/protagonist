@@ -119,7 +119,7 @@ namespace Orchestrator.Tests.Integration
             // Arrange
             const string path = "zip/99/test-zip/my-ref/1/1";
             await AddControlFile("99/zip/test-zip/my-ref/1/1/tester.zip.json",
-                new ControlFile { Created = DateTime.Now, InProcess = true });
+                new ControlFile { Created = DateTime.UtcNow, InProcess = true });
 
             // Act
             var response = await httpClient.GetAsync(path);
@@ -136,7 +136,7 @@ namespace Orchestrator.Tests.Integration
             var fakeContent = nameof(GetZip_Returns200_WithExistingZip_IfControlFileAndZipExist);
             const string path = "zip/99/test-zip/my-ref/1/1";
             await AddControlFile("99/zip/test-zip/my-ref/1/1/tester.zip.json",
-                new ControlFile { Created = DateTime.Now, InProcess = false });
+                new ControlFile { Created = DateTime.UtcNow, InProcess = false });
             await AddZipArchive("99/zip/test-zip/my-ref/1/1/tester.zip", fakeContent);
 
             // Act
@@ -157,7 +157,7 @@ namespace Orchestrator.Tests.Integration
             const string path = "zip/99/test-zip/my-ref/1/2";
             
             await AddControlFile("99/zip/test-zip/my-ref/1/2/tester.zip.json",
-                new ControlFile { Created = DateTime.Now, InProcess = false });
+                new ControlFile { Created = DateTime.UtcNow, InProcess = false });
             zipCreator.AddCallbackFor(storageKey, (query, assets) =>
             {
                 AddZipArchive(storageKey, fakeContent).Wait();
@@ -181,7 +181,7 @@ namespace Orchestrator.Tests.Integration
             const string storageKey = "99/zip/test-zip/my-ref/1/3/tester.zip";
             const string path = "zip/99/test-zip/my-ref/1/3";
             await AddControlFile("99/zip/test-zip/my-ref/1/3/tester.json",
-                new ControlFile { Created = DateTime.Now.AddHours(-1), InProcess = false });
+                new ControlFile { Created = DateTime.UtcNow.AddHours(-1), InProcess = false });
             
             zipCreator.AddCallbackFor(storageKey, (query, assets) =>
             {
@@ -206,7 +206,7 @@ namespace Orchestrator.Tests.Integration
             const string storageKey = "99/zip/test-zip/my-ref/1/4/tester";
             
             await AddControlFile("99/zip/test-zip/my-ref/1/4/tester.zip.json",
-                new ControlFile { Created = DateTime.Now, InProcess = false });
+                new ControlFile { Created = DateTime.UtcNow, InProcess = false });
             
             // return True but don't create object in s3
             zipCreator.AddCallbackFor(storageKey, (query, assets) => true);
@@ -226,7 +226,7 @@ namespace Orchestrator.Tests.Integration
             const string storageKey = "99/zip/test-zip/my-ref/1/5/tester";
             
             await AddControlFile("99/test-zip/my-ref/1/5/tester.json",
-                new ControlFile { Created = DateTime.Now, InProcess = false });
+                new ControlFile { Created = DateTime.UtcNow, InProcess = false });
             
             zipCreator.AddCallbackFor(storageKey, (query, assets) => false);
 
@@ -259,7 +259,7 @@ namespace Orchestrator.Tests.Integration
             const string storageKey = "99/zip/ordered-zip/ordered/tester";
             
             await AddControlFile("99/ordered-zip/ordered/tester.json",
-                new ControlFile { Created = DateTime.Now, InProcess = false });
+                new ControlFile { Created = DateTime.UtcNow, InProcess = false });
 
             List<Asset> savedAssets = null;
             zipCreator.AddCallbackFor(storageKey, (query, assets) =>
@@ -335,7 +335,7 @@ namespace Orchestrator.Tests.Integration
 
             var controlFile = new ControlFile
             {
-                Created = DateTime.Now, InProcess = false, Exists = true, Key = "the-key", ItemCount = 100,
+                Created = DateTime.UtcNow, InProcess = false, Exists = true, Key = "the-key", ItemCount = 100,
                 SizeBytes = 1024
             };
             await AddControlFile("99/zip/test-zip/any-ref/1/5/tester.zip.json", controlFile);

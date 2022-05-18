@@ -97,8 +97,7 @@ namespace Orchestrator
 
             services
                 .AddFeatureFolderViews()
-                .AddControllersWithViews()
-                .SetCompatibilityVersion(CompatibilityVersion.Latest);
+                .AddControllersWithViews();
 
             services
                 .AddCors(options =>

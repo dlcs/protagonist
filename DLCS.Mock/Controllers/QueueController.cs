@@ -38,12 +38,12 @@ namespace DLCS.Mock.Controllers
             List<Image> initialisedImages = new List<Image>();
 
             var newBatchId = model.Batches.Select(b => b.ModelId).Max() + 1;
-            var batch = new Batch(model.BaseUrl, newBatchId, customerId, DateTime.Now);
+            var batch = new Batch(model.BaseUrl, newBatchId, customerId, DateTime.UtcNow);
             model.Batches.Add(batch);
             foreach (var incomingImage in images.Members)
             {
                 var newImage = MockHelp.MakeImage(model.BaseUrl, customerId, incomingImage.Space, incomingImage.ModelId, 
-                    DateTime.Now, incomingImage.Origin, incomingImage.InitialOrigin,
+                    DateTime.UtcNow, incomingImage.Origin, incomingImage.InitialOrigin,
                     0, 0, incomingImage.MaxUnauthorised, null, null, null, true, null, 
                     incomingImage.Tags, incomingImage.String1, incomingImage.String2, incomingImage.String3,
                     incomingImage.Number1, incomingImage.Number2, incomingImage.Number3,

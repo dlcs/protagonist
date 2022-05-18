@@ -65,9 +65,9 @@ namespace Portal.Tests.Integration
             // Arrange
             // Add 3 spaces - 2 for this customer and 1 for another
             await dbContext.Spaces.AddRangeAsync(
-                new Space {Customer = 1, Id = 1, Created = DateTime.Now, Name = "space1"},
-                new Space {Customer = 2, Id = 2, Created = DateTime.Now, Name = "space2"},
-                new Space {Customer = 2, Id = 3, Created = DateTime.Now, Name = "space3"}
+                new Space {Customer = 1, Id = 1, Created = DateTime.UtcNow, Name = "space1"},
+                new Space {Customer = 2, Id = 2, Created = DateTime.UtcNow, Name = "space2"},
+                new Space {Customer = 2, Id = 3, Created = DateTime.UtcNow, Name = "space3"}
             );
             
             await dbContext.SaveChangesAsync();

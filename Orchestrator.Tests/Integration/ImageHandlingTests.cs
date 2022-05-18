@@ -311,7 +311,7 @@ namespace Orchestrator.Tests.Integration
             var userSession =
                 await dbFixture.DbContext.SessionUsers.AddTestSession(
                     DlcsDatabaseFixture.ClickThroughAuthService.AsList());
-            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(-1),
+            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddMinutes(-1),
                 sessionUserId: userSession.Entity.Id);
             await dbFixture.DbContext.SaveChangesAsync();
             
@@ -344,8 +344,8 @@ namespace Orchestrator.Tests.Integration
             var userSession =
                 await dbFixture.DbContext.SessionUsers.AddTestSession(
                     DlcsDatabaseFixture.ClickThroughAuthService.AsList());
-            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(1),
-                sessionUserId: userSession.Entity.Id, ttl: 6000, lastChecked: DateTime.Now.AddHours(-1));
+            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddMinutes(1),
+                sessionUserId: userSession.Entity.Id, ttl: 6000, lastChecked: DateTime.UtcNow.AddHours(-1));
             await dbFixture.DbContext.SaveChangesAsync();
             
             await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -370,7 +370,7 @@ namespace Orchestrator.Tests.Integration
             response.Headers.CacheControl.Private.Should().BeTrue();
             
             dbFixture.DbContext.AuthTokens.Single(t => t.BearerToken == bearerToken)
-                .Expires.Should().BeAfter(DateTime.Now.AddMinutes(5));
+                .Expires.Should().BeAfter(DateTime.UtcNow.AddMinutes(5));
         }
 
         [Fact]
@@ -471,7 +471,7 @@ namespace Orchestrator.Tests.Integration
             var userSession =
                 await dbFixture.DbContext.SessionUsers.AddTestSession(
                     DlcsDatabaseFixture.ClickThroughAuthService.AsList());
-            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(-1),
+            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddMinutes(-1),
                 sessionUserId: userSession.Entity.Id);
             await dbFixture.DbContext.SaveChangesAsync();
             
@@ -495,7 +495,7 @@ namespace Orchestrator.Tests.Integration
             var userSession =
                 await dbFixture.DbContext.SessionUsers.AddTestSession(
                     DlcsDatabaseFixture.ClickThroughAuthService.AsList());
-            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(15),
+            var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddMinutes(15),
                 sessionUserId: userSession.Entity.Id);
             await dbFixture.DbContext.SaveChangesAsync();
             

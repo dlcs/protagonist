@@ -27,9 +27,9 @@ namespace Portal.Features.Admin
         
         public async Task<IActionResult> CreateSignUp([FromForm] string? note, [FromForm] DateTime? expires = null)
         {
-            if(expires == null || expires.Value < DateTime.Now)
+            if(expires == null || expires.Value < DateTime.UtcNow)
             {
-                expires = DateTime.Now.AddDays(14);
+                expires = DateTime.UtcNow.AddDays(14);
             }
             var signUpLink = await mediator.Send(new CreateSignupLink{Note = note, Expires = expires.Value});
             TempData["new-signup-id"] = signUpLink.Id;

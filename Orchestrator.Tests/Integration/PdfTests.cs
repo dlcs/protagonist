@@ -120,7 +120,7 @@ namespace Orchestrator.Tests.Integration
             // Arrange
             const string path = "pdf/99/test-pdf/my-ref/1/1";
             await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/1/tester.json",
-                new ControlFile { Created = DateTime.Now, InProcess = true });
+                new ControlFile { Created = DateTime.UtcNow, InProcess = true });
 
             // Act
             var response = await httpClient.GetAsync(path);
@@ -137,7 +137,7 @@ namespace Orchestrator.Tests.Integration
             var fakePdfContent = nameof(GetPdf_Returns200_WithExistingPdf_IfPdfControlFileAndPdfExist);
             const string path = "pdf/99/test-pdf/my-ref/1/1";
             await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/1/tester.json",
-                new ControlFile { Created = DateTime.Now, InProcess = false });
+                new ControlFile { Created = DateTime.UtcNow, InProcess = false });
             await AddPdf("99/pdf/test-pdf/my-ref/1/1/tester", fakePdfContent);
 
             // Act
@@ -158,7 +158,7 @@ namespace Orchestrator.Tests.Integration
             const string path = "pdf/99/test-pdf/my-ref/1/2";
             
             await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/2/tester.json",
-                new ControlFile { Created = DateTime.Now, InProcess = false });
+                new ControlFile { Created = DateTime.UtcNow, InProcess = false });
             pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
             {
                 AddPdf(pdfStorageKey, fakePdfContent).Wait();
@@ -182,7 +182,7 @@ namespace Orchestrator.Tests.Integration
             const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/3/tester";
             const string path = "pdf/99/test-pdf/my-ref/1/3";
             await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/3/tester.json",
-                new ControlFile { Created = DateTime.Now.AddHours(-1), InProcess = false });
+                new ControlFile { Created = DateTime.UtcNow.AddHours(-1), InProcess = false });
             
             pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
             {
@@ -207,7 +207,7 @@ namespace Orchestrator.Tests.Integration
             const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/4/tester";
             
             await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/4/tester.json",
-                new ControlFile { Created = DateTime.Now, InProcess = false });
+                new ControlFile { Created = DateTime.UtcNow, InProcess = false });
             
             // return True but don't create object
             pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) => true);
@@ -227,7 +227,7 @@ namespace Orchestrator.Tests.Integration
             const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/5/tester";
             
             await AddPdfControlFile("99/test-pdf/my-ref/1/5/tester.json",
-                new ControlFile { Created = DateTime.Now, InProcess = false });
+                new ControlFile { Created = DateTime.UtcNow, InProcess = false });
             
             pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) => false);
 
@@ -261,7 +261,7 @@ namespace Orchestrator.Tests.Integration
             const string pdfStorageKey = "99/pdf/ordered-pdf/possum/tester";
             
             await AddPdfControlFile("99/pdf/ordered-pdf/possum/tester.json",
-                new ControlFile { Created = DateTime.Now, InProcess = false });
+                new ControlFile { Created = DateTime.UtcNow, InProcess = false });
             
             List<Asset> savedAssets = null;
             pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
@@ -337,7 +337,7 @@ namespace Orchestrator.Tests.Integration
 
             var controlFile = new ControlFile
             {
-                Created = DateTime.Now, InProcess = false, Exists = true, Key = "the-key", ItemCount = 100,
+                Created = DateTime.UtcNow, InProcess = false, Exists = true, Key = "the-key", ItemCount = 100,
                 SizeBytes = 1024
             };
             var pdfControlFile = new PdfControlFile(controlFile);

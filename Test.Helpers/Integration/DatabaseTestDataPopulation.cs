@@ -31,7 +31,7 @@ namespace Test.Helpers.Integration
             int num3 = 0)
             => assets.AddAsync(new Asset
             {
-                Created = DateTime.Now, Customer = customer, Space = space, Id = id, Origin = origin,
+                Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
                 Width = width, Height = height, Roles = roles, Family = family, MediaType = mediaType,
                 ThumbnailPolicy = "default", MaxUnauthorised = maxUnauthorised, Reference1 = ref1,
                 Reference2 = ref2, Reference3 = ref3, NumberReference1 = num1, NumberReference2 = num2,
@@ -45,13 +45,13 @@ namespace Test.Helpers.Integration
                 new AuthToken
                 {
                     Id = Guid.NewGuid().ToString(),
-                    Created = DateTime.Now,
-                    LastChecked = lastChecked ?? DateTime.Now,
+                    Created = DateTime.UtcNow,
+                    LastChecked = lastChecked ?? DateTime.UtcNow,
                     CookieId = Guid.NewGuid().ToString(),
                     SessionUserId = sessionUserId ?? Guid.NewGuid().ToString(),
                     BearerToken = Guid.NewGuid().ToString().Replace("-", string.Empty),
                     Customer = customer,
-                    Expires = expires ?? DateTime.Now.AddSeconds(ttl),
+                    Expires = expires ?? DateTime.UtcNow.AddSeconds(ttl),
                     Ttl = ttl
                 });
 
@@ -61,7 +61,7 @@ namespace Test.Helpers.Integration
                 new SessionUser
                 {
                     Id = Guid.NewGuid().ToString(),
-                    Created = DateTime.Now,
+                    Created = DateTime.UtcNow,
                     Roles = new Dictionary<int, List<string>>
                     {
                         [customer] = roles

@@ -52,7 +52,7 @@ namespace DLCS.Mock.Controllers
 
         private void AutoAdvance(List<Image> images)
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             var tenSeconds = new TimeSpan(0, 0, 10);
             foreach (var image in images)
             {
@@ -101,7 +101,7 @@ namespace DLCS.Mock.Controllers
         public Image Image(int customerId, int spaceId, string id, [FromBody]Image incomingImage)
         {
             var newImage = MockHelp.MakeImage(model.BaseUrl, customerId, spaceId, incomingImage.ModelId,
-                    DateTime.Now, incomingImage.Origin, incomingImage.InitialOrigin,
+                    DateTime.UtcNow, incomingImage.Origin, incomingImage.InitialOrigin,
                     0, 0, incomingImage.MaxUnauthorised, null, null, null, true, null,
                     incomingImage.Tags, incomingImage.String1, incomingImage.String2, incomingImage.String3,
                     incomingImage.Number1, incomingImage.Number2, incomingImage.Number3,

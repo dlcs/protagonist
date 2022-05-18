@@ -215,17 +215,17 @@ namespace Orchestrator.Features.Auth
                 return null;
             }
 
-            if (authToken.Expires <= DateTime.Now)
+            if (authToken.Expires <= DateTime.UtcNow)
             {
                 logger.LogDebug("AuthToken expired, customer:'{Customer}'", customer);
                 return null;
             }
 
             // Token was last checked in the past and threshold has passed
-            if (authToken.LastChecked.HasValue && authToken.LastChecked.Value.Add(RefreshThreshold) < DateTime.Now)
+            if (authToken.LastChecked.HasValue && authToken.LastChecked.Value.Add(RefreshThreshold) < DateTime.UtcNow)
             {
-                authToken.LastChecked = DateTime.Now;
-                authToken.Expires = DateTime.Now.AddSeconds(authToken.Ttl);
+                authToken.LastChecked = DateTime.UtcNow;
+                authToken.Expires = DateTime.UtcNow.AddSeconds(authToken.Ttl);
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
 
@@ -238,7 +238,7 @@ namespace Orchestrator.Features.Auth
         {
             var sessionUser = new SessionUser
             {
-                Created = DateTime.Now,
+                Created = DateTime.UtcNow,
                 Id = Guid.NewGuid().ToString(),
                 Roles = new Dictionary<int, List<string>>
                 {
@@ -255,13 +255,13 @@ namespace Orchestrator.Features.Auth
             var authToken = new AuthToken
             {
                 Id = Guid.NewGuid().ToString(),
-                Created = DateTime.Now,
-                LastChecked = DateTime.Now,
+                Created = DateTime.UtcNow,
+                LastChecked = DateTime.UtcNow,
                 CookieId = Guid.NewGuid().ToString(),
                 SessionUserId = sessionUser.Id,
                 BearerToken = Guid.NewGuid().ToString().Replace("-", string.Empty),
                 Customer = authService.Customer,
-                Expires = DateTime.Now.AddSeconds(authService.Ttl),
+                Expires = DateTime.UtcNow.AddSeconds(authService.Ttl),
                 Ttl = authService.Ttl
             };
             await dbContext.AuthTokens.AddAsync(authToken);
