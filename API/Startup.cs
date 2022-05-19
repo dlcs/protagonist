@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Amazon.S3;
 using API.Auth;
-using API.Client;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Encryption;
@@ -56,12 +55,11 @@ namespace API
             var apiSettings = configuration.Get<ApiSettings>();
             var cacheSettings = cachingSection.Get<CacheSettings>();
             
-            services.AddHttpClient();
+            services.AddHttpClient(); // needed to call engine
 
             services
                 .AddHttpContextAccessor()
                 .AddSingleton<IEncryption, SHA256>()
-                .AddSingleton<DeliveratorApiAuth>()
                 .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
                 .AddMemoryCache(memoryCacheOptions =>
                 {

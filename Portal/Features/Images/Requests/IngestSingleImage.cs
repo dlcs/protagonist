@@ -8,6 +8,7 @@ using DLCS.HydraModel;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository.Spaces;
+using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

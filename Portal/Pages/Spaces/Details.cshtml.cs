@@ -7,6 +7,7 @@ using API.Client;
 using DLCS.Core;
 using DLCS.Core.Settings;
 using DLCS.HydraModel;
+using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;

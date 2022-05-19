@@ -1,12 +1,9 @@
-﻿using System.Linq;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using API.Client;
 using DLCS.Model.Spaces;
-using DLCS.Repository;
+using DLCS.Web.Auth;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace API.Features.Space.Requests

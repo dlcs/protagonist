@@ -12,6 +12,7 @@ using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Spaces;
 using DLCS.Repository.Storage.S3;
+using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;

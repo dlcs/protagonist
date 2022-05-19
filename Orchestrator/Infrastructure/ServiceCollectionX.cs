@@ -13,6 +13,7 @@ using DLCS.Repository.Assets.CustomHeaders;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
+using DLCS.Web.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

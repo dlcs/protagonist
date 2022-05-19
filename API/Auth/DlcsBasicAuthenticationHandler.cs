@@ -6,7 +6,6 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using API.Client;
 using DLCS.Core.Strings;
 using DLCS.HydraModel;
 using DLCS.Model.Customers;
@@ -165,7 +164,7 @@ namespace API.Auth
             {
                 var authHeader = headerValue.Parameter.DecodeBase64();
                 string[] keyAndSecret = authHeader.Split(':');
-                var apiCaller = new ApiCaller() {Key = keyAndSecret[0], Secret = keyAndSecret[1]};
+                var apiCaller = new ApiCaller {Key = keyAndSecret[0], Secret = keyAndSecret[1]};
                 if (apiCaller.Key.HasText() && apiCaller.Secret.HasText())
                 {
                     return apiCaller;
