@@ -61,17 +61,17 @@ There are 2 docker-compose files:
 # start full stack
 docker-compose up
 
-# start external dependencies only
+# start external dependencies only for local dev
 docker-compose -f docker-compose.local.yml up
 ```
 
-### External Dependencies 
+### Local Development
 
 Both docker-compose files will spin up a Postgres, [LocalStack](https://github.com/localstack/localstack) container and external resources like image-servers etc. Postgres connection details are specified via `.env` file (see `.env.dist` for example) and this is listening on `5452`. The LocalStack image will contain required resources, see [seed-resources.sh](./compose/localstack/seed-resources.sh) and these will be used by DLCS for S3 access.
 
 Using the connection and AWS details from `.env.dist` and `appsettings.Development.Example.json` will work by default. The `seed-resources.sh` file will seed AWS resources and EFMigrations will be run on Orchestrator startup is `"RunMigrations"` appsetting is `true`.
 
-### LocalStack 
+#### LocalStack 
 
 Use of LocalStack can be controlled by appsettings:
 
@@ -108,3 +108,15 @@ If `environment.IsDevelopment() && awsSettings.UseLocalStack;` when the above wi
 # view thumbs bucket
 aws s3 ls dlcs-thumbs --recursive --human-readable --endpoint-url=http://localhost:4566
 ```
+
+#### Database
+
+Running Orchestrator with appSetting `RunMigrations = true` will apply migrations to DB on startup.
+
+Running the `TestData` app will seed data to database.
+
+```bash
+dotnet run ./Utils/TestData/TestData.csproj
+```
+
+> Note that the seed data added by `TestData` is insufficient to fully run DLCS and will need expanded as Engine and API are ported.
