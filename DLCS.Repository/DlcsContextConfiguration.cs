@@ -20,8 +20,7 @@ namespace DLCS.Repository
         public static IServiceCollection AddDlcsContext(this IServiceCollection services,
             IConfiguration configuration)
             => services
-                .AddDbContext<DlcsContext>(options =>
-                    options.UseNpgsql(configuration.GetConnectionString(ConnectionStringKey)));
+                .AddDbContext<DlcsContext>(options => SetupOptions(configuration, options));
         
         /// <summary>
         /// Run EF migrations if "RunMigrations" = true
@@ -30,11 +29,7 @@ namespace DLCS.Repository
         {
             if (configuration.GetValue(RunMigrationsKey, false))
             {
-                var connection = configuration.GetConnectionString(ConnectionStringKey);
-                using var context = new DlcsContext(
-                    new DbContextOptionsBuilder<DlcsContext>()
-                        .UseNpgsql(connection)
-                        .Options);
+                using var context = new DlcsContext(GetOptionsBuilder(configuration).Options);
                 
                 var pendingMigrations = context.Database.GetPendingMigrations().ToList();
                 if (pendingMigrations.Count == 0)
@@ -47,5 +42,23 @@ namespace DLCS.Repository
                 context.Database.Migrate();
             }
         }
+
+        /// <summary>
+        /// Get a new instantiated <see cref="DlcsContext"/> object
+        /// </summary>
+        public static DlcsContext GetNewDbContext(IConfiguration configuration)
+            => new(GetOptionsBuilder(configuration).Options);
+
+        private static DbContextOptionsBuilder<DlcsContext> GetOptionsBuilder(IConfiguration configuration)
+        {
+            var optionsBuilder = new DbContextOptionsBuilder<DlcsContext>();
+            SetupOptions(configuration, optionsBuilder);
+            return optionsBuilder;
+        }
+
+        private static void SetupOptions(IConfiguration configuration,
+            DbContextOptionsBuilder optionsBuilder)
+            => optionsBuilder.UseNpgsql(configuration.GetConnectionString(ConnectionStringKey));
+
     }
 }
