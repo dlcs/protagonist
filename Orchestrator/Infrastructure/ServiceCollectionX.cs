@@ -43,9 +43,7 @@ namespace Orchestrator.Infrastructure
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
                 .AddSingleton<ICustomHeaderRepository, DapperCustomHeaderRepository>()
                 .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
-                .AddDbContext<DlcsContext>(opts =>
-                    opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
-                );
+                .AddDlcsContext(configuration);
 
         /// <summary>
         /// Add required caching dependencies

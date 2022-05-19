@@ -128,9 +128,10 @@ namespace Orchestrator
 
             if (env.IsDevelopment())
             {
+                DlcsContextConfiguration.TryRunMigrations(configuration, logger);
                 app.UseDeveloperExceptionPage();
-                
             }
+
             app
                 .HandlePathBase(pathBase, logger)
                 .UseForwardedHeaders()
