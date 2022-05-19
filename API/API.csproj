@@ -9,7 +9,6 @@
 
     <ItemGroup>
       <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="6.0.3" />
-      <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.2" />
       <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.150" />
       <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />
       <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="10.0.1" />

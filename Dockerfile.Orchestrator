@@ -10,6 +10,7 @@ COPY ["DLCS.Mediatr/DLCS.Mediatr.csproj", "DLCS.Mediatr/"]
 COPY ["Hydra/Hydra.csproj", "Hydra/"]
 COPY ["DLCS.HydraModel/DLCS.HydraModel.csproj", "DLCS.HydraModel/"]
 COPY ["API.Client/API.Client.csproj", "API.Client/"]
+COPY ["DLCS.AWS/DLCS.AWS.csproj", "DLCS.AWS/"]
 
 RUN dotnet restore "Orchestrator/Orchestrator.csproj"
 

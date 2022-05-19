@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using DLCS.Core.Collections;
 using DLCS.Core.Guard;
+using DLCS.Core.Types;
 using IIIF;
 
 namespace DLCS.Model.Assets
@@ -35,14 +35,15 @@ namespace DLCS.Model.Assets
 
             foreach (int boundingSize in thumbnailPolicy.SizeList)
             {
-                if (!includeUnavailable && AssetIsUnavailableForSize(asset, boundingSize))
+                var assetIsUnavailableForSize = AssetIsUnavailableForSize(asset, boundingSize);
+                if (!includeUnavailable && assetIsUnavailableForSize)
                 {
                     continue;
                 }
 
                 Size bounded = Size.Confine(boundingSize, size);
                 availableSizes.Add(bounded);
-                if (boundingSize > maxBoundedSize)
+                if (boundingSize > maxBoundedSize && !assetIsUnavailableForSize)
                 {
                     maxBoundedSize = boundingSize;
                     maxAvailableWidth = bounded.Width;
@@ -53,6 +54,14 @@ namespace DLCS.Model.Assets
             maxDimensions = (maxBoundedSize, maxAvailableWidth, maxAvailableHeight);
             return availableSizes;
         }
+
+        /// <summary>
+        /// Get <see cref="AssetId"/> for asset
+        /// </summary>
+        /// <param name="asset">Current <see cref="Asset"/></param>
+        /// <returns><see cref="AssetId"/> containing current customer, space, asset id</returns>
+        public static AssetId GetAssetId(this Asset asset)
+            => AssetId.FromString(asset.Id);
 
         private static bool AssetIsUnavailableForSize(Asset asset, int boundingSize)
             => asset.RequiresAuth && boundingSize > asset.MaxUnauthorised;

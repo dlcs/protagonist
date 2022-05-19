@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.Storage;
-using DLCS.Repository.Storage;
 using DLCS.Web.Response;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -34,10 +33,12 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
 
         public FireballPdfCreator(
             IBucketReader bucketReader,
+            IBucketWriter bucketWriter,
             IOptions<NamedQuerySettings> namedQuerySettings,
             ILogger<FireballPdfCreator> logger,
-            HttpClient fireballClient
-        ) : base(bucketReader, namedQuerySettings, logger)
+            HttpClient fireballClient,
+            IStorageKeyGenerator storageKeyGenerator
+        ) : base(bucketReader, bucketWriter, namedQuerySettings, storageKeyGenerator, logger)
         {
             this.fireballClient = fireballClient;
             jsonSerializerSettings = new JsonSerializerSettings
@@ -72,12 +73,12 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
             return new CreateProjectionResult();
         }
 
-        private FireballPlaybook GeneratePlaybook(string? pdfKey, PdfParsedNamedQuery parsedNamedQuery,
+        private FireballPlaybook GeneratePlaybook(string pdfKey, PdfParsedNamedQuery parsedNamedQuery,
             List<Asset> assets)
         {
             var playbook = new FireballPlaybook
             {
-                Output = $"s3://{NamedQuerySettings.OutputBucket}/{pdfKey}",
+                Output = StorageKeyGenerator.GetOutputLocation(pdfKey).GetS3Uri(),
                 Title = parsedNamedQuery.ObjectName,
                 CustomTypes = new FireballCustomTypes
                 {
@@ -99,8 +100,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
                 }
                 else
                 {
-                    playbook.Pages.Add(
-                        FireballPage.Image($"s3://{NamedQuerySettings.ThumbsBucket}/{i.GetStorageKey()}/low.jpg"));
+                    var largestThumb = StorageKeyGenerator.GetLargestThumbnailLocation(i.GetAssetId());
+                    playbook.Pages.Add(FireballPage.Image(largestThumb.GetS3Uri()));
                 }
             }
 
@@ -127,7 +128,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
 
     public class FireballPlaybook
     {
-        public string Method { get; set; } = "s3";
+        public string Method { get; set; } = "s3";  // TODO - should this have any say in prefix for adding low.jpg
         
         public string Output { get; set; }
         

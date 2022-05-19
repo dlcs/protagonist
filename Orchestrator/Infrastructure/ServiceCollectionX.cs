@@ -1,5 +1,7 @@
 ﻿using System;
 using API.Client;
+using DLCS.AWS.Configuration;
+using DLCS.AWS.S3;
 using DLCS.Core.Encryption;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
@@ -12,6 +14,7 @@ using DLCS.Repository.Assets.CustomHeaders;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -117,6 +120,22 @@ namespace Orchestrator.Infrastructure
             {
                 healthChecksBuilder.AddUrlGroup(new Uri(resizeThumbs, "/ping"), name: "ThumbsResize", tags: tagsList);
             }
+
+            return services;
+        }
+
+        /// <summary>
+        /// Add required AWS services
+        /// </summary>
+        public static IServiceCollection AddAws(this IServiceCollection services,
+            IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
+        {
+            services
+                .AddSingleton<IBucketReader, S3BucketReader>()
+                .AddSingleton<IBucketWriter, S3BucketWriter>()
+                .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
+                .SetupAWS(configuration, webHostEnvironment)
+                .WithAmazonS3();
 
             return services;
         }

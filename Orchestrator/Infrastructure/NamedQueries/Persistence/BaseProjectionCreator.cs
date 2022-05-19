@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.AWS.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -17,17 +17,23 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         where T : StoredParsedNamedQuery
     {
         protected readonly IBucketReader BucketReader;
+        protected readonly IBucketWriter BucketWriter;
         protected readonly ILogger Logger;
         protected readonly NamedQuerySettings NamedQuerySettings;
+        protected readonly IStorageKeyGenerator StorageKeyGenerator;
 
         public BaseProjectionCreator(
             IBucketReader bucketReader,
+            IBucketWriter bucketWriter,
             IOptions<NamedQuerySettings> namedQuerySettings,
+            IStorageKeyGenerator storageKeyGenerator,
             ILogger logger)
         {
             BucketReader = bucketReader;
+            BucketWriter = bucketWriter;
             Logger = logger;
             NamedQuerySettings = namedQuerySettings.Value;
+            StorageKeyGenerator = storageKeyGenerator;
         }
         
         public async Task<bool> PersistProjection(T parsedNamedQuery, List<Asset> images,
@@ -76,7 +82,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         }
 
         private Task UpdateControlFile(string controlFileKey, ControlFile? controlFile) =>
-            BucketReader.WriteToBucket(new ObjectInBucket(NamedQuerySettings.OutputBucket, controlFileKey),
+            BucketWriter.WriteToBucket(StorageKeyGenerator.GetOutputLocation(controlFileKey),
                 JsonConvert.SerializeObject(controlFile), "application/json");
 
         protected abstract Task<CreateProjectionResult> CreateFile(T parsedNamedQuery, List<Asset> assets,

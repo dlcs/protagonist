@@ -4,13 +4,12 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using Amazon.S3;
 using API.Client;
+using DLCS.AWS.S3;
 using DLCS.Core.Encryption;
 using DLCS.Core.Settings;
 using DLCS.Mediatr.Behaviours;
-using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Spaces;
-using DLCS.Repository.Storage.S3;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -80,7 +79,8 @@ namespace Portal
                 .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
                 .AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditBehaviour<,>))
                 .AddAWSService<IAmazonS3>()
-                .AddSingleton<IBucketReader, BucketReader>()
+                .AddSingleton<IBucketReader, S3BucketReader>()
+                .AddSingleton<IBucketWriter, S3BucketWriter>()
                 .AddTransient<ISpaceRepository, SpaceRepository>();
 
             services.AddDbContext<DlcsContext>(opts =>

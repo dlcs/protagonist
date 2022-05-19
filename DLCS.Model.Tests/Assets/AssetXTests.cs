@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using FluentAssertions;
 using IIIF;
@@ -29,14 +30,14 @@ namespace DLCS.Model.Tests.Assets
             // Assert
             sizes.Should().BeEquivalentTo(new List<Size>
             {
-                new Size(800, 400),
-                new Size(400, 200),
-                new Size(200, 100),
-                new Size(100, 50),
+                new(800, 400),
+                new(400, 200),
+                new(200, 100),
+                new(100, 50),
             });
-            maxDimensions.maxBoundedSize = 800;
-            maxDimensions.maxAvailableWidth = 800;
-            maxDimensions.maxAvailableHeight = 400;
+            maxDimensions.maxBoundedSize.Should().Be(800);
+            maxDimensions.maxAvailableWidth.Should().Be(800);
+            maxDimensions.maxAvailableHeight.Should().Be(400);
         }
         
         [Theory]
@@ -60,14 +61,14 @@ namespace DLCS.Model.Tests.Assets
             // Assert
             sizes.Should().BeEquivalentTo(new List<Size>
             {
-                new Size(800, 400),
-                new Size(400, 200),
-                new Size(200, 100),
-                new Size(100, 50),
+                new(800, 400),
+                new(400, 200),
+                new(200, 100),
+                new(100, 50),
             });
-            maxDimensions.maxBoundedSize = 800;
-            maxDimensions.maxAvailableWidth = 800;
-            maxDimensions.maxAvailableHeight = 400;
+            maxDimensions.maxBoundedSize.Should().Be(800);
+            maxDimensions.maxAvailableWidth.Should().Be(800);
+            maxDimensions.maxAvailableHeight.Should().Be(400);
         }
         
         [Fact]
@@ -89,12 +90,12 @@ namespace DLCS.Model.Tests.Assets
             // Assert
             sizes.Should().BeEquivalentTo(new List<Size>
             {
-                new Size(100, 200),
-                new Size(50, 100),
+                new(100, 200),
+                new(50, 100),
             });
-            maxDimensions.maxBoundedSize = 200;
-            maxDimensions.maxAvailableWidth = 100;
-            maxDimensions.maxAvailableHeight = 200;
+            maxDimensions.maxBoundedSize.Should().Be(200);
+            maxDimensions.maxAvailableWidth.Should().Be(100);
+            maxDimensions.maxAvailableHeight.Should().Be(200);
         }
         
         [Fact]
@@ -116,14 +117,25 @@ namespace DLCS.Model.Tests.Assets
             // Assert
             sizes.Should().BeEquivalentTo(new List<Size>
             {
-                new Size(400, 800),
-                new Size(200, 400),
-                new Size(100, 200),
-                new Size(50, 100),
+                new(400, 800),
+                new(200, 400),
+                new(100, 200),
+                new(50, 100),
             });
-            maxDimensions.maxBoundedSize = 200;
-            maxDimensions.maxAvailableWidth = 100;
-            maxDimensions.maxAvailableHeight = 200;
+            maxDimensions.maxBoundedSize.Should().Be(200);
+            maxDimensions.maxAvailableWidth.Should().Be(100);
+            maxDimensions.maxAvailableHeight.Should().Be(200);
+        }
+        
+        [Fact]
+        public void GetAssetId_ReturnsExpected()
+        {
+            var asset = new Asset { Id = "100/14/image" };
+            var expected = new AssetId(100, 14, "image");
+
+            var actual = asset.GetAssetId();
+
+            actual.Should().BeEquivalentTo(expected);
         }
     }
 }

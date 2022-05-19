@@ -4,10 +4,12 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
+using DLCS.AWS.Settings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
-using DLCS.Model.Storage;
 using FakeItEasy;
 using FizzWare.NBuilder;
 using FluentAssertions;
@@ -26,16 +28,14 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
         private readonly ControllableHttpMessageHandler httpHandler;
         private readonly FireballPdfCreator sut;
         private readonly CustomerPathElement customer = new(99, "Test-Customer");
+        private readonly IBucketWriter bucketWriter;
 
         public FireballPdfCreatorTests()
         {
-            var namedQuerySettings = Options.Create(new NamedQuerySettings
-            {
-                OutputBucket = "test-pdf-bucket",
-                ThumbsBucket = "test-thumbs-bucket"
-            });
+            var namedQuerySettings = Options.Create(new NamedQuerySettings());
         
             bucketReader = A.Fake<IBucketReader>();
+            bucketWriter = A.Fake<IBucketWriter>();
             
             httpHandler = new ControllableHttpMessageHandler();
             var httpClient = new HttpClient(httpHandler)
@@ -43,8 +43,19 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
                 BaseAddress = new Uri("https://fireball")
             };
 
-            sut = new FireballPdfCreator(bucketReader, namedQuerySettings, new NullLogger<FireballPdfCreator>(),
-                httpClient);
+            var bucketKeyGenerator =
+                new S3StorageKeyGenerator(Options.Create(new AWSSettings
+                {
+                    S3 = new S3Settings
+                    {
+
+                        OutputBucket = "test-pdf-bucket",
+                        ThumbsBucket = "test-thumbs-bucket"
+                    }
+                }));
+
+            sut = new FireballPdfCreator(bucketReader, bucketWriter, namedQuerySettings,
+                new NullLogger<FireballPdfCreator>(), httpClient, bucketKeyGenerator);
         }
 
         [Fact]
@@ -58,7 +69,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             };
             var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
 
-            A.CallTo(() => bucketReader
+            A.CallTo(() => bucketWriter
                     .WriteToBucket(
                         A<ObjectInBucket>.That.Matches(b => b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
                         A<string>._, A<string>._))
@@ -69,7 +80,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             
             // Assert
             response.Should().BeFalse();
-            A.CallTo(() => bucketReader
+            A.CallTo(() => bucketWriter
                     .WriteToBucket(
                         A<ObjectInBucket>.That.Matches(b => b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
                         A<string>._, A<string>._))
@@ -84,7 +95,12 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             {
                 StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
             };
-            var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
+            var images = Builder<Asset>
+                .CreateListOfSize(10)
+                .All()
+                .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
+                .Build()
+                .ToList();
 
             httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadGateway));
             
@@ -104,7 +120,12 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             {
                 StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
             };
-            var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
+            var images = Builder<Asset>
+                .CreateListOfSize(10)
+                .All()
+                .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
+                .Build()
+                .ToList();
 
             var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
             responseMessage.Content =
@@ -128,7 +149,12 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             {
                 StorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
             };
-            var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
+            var images = Builder<Asset>
+                .CreateListOfSize(10)
+                .All()
+                .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
+                .Build()
+                .ToList();
 
             var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
             responseMessage.Content =
@@ -141,7 +167,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             // Assert
             response.Should().BeTrue();
             httpHandler.CallsMade.Should().Contain("https://fireball/pdf");
-            A.CallTo(() => bucketReader
+            A.CallTo(() => bucketWriter
                     .WriteToBucket(
                         A<ObjectInBucket>.That.Matches(b =>
                             b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),

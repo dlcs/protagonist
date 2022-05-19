@@ -7,6 +7,7 @@ COPY ["DLCS.Model/DLCS.Model.csproj", "DLCS.Model/"]
 COPY ["DLCS.Core/DLCS.Core.csproj", "DLCS.Core/"]
 COPY ["DLCS.Mediatr/DLCS.Mediatr.csproj", "DLCS.Mediatr/"]
 COPY ["DLCS.Web/DLCS.Web.csproj", "DLCS.Web/"]
+COPY ["DLCS.AWS/DLCS.AWS.csproj", "DLCS.AWS/"]
 
 RUN dotnet restore "API/API.csproj"
 

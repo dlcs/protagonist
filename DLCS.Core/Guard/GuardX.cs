@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace DLCS.Core.Guard
 {
@@ -15,7 +16,7 @@ namespace DLCS.Core.Guard
         /// <typeparam name="T">Type of argument to check.</typeparam>
         /// <returns>Passed argument, if not null.</returns>
         /// <exception cref="ArgumentNullException">Thrown if provided argument is null.</exception>
-        public static T ThrowIfNull<T>(this T argument, string argName)
+        public static T ThrowIfNull<T>([NotNull] this T argument, string argName)
         {
             if (argument == null)
             {

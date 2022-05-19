@@ -1,7 +1,7 @@
 ﻿using Amazon.S3.Model;
-using DLCS.Model.Storage;
+using DLCS.AWS.S3.Models;
 
-namespace DLCS.Repository.Storage.S3
+namespace DLCS.AWS.S3
 {
     public static class S3Extensions
     {
@@ -58,7 +58,7 @@ namespace DLCS.Repository.Storage.S3
                 CacheControl = headersCollection.CacheControl,
                 ContentDisposition = headersCollection.ContentDisposition,
                 ContentEncoding = headersCollection.ContentEncoding,
-                ContentLength = headersCollection.ContentLength == -1L ? (long?) null : headersCollection.ContentLength,
+                ContentLength = headersCollection.ContentLength == -1L ? null : headersCollection.ContentLength,
                 ContentMD5 = headersCollection.ContentMD5,
                 ContentType = headersCollection.ContentType,
                 ExpiresUtc = headersCollection.ExpiresUtc

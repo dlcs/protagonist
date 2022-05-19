@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Customers;
-using DLCS.Model.Storage;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Strategy
