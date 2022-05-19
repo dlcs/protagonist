@@ -1,4 +1,4 @@
-﻿namespace DLCS.Repository.Settings
+﻿namespace Thumbs.Settings
 {
     /// <summary>
     /// Options to manage configuration of thumbnails

@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
-using DLCS.Repository.Settings;
 using FluentAssertions;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Configuration;

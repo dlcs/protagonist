@@ -6,14 +6,13 @@ using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Repository.Assets;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Xunit;
+using Thumbs.Reorganising;
 
-namespace DLCS.Repository.Tests.Assets
+namespace Thumbs.Tests
 {
     public class ThumbReorganiserTests
     {

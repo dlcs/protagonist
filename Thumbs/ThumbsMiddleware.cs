@@ -17,6 +17,7 @@ namespace Thumbs
     {
         private readonly int cacheSeconds;
         private readonly ILogger<ThumbsMiddleware> logger;
+        private readonly ThumbnailHandler thumbnailHandler;
         private readonly IThumbRepository thumbRepository;
         private readonly IAssetPathGenerator pathGenerator;
 
@@ -24,14 +25,16 @@ namespace Thumbs
             RequestDelegate next,
             IConfiguration configuration,
             ILogger<ThumbsMiddleware> logger,
-            IThumbRepository thumbRepository,
-            IAssetPathGenerator pathGenerator)
+            ThumbnailHandler thumbnailHandler,
+            IAssetPathGenerator pathGenerator, 
+            IThumbRepository thumbRepository)
         {
             // TODO - change this to use CacheSettings
             this.cacheSeconds = configuration.GetValue<int>("ResponseCacheSeconds", 0);
             this.logger = logger;
-            this.thumbRepository = thumbRepository;
+            this.thumbnailHandler = thumbnailHandler;
             this.pathGenerator = pathGenerator;
+            this.thumbRepository = thumbRepository;
         }
 
         public async Task Invoke(HttpContext context,
@@ -72,7 +75,7 @@ namespace Thumbs
         private async Task WritePixels(HttpContext context, ImageAssetDeliveryRequest request)
         {
             await using var thumbnailResponse =
-                await thumbRepository.GetThumbnail(request.GetAssetId(), request.IIIFImageRequest);
+                await thumbnailHandler.GetThumbnail(request.GetAssetId(), request.IIIFImageRequest);
             
             if (thumbnailResponse.IsEmpty)
             {

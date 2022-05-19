@@ -1,7 +1,3 @@
-using System.Collections.Generic;
-using Amazon.S3;
-using DLCS.AWS.Configuration;
-using DLCS.AWS.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
@@ -9,7 +5,6 @@ using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
-using DLCS.Repository.Settings;
 using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
@@ -20,8 +15,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Serilog;
+using Thumbs.Infrastructure;
+using Thumbs.Reorganising;
+using Thumbs.Settings;
 
 namespace Thumbs
 {
@@ -38,29 +35,26 @@ namespace Thumbs
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddHealthChecks()
-                .AddNpgSql(configuration.GetPostgresSqlConnection());
-            services.AddLazyCache();
-            services.AddSingleton<AssetDeliveryPathParser>();
-            services.AddSingleton<ICustomerRepository, DapperCustomerRepository>();
-            services.AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>();
-            services.AddSingleton<IThumbRepository, ThumbRepository>();
-            services.AddSingleton<IThumbReorganiser, ThumbReorganiser>();
-            services.AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>();
-            services.AddSingleton<IAssetRepository, DapperAssetRepository>();
-            services.AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>();
-
-            services
-                .AddSingleton<IBucketReader, S3BucketReader>()
-                .AddSingleton<IBucketWriter, S3BucketWriter>()
-                .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
-                .SetupAWS(configuration, webHostEnvironment)
-                .WithAmazonS3();
-
             services
                 .Configure<ThumbsSettings>(configuration.GetSection("Thumbs"))
                 .Configure<PathTemplateOptions>(configuration.GetSection("PathRules"))
                 .Configure<CacheSettings>(configuration.GetSection("Caching"));
+            
+            var thumbSettings = configuration.GetSection("Thumbs").Get<ThumbsSettings>();
+            
+            services
+                .AddHealthChecks()
+                .AddNpgSql(configuration.GetPostgresSqlConnection());
+
+            services
+                .AddLazyCache()
+                .AddThumbnailHandling(thumbSettings)
+                .AddAws(configuration, webHostEnvironment)
+                .AddSingleton<AssetDeliveryPathParser>()
+                .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
+                .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
+                .AddSingleton<IAssetRepository, DapperAssetRepository>()
+                .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>();
 
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
             services.Configure<ForwardedHeadersOptions>(opts =>
@@ -68,18 +62,7 @@ namespace Thumbs
                 opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
             });
             services.AddHttpContextAccessor();
-
-            services.PostConfigure<PathTemplateOptions>(opts =>
-            {
-                if (!string.IsNullOrEmpty(opts.OverridesAsJson))
-                {
-                    var overridesDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(opts.OverridesAsJson);
-                    foreach (var (key, value) in overridesDict)
-                    {
-                        opts.Overrides.Add(key, value);
-                    }
-                }
-            });
+            services.HandlePathTemplates();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
