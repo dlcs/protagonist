@@ -9,6 +9,7 @@ using API.Converters;
 using API.Features.Image.Requests;
 using API.Features.Space.Requests;
 using API.Settings;
+using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
@@ -70,26 +71,32 @@ namespace API.Features.Image
         [HttpPost]  // This should be a PUT? But then it will be the same op to same location as a normal asset without File.
         [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000, ValueLengthLimit = 100_000_000)]
         [Route("{imageId}")]
-        public async Task<IActionResult> IngestBytes([FromRoute] string customerId, [FromRoute] string spaceId,
+        public async Task<IActionResult> IngestBytes([FromRoute] int customerId, [FromRoute] int spaceId,
             [FromRoute] string imageId, [FromBody] ImageWithFile asset)
         {
-            
-            
-            
-            
-            var claimsIdentity = User.Identity as ClaimsIdentity;
-            var claim = claimsIdentity?.FindFirst("DlcsAuth").Value;
-            var command = new IngestImageFromFile(customerId, spaceId, imageId,
-                new MemoryStream(asset.File), asset.ToImage(), claim);
+            const string errorTitle = "POST of Asset bytes failed";
+            var assetId = new AssetId(customerId, spaceId, imageId);
+            if (asset.File == null || asset.File.Length == 0)
+            {
+                return Problem("No file bytes in request body", assetId.ToString(),
+                    (int?)HttpStatusCode.BadRequest, errorTitle);
+            }
+            var saveRequest = new HostAssetAtOrigin
+            {
+                AssetId = assetId,
+                FileBytes = asset.File
+            };
 
-            var response = await mediator.Send(command);
+            var result = await mediator.Send(saveRequest);
+            if (string.IsNullOrEmpty(result.Origin))
+            {
+                return Problem("Could not save uploaded file", assetId.ToString(), 500, errorTitle);
+            }
 
-            HttpStatusCode? statusCode = response.Value?.DownstreamStatusCode ??
-                                         (response.Success
-                                             ? HttpStatusCode.Created
-                                             : HttpStatusCode.InternalServerError);
+            asset.Origin = result.Origin;
+            asset.File = null;
+            return await Image(customerId, spaceId, imageId, asset);
 
-            return StatusCode((int) statusCode, response.Value?.Body);
         }
         
         
