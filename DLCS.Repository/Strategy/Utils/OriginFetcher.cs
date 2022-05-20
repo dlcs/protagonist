@@ -6,6 +6,9 @@ using DLCS.Repository.Strategy.DependencyInjection;
 
 namespace DLCS.Repository.Strategy.Utils
 {
+    /// <summary>
+    /// Helper class that gets appropriate origin strategy for a resource and fetches from origin to local disk
+    /// </summary>
     public class OriginFetcher
     {
         private readonly ICustomerOriginStrategyRepository customerOriginStrategyRepository;

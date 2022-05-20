@@ -3,6 +3,8 @@ using Amazon.S3;
 using API.Auth;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.AWS.Configuration;
+using DLCS.AWS.S3;
 using DLCS.Core.Encryption;
 using DLCS.Model;
 using DLCS.Model.Assets;
@@ -10,6 +12,7 @@ using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
+using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
@@ -18,8 +21,10 @@ using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
+using DLCS.Repository.Spaces;
 using DLCS.Repository.Storage;
 using DLCS.Repository.Storage.S3;
+using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -33,17 +38,20 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serilog;
+using IBucketReader = DLCS.Model.Storage.IBucketReader;
 
 namespace API
 {
     public class Startup
     {
         private const string Iso8601DateFormatString = "O";
-        private readonly IConfiguration configuration;
+        private readonly IConfiguration configuration;        
+        private readonly IWebHostEnvironment webHostEnvironment;
         
-        public Startup(IConfiguration configuration)
+        public Startup(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             this.configuration = configuration;
+            this.webHostEnvironment = webHostEnvironment;
         }
         
         public void ConfigureServices(IServiceCollection services)
@@ -56,7 +64,14 @@ namespace API
             var cacheSettings = cachingSection.Get<CacheSettings>();
             
             services.AddHttpClient(); // needed to call engine
-
+    
+            services
+                .AddSingleton<DLCS.AWS.S3.IBucketReader, DLCS.AWS.S3.S3BucketReader>()
+                .AddSingleton<IBucketWriter, S3BucketWriter>()
+                .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
+                .SetupAWS(configuration, webHostEnvironment)
+                .WithAmazonS3();
+            
             services
                 .AddHttpContextAccessor()
                 .AddSingleton<IEncryption, SHA256>()
@@ -67,12 +82,17 @@ namespace API
                     memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
                 })
                 .AddLazyCache()
+                .AddScoped<DeliveratorApiAuth>()
                 .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
                 .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
+                .AddScoped<ISpaceRepository, SpaceRepository>()
+                .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
                 .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
                 .AddScoped<IStorageRepository, DapperCustomerStorageRepository>()
                 .AddScoped<IAssetRepository, DapperAssetRepository>()
+                .AddScoped<IThumbnailPolicyRepository, ThumbnailPolicyRepository>()
+                .AddScoped<IImageOptimisationPolicyRepository, ImageOptimisationPolicyRepository>()
                 .ConfigureMediatR()
                 .ConfigureSwagger()
                 .AddDbContext<DlcsContext>(opts =>

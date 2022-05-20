@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
-using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
 using DLCS.Model.Spaces;
 using DLCS.Repository;
-using DLCS.Repository.Entities;
 using DotNet.Testcontainers.Containers.Builders;
 using DotNet.Testcontainers.Containers.Configurations.Databases;
 using DotNet.Testcontainers.Containers.Modules.Databases;
@@ -73,14 +71,14 @@ namespace Test.Helpers.Integration
 
             await DbContext.Customers.AddAsync(new Customer
             {
-                Created = DateTime.Now,
+                Created = DateTime.UtcNow,
                 Id = customer,
                 DisplayName = "TestUser",
                 Name = "test",
                 Keys = Array.Empty<string>()
             });
             await DbContext.Spaces.AddAsync(new Space
-                { Created = DateTime.Now, Id = 1, Customer = customer, Name = "space-1" });
+                { Created = DateTime.UtcNow, Id = 1, Customer = customer, Name = "space-1" });
             await DbContext.ThumbnailPolicies.AddAsync(new ThumbnailPolicy
                 { Id = "default", Name = "default", Sizes = "800,400,200" });
             await DbContext.AuthServices.AddAsync(new AuthService

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Security.Claims;
-using API.Client;
 using DLCS.Web.Auth;
 using FluentAssertions;
 using Xunit;

@@ -13,7 +13,7 @@ namespace Portal.Behaviours
     /// Audits request by logging message type/contents and UserId
     /// </summary>
     public class AuditBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IAuditable
+        where TRequest : IRequest<TResponse>, IAuditable
     {
         private readonly ILogger<AuditBehaviour<TRequest, TResponse>> logger;
         private readonly ClaimsPrincipal claimsPrincipal;

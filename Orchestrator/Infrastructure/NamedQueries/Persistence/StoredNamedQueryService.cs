@@ -1,9 +1,10 @@
 ﻿using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,15 +21,18 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         private readonly IBucketReader bucketReader;
         private readonly ILogger<StoredNamedQueryService> logger;
         private readonly NamedQuerySettings namedQuerySettings;
+        private readonly IStorageKeyGenerator storageKeyGenerator;
 
         public StoredNamedQueryService(
             IBucketReader bucketReader,
             IOptions<NamedQuerySettings> namedQuerySettings,
-            ILogger<StoredNamedQueryService> logger)
+            ILogger<StoredNamedQueryService> logger, 
+            IStorageKeyGenerator storageKeyGenerator)
         {
             this.bucketReader = bucketReader;
             this.namedQuerySettings = namedQuerySettings.Value;
             this.logger = logger;
+            this.storageKeyGenerator = storageKeyGenerator;
         }
 
         /// <summary>
@@ -115,8 +119,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
 
         private Task<ObjectFromBucket> LoadStoredObject(string key, CancellationToken cancellationToken)
         {
-            var objectInBucket = new ObjectInBucket(namedQuerySettings.OutputBucket, key);
-            return bucketReader.GetObjectFromBucket(objectInBucket, cancellationToken);
+            var outputLocation = storageKeyGenerator.GetOutputLocation(key);
+            return bucketReader.GetObjectFromBucket(outputLocation, cancellationToken);
         }
     }
     

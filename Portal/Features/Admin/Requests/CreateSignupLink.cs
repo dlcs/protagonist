@@ -42,7 +42,7 @@ namespace Portal.Features.Admin.Requests
                 var newLink = new SignupLink
                 {
                     Id = KeyGenerator.GetUniqueKey(24),
-                    Created = DateTime.Now,
+                    Created = DateTime.UtcNow,
                     Expires = request.Expires,
                     Note = request.Note
                 };

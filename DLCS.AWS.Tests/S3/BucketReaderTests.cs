@@ -7,27 +7,26 @@ using System.Threading.Tasks;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.Core.Exceptions;
-using DLCS.Model.Storage;
-using DLCS.Repository.Storage.S3;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
-namespace DLCS.Repository.Tests.Storage.S3
+namespace DLCS.AWS.Tests.S3
 {
     public class BucketReaderTests
     {
         private readonly IAmazonS3 s3Client;
-        private readonly ILogger<BucketReader> logger;
-        private readonly BucketReader sut;
+        private readonly S3BucketReader sut;
         
         public BucketReaderTests()
         {
             s3Client = A.Fake<IAmazonS3>();
-            logger = A.Fake<ILogger<BucketReader>>();
-            sut = new BucketReader(s3Client, logger);
+            sut = new S3BucketReader(s3Client, new NullLogger<S3BucketReader>());
         }
 
         [Fact]

@@ -118,7 +118,7 @@ namespace Portal.Pages.Account
             var signups = await dbContext.SignupLinks.Where(link => link.Id == signupCode).ToListAsync();
             if (signups.Count == 1)
             {
-                if (signups[0].CustomerId == null && signups[0].Expires > DateTime.Now)
+                if (signups[0].CustomerId == null && signups[0].Expires > DateTime.UtcNow)
                 {
                     return true;
                 }

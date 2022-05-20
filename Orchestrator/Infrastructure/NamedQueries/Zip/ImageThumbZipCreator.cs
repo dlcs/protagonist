@@ -2,13 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.AWS.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.Storage;
-using DLCS.Repository.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.NamedQueries.Persistence;
@@ -22,9 +20,10 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
     /// </summary>
     public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
     {
-        public ImageThumbZipCreator(IBucketReader bucketReader, IOptions<NamedQuerySettings> namedQuerySettings,
+        public ImageThumbZipCreator(IBucketReader bucketReader, IBucketWriter bucketWriter,
+            IOptions<NamedQuerySettings> namedQuerySettings, IStorageKeyGenerator storageKeyGenerator,
             ILogger<ImageThumbZipCreator> logger) :
-            base(bucketReader, namedQuerySettings, logger)
+            base(bucketReader, bucketWriter, namedQuerySettings, storageKeyGenerator, logger)
         {
         }
 
@@ -56,9 +55,9 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
 
         private async Task<CreateProjectionResult> UploadZipToS3(ZipParsedNamedQuery parsedNamedQuery, string zipFilePath)
         {
-            Logger.LogInformation("Uploading new zip archive to {S3Key}", parsedNamedQuery.StorageKey);
-            var objectInBucket = new ObjectInBucket(NamedQuerySettings.OutputBucket, parsedNamedQuery.StorageKey);
-            var success = await BucketReader.WriteFileToBucket(objectInBucket, zipFilePath, "application/zip");
+            var destination = StorageKeyGenerator.GetOutputLocation(parsedNamedQuery.StorageKey);
+            Logger.LogInformation("Uploading new zip archive to {S3Key}", destination);
+            var success = await BucketWriter.WriteFileToBucket(destination, zipFilePath, "application/zip");
             var fileInfo = new FileInfo(zipFilePath);
 
             return new CreateProjectionResult
@@ -99,8 +98,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
                 return;
             }
 
-            var largestThumb = new ObjectInBucket(NamedQuerySettings.ThumbsBucket,
-                $"{image.GetStorageKey()}/low.jpg");
+            var largestThumb = StorageKeyGenerator.GetLargestThumbnailLocation(image.GetAssetId());
             var largestThumbStream = await BucketReader.GetObjectContentFromBucket(largestThumb);
             if (largestThumbStream == null || largestThumbStream == Stream.Null)
             {

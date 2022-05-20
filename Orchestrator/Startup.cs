@@ -1,21 +1,12 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.S3;
-using API.Client;
-using DLCS.Core.Encryption;
-using DLCS.Model.Assets;
-using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.Auth;
-using DLCS.Model.Customers;
-using DLCS.Model.PathElements;
-using DLCS.Model.Storage;
+using DLCS.AWS.S3;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
-using DLCS.Repository.Customers;
 using DLCS.Repository.Settings;
-using DLCS.Repository.Storage.S3;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Configuration;
 using DLCS.Web.Requests.AssetDelivery;
@@ -25,17 +16,13 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Orchestrator.Assets;
 using Orchestrator.Features.Auth;
 using Orchestrator.Features.Images;
-using Orchestrator.Features.Images.Orchestration;
-using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
@@ -53,11 +40,14 @@ namespace Orchestrator
     public class Startup
     {
         private readonly IConfiguration configuration;
-        public Startup(IConfiguration configuration)
+        private readonly IWebHostEnvironment webHostEnvironment;
+
+        public Startup(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             this.configuration = configuration;
+            this.webHostEnvironment = webHostEnvironment;
         }
-        
+
         public void ConfigureServices(IServiceCollection services)
         {
             var reverseProxySection = configuration.GetSection("ReverseProxy");
@@ -70,16 +60,13 @@ namespace Orchestrator
                 .Configure<CacheSettings>(cachingSection)
                 .Configure<ReverseProxySettings>(reverseProxySection);
 
+            var orchestratorSettings = configuration.Get<OrchestratorSettings>();
+            
             services
                 .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
                 .AddSingleton<TimeBasedRequestHandler>()
-                .AddAWSService<IAmazonS3>()
-                .AddSingleton<IBucketReader, BucketReader>()
                 .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
-                .AddSingleton<IAssetTracker, MemoryAssetTracker>()
-                .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
-                .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
                 .AddScoped<AccessChecker>()
                 .AddScoped<IIIFCanvasFactory>()
@@ -94,8 +81,10 @@ namespace Orchestrator
                 .AddMediatR()
                 .AddHttpContextAccessor()
                 .AddNamedQueries(configuration)
-                .AddApiClient(configuration.Get<OrchestratorSettings>())
-                .ConfigureHealthChecks(reverseProxySection, configuration);
+                .AddOrchestration(orchestratorSettings)
+                .AddApiClient(orchestratorSettings)
+                .ConfigureHealthChecks(reverseProxySection, configuration)
+                .AddAws(configuration, webHostEnvironment);
             
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
             services.Configure<ForwardedHeadersOptions>(opts =>
@@ -105,8 +94,7 @@ namespace Orchestrator
 
             services
                 .AddFeatureFolderViews()
-                .AddControllersWithViews()
-                .SetCompatibilityVersion(CompatibilityVersion.Latest);
+                .AddControllersWithViews();
 
             services
                 .AddCors(options =>
@@ -140,9 +128,10 @@ namespace Orchestrator
 
             if (env.IsDevelopment())
             {
+                DlcsContextConfiguration.TryRunMigrations(configuration, logger);
                 app.UseDeveloperExceptionPage();
-                
             }
+
             app
                 .HandlePathBase(pathBase, logger)
                 .UseForwardedHeaders()

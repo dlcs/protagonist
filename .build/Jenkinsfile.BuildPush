@@ -34,7 +34,7 @@ pipeline {
       sh "apt-get update"
       sh "apt install -y libunwind8 gettext apt-transport-https python3-pip"
       sh "pip3 install awscli"
-      sh "curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 5.0"
+      sh "curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 6.0"
     }
   }
   stage('Test') {

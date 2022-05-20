@@ -172,7 +172,7 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_Token_Returns403_WithErrorJson_IfCookieContainsExpiredId_AndMessageIdNotPresent()
         {
             // Arrange
-            var token = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddHours(-1));
+            var token = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddHours(-1));
             await dbFixture.DbContext.SaveChangesAsync();
             const string path = "/auth/99/token";
             var request = new HttpRequestMessage(HttpMethod.Get, path);
@@ -193,7 +193,7 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_Token_Returns200_WithAccessToken_IfSuccess_AndMessageIdNotPresent()
         {
             // Arrange
-            var token = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(10));
+            var token = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddMinutes(10));
             await dbFixture.DbContext.SaveChangesAsync();
             const string path = "/auth/99/token";
             var request = new HttpRequestMessage(HttpMethod.Get, path);
@@ -292,7 +292,7 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_Token_ReturnsView_WithErrorJson_IfCookieContainsExpiredId()
         {
             // Arrange
-            var token = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddHours(-1));
+            var token = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddHours(-1));
             await dbFixture.DbContext.SaveChangesAsync();
             const string path = "/auth/99/token?messageId=123";
             var request = new HttpRequestMessage(HttpMethod.Get, path);
@@ -313,7 +313,7 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_Token_ReturnsView_WithAccessToken_IfSuccess()
         {
             // Arrange
-            var token = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.Now.AddMinutes(10));
+            var token = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddMinutes(10));
             await dbFixture.DbContext.SaveChangesAsync();
             const string path = "/auth/99/token?messageId=123";
             var request = new HttpRequestMessage(HttpMethod.Get, path);

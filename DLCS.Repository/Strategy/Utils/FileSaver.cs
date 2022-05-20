@@ -50,7 +50,7 @@ namespace DLCS.Repository.Strategy.Utils
                 if (knownFileSize)
                 {
                     await assetStream.CopyToAsync(fileStream, cancellationToken);
-                    received = originResponse.ContentLength.Value;
+                    received = originResponse.ContentLength!.Value;
                 }
                 else
                 {

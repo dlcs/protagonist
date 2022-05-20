@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Net.Http;
 using API.Client;
+using DLCS.AWS.Configuration;
+using DLCS.AWS.S3;
 using DLCS.Core.Encryption;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
@@ -13,11 +14,13 @@ using DLCS.Repository.Assets.CustomHeaders;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
-using DLCS.Web.Auth;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Orchestrator.Assets;
+using Orchestrator.Features.Images.Orchestration;
+using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
@@ -40,9 +43,7 @@ namespace Orchestrator.Infrastructure
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
                 .AddSingleton<ICustomHeaderRepository, DapperCustomHeaderRepository>()
                 .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
-                .AddDbContext<DlcsContext>(opts =>
-                    opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
-                );
+                .AddDlcsContext(configuration);
 
         /// <summary>
         /// Add required caching dependencies
@@ -77,6 +78,25 @@ namespace Orchestrator.Infrastructure
         }
 
         /// <summary>
+        /// Add required caching dependencies
+        /// </summary>
+        public static IServiceCollection AddOrchestration(this IServiceCollection services,
+            OrchestratorSettings settings)
+        {
+            var serviceCollection = services
+                .AddSingleton<IAssetTracker, MemoryAssetTracker>()
+                .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
+                .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
+                .AddSingleton<IOrchestrationQueue>(_ =>
+                    new BoundedChannelOrchestrationQueue(settings.OrchestrateOnInfoJsonMaxCapacity));
+
+            if (settings.OrchestrateOnInfoJson)
+                serviceCollection.AddHostedService<OrchestrationQueueMonitor>();
+            
+            return serviceCollection;
+        }
+
+        /// <summary>
         /// Add HealthChecks for Database and downstream image-servers
         /// </summary>
         public static IServiceCollection ConfigureHealthChecks(this IServiceCollection services,
@@ -98,6 +118,22 @@ namespace Orchestrator.Infrastructure
             {
                 healthChecksBuilder.AddUrlGroup(new Uri(resizeThumbs, "/ping"), name: "ThumbsResize", tags: tagsList);
             }
+
+            return services;
+        }
+
+        /// <summary>
+        /// Add required AWS services
+        /// </summary>
+        public static IServiceCollection AddAws(this IServiceCollection services,
+            IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
+        {
+            services
+                .AddSingleton<IBucketReader, S3BucketReader>()
+                .AddSingleton<IBucketWriter, S3BucketWriter>()
+                .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
+                .SetupAWS(configuration, webHostEnvironment)
+                .WithAmazonS3();
 
             return services;
         }

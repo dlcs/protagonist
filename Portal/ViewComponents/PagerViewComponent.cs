@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Amazon.SimpleSystemsManagement.Model;
-using Hydra.Collections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 

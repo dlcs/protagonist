@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace DLCS.Model.Storage
+namespace DLCS.AWS.S3.Models
 {
     public static class ObjectFromBucketX
     {

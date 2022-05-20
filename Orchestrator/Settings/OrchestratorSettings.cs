@@ -25,7 +25,7 @@ namespace Orchestrator.Settings
         public string AuthServicesUriTemplate { get; set; }
 
         /// <summary>
-        /// Timeout for critical orchestration path. How long to wait to acheive lock when orchestrating asset.
+        /// Timeout for critical orchestration path. How long to wait to achieve lock when orchestrating asset.
         /// If timeout breached, multiple orchestrations can happen for same item.
         /// </summary>
         public int CriticalPathTimeoutMs { get; set; } = 10000;
@@ -44,6 +44,11 @@ namespace Orchestrator.Settings
         /// If true, requests for info.json will cause image to be orchestrated.
         /// </summary>
         public bool OrchestrateOnInfoJson { get; set; }
+
+        /// <summary>
+        /// If <see cref="OrchestrateOnInfoJson"/> is true, this is the max number of requests that will be honoured
+        /// </summary>
+        public int OrchestrateOnInfoJsonMaxCapacity { get; set; } = 50;
         
         /// <summary>
         /// String used for salting requests to API
@@ -175,16 +180,6 @@ namespace Orchestrator.Settings
     /// </summary>
     public class NamedQuerySettings
     {
-        /// <summary>
-        /// Name of S3Bucket for storing namedquery PDF output
-        /// </summary>
-        public string OutputBucket { get; set; }
-
-        /// <summary>
-        /// Name of S3Bucket for storing thumbnails
-        /// </summary>
-        public string ThumbsBucket { get; set; }
-
         /// <summary>
         /// String format for generating keys for PDF object storage.
         /// Supported replacements are {customer}/{queryname}/{args}

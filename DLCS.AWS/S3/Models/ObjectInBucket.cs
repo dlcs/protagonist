@@ -1,6 +1,6 @@
 ﻿using DLCS.Core.Guard;
 
-namespace DLCS.Model.Storage
+namespace DLCS.AWS.S3.Models
 {
     /// <summary>
     /// Not S3-specific, but doesn't hide storage of objects in buckets

@@ -2,6 +2,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Settings;
+using DLCS.AWS.S3;
 using DLCS.Core.Types;
 using DLCS.Model.Storage;
 using MediatR;
@@ -26,16 +27,16 @@ namespace API.Features.Image.Requests
 
     public class HostAssetAtOriginHandler : IRequestHandler<HostAssetAtOrigin, HostAssetAtOriginResult>
     {
-        private readonly IBucketReader bucketReader;
+        private readonly IBucketWriter bucketWriter;
         private readonly ILogger<HostAssetAtOriginHandler> logger;
         private readonly ApiSettings settings;
 
         public HostAssetAtOriginHandler(
-            IBucketReader bucketReader,
+            IBucketWriter bucketWriter,
             ILogger<HostAssetAtOriginHandler> logger,
             IOptions<ApiSettings> settings)
         {
-            this.bucketReader = bucketReader;
+            this.bucketWriter = bucketWriter;
             this.logger = logger;
             this.settings = settings.Value;
         }
@@ -46,7 +47,7 @@ namespace API.Features.Image.Requests
             
             // Save to S3
             var objectInBucket = GetObjectInBucket(request.AssetId);
-            var bucketSuccess = await bucketReader.WriteToBucket(objectInBucket, stream, request.MediaType);
+            var bucketSuccess = await bucketWriter.WriteToBucket(objectInBucket, stream, request.MediaType);
 
             if (!bucketSuccess)
             {

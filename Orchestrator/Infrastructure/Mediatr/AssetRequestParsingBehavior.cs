@@ -11,7 +11,7 @@ namespace Orchestrator.Infrastructure.Mediatr
     /// <typeparam name="TRequest">Type of mediatr request</typeparam>
     /// <typeparam name="TResponse">Type of response</typeparam>
     public class AssetRequestParsingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-        where TRequest : IAssetRequest
+        where TRequest : IRequest<TResponse>, IAssetRequest
     {
         private readonly IAssetDeliveryPathParser assetDeliveryPathParser;
 
