@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using API.Settings;
 using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Storage;
 using MediatR;

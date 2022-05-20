@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Amazon.S3;
 using API.Auth;
 using API.Infrastructure;
 using API.Settings;
@@ -23,7 +22,6 @@ using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
 using DLCS.Repository.Spaces;
 using DLCS.Repository.Storage;
-using DLCS.Repository.Storage.S3;
 using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
 using Microsoft.AspNetCore.Builder;
@@ -31,14 +29,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serilog;
-using IBucketReader = DLCS.Model.Storage.IBucketReader;
 
 namespace API
 {
@@ -66,15 +62,9 @@ namespace API
             services.AddHttpClient(); // needed to call engine
     
             services
-                .AddSingleton<DLCS.AWS.S3.IBucketReader, DLCS.AWS.S3.S3BucketReader>()
-                .AddSingleton<IBucketWriter, S3BucketWriter>()
-                .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
-                .SetupAWS(configuration, webHostEnvironment)
-                .WithAmazonS3();
-            
-            services
                 .AddHttpContextAccessor()
                 .AddSingleton<IEncryption, SHA256>()
+                .AddSingleton<DeliveratorApiAuth>()
                 .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
                 .AddMemoryCache(memoryCacheOptions =>
                 {
@@ -82,9 +72,8 @@ namespace API
                     memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
                 })
                 .AddLazyCache()
-                .AddScoped<DeliveratorApiAuth>()
-                .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
                 .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
+                .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
                 .AddScoped<ISpaceRepository, SpaceRepository>()
                 .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
@@ -93,14 +82,17 @@ namespace API
                 .AddScoped<IAssetRepository, DapperAssetRepository>()
                 .AddScoped<IThumbnailPolicyRepository, ThumbnailPolicyRepository>()
                 .AddScoped<IImageOptimisationPolicyRepository, ImageOptimisationPolicyRepository>()
+                .AddSingleton<IMessageBus, MessageBus>()
                 .ConfigureMediatR()
                 .ConfigureSwagger()
-                .AddDbContext<DlcsContext>(opts =>
-                    opts.UseNpgsql(configuration.GetConnectionString("PostgreSQLConnection"))
-                )
-                .AddAWSService<IAmazonS3>()
-                .AddSingleton<IBucketReader, BucketReader>()
-                .AddSingleton<IMessageBus, MessageBus>();
+                .AddDlcsContext(configuration);
+
+            services
+                .AddSingleton<IBucketReader, S3BucketReader>()
+                .AddSingleton<IBucketWriter, S3BucketWriter>()
+                .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
+                .SetupAWS(configuration, webHostEnvironment)
+                .WithAmazonS3();
 
             services.AddDlcsDelegatedBasicAuth(options =>
                 {
