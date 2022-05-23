@@ -6,21 +6,6 @@ volumes:
   dlcs_localstack_tmp: {}
 
 services:
-  orchestrator:
-    build:
-      context: ../
-      dockerfile: Dockerfile.Orchestrator
-    ports:
-      - "5024:80"
-      - "5034:443"
-    env_file:
-      - .env
-    environment:
-      - RunMigrations=true
-    volumes:
-      - $HOME\Docker\scratch:/nas
-      - $HOME\.aws:/root/.aws:ro
-
   image-server:
     image: ghcr.io/dlcs/iipsrv-openjpeg:2.4.0
     ports:
@@ -29,16 +14,18 @@ services:
       - $HOME\Docker\scratch:/nas
     entrypoint: /operations.sh
 
-  thumbs:
-    build:
-      context: ../
-      dockerfile: Dockerfile.Thumbs
+  fireball:
+    image: fractos/fireball:1304a21459c2b6157abc46d3808512b578bd78b5
     ports:
-      - "5026:80"
+      - "5030:80"
+    environment:
+      - FIREBALL_DOWNLOAD_POOL_SIZE=100
+      - FIREBALL_WORK_FOLDER=/scratch/fireball
+    volumes:
+      - $HOME\Docker\scratch\fireball:/scratch/fireball
+      - $HOME\.aws:/root/.aws
     env_file:
       - .env
-    volumes:
-      - $HOME\.aws:/root/.aws
 
   localstack:
     build:
@@ -63,15 +50,3 @@ services:
       - dlcs_postgres_data_backups:/backups
     env_file:
       - .env
-
-  # NOTE: This uploads to 'real' s3
-  fireball:
-    image: fractos/fireball:1304a21459c2b6157abc46d3808512b578bd78b5
-    ports:
-      - "5030:80"
-    environment:
-      - FIREBALL_DOWNLOAD_POOL_SIZE=100
-      - FIREBALL_WORK_FOLDER=/scratch/fireball
-    volumes:
-      - $HOME\Docker\scratch\fireball:/scratch/fireball
-      - $HOME\.aws:/root/.aws

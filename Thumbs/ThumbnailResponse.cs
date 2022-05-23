@@ -2,7 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 
-namespace DLCS.Model.Assets
+namespace Thumbs
 {
     /// <summary>
     /// Represents request to get a Thumbnail.
