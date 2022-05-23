@@ -42,6 +42,11 @@ namespace DLCS.Repository.Customers
             return customer.Id == NullCustomer.Id ? null : customer;
         }
 
+        public Task<Customer?> GetCustomer(string name)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<Customer?> GetCustomerForKey(string apiKey, int? customerIdHint)
         {
             if (customerIdHint.HasValue)

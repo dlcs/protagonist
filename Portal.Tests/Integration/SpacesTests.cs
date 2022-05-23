@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
+using DLCS.Model.Spaces;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using FluentAssertions;

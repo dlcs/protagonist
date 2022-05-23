@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
+using DLCS.Model.Spaces;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using MediatR;

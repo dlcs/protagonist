@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using DLCS.Core.Types;
@@ -49,7 +50,18 @@ namespace DLCS.Repository.Assets
             return await connection.QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql,
                 new { Id = assetId.ToString() });
         }
-        
+
+        public Task<PageOfAssets> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize, string orderBy, bool ascending,
+            CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task Put(Asset putAsset, CancellationToken cancellationToken, string operation)
+        {
+            throw new NotImplementedException();
+        }
+
         private async Task<Asset> GetAssetInternal(string id)
         {
             var key = $"asset:{id}";

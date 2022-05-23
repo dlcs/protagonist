@@ -8,6 +8,7 @@ using DLCS.AWS.S3;
 using DLCS.Core.Encryption;
 using DLCS.Core.Settings;
 using DLCS.Mediatr.Behaviours;
+using DLCS.Model.Spaces;
 using DLCS.Repository;
 using DLCS.Repository.Spaces;
 using MediatR;

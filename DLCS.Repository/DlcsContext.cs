@@ -1,4 +1,8 @@
-﻿using System;
+﻿
+
+#nullable disable
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Enum;
@@ -8,6 +12,8 @@ using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
+using DLCS.Model.Spaces;
+using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Serialisation;
@@ -15,9 +21,6 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using OriginStrategy = DLCS.Repository.Entities.OriginStrategy;
-
-#nullable disable
-
 namespace DLCS.Repository
 {
     public partial class DlcsContext : DbContext
