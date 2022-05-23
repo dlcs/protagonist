@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace DLCS.Core.Strings
@@ -10,7 +11,7 @@ namespace DLCS.Core.Strings
         /// </summary>
         /// <param name="str">String to check</param>
         /// <returns>true if string contains content; else false</returns>
-        public static bool HasText(this string str) => !string.IsNullOrWhiteSpace(str);
+        public static bool HasText([NotNullWhen(true)] this string? str) => !string.IsNullOrWhiteSpace(str);
 
         /// <summary>
         /// Decode base64 encoded string back to UTF8 representation
@@ -21,5 +22,25 @@ namespace DLCS.Core.Strings
             => encoded.HasText()
                 ? Encoding.UTF8.GetString(Convert.FromBase64String(encoded))
                 : encoded;
+       
+        /// <summary>
+        /// converts "Some list of strings" to "someListOfStrings"
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns>The camel case string</returns>
+        public static string ToCamelCase(this string str)
+        {
+            var sb = new StringBuilder();
+            bool previousWasSpace = false;
+            foreach (char c in str.Trim())
+            {
+                if (Char.IsLetterOrDigit(c))
+                {
+                    sb.Append(previousWasSpace ? Char.ToUpperInvariant(c) : c);
+                }
+                previousWasSpace = Char.IsWhiteSpace(c);
+            }
+            return sb.ToString();
+        }
     }
 }

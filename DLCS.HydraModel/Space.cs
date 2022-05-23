@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using DLCS.Core.Collections;
+using DLCS.Core.Strings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -34,7 +36,7 @@ namespace DLCS.HydraModel
         [RdfProperty(Description = "The internal identifier for the space within the customer (uri component)",
             Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 10, PropertyName = "id")]
-        public int ModelId { get; set; }
+        public int? ModelId { get; set; }
 
         [RdfProperty(Description = "Space name",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
@@ -53,13 +55,21 @@ namespace DLCS.HydraModel
 
         [RdfProperty(Description = "Default size at which role-based authorisation will be enforced. -1=open, 0=always require auth",
             Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
-        [JsonProperty(Order = 14, PropertyName = "defaultMaxUnauthorised")]
-        public int? DefaultMaxUnauthorised { get; set; }
+        [JsonProperty(Order = 14, PropertyName = "maxUnauthorised")]
+        public int? MaxUnauthorised { get; set; }
+        
+        
+        [RdfProperty(Description = "Computed count of the number of images in the space.",
+            Range = Names.XmlSchema.Integer, ReadOnly = true, WriteOnly = false)]
+        [JsonProperty(Order = 14, PropertyName = "approximateNumberOfImages")]
+        public long? ApproximateNumberOfImages { get; set; }
+        
+        
 
-        [HydraLink(Description = "Default roles that will be applied to images in this space",
-            Range = Names.Hydra.Collection, ReadOnly = false, WriteOnly = false)]
+        [RdfProperty(Description = "Default roles that will be applied to images in this space",
+            Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 20, PropertyName = "defaultRoles")]
-        public string? DefaultRoles { get; set; }
+        public string[]? DefaultRoles { get; set; }
 
         [HydraLink(Description = "All the images in the space",
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
@@ -75,6 +85,7 @@ namespace DLCS.HydraModel
             Range = "vocab:CustomerStorage", ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 28, PropertyName = "storage")]
         public string? Storage { get; set; }
+
     }
 
     public class SpaceClass : Class
@@ -134,5 +145,16 @@ namespace DLCS.HydraModel
         /// <returns></returns>
         public static bool IsManifestSpace(this Space space) 
             => space.DefaultTags.Contains(ManifestTag);
+        
+        
+        public static void AddDefaultTag(this Space space, string tag)
+        {
+            space.DefaultTags = StringArrays.EnsureString(space.DefaultTags, tag);
+        }
+        
+        public static void RemoveDefaultTag(this Space space, string tag)
+        {
+            space.DefaultTags = StringArrays.RemoveString(space.DefaultTags, tag);
+        }
     }
 }

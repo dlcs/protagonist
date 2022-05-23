@@ -52,7 +52,7 @@ namespace API.Client
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}";
             var response = await httpClient.GetAsync(url);
-            var space = await response.ReadAsJsonAsync<Space>(true, jsonSerializerSettings);
+            var space = await response.ReadAsHydraResponseAsync<Space>(jsonSerializerSettings);
             return space;
         }
         
@@ -61,7 +61,7 @@ namespace API.Client
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images";
             var response = await httpClient.GetAsync(url);
-            var images = await response.ReadAsJsonAsync<HydraCollection<Image>>(true, jsonSerializerSettings);
+            var images = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>(jsonSerializerSettings);
             return images;
         }
 
@@ -69,7 +69,7 @@ namespace API.Client
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/spaces";
             var response = await httpClient.PostAsync(url, ApiBody(newSpace));
-            var space = await response.ReadAsJsonAsync<Space>(true, jsonSerializerSettings);
+            var space = await response.ReadAsHydraResponseAsync<Space>(jsonSerializerSettings);
             return space;
         }
 
@@ -77,7 +77,7 @@ namespace API.Client
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/keys";
             var response = await httpClient.GetAsync(url);
-            var apiKeys = await response.ReadAsJsonAsync<HydraCollection<ApiKey>>();
+            var apiKeys = await response.ReadAsHydraResponseAsync<HydraCollection<ApiKey>>(jsonSerializerSettings);
             return apiKeys?.Members.Select(m => m.Key);
         }
 
@@ -85,7 +85,7 @@ namespace API.Client
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/keys";
             var response = await httpClient.PostAsync(url, null!);
-            var apiKey = await response.ReadAsJsonAsync<ApiKey>();
+            var apiKey = await response.ReadAsHydraResponseAsync<ApiKey>(jsonSerializerSettings);
             return apiKey;
         }
 
@@ -93,7 +93,7 @@ namespace API.Client
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{requestSpaceId}/images/{requestImageId}";
             var response = await httpClient.GetAsync(url);
-            var image = await response.ReadAsJsonAsync<Image>(true, jsonSerializerSettings);
+            var image = await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
             return image;
         }
         
@@ -101,7 +101,7 @@ namespace API.Client
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/portalUsers";
             var response = await httpClient.GetAsync(url);
-            var portalUsers = await response.ReadAsJsonAsync<HydraCollection<PortalUser>>();
+            var portalUsers = await response.ReadAsHydraResponseAsync<HydraCollection<PortalUser>>(jsonSerializerSettings);
             return portalUsers;
         }
 
@@ -111,7 +111,7 @@ namespace API.Client
             // Handle that with some sort of nicer response code or known error enum.
             var url = $"/customers/{currentUser.GetCustomerId()}/portalUsers";
             var response = await httpClient.PostAsync(url, ApiBody(portalUser));
-            var newUser = await response.ReadAsJsonAsync<PortalUser>(true, jsonSerializerSettings);
+            var newUser = await response.ReadAsHydraResponseAsync<PortalUser>(jsonSerializerSettings);
             return newUser;
         }
 
@@ -135,7 +135,7 @@ namespace API.Client
             // TODO - error handling
             var uri = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}";
             var response = await httpClient.PutAsync(uri, ApiBody(asset));
-            return await response.ReadAsJsonAsync<Image>(true, jsonSerializerSettings);
+            return await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
         }
 
         public async Task<HydraCollection<Image>> PatchImages(HydraCollection<Image> images, int spaceId)
@@ -147,7 +147,7 @@ namespace API.Client
                 image.ModelId = $"{customerId}/{spaceId}/{image.ModelId}";
             }
             var response = await httpClient.PatchAsync(uri, ApiBody(images));
-            var patched = await response.ReadAsJsonAsync<HydraCollection<Image>>(true, jsonSerializerSettings);
+            var patched = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>(jsonSerializerSettings);
             return patched;
         }
 

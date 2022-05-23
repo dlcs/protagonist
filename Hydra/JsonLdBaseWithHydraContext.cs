@@ -7,12 +7,15 @@ namespace Hydra
     /// </summary>
     public class JsonLdBaseWithHydraContext : JsonLdBase
     {
+        private const string HydraContext = "http://www.w3.org/ns/hydra/context.jsonld";
         [JsonIgnore]
-        public bool IncludeContext { get; set; }
+        public bool WithContext { get; set; }
 
-        public override string Context
+        public override string? Context
         {
-            get { return IncludeContext ? "http://www.w3.org/ns/hydra/context.jsonld" : null; }
+            // Force the HydraContext but if not, don't null any existing context
+            get => WithContext ? HydraContext : InternalContext;
+            set => InternalContext = value;
         }
     }
 }
