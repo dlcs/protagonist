@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using DLCS.Core.Types;
 
-namespace DLCS.Repository.Assets
+namespace Thumbs.Reorganising
 {
     public interface IThumbReorganiser
     {
@@ -11,14 +11,5 @@ namespace DLCS.Repository.Assets
         /// <param name="assetId"><see cref="AssetId"/> to create new layout for</param>
         /// <returns><see cref="ReorganiseResult"/> enum representing result</returns>
         Task<ReorganiseResult> EnsureNewLayout(AssetId assetId);
-    }
-
-    /// <summary>
-    /// Default, no-op implementation of <see cref="IThumbReorganiser"/>
-    /// </summary>
-    public class NonOrganisingReorganiser : IThumbReorganiser
-    {
-        public Task<ReorganiseResult> EnsureNewLayout(AssetId assetId)
-            => Task.FromResult(ReorganiseResult.Unknown);
     }
 }

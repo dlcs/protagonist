@@ -4,14 +4,12 @@ using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository.Caching;
-using DLCS.Repository.Settings;
 using FakeItEasy;
 using FluentAssertions;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Orchestrator.Features.Images;
 using Orchestrator.Features.Images.Orchestration.Status;
 using Xunit;
 

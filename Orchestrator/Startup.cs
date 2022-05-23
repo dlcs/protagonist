@@ -1,12 +1,8 @@
 using System.Linq;
 using System.Threading.Tasks;
-using Amazon.S3;
-using DLCS.AWS.S3;
 using DLCS.Repository;
-using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
-using DLCS.Repository.Settings;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Configuration;
 using DLCS.Web.Requests.AssetDelivery;
@@ -54,7 +50,6 @@ namespace Orchestrator
             var cachingSection = configuration.GetSection("Caching");
             services
                 .Configure<OrchestratorSettings>(configuration)
-                .Configure<ThumbsSettings>(configuration.GetSection("Thumbs"))
                 .Configure<ProxySettings>(configuration.GetSection("Proxy"))
                 .Configure<NamedQuerySettings>(configuration.GetSection("NamedQuery"))
                 .Configure<CacheSettings>(cachingSection)
@@ -66,7 +61,6 @@ namespace Orchestrator
                 .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
                 .AddSingleton<ImageRequestHandler>()
                 .AddSingleton<TimeBasedRequestHandler>()
-                .AddSingleton<IThumbReorganiser, NonOrganisingReorganiser>()
                 .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
                 .AddScoped<AccessChecker>()
                 .AddScoped<IIIFCanvasFactory>()

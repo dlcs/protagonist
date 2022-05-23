@@ -8,11 +8,12 @@ using DLCS.Core.Collections;
 using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Repository.Assets;
 using IIIF;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace DLCS.Repository.Assets
+namespace Thumbs.Reorganising
 {
     public class ThumbReorganiser : IThumbReorganiser
     {
@@ -226,28 +227,5 @@ namespace DLCS.Repository.Assets
                 await bucketWriter.DeleteFromBucket(toDelete.ToArray());
             }
         }
-    }
-
-    public enum ReorganiseResult
-    {
-        /// <summary>
-        /// Default
-        /// </summary>
-        Unknown,
-        
-        /// <summary>
-        /// Asset with specified key was not found
-        /// </summary>
-        AssetNotFound,
-        
-        /// <summary>
-        /// Key already has expected layout
-        /// </summary>
-        HasExpectedLayout,
-        
-        /// <summary>
-        /// Layout was successfully reorganised.
-        /// </summary>
-        Reorganised
     }
 }

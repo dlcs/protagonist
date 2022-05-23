@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Model.Customers;
 using DLCS.Repository.Caching;
-using DLCS.Repository.Settings;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
