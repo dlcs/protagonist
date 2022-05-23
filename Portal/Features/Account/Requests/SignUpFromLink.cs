@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using API.Client;
 using DLCS.HydraModel;
 using DLCS.Repository;
+using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

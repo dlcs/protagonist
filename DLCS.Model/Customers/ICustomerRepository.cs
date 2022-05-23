@@ -18,6 +18,14 @@ namespace DLCS.Model.Customers
         /// <returns><see cref="Customer"/> object if found, else null</returns>
         public Task<Customer?> GetCustomer(int customerId);
 
+        
+        /// <summary>
+        /// Get Customer with specified Name
+        /// </summary>
+        /// <param name="name">The name (url-part) of the customer (not display name)</param>
+        /// <returns><see cref="Customer"/> object if found, else null</returns>
+        public Task<Customer?> GetCustomer(string name);
+        
         /// <summary>
         /// Return the customer that owns the supplied apiKey.
         /// This might be the admin user or it might be a regular customer.

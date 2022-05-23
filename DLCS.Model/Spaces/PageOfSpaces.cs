@@ -1,12 +1,10 @@
 using System.Collections.Generic;
-using DLCS.Model.Spaces;
-using DLCS.Repository.Entities;
 
-namespace Portal.Features.Spaces.Models
+namespace DLCS.Model.Spaces
 {
     public class PageOfSpaces
     {
-        public IEnumerable<Space> Spaces { get; set; }
+        public List<DLCS.Model.Spaces.Space> Spaces { get; set; }
         public int Page { get; set; }
         public int Total { get; set; }
     }

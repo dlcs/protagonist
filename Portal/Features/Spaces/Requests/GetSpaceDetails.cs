@@ -8,6 +8,7 @@ using API.Client;
 using DLCS.Core;
 using DLCS.Core.Settings;
 using DLCS.HydraModel;
+using DLCS.Web.Auth;
 using Hydra.Collections;
 using MediatR;
 using Microsoft.Extensions.Logging;
