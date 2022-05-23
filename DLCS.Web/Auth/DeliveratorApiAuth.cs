@@ -4,7 +4,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.Encryption;
 using DLCS.Model.Customers;
 
-namespace API.Client
+namespace DLCS.Web.Auth
 {
     /// <summary>
     /// Class with helpers to get basic authentication credentials for Deliverator DLCS API.

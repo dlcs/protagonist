@@ -8,6 +8,7 @@ using DLCS.AWS.S3.Models;
 using DLCS.Core.Settings;
 using DLCS.HydraModel;
 using DLCS.Model.Spaces;
+using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

@@ -11,6 +11,7 @@ using DLCS.Model.Customers;
 using DLCS.Repository;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
+using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

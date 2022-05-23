@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Security.Claims;
 
-namespace API.Client
+namespace DLCS.Web.Auth
 {
     /// <summary>
     /// A collection of extension methods for dealing with <see cref="ClaimsPrincipal"/>

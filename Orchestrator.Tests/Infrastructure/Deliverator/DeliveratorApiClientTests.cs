@@ -7,6 +7,7 @@ using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Core.Types;
 using DLCS.Model.Customers;
+using DLCS.Web.Auth;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;

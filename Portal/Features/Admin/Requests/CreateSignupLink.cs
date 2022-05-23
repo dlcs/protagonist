@@ -7,6 +7,7 @@ using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Model.Customers;
 using DLCS.Repository;
+using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.Extensions.Logging;
 

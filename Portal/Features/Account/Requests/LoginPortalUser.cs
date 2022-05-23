@@ -7,6 +7,7 @@ using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
+using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;

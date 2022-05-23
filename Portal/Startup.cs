@@ -11,6 +11,7 @@ using DLCS.Mediatr.Behaviours;
 using DLCS.Model.Spaces;
 using DLCS.Repository;
 using DLCS.Repository.Spaces;
+using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
