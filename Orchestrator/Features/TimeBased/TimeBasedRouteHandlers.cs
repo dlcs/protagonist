@@ -44,11 +44,11 @@ namespace Orchestrator.Features.TimeBased
         /// <param name="endpoints">Current <see cref="IEndpointRouteBuilder"/> object.</param>
         public static void MapTimeBasedHandling(this IEndpointRouteBuilder endpoints)
         {
-            var requestHandler = endpoints.ServiceProvider.GetService<TimeBasedRequestHandler>();
-            var forwarder = endpoints.ServiceProvider.GetService<IHttpForwarder>();
-            var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
+            var requestHandler = endpoints.GetRequiredService<TimeBasedRequestHandler>();
+            var forwarder = endpoints.GetRequiredService<IHttpForwarder>();
+            var logger = endpoints.GetRequiredService<ILoggerFactory>()
                 .CreateLogger(nameof(TimeBasedRouteHandlers));
-            var settings = endpoints.ServiceProvider.GetService<IOptions<ReverseProxySettings>>();
+            var settings = endpoints.GetRequiredService<IOptions<ReverseProxySettings>>();
 
             endpoints.Map("/iiif-av/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
             {

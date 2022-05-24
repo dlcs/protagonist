@@ -12,6 +12,7 @@ using Orchestrator.Assets;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
+using Yarp.ReverseProxy;
 using Yarp.ReverseProxy.Forwarder;
 
 namespace Orchestrator.Features.Images
@@ -48,12 +49,11 @@ namespace Orchestrator.Features.Images
         /// <param name="endpoints">Current <see cref="IEndpointRouteBuilder"/> object.</param>
         public static void MapImageHandling(this IEndpointRouteBuilder endpoints)
         {
-            var requestHandler = endpoints.ServiceProvider.GetService<ImageRequestHandler>();
-            var forwarder = endpoints.ServiceProvider.GetService<IHttpForwarder>();
-            var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
-                .CreateLogger(nameof(ImageRouteHandlers));
-            var settings = endpoints.ServiceProvider.GetService<IOptions<ReverseProxySettings>>();
-            var orchestrator = endpoints.ServiceProvider.GetService<IImageOrchestrator>();
+            var requestHandler = endpoints.GetRequiredService<ImageRequestHandler>();
+            var forwarder = endpoints.GetRequiredService<IHttpForwarder>();
+            var logger = endpoints.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(ImageRouteHandlers));
+            var settings = endpoints.GetRequiredService<IOptions<ReverseProxySettings>>();
+            var orchestrator = endpoints.GetRequiredService<IImageOrchestrator>();
 
             endpoints.MapGet("/iiif-img/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
             {
