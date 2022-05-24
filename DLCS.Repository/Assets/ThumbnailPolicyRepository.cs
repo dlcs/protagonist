@@ -40,7 +40,7 @@ namespace DLCS.Repository.Assets
             const string key = "ThumbRepository_ThumbnailPolicies";
             return appCache.GetOrAddAsync(key, async () =>
             {
-                logger.LogInformation("refreshing ThumbnailPolicies from database");
+                logger.LogDebug("Refreshing ThumbnailPolicies from database");
                 await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
                 var thumbnailPolicies = await connection.QueryAsync<ThumbnailPolicy>(
                     "SELECT \"Id\", \"Name\", \"Sizes\" FROM \"ThumbnailPolicies\"");

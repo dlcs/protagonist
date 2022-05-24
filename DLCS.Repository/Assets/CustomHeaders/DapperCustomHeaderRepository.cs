@@ -36,7 +36,7 @@ namespace DLCS.Repository.Assets.CustomHeaders
             var key = $"header:{customerId}";
             return await appCache.GetOrAddAsync(key, async () =>
             {
-                logger.LogDebug("refreshing {CacheKey} from database", key);
+                logger.LogDebug("Refreshing {CacheKey} from database", key);
                 await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
                 var customHeaders =
                     await connection.QueryAsync<CustomHeader>(CustomHeaderSql, new { Customer = customerId });

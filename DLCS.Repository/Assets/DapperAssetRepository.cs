@@ -67,7 +67,7 @@ namespace DLCS.Repository.Assets
             var key = $"asset:{id}";
             return await appCache.GetOrAddAsync(key, async entry =>
             {
-                logger.LogInformation("Refreshing assetCache from database {Asset}", id);
+                logger.LogDebug("Refreshing assetCache from database {Asset}", id);
                 await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
                 dynamic? rawAsset = await connection.QuerySingleOrDefaultAsync(AssetSql, new { Id = id });
                 if (rawAsset == null)

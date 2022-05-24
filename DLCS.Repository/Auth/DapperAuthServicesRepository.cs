@@ -39,7 +39,7 @@ namespace DLCS.Repository.Auth
 
             return await appCache.GetOrAddAsync(cacheKey, async () =>
             {
-                logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
+                logger.LogDebug("Refreshing {CacheKey} from database", cacheKey);
                 return await GetAuthServicesFromDatabase(customer, role);
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
         }
@@ -52,7 +52,7 @@ namespace DLCS.Repository.Auth
             {
                 return await appCache.GetOrAddAsync(cacheKey, async () =>
                 {
-                    logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
+                    logger.LogDebug("Refreshing {CacheKey} from database", cacheKey);
                     await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
                     return await connection.QuerySingleOrDefaultAsync<AuthService>(AuthServiceByNameSql,
                         new { Customer = customer, Name = name });
@@ -74,7 +74,7 @@ namespace DLCS.Repository.Auth
             {
                 return await appCache.GetOrAddAsync(cacheKey, async () =>
                 {
-                    logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
+                    logger.LogDebug("Refreshing {CacheKey} from database", cacheKey);
                     await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
                     return await connection.QuerySingleOrDefaultAsync<Role>(RoleByIdSql, new { Customer = customer, Role = role });
                 }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
@@ -94,7 +94,7 @@ namespace DLCS.Repository.Auth
             {
                 return await appCache.GetOrAddAsync(cacheKey, async () =>
                 {
-                    logger.LogDebug("refreshing {CacheKey} from database", cacheKey);
+                    logger.LogDebug("Refreshing {CacheKey} from database", cacheKey);
                     await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
                     return await connection.QuerySingleOrDefaultAsync<RoleProvider>(RoleProviderByIdSql,
                         new { Id = roleProviderId });

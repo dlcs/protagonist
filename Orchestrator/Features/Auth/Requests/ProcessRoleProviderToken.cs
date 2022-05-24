@@ -64,7 +64,7 @@ namespace Orchestrator.Features.Auth.Requests
 
             if (roleProvider == null)
             {
-                logger.LogInformation("Could not find authService {AuthServiceName} to customer {Customer}",
+                logger.LogInformation("Could not find authService {AuthServiceName} for customer {Customer}",
                     request.CustomerId, request.AuthServiceName);
                 return AuthTokenResponse.Fail();
             }

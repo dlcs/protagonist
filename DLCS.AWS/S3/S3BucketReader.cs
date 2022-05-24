@@ -32,7 +32,7 @@ namespace DLCS.AWS.S3
             }
             catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
             {
-                logger.LogDebug(e, "Could not find S3 object '{S3ObjectRequest}'", getObjectRequest.AsBucketAndKey());
+                logger.LogDebug("Could not find S3 object '{S3ObjectRequest}'", getObjectRequest.AsBucketAndKey());
                 return Stream.Null;
             }
             catch (AmazonS3Exception e)
@@ -54,7 +54,7 @@ namespace DLCS.AWS.S3
             }
             catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
             {
-                logger.LogDebug(e, "Could not find S3 object '{S3ObjectRequest}'", getObjectRequest.AsBucketAndKey());
+                logger.LogDebug("Could not find S3 object '{S3ObjectRequest}'", getObjectRequest.AsBucketAndKey());
                 return new ObjectFromBucket(objectInBucket, null, null);
             }
             catch (AmazonS3Exception e)
@@ -72,6 +72,11 @@ namespace DLCS.AWS.S3
             {
                 var response = await s3Client.ListObjectsAsync(listObjectsRequest, CancellationToken.None);
                 return response.S3Objects.Select(obj => obj.Key).OrderBy(s => s).ToArray();
+            }
+            catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
+            {
+                logger.LogDebug("Could not find S3 object '{S3ListObjectRequest}'", rootKey);
+                throw new HttpException(e.StatusCode, $"Error getting S3 objects for {listObjectsRequest}", e);
             }
             catch (AmazonS3Exception e)
             {

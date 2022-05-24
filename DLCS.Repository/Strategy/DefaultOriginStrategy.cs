@@ -28,7 +28,7 @@ namespace DLCS.Repository.Strategy
             // NOTE(DG): This will follow up to 8 redirections, as per deliverator.
             // However, https -> http will fail. 
             // Need to test relative redirects too.
-            logger.LogDebug("Fetching {asset} from Origin: {url}", assetId, origin);
+            logger.LogDebug("Fetching {Asset} from Origin: {Url}", assetId, origin);
 
             try
             {
@@ -39,7 +39,7 @@ namespace DLCS.Repository.Strategy
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error fetching {asset} from Origin: {url}", assetId, origin);
+                logger.LogError(ex, "Error fetching {Asset} from Origin: {Url}", assetId, origin);
                 return OriginResponse.Empty;
             }
         }
