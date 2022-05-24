@@ -18,7 +18,6 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         {
             this.proxyAction = proxyAction;
             this.rewriteWholePath = rewriteWholePath;
-
         }
 
         public override async ValueTask TransformRequestAsync(HttpContext httpContext, HttpRequestMessage proxyRequest,
@@ -28,7 +27,9 @@ namespace Orchestrator.Infrastructure.ReverseProxy
             await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix);
 
             // Assign the custom uri. Be careful about extra slashes when concatenating here.
-            proxyRequest.RequestUri = rewriteWholePath ? new Uri(proxyAction.Path) : GetNewDestination(destinationPrefix);
+            proxyRequest.RequestUri = rewriteWholePath 
+                ? new Uri(proxyAction.Path) 
+                : GetNewDestination(destinationPrefix);
             
             // TODO - handle x-forwarded-* headers?
             proxyRequest.Headers.Host = proxyRequest.RequestUri.Authority;
@@ -37,7 +38,7 @@ namespace Orchestrator.Infrastructure.ReverseProxy
 
         public override ValueTask<bool> TransformResponseAsync(
             HttpContext httpContext,
-            HttpResponseMessage proxyResponse)
+            HttpResponseMessage? proxyResponse)
         {
             base.TransformResponseAsync(httpContext, proxyResponse);
             

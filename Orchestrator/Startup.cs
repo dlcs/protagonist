@@ -25,6 +25,7 @@ using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.NamedQueries;
+using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Serilog;
 
@@ -69,6 +70,7 @@ namespace Orchestrator
                 .AddSingleton<AssetRequestProcessor>()
                 .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
                 .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
+                .AddSingleton<DownstreamDestinationSelector>()
                 .AddCaching(cachingSection.Get<CacheSettings>())
                 .AddOriginStrategies()
                 .AddDataAccess(configuration)
