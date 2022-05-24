@@ -48,5 +48,23 @@ namespace DLCS.Core.Tests.Strings
 
             actual.Should().Be("foo bar baz");
         }
+        
+        
+        [Theory]
+        [InlineData("this is a test", "thisIsATest", false)]
+        [InlineData("this is another test", "thisIsAnotherTest", false)]
+        [InlineData("this is another test", "thisIsAnotherTest", true)]
+        [InlineData(" ", "", false)]
+        [InlineData("Start with Capital ", "startWithCapital", true)]
+        [InlineData("Start with Capital ", "StartWithCapital", false)]
+        public void ToCamelCase_Transforms(string from, string to, bool lower)
+        {
+            var actual = from.ToCamelCase(lower);
+
+            actual.Should().Be(to);
+        }
+        
+        
+        
     }
 }

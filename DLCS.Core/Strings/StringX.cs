@@ -22,13 +22,14 @@ namespace DLCS.Core.Strings
             => encoded.HasText()
                 ? Encoding.UTF8.GetString(Convert.FromBase64String(encoded))
                 : encoded;
-       
+
         /// <summary>
         /// converts "Some list of strings" to "someListOfStrings"
         /// </summary>
-        /// <param name="str"></param>
+        /// <param name="str">The string to transform</param>
+        /// <param name="lowerInitial">Force the first letter to be lower case</param>
         /// <returns>The camel case string</returns>
-        public static string ToCamelCase(this string str)
+        public static string ToCamelCase(this string str, bool lowerInitial = false)
         {
             var sb = new StringBuilder();
             bool previousWasSpace = false;
@@ -39,6 +40,11 @@ namespace DLCS.Core.Strings
                     sb.Append(previousWasSpace ? Char.ToUpperInvariant(c) : c);
                 }
                 previousWasSpace = Char.IsWhiteSpace(c);
+            }
+
+            if (lowerInitial)
+            {
+                sb[0] = Char.ToLower(sb[0]);
             }
             return sb.ToString();
         }
