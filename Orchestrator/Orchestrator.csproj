@@ -17,7 +17,7 @@
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="6.0.5" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.4" />
         <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
-        <PackageReference Include="Yarp.ReverseProxy" Version="1.0.0-rc.1.21520.4" />
+        <PackageReference Include="Yarp.ReverseProxy" Version="1.1.0" />
     </ItemGroup>
 
     <ItemGroup>
