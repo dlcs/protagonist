@@ -1,6 +1,4 @@
-﻿using System;
-using API.Client;
-using DLCS.AWS.Configuration;
+﻿using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.Core.Encryption;
 using DLCS.Model.Assets;
@@ -16,7 +14,6 @@ using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Assets;
@@ -101,23 +98,20 @@ namespace Orchestrator.Infrastructure
         /// Add HealthChecks for Database and downstream image-servers
         /// </summary>
         public static IServiceCollection ConfigureHealthChecks(this IServiceCollection services,
-            IConfigurationSection reverseProxySection,
+            IConfigurationSection proxySection,
             IConfiguration configuration)
         {
-            var reverseProxySettings = reverseProxySection.Get<ReverseProxySettings>();
+            var proxy = proxySection.Get<ProxySettings>();
             var tagsList = new[] { "detail-only" };
             var healthChecksBuilder = services
                 .AddHealthChecks()
                 .AddNpgSql(configuration.GetPostgresSqlConnection(), name: "Database")
-                .AddUrlGroup(reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.ImageServer),
-                    name: "Image Server")
-                .AddUrlGroup(new Uri(reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.Thumbs)!, "/ping"),
-                    name: "Thumbs", tags: tagsList);
-            
-            var resizeThumbs = reverseProxySettings.GetAddressForProxyTarget(ProxyDestination.ResizeThumbs);
-            if (resizeThumbs != null)
+                .AddProxyDestination(ProxyDestination.ImageServer, "Image Server")
+                .AddProxyDestination(ProxyDestination.Thumbs, "Thumbs", tags: tagsList);
+                
+            if (proxy.CanResizeThumbs)
             {
-                healthChecksBuilder.AddUrlGroup(new Uri(resizeThumbs, "/ping"), name: "ThumbsResize", tags: tagsList);
+                healthChecksBuilder.AddProxyDestination(ProxyDestination.ResizeThumbs, "ThumbsResize", tags: tagsList);
             }
 
             return services;

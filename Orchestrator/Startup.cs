@@ -47,14 +47,13 @@ namespace Orchestrator
 
         public void ConfigureServices(IServiceCollection services)
         {
-            var reverseProxySection = configuration.GetSection("ReverseProxy");
             var cachingSection = configuration.GetSection("Caching");
+            var proxySection = configuration.GetSection("Proxy");
             services
                 .Configure<OrchestratorSettings>(configuration)
-                .Configure<ProxySettings>(configuration.GetSection("Proxy"))
+                .Configure<ProxySettings>(proxySection)
                 .Configure<NamedQuerySettings>(configuration.GetSection("NamedQuery"))
-                .Configure<CacheSettings>(cachingSection)
-                .Configure<ReverseProxySettings>(reverseProxySection);
+                .Configure<CacheSettings>(cachingSection);
 
             var orchestratorSettings = configuration.Get<OrchestratorSettings>();
             
@@ -79,7 +78,7 @@ namespace Orchestrator
                 .AddNamedQueries(configuration)
                 .AddOrchestration(orchestratorSettings)
                 .AddApiClient(orchestratorSettings)
-                .ConfigureHealthChecks(reverseProxySection, configuration)
+                .ConfigureHealthChecks(proxySection, configuration)
                 .AddAws(configuration, webHostEnvironment);
             
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
@@ -114,7 +113,7 @@ namespace Orchestrator
             // Add the reverse proxy to capability to the server
             services
                 .AddReverseProxy()
-                .LoadFromConfig(reverseProxySection);
+                .LoadFromConfig(configuration.GetSection("ReverseProxy"));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
