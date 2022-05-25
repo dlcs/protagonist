@@ -38,26 +38,26 @@ services:
     volumes:
       - $HOME\.aws:/root/.aws
 
-  # localstack:
-  #   build:
-  #     context: ./localstack
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "4566:4566"
-  #   environment:
-  #     - SERVICES=s3
-  #     - HOSTNAME_EXTERNAL=localstack
-  #     - DATA_DIR=/tmp/localstack/data
-  #   volumes:
-  #     - dlcs_localstack_tmp:/tmp/localstack
+  localstack:
+    build:
+      context: ./localstack
+      dockerfile: Dockerfile
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - HOSTNAME_EXTERNAL=localstack
+      - DATA_DIR=/tmp/localstack/data
+    volumes:
+      - dlcs_localstack_tmp:/tmp/localstack
 
-  # postgres:
-  #   image: postgres:14
-  #   hostname: postgres
-  #   ports:
-  #     - "5452:5432"
-  #   volumes:
-  #     - dlcs_postgres_data:/var/lib/postgresql/data
-  #     - dlcs_postgres_data_backups:/backups
-  #   env_file:
-  #     - .env
+  postgres:
+    image: postgres:14
+    hostname: postgres
+    ports:
+      - "5452:5432"
+    volumes:
+      - dlcs_postgres_data:/var/lib/postgresql/data
+      - dlcs_postgres_data_backups:/backups
+    env_file:
+      - .env
