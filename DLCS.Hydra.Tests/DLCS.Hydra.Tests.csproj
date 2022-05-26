@@ -23,6 +23,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\DLCS.HydraModel\DLCS.HydraModel.csproj" />
       <ProjectReference Include="..\Hydra\Hydra.csproj" />
     </ItemGroup>
 

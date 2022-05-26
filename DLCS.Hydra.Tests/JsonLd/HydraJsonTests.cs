@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Hydra.Tests.JsonLd;
 
-public class HydraJson
+public class HydraJsonTests
 {
     private const string HydraContext = "http://www.w3.org/ns/hydra/context.jsonld";
     
@@ -78,7 +78,20 @@ public class HydraJson
         {
             Id = "https://example.org/api/path-part/1"
         };
-        operation.Id.GetLastPathElement("api/path-part").Should().BeNull();}
+        operation.Id.GetLastPathElement("api/path-part/").Should().Be("1");
+        
+    }
+
+
+    [Fact] public void HydraId_GetLastPathElementWithPrefixNotExactMatch_ReturnsNull()
+    {
+        var operation = new Operation
+        {
+            Id = "https://example.org/api/path-part/1"
+        };
+        operation.Id.GetLastPathElement("api/path-part").Should().BeNull();
+
+    }
     
     
 }

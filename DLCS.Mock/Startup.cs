@@ -1,18 +1,16 @@
 using DLCS.Mock.ApiApp;
+using Hydra;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using Newtonsoft.Json;
 
 namespace DLCS.Mock
 {
     public class Startup
     {
-        private const string Iso8601DateFormatString = "O";
-        
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -31,12 +29,7 @@ namespace DLCS.Mock
             .AddNewtonsoftJson(options =>
             {
                 var jsonSettings = options.SerializerSettings;
-                jsonSettings.DateFormatString = Iso8601DateFormatString;
-                jsonSettings.DateFormatHandling = DateFormatHandling.IsoDateFormat;
-                options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-                options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-                jsonSettings.Formatting = Formatting.Indented;
-                jsonSettings.NullValueHandling = NullValueHandling.Ignore;
+                jsonSettings.ApplyHydraSerializationSettings();
             });
             services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo {Title = "DLCS.Mock", Version = "v1"}); });
         }
