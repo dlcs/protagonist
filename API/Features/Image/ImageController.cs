@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using API.Features.Image.Requests;
 using DLCS.HydraModel;
+using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -42,10 +43,12 @@ namespace API.Features.Image
         public async Task<IActionResult> IngestBytes([FromRoute] string customerId, [FromRoute] string spaceId,
             [FromRoute] string imageId, [FromBody] ImageWithFile asset)
         {
-            var claimsIdentity = User.Identity as ClaimsIdentity;
-            var claim = claimsIdentity?.FindFirst("DlcsAuth").Value;
+            // In this interim implementation that still calls old API, if the user has arrived
+            // at this controller, they are authorised to make this call.
+            // So we just need to forward on the Auth header.
+            var basicAuth = Request.GetAuthHeaderValue(AuthenticationHeaderUtils.BasicScheme);
             var command = new IngestImageFromFile(customerId, spaceId, imageId,
-                new MemoryStream(asset.File), asset.ToImage(), claim);
+                new MemoryStream(asset.File), asset.ToImage(), basicAuth);
 
             var response = await mediator.Send(command);
 

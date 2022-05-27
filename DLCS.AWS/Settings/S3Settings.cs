@@ -16,8 +16,16 @@
         public string OutputBucket { get; set; }
         
         /// <summary>
+        /// Name of bucket used when the DLCS provides the origin of asset itself, by hosting, rather than
+        /// relying on a third party bucket or other origin.
+        /// DLCS applications like API and Portal will deposit uploaded resources here.
+        /// </summary>
+        public string OriginBucket { get; set; }
+        
+        /// <summary>
         /// Service root for S3. Only used if running LocalStack
         /// </summary>
         public string ServiceUrl { get; set; } = "http://localhost:4566/";
+        
     }
 }
