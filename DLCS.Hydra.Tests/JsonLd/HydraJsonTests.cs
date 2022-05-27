@@ -1,8 +1,9 @@
 using FluentAssertions;
+using Hydra;
 using Hydra.Model;
 using Xunit;
 
-namespace Hydra.Tests.JsonLd;
+namespace DLCS.Hydra.Tests.JsonLd;
 
 public class HydraJsonTests
 {
