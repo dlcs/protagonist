@@ -64,8 +64,12 @@ namespace API.Client
             var space = await response.ReadAsHydraResponseAsync<Space>(jsonSerializerSettings);
             return space;
         }
-        
-        
+
+        public async Task<HydraCollection<Image>> GetSpaceImages(int spaceId)
+        {
+            return await GetSpaceImages(1, 100, spaceId);
+        }
+
         public async Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, string? orderBy = null)
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images?page={page}&pageSize={pageSize}";

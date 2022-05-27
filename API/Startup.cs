@@ -7,10 +7,15 @@ using API.Settings;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.Core.Encryption;
+using DLCS.Model;
+using DLCS.Model.Auth;
 using DLCS.Model.Customers;
+using DLCS.Model.Processing;
 using DLCS.Repository;
+using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
+using DLCS.Repository.Entities;
 using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
 using Hydra;
@@ -63,6 +68,9 @@ namespace API
                 })
                 .AddLazyCache()
                 .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
+                .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
+                .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
+                .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
                 .ConfigureMediatR()
                 .ConfigureSwagger()
                 .AddDlcsContext(configuration);
