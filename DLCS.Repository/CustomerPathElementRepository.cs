@@ -65,7 +65,7 @@ namespace DLCS.Repository
             const string key = "CustomerPathElementRepository_CustomerLookup";
             return appCache.GetOrAddAsync(key, async () =>
             {
-                logger.LogDebug("refreshing customer name/id lookup from database");
+                logger.LogDebug("Refreshing customer name/id lookup from database");
                 return new ReadOnlyMap<string, int>(await customerRepository.GetCustomerIdLookup());
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.High));
         }

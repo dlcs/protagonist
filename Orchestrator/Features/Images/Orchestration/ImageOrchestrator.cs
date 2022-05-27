@@ -76,7 +76,7 @@ namespace Orchestrator.Features.Images.Orchestration
                 // TODO - should this be done prior to entering the lock?
                 if (string.IsNullOrEmpty(orchestrationImage.S3Location))
                 {
-                    logger.LogWarning("Asset '{AssetId}' has no s3 location, reingesting", assetId);
+                    logger.LogInformation("Asset '{AssetId}' has no s3 location, reingesting", assetId);
                     
                     if (!await dlcsApiClient.ReingestAsset(assetId, cancellationToken))
                     {

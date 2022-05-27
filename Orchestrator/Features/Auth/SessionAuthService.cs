@@ -175,7 +175,7 @@ namespace Orchestrator.Features.Auth
 
             if (authToken == null)
             {
-                logger.LogInformation(
+                logger.LogDebug(
                     "Requested authToken for customer:'{Customer}', cookie:'{CookieId}' not found or expired",
                     customer, cookieId);
                 return null;
@@ -192,7 +192,7 @@ namespace Orchestrator.Features.Auth
 
             if (authToken == null)
             {
-                logger.LogInformation(
+                logger.LogDebug(
                     "Requested authToken for customer:'{Customer}', bearerToken:'{BearerToken}' not found or expired",
                     customer, bearerToken);
                 return null;

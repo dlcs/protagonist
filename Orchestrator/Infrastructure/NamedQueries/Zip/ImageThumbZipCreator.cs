@@ -32,6 +32,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
         {
             var storageKey = parsedNamedQuery.StorageKey;
             var zipFilePath = GetZipFilePath(parsedNamedQuery);
+            Logger.LogInformation("Creating new zip document at {ZipS3Key}", storageKey);
 
             try
             {
@@ -56,7 +57,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
         private async Task<CreateProjectionResult> UploadZipToS3(ZipParsedNamedQuery parsedNamedQuery, string zipFilePath)
         {
             var destination = StorageKeyGenerator.GetOutputLocation(parsedNamedQuery.StorageKey);
-            Logger.LogInformation("Uploading new zip archive to {S3Key}", destination);
+            Logger.LogDebug("Uploading new zip archive to {S3Key}", destination);
             var success = await BucketWriter.WriteFileToBucket(destination, zipFilePath, "application/zip");
             var fileInfo = new FileInfo(zipFilePath);
 
@@ -70,7 +71,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
         private async Task CreateZipFileOnDisk(ZipParsedNamedQuery parsedNamedQuery, List<Asset> assets,
             string storageKey, string zipFilePath, CancellationToken cancellationToken)
         {
-            Logger.LogInformation("Creating new zip archive for {S3Key} at {LocalPath} with {AssetCount} assets",
+            Logger.LogDebug("Creating new zip archive for {S3Key} at {LocalPath} with {AssetCount} assets",
                 storageKey, zipFilePath, assets.Count);
 
             Directory.CreateDirectory(zipFilePath[..zipFilePath.LastIndexOf(Path.DirectorySeparatorChar)]);
@@ -85,7 +86,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip
                     Logger.LogWarning("Creation of zip file at {LocalPath} cancelled, aborting", zipFilePath);
                     cancellationToken.ThrowIfCancellationRequested();
                 }
-                Logger.LogDebug("Adding image {Image} to {LocalPath}", ++imageCount, zipFilePath);
+                Logger.LogTrace("Adding image {Image} to {LocalPath}", ++imageCount, zipFilePath);
                 await ProcessImage(i, storageKey, zipArchive);
             }
         }

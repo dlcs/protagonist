@@ -60,7 +60,7 @@ namespace DLCS.Repository.Strategy.Utils
                 
                 sw.Stop();
 
-                logger.LogInformation(
+                logger.LogDebug(
                     "Download {Asset} to '{TargetPath}': done ({Bytes} bytes, {Elapsed}ms) using {CopyType}",
                     assetId, destination, received, sw.ElapsedMilliseconds,
                     knownFileSize ? "framework-copy" : "manual-copy");

@@ -91,7 +91,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
             int pageNumber = 0;
             foreach (var i in NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery))
             {
-                Logger.LogDebug("Adding PDF page {PdfPage} to {PdfS3Key} for {Image}", pageNumber++, pdfKey, i.Id);
+                Logger.LogTrace("Adding PDF page {PdfPage} to {PdfS3Key} for {Image}", pageNumber++, pdfKey, i.Id);
                 if (i.Roles.HasText())
                 {
                     Logger.LogDebug("Image {Image} on page {PdfPage} of {PdfS3Key} has roles, redacting", i.Id,
@@ -115,12 +115,12 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
             {
                 Content = new StringContent(jsonString, Encoding.UTF8, "application/json")
             };
-            Logger.LogInformation("Calling fireball to create new pdf document at {PdfS3Key}", pdfKey);
+            Logger.LogDebug("Calling fireball to create new pdf document at {PdfS3Key}", pdfKey);
             var sw = Stopwatch.StartNew();
             var response = await fireballClient.SendAsync(request, cancellationToken);
             var fireballResponse = await response.ReadAsJsonAsync<CreateProjectionResult>(true, jsonSerializerSettings);
             sw.Stop();
-            Logger.LogInformation("Created new pdf document at {PdfS3Key} with size in bytes = {SizeBytes}. Took {Elapsed}ms",
+            Logger.LogDebug("Created new pdf document at {PdfS3Key} with size in bytes = {SizeBytes}. Took {Elapsed}ms",
                 pdfKey, fireballResponse?.Size ?? -1, sw.ElapsedMilliseconds);
             return fireballResponse;
         }
