@@ -9,6 +9,12 @@ namespace DLCS.HydraModel
         UriTemplate = "")]
     public class EntryPoint : DlcsResource
     {
+        public EntryPoint(string baseUrl)
+        {
+            BaseUrl = baseUrl;
+            Init(baseUrl, true);
+        }
+        
         [HydraLink(Description = "List of customers to which you have access (usually 1)", 
             Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
         [JsonProperty(Order = 11, PropertyName = "customers")]

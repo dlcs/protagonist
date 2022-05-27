@@ -25,7 +25,7 @@ namespace DLCS.Mock.Controllers
 
             return new HydraCollection<ImageOptimisationPolicy>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = imageOptimisationPolicies,
                 TotalItems = imageOptimisationPolicies.Length,
                 Id = Request.GetDisplayUrl()

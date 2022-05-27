@@ -25,7 +25,7 @@ namespace DLCS.Mock.Controllers
 
             return new HydraCollection<ThumbnailPolicy>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = thumbnailPolicies,
                 TotalItems = thumbnailPolicies.Length,
                 Id = Request.GetDisplayUrl()

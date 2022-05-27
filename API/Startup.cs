@@ -13,6 +13,7 @@ using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
+using Hydra;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -30,7 +31,6 @@ namespace API
 {
     public class Startup
     {
-        private const string Iso8601DateFormatString = "O";
         private readonly IConfiguration configuration;
         private readonly IWebHostEnvironment webHostEnvironment;
 
@@ -94,12 +94,7 @@ namespace API
                 .AddControllers()
                 .AddNewtonsoftJson(options =>
                 {
-                    var jsonSettings = options.SerializerSettings;
-                    jsonSettings.DateFormatString = Iso8601DateFormatString;
-                    jsonSettings.DateFormatHandling = DateFormatHandling.IsoDateFormat;
-                    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-                    options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-                    jsonSettings.Formatting = Formatting.Indented;
+                    options.SerializerSettings.ApplyHydraSerializationSettings();
                 });
 
             services

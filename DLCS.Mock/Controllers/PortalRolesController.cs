@@ -25,7 +25,7 @@ namespace DLCS.Mock.Controllers
 
             return new HydraCollection<PortalRole>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = portalRoles,
                 TotalItems = portalRoles.Length,
                 Id = Request.GetDisplayUrl()
@@ -55,7 +55,7 @@ namespace DLCS.Mock.Controllers
 
             return new HydraCollection<PortalRole>
             {
-                IncludeContext = true,
+                WithContext = true,
                 Members = roles,
                 TotalItems = roles.Length,
                 Id = Request.GetDisplayUrl()

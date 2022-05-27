@@ -4,10 +4,7 @@ namespace Hydra.Model
 {
     public class Status : JsonLdBaseWithHydraContext
     {
-        public override string Type
-        {
-            get { return "Status"; }
-        }
+        public override string Type => "Status";
 
         [JsonProperty(Order = 10, PropertyName = "statusCode")]
         public int StatusCode { get; set; }
