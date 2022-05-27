@@ -1,28 +1,16 @@
 ﻿using System.Text.RegularExpressions;
-using DLCS.Core.Guard;
 
 namespace DLCS.AWS.S3.Models
 {
     public class RegionalisedObjectInBucket : ObjectInBucket
     {
-        public string Region { get; set; }
+        public string? Region { get; set; }
         
-        public RegionalisedObjectInBucket(string bucket, string key = null, string region = null) : base(bucket, key)
+        public RegionalisedObjectInBucket(string bucket, string? key = null, string? region = null) : base(bucket, key)
         {
             Region = region;
         }
-        
-        /// <summary>
-        /// Get fully qualified S3 uri (e.g. s3://eu-west-1/bucket/key)
-        /// </summary>
-        public string GetS3QualifiedUri() => $"s3://{Region.ThrowIfNullOrWhiteSpace(nameof(Region))}/{Bucket}/{Key}";
-        
-        // TODO - naive implementation, won't work for us-east-1
-        /// <summary>
-        /// Get http uri for S3 object (e.g. https://s3.eu-west-1/bucket/key)
-        /// </summary>
-        public string GetHttpUri() => $"https://{Bucket}.s3-{Region.ThrowIfNullOrWhiteSpace(nameof(Region))}.amazonaws.com/{Key}";
-        
+
         // NOTE(DG) Regex's and logic moved from deliverator
         private static readonly Regex RegexS3Qualified = new(@"s3\:\/\/(.*?)\/(.*?)\/(.*)", RegexOptions.Compiled);
         
@@ -38,7 +26,7 @@ namespace DLCS.AWS.S3.Models
         // bucket name in path (assumes same region as caller)
         private static readonly Regex RegexHttp4 = new(@"^http[s]?:\/\/s3\.amazonaws\.com\/(.*?)\/(.*)$", RegexOptions.Compiled); 
 
-        public static RegionalisedObjectInBucket Parse(string uri)
+        public static RegionalisedObjectInBucket? Parse(string uri)
         {
             if (TryParseBucketInfo(RegexS3Qualified, uri, out var result, qualified: true))
             {
@@ -68,7 +56,7 @@ namespace DLCS.AWS.S3.Models
             return null;
         }
 
-        private static bool TryParseBucketInfo(Regex regex, string s, out RegionalisedObjectInBucket bucket,
+        private static bool TryParseBucketInfo(Regex regex, string s, out RegionalisedObjectInBucket? bucket,
             bool qualified = false, bool following = false)
         {
             var match = regex.Match(s);
