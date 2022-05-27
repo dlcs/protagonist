@@ -10,9 +10,11 @@ namespace DLCS.AWS.S3
     public class S3StorageKeyGenerator : IStorageKeyGenerator
     {
         private readonly S3Settings s3Options;
+        private readonly AWSSettings awsSettings;
 
         public S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions)
         {
+            awsSettings = awsOptions.Value;
             s3Options = awsOptions.Value.S3;
         }
         
@@ -87,5 +89,11 @@ namespace DLCS.AWS.S3
 
         public ObjectInBucket GetOutputLocation(string key)
             => new(s3Options.OutputBucket, key);
+
+        public RegionalisedObjectInBucket GetTimebasedAssetLocation(AssetId assetId, string assetPath)
+        {
+            var fullPath = $"{GetStorageKey(assetId)}/{assetPath}";
+            return new RegionalisedObjectInBucket(s3Options.StorageBucket, fullPath, awsSettings.Region);
+        }
     }
 }

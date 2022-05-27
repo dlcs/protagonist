@@ -6,6 +6,11 @@
     public class S3Settings
     {
         /// <summary>
+        /// Name of bucket for storing ingested web-friendly derivatives
+        /// </summary>
+        public string StorageBucket { get; set; }
+            
+        /// <summary>
         /// Name of bucket storing pre-generated thumbnails
         /// </summary>
         public string ThumbsBucket { get; set; }
