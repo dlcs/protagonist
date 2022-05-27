@@ -1,15 +1,16 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Threading.Tasks;
+using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.ReverseProxy;
-using Orchestrator.Settings;
 
 namespace Orchestrator.Features.TimeBased
 {
@@ -21,18 +22,18 @@ namespace Orchestrator.Features.TimeBased
         private readonly ILogger<TimeBasedRequestHandler> logger;
         private readonly AssetRequestProcessor assetRequestProcessor;
         private readonly IServiceScopeFactory scopeFactory;
-        private readonly ProxySettings proxySettings;
+        private readonly IStorageKeyGenerator storageKeyGenerator;
 
         public TimeBasedRequestHandler(
             ILogger<TimeBasedRequestHandler> logger,
             AssetRequestProcessor assetRequestProcessor,
             IServiceScopeFactory scopeFactory,
-            IOptions<ProxySettings> proxySettings)
+            IStorageKeyGenerator storageKeyGenerator)
         {
             this.logger = logger;
             this.assetRequestProcessor = assetRequestProcessor;
             this.scopeFactory = scopeFactory;
-            this.proxySettings = proxySettings.Value;
+            this.storageKeyGenerator = storageKeyGenerator;
         }
 
         /// <summary>
@@ -57,13 +58,12 @@ namespace Orchestrator.Features.TimeBased
                 logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
                 return new StatusCodeResult(HttpStatusCode.NotFound);
             }
-            
-            var s3Path =
-                $"{proxySettings.S3HttpBase}/{proxySettings.StorageBucket}/{assetRequest.GetAssetId()}{assetRequest.TimeBasedRequest}";
+
+            var s3Path = GetRequestedAssetHttpUri(assetRequest);
             if (!orchestrationAsset.RequiresAuth)
             {
                 logger.LogDebug("No auth for {Path}, 302 to S3 object {S3}", httpContext.Request.Path, s3Path);
-                return new StatusCodeResult(HttpStatusCode.Redirect).WithHeader("Location", s3Path);
+                return new StatusCodeResult(HttpStatusCode.Redirect).WithHeader("Location", s3Path.ToString());
             }
 
             if (!await IsAuthenticated(assetRequest, orchestrationAsset, httpContext.Request))
@@ -79,7 +79,14 @@ namespace Orchestrator.Features.TimeBased
                 return new StatusCodeResult(HttpStatusCode.OK);
             }
             
-            return new ProxyActionResult(ProxyDestination.S3, orchestrationAsset.RequiresAuth, s3Path);
+            return new ProxyActionResult(ProxyDestination.S3, orchestrationAsset.RequiresAuth, s3Path.ToString());
+        }
+
+        private Uri GetRequestedAssetHttpUri(TimeBasedAssetDeliveryRequest? assetRequest)
+        {
+            var location =
+                storageKeyGenerator.GetTimebasedAssetLocation(assetRequest.GetAssetId(), assetRequest.TimeBasedRequest);
+            return location.GetHttpUri();
         }
 
         private async Task<bool> IsAuthenticated(TimeBasedAssetDeliveryRequest assetRequest, OrchestrationAsset asset,

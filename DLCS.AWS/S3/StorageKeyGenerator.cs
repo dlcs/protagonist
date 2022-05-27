@@ -1,5 +1,7 @@
-﻿using DLCS.AWS.S3.Models;
+﻿using System;
+using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
+using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using Microsoft.Extensions.Options;
 
@@ -92,7 +94,7 @@ namespace DLCS.AWS.S3
 
         public RegionalisedObjectInBucket GetTimebasedAssetLocation(AssetId assetId, string assetPath)
         {
-            var fullPath = $"{GetStorageKey(assetId)}/{assetPath}";
+            var fullPath = GetStorageKey(assetId).ToConcatenated('/', assetPath);
             return new RegionalisedObjectInBucket(s3Options.StorageBucket, fullPath, awsSettings.Region);
         }
     }

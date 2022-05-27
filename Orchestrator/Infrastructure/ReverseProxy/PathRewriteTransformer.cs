@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using DLCS.Core.Strings;
 using Microsoft.AspNetCore.Http;
 using Yarp.ReverseProxy.Forwarder;
 
@@ -77,8 +78,6 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         }
 
         private Uri GetNewDestination(string destinationPrefix)
-            => new(destinationPrefix[^1] == '/'
-                ? $"{destinationPrefix}{proxyAction.Path}"
-                : $"{destinationPrefix}/{proxyAction.Path}");
+            => new(destinationPrefix.ToConcatenated('/', proxyAction.Path));
     }
 }

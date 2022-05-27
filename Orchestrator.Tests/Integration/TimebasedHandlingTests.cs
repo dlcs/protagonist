@@ -91,7 +91,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.SaveChangesAsync();
             var expectedPath =
                 new Uri(
-                    "https://s3-eu-west-1.amazonaws.com/test-dlcs-storage/99/1/test-noauth/full/full/max/max/0/default.mp4");
+                    "https://protagonist-storage.s3.eu-west-1.amazonaws.com/99/1/test-noauth/full/full/max/max/0/default.mp4");
             
             // Act
             var response = await httpClient.GetAsync("/iiif-av/99/1/test-noauth/full/full/max/max/0/default.mp4");
@@ -243,7 +243,7 @@ namespace Orchestrator.Tests.Integration
             
             var expectedPath =
                 new Uri(
-                    "https://s3-eu-west-1.amazonaws.com/test-dlcs-storage/99/1/cookie-pass/full/full/max/max/0/default.mp4");
+                    "https://protagonist-storage.s3.eu-west-1.amazonaws.com/99/1/cookie-pass/full/full/max/max/0/default.mp4");
 
             // Act
             var request = new HttpRequestMessage(HttpMethod.Get,

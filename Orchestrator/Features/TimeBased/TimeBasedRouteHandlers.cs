@@ -5,14 +5,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Orchestrator.Features.Images;
 using Orchestrator.Infrastructure.ReverseProxy;
-using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
-using Yarp.ReverseProxy.Model;
 
 namespace Orchestrator.Features.TimeBased
 {
