@@ -41,7 +41,7 @@ public class ImageTests
     }
     
     [Fact]
-    public void ImageClass_SerialisesTo_shortStringForImage_Id()
+    public void ImageClass_SerialisesTo_ShortStringForImage_Id()
     {
         var expected = "my-image";
         var image = new Image(BaseUrl, 1, 1, expected);

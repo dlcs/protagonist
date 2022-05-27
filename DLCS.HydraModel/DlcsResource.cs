@@ -52,7 +52,7 @@ namespace DLCS.HydraModel
                     var hydraLink = attrs.OfType<HydraLinkAttribute>().SingleOrDefault();
                     if (hydraLink != null && hydraLink.SetManually == false)
                     {
-                        property.SetValue(this, Id + "/" + jsonProp.PropertyName);
+                        property.SetValue(this,  $"{Id}/{jsonProp.PropertyName}");
                     }
                 }
             }
@@ -68,7 +68,7 @@ namespace DLCS.HydraModel
 
         public override string Context =>
             // do this better later - prefer not have FullName but makes reflection easier!
-            BaseUrl + "/contexts/" + GetType().Name + ".jsonld";
+            $"{BaseUrl}/contexts/{GetType().Name}.jsonld";
 
         public override string Type => $"vocab:{GetType().Name}";
     }

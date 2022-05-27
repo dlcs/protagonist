@@ -83,15 +83,25 @@ public class HydraJsonTests
     }
 
 
-    [Fact] public void HydraId_GetLastPathElementWithPrefixNotExactMatch_ReturnsNull()
+    [Fact] 
+    public void HydraId_GetLastPathElementWithPrefixNotExactMatch_ReturnsNull()
     {
         var operation = new Operation
         {
             Id = "https://example.org/api/path-part/1"
         };
         operation.Id.GetLastPathElement("api/path-part").Should().BeNull();
-
     }
+
+    [Fact]
+    public void GetLastPathElementAsInt_Throws_InvalidCastException()
+    {
+        var path = "foo/bar";
+        Action action = () => path.GetLastPathElementAsInt();
+        action.Should().Throw<FormatException>();
+    }
+
+    
     
     
 }

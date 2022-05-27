@@ -9,6 +9,10 @@ using Newtonsoft.Json;
 
 namespace API.Client
 {
+    /// <summary>
+    /// Rather than just using Newtonsoft ReadAsJsonAsync directly, we wrap the deserialisation
+    /// to ensure a correct Hydra object with @context is created, or a DlcsException is thrown.
+    /// </summary>
     public static class HydraHttpResponseMessageX
     {
         public static async Task<T?> ReadAsHydraResponseAsync<T>(this HttpResponseMessage response,
