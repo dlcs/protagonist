@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using API.Client;
 using DLCS.Core.Strings;
 using DLCS.Model.Customers;
 using DLCS.Web.Auth;
