@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using API.Client;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.AWS.Settings;
 using DLCS.Core.Settings;
 using DLCS.HydraModel;
 using DLCS.Model.Spaces;
@@ -35,7 +36,7 @@ namespace Portal.Features.Images.Requests
     {
         private readonly ClaimsPrincipal claimsPrincipal;
         private readonly IBucketWriter bucketWriter;
-        private readonly DlcsSettings settings;
+        private readonly AWSSettings awsSettings;
         private readonly IDlcsClient dlcsClient;
         private readonly ILogger<IngestImageFromFileHandler> logger;
         private readonly ISpaceRepository spaceRepository;
@@ -43,14 +44,14 @@ namespace Portal.Features.Images.Requests
         public IngestImageFromFileHandler(
             ClaimsPrincipal claimsPrincipal,
             IBucketWriter bucketWriter,
-            IOptions<DlcsSettings> settings,
+            IOptions<AWSSettings> awsSettings,
             IDlcsClient dlcsClient,
             ILogger<IngestImageFromFileHandler> logger,
             ISpaceRepository spaceRepository)
         {
             this.claimsPrincipal = claimsPrincipal;
             this.bucketWriter = bucketWriter;
-            this.settings = settings.Value;
+            this.awsSettings = awsSettings.Value;
             this.dlcsClient = dlcsClient;
             this.logger = logger;
             this.spaceRepository = spaceRepository;
@@ -76,8 +77,8 @@ namespace Portal.Features.Images.Requests
         }
 
         private RegionalisedObjectInBucket GetObjectInBucket(IngestSingleImage request)
-            => new RegionalisedObjectInBucket(settings.OriginBucket,
-                $"{claimsPrincipal.GetCustomerId()}/{request.SpaceId}/{request.ImageId}", settings.Region);
+            => new RegionalisedObjectInBucket(awsSettings.S3.OriginBucket,
+                $"{claimsPrincipal.GetCustomerId()}/{request.SpaceId}/{request.ImageId}", awsSettings.Region);
 
         private async Task<Image> CreateJsonBody(RegionalisedObjectInBucket objectInBucket, IngestSingleImage request)
         {

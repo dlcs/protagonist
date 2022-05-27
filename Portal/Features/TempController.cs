@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.AWS.Settings;
 using DLCS.Core.Settings;
 using DLCS.Repository;
 using Microsoft.AspNetCore.Mvc;
@@ -16,20 +17,20 @@ namespace Portal.Features
     {
         private readonly IAmazonS3 amazonS3;
         private readonly DlcsContext context;
-        private readonly DlcsSettings dlcsSettings;
+        private readonly AWSSettings awsSettings;
 
-        public TempController(IAmazonS3 amazonS3, DlcsContext context, IOptions<DlcsSettings> dlcsSettings)
+        public TempController(IAmazonS3 amazonS3, DlcsContext context, IOptions<AWSSettings> awsSettings)
         {
             this.amazonS3 = amazonS3;
             this.context = context;
-            this.dlcsSettings = dlcsSettings.Value;
+            this.awsSettings = awsSettings.Value;
         }
 
         [HttpGet]
         public async Task<IActionResult> IndexAsync()
         {
             var listObjects = await amazonS3.ListObjectsAsync(new ListObjectsRequest
-                {BucketName = dlcsSettings.OriginBucket});
+                {BucketName = awsSettings.S3.OriginBucket});
             
             return new JsonResult(new
             {

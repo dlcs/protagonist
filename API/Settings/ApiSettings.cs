@@ -1,4 +1,5 @@
-﻿using DLCS.Core.Settings;
+﻿using DLCS.AWS.Settings;
+using DLCS.Core.Settings;
 
 namespace API.Settings
 {
@@ -9,15 +10,10 @@ namespace API.Settings
         /// </summary>
         public DlcsSettings DLCS { get; set; }
         
-        public AwsSettings AWS { get; set; }
+        public AWSSettings AWS { get; set; }
         
         public string PathBase { get; set; }
         
         public string Salt { get; set; }
-    }
-
-    public class AwsSettings
-    {
-        public string Region { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,12 +32,12 @@ namespace API.Features.Image.Requests
         public DLCS.HydraModel.Image Body { get; }
         
         // TODO - temporary as we forward this on from those the user sent
-        public string BasicAuth { get; }
+        public AuthenticationHeaderValue? BasicAuth { get; }
 
         public override string ToString() => $"{CustomerId}/{SpaceId}/{ImageId}";
 
         public IngestImageFromFile(string customerId, string spaceId, string imageId, Stream file, DLCS.HydraModel.Image body,
-            string basicAuth)
+            AuthenticationHeaderValue? basicAuth)
         {
             CustomerId = customerId;
             SpaceId = spaceId;
@@ -87,7 +88,7 @@ namespace API.Features.Image.Requests
             request.Body.Origin = objectInBucket.GetHttpUri();
             var ingestResponse = await CallDlcsIngest(request, cancellationToken);
             var responseBody = await ingestResponse.Content.ReadAsStringAsync();
-            var imageResult = JsonConvert.DeserializeObject<Image>(responseBody);
+            var imageResult = JsonConvert.DeserializeObject<DLCS.HydraModel.Image>(responseBody);
 
             return ResultStatus<DelegatedIngestResponse>.Successful(new DelegatedIngestResponse(
                 ingestResponse.StatusCode,
@@ -104,7 +105,8 @@ namespace API.Features.Image.Requests
                 });
 
             var client = clientFactory.CreateClient("dlcs-api");
-            var requestUri = $"/customers/{request.CustomerId}/spaces/{request.SpaceId}/images/{request.ImageId}";
+            
+            var requestUri = $"{settings.DLCS.ApiRoot}/customers/{request.CustomerId}/spaces/{request.SpaceId}/images/{request.ImageId}";
             
             logger.LogDebug($"Ingesting '{ingestJson}' at '{requestUri}'");
 
@@ -112,25 +114,25 @@ namespace API.Features.Image.Requests
             {
                 Content = new StringContent(ingestJson, Encoding.UTF8, "application/json")
             };
-            requestMessage.Headers.AddBasicAuth(request.BasicAuth);
+            requestMessage.Headers.AddBasicAuth(request.BasicAuth.Parameter);
             return await client.SendAsync(requestMessage, cancellationToken);
         }
 
         private RegionalisedObjectInBucket GetObjectInBucket(IngestImageFromFile request)
-            => new RegionalisedObjectInBucket(settings.DLCS.OriginBucket,
+            => new RegionalisedObjectInBucket(settings.AWS.S3.OriginBucket,
                 $"{request.CustomerId}/{request.SpaceId}/{request.ImageId}", settings.AWS.Region);
     }
 
     public class DelegatedIngestResponse
     {
-        public Image? Body { get; }
+        public DLCS.HydraModel.Image? Body { get; }
         
         // NOTE - this isn't ideal but is temporary
         public HttpStatusCode? DownstreamStatusCode { get; }
 
         public override string ToString() => DownstreamStatusCode?.ToString() ?? "_unknown_";
 
-        public DelegatedIngestResponse(HttpStatusCode? downstreamStatusCode, Image? body)
+        public DelegatedIngestResponse(HttpStatusCode? downstreamStatusCode, DLCS.HydraModel.Image? body)
         {
             DownstreamStatusCode = downstreamStatusCode;
             Body = body;
