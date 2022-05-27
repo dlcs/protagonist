@@ -34,6 +34,20 @@ namespace API.Auth
         private readonly ICustomerRepository customerRepository;
         private readonly DeliveratorApiAuth deliveratorApiAuth; // TODO - will become apiAuth
 
+        /// <summary>
+        /// Deduces the caller's claims
+        ///  - what customer are they?
+        ///  - are they admin?
+        ///  - If they are calling a resource under customers/x/, are they x?
+        ///
+        /// Downstream controllers may still reject calls for other reasons.
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="logger"></param>
+        /// <param name="encoder"></param>
+        /// <param name="clock"></param>
+        /// <param name="customerRepository"></param>
+        /// <param name="deliveratorApiAuth"></param>
         public DlcsBasicAuthenticationHandler(
             IOptionsMonitor<BasicAuthenticationOptions> options,
             ILoggerFactory logger,
@@ -47,12 +61,16 @@ namespace API.Auth
             this.deliveratorApiAuth = deliveratorApiAuth;
         }
 
+        /// <summary>
+        /// Called by the ASP.NET pipeline
+        /// </summary>
+        /// <returns></returns>
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             // skip authentication if endpoint has [AllowAnonymous] attribute
             // Not all API paths require auth...
             var endpoint = Context.GetEndpoint();
-            if (endpoint?.Metadata?.GetMetadata<IAllowAnonymous>() != null)
+            if (endpoint?.Metadata.GetMetadata<IAllowAnonymous>() != null)
                 return AuthenticateResult.NoResult();
             
             // ...but any not marked must have the auth header
@@ -70,7 +88,7 @@ namespace API.Auth
             int? resourceCustomerId = null;
             if (Request.RouteValues.TryGetValue("customerId", out var customerIdRouteVal))
             {
-                if (int.TryParse(customerIdRouteVal.ToString(), out int result))
+                if (customerIdRouteVal != null && int.TryParse(customerIdRouteVal.ToString(), out int result))
                 {
                     resourceCustomerId = result;
                 }
@@ -144,13 +162,16 @@ namespace API.Auth
         {
             try
             {
+                if (headerValue.Parameter == null) return null;
+                
                 var authHeader = headerValue.Parameter.DecodeBase64();
                 string[] keyAndSecret = authHeader.Split(':');
-                var apiCaller = new ApiCaller() {Key = keyAndSecret[0], Secret = keyAndSecret[1]};
+                var apiCaller = new ApiCaller(keyAndSecret[0], keyAndSecret[1]);
                 if (apiCaller.Key.HasText() && apiCaller.Secret.HasText())
                 {
                     return apiCaller;
                 }
+
                 return null;
             }
             catch
@@ -160,6 +181,11 @@ namespace API.Auth
             return null;
         }
 
+        /// <summary>
+        /// Called by the ASP.NET pipeline
+        /// </summary>
+        /// <param name="properties"></param>
+        /// <returns></returns>
         protected override Task HandleChallengeAsync(AuthenticationProperties properties)
         {
             Response.Headers["WWW-Authenticate"] = $"Basic realm=\"{Options.Realm}\"";
@@ -167,8 +193,22 @@ namespace API.Auth
         }
     }
 
+    /// <summary>
+    /// Represents the credentials in the API request, the basic auth key:secret pair.
+    /// </summary>
     public class ApiCaller
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="secret"></param>
+        public ApiCaller(string key, string secret)
+        {
+            Key = key;
+            Secret = secret;
+        }
+
         public string Key { get; set; }
         public string Secret { get; set; }
     }
