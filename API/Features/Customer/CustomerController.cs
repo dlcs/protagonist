@@ -1,10 +1,9 @@
-using System;
 using System.Linq;
 using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Customer.Requests;
 using API.Settings;
-using DLCS.Core.Strings;
+using DLCS.Web.Auth;
 using DLCS.Web.Requests;
 using Hydra.Collections;
 using MediatR;
@@ -15,6 +14,11 @@ using Newtonsoft.Json.Linq;
 
 namespace API.Features.Customer
 {
+    /// <summary>
+    /// DLCS REST API Operations for customers.
+    /// This controller does not do any data access; it creates Mediatr requests and passes them on.
+    /// It converts to and from the Hydra form of the DLCS API.
+    /// </summary>
     [Route("/customers/")]
     [ApiController]
     public class CustomerController : Controller
@@ -22,6 +26,7 @@ namespace API.Features.Customer
         private readonly IMediator mediator;
         private readonly ApiSettings settings;
 
+        /// <inheritdoc />
         public CustomerController(
             IMediator mediator,
             IOptions<ApiSettings> options)
@@ -30,6 +35,12 @@ namespace API.Features.Customer
             settings = options.Value;
         }
         
+        /// <summary>
+        /// Get all the customers.
+        /// Although it returns a paged collection, the page size is always the total number of customers:
+        /// clients don't need to page this collection, it contains all customers.
+        /// </summary>
+        /// <returns></returns>
         [AllowAnonymous]
         [HttpGet]
         public async Task<HydraCollection<JObject>> Index()
@@ -47,43 +58,26 @@ namespace API.Features.Customer
             };
         }
 
+        /// <summary>
+        /// The /customers/ path is not access controlled, but only an admin may call this.
+        /// </summary>
+        /// <param name="newCustomer"></param>
+        /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] DLCS.HydraModel.Customer newCustomer)
         {
-            // Where should this happen? Some happens in the controller, some in the Mediator handler.
-            // Basic data checks (no DB access)
-            if (newCustomer.ModelId > 0)
+            if (!User.IsAdmin())
             {
-                return BadRequest($"DLCS must allocate customer id, but id {newCustomer.ModelId} was supplied.");
-            }
-
-            if (string.IsNullOrEmpty(newCustomer.Name))
-            {
-                return BadRequest($"A new customer must have a name (url part).");
+                return Forbid();
             }
             
-            if (string.IsNullOrEmpty(newCustomer.DisplayName))
+            var basicErrors = HydraCustomerValidator.GetNewHydraCustomerErrors(newCustomer);
+            if (basicErrors.Any())
             {
-                return BadRequest($"A new customer must have a Display name (label).");
-            }
-            
-            if (newCustomer.Administrator == true)
-            {
-                return BadRequest($"You can't attempt to create an Administrator customer.");
+                return BadRequest(string.Join("; ", basicErrors));
             }
 
-            if (newCustomer.Keys.HasText())
-            {
-                return BadRequest($"You can't supply API Keys at customer creation time.");
-            }
-
-            if (Enum.GetNames(typeof(DLCS.HydraModel.Customer.ReservedNames)).Any(n =>
-                String.Equals(n, newCustomer.Name, StringComparison.CurrentCultureIgnoreCase)))
-            {
-                return BadRequest($"Name field cannot be a reserved word.");
-            }
-
-            var command = new CreateCustomer(newCustomer.Name, newCustomer.DisplayName);
+            var command = new CreateCustomer(newCustomer.Name!, newCustomer.DisplayName!);
 
             try
             {

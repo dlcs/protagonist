@@ -13,13 +13,27 @@ using Microsoft.Extensions.Logging;
 namespace API.Features.Customer.Requests
 {
     /// <summary>
+    /// Mediatr Command to Create a new Customer
     /// See Deliverator: API/Architecture/Request/API/Entities/Customers.cs
     /// </summary>
     public class CreateCustomer : IRequest<DLCS.Model.Customers.Customer>
     {
+        /// <summary>
+        /// Customer name. Will be checked for uniqueness.
+        /// Used as the URL component.
+        /// </summary>
         public string Name { get; set; }
+        
+        /// <summary>
+        /// Display name, must also be unique.
+        /// </summary>
         public string DisplayName { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="displayName"></param>
         public CreateCustomer(string name, string displayName)
         {
             Name = name;
@@ -27,6 +41,7 @@ namespace API.Features.Customer.Requests
         }
     }
 
+    /// <inheritdoc />
     public class CreateCustomerHandler : IRequestHandler<CreateCustomer, DLCS.Model.Customers.Customer>
     {
         private readonly DlcsContext dbContext;
@@ -51,7 +66,8 @@ namespace API.Features.Customer.Requests
             this.authServicesRepository = authServicesRepository;
             this.logger = logger;
         }
-        
+
+        /// <inheritdoc />
         public async Task<DLCS.Model.Customers.Customer> Handle(CreateCustomer request, CancellationToken cancellationToken)
         {
             // Reproducing POST behaviour for customer in Deliverator

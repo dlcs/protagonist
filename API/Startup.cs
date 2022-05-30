@@ -121,7 +121,7 @@ namespace API
             {
                 app.UseDeveloperExceptionPage();
             }
-            
+
             var applicationOptions = configuration.Get<ApiSettings>();
             var pathBase = applicationOptions.PathBase;
 
@@ -133,12 +133,13 @@ namespace API
                 .UseCors("CorsPolicy")
                 .UseAuthentication()
                 .UseAuthorization()
-                .UseHealthChecks("/ping")
-                .UseEndpoints(endpoints => 
+                .UseEndpoints(endpoints =>
+                {
                     endpoints
                         .MapControllers()
-                        .RequireAuthorization())
-                ;
+                        .RequireAuthorization();
+                    endpoints.MapHealthChecks("/ping").AllowAnonymous();
+                });
         }
     }
 }
