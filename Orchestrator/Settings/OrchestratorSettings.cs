@@ -105,16 +105,6 @@ namespace Orchestrator.Settings
         public string ThumbsPath { get; set; } = "thumbs";
 
         /// <summary>
-        /// Get https base url for region.
-        /// </summary>
-        public string S3HttpBase { get; set; }
-        
-        /// <summary>
-        /// Get the S3 storage bucket name.
-        /// </summary>
-        public string StorageBucket { get; set; }
-        
-        /// <summary>
         /// The root URI of the image server
         /// </summary>
         public string ImageServerRoot { get; set; }

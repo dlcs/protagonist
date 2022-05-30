@@ -68,7 +68,7 @@ namespace Test.Helpers.Integration
         {
             // Create basic buckets used by DLCS
             var amazonS3Client = AWSS3ClientFactory();
-            await amazonS3Client.PutBucketAsync("protagonist-test-origin");
+            await amazonS3Client.PutBucketAsync("protagonist-output");
             await amazonS3Client.PutBucketAsync("protagonist-thumbs");
             await amazonS3Client.PutBucketAsync("protagonist-storage");
         }

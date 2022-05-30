@@ -34,7 +34,7 @@ services:
       context: ../
       dockerfile: Dockerfile.Thumbs
     ports:
-      - "5026:80"
+      - "5019:80"
     env_file:
       - .env
     volumes:

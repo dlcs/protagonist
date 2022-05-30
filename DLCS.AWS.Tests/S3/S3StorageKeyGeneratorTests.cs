@@ -16,10 +16,12 @@ namespace DLCS.AWS.Tests.S3
         {
             sut = new S3StorageKeyGenerator(Options.Create<AWSSettings>(new AWSSettings
             {
+                Region = "eu-west-1",
                 S3 = new S3Settings
                 {
                     OutputBucket = "test-output",
                     ThumbsBucket = "test-thumbs",
+                    StorageBucket = "test-storage"
                 }
             }));
         }
@@ -150,6 +152,22 @@ namespace DLCS.AWS.Tests.S3
             // Assert
             actual.Key.Should().Be("foo/bar/baz");
             actual.Bucket.Should().Be("test-output");
+        }
+
+        [Fact]
+        public void GetTimebasedAssetLocation_ReturnsExpected()
+        {
+            // Arrange
+            const string expected = "10/20/foo-bar/foo/bar/baz";
+            var asset = new AssetId(10, 20, "foo-bar");
+            
+            // Act
+            var actual = sut.GetTimebasedAssetLocation(asset, "foo/bar/baz");
+            
+            // Assert
+            actual.Key.Should().Be(expected);
+            actual.Bucket.Should().Be("test-storage");
+            actual.Region.Should().Be("eu-west-1");
         }
     }
 }

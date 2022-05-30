@@ -26,6 +26,6 @@ README.md
 **/.idea
 **/Jenkinsfile*
 docs/
-appsettings.Development.Example.json
-appsettings.Development.json
+**/appsettings.Development.Example.json
+**/appsettings.Development.json
 Utils/

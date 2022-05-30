@@ -48,8 +48,7 @@ namespace DLCS.Core.Tests.Strings
 
             actual.Should().Be("foo bar baz");
         }
-        
-        
+
         [Theory]
         [InlineData("this is a test", "thisIsATest", false)]
         [InlineData("this is another test", "thisIsAnotherTest", false)]
@@ -63,8 +62,40 @@ namespace DLCS.Core.Tests.Strings
 
             actual.Should().Be(to);
         }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(null)]
+        public void ToConcatenated_ReturnsString_IfNullOrEmpty(string str)
+            => str.ToConcatenated('-', "hi").Should().Be(str);
+
+        [Theory]
+        [InlineData("foo-")]
+        [InlineData("foo")]
+        public void ToConcatenated_ReturnsConcatenatedString_EndsWithSeparator(string str)
+        {
+            // Arrange
+            const string expected = "foo-bar-baz";
+            
+            // Act
+            var result = str.ToConcatenated('-', "bar", "baz");
+
+            // Assert
+            result.Should().Be(expected);
+        }
         
-        
-        
+        [Fact]
+        public void ToConcatenated_TrimsAllElements()
+        {
+            // Arrange
+            const string expected = "foo-bar-baz";
+            
+            // Act
+            var result = "foo".ToConcatenated('-', "-bar-", "-baz");
+
+            // Assert
+            result.Should().Be(expected);
+        }
     }
 }

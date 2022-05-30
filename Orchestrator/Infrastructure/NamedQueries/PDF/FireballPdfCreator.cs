@@ -78,7 +78,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
         {
             var playbook = new FireballPlaybook
             {
-                Output = StorageKeyGenerator.GetOutputLocation(pdfKey).GetS3Uri(),
+                Output = StorageKeyGenerator.GetOutputLocation(pdfKey).GetS3Uri().ToString(),
                 Title = parsedNamedQuery.ObjectName,
                 CustomTypes = new FireballCustomTypes
                 {
@@ -101,7 +101,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
                 else
                 {
                     var largestThumb = StorageKeyGenerator.GetLargestThumbnailLocation(i.GetAssetId());
-                    playbook.Pages.Add(FireballPage.Image(largestThumb.GetS3Uri()));
+                    playbook.Pages.Add(FireballPage.Image(largestThumb.GetS3Uri().ToString()));
                 }
             }
 

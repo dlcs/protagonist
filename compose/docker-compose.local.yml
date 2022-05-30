@@ -27,6 +27,17 @@ services:
     env_file:
       - .env
 
+  thumbs:
+    build:
+      context: ../
+      dockerfile: Dockerfile.Thumbs
+    ports:
+      - "5019:80"
+    env_file:
+      - .env
+    volumes:
+      - $HOME\.aws:/root/.aws
+
   localstack:
     build:
       context: ./localstack
