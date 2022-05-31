@@ -10,12 +10,12 @@ namespace API.Features.Customer.Requests
     /// Mediatr command to Get a Customer
     /// This does not go via the customer repository and speaks to DBContext directly
     /// </summary>
-    public class GetCustomer : IRequest<DLCS.Model.Customers.Customer>
+    public class GetCustomer : IRequest<DLCS.Model.Customers.Customer?>
     {
         /// <summary>
         /// Integer form of Customer ID
         /// </summary>
-        public int CustomerId { get; set; }
+        public int CustomerId { get; }
         
         /// <summary>
         /// 
@@ -28,7 +28,7 @@ namespace API.Features.Customer.Requests
     }
 
     /// <inheritdoc />
-    public class GetCustomerHandler : IRequestHandler<GetCustomer, DLCS.Model.Customers.Customer>
+    public class GetCustomerHandler : IRequestHandler<GetCustomer, DLCS.Model.Customers.Customer?>
     {
         private readonly DlcsContext dbContext;
     
@@ -42,11 +42,11 @@ namespace API.Features.Customer.Requests
         }
 
         /// <inheritdoc />
-        public async Task<DLCS.Model.Customers.Customer> Handle(GetCustomer request, CancellationToken cancellationToken)
+        public async Task<DLCS.Model.Customers.Customer?> Handle(GetCustomer request, CancellationToken cancellationToken)
         {
             return await dbContext.Customers
                 .AsNoTracking()
-                .SingleAsync(c => c.Id == request.CustomerId, cancellationToken);
+                .SingleOrDefaultAsync(c => c.Id == request.CustomerId, cancellationToken);
         }
     }
 }

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model;
@@ -16,7 +18,7 @@ namespace API.Features.Customer.Requests
     /// Mediatr Command to Create a new Customer
     /// See Deliverator: API/Architecture/Request/API/Entities/Customers.cs
     /// </summary>
-    public class CreateCustomer : IRequest<DLCS.Model.Customers.Customer>
+    public class CreateCustomer : IRequest<CreateCustomerResult>
     {
         /// <summary>
         /// Customer name. Will be checked for uniqueness.
@@ -41,8 +43,14 @@ namespace API.Features.Customer.Requests
         }
     }
 
+    public class CreateCustomerResult
+    {
+        public DLCS.Model.Customers.Customer? Customer;
+        public List<string> ErrorMessages = new List<string>();
+    }
+
     /// <inheritdoc />
-    public class CreateCustomerHandler : IRequestHandler<CreateCustomer, DLCS.Model.Customers.Customer>
+    public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCustomerResult>
     {
         private readonly DlcsContext dbContext;
         private readonly ICustomerRepository customerRepository;
@@ -68,34 +76,36 @@ namespace API.Features.Customer.Requests
         }
 
         /// <inheritdoc />
-        public async Task<DLCS.Model.Customers.Customer> Handle(CreateCustomer request, CancellationToken cancellationToken)
+        public async Task<CreateCustomerResult> Handle(CreateCustomer request, CancellationToken cancellationToken)
         {
             // Reproducing POST behaviour for customer in Deliverator
             // what gets locked here?
+            var result = new CreateCustomerResult();
             
-            await EnsureCustomerNamesNotTaken(request, cancellationToken);
+            await EnsureCustomerNamesNotTaken(request, result, cancellationToken);
+            if (result.ErrorMessages.Any()) return result;
             
             var newModelId = await GetIdForNewCustomer();
-            var customer = await CreateCustomer(request, cancellationToken, newModelId);
+            result.Customer = await CreateCustomer(request, cancellationToken, newModelId);
 
             // create an entity counter for space IDs [CreateCustomerSpaceEntityCounterBehaviour]
-            await entityCounterRepository.Create(customer.Id, "customer", customer.Id.ToString());
+            await entityCounterRepository.Create(result.Customer.Id, "space", result.Customer.Id.ToString());
             
             // create a Queue [CreateCustomerQueueBehaviour]...
-            var queue = new CustomerQueue { Customer = customer.Id };
+            var queue = new CustomerQueue { Customer = result.Customer.Id };
             // ...and save it [UpdateQueueBehaviour]
             await customerQueueRepository.Put(queue);
             
             // Create a clickthrough auth service [CreateClickthroughAuthServiceBehaviour]
             var clickThrough = authServicesRepository.CreateAuthService(
-                customer.Id, String.Empty, "clickthrough", 600);
+                result.Customer.Id, String.Empty, "clickthrough", 600);
             // Create a logout auth service [CreateLogoutAuthServiceBehaviour]
             var logout = authServicesRepository.CreateAuthService(
-                customer.Id, "http://iiif.io/api/auth/1/logout", "logout", 600);
+                result.Customer.Id, "http://iiif.io/api/auth/1/logout", "logout", 600);
             clickThrough.ChildAuthService = logout.Id;
             
             // Make a Role for clickthrough [CreateClickthroughRoleBehaviour]
-            var clickthroughRole = authServicesRepository.CreateRole("clickthrough", customer.Id, clickThrough.Id);
+            var clickthroughRole = authServicesRepository.CreateRole("clickthrough", result.Customer.Id, clickThrough.Id);
             
             // Save these [UpdateAuthServiceBehaviour x2, UpdateRoleBehaviour]
             // Like this?
@@ -114,12 +124,15 @@ namespace API.Features.Customer.Requests
             // - some calls to repositories that use EF (and do their own SaveChanges)
             // - some calls to repositories that use Dapper
             
-            return customer;
+            return result;
         }
 
 
         // Does this belong on ICustomerRepository?
-        private async Task<DLCS.Model.Customers.Customer> CreateCustomer(CreateCustomer request, CancellationToken cancellationToken, int newModelId)
+        private async Task<DLCS.Model.Customers.Customer> CreateCustomer(
+            CreateCustomer request, 
+            CancellationToken cancellationToken, 
+            int newModelId)
         {
             var customer = new DLCS.Model.Customers.Customer
             {
@@ -137,7 +150,7 @@ namespace API.Features.Customer.Requests
             return customer;
         }
 
-        private async Task EnsureCustomerNamesNotTaken(CreateCustomer request, CancellationToken cancellationToken)
+        private async Task EnsureCustomerNamesNotTaken(CreateCustomer request, CreateCustomerResult result, CancellationToken cancellationToken)
         {
             // This could use customerRepository.GetCustomer(request.Name), but we want to be a bit more restrictive.
             var existing = await dbContext.Customers
@@ -145,7 +158,7 @@ namespace API.Features.Customer.Requests
                     cancellationToken: cancellationToken);
             if (existing != null)
             {
-                throw new BadRequestException("A customer with this name (url part) already exists.");
+                result.ErrorMessages.Add("A customer with this name (url part) already exists.");
             }
 
             existing = await dbContext.Customers
@@ -154,12 +167,13 @@ namespace API.Features.Customer.Requests
                     cancellationToken: cancellationToken);
             if (existing != null)
             {
-                throw new BadRequestException("A customer with this display name (label) already exists.");
+                result.ErrorMessages.Add("A customer with this display name (label) already exists.");
             }
         }
 
         private async Task<int> GetIdForNewCustomer()
         {
+            // Deliverator: /DLCS.Application/Behaviour/Data/GetNewCustomerIDBehaviour.cs#L25
             int newModelId;
             DLCS.Model.Customers.Customer existingCustomerWithId;
             do

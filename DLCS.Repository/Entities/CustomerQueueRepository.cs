@@ -33,6 +33,7 @@ q.""Customer"", q.""Size"", q.""Name"", b.""BatchesWaiting"", b.""ImagesWaiting"
         public async Task Put(CustomerQueue queue)
         {
             // This upsert logic is not quite the same as Deliverator
+            // /DLCS.PostgreSQL/Data/Store/PostgreSQLCustomerQueueStore.cs#L24
             var upsertedQueue = await dlcsContext.Queues.FindAsync(queue.Customer);
             if (upsertedQueue == null)
             {

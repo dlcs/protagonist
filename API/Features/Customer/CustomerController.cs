@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using API.Converters;
@@ -21,7 +22,7 @@ namespace API.Features.Customer
     /// </summary>
     [Route("/customers/")]
     [ApiController]
-    public class CustomerController : Controller
+    public class CustomerController : HydraController
     {
         private readonly IMediator mediator;
         private readonly ApiSettings settings;
@@ -74,32 +75,45 @@ namespace API.Features.Customer
             var basicErrors = HydraCustomerValidator.GetNewHydraCustomerErrors(newCustomer);
             if (basicErrors.Any())
             {
-                return BadRequest(string.Join("; ", basicErrors));
+                return HydraProblem(basicErrors, null, 400, "Invalid Customer", null);
             }
 
             var command = new CreateCustomer(newCustomer.Name!, newCustomer.DisplayName!);
 
             try
             {
-                var newDbCustomer = await mediator.Send(command);
-                var newApiCustomer = newDbCustomer.ToHydra(Request.GetBaseUrl());
+                var result = await mediator.Send(command);
+                if (result.Customer == null || result.ErrorMessages.Any())
+                {
+                    return HydraProblem(result.ErrorMessages, null, 500, "Could not create Customer", null);
+                }
+                var newApiCustomer = result.Customer.ToHydra(Request.GetBaseUrl());
                 return Created(newApiCustomer.Id, newApiCustomer);
             }
-            catch (BadRequestException badRequestException)
+            catch (Exception ex)
             {
                 // Are exceptions the way this info should be passed back to the controller?
-                return BadRequest(badRequestException.Message);
+                return HydraProblem(ex);
             }
         }
         
         
+        /// <summary>
+        /// Get a Customer
+        /// </summary>
+        /// <param name="customerId"></param>
+        /// <returns></returns>
         [HttpGet]
         [Route("{customerId}")]
-        public async Task<DLCS.HydraModel.Customer> Index(int customerId)
+        public async Task<IActionResult> Index(int customerId)
         {
             var baseUrl = Request.GetBaseUrl();
             var dbCustomer = await mediator.Send(new GetCustomer(customerId));
-            return dbCustomer.ToHydra(baseUrl);
+            if (dbCustomer == null)
+            {
+                return HydraNotFound();
+            }
+            return Ok(dbCustomer.ToHydra(baseUrl));
         }
     }
 
