@@ -5,7 +5,7 @@ using Xunit;
 
 namespace API.Tests.Customers;
 
-public class CustomerTests
+public class CustomerValidationTests
 {
     private Customer GetValidNewCustomer()
     {

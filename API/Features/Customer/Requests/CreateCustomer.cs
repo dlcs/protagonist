@@ -53,7 +53,6 @@ namespace API.Features.Customer.Requests
     public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCustomerResult>
     {
         private readonly DlcsContext dbContext;
-        private readonly ICustomerRepository customerRepository;
         private readonly IEntityCounterRepository entityCounterRepository;
         private readonly ICustomerQueueRepository customerQueueRepository;
         private readonly IAuthServicesRepository authServicesRepository;
@@ -61,14 +60,12 @@ namespace API.Features.Customer.Requests
 
         public CreateCustomerHandler(
             DlcsContext dbContext,
-            ICustomerRepository customerRepository,
             IEntityCounterRepository entityCounterRepository,
             ICustomerQueueRepository customerQueueRepository,
             IAuthServicesRepository authServicesRepository,
             ILogger<CreateCustomerHandler> logger)
         {
             this.dbContext = dbContext;
-            this.customerRepository = customerRepository;
             this.entityCounterRepository = entityCounterRepository;
             this.customerQueueRepository = customerQueueRepository;
             this.authServicesRepository = authServicesRepository;

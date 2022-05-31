@@ -4,13 +4,12 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using API.Client;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Portal.Tests.Integration.Infrastructure
+namespace Test.Helpers.Integration.Infrastructure
 {
     public static class TestAuthHandlerX
     {
@@ -31,6 +30,8 @@ namespace Portal.Tests.Integration.Infrastructure
     
     /// <summary>
     /// Authentication Handler to make testing easier.
+    ///
+    /// This can be used for both API and Portal.
     /// </summary>
     public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
@@ -43,6 +44,11 @@ namespace Portal.Tests.Integration.Infrastructure
 
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            if (ClaimsIssuer == "API-Test")
+            {
+                // Demonstrates how this could do different things for Portal and API.
+            }
+            
             if (!Request.Headers.ContainsKey(AuthHeader))
             {
                 // Authorization header not in request
@@ -57,24 +63,40 @@ namespace Portal.Tests.Integration.Infrastructure
             }
 
             bool isAdmin = headerValue.ToString().StartsWith("admin");
-            
-            var claims = new List<Claim>
-            {
-                new (ClaimTypes.Name, "test@example.com"),
-                new (ClaimTypes.NameIdentifier, "1"),
-                new (ClaimsPrincipalUtils.Claims.Customer, headerValue.ToString().Split("|")[^1]),
-                new (ClaimTypes.Role, ClaimsPrincipalUtils.Roles.Customer),
-                new (ClaimsPrincipalUtils.Claims.ApiCredentials, "basicAuth")
-            };
 
+            List<Claim> claims;
+            var parts = headerValue.ToString().Split("|");
+            if (ClaimsIssuer == "API-Test")
+            {
+                // API
+                claims = new List<Claim>
+                {
+                    new (ClaimTypes.Name, parts[0]),
+                    new (ClaimTypes.NameIdentifier, parts[0]),
+                    new (ClaimsPrincipalUtils.Claims.Customer, parts[^1]),
+                    new (ClaimTypes.Role, ClaimsPrincipalUtils.Roles.Customer)
+                };
+            }
+            else
+            {
+                // Portal
+                claims = new List<Claim>
+                {
+                    new (ClaimTypes.Name, "test@example.com"),
+                    new (ClaimTypes.NameIdentifier, "1"),
+                    new (ClaimsPrincipalUtils.Claims.Customer, parts[^1]),
+                    new (ClaimTypes.Role, ClaimsPrincipalUtils.Roles.Customer),
+                    new (ClaimsPrincipalUtils.Claims.ApiCredentials, "basicAuth")
+                };
+            }
             if (isAdmin)
             {
                 claims.Add(new Claim(ClaimTypes.Role, ClaimsPrincipalUtils.Roles.Admin));
             }
-            
-            var identity = new ClaimsIdentity(claims, "Test");
+
+            var identity = new ClaimsIdentity(claims, ClaimsIssuer);
             var principal = new ClaimsPrincipal(identity);
-            var ticket = new AuthenticationTicket(principal, "Test");
+            var ticket = new AuthenticationTicket(principal, ClaimsIssuer);
             var result = AuthenticateResult.Success(ticket);
             return result;
         }

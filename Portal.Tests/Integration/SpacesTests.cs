@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Portal.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
+using Test.Helpers.Integration.Infrastructure;
 using Xunit;
 
 namespace Portal.Tests.Integration
