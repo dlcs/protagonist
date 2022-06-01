@@ -17,7 +17,7 @@
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="6.0.5" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.4" />
         <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
-        <PackageReference Include="Yarp.ReverseProxy" Version="1.0.0-rc.1.21520.4" />
+        <PackageReference Include="Yarp.ReverseProxy" Version="1.1.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -25,10 +25,6 @@
       <ProjectReference Include="..\DLCS.Mediatr\DLCS.Mediatr.csproj" />
       <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
       <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Infrastructure\Web" />
     </ItemGroup>
 
 </Project>

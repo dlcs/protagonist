@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 
 namespace DLCS.Core.Strings
@@ -46,6 +47,27 @@ namespace DLCS.Core.Strings
             {
                 sb[0] = Char.ToLower(sb[0]);
             }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Build string concatenated with specified separator. Will ensure only 1 separator between elements 
+        /// </summary>
+        /// <param name="str"></param>
+        /// <param name="separator"></param>
+        /// <param name="toAppend"></param>
+        /// <returns></returns>
+        public static string ToConcatenated(this string str, char separator, params string[] toAppend)
+        {
+            if (string.IsNullOrWhiteSpace(str)) return str;
+
+            var sb = new StringBuilder(str.TrimEnd(separator));
+            foreach (var s in toAppend)
+            {
+                sb.Append(separator);
+                sb.Append(s.TrimEnd(separator).TrimStart(separator));
+            }
+
             return sb.ToString();
         }
     }

@@ -5,11 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.ReverseProxy;
-using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
 
 namespace Orchestrator.Features.TimeBased
@@ -44,22 +41,20 @@ namespace Orchestrator.Features.TimeBased
         /// <param name="endpoints">Current <see cref="IEndpointRouteBuilder"/> object.</param>
         public static void MapTimeBasedHandling(this IEndpointRouteBuilder endpoints)
         {
-            var requestHandler = endpoints.ServiceProvider.GetService<TimeBasedRequestHandler>();
-            var forwarder = endpoints.ServiceProvider.GetService<IHttpForwarder>();
-            var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
-                .CreateLogger(nameof(TimeBasedRouteHandlers));
-            var settings = endpoints.ServiceProvider.GetService<IOptions<ReverseProxySettings>>();
+            var requestHandler = endpoints.GetRequiredService<TimeBasedRequestHandler>();
+            var forwarder = endpoints.GetRequiredService<IHttpForwarder>();
+            var logger = endpoints.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(TimeBasedRouteHandlers));
 
             endpoints.Map("/iiif-av/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
             {
                 logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
                 var proxyResponse = await requestHandler.HandleRequest(httpContext);
-                await ProxyRequest(logger, httpContext, forwarder, proxyResponse, settings);
+                await ProcessResponse(logger, httpContext, forwarder, proxyResponse);
             });
         }
 
-        private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
-            IProxyActionResult proxyActionResult, IOptions<ReverseProxySettings> reverseProxySettings)
+        private static async Task ProcessResponse(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
+            IProxyActionResult proxyActionResult)
         {
             if (proxyActionResult is StatusCodeResult statusCodeResult)
             {
@@ -71,16 +66,26 @@ namespace Orchestrator.Features.TimeBased
                 return;
             }
             
-            var proxyAction = proxyActionResult as ProxyActionResult;
-            var root = proxyAction.Target != ProxyDestination.S3
-                ? reverseProxySettings.Value.GetAddressForProxyTarget(proxyAction.Target).ToString()
-                : proxyAction.Path;
+            var proxyAction = proxyActionResult as ProxyActionResult; 
+            await ProxyRequest(logger, httpContext, forwarder, proxyAction);
+        }
+
+        private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
+            ProxyActionResult proxyAction)
+        {
+            if (proxyAction.Target != ProxyDestination.S3)
+            {
+                logger.LogError("Found unexpected proxyTarget '{TargetCluster}' - only S3 supported",
+                    proxyAction.Target);
+                httpContext.Response.StatusCode = 502;
+                return;
+            }
             
             var transformer = proxyAction.HasPath
-                ? new PathRewriteTransformer(proxyAction, proxyAction.Target == ProxyDestination.S3)
+                ? new PathRewriteTransformer(proxyAction, true)
                 : DefaultTransformer;
 
-            var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions,
+            var error = await forwarder.SendAsync(httpContext, proxyAction.Path!, HttpClient, RequestOptions,
                 transformer);
 
             // Check if the proxy operation was successful

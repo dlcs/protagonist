@@ -85,7 +85,7 @@ namespace API.Features.Image.Requests
                 return new ResultStatus<DelegatedIngestResponse>(false);
             }
 
-            request.Body.Origin = objectInBucket.GetHttpUri();
+            request.Body.Origin = objectInBucket.GetHttpUri().ToString();
             var ingestResponse = await CallDlcsIngest(request, cancellationToken);
             var responseBody = await ingestResponse.Content.ReadAsStringAsync();
             var imageResult = JsonConvert.DeserializeObject<DLCS.HydraModel.Image>(responseBody);

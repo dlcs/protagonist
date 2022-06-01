@@ -40,10 +40,11 @@ namespace Orchestrator.Infrastructure
                 new JProperty("status", result.Status.ToString()),
                 new JProperty("results", new JObject(result.Entries.Select(pair =>
                     new JProperty(pair.Key, new JObject(
-                        new JProperty("status", pair.Value.Status.ToString())))))));
+                        new JProperty("status", pair.Value.Status.ToString()),
+                        new JProperty("data",
+                            new JObject(pair.Value.Data.Select(d => new JProperty(d.Key, d.Value))))))))));
 
-            return context.Response.WriteAsync(
-                json.ToString(Formatting.Indented));
+            return context.Response.WriteAsync(json.ToString(Formatting.Indented));
         }
     }
 }

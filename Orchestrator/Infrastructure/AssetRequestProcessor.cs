@@ -28,6 +28,12 @@ namespace Orchestrator.Infrastructure
             this.assetDeliveryPathParser = assetDeliveryPathParser;
         }
 
+        /// <summary>
+        /// Try and parse current asset request, handling possible errors that may occur
+        /// </summary>
+        /// <param name="httpContext"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns>Parsed asset request, if successful. Else error status code.</returns>
         public async Task<(T? assetRequest, HttpStatusCode? statusCode)> TryGetAssetDeliveryRequest<T>(
             HttpContext httpContext) where T : BaseAssetRequest, new()
         {

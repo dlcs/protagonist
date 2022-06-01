@@ -354,7 +354,7 @@ namespace Orchestrator.Tests.Integration
             => amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = key,
-                BucketName = "protagonist-storage",
+                BucketName = "protagonist-output",
                 ContentBody = JsonConvert.SerializeObject(controlFile)
             });
         
@@ -362,7 +362,7 @@ namespace Orchestrator.Tests.Integration
             => amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = key,
-                BucketName = "protagonist-storage",
+                BucketName = "protagonist-output",
                 ContentBody = fakeContent
             });
         

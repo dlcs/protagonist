@@ -1,9 +1,8 @@
-﻿using System;
-using DLCS.AWS.S3.Models;
+﻿using DLCS.AWS.S3.Models;
 using FluentAssertions;
 using Xunit;
 
-namespace DLCS.Model.Tests.Storage
+namespace DLCS.AWS.Tests.S3.Models
 {
     public class RegionalisedObjectInBucketTests
     {
@@ -43,39 +42,6 @@ namespace DLCS.Model.Tests.Storage
 
             // Assert
             actual.Should().BeNull();
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData(" ")]
-        public void GetS3QualifiedUri_Throws_IfRegionNullOrEmpty(string region)
-        {
-            // Arrange
-            var bucket = new RegionalisedObjectInBucket("dlcs-storage", "2/1/foo-bar");
-            bucket.Region = region;
-
-            Action action = () => bucket.GetS3QualifiedUri();
-
-            // Assert
-            action.Should().Throw<ArgumentNullException>();
-        }
-
-        [Fact]
-        public void GetS3QualifiedUri_Correct()
-        {
-            // Arrange
-            var bucket = new RegionalisedObjectInBucket(
-                "dlcs-storage",
-                "2/1/foo-bar",
-                "eu-west-1");
-            const string expected = "s3://eu-west-1/dlcs-storage/2/1/foo-bar";
-
-            // Act
-            var actual = bucket.GetS3QualifiedUri();
-            
-            // Assert
-            actual.Should().Be(expected);
         }
     }
 }

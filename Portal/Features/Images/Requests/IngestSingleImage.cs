@@ -86,7 +86,7 @@ namespace Portal.Features.Images.Requests
                 await spaceRepository.GetImageCountForSpace(claimsPrincipal.GetCustomerId().Value, request.SpaceId);
             return new Image
             {
-                Origin = objectInBucket.GetHttpUri(),
+                Origin = objectInBucket.GetHttpUri().ToString(),
                 Number1 = spaceCount,
                 String1 = spaceCount.ToString()
             };

@@ -67,5 +67,13 @@ namespace DLCS.AWS.S3
         /// <param name="key">Object key</param>
         /// <returns><see cref="ObjectInBucket"/> for specified key in output bucket</returns>
         ObjectInBucket GetOutputLocation(string key);
+
+        /// <summary>
+        /// Get <see cref="RegionalisedObjectInBucket"/> for requested AV file 
+        /// </summary>
+        /// <param name="assetId">AssetId request is for</param>
+        /// <param name="assetPath">Requested asset path</param>
+        /// <returns><see cref="RegionalisedObjectInBucket"/> for AV file</returns>
+        RegionalisedObjectInBucket GetTimebasedAssetLocation(AssetId assetId, string assetPath);
     }
 }

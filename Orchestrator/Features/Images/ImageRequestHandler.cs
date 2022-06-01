@@ -107,7 +107,7 @@ namespace Orchestrator.Features.Images
             for 2 and 3 - if the asked-for thumb is not on S3 but is in the thumbnail policy list, save it to S3 on the way out
             ... and use the No 3 S3 cantaloupe, not the orchestrating path
              */
-            if (assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max)
+            if (RegionFullNotMax(assetRequest))
             {
                 var canHandleByThumbResponse = CanRequestBeHandledByThumb(assetRequest, orchestrationImage);
                 if (canHandleByThumbResponse.CanHandle)
@@ -131,6 +131,9 @@ namespace Orchestrator.Features.Images
 
             return await GenerateImageResult(orchestrationImage, assetRequest);
         }
+        
+        private static bool RegionFullNotMax(ImageAssetDeliveryRequest? assetRequest) 
+            => assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max;
 
         // TODO handle known thumb size that doesn't exist yet - call image-server and save to s3 on way back
         private (bool CanHandle, bool IsResize) CanRequestBeHandledByThumb(ImageAssetDeliveryRequest requestModel, OrchestrationImage orchestrationImage)
@@ -180,9 +183,8 @@ namespace Orchestrator.Features.Images
         {
             // NOTE - this is for IIP image only
             var targetPath = orchestratorSettings.Value.GetImageLocalPath(orchestrationImage.AssetId, true);
-            var root = orchestratorSettings.Value.Proxy.ImageServerRoot;
             var imageServerPath =
-                $"{root}/fcgi-bin/iipsrv.fcgi?IIIF={targetPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
+                $"/fcgi-bin/iipsrv.fcgi?IIIF={targetPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
             var proxyImageServerResult = new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth,
                 ProxyDestination.ImageServer, imageServerPath);
             await SetCustomHeaders(orchestrationImage, proxyImageServerResult);

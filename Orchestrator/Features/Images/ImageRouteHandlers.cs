@@ -1,18 +1,17 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.ReverseProxy;
-using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
+using Yarp.ReverseProxy.Model;
 
 namespace Orchestrator.Features.Images
 {
@@ -33,13 +32,14 @@ namespace Orchestrator.Features.Images
                 UseProxy = false,
                 AllowAutoRedirect = false,
                 AutomaticDecompression = DecompressionMethods.GZip,
-                UseCookies = false
+                UseCookies = false,
+                ActivityHeadersPropagator = new ReverseProxyPropagator(DistributedContextPropagator.Current)
             });
 
             DefaultTransformer = HttpTransformer.Default;
             
             // TODO - make this configurable, potentially by target
-            RequestOptions = new ForwarderRequestConfig {ActivityTimeout = TimeSpan.FromSeconds(60)};  
+            RequestOptions = new ForwarderRequestConfig { ActivityTimeout = TimeSpan.FromSeconds(60) };
         }
 
         /// <summary>
@@ -48,23 +48,22 @@ namespace Orchestrator.Features.Images
         /// <param name="endpoints">Current <see cref="IEndpointRouteBuilder"/> object.</param>
         public static void MapImageHandling(this IEndpointRouteBuilder endpoints)
         {
-            var requestHandler = endpoints.ServiceProvider.GetService<ImageRequestHandler>();
-            var forwarder = endpoints.ServiceProvider.GetService<IHttpForwarder>();
-            var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()
-                .CreateLogger(nameof(ImageRouteHandlers));
-            var settings = endpoints.ServiceProvider.GetService<IOptions<ReverseProxySettings>>();
-            var orchestrator = endpoints.ServiceProvider.GetService<IImageOrchestrator>();
+            var requestHandler = endpoints.GetRequiredService<ImageRequestHandler>();
+            var forwarder = endpoints.GetRequiredService<IHttpForwarder>();
+            var logger = endpoints.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(ImageRouteHandlers));
+            var orchestrator = endpoints.GetRequiredService<IImageOrchestrator>();
+            var destinationSelector = endpoints.GetRequiredService<DownstreamDestinationSelector>();
 
             endpoints.MapGet("/iiif-img/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
             {
                 logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
                 var proxyResponse = await requestHandler.HandleRequest(httpContext);
-                await ProcessResponse(logger, httpContext, forwarder, proxyResponse, settings, orchestrator);
+                await ProcessResponse(logger, httpContext, forwarder, proxyResponse, destinationSelector, orchestrator);
             });
         }
         
         private static async Task ProcessResponse(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
-            IProxyActionResult proxyActionResult, IOptions<ReverseProxySettings> reverseProxySettings,
+            IProxyActionResult proxyActionResult, DownstreamDestinationSelector destinationSelector,
             IImageOrchestrator imageOrchestrator)
         {
             if (proxyActionResult is StatusCodeResult statusCodeResult)
@@ -73,14 +72,13 @@ namespace Orchestrator.Features.Images
                 return;
             }
 
-            bool requiresAuth = false;
             if (proxyActionResult is ProxyImageServerResult proxyImageServer)
             {
                 await EnsureImageOrchestrated(httpContext, proxyImageServer, imageOrchestrator);
             }
 
             var proxyAction = proxyActionResult as ProxyActionResult; 
-            await ProxyRequest(logger, httpContext, forwarder, reverseProxySettings, proxyAction);
+            await ProxyRequest(logger, httpContext, forwarder, destinationSelector, proxyAction);
         }
         
         private static void HandleStatusCodeResult(HttpContext httpContext, StatusCodeResult statusCodeResult)
@@ -106,14 +104,30 @@ namespace Orchestrator.Features.Images
         }
 
         private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
-            IOptions<ReverseProxySettings> reverseProxySettings, ProxyActionResult? proxyAction)
+            DownstreamDestinationSelector destinationSelector, ProxyActionResult? proxyAction)
         {
-            var root = reverseProxySettings.Value.GetAddressForProxyTarget(proxyAction.Target).ToString();
+            if (!destinationSelector.TryGetCluster(proxyAction.Target, out ClusterState? cluster))
+            {
+                logger.LogError("Unable to find target cluster {TargetCluster}", proxyAction.Target);
+                httpContext.Response.StatusCode = 502;
+                return;
+            }
+
+            var destination = destinationSelector.GetClusterTarget(httpContext, cluster!);
+
+            if (destination == null)
+            {
+                logger.LogError("No healthy targets for {TargetCluster}", proxyAction.Target);
+                httpContext.Response.StatusCode = 502;
+                return;
+            }
+
+            var root = destination.Model.Config.Address;
 
             var transformer = proxyAction.HasPath
-                ? new PathRewriteTransformer(proxyAction, proxyAction.Path.StartsWith("http"))
+                ? new PathRewriteTransformer(proxyAction)
                 : DefaultTransformer;
-            
+
             var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions,
                 transformer);
 
