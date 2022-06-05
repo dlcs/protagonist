@@ -5,11 +5,7 @@ using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using DLCS.Model.Spaces;
 using DLCS.Repository;
-using DLCS.Repository.Entities;
 using FluentAssertions;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Portal.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
@@ -27,19 +23,7 @@ namespace Portal.Tests.Integration
         public SpacesTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
         {
             dbContext = dbFixture.DbContext;
-            httpClient = factory
-                .WithConnectionString(dbFixture.ConnectionString)
-                .WithTestServices(services =>
-                {
-                    services.AddAuthentication("Test")
-                        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
-                            "Test", _ => { });
-                })
-                .CreateClient(new WebApplicationFactoryClientOptions
-                {
-                    AllowAutoRedirect = false
-                });
-            
+            httpClient = factory.ConfigureIntegrationTestClient(dbFixture, "Test");
             dbFixture.CleanUp();
         }
         

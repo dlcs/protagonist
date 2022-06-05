@@ -137,7 +137,7 @@ namespace API.Features.Customer.Requests
                 Name = request.Name,
                 DisplayName = request.DisplayName,
                 Administrator = false,
-                Created = DateTime.Now,
+                Created = DateTime.UtcNow,  
                 AcceptedAgreement = true,
                 Keys = Array.Empty<string>()
             };
@@ -150,18 +150,17 @@ namespace API.Features.Customer.Requests
         private async Task EnsureCustomerNamesNotTaken(CreateCustomer request, CreateCustomerResult result, CancellationToken cancellationToken)
         {
             // This could use customerRepository.GetCustomer(request.Name), but we want to be a bit more restrictive.
-            var existing = await dbContext.Customers
-                .SingleOrDefaultAsync(c => c.Name.Equals(request.Name, StringComparison.InvariantCultureIgnoreCase),
-                    cancellationToken: cancellationToken);
+            var allCustomers = await dbContext.Customers.ToListAsync(cancellationToken);
+            // get all locally for more string comparison support
+            var existing = allCustomers.SingleOrDefault(c 
+                => c.Name.Equals(request.Name, StringComparison.InvariantCultureIgnoreCase));
             if (existing != null)
             {
                 result.ErrorMessages.Add("A customer with this name (url part) already exists.");
             }
 
-            existing = await dbContext.Customers
-                .SingleOrDefaultAsync(
-                    c => c.DisplayName.Equals(request.DisplayName, StringComparison.InvariantCultureIgnoreCase),
-                    cancellationToken: cancellationToken);
+            existing = allCustomers.SingleOrDefault(
+                    c => c.DisplayName.Equals(request.DisplayName, StringComparison.InvariantCultureIgnoreCase));
             if (existing != null)
             {
                 result.ErrorMessages.Add("A customer with this display name (label) already exists.");

@@ -2,9 +2,6 @@
 using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Portal.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
@@ -20,18 +17,7 @@ namespace Portal.Tests.Integration
 
         public BasicAccessTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
         {
-            httpClient = factory
-                .WithConnectionString(dbFixture.ConnectionString)
-                .WithTestServices(services =>
-                {
-                    services.AddAuthentication("Test")
-                        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
-                            "Test", _ => { });
-                })
-                .CreateClient(new WebApplicationFactoryClientOptions
-                {
-                    AllowAutoRedirect = false
-                });
+            httpClient = factory.ConfigureIntegrationTestClient(dbFixture, "Test");
         }
 
         [Theory]
