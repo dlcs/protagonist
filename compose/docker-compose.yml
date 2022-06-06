@@ -21,13 +21,24 @@ services:
       - $HOME\Docker\scratch:/nas
       - $HOME\.aws:/root/.aws:ro
 
-  image-server:
+  iip:
     image: ghcr.io/dlcs/iipsrv-openjpeg:2.4.0
     ports:
       - "5025:8080"
     volumes:
       - $HOME\Docker\scratch:/nas
     entrypoint: /operations.sh
+
+  cantaloupe:
+    image: ghcr.io/dlcs/cantaloupe:5.0.5
+    ports:
+      - "5026:8182"
+    environment:
+      - ENDPOINT_ADMIN_ENABLED=true
+      - ENDPOINT_ADMIN_SECRET=admin
+      - PROCESSOR_MANUALSELECTIONSTRATEGY_JP2=GrokProcessor
+    volumes:
+      - $HOME\Docker\scratch:/home/cantaloupe/images/
 
   thumbs:
     build:

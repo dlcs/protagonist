@@ -105,11 +105,6 @@ namespace Orchestrator.Settings
         public string ThumbsPath { get; set; } = "thumbs";
 
         /// <summary>
-        /// The root URI of the image server
-        /// </summary>
-        public string ImageServerRoot { get; set; }
-        
-        /// <summary>
         /// Whether resizing thumbs is supported
         /// </summary>
         public bool CanResizeThumbs { get; set; }
@@ -123,6 +118,15 @@ namespace Orchestrator.Settings
         /// Get the root path for serving images
         /// </summary>
         public string ImagePath { get; set; } = "iiif-img";
+
+        /// <summary>
+        /// Which image-server is handling downstream tile requests
+        /// </summary>
+        /// <remarks>
+        /// Ideally the Orchestrator should be agnostic to this but, for now at least, the downstream image server will
+        /// be useful to know for toggling some functionality (for now at least)
+        /// </remarks>
+        public ImageServer ImageServer { get; set; } = ImageServer.Cantaloupe; 
 
         /// <summary>
         /// A collection of resize config for serving resized thumbs rather than handling requests via image-server
@@ -197,5 +201,21 @@ namespace Orchestrator.Settings
         /// Folder template for creating local Zip file
         /// </summary>
         public string ZipFolderTemplate { get; set; }
+    }
+    
+    /// <summary>
+    /// Enum representing image server used for serving image requests
+    /// </summary>
+    public enum ImageServer
+    {
+        /// <summary>
+        /// Cantaloupe image server
+        /// </summary>
+        Cantaloupe,
+        
+        /// <summary>
+        /// IIP Image Server
+        /// </summary>
+        IIPImage
     }
 }
