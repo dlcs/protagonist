@@ -18,19 +18,19 @@ namespace Orchestrator.Infrastructure.ReverseProxy
     {
         private readonly ILogger<DownstreamDestinationSelector> logger;
         private readonly IProxyStateLookup proxyStateLookup;
-        private readonly IOptionsMonitor<ProxySettings> proxySettings;
-        private readonly IDictionary<string,ILoadBalancingPolicy> loadBalancingPolicies;
+        private readonly IOptionsMonitor<OrchestratorSettings> orchestratorSettings;
+        private readonly IDictionary<string, ILoadBalancingPolicy> loadBalancingPolicies;
 
         public DownstreamDestinationSelector(
             ILogger<DownstreamDestinationSelector> logger, 
             IEnumerable<ILoadBalancingPolicy> loadBalancingPolicies,
             IProxyStateLookup proxyStateLookup,
-            IOptionsMonitor<ProxySettings> proxySettings)
+            IOptionsMonitor<OrchestratorSettings> orchestratorSettings)
         {
             this.loadBalancingPolicies = loadBalancingPolicies.ToDictionaryByUniqueId(p => p.Name);
             this.logger = logger;
             this.proxyStateLookup = proxyStateLookup;
-            this.proxySettings = proxySettings;
+            this.orchestratorSettings = orchestratorSettings;
         }
         
         /// <summary>
@@ -102,7 +102,7 @@ namespace Orchestrator.Infrastructure.ReverseProxy
             };
 
         private string GetImageServerCluster()
-            => proxySettings.CurrentValue.ImageServer switch
+            => orchestratorSettings.CurrentValue.ImageServer switch
             {
                 ImageServer.IIPImage => "iip",
                 ImageServer.Cantaloupe => "cantaloupe",

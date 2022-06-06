@@ -51,7 +51,7 @@ namespace Orchestrator.Features.Images.Orchestration.Status
             return false;
         }
 
-        private string GetLocalPath(AssetId assetId) => orchestratorSettings.Value.GetImageLocalPath(assetId, false);
+        private string GetLocalPath(AssetId assetId) => orchestratorSettings.Value.GetImageLocalPath(assetId);
 
         private async Task<bool> IsOrchestrating(AssetId assetId, CancellationToken cancellationToken = default)
         {
