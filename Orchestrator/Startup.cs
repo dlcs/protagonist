@@ -106,6 +106,8 @@ namespace Orchestrator
                         .FirstOrDefault();
                     jsonFormatter?.SupportedMediaTypes.Add(IIIF.Presentation.ContentTypes.V2);
                     jsonFormatter?.SupportedMediaTypes.Add(IIIF.Presentation.ContentTypes.V3);
+                    jsonFormatter?.SupportedMediaTypes.Add(IIIF.ImageApi.ContentTypes.V2);
+                    jsonFormatter?.SupportedMediaTypes.Add(IIIF.ImageApi.ContentTypes.V3);
                 });
             
             DapperMappings.Register();
