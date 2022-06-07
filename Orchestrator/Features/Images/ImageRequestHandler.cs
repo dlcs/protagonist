@@ -181,10 +181,9 @@ namespace Orchestrator.Features.Images
         private async Task<ProxyImageServerResult> GenerateImageResult(OrchestrationImage orchestrationImage,
             ImageAssetDeliveryRequest requestModel)
         {
-            // NOTE - this is for IIP image only
-            var targetPath = orchestratorSettings.Value.GetImageLocalPath(orchestrationImage.AssetId, true);
-            var imageServerPath =
-                $"/fcgi-bin/iipsrv.fcgi?IIIF={targetPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
+            var settings = orchestratorSettings.Value;
+            var targetPath = settings.GetImageServerFilePath(orchestrationImage.AssetId);
+            var imageServerPath = $"{targetPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
             var proxyImageServerResult = new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth,
                 ProxyDestination.ImageServer, imageServerPath);
             await SetCustomHeaders(orchestrationImage, proxyImageServerResult);

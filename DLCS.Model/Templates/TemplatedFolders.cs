@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using DLCS.Core.Types;
 
 namespace DLCS.Model.Templates
@@ -24,11 +23,11 @@ namespace DLCS.Model.Templates
         /// <param name="root">The root of the template, used as {root} param.</param>
         /// <param name="replaceImage">If true {image} is replaced, else it is left untouched</param>
         /// <returns>New string with replacements made.</returns>
-        public static string GenerateTemplate(string template,
+        public static string GenerateFolderTemplate(string template,
             AssetId asset,
             string? root = null,
             bool replaceImage = true)
-            => GenerateTemplate(template, asset, Path.DirectorySeparatorChar, root, replaceImage);
+            => GenerateTemplate(template, asset, Path.DirectorySeparatorChar.ToString(), root, replaceImage);
         
         /// <summary>
         /// Generate a folder template using provided details.
@@ -46,7 +45,7 @@ namespace DLCS.Model.Templates
         public static string GenerateTemplate(
             string template,
             AssetId asset, 
-            char directorySeparator,
+            string directorySeparator,
             string? root = null, 
             bool replaceImage = true)
         {
@@ -62,7 +61,7 @@ namespace DLCS.Model.Templates
                 : replacements;
         }
 
-        private static string SplitImageNameToFolders(string name, char separator)
+        private static string SplitImageNameToFolders(string name, string separator)
             => name.Length <= 8
                 ? name
                 : string.Concat(

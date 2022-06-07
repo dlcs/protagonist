@@ -87,7 +87,7 @@ namespace Orchestrator.Features.Images.Orchestration
                     orchestrationImage = await assetTracker.RefreshCachedAsset<OrchestrationImage>(assetId);
                 }
 
-                var targetPath = orchestratorSettings.Value.GetImageLocalPath(assetId, false);
+                var targetPath = orchestratorSettings.Value.GetImageLocalPath(assetId);
                 await SaveImageToFastDisk(orchestrationImage, targetPath, cancellationToken);
 
                 // Save status as Orchestrated

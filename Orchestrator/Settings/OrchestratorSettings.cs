@@ -29,12 +29,21 @@ namespace Orchestrator.Settings
         /// If timeout breached, multiple orchestrations can happen for same item.
         /// </summary>
         public int CriticalPathTimeoutMs { get; set; } = 10000;
-        
+
         /// <summary>
-        /// Folder template for downloading pointing ImageServer at local file
+        /// Which image-server is handling downstream tile requests
         /// </summary>
-        public string ImageFolderTemplateImageServer { get; set; }
-        
+        /// <remarks>
+        /// Ideally the Orchestrator should be agnostic to this but, for now at least, the downstream image server will
+        /// be useful to know for toggling some functionality (for now at least)
+        /// </remarks>
+        public ImageServer ImageServer { get; set; } = ImageServer.Cantaloupe;
+
+        /// <summary>
+        /// Configuration for specifying paths to images stored on fast disk.
+        /// </summary>
+        public Dictionary<ImageServer, ImageServerConfig> ImageServerPathConfig { get; set; } = new();
+
         /// <summary>
         /// Folder template for downloading resources to.
         /// </summary>
@@ -87,13 +96,22 @@ namespace Orchestrator.Settings
         public NamedQuerySettings NamedQuery { get; set; }
 
         /// <summary>
-        /// Get the local folder where Asset should be saved to
+        /// Get the local folder path for Asset. This is where it will be orchestrated to, or found on fast disk after
+        /// orchestration.
         /// </summary>
-        public string GetImageLocalPath(AssetId assetId, bool forImageServer)
+        public string GetImageLocalPath(AssetId assetId)
+            => TemplatedFolders.GenerateFolderTemplate(ImageFolderTemplateOrchestrator, assetId);
+        
+        /// <summary>
+        /// Get the folder path where ImageServer can access Asset file.
+        /// </summary>
+        public string GetImageServerFilePath(AssetId assetId)
         {
-            var template = forImageServer ? ImageFolderTemplateImageServer : ImageFolderTemplateOrchestrator;
-            var separator = forImageServer ? '/' : Path.DirectorySeparatorChar;
-            return TemplatedFolders.GenerateTemplate(template, assetId, separator);
+            var imageServerConfig = ImageServerPathConfig[ImageServer];
+            var imageServerFilePath = TemplatedFolders.GenerateTemplate(imageServerConfig.PathTemplate, assetId,
+                imageServerConfig.Separator);
+            
+            return $"{imageServerConfig.UrlPrefixTemplate}{imageServerFilePath}";
         }
     }
 
@@ -104,11 +122,6 @@ namespace Orchestrator.Settings
         /// </summary>
         public string ThumbsPath { get; set; } = "thumbs";
 
-        /// <summary>
-        /// The root URI of the image server
-        /// </summary>
-        public string ImageServerRoot { get; set; }
-        
         /// <summary>
         /// Whether resizing thumbs is supported
         /// </summary>
@@ -197,5 +210,48 @@ namespace Orchestrator.Settings
         /// Folder template for creating local Zip file
         /// </summary>
         public string ZipFolderTemplate { get; set; }
+    }
+    
+    /// <summary>
+    /// Enum representing image server used for serving image requests
+    /// </summary>
+    public enum ImageServer
+    {
+        /// <summary>
+        /// Cantaloupe image server
+        /// </summary>
+        Cantaloupe,
+        
+        /// <summary>
+        /// IIP Image Server
+        /// </summary>
+        IIPImage
+    }
+    
+    /// <summary>
+    /// Represents redirect configuration for redirecting ImageServer requests
+    /// </summary>
+    public class ImageServerConfig
+    {
+        /// <summary>
+        /// Directory separator character to use when specifying path to image.
+        /// Used when constructing {image-dir} template replacement.
+        /// </summary>
+        public string Separator { get; set; }
+        
+        /// <summary>
+        /// Path template for sending requests to image server.
+        /// Supports {customer}, {space}, {image-dir} and {image} replacements.
+        /// </summary>
+        /// <remarks>
+        /// This is the template used to construct requests to image servers. 
+        /// </remarks>
+        public string PathTemplate { get; set; }
+        
+        /// <summary>
+        /// The prefix for forwarding requests to this image-server. The final URL sent to the image-server is
+        /// {image-server-root}{url-prefix}{path-template}{image-request}
+        /// </summary>
+        public string UrlPrefixTemplate { get; set; }
     }
 }

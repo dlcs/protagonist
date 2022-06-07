@@ -513,7 +513,7 @@ namespace Orchestrator.Tests.Integration
             var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
             
             // Assert
-            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/fcgi-bin/iipsrv.fcgi?IIIF");
+            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/iiif");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.Should().ContainKey("Set-Cookie");
         }
@@ -586,7 +586,7 @@ namespace Orchestrator.Tests.Integration
             var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
             
             // Assert
-            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/fcgi-bin/iipsrv.fcgi?IIIF");
+            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/iiif");
         }
         
         [Fact]
@@ -610,7 +610,7 @@ namespace Orchestrator.Tests.Integration
             var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
             
             // Assert
-            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/fcgi-bin/iipsrv.fcgi?IIIF");
+            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/iiif");
         }
         
         [Fact]
@@ -634,7 +634,7 @@ namespace Orchestrator.Tests.Integration
             var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
             
             // Assert
-            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/fcgi-bin/iipsrv.fcgi?IIIF");
+            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/iiif");
         }
         
         [Fact]
@@ -701,7 +701,7 @@ namespace Orchestrator.Tests.Integration
             var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
             
             // Assert
-            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/fcgi-bin/iipsrv.fcgi?IIIF");
+            proxyResponse.Uri.ToString().Should().StartWith("http://image-server/iiif");
             response.Headers.CacheControl.Public.Should().BeTrue();
             response.Headers.CacheControl.SharedMaxAge.Should().Be(TimeSpan.FromDays(28));
             response.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromDays(28));

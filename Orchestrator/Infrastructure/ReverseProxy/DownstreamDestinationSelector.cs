@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Orchestrator.Settings;
 using Yarp.ReverseProxy;
 using Yarp.ReverseProxy.LoadBalancing;
 using Yarp.ReverseProxy.Model;
@@ -16,16 +18,19 @@ namespace Orchestrator.Infrastructure.ReverseProxy
     {
         private readonly ILogger<DownstreamDestinationSelector> logger;
         private readonly IProxyStateLookup proxyStateLookup;
-        private readonly IDictionary<string,ILoadBalancingPolicy> loadBalancingPolicies;
+        private readonly IOptionsMonitor<OrchestratorSettings> orchestratorSettings;
+        private readonly IDictionary<string, ILoadBalancingPolicy> loadBalancingPolicies;
 
         public DownstreamDestinationSelector(
             ILogger<DownstreamDestinationSelector> logger, 
             IEnumerable<ILoadBalancingPolicy> loadBalancingPolicies,
-            IProxyStateLookup proxyStateLookup)
+            IProxyStateLookup proxyStateLookup,
+            IOptionsMonitor<OrchestratorSettings> orchestratorSettings)
         {
             this.loadBalancingPolicies = loadBalancingPolicies.ToDictionaryByUniqueId(p => p.Name);
             this.logger = logger;
             this.proxyStateLookup = proxyStateLookup;
+            this.orchestratorSettings = orchestratorSettings;
         }
         
         /// <summary>
@@ -85,15 +90,23 @@ namespace Orchestrator.Infrastructure.ReverseProxy
 
             return destination;
         }
-        
-        private string GetProxyNameForDestination(ProxyDestination destination) 
+
+        private string GetProxyNameForDestination(ProxyDestination destination)
             => destination switch
             {
                 ProxyDestination.Orchestrator => "deliverator",
                 ProxyDestination.Thumbs => "thumbs",
                 ProxyDestination.ResizeThumbs => "thumbresize",
-                ProxyDestination.ImageServer =>"image_server",
+                ProxyDestination.ImageServer => GetImageServerCluster(),
                 _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, null)
+            };
+
+        private string GetImageServerCluster()
+            => orchestratorSettings.CurrentValue.ImageServer switch
+            {
+                ImageServer.IIPImage => "iip",
+                ImageServer.Cantaloupe => "cantaloupe",
+                _ => throw new ArgumentOutOfRangeException()
             };
     }
     

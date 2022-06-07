@@ -41,7 +41,21 @@ namespace Orchestrator.Tests.Features.Images
             accessValidator = A.Fake<IAssetAccessValidator>();
             assetDeliveryPathParserImpl = new AssetDeliveryPathParser(customerRepository);
             customHeaderRepository = A.Fake<ICustomHeaderRepository>();
-            defaultSettings = Options.Create(new OrchestratorSettings());
+            defaultSettings = Options.Create(new OrchestratorSettings
+            {
+                Proxy = new(),
+                ImageServerPathConfig = new()
+                {
+                    [ImageServer.Cantaloupe] = new ImageServerConfig
+                    {
+                        Separator = "%2F", PathTemplate = "/path", UrlPrefixTemplate = "cantaloupe"
+                    },
+                    [ImageServer.IIPImage] = new ImageServerConfig
+                    {
+                        Separator = "/", PathTemplate = "/path", UrlPrefixTemplate = "iip"
+                    }
+                }
+            });
 
             scopeFactory = A.Fake<IServiceScopeFactory>();
             var scope = A.Fake<IServiceScope>();
@@ -138,12 +152,7 @@ namespace Orchestrator.Tests.Features.Images
                 .Returns(new OrchestrationImage
                     { AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } } });
             A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie)).Returns(accessResult);
-            var sut = GetImageRequestHandlerWithMockPathParser(
-                settings: Options.Create(new OrchestratorSettings
-                {
-                    ImageFolderTemplateImageServer = "/path",
-                    Proxy = new()
-                }));
+            var sut = GetImageRequestHandlerWithMockPathParser();
 
             // Act
             var result = await sut.HandleRequest(context) as ProxyImageServerResult;
@@ -165,12 +174,7 @@ namespace Orchestrator.Tests.Features.Images
             A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
                 .Returns(new OrchestrationImage
                     { AssetId = assetId, OpenThumbs = new List<int[]> { new[] { 150, 150 } } });
-            var sut = GetImageRequestHandlerWithMockPathParser(
-                settings: Options.Create(new OrchestratorSettings
-                {
-                    ImageFolderTemplateImageServer = "/path",
-                    Proxy = new ProxySettings()
-                }));
+            var sut = GetImageRequestHandlerWithMockPathParser();
 
             // Act
             var result = await sut.HandleRequest(context) as ProxyActionResult;
@@ -193,12 +197,7 @@ namespace Orchestrator.Tests.Features.Images
             A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
             var assetId = new AssetId(2, 2, "test-image");
             
-            var sut = GetImageRequestHandlerWithMockPathParser(
-                settings: Options.Create(new OrchestratorSettings
-                {
-                    ImageFolderTemplateImageServer = "/path",
-                    Proxy = new ProxySettings()
-                }));
+            var sut = GetImageRequestHandlerWithMockPathParser();
 
             List<int[]> openSizes = knownThumb
                 ? new List<int[]> { new[] { 150, 150 } }
@@ -231,12 +230,7 @@ namespace Orchestrator.Tests.Features.Images
             
             var assetId = new AssetId(2, 2, "test-image");
             
-            var sut = GetImageRequestHandlerWithMockPathParser(
-                settings: Options.Create(new OrchestratorSettings
-                {
-                    ImageFolderTemplateImageServer = "/path",
-                    Proxy = new ProxySettings()
-                }));
+            var sut = GetImageRequestHandlerWithMockPathParser();
 
             List<int[]> openSizes = new List<int[]> { new[] { 150, 150 } };
 
@@ -250,13 +244,12 @@ namespace Orchestrator.Tests.Features.Images
             result.Headers.Should().ContainKeys("x-test-header", "x-test-header-2");
         }
 
-        private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false,
-            IOptions<OrchestratorSettings> settings = null)
+        private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false)
         {
             var requestProcessor = new AssetRequestProcessor(new NullLogger<AssetRequestProcessor>(), assetTracker,
                 mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl);
             return new(new NullLogger<ImageRequestHandler>(), requestProcessor, scopeFactory, customHeaderRepository,
-                settings ?? defaultSettings);
+                defaultSettings);
         }
     }
 }

@@ -6,13 +6,25 @@ volumes:
   dlcs_localstack_tmp: {}
 
 services:
-  image-server:
+  iip:
     image: ghcr.io/dlcs/iipsrv-openjpeg:2.4.0
     ports:
       - "5025:8080"
     volumes:
       - $HOME\Docker\scratch:/nas
     entrypoint: /operations.sh
+
+  cantaloupe:
+    image: ghcr.io/dlcs/cantaloupe:5.0.5
+    ports:
+      - "5026:8182"
+    environment:
+      - ENDPOINT_ADMIN_ENABLED=true
+      - ENDPOINT_ADMIN_SECRET=admin
+      - PROCESSOR_SELECTION_STRATEGY=ManualSelectionStrategy
+      - PROCESSOR_MANUALSELECTIONSTRATEGY_JP2=GrokProcessor
+    volumes:
+      - $HOME\Docker\scratch:/home/cantaloupe/images/
 
   fireball:
     image: fractos/fireball:1304a21459c2b6157abc46d3808512b578bd78b5

@@ -26,7 +26,7 @@
         ResizeThumbs,
         
         /// <summary>
-        /// Image-server/image-server cluster
+        /// Image-server, cluster targeted destination is determined by Proxy:ImageServer value
         /// </summary>
         ImageServer,
         
