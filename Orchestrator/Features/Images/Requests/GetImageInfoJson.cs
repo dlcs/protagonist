@@ -34,12 +34,14 @@ namespace Orchestrator.Features.Images.Requests
     {
         public string FullPath { get; }
         public bool NoOrchestrationOverride { get; }
+        public IIIF.ImageApi.Version Version { get; }
 
         public ImageAssetDeliveryRequest AssetRequest { get; set; }
 
-        public GetImageInfoJson(string path, bool noOrchestrationOverride)
+        public GetImageInfoJson(string path, IIIF.ImageApi.Version version, bool noOrchestrationOverride)
         {
             FullPath = path;
+            Version = version;
             NoOrchestrationOverride = noOrchestrationOverride;
         }
     }
