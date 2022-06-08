@@ -53,8 +53,8 @@ namespace Orchestrator.Infrastructure.IIIF
         {
             var profiles = GetProfileParameters(mediaTypeHeaders);
 
-            var v3Profile = $"\"{ImageApi.Service.ImageService3.Image3Context}\"";
-            var v2Profile = $"\"{ImageApi.Service.ImageService2.Image2Context}\"";
+            var v3Profile = $"\"{ImageApi.V3.ImageService3.Image3Context}\"";
+            var v2Profile = $"\"{ImageApi.V2.ImageService2.Image2Context}\"";
 
             foreach (var profile in profiles)
             {
