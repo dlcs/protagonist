@@ -63,7 +63,7 @@ namespace Orchestrator.Features.Manifests.Requests
 
             return manifest == null 
                 ? DescriptionResourceResponse.Empty
-                : DescriptionResourceResponse.Open(manifest.AsJson());
+                : DescriptionResourceResponse.Open(manifest);
         }
     }
 }

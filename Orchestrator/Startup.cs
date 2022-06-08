@@ -69,6 +69,7 @@ namespace Orchestrator
                 .AddSingleton<AssetRequestProcessor>()
                 .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
                 .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
+                .AddScoped<IIIFAuthBuilder>()
                 .AddSingleton<DownstreamDestinationSelector>()
                 .AddCaching(cachingSection.Get<CacheSettings>())
                 .AddOriginStrategies()

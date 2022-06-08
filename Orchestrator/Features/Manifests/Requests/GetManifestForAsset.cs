@@ -79,7 +79,7 @@ namespace Orchestrator.Features.Manifests.Requests
                 ? await GenerateV3Manifest(request.AssetRequest, asset)
                 : await GenerateV2Manifest(request.AssetRequest, asset);
 
-            return DescriptionResourceResponse.Open(manifest.AsJson());
+            return DescriptionResourceResponse.Open(manifest);
         }
 
         private async Task<IIIF3.Manifest> GenerateV3Manifest(BaseAssetRequest assetRequest, Asset asset)
