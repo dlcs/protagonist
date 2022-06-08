@@ -126,7 +126,7 @@ namespace Orchestrator.Features.Images.Requests
                     var baseAssetRequest = assetRequest as BaseAssetRequest;
                     return DlcsPathHelpers.GeneratePathFromTemplate(
                         template,
-                        baseAssetRequest.RoutePrefix,
+                        baseAssetRequest.VersionedRoutePrefix,
                         baseAssetRequest.CustomerPathValue,
                         baseAssetRequest.Space.ToString(),
                         baseAssetRequest.AssetId);

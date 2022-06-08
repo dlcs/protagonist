@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Repository.Caching;
 using IIIF.ImageApi;
@@ -112,7 +113,20 @@ namespace Orchestrator.Features.Images
         private Task<IActionResult> RenderInfoJson(Version imageApiVersion, bool noOrchestrate,
             CancellationToken cancellationToken)
         {
-            var contentType = imageApiVersion == Version.V3 ? ContentTypes.V3 : ContentTypes.V2;
+            string? contentType;
+            if (imageApiVersion == Version.V3)
+            {
+                contentType = ContentTypes.V3;
+            }
+            else
+            {
+                // Only return application/ld+json if client specified via Accept header
+                // https://iiif.io/api/image/2.1/#image-information-request
+                contentType = Request.GetTypedHeaders().Accept.Any(h => h.MatchesMediaType("application/ld+json"))
+                    ? "application/ld+json"
+                    : "application/json";
+            }
+
             return GenerateIIIFDescriptionResource(
                 () => new GetImageInfoJson(HttpContext.Request.Path, imageApiVersion, noOrchestrate),
                 contentType,
