@@ -63,6 +63,14 @@ namespace Orchestrator.Tests.Integration
         [InlineData("/iiif-img/2/1/image/")]
         [InlineData("/iiif-img/display-name/1/image")]
         [InlineData("/iiif-img/display-name/1/image/")]
+        [InlineData("/iiif-img/v2/2/1/image")]
+        [InlineData("/iiif-img/v2/2/1/image/")]
+        [InlineData("/iiif-img/v2/display-name/1/image")]
+        [InlineData("/iiif-img/v2/display-name/1/image/")]
+        [InlineData("/iiif-img/v3/2/1/image")]
+        [InlineData("/iiif-img/v3/2/1/image/")]
+        [InlineData("/iiif-img/v3/display-name/1/image")]
+        [InlineData("/iiif-img/v3/display-name/1/image/")]
         public async Task Get_ImageRoot_RedirectsToInfoJson(string path)
         {
             // Arrange
@@ -74,6 +82,18 @@ namespace Orchestrator.Tests.Integration
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.SeeOther);
             response.Headers.Location.Should().Be(expected);
+        }
+        
+        [Theory]
+        [InlineData("/iiif-img/v21/2/1/image")]
+        [InlineData("/iiif-img/v2.1/2/1/image/")]
+        public async Task Get_ImageRoot_404_IfIncorrectVersionSlugProvided(string path)
+        {
+            // Act
+            var response = await httpClient.GetAsync(path);
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
         [Fact]

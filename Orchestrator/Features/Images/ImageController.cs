@@ -35,12 +35,18 @@ namespace Orchestrator.Features.Images
         /// <returns></returns>
         [Route("{customer}/{space}/{image}", Name = "image_only")]
         [HttpGet]
-        public IActionResult Index()
-        {
-            var location = HttpContext.Request.Path.Add("/info.json");
-            Response.Headers["Location"] = location.Value;
-            return new StatusCodeResult(303);
-        }
+        public IActionResult ImageOnly()
+            => RedirectToInfoJson();
+        
+        /// <summary>
+        /// Index request for image root, redirects to info.json.
+        /// Matches a version string in format vX, where X is a single digit
+        /// </summary>
+        /// <returns></returns>
+        [Route("{version:regex(^v\\d$)}/{customer}/{space}/{image}", Name = "image_only_versioned")]
+        [HttpGet]
+        public IActionResult ImageOnlyVersioned()
+            => RedirectToInfoJson();
 
         /// <summary>
         /// Get info.json file for specified image
@@ -86,6 +92,13 @@ namespace Orchestrator.Features.Images
         public Task<IActionResult> InfoJsonV3([FromQuery] bool noOrchestrate = false,
             CancellationToken cancellationToken = default) =>
             RenderInfoJson(Version.V3, noOrchestrate, cancellationToken);
+        
+        private StatusCodeResult RedirectToInfoJson()
+        {
+            var location = HttpContext.Request.Path.Add("/info.json");
+            Response.Headers["Location"] = location.Value;
+            return new StatusCodeResult(303);
+        }
 
         private Version GetRequestIIIFImageApiVersion()
         {
