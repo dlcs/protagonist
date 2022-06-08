@@ -11,6 +11,12 @@ namespace DLCS.Web.Requests.AssetDelivery
         public string RoutePrefix { get; set; }
         
         /// <summary>
+        /// The request root, including Version, if available.
+        /// e.g. "thumbs", "iiif-img", "iiif-img/v2", "thumbs/v3" etc.
+        /// </summary>
+        public string VersionedRoutePrefix { get; set; }
+        
+        /// <summary>
         /// The customer for this request.
         /// </summary>
         public CustomerPathElement Customer { get; set; }

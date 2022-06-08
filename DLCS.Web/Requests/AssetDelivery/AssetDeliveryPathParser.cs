@@ -66,8 +66,11 @@ namespace DLCS.Web.Requests.AssetDelivery
             var versionCandidate = parts[defaultCustomerIndex];
             var isVersioned = versionRegex.IsMatch(versionCandidate);
             var versionOffset = isVersioned ? 1 : 0;
-
+            
             request.RoutePrefix = parts[routeIndex];
+            request.VersionedRoutePrefix = isVersioned 
+                ? $"{request.RoutePrefix}/{versionCandidate}" 
+                : request.RoutePrefix;
 
             request.CustomerPathValue = parts[defaultCustomerIndex + versionOffset];
             var space = parts[defaultSpacesIndex + versionOffset];
