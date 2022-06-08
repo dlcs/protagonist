@@ -33,9 +33,9 @@ namespace DLCS.Model.Assets
                     Formats = new[] { "jpg" },
                     Qualities = new[] { "color" },
                     Supports = new[] { "sizeByWhListed" }
-                }
+                },
+                Sizes = GetSizesOrderedAscending(sizes)
             };
-            imageService.Sizes = GetSizesOrderedAscending(sizes);
             imageService.Width = imageService.Sizes[^1].Width;
             imageService.Height = imageService.Sizes[^1].Height;
             return imageService;
@@ -65,10 +65,14 @@ namespace DLCS.Model.Assets
                 {
                     Formats = new[] { "jpg" },
                     Qualities = new[] { "native", "color", "gray" },
-                    Supports = new[] { "regionByPct","sizeByForcedWh","sizeByWh","sizeAboveFull","rotationBy90s","mirroring","gray" }
-                }
+                    Supports = new[]
+                    {
+                        "regionByPct", "sizeByForcedWh", "sizeByWh", "sizeAboveFull", "rotationBy90s", "mirroring",
+                        "gray"
+                    }
+                },
+                Sizes = GetSizesOrderedAscending(sizes)
             };
-            imageService.Sizes = GetSizesOrderedAscending(sizes);
             imageService.Tiles = GetTiles(imageService.Width, imageService.Height);
             return imageService;
         }
@@ -77,11 +81,10 @@ namespace DLCS.Model.Assets
         /// Get level 0 info.json object for IIIF Image 3
         /// </summary>
         /// <param name="serviceEndpoint">URI for image</param>
-        /// <param name="width">Width of image</param>
-        /// <param name="height">Height of image</param>
         /// <param name="sizes">List of sizes image is available in.</param>
         /// <returns>info.json object</returns>
-        public static ImageService3 GetImageApi3_Level0(string serviceEndpoint, List<int[]> sizes)
+        public static ImageService3 GetImageApi3_Level0(string serviceEndpoint, List<int[]> sizes, int? width = null,
+            int? height = null)
         {
             var imageService = new ImageService3
             {
@@ -90,11 +93,11 @@ namespace DLCS.Model.Assets
                 Protocol = ImageService3.ImageProtocol,
                 Profile = ImageService3.Level0Profile,
                 ExtraFeatures = new List<string> { Features.ProfileLinkHeader, Features.JsonldMediaType },
-                PreferredFormats = new List<string> { "jpg" }
+                PreferredFormats = new List<string> { "jpg" },
+                Sizes = GetSizesOrderedAscending(sizes)
             };
-            imageService.Sizes = GetSizesOrderedAscending(sizes);
-            imageService.Width = imageService.Sizes[^1].Width;
-            imageService.Height = imageService.Sizes[^1].Height;
+            imageService.Width = width ?? imageService.Sizes[^1].Width;
+            imageService.Height = height ?? imageService.Sizes[^1].Height;
             return imageService;
         }
 

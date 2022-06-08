@@ -6,8 +6,9 @@ using DLCS.Model.Assets;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
+using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
-using IIIF.Serialisation;
+using IIIF.ImageApi.V3;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -82,7 +83,7 @@ namespace Orchestrator.Features.Images.Requests
 
             var imageId = GetImageId(request);
             
-            var infoJson = InfoJsonBuilder.GetImageApi2_1Level1(imageId, asset.Width, asset.Height, asset.OpenThumbs);
+            var infoJson = GetInfoJson(imageId, asset, request.Version);
 
             if (!asset.RequiresAuth)
             {
@@ -111,6 +112,13 @@ namespace Orchestrator.Features.Images.Requests
             return orchestrationQueue.QueueRequest(orchestrationImage, cancellationToken);
         }
 
+        // TODO this is returning ImageApi 3 level 0 for now - next ticket will properly implement this to use
+        // downstream image-server to generate info.json 
+        private JsonLdBase GetInfoJson(string imageId, OrchestrationImage asset, Version version)
+            => version == Version.V2
+                ? InfoJsonBuilder.GetImageApi2_1Level1(imageId, asset.Width, asset.Height, asset.OpenThumbs)
+                : InfoJsonBuilder.GetImageApi3_Level0(imageId, asset.OpenThumbs, asset.Width, asset.Height);
+
         private string GetImageId(GetImageInfoJson request)
             => assetPathGenerator.GetFullPathForRequest(
                 request.AssetRequest,
@@ -125,12 +133,20 @@ namespace Orchestrator.Features.Images.Requests
                         baseAssetRequest.AssetId);
                 });
 
-        private async Task AddAuthServicesToInfoJson(ImageService2 infoJson, OrchestrationImage image)
+        private async Task AddAuthServicesToInfoJson(JsonLdBase infoJson, OrchestrationImage image)
         {
             var authService = await iiifAuthBuilder.GetAuthCookieServiceForAsset(image);
             if (authService != null)
             {
-                infoJson.Service = new List<IService> { authService };
+                switch (infoJson)
+                {
+                    case ImageService3 imageService3:
+                        imageService3.Service = new List<IService> { authService };
+                        break;
+                    case ImageService2 imageService2:
+                        imageService2.Service = new List<IService> { authService };
+                        break;
+                }
             }
         }
     }

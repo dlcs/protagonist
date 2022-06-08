@@ -183,7 +183,7 @@ namespace Orchestrator.Tests.Integration
             // Assert
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/v3/99/1/GetInfoJsonV3_Correct_ViaDirectPath");
+            jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/v3/99/1/GetInfoJsonV3_Correct_ViaDirectPath");
             jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/3/context.json");
             jsonResponse["height"].ToString().Should().Be("8000");
             jsonResponse["width"].ToString().Should().Be("8000");
@@ -217,7 +217,7 @@ namespace Orchestrator.Tests.Integration
             // Assert
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJsonV3_Correct_ViaConneg");
+            jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJsonV3_Correct_ViaConneg");
             jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/3/context.json");
             jsonResponse["height"].ToString().Should().Be("8000");
             jsonResponse["width"].ToString().Should().Be("8000");
@@ -247,7 +247,7 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_OpenImage_Correct");
+            jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_OpenImage_Correct");
             jsonResponse["height"].ToString().Should().Be("8000");
             jsonResponse["width"].ToString().Should().Be("8000");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -322,7 +322,7 @@ namespace Orchestrator.Tests.Integration
             // Assert
             // TODO - improve these tests when we have IIIF models
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should()
+            jsonResponse["id"].ToString().Should()
                 .Be("http://new-host.dlcs/iiif-img/99/1/GetInfoJson_OpenImage_ForwardedFor_Correct");
             jsonResponse["height"].ToString().Should().Be("8000");
             jsonResponse["width"].ToString().Should().Be("8000");
@@ -362,7 +362,7 @@ namespace Orchestrator.Tests.Integration
             // Assert
             // TODO - improve these tests when we have IIIF models
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should()
+            jsonResponse["id"].ToString().Should()
                 .Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_Correct");
             jsonResponse["service"].Should().NotBeNull();
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -391,7 +391,7 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             jsonResponse["services"].Should().BeNull();
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             response.Headers.CacheControl.Public.Should().BeFalse();
@@ -419,7 +419,7 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
@@ -447,7 +447,7 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
@@ -480,7 +480,7 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
@@ -515,7 +515,7 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
