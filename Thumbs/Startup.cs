@@ -17,7 +17,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Thumbs.Infrastructure;
-using Thumbs.Reorganising;
 using Thumbs.Settings;
 
 namespace Thumbs

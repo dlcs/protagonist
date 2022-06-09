@@ -25,5 +25,17 @@
         /// The maximum % size difference for upscaling.
         /// </summary>
         public int UpscaleThreshold { get; set; }
+        
+        /// <summary>
+        /// Default Image API Version to conform to when returning info.json
+        /// </summary>
+        public string DefaultIIIFImageVersion { get; set; } = "3.0";
+
+        /// <summary>
+        /// Get default IIIF Image API Version to conform to when returning resources as enum.
+        /// Defaults to V3 if unsupported, or unknown version specified
+        /// </summary>
+        public IIIF.ImageApi.Version GetDefaultIIIFImageVersion()
+            => DefaultIIIFImageVersion[0] == '2' ? IIIF.ImageApi.Version.V2 : IIIF.ImageApi.Version.V3;
     }
 }

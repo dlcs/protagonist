@@ -106,6 +106,11 @@ namespace Thumbs
         // TODO: Don't construct the URL from what came in on the Request.
         private async Task WriteInfoJson(HttpContext context, ImageAssetDeliveryRequest request)
         {
+            /*
+             * TODO - is this on a specific version path (v2/v3) slug
+             * is this default / non-versioned. If so use version from settings
+             */
+            
             var sizes = await thumbRepository.GetOpenSizes(request.GetAssetId());
             if (sizes.IsNullOrEmpty())
             {

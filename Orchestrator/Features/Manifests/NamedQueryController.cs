@@ -1,15 +1,14 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Repository.Caching;
+using DLCS.Web.IIIF;
 using IIIF.Presentation;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Features.Manifests.Requests;
 using Orchestrator.Infrastructure;
-using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Manifests
@@ -40,10 +39,8 @@ namespace Orchestrator.Features.Manifests
         public Task<IActionResult> Index(string customer, string namedQueryName, string? namedQueryArgs = null,
             CancellationToken cancellationToken = default)
         {
-            var requestedVersion = Request.GetTypedHeaders().Accept.GetIIIFPresentationType();
-            var version = requestedVersion == Version.Unknown
-                ? orchestratorSettings.GetDefaultIIIFPresentationVersion()
-                : requestedVersion;
+            var version =
+                Request.GetIIIFPresentationApiVersion(orchestratorSettings.GetDefaultIIIFPresentationVersion());
             return RenderNamedQuery(customer, namedQueryName, namedQueryArgs, version, cancellationToken);
         }
 
@@ -67,12 +64,9 @@ namespace Orchestrator.Features.Manifests
 
         public Task<IActionResult> RenderNamedQuery(string customer, string namedQueryName, string? namedQueryArgs,
             Version presentationVersion, CancellationToken cancellationToken = default)
-        {
-            var contentType = presentationVersion == Version.V3 ? ContentTypes.V3 : ContentTypes.V2;
-            return GenerateIIIFDescriptionResource(
+            => GenerateIIIFDescriptionResource(
                 () => new GetNamedQueryResults(customer, namedQueryName, namedQueryArgs, presentationVersion),
-                contentType,
+                Request.GetIIIFContentType(presentationVersion),
                 cancellationToken);
-        }
     }
 }

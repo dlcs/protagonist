@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Repository.Caching;
+using DLCS.Web.IIIF;
 using IIIF.ImageApi;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -10,7 +11,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Features.Images.Requests;
 using Orchestrator.Infrastructure;
-using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images
@@ -62,7 +62,7 @@ namespace Orchestrator.Features.Images
         public Task<IActionResult> InfoJson([FromQuery] bool noOrchestrate = false,
             CancellationToken cancellationToken = default)
         {
-            var version = GetRequestIIIFImageApiVersion();
+            var version = Request.GetIIIFImageApiVersion(orchestratorSettings.GetDefaultIIIFImageVersion());
             return RenderInfoJson(version, noOrchestrate, cancellationToken);
         }
 
@@ -99,15 +99,6 @@ namespace Orchestrator.Features.Images
             var location = HttpContext.Request.Path.Add("/info.json");
             Response.Headers["Location"] = location.Value;
             return new StatusCodeResult(303);
-        }
-
-        private Version GetRequestIIIFImageApiVersion()
-        {
-            var requestedVersion = Request.GetTypedHeaders().Accept.GetIIIFImageApiType();
-            var version = requestedVersion == Version.Unknown
-                ? orchestratorSettings.GetDefaultIIIFImageVersion()
-                : requestedVersion;
-            return version;
         }
 
         private Task<IActionResult> RenderInfoJson(Version imageApiVersion, bool noOrchestrate,
