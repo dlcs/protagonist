@@ -111,8 +111,7 @@ namespace Orchestrator.Tests.Integration
             
             // Act
             var response = await httpClient.GetAsync($"iiif-img/v2/{id}/info.json");
-
-            // Assert
+            
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/v2/99/1/GetInfoJsonV2_Correct_ViaDirectPath");
@@ -148,7 +147,6 @@ namespace Orchestrator.Tests.Integration
             var response = await httpClient.SendAsync(request);
 
             // Assert
-            // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJsonV2_Correct_ViaConneg");
             jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
@@ -180,7 +178,6 @@ namespace Orchestrator.Tests.Integration
             // Act
             var response = await httpClient.GetAsync($"iiif-img/v3/{id}/info.json");
 
-            // Assert
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/v3/99/1/GetInfoJsonV3_Correct_ViaDirectPath");
@@ -214,7 +211,6 @@ namespace Orchestrator.Tests.Integration
             request.Headers.Add("Accept", iiif3);
             var response = await httpClient.SendAsync(request);
 
-            // Assert
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJsonV3_Correct_ViaConneg");

@@ -128,9 +128,8 @@ namespace Thumbs
             context.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
             SetCacheControl(context);
             
-            var displayUrl = pathGenerator.GetFullPathForRequest(request);
+            var id = GetFullImagePath(request);
             
-            var id = displayUrl[..displayUrl.LastIndexOf("/", StringComparison.CurrentCultureIgnoreCase)];
             JsonLdBase infoJsonText = requestedVersion == Version.V2
                 ? InfoJsonBuilder.GetImageApi2_1Level0(id, sizes)
                 : InfoJsonBuilder.GetImageApi3_Level0(id, sizes);
@@ -151,7 +150,20 @@ namespace Thumbs
 
         private Task RedirectToInfoJson(HttpContext context, ImageAssetDeliveryRequest imageAssetDeliveryRequest)
         {
-            var redirectPath = pathGenerator.GetFullPathForRequest(
+            var redirectPath = GetFullImagePath(imageAssetDeliveryRequest);
+            if (!redirectPath.EndsWith('/'))
+            {
+                redirectPath += "/";
+            }
+
+            var infoJson = $"{redirectPath}info.json";
+            context.Response.SeeOther(infoJson);
+            return context.Response.CompleteAsync();
+        }
+
+        private string GetFullImagePath(ImageAssetDeliveryRequest imageAssetDeliveryRequest)
+        {
+            return pathGenerator.GetFullPathForRequest(
                 imageAssetDeliveryRequest,
                 (assetRequest, template) =>
                 {
@@ -163,14 +175,6 @@ namespace Thumbs
                         baseAssetRequest.Space.ToString(),
                         baseAssetRequest.AssetId);
                 });
-            if (!redirectPath.EndsWith('/'))
-            {
-                redirectPath += "/";
-            }
-
-            var infoJson = $"{redirectPath}info.json";
-            context.Response.SeeOther(infoJson);
-            return context.Response.CompleteAsync();
         }
 
         private void SetCacheControl(HttpContext context)
