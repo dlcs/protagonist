@@ -3,7 +3,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using DLCS.Core.Strings;
 using DLCS.Model.PathElements;
 using IIIF.ImageApi;
 
@@ -66,8 +65,18 @@ namespace DLCS.Web.Requests.AssetDelivery
             var versionCandidate = parts[defaultCustomerIndex];
             var isVersioned = versionRegex.IsMatch(versionCandidate);
             var versionOffset = isVersioned ? 1 : 0;
-
+            
             request.RoutePrefix = parts[routeIndex];
+
+            if (isVersioned)
+            {
+                request.VersionPathValue = versionCandidate;
+                request.VersionedRoutePrefix = $"{request.RoutePrefix}/{versionCandidate}";
+            }
+            else
+            {
+                request.VersionedRoutePrefix = request.RoutePrefix;
+            }
 
             request.CustomerPathValue = parts[defaultCustomerIndex + versionOffset];
             var space = parts[defaultSpacesIndex + versionOffset];

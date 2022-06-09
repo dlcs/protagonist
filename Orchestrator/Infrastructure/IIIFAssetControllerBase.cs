@@ -4,6 +4,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Repository.Caching;
+using IIIF.Serialisation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -68,7 +69,7 @@ namespace Orchestrator.Infrastructure
 
                 SetCacheControl(descriptionResource.RequiresAuth);
                 HttpContext.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding", "Accept" };
-                return Content(descriptionResource.DescriptionResource, contentType);
+                return Content(descriptionResource.DescriptionResource.AsJson(), contentType);
             }
             catch (KeyNotFoundException ex)
             {

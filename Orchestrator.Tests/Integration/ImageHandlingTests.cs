@@ -10,9 +10,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
-using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
-using DLCS.Repository.Entities;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -63,6 +61,14 @@ namespace Orchestrator.Tests.Integration
         [InlineData("/iiif-img/2/1/image/")]
         [InlineData("/iiif-img/display-name/1/image")]
         [InlineData("/iiif-img/display-name/1/image/")]
+        [InlineData("/iiif-img/v2/2/1/image")]
+        [InlineData("/iiif-img/v2/2/1/image/")]
+        [InlineData("/iiif-img/v2/display-name/1/image")]
+        [InlineData("/iiif-img/v2/display-name/1/image/")]
+        [InlineData("/iiif-img/v3/2/1/image")]
+        [InlineData("/iiif-img/v3/2/1/image/")]
+        [InlineData("/iiif-img/v3/display-name/1/image")]
+        [InlineData("/iiif-img/v3/display-name/1/image/")]
         public async Task Get_ImageRoot_RedirectsToInfoJson(string path)
         {
             // Arrange
@@ -76,6 +82,147 @@ namespace Orchestrator.Tests.Integration
             response.Headers.Location.Should().Be(expected);
         }
 
+        [Theory]
+        [InlineData("/iiif-img/v21/2/1/image")]
+        [InlineData("/iiif-img/v2.1/2/1/image/")]
+        public async Task Get_ImageRoot_404_IfIncorrectVersionSlugProvided(string path)
+        {
+            // Act
+            var response = await httpClient.GetAsync(path);
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+        
+        [Fact]
+        public async Task GetInfoJsonV2_Correct_ViaDirectPath()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id);
+
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = LocalStackFixture.ThumbsBucketName,
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/v2/{id}/info.json");
+            
+            // Assert
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/v2/99/1/GetInfoJsonV2_Correct_ViaDirectPath");
+            jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+            jsonResponse["height"].ToString().Should().Be("8000");
+            jsonResponse["width"].ToString().Should().Be("8000");
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.CacheControl.Public.Should().BeTrue();
+            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+            response.Content.Headers.ContentType.ToString().Should()
+                .Be("application/json", "application/json unless Accept header specified");
+        }
+        
+        [Fact]
+        public async Task GetInfoJsonV2_Correct_ViaConneg()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJsonV2_Correct_ViaConneg)}";
+            const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/image/2/context.json\"";
+            await dbFixture.DbContext.Images.AddTestAsset(id);
+
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = LocalStackFixture.ThumbsBucketName,
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Get, $"iiif-img/{id}/info.json");
+            request.Headers.Add("Accept", iiif2);
+            var response = await httpClient.SendAsync(request);
+
+            // Assert
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJsonV2_Correct_ViaConneg");
+            jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+            jsonResponse["height"].ToString().Should().Be("8000");
+            jsonResponse["width"].ToString().Should().Be("8000");
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.CacheControl.Public.Should().BeTrue();
+            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+            response.Content.Headers.ContentType.ToString().Should()
+                .Be("application/ld+json", "application/ld+json as Accept header specified");
+        }
+        
+        [Fact]
+        public async Task GetInfoJsonV3_Correct_ViaDirectPath()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJsonV3_Correct_ViaDirectPath)}";
+            const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
+            await dbFixture.DbContext.Images.AddTestAsset(id);
+
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = LocalStackFixture.ThumbsBucketName,
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/v3/{id}/info.json");
+
+            // Assert
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/v3/99/1/GetInfoJsonV3_Correct_ViaDirectPath");
+            jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/3/context.json");
+            jsonResponse["height"].ToString().Should().Be("8000");
+            jsonResponse["width"].ToString().Should().Be("8000");
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.CacheControl.Public.Should().BeTrue();
+            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
+        }
+        
+        [Fact]
+        public async Task GetInfoJsonV3_Correct_ViaConneg()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJsonV3_Correct_ViaConneg)}";
+            const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
+            await dbFixture.DbContext.Images.AddTestAsset(id);
+
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = LocalStackFixture.ThumbsBucketName,
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Get, $"iiif-img/{id}/info.json");
+            request.Headers.Add("Accept", iiif3);
+            var response = await httpClient.SendAsync(request);
+
+            // Assert
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJsonV3_Correct_ViaConneg");
+            jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/3/context.json");
+            jsonResponse["height"].ToString().Should().Be("8000");
+            jsonResponse["width"].ToString().Should().Be("8000");
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.CacheControl.Public.Should().BeTrue();
+            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+            response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
+        }
+
         [Fact]
         public async Task GetInfoJson_OpenImage_Correct()
         {
@@ -86,7 +233,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -96,7 +243,7 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_OpenImage_Correct");
+            jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_OpenImage_Correct");
             jsonResponse["height"].ToString().Should().Be("8000");
             jsonResponse["width"].ToString().Should().Be("8000");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -114,7 +261,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -136,7 +283,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -158,7 +305,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -171,7 +318,7 @@ namespace Orchestrator.Tests.Integration
             // Assert
             // TODO - improve these tests when we have IIIF models
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should()
+            jsonResponse["id"].ToString().Should()
                 .Be("http://new-host.dlcs/iiif-img/99/1/GetInfoJson_OpenImage_ForwardedFor_Correct");
             jsonResponse["height"].ToString().Should().Be("8000");
             jsonResponse["width"].ToString().Should().Be("8000");
@@ -200,7 +347,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[400,400],[200,200]]}"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -211,7 +358,7 @@ namespace Orchestrator.Tests.Integration
             // Assert
             // TODO - improve these tests when we have IIIF models
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should()
+            jsonResponse["id"].ToString().Should()
                 .Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_Correct");
             jsonResponse["service"].Should().NotBeNull();
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -230,7 +377,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[400,400],[200,200]]}"
             });
             await dbFixture.DbContext.SaveChangesAsync();
@@ -240,7 +387,7 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             jsonResponse["services"].Should().BeNull();
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             response.Headers.CacheControl.Public.Should().BeFalse();
@@ -259,7 +406,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
             });
             
@@ -268,7 +415,7 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
@@ -285,7 +432,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
             });
             
@@ -296,7 +443,7 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
@@ -318,7 +465,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
             });
             
@@ -329,7 +476,7 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
@@ -351,7 +498,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
             });
             
@@ -364,7 +511,7 @@ namespace Orchestrator.Tests.Integration
 
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+            jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
@@ -502,7 +649,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[400,400], [200,200]]}",
             });
             
@@ -525,7 +672,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = "99/1/known-thumb/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[200,200]]}",
             });
 
@@ -551,7 +698,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[400,400], [200,200]]}",
             });
             await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000);
@@ -575,7 +722,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[400,400], [200,200]]}",
             });
             await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000);
@@ -598,7 +745,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": []}",
             });
 
@@ -622,7 +769,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[300,300]]}",
             });
 
@@ -646,7 +793,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"{id}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": [[300,300]]}",
             });
 
@@ -687,7 +834,7 @@ namespace Orchestrator.Tests.Integration
             await amazonS3.PutObjectAsync(new PutObjectRequest
             {
                 Key = $"99/1/{imageName}/s.json",
-                BucketName = "protagonist-thumbs",
+                BucketName = LocalStackFixture.ThumbsBucketName,
                 ContentBody = "{\"o\": []}",
             });
 

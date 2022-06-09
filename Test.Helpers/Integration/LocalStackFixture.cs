@@ -16,6 +16,9 @@ namespace Test.Helpers.Integration
     {
         private readonly TestcontainersContainer localStackContainer;
         private const int LocalStackContainerPort = 4566;
+        public const string OutputBucketName = "protagonist-output";
+        public const string ThumbsBucketName = "protagonist-thumbs";
+        public const string StorageBucketName = "protagonist-storage";
 
         public Func<IAmazonS3> AWSS3ClientFactory { get; private set; }
 
@@ -68,9 +71,9 @@ namespace Test.Helpers.Integration
         {
             // Create basic buckets used by DLCS
             var amazonS3Client = AWSS3ClientFactory();
-            await amazonS3Client.PutBucketAsync("protagonist-output");
-            await amazonS3Client.PutBucketAsync("protagonist-thumbs");
-            await amazonS3Client.PutBucketAsync("protagonist-storage");
+            await amazonS3Client.PutBucketAsync(OutputBucketName);
+            await amazonS3Client.PutBucketAsync(ThumbsBucketName);
+            await amazonS3Client.PutBucketAsync(StorageBucketName);
         }
     }
 }

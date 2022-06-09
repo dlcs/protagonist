@@ -102,5 +102,37 @@ namespace DLCS.Model.Tests.Assets
       var normalisedJson = actual.AsJson().Replace("\r\n", "\n");
       normalisedJson.Should().BeEquivalentTo(expected);
     }
+    
+    [Fact]
+    public void GetImageApi3_Level0_ReturnsExpected()
+    {
+      // Arrange
+      var expected = @"{
+  ""@context"": ""http://iiif.io/api/image/3/context.json"",
+  ""id"": ""https://test.example.com/iiif-img/2/1/jackal"",
+  ""type"": ""ImageService3"",
+  ""profile"": ""level0"",
+  ""protocol"": ""http://iiif.io/api/image"",
+  ""width"": 400,
+  ""height"": 800,
+  ""sizes"": [
+    {""width"":100,""height"":200},
+    {""width"":400,""height"":800}
+  ],
+  ""preferredFormats"": [""jpg""],
+  ""extraFeatures"": [
+    ""profileLinkHeader"",
+    ""jsonldMediaType""
+  ]
+}";
+      // Act
+      var actual = InfoJsonBuilder.GetImageApi3_Level0(
+        "https://test.example.com/iiif-img/2/1/jackal",
+        new List<int[]> { new[] { 400, 800 }, new[] { 100, 200 } });
+
+      // Assert
+      var normalisedJson = actual.AsJson().Replace("\r\n", "\n");
+      normalisedJson.Should().BeEquivalentTo(expected);
+    }
   }
 }

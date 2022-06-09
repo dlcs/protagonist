@@ -69,6 +69,7 @@ namespace Orchestrator
                 .AddSingleton<AssetRequestProcessor>()
                 .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
                 .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
+                .AddScoped<IIIFAuthBuilder>()
                 .AddSingleton<DownstreamDestinationSelector>()
                 .AddCaching(cachingSection.Get<CacheSettings>())
                 .AddOriginStrategies()
@@ -106,6 +107,8 @@ namespace Orchestrator
                         .FirstOrDefault();
                     jsonFormatter?.SupportedMediaTypes.Add(IIIF.Presentation.ContentTypes.V2);
                     jsonFormatter?.SupportedMediaTypes.Add(IIIF.Presentation.ContentTypes.V3);
+                    jsonFormatter?.SupportedMediaTypes.Add(IIIF.ImageApi.ContentTypes.V2);
+                    jsonFormatter?.SupportedMediaTypes.Add(IIIF.ImageApi.ContentTypes.V3);
                 });
             
             DapperMappings.Register();

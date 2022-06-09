@@ -1,15 +1,20 @@
 ﻿using System;
 using System.Threading.Tasks;
+using DLCS.Core;
 using DLCS.Core.Collections;
+using DLCS.Core.Strings;
 using DLCS.Model.Assets;
+using DLCS.Web.IIIF;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
+using IIIF;
 using IIIF.Serialisation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
+using Version = IIIF.ImageApi.Version;
 
 namespace Thumbs
 {
@@ -20,6 +25,7 @@ namespace Thumbs
         private readonly ThumbnailHandler thumbnailHandler;
         private readonly IThumbRepository thumbRepository;
         private readonly IAssetPathGenerator pathGenerator;
+        private readonly Version defaultImageApiVersion;
 
         public ThumbsMiddleware(
             RequestDelegate next,
@@ -35,6 +41,9 @@ namespace Thumbs
             this.thumbnailHandler = thumbnailHandler;
             this.pathGenerator = pathGenerator;
             this.thumbRepository = thumbRepository;
+
+            var defaultImageVersion = configuration.GetValue("DefaultIIIFImageVersion", "3");
+            defaultImageApiVersion = defaultImageVersion[0] == '2' ? Version.V2 : Version.V3;
         }
 
         public async Task Invoke(HttpContext context,
@@ -102,8 +111,6 @@ namespace Thumbs
             await context.Response.WriteAsync(JsonConvert.SerializeObject(request));
         }
 
-        // TODO: observe Accepts header - https://iiif.io/api/image/3.0/#51-image-information-request
-        // TODO: Don't construct the URL from what came in on the Request.
         private async Task WriteInfoJson(HttpContext context, ImageAssetDeliveryRequest request)
         {
             var sizes = await thumbRepository.GetOpenSizes(request.GetAssetId());
@@ -115,20 +122,35 @@ namespace Thumbs
                 return;
             }
             
-            context.Response.ContentType = "application/json";
+            var requestedVersion = DiscoverRequestedImageApiVersion(context, request);
+            
+            context.Response.ContentType = context.Request.GetIIIFContentType(requestedVersion);
             context.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
             SetCacheControl(context);
             
-            var displayUrl = pathGenerator.GetFullPathForRequest(request);
+            var id = GetFullImagePath(request);
             
-            var id = displayUrl.Substring(0, displayUrl.LastIndexOf("/", StringComparison.CurrentCultureIgnoreCase));
-            var infoJsonText = InfoJsonBuilder.GetImageApi2_1Level0(id, sizes);
+            JsonLdBase infoJsonText = requestedVersion == Version.V2
+                ? InfoJsonBuilder.GetImageApi2_1Level0(id, sizes)
+                : InfoJsonBuilder.GetImageApi3_Level0(id, sizes);
             await context.Response.WriteAsync(infoJsonText.AsJson());
+        }
+
+        private Version DiscoverRequestedImageApiVersion(HttpContext context, ImageAssetDeliveryRequest request)
+        {
+            // If the request has /v2/ or /v3/ before customer etc use that to determine image api version
+            if (request.VersionPathValue.HasText())
+            {
+                return request.VersionPathValue == "v2" ? Version.V2 : Version.V3;
+            }
+
+            // Else look at any Accepts headers, falling back to configured version
+            return context.Request.GetIIIFImageApiVersion(defaultImageApiVersion);
         }
 
         private Task RedirectToInfoJson(HttpContext context, ImageAssetDeliveryRequest imageAssetDeliveryRequest)
         {
-            var redirectPath = pathGenerator.GetPathForRequest(imageAssetDeliveryRequest);
+            var redirectPath = GetFullImagePath(imageAssetDeliveryRequest);
             if (!redirectPath.EndsWith('/'))
             {
                 redirectPath += "/";
@@ -137,6 +159,22 @@ namespace Thumbs
             var infoJson = $"{redirectPath}info.json";
             context.Response.SeeOther(infoJson);
             return context.Response.CompleteAsync();
+        }
+
+        private string GetFullImagePath(ImageAssetDeliveryRequest imageAssetDeliveryRequest)
+        {
+            return pathGenerator.GetFullPathForRequest(
+                imageAssetDeliveryRequest,
+                (assetRequest, template) =>
+                {
+                    var baseAssetRequest = assetRequest as BaseAssetRequest;
+                    return DlcsPathHelpers.GeneratePathFromTemplate(
+                        template,
+                        baseAssetRequest.VersionedRoutePrefix,
+                        baseAssetRequest.CustomerPathValue,
+                        baseAssetRequest.Space.ToString(),
+                        baseAssetRequest.AssetId);
+                });
         }
 
         private void SetCacheControl(HttpContext context)

@@ -1,15 +1,14 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Repository.Caching;
+using DLCS.Web.IIIF;
 using IIIF.Presentation;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Features.Manifests.Requests;
 using Orchestrator.Infrastructure;
-using Orchestrator.Infrastructure.IIIF.Conneg;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Manifests
@@ -40,10 +39,8 @@ namespace Orchestrator.Features.Manifests
         [HttpGet]
         public Task<IActionResult> Index(CancellationToken cancellationToken = default)
         {
-            var requestedVersion = Request.GetTypedHeaders().Accept.GetIIIFPresentationType();
-            var version = requestedVersion == Version.Unknown
-                ? orchestratorSettings.GetDefaultIIIFPresentationVersion()
-                : requestedVersion;
+            var version =
+                Request.GetIIIFPresentationApiVersion(orchestratorSettings.GetDefaultIIIFPresentationVersion());
             return RenderManifest(version, cancellationToken);
         }
 
@@ -66,14 +63,12 @@ namespace Orchestrator.Features.Manifests
         [HttpGet]
         public Task<IActionResult> V3(CancellationToken cancellationToken = default)
             => RenderManifest(Version.V3, cancellationToken);
-        
-        public Task<IActionResult> RenderManifest(Version presentationVersion, CancellationToken cancellationToken = default)
-        {
-            var contentType = presentationVersion == Version.V3 ? ContentTypes.V3 : ContentTypes.V2;
-            return GenerateIIIFDescriptionResource(
+
+        public Task<IActionResult> RenderManifest(Version presentationVersion,
+            CancellationToken cancellationToken = default)
+            => GenerateIIIFDescriptionResource(
                 () => new GetManifestForAsset(HttpContext.Request.Path, presentationVersion),
-                contentType,
+                Request.GetIIIFContentType(presentationVersion),
                 cancellationToken);
-        }
     }
 }

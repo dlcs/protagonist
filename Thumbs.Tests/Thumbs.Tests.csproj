@@ -25,7 +25,14 @@
 
     <ItemGroup>
       <ProjectReference Include="..\DLCS.AWS\DLCS.AWS.csproj" />
+      <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj" />
       <ProjectReference Include="..\Thumbs\Thumbs.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="appsettings.Testing.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>
