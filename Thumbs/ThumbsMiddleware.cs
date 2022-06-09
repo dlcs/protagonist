@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
@@ -150,7 +151,18 @@ namespace Thumbs
 
         private Task RedirectToInfoJson(HttpContext context, ImageAssetDeliveryRequest imageAssetDeliveryRequest)
         {
-            var redirectPath = pathGenerator.GetPathForRequest(imageAssetDeliveryRequest);
+            var redirectPath = pathGenerator.GetFullPathForRequest(
+                imageAssetDeliveryRequest,
+                (assetRequest, template) =>
+                {
+                    var baseAssetRequest = assetRequest as BaseAssetRequest;
+                    return DlcsPathHelpers.GeneratePathFromTemplate(
+                        template,
+                        baseAssetRequest.VersionedRoutePrefix,
+                        baseAssetRequest.CustomerPathValue,
+                        baseAssetRequest.Space.ToString(),
+                        baseAssetRequest.AssetId);
+                });
             if (!redirectPath.EndsWith('/'))
             {
                 redirectPath += "/";
