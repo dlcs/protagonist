@@ -34,6 +34,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             // Assert
             thumbnailRequest.RoutePrefix.Should().Be("thumbs");
             thumbnailRequest.VersionedRoutePrefix.Should().Be("thumbs");
+            thumbnailRequest.VersionPathValue.Should().BeNull();
             thumbnailRequest.CustomerPathValue.Should().Be("99");
             thumbnailRequest.Customer.Should().Be(customer);
             thumbnailRequest.BasePath.Should().Be("/thumbs/99/1/");
@@ -57,6 +58,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             // Assert
             thumbnailRequest.RoutePrefix.Should().Be("thumbs");
             thumbnailRequest.VersionedRoutePrefix.Should().Be("thumbs");
+            thumbnailRequest.VersionPathValue.Should().BeNull();
             thumbnailRequest.CustomerPathValue.Should().Be("test-customer");
             thumbnailRequest.Customer.Should().Be(customer);
             thumbnailRequest.BasePath.Should().Be("/thumbs/test-customer/1/");
@@ -80,6 +82,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             // Assert
             imageRequest.RoutePrefix.Should().Be("iiif-img");
             imageRequest.VersionedRoutePrefix.Should().Be("iiif-img");
+            imageRequest.VersionPathValue.Should().BeNull();
             imageRequest.CustomerPathValue.Should().Be("test-customer");
             imageRequest.Customer.Should().Be(customer);
             imageRequest.BasePath.Should().Be("/iiif-img/test-customer/1/");
@@ -104,6 +107,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             // Assert
             imageRequest.RoutePrefix.Should().Be("iiif-img");
             imageRequest.VersionedRoutePrefix.Should().Be("iiif-img");
+            imageRequest.VersionPathValue.Should().BeNull();
             imageRequest.CustomerPathValue.Should().Be("v33");
             imageRequest.Customer.Should().Be(customer);
             imageRequest.BasePath.Should().Be("/iiif-img/v33/1/");
@@ -129,6 +133,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             // Assert
             imageRequest.RoutePrefix.Should().Be("iiif-img");
             imageRequest.VersionedRoutePrefix.Should().Be("iiif-img");
+            imageRequest.VersionPathValue.Should().BeNull();
             imageRequest.CustomerPathValue.Should().Be(customerPathValue);
             imageRequest.Customer.Should().Be(customer);
             imageRequest.BasePath.Should().Be($"/iiif-img/{customerPathValue}/1/");
@@ -156,6 +161,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             // Assert
             imageRequest.RoutePrefix.Should().Be("iiif-img");
             imageRequest.VersionedRoutePrefix.Should().Be($"iiif-img/{version}");
+            imageRequest.VersionPathValue.Should().Be($"{version}");
             imageRequest.CustomerPathValue.Should().Be(customerPathValue);
             imageRequest.Customer.Should().Be(customer);
             imageRequest.BasePath.Should().Be($"/iiif-img/{version}/{customerPathValue}/1/");
@@ -195,6 +201,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             // Assert
             imageRequest.RoutePrefix.Should().Be("iiif-av");
             imageRequest.VersionedRoutePrefix.Should().Be("iiif-av");
+            imageRequest.VersionPathValue.Should().BeNull();
             imageRequest.CustomerPathValue.Should().Be("test-customer");
             imageRequest.Customer.Should().Be(customer);
             imageRequest.BasePath.Should().Be("/iiif-av/test-customer/1/");
@@ -220,6 +227,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             // Assert
             imageRequest.RoutePrefix.Should().Be("iiif-av");
             imageRequest.VersionedRoutePrefix.Should().Be("iiif-av");
+            imageRequest.VersionPathValue.Should().BeNull();
             imageRequest.CustomerPathValue.Should().Be(customerPathValue);
             imageRequest.Customer.Should().Be(customer);
             imageRequest.BasePath.Should().Be($"/iiif-av/{customerPathValue}/1/");
@@ -246,6 +254,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             // Assert
             imageRequest.RoutePrefix.Should().Be("file");
             imageRequest.VersionedRoutePrefix.Should().Be("file");
+            imageRequest.VersionPathValue.Should().BeNull();
             imageRequest.CustomerPathValue.Should().Be("test-customer");
             imageRequest.Customer.Should().Be(customer);
             imageRequest.BasePath.Should().Be("/file/test-customer/1/");
@@ -270,6 +279,7 @@ namespace DLCS.Web.Tests.Requests.AssetDelivery
             // Assert
             imageRequest.RoutePrefix.Should().Be("file");
             imageRequest.VersionedRoutePrefix.Should().Be("file");
+            imageRequest.VersionPathValue.Should().BeNull();
             imageRequest.CustomerPathValue.Should().Be(customerPathValue);
             imageRequest.Customer.Should().Be(customer);
             imageRequest.BasePath.Should().Be($"/file/{customerPathValue}/1/");

@@ -17,6 +17,11 @@ namespace DLCS.Web.Requests.AssetDelivery
         public string VersionedRoutePrefix { get; set; }
         
         /// <summary>
+        /// The requested version slug, if present. e.g. v2, v3 etc.
+        /// </summary>
+        public string? VersionPathValue { get; set; }
+        
+        /// <summary>
         /// The customer for this request.
         /// </summary>
         public CustomerPathElement Customer { get; set; }

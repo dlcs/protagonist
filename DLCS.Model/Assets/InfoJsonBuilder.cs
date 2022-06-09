@@ -86,6 +86,7 @@ namespace DLCS.Model.Assets
         public static ImageService3 GetImageApi3_Level0(string serviceEndpoint, List<int[]> sizes, int? width = null,
             int? height = null)
         {
+            // TODO ExtraFeatures may need altering if resizing is supported 
             var imageService = new ImageService3
             {
                 Context = ImageService3.Image3Context,
