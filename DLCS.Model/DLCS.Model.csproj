@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="iiif-net" Version="0.1.0-tags-v0-0-8-0005" />
+    <PackageReference Include="iiif-net" Version="0.1.0" />
   </ItemGroup>
 
 </Project>
