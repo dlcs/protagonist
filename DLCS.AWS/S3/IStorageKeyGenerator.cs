@@ -75,5 +75,13 @@ namespace DLCS.AWS.S3
         /// <param name="assetPath">Requested asset path</param>
         /// <returns><see cref="RegionalisedObjectInBucket"/> for AV file</returns>
         RegionalisedObjectInBucket GetTimebasedAssetLocation(AssetId assetId, string assetPath);
+        
+        /// <summary>
+        /// Get <see cref="ObjectInBucket"/> item for info.json object
+        /// </summary>
+        /// <param name="assetId">AssetId request is for</param>
+        /// <param name="imageServer">Name of image server being used</param>
+        /// <returns><see cref="ObjectInBucket"/> for specified key in output bucket</returns>
+        ObjectInBucket GetInfoJsonLocation(AssetId assetId, string imageServer);
     }
 }

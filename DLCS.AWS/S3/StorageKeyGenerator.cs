@@ -7,8 +7,13 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.AWS.S3
 {
-    // Put all the things that generate keys into this - then inject it
-    // this is the only way to get a key for s3?
+    /// <summary>
+    /// Contains methods for getting ObjectInBucket objects for specific buckets/items 
+    /// </summary>
+    /// <remarks>
+    /// This should be the only class that knows/cares about buckets - calling code should only deal with
+    /// the ObjectInBucket objects for accessing s3 objects
+    /// </remarks>
     public class S3StorageKeyGenerator : IStorageKeyGenerator
     {
         private readonly S3Settings s3Options;
@@ -96,6 +101,12 @@ namespace DLCS.AWS.S3
         {
             var fullPath = GetStorageKey(assetId).ToConcatenated('/', assetPath);
             return new RegionalisedObjectInBucket(s3Options.StorageBucket, fullPath, awsSettings.Region);
+        }
+
+        public ObjectInBucket GetInfoJsonLocation(AssetId assetId, string imageServer)
+        {
+            var key = $"info/{imageServer}/{GetStorageKey(assetId)}/info.json";
+            return new ObjectInBucket(s3Options.StorageBucket, key);
         }
     }
 }

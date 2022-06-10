@@ -169,5 +169,22 @@ namespace DLCS.AWS.Tests.S3
             actual.Bucket.Should().Be("test-storage");
             actual.Region.Should().Be("eu-west-1");
         }
+        
+        [Theory]
+        [InlineData("Cantaloupe")]
+        [InlineData("IIPImage")]
+        public void GetInfoJsonLocation_ReturnsExpected(string imageServer)
+        {
+            // Arrange
+            var expected = $"info/{imageServer}/10/20/foo-bar/info.json";
+            var asset = new AssetId(10, 20, "foo-bar");
+            
+            // Act
+            var actual = sut.GetInfoJsonLocation(asset, imageServer);
+            
+            // Assert
+            actual.Key.Should().Be(expected);
+            actual.Bucket.Should().Be("test-storage");
+        }
     }
 }
