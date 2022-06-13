@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using DLCS.Core.Collections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -64,7 +66,7 @@ namespace Orchestrator.Infrastructure.ReverseProxy
         public DestinationState? GetClusterTarget(HttpContext context, ClusterState clusterState)
         {
             var destinations = clusterState.DestinationsState.AvailableDestinations;
-            
+
             var destinationCount = destinations.Count;
             DestinationState? destination;
 
@@ -89,6 +91,29 @@ namespace Orchestrator.Infrastructure.ReverseProxy
             }
 
             return destination;
+        }
+
+        /// <summary>
+        /// Get a random, healthy address for specified <see cref="ProxyDestination"/>.
+        /// This is more light weight than GetClusterTarget() as it doesn't use load-balancing, it picks a random
+        /// target from those available.
+        /// </summary>
+        public string? GetRandomDestinationAddress(ProxyDestination destination)
+        {
+            if (!TryGetCluster(destination, out var clusterState))
+            {
+                logger.LogWarning("Attempt to get a random address for {ProxyDestination} but could not get cluster",
+                    destination);
+                return null;
+            }
+            
+            var destinations = clusterState!.DestinationsState.AvailableDestinations;
+            var destinationCount = destinations.Count;
+
+            if (destinationCount == 0) return null;
+            
+            var destinationState = destinationCount == 1 ? destinations[0] : destinations.PickRandom();
+            return destinationState.Model.Config.Address;
         }
 
         private string GetProxyNameForDestination(ProxyDestination destination)

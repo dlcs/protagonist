@@ -182,7 +182,7 @@ namespace Orchestrator.Features.Images
             ImageAssetDeliveryRequest requestModel)
         {
             var settings = orchestratorSettings.Value;
-            var targetPath = settings.GetImageServerFilePath(orchestrationImage.AssetId);
+            var targetPath = settings.GetImageServerPath(orchestrationImage.AssetId);
             var imageServerPath = $"{targetPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
             var proxyImageServerResult = new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth,
                 ProxyDestination.ImageServer, imageServerPath);

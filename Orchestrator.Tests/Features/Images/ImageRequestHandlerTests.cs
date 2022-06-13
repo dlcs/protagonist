@@ -19,6 +19,7 @@ using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Xunit;
+using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Tests.Features.Images
 {
@@ -48,11 +49,21 @@ namespace Orchestrator.Tests.Features.Images
                 {
                     [ImageServer.Cantaloupe] = new ImageServerConfig
                     {
-                        Separator = "%2F", PathTemplate = "/path", UrlPrefixTemplate = "cantaloupe"
+                        Separator = "%2F",
+                        PathTemplate = "/path",
+                        VersionPathTemplates = new Dictionary<Version, string>
+                        {
+                            [Version.V3] = "cantaloupe"
+                        }
                     },
                     [ImageServer.IIPImage] = new ImageServerConfig
                     {
-                        Separator = "/", PathTemplate = "/path", UrlPrefixTemplate = "iip"
+                        Separator = "/",
+                        PathTemplate = "/path",
+                        VersionPathTemplates = new Dictionary<Version, string>
+                        {
+                            [Version.V2] = "iip"
+                        }
                     }
                 }
             });

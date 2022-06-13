@@ -43,5 +43,23 @@ namespace DLCS.Core.Collections
 
             return new() { list };
         }
+        
+        /// <summary>
+        /// Pick a single random item from list
+        /// </summary>
+        public static T PickRandom<T>(this IEnumerable<T> source) 
+            => source.PickRandom(1).Single();
+
+        /// <summary>
+        /// Pick a random number of items from list
+        /// </summary>
+        public static IEnumerable<T> PickRandom<T>(this IEnumerable<T> source, int count) 
+            => source.Shuffle().Take(count);
+
+        /// <summary>
+        /// Randomly reorder given list
+        /// </summary>
+        public static IOrderedEnumerable<T> Shuffle<T>(this IEnumerable<T> source) 
+            => source.OrderBy(_ => Guid.NewGuid());
     }
 }
