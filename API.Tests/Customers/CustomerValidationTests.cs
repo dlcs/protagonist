@@ -46,8 +46,7 @@ public class CustomerValidationTests
 
         errors.Length.Should().BeGreaterThan(0);
     }
-    
-    
+   
     
     [Fact]
     public void NewCustomer_CannotHaveName_Admin()
@@ -59,74 +58,4 @@ public class CustomerValidationTests
 
         errors.Length.Should().BeGreaterThan(0);
     }
-
-    [Fact]
-    public void CreateNewCustomer_Throws_IfNameConflicts()
-    {
-        // Tests CreateCustomer::EnsureCustomerNamesNotTaken
-    }
-
-
-
-    [Fact]
-    public void NewCustomerId_Increments_EntityCounter()
-    {
-        // Test... The Controller?
-        // Or the Mediatr command?
-        // Or the Repository operations?
-        
-        // Expected: Adding a new Customer picks a Customer ID that
-        // - is not in use
-        // - is higher than any other customer
-        
-        // Tests CreateCustomer::GetIdForNewCustomer
-    }
-
-    [Fact]
-    public void CreateNewCustomer_Creates_SpaceEntityCounter()
-    {
-        // An entity counter for this customer's spaces is created with 
-        // Type=space, Scope=CustomerId, Next=0 (?), Customer=CustomerId
-    }
-    
-    [Fact]
-    public void CreateNewCustomer_Creates_CustomerQueue()
-    {
-        // A Queue for this customer is created with 
-        // Customer=CustomerId, Name=default, Size=0
-    }
-    
-    [Fact]
-    public void CreateNewCustomer_Creates_ClickthroughAuthService()
-    {
-        // Creates an Auth service with
-        // GUID Id, Customer=customerId, Name="clickthrough", ttl=600
-        // (deliverator doesn't set profile?)
-    }
-    
-    
-    [Fact]
-    public void CreateNewCustomer_Creates_LogoutAuthService()
-    {
-        // Creates an Auth service with
-        // GUID Id, Customer=customerId, Name="logout", ttl=600, profile=http://iiif.io/api/auth/0/logout"
-    }
-    
-    
-    [Fact]
-    public void LogoutAuthService_IsChildOf_Clickthrough()
-    {
-        // The logout service is a child service of the clickthrough service
-        // test that this is reflected in the returned Hydra Customer? As a URL?
-    }
-    
-    
-    [Fact]
-    public void NewCustomer_Has_ClickthroughRole()
-    {
-        // Creates a role with
-        // Id URL having correct customer Id, Customer=CustomerId, AuthService=^^, Name=clickthrough
-        
-    }
-    
 }

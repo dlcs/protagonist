@@ -20,7 +20,7 @@ public class BasicApiTests : IClassFixture<ProtagonistAppFactory<Startup>>
     
     public BasicApiTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
-        httpClient = factory.ConfigureIntegrationTestClient(dbFixture, "API-Test");
+        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
         dbFixture.CleanUp();
     }
     

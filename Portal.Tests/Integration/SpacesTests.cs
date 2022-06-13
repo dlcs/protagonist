@@ -23,7 +23,7 @@ namespace Portal.Tests.Integration
         public SpacesTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
         {
             dbContext = dbFixture.DbContext;
-            httpClient = factory.ConfigureIntegrationTestClient(dbFixture, "Test");
+            httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "Test");
             dbFixture.CleanUp();
         }
         

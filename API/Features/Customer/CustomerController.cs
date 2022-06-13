@@ -85,7 +85,8 @@ namespace API.Features.Customer
                 var result = await mediator.Send(command);
                 if (result.Customer == null || result.ErrorMessages.Any())
                 {
-                    return HydraProblem(result.ErrorMessages, null, 500, "Could not create Customer", null);
+                    int statusCode = result.Conflict ? 409 : 500;
+                    return HydraProblem(result.ErrorMessages, null, statusCode, "Could not create Customer", null);
                 }
                 var newApiCustomer = result.Customer.ToHydra(Request.GetBaseUrl());
                 return Created(newApiCustomer.Id, newApiCustomer);

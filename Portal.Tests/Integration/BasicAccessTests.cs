@@ -17,7 +17,7 @@ namespace Portal.Tests.Integration
 
         public BasicAccessTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
         {
-            httpClient = factory.ConfigureIntegrationTestClient(dbFixture, "Test");
+            httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "Test");
         }
 
         [Theory]

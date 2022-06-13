@@ -40,6 +40,7 @@ namespace Portal
         {
             services.Configure<PortalSettings>(configuration.GetSection("Portal"));
             services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
+            services.Configure<ApiClientSettings>(configuration.GetSection("API"));
             var dlcsSettings = configuration.GetSection("DLCS").Get<DlcsSettings>();
             
             services.AddRazorPages(opts =>

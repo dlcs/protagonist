@@ -7,7 +7,6 @@ using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
 using DLCS.Repository;
-using DLCS.Repository.Entities;
 using FluentAssertions;
 using Hydra.Collections;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +27,7 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public CustomerTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
         dbContext = dbFixture.DbContext;
-        httpClient = factory.ConfigureIntegrationTestClient(dbFixture, "API-Test");
+        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
         dbFixture.CleanUp();
     }
     
@@ -74,9 +73,6 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // arrange
         // Need to create an entity counter global for customers
-        // Should this go in DlcsDatabaseFixture.cs?
-        // In fact, should that run all of the seed data in https://github.com/digirati-co-uk/deliverator-db/blob/master/dump.sql?
-        int customerCounterSeed = 1;
         int expectedNewCustomerId = 1;
         
         var customerCounter = await dbContext.EntityCounters.SingleOrDefaultAsync(ec 
@@ -169,6 +165,25 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         queue.Name.Should().Be("default");
         queue.Size.Should().Be(0);
 
+    }
+    
+    [Fact]
+    public async void CreateNewCustomer_Throws_IfNameConflicts()
+    {
+        // Tests CreateCustomer::EnsureCustomerNamesNotTaken
+        // These display names have already been taken by the seed data
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""test"",
+  ""displayName"": ""TestUser""
+}";
+        
+        // act
+        var content = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsAdmin().PostAsync("/customers", content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     

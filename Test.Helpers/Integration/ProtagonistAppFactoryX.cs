@@ -8,7 +8,7 @@ namespace Test.Helpers.Integration;
 
 public static class ProtagonistAppFactoryX
 {
-    public static HttpClient ConfigureIntegrationTestClient<T>(
+    public static HttpClient ConfigureBasicAuthedIntegrationTestHttpClient<T>(
         this ProtagonistAppFactory<T> factory,
         DlcsDatabaseFixture dbFixture,
         string authenticationScheme) where T : class

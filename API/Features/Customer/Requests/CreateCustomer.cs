@@ -47,6 +47,7 @@ namespace API.Features.Customer.Requests
     {
         public DLCS.Model.Customers.Customer? Customer;
         public List<string> ErrorMessages = new List<string>();
+        public bool Conflict { get; set; }
     }
 
     /// <inheritdoc />
@@ -156,6 +157,7 @@ namespace API.Features.Customer.Requests
                 => c.Name.Equals(request.Name, StringComparison.InvariantCultureIgnoreCase));
             if (existing != null)
             {
+                result.Conflict = true;
                 result.ErrorMessages.Add("A customer with this name (url part) already exists.");
             }
 
@@ -163,6 +165,7 @@ namespace API.Features.Customer.Requests
                     c => c.DisplayName.Equals(request.DisplayName, StringComparison.InvariantCultureIgnoreCase));
             if (existing != null)
             {
+                result.Conflict = true;
                 result.ErrorMessages.Add("A customer with this display name (label) already exists.");
             }
         }

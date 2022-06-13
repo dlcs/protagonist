@@ -12,6 +12,7 @@ using DLCS.Web.Response;
 using Hydra;
 using Hydra.Collections;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -26,15 +27,18 @@ namespace API.Client
         private readonly HttpClient httpClient;
         private readonly ClaimsPrincipal currentUser;
         private readonly JsonSerializerSettings jsonSerializerSettings;
+        private readonly ApiClientSettings settings;
 
         public DlcsClient(
             ILogger<DlcsClient> logger,
             HttpClient httpClient,
-            ClaimsPrincipal currentUser)
+            ClaimsPrincipal currentUser,
+            IOptions<ApiClientSettings> options)
         {
             this.logger = logger;
             this.httpClient = httpClient;
             this.currentUser = currentUser;
+            settings = options.Value;
 
             var basicAuth = currentUser.GetApiCredentials();
             if (!string.IsNullOrEmpty(basicAuth))
@@ -65,9 +69,9 @@ namespace API.Client
             return space;
         }
 
-        public async Task<HydraCollection<Image>> GetSpaceImages(int spaceId)
+        public Task<HydraCollection<Image>> GetSpaceImages(int spaceId)
         {
-            return await GetSpaceImages(1, 100, spaceId);
+            return GetSpaceImages(1, settings.PageSize, spaceId);
         }
 
         public async Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, string? orderBy = null)
