@@ -10,9 +10,9 @@ namespace Hydra.Model
         public int StatusCode { get; set; }
 
         [JsonProperty(Order = 11, PropertyName = "title")]
-        public string Title { get; set; }
+        public string? Title { get; set; }
 
         [JsonProperty(Order = 12, PropertyName = "description")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
     }
 }

@@ -7,9 +7,12 @@ namespace API.Client
 {
     public interface IDlcsClient
     {
+        Task<HydraCollection<Space>?> GetSpaces(int page, int pageSize, int? customerId = null);
         Task<Space?> GetSpaceDetails(int spaceId);
         Task<HydraCollection<Image>> GetSpaceImages(int spaceId);
+        Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, string? orderBy = null);
         Task<Space?> CreateSpace(Space newSpace);
+        Task<Space?> PatchSpace(int spaceId, Space space);
         Task<IEnumerable<string>?> GetApiKeys();
         Task<ApiKey> CreateNewApiKey();
         Task<Image> GetImage(int requestSpaceId, string requestImageId);
