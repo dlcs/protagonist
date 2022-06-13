@@ -1,5 +1,4 @@
-﻿using System;
-using DLCS.AWS.S3.Models;
+﻿using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
@@ -103,9 +102,10 @@ namespace DLCS.AWS.S3
             return new RegionalisedObjectInBucket(s3Options.StorageBucket, fullPath, awsSettings.Region);
         }
 
-        public ObjectInBucket GetInfoJsonLocation(AssetId assetId, string imageServer)
+        public ObjectInBucket GetInfoJsonLocation(AssetId assetId, string imageServer, IIIF.ImageApi.Version imageApiVersion)
         {
-            var key = $"info/{imageServer}/{GetStorageKey(assetId)}/info.json";
+            var versionSlug = imageApiVersion == IIIF.ImageApi.Version.V2 ? "v2" : "v3";
+            var key = $"info/{imageServer}/{versionSlug}/{GetStorageKey(assetId)}/info.json";
             return new ObjectInBucket(s3Options.StorageBucket, key);
         }
     }

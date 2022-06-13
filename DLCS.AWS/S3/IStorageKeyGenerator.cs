@@ -1,5 +1,6 @@
 ﻿using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
+using Version = IIIF.ImageApi.Version;
 
 namespace DLCS.AWS.S3
 {
@@ -81,7 +82,8 @@ namespace DLCS.AWS.S3
         /// </summary>
         /// <param name="assetId">AssetId request is for</param>
         /// <param name="imageServer">Name of image server being used</param>
+        /// <param name="imageApiVersion">IIIF ImageApi version</param>
         /// <returns><see cref="ObjectInBucket"/> for specified key in output bucket</returns>
-        ObjectInBucket GetInfoJsonLocation(AssetId assetId, string imageServer);
+        ObjectInBucket GetInfoJsonLocation(AssetId assetId, string imageServer, Version imageApiVersion);
     }
 }
