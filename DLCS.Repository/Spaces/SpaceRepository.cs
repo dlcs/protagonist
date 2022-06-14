@@ -59,7 +59,7 @@ namespace DLCS.Repository.Spaces
                 Customer = customer,
                 Id = newModelId,
                 Name = name,
-                Created = DateTime.Now,
+                Created = DateTime.UtcNow,
                 ImageBucket = imageBucket,
                 Tags = tags ?? Array.Empty<string>(),
                 Roles = roles ?? Array.Empty<string>(),

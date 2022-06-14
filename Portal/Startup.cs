@@ -82,8 +82,7 @@ namespace Portal
                 .AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditBehaviour<,>))
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, S3BucketReader>()
-                .AddSingleton<IBucketWriter, S3BucketWriter>()
-                .AddTransient<ISpaceRepository, SpaceRepository>(); // This shouldn't be here... use API
+                .AddSingleton<IBucketWriter, S3BucketWriter>();
 
             services.AddDlcsContext(configuration);
 
