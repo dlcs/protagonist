@@ -65,10 +65,6 @@ namespace Orchestrator.Tests.Integration
         [InlineData("/iiif-img/v2/2/1/image/")]
         [InlineData("/iiif-img/v2/display-name/1/image")]
         [InlineData("/iiif-img/v2/display-name/1/image/")]
-        [InlineData("/iiif-img/v3/2/1/image")]
-        [InlineData("/iiif-img/v3/2/1/image/")]
-        [InlineData("/iiif-img/v3/display-name/1/image")]
-        [InlineData("/iiif-img/v3/display-name/1/image/")]
         public async Task Get_ImageRoot_RedirectsToInfoJson(string path)
         {
             // Arrange
@@ -81,19 +77,22 @@ namespace Orchestrator.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.SeeOther);
             response.Headers.Location.Should().Be(expected);
         }
-
+        
         [Theory]
-        [InlineData("/iiif-img/v21/2/1/image")]
-        [InlineData("/iiif-img/v2.1/2/1/image/")]
-        public async Task Get_ImageRoot_404_IfIncorrectVersionSlugProvided(string path)
+        [InlineData("/iiif-img/v3/2/1/image", "/iiif-img/2/1/image/info.json")]
+        [InlineData("/iiif-img/v3/2/1/image/", "/iiif-img/2/1/image/info.json")]
+        [InlineData("/iiif-img/v3/display-name/1/image", "/iiif-img/display-name/1/image/info.json")]
+        [InlineData("/iiif-img/v3/display-name/1/image/", "/iiif-img/display-name/1/image/info.json")]
+        public async Task Get_ImageRoot_RedirectsToCanonicalInfoJson_IfRequestingCanonicalVersion(string path, string expected)
         {
             // Act
             var response = await httpClient.GetAsync(path);
 
             // Assert
-            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+            response.StatusCode.Should().Be(HttpStatusCode.SeeOther);
+            response.Headers.Location.Should().Be(expected);
         }
-        
+
         [Fact]
         public async Task GetInfoJsonV2_Correct_ViaDirectPath()
         {
@@ -160,34 +159,17 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task GetInfoJsonV3_Correct_ViaDirectPath()
+        public async Task GetInfoJsonV3_RedirectsToCanonical()
         {
             // Arrange
-            var id = $"99/1/{nameof(GetInfoJsonV3_Correct_ViaDirectPath)}";
-            const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
-            await dbFixture.DbContext.Images.AddTestAsset(id);
+            var id = $"99/1/{nameof(GetInfoJsonV3_RedirectsToCanonical)}";
 
-            await amazonS3.PutObjectAsync(new PutObjectRequest
-            {
-                Key = $"{id}/s.json",
-                BucketName = LocalStackFixture.ThumbsBucketName,
-                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
-            });
-            await dbFixture.DbContext.SaveChangesAsync();
-            
             // Act
             var response = await httpClient.GetAsync($"iiif-img/v3/{id}/info.json");
 
             // Assert
-            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/v3/99/1/GetInfoJsonV3_Correct_ViaDirectPath");
-            jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/3/context.json");
-            jsonResponse["height"].ToString().Should().Be("8000");
-            jsonResponse["width"].ToString().Should().Be("8000");
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-            response.Headers.CacheControl.Public.Should().BeTrue();
-            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
-            response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
+            response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+            response.Headers.Location.Should().Be($"/iiif-img/{id}/info.json");
         }
         
         [Fact]

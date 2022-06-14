@@ -1,10 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using DLCS.Web.IIIF;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
-using Microsoft.Net.Http.Headers;
 using Xunit;
 using ImageApi = IIIF.ImageApi;
 
@@ -71,5 +69,51 @@ public class ImageApiHeaders
 
         var versionReverse = httpRequest.GetIIIFImageApiVersion(ImageApi.Version.Unknown);
         versionReverse.Should().Be(ImageApi.Version.V3);
+    }
+    
+    [Fact]
+    public void GetIIIFImageApiVersionFromRoute_ReturnsNull_IfRouteValueNotFound()
+    {
+        var httpRequest = new DefaultHttpContext().Request;
+
+        var version = httpRequest.GetIIIFImageApiVersionFromRoute();
+
+        version.Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetIIIFImageApiVersionFromRoute_ReturnsNull_IfRouteValueFoundButEmpty()
+    {
+        var httpRequest = new DefaultHttpContext().Request;
+        httpRequest.RouteValues.Add("version", "");
+
+        var version = httpRequest.GetIIIFImageApiVersionFromRoute();
+
+        version.Should().BeNull();
+    }
+    
+    [Theory]
+    [InlineData("v2", ImageApi.Version.V2)]
+    [InlineData("v2.1", ImageApi.Version.V2)]
+    [InlineData("v3", ImageApi.Version.V3)]
+    public void GetIIIFImageApiVersionFromRoute_ReturnsValueIfFound(string versionValue, ImageApi.Version expected)
+    {
+        var httpRequest = new DefaultHttpContext().Request;
+        httpRequest.RouteValues.Add("version", versionValue);
+
+        var version = httpRequest.GetIIIFImageApiVersionFromRoute();
+
+        version.Should().Be(expected);
+    }
+    
+    [Fact]
+    public void GetIIIFImageApiVersionFromRoute_ReturnsNull_IfRouteValueUnknown()
+    {
+        var httpRequest = new DefaultHttpContext().Request;
+        httpRequest.RouteValues.Add("version", "v1");
+
+        var version = httpRequest.GetIIIFImageApiVersionFromRoute();
+
+        version.Should().BeNull();
     }
 }

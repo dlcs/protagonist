@@ -1,11 +1,9 @@
-﻿using System.Linq;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Repository.Caching;
 using DLCS.Web.IIIF;
 using IIIF.ImageApi;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -19,6 +17,7 @@ namespace Orchestrator.Features.Images
     [ApiController]
     public class ImageController : IIIFAssetControllerBase
     {
+        private const string CanonicalInfoJsonRoute = "info_json_canonical";
         private readonly OrchestratorSettings orchestratorSettings;
 
         public ImageController(
@@ -41,13 +40,29 @@ namespace Orchestrator.Features.Images
         
         /// <summary>
         /// Index request for image root, redirects to info.json.
-        /// Matches a version string in format vX, where X is a single digit
+        /// Matches a version string in format "v2" or "v3"
         /// </summary>
         /// <returns></returns>
-        [Route("{version:regex(^v\\d$)}/{customer}/{space}/{image}", Name = "image_only_versioned")]
+        [Route("{version:regex(^v2|v3$)}/{customer}/{space}/{image}", Name = "image_only_versioned")]
         [HttpGet]
         public IActionResult ImageOnlyVersioned()
-            => RedirectToInfoJson();
+        {
+            var requestedVersion = Request.GetIIIFImageApiVersionFromRoute();
+
+            // Requesting image-only for canonical version, redirect to canonical info.json
+            if (IsCanonicalRequest(requestedVersion))
+            {
+                var routeUrl = Url.RouteUrl(CanonicalInfoJsonRoute, new
+                {
+                    customer = Request.RouteValues["customer"],
+                    space = Request.RouteValues["space"],
+                    image = Request.RouteValues["image"]
+                })!;
+                return SeeAlsoResult(routeUrl);
+            }
+            
+            return RedirectToInfoJson();
+        }
 
         /// <summary>
         /// Get info.json file for specified image
@@ -57,7 +72,7 @@ namespace Orchestrator.Features.Images
         /// </param>
         /// <param name="cancellationToken">Async cancellation token</param>
         /// <returns>IIIF info.json for specified manifest.</returns>
-        [Route("{customer}/{space}/{image}/info.json", Name = "info_json")]
+        [Route("{customer}/{space}/{image}/info.json", Name = CanonicalInfoJsonRoute)]
         [HttpGet]
         public Task<IActionResult> InfoJson([FromQuery] bool noOrchestrate = false,
             CancellationToken cancellationToken = default)
@@ -67,37 +82,47 @@ namespace Orchestrator.Features.Images
         }
 
         /// <summary>
-        /// Get info.json file for specified image confirming to ImageApi v2.1
+        /// Get info.json file for specified image confirming to ImageApi v2 or v3, depending on version route value.
+        /// Accepted values are "v2" and "v3"
         /// </summary>
         /// <param name="noOrchestrate">
         /// Optional query parameter, if true then info.json request will not trigger orchestration
         /// </param>
         /// <param name="cancellationToken">Async cancellation token</param>
-        /// <returns>v2.1 IIIF info.json for specified manifest.</returns>
-        [Route("v2/{customer}/{space}/{image}/info.json", Name = "info_json_v2")]
+        /// <returns>IIIF info.json for specified manifest.</returns>
+        [Route("{version:regex(^v2|v3$)}/{customer}/{space}/{image}/info.json", Name = "info_json_versioned")]
         [HttpGet]
-        public Task<IActionResult> InfoJsonV2([FromQuery] bool noOrchestrate = false,
-            CancellationToken cancellationToken = default) =>
-            RenderInfoJson(Version.V2, noOrchestrate, cancellationToken);
-        
-        /// <summary>
-        /// Get info.json file for specified image confirming to ImageApi v3.0
-        /// </summary>
-        /// <param name="noOrchestrate">
-        /// Optional query parameter, if true then info.json request will not trigger orchestration
-        /// </param>
-        /// <param name="cancellationToken">Async cancellation token</param>
-        /// <returns>v3.0 IIIF info.json for specified manifest.</returns>
-        [Route("v3/{customer}/{space}/{image}/info.json", Name = "info_json_v3")]
-        [HttpGet]
-        public Task<IActionResult> InfoJsonV3([FromQuery] bool noOrchestrate = false,
-            CancellationToken cancellationToken = default) =>
-            RenderInfoJson(Version.V3, noOrchestrate, cancellationToken);
-        
+        public async Task<IActionResult> InfoJsonVersioned([FromQuery] bool noOrchestrate = false,
+            CancellationToken cancellationToken = default)
+        {
+            var requestedVersion = Request.GetIIIFImageApiVersionFromRoute();
+            if (IsCanonicalRequest(requestedVersion))
+            {
+                return RedirectToRoute(CanonicalInfoJsonRoute, new
+                {
+                    customer = Request.RouteValues["customer"],
+                    space = Request.RouteValues["space"],
+                    image = Request.RouteValues["image"]
+                });
+            }
+
+            if (!requestedVersion.HasValue)
+            {
+                return BadRequest("Unknown iiif image api version requested");
+            }
+
+            return await RenderInfoJson(requestedVersion.Value, noOrchestrate, cancellationToken);
+        }
+
         private StatusCodeResult RedirectToInfoJson()
         {
             var location = HttpContext.Request.Path.Add("/info.json");
-            Response.Headers["Location"] = location.Value;
+            return SeeAlsoResult(location);
+        }
+
+        private StatusCodeResult SeeAlsoResult(string location)
+        {
+            Response.Headers["Location"] = location;
             return new StatusCodeResult(303);
         }
 
@@ -110,5 +135,8 @@ namespace Orchestrator.Features.Images
                 contentType,
                 cancellationToken);
         }
+        
+        private bool IsCanonicalRequest(Version? requestedVersion) 
+            => requestedVersion.HasValue && requestedVersion == orchestratorSettings.DefaultIIIFImageVersion;
     }
 }

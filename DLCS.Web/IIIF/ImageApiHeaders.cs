@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using DLCS.Core.Collections;
 using IIIF.ImageApi;
 using Microsoft.AspNetCore.Http;
 using Version = IIIF.ImageApi.Version;
@@ -22,6 +23,34 @@ public static class ImageApiHeaders
         var requestedVersion = request.GetTypedHeaders().Accept.GetIIIFImageApiType();
         var version = requestedVersion == Version.Unknown ? fallbackVersion : requestedVersion;
         return version;
+    }
+
+    /// <summary>
+    /// Parse "version" RouteValues and convert to IIIF ImageApi version.
+    /// </summary>
+    /// <param name="request">Current HttpRequest</param>
+    /// <param name="fallbackVersion">ImageApi version to fallback to if no RouteValue found found.</param>
+    /// <returns>ImageApi version</returns>
+    public static Version? GetIIIFImageApiVersionFromRoute(this HttpRequest request)
+    {
+        if (!request.RouteValues.TryGetValue("version", out var versionValue) || versionValue == null)
+        {
+            return null;
+        }
+
+        var stringVal = versionValue.ToString();
+        if (!stringVal.IsNullOrEmpty())
+        {
+            switch (stringVal![1])
+            {
+                case '2':
+                    return Version.V2;
+                case '3':
+                    return Version.V3;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
