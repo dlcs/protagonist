@@ -22,12 +22,13 @@ namespace DLCS.AWS.S3
             this.logger = logger;
         }
         
-        public async Task<Stream?> GetObjectContentFromBucket(ObjectInBucket objectInBucket)
+        public async Task<Stream?> GetObjectContentFromBucket(ObjectInBucket objectInBucket,
+            CancellationToken cancellationToken = default)
         {
             var getObjectRequest = objectInBucket.AsGetObjectRequest();
             try
             {
-                GetObjectResponse getResponse = await s3Client.GetObjectAsync(getObjectRequest);
+                GetObjectResponse getResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
                 return getResponse.ResponseStream;
             }
             catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)

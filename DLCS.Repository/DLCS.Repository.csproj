@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.0.123" />
-    <PackageReference Include="iiif-net" Version="0.1.0" />
+    <PackageReference Include="iiif-net" Version="0.1.0.1" />
     <PackageReference Include="LazyCache" Version="2.4.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.5">
       <PrivateAssets>all</PrivateAssets>
