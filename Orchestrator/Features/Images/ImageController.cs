@@ -62,7 +62,7 @@ namespace Orchestrator.Features.Images
         public Task<IActionResult> InfoJson([FromQuery] bool noOrchestrate = false,
             CancellationToken cancellationToken = default)
         {
-            var version = Request.GetIIIFImageApiVersion(orchestratorSettings.GetDefaultIIIFImageVersion());
+            var version = Request.GetIIIFImageApiVersion(orchestratorSettings.DefaultIIIFImageVersion);
             return RenderInfoJson(version, noOrchestrate, cancellationToken);
         }
 

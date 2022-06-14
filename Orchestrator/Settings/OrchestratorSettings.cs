@@ -68,26 +68,12 @@ namespace Orchestrator.Settings
         /// <summary>
         /// Default Presentation API Version to conform to when returning presentation resources  
         /// </summary>
-        public string DefaultIIIFPresentationVersion { get; set; } = "3.0";
-
-        /// <summary>
-        /// Get default Presentation API Version to conform to when returning resources from as enum.
-        /// Defaults to V3 if unsupported, or unknown version specified
-        /// </summary>
-        public IIIF.Presentation.Version GetDefaultIIIFPresentationVersion()
-            => DefaultIIIFPresentationVersion[0] == '2' ? IIIF.Presentation.Version.V2 : IIIF.Presentation.Version.V3;
-
+        public IIIF.Presentation.Version DefaultIIIFPresentationVersion { get; set; } = IIIF.Presentation.Version.V3;
+        
         /// <summary>
         /// Default Image API Version to conform to when returning image description resources
         /// </summary>
-        public string DefaultIIIFImageVersion { get; set; } = "3.0";
-
-        /// <summary>
-        /// Get default IIIF Image API Version to conform to when returning resources as enum.
-        /// Defaults to V3 if unsupported, or unknown version specified
-        /// </summary>
-        public IIIF.ImageApi.Version GetDefaultIIIFImageVersion()
-            => DefaultIIIFImageVersion[0] == '2' ? IIIF.ImageApi.Version.V2 : IIIF.ImageApi.Version.V3;
+        public IIIF.ImageApi.Version DefaultIIIFImageVersion { get; set; } = Version.V3;
 
         /// <summary>
         /// Root URL for dlcs api

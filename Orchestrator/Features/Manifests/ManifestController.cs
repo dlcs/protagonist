@@ -40,7 +40,7 @@ namespace Orchestrator.Features.Manifests
         public Task<IActionResult> Index(CancellationToken cancellationToken = default)
         {
             var version =
-                Request.GetIIIFPresentationApiVersion(orchestratorSettings.GetDefaultIIIFPresentationVersion());
+                Request.GetIIIFPresentationApiVersion(orchestratorSettings.DefaultIIIFPresentationVersion);
             return RenderManifest(version, cancellationToken);
         }
 

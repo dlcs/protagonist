@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
@@ -72,7 +73,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             A.CallTo(() => bucketWriter
                     .WriteToBucket(
                         A<ObjectInBucket>.That.Matches(b => b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
-                        A<string>._, A<string>._))
+                        A<string>._, A<string>._, A<CancellationToken>._))
                 .Throws(new Exception());
             
             // Act
@@ -83,7 +84,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             A.CallTo(() => bucketWriter
                     .WriteToBucket(
                         A<ObjectInBucket>.That.Matches(b => b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
-                        A<string>._, A<string>._))
+                        A<string>._, A<string>._, A<CancellationToken>._))
                 .MustHaveHappened();
         }
         
@@ -171,7 +172,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
                     .WriteToBucket(
                         A<ObjectInBucket>.That.Matches(b =>
                             b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
-                        A<string>._, A<string>._))
+                        A<string>._, A<string>._, A<CancellationToken>._))
                 .MustHaveHappened(2, Times.Exactly);
         }
     }

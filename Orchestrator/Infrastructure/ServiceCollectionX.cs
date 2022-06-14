@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Assets;
+using Orchestrator.Features.Images.ImageServer;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Features.Images.Orchestration.Status;
 using Orchestrator.Features.Images.Requests;
@@ -83,8 +84,8 @@ namespace Orchestrator.Infrastructure
         public static IServiceCollection AddInfoJsonClient(this IServiceCollection services)
         {
             services
-                .AddSingleton<InfoJsonConstructor>()
-                .AddSingleton<InfoJsonService>()
+                .AddScoped<InfoJsonConstructor>()
+                .AddScoped<InfoJsonService>()
                 .AddHttpClient<IImageServerClient, YarpImageServerClient>(client =>
                 {
                     client.DefaultRequestHeaders.WithRequestedBy();

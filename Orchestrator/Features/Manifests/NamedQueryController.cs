@@ -40,7 +40,7 @@ namespace Orchestrator.Features.Manifests
             CancellationToken cancellationToken = default)
         {
             var version =
-                Request.GetIIIFPresentationApiVersion(orchestratorSettings.GetDefaultIIIFPresentationVersion());
+                Request.GetIIIFPresentationApiVersion(orchestratorSettings.DefaultIIIFPresentationVersion);
             return RenderNamedQuery(customer, namedQueryName, namedQueryArgs, version, cancellationToken);
         }
 
