@@ -42,7 +42,7 @@
 </table>
 
 <h3>Spaces</h3>
-<p>Total spaces for customer: @Model.PageOfSpaces.Total</p>
+<p>Total spaces for customer: @Model.PageOfSpaces.TotalItems</p>
 <table class="table">
     <thead>
     <tr>
@@ -52,10 +52,10 @@
     </tr>
     </thead>
     <tbody>
-    @foreach (var space in Model.PageOfSpaces.Spaces)
+    @foreach (var space in Model.PageOfSpaces.Members)
     {
         <tr>
-            <th scope="row">@space.Id</th>
+            <th scope="row">@space.ModelId</th>
             <td>@space.Name</td>
             <td>@space.Created</td>
         </tr>

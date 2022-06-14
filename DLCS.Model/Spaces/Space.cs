@@ -1,7 +1,7 @@
 ﻿#nullable disable
 
 using System;
-using System.Linq;
+using DLCS.Core.Collections;
 
 namespace DLCS.Model.Spaces
 {
@@ -12,11 +12,14 @@ namespace DLCS.Model.Spaces
         public int Customer { get; set; }
         public DateTime Created { get; set; }
         public string ImageBucket { get; set; } = string.Empty;
-        public string Tags { get; set; } = string.Empty;
-        public string Roles { get; set; } = string.Empty;
+        public string[] Tags { get; set; }
+        public string[] Roles { get; set; }
+        
         public bool Keep { get; set; }
         public bool Transform { get; set; }
         public int MaxUnauthorised { get; set; }
+        
+        public long ApproximateNumberOfImages { get; set; }
     }
 
     public static class SpaceX
@@ -26,17 +29,7 @@ namespace DLCS.Model.Spaces
         /// </summary>
         public static void AddTag(this Space space, string tag)
         {
-            if (string.IsNullOrEmpty(space.Tags))
-            {
-                space.Tags = tag;
-                return;
-            }
-
-            var tags = space.Tags.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
-            if (tags.Contains(tag)) return;
-            
-            tags.Add(tag);
-            space.Tags = string.Join(",", tags);
+            space.Tags = StringArrays.EnsureString(space.Tags, tag);
         }
 
         /// <summary>
@@ -44,12 +37,7 @@ namespace DLCS.Model.Spaces
         /// </summary>
         public static void RemoveTag(this Space space, string tag)
         {
-            if (string.IsNullOrEmpty(space.Tags)) return;
-            
-            var tags = space.Tags.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
-            if (!tags.Contains(tag)) return;
-
-            space.Tags = string.Join(",", tags.Where(t => t != tag));
+            space.Tags = StringArrays.RemoveString(space.Tags, tag);
         }
     }
 }

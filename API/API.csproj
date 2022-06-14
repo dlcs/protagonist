@@ -26,9 +26,19 @@
 
     <ItemGroup>
       <ProjectReference Include="..\API.Client\API.Client.csproj" />
+      <ProjectReference Include="..\DLCS.AWS\DLCS.AWS.csproj" />
+      <ProjectReference Include="..\DLCS.HydraModel\DLCS.HydraModel.csproj" />
       <ProjectReference Include="..\DLCS.Mediatr\DLCS.Mediatr.csproj" />
       <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
       <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
+      <ProjectReference Include="..\Hydra\Hydra.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="favicon.ico">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>

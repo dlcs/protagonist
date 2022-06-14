@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Dapper;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Repository.Caching;
@@ -12,9 +11,8 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Customers
 {
-    public class DapperCustomerRepository : ICustomerRepository
+    public class DapperCustomerRepository : DapperRepository, ICustomerRepository
     {
-        private readonly IConfiguration configuration;
         private readonly IAppCache appCache;
         private readonly CacheSettings cacheSettings;
         private static readonly Customer NullCustomer = new() { Id = -99 };
@@ -22,29 +20,41 @@ namespace DLCS.Repository.Customers
         public DapperCustomerRepository(
             IConfiguration configuration,
             IAppCache appCache,
-            IOptions<CacheSettings> cacheSettings)
+            IOptions<CacheSettings> cacheSettings) : base(configuration)
         {
-            this.configuration = configuration;
             this.appCache = appCache;
             this.cacheSettings = cacheSettings.Value;
         }
 
         public async Task<Dictionary<string, int>> GetCustomerIdLookup()
         {
-            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-            var results = await connection.QueryAsync<CustomerPathElement>("SELECT \"Id\", \"Name\" FROM \"Customers\"");
+            var results = await QueryAsync<CustomerPathElement>("SELECT \"Id\", \"Name\" FROM \"Customers\"");
             return results.ToDictionary(cpe => cpe.Name, cpe => cpe.Id);
         }
  
         public async Task<Customer?> GetCustomer(int customerId)
         {
-            var customer = await GetCustomerInternal(customerId);
-            return customer.Id == NullCustomer.Id ? null : customer;
+            // Getting customer by Id uses appCache but by name does not.
+            // Should this have an additional "bool preferCache = true" default?
+            bool preferCache = true;
+            if (preferCache)
+            {
+                var customer = await GetCustomerInternal(customerId);
+                return customer.Id == NullCustomer.Id ? null : customer;
+            }
+            else
+            {
+                const string sql = CustomerSelect + @" WHERE ""Id""=@Id;";
+                dynamic? rawCustomer = await QuerySingleOrDefaultAsync(sql, new {Id = customerId});
+                return MapRawCustomer(rawCustomer);
+            }
         }
 
-        public Task<Customer?> GetCustomer(string name)
+        public async Task<Customer?> GetCustomer(string name)
         {
-            throw new NotImplementedException();
+            const string sql = CustomerSelect + @" WHERE ""Name""=@name;";
+            dynamic? rawCustomer = await QuerySingleOrDefaultAsync(sql, new {name});
+            return MapRawCustomer(rawCustomer);
         }
 
         public async Task<Customer?> GetCustomerForKey(string apiKey, int? customerIdHint)
@@ -68,8 +78,8 @@ namespace DLCS.Repository.Customers
             var key = $"cust:{customerId}";
             return appCache.GetOrAddAsync(key, async entry =>
             {
-                await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
-                dynamic? rawCustomer = await connection.QuerySingleOrDefaultAsync(CustomerSql, new { Id = customerId });
+                const string sql = CustomerSelect + @" WHERE ""Id""=@Id;";
+                dynamic? rawCustomer = await QuerySingleOrDefaultAsync(sql, new {Id = customerId});
                 if (rawCustomer == null)
                 {
                     entry.AbsoluteExpirationRelativeToNow =
@@ -77,17 +87,8 @@ namespace DLCS.Repository.Customers
                     return NullCustomer;
                 }
 
-                // TODO: Why can't I replace this with return MapRawCustomer(rawCustomer) ?
-                return new Customer
-                {
-                    Administrator = rawCustomer.Administrator,
-                    Created = rawCustomer.Created,
-                    Id = rawCustomer.Id,
-                    Name = rawCustomer.Name,
-                    AcceptedAgreement = rawCustomer.AcceptedAgreement,
-                    DisplayName = rawCustomer.DisplayName,
-                    Keys = rawCustomer.Keys.ToString().Split(',')
-                };
+                Customer c = MapRawCustomer(rawCustomer);
+                return c;
             }, cacheSettings.GetMemoryCacheOptions());
         }
 
@@ -96,9 +97,9 @@ namespace DLCS.Repository.Customers
             const string key = "admin_customers";
             return appCache.GetOrAddAsync(key, async entry =>
             {
-                await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
                 // This allows for more than one admin customer - should it?
-                var rawAdmins = await connection.QueryAsync(AdminCustomersSql);
+                const string sql = CustomerSelect + @" WHERE ""Administrator""=True;";
+                var rawAdmins = await QueryAsync(sql);
                 var admins = new List<Customer>();
                 foreach (dynamic rawCustomer in rawAdmins)
                 {
@@ -109,8 +110,9 @@ namespace DLCS.Repository.Customers
             }, cacheSettings.GetMemoryCacheOptions());
         }
 
-        private static Customer MapRawCustomer(dynamic? rawCustomer)
+        private static Customer? MapRawCustomer(dynamic? rawCustomer)
         {
+            if (rawCustomer == null) return null;
             return new()
             {
                 Administrator = rawCustomer.Administrator,
@@ -123,15 +125,8 @@ namespace DLCS.Repository.Customers
             };
         }
 
-        private const string CustomerSql = @"
+        private const string CustomerSelect = @"
 SELECT ""Id"", ""Name"", ""DisplayName"", ""Keys"", ""Administrator"", ""Created"", ""AcceptedAgreement""
-  FROM public.""Customers""
-  WHERE ""Id""=@Id;";
-        
-        // TODO: make the shared SELECT list a const?
-        private const string AdminCustomersSql = @"
-SELECT ""Id"", ""Name"", ""DisplayName"", ""Keys"", ""Administrator"", ""Created"", ""AcceptedAgreement""
-  FROM public.""Customers""
-  WHERE ""Administrator""=True;";
+  FROM public.""Customers"" ";
     }
 }
