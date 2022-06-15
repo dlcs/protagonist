@@ -46,8 +46,8 @@ public class InfoJsonService
     public async Task<InfoJsonResponse?> GetInfoJson(OrchestrationImage orchestrationImage,
         Version version, CancellationToken cancellationToken = default)
     {
-        var infoJsonCandidate = GetInfoJsonKey(orchestrationImage, version);
-        var infoJson = await GetStoredInfoJson(infoJsonCandidate, cancellationToken);
+        var infoJsonKey = GetInfoJsonKey(orchestrationImage, version);
+        var infoJson = await GetStoredInfoJson(infoJsonKey, cancellationToken);
 
         if (infoJson != null && infoJson != Stream.Null)
         {
@@ -65,7 +65,7 @@ public class InfoJsonService
 
         if (infoJsonResponse == null) return null;
 
-        await StoreInfoJson(infoJsonResponse, orchestrationImage, version, cancellationToken);
+        await StoreInfoJson(infoJsonKey, infoJsonResponse, cancellationToken);
         return new InfoJsonResponse(infoJsonResponse, true);
     }
 
@@ -78,13 +78,7 @@ public class InfoJsonService
 
     private async Task<Stream?> GetStoredInfoJson(ObjectInBucket infoJsonKey, CancellationToken cancellationToken) 
         => await bucketReader.GetObjectContentFromBucket(infoJsonKey, cancellationToken);
-        
-    private async Task StoreInfoJson(JsonLdBase infoJson, OrchestrationImage orchestrationImage,
-        Version version, CancellationToken cancellationToken)
-    {
-        // Write this to the bucket
-        var bucket = storageKeyGenerator.GetInfoJsonLocation(orchestrationImage.AssetId,
-            orchestratorSettings.Value.ImageServer.ToString(), version);
-        await bucketWriter.WriteToBucket(bucket, infoJson.AsJson(), "application/json", cancellationToken);
-    }
+
+    private Task StoreInfoJson(ObjectInBucket infoJsonKey, JsonLdBase infoJson, CancellationToken cancellationToken)
+        => bucketWriter.WriteToBucket(infoJsonKey, infoJson.AsJson(), "application/json", cancellationToken);
 }

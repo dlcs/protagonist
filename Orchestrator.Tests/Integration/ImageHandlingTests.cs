@@ -12,15 +12,21 @@ using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Auth.Entities;
 using FluentAssertions;
+using IIIF;
+using IIIF.ImageApi.V2;
+using IIIF.ImageApi.V3;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Assets;
+using Orchestrator.Features.Images.ImageServer;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Tests.Integration.Infrastructure;
+using Test.Helpers;
 using Test.Helpers.Integration;
 using Xunit;
 using Yarp.ReverseProxy.Forwarder;
+using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Tests.Integration
 {
@@ -48,6 +54,7 @@ namespace Orchestrator.Tests.Integration
                     services
                         .AddSingleton<IForwarderHttpClientFactory, TestProxyHttpClientFactory>()
                         .AddSingleton<IHttpForwarder, TestProxyForwarder>()
+                        .AddSingleton<IImageServerClient, FakeImageServerClient>()
                         .AddSingleton<IImageOrchestrator>(orchestrator)
                         .AddSingleton<TestProxyHandler>();
                 })
@@ -94,10 +101,10 @@ namespace Orchestrator.Tests.Integration
         }
 
         [Fact]
-        public async Task GetInfoJsonV2_Correct_ViaDirectPath()
+        public async Task GetInfoJsonV2_Correct_ViaDirectPath_NotInS3()
         {
             // Arrange
-            var id = $"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath)}";
+            var id = $"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3)}";
             await dbFixture.DbContext.Images.AddTestAsset(id);
 
             await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -107,16 +114,63 @@ namespace Orchestrator.Tests.Integration
                 ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
             });
             await dbFixture.DbContext.SaveChangesAsync();
-            
+
             // Act
             var response = await httpClient.GetAsync($"iiif-img/v2/{id}/info.json");
             
             // Assert
+            // Verify correct info.json returned
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-            jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/v2/99/1/GetInfoJsonV2_Correct_ViaDirectPath");
+            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/v2/{id}");
             jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
-            jsonResponse["height"].ToString().Should().Be("8000");
-            jsonResponse["width"].ToString().Should().Be("8000");
+
+            // With correct headers/status
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.CacheControl.Public.Should().BeTrue();
+            response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+            response.Content.Headers.ContentType.ToString().Should()
+                .Be("application/json", "application/json unless Accept header specified");
+            
+            // And a copy was put in S3 for future requests
+            var s3InfoJsonObject =
+                await amazonS3.GetObjectAsync(LocalStackFixture.StorageBucketName, $"info/Cantaloupe/v2/{id}/info.json");
+            var s3InfoJson = JObject.Parse(s3InfoJsonObject.ResponseStream.GetContentString());
+            s3InfoJson["@id"].ToString().Should()
+                .NotBe($"http://localhost/iiif-img/v2/{id}", "Stored Id is placeholder only");
+            s3InfoJson["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+        }
+        
+        [Fact]
+        public async Task GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id);
+
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = LocalStackFixture.ThumbsBucketName,
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"info/Cantaloupe/v2/{id}/info.json",
+                BucketName = LocalStackFixture.StorageBucketName,
+                ContentBody = "{\"@context\": \"_this_proves_s3_origin_\"}"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/v2/{id}/info.json");
+            
+            // Assert
+            // Verify correct info.json returned
+            var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+            jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/v2/{id}");
+            jsonResponse["@context"].ToString().Should().Be("_this_proves_s3_origin_");
+
+            // With correct headers/status
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeTrue();
             response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
@@ -149,8 +203,6 @@ namespace Orchestrator.Tests.Integration
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJsonV2_Correct_ViaConneg");
             jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
-            jsonResponse["height"].ToString().Should().Be("8000");
-            jsonResponse["width"].ToString().Should().Be("8000");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeTrue();
             response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
@@ -197,8 +249,6 @@ namespace Orchestrator.Tests.Integration
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJsonV3_Correct_ViaConneg");
             jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/3/context.json");
-            jsonResponse["height"].ToString().Should().Be("8000");
-            jsonResponse["width"].ToString().Should().Be("8000");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeTrue();
             response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
@@ -226,18 +276,44 @@ namespace Orchestrator.Tests.Integration
             // Assert
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_OpenImage_Correct");
-            jsonResponse["height"].ToString().Should().Be("8000");
-            jsonResponse["width"].ToString().Should().Be("8000");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeTrue();
             response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         }
         
         [Fact]
-        public async Task GetInfoJson_OrchestratesImage()
+        public async Task GetInfoJson_OrchestratesImage_IfServedFromS3()
         {
             // Arrange
-            var id = $"99/1/{nameof(GetInfoJson_OrchestratesImage)}";
+            var id = $"99/1/{nameof(GetInfoJson_OrchestratesImage_IfServedFromS3)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id);
+
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"{id}/s.json",
+                BucketName = LocalStackFixture.ThumbsBucketName,
+                ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            });
+            await amazonS3.PutObjectAsync(new PutObjectRequest
+            {
+                Key = $"info/Cantaloupe/v3/{id}/info.json",
+                BucketName = LocalStackFixture.StorageBucketName,
+                ContentBody = "{\"id\": \"whatever\", \"type\": \"ImageService3\", \"context\": \"_this_proves_s3_origin_\"}"
+            });
+            await dbFixture.DbContext.SaveChangesAsync();
+            
+            // Act
+            await httpClient.GetAsync($"iiif-img/{id}/info.json");
+
+            // Assert
+            FakeImageOrchestrator.OrchestratedImages.Should().Contain(AssetId.FromString(id));
+        }
+        
+        [Fact]
+        public async Task GetInfoJson_DoesNotOrchestratesImage_IfServedFromImageServer()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(GetInfoJson_DoesNotOrchestratesImage_IfServedFromImageServer)}";
             await dbFixture.DbContext.Images.AddTestAsset(id);
 
             await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -252,7 +328,7 @@ namespace Orchestrator.Tests.Integration
             await httpClient.GetAsync($"iiif-img/{id}/info.json");
 
             // Assert
-            FakeImageOrchestrator.OrchestratedImages.Should().Contain(AssetId.FromString(id));
+            FakeImageOrchestrator.OrchestratedImages.Should().NotContain(AssetId.FromString(id));
         }
         
         [Fact]
@@ -302,8 +378,6 @@ namespace Orchestrator.Tests.Integration
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["id"].ToString().Should()
                 .Be("http://new-host.dlcs/iiif-img/99/1/GetInfoJson_OpenImage_ForwardedFor_Correct");
-            jsonResponse["height"].ToString().Should().Be("8000");
-            jsonResponse["width"].ToString().Should().Be("8000");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             response.Headers.CacheControl.Public.Should().BeTrue();
             response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
@@ -847,6 +921,36 @@ namespace Orchestrator.Tests.Integration
         {
             OrchestratedImages.Add(orchestrationImage.AssetId);
             return Task.CompletedTask;
+        }
+    }
+
+    public class FakeImageServerClient : IImageServerClient
+    {
+        public async Task<TImageService> GetInfoJson<TImageService>(OrchestrationImage orchestrationImage,
+            Version version,
+            CancellationToken cancellationToken = default) where TImageService : JsonLdBase
+        {
+            if (typeof(TImageService) == typeof(ImageService2))
+            {
+                return new ImageService2
+                {
+                    Profile = ImageService2.Level1Profile,
+                    Protocol = ImageService2.Image2Protocol,
+                    Context = ImageService2.Image2Context,
+                    Width = 100,
+                    Height = 100
+                } as TImageService;
+            }
+
+            return new ImageService3
+            {
+                Profile = ImageService3.Level1Profile,
+                Protocol = ImageService3.ImageProtocol,
+                Context = ImageService3.Image3Context,
+                Width = 100,
+                Height = 100
+            } as TImageService;
+
         }
     }
 }
