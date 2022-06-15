@@ -8,7 +8,7 @@ using ImageApi = IIIF.ImageApi;
 
 namespace DLCS.Web.Tests.IIIF;
 
-public class ImageApiHeaders
+public class ImageApiVersionHelpersTests
 {
     [Theory]
     [InlineData(ImageApi.Version.V2)]
@@ -113,6 +113,25 @@ public class ImageApiHeaders
         httpRequest.RouteValues.Add("version", "v1");
 
         var version = httpRequest.GetIIIFImageApiVersionFromRoute();
+
+        version.Should().BeNull();
+    }
+    
+    [Theory]
+    [InlineData("v2", ImageApi.Version.V2)]
+    [InlineData("v2.1", ImageApi.Version.V2)]
+    [InlineData("v3", ImageApi.Version.V3)]
+    public void ParseToIIIFImageApiVersion_ReturnsValueIfFound(string versionValue, ImageApi.Version expected)
+    {
+        var version = versionValue.ParseToIIIFImageApiVersion();
+
+        version.Should().Be(expected);
+    }
+    
+    [Fact]
+    public void ParseToIIIFImageApiVersion_ReturnsNull_IfRouteValueUnknown()
+    {
+        var version = "v1".ParseToIIIFImageApiVersion();
 
         version.Should().BeNull();
     }

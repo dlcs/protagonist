@@ -4,9 +4,11 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
+using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Repository.Assets;
+using DLCS.Web.IIIF;
 using DLCS.Web.Requests.AssetDelivery;
 using IIIF;
 using Microsoft.AspNetCore.Http;
@@ -67,7 +69,7 @@ namespace Orchestrator.Features.Images
             {
                 return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
             }
-
+            
             // If "HEAD" then add CORS - is this required here?
             var orchestrationAsset = await assetRequestProcessor.GetAsset(assetRequest);
             if (orchestrationAsset is not OrchestrationImage orchestrationImage)
@@ -178,16 +180,38 @@ namespace Orchestrator.Features.Images
             return (false, false);
         }
 
-        private async Task<ProxyImageServerResult> GenerateImageResult(OrchestrationImage orchestrationImage,
+        private async Task<IProxyActionResult> GenerateImageResult(OrchestrationImage orchestrationImage,
             ImageAssetDeliveryRequest requestModel)
         {
-            var settings = orchestratorSettings.Value;
-            var targetPath = settings.GetImageServerPath(orchestrationImage.AssetId);
+            string? targetPath = GetImageServerPath(orchestrationImage, requestModel);
+            if (string.IsNullOrEmpty(targetPath))
+            {
+                logger.LogDebug("Unable to fulfil image request: {Path}. ImageServer path found",
+                    requestModel.NormalisedFullPath);
+                return new StatusCodeResult(HttpStatusCode.BadRequest);
+            }
+
             var imageServerPath = $"{targetPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
             var proxyImageServerResult = new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth,
                 ProxyDestination.ImageServer, imageServerPath);
             await SetCustomHeaders(orchestrationImage, proxyImageServerResult);
             return proxyImageServerResult;
+        }
+
+        private string? GetImageServerPath(OrchestrationImage orchestrationImage, ImageAssetDeliveryRequest requestModel)
+        {
+            var settings = orchestratorSettings.Value;
+            if (requestModel.VersionPathValue.HasText())
+            {
+                var imageApiVersion = requestModel.VersionPathValue.ParseToIIIFImageApiVersion();
+                if (!imageApiVersion.HasValue) return null;
+
+                return settings.GetImageServerPath(orchestrationImage.AssetId, imageApiVersion.Value);
+            }
+            else
+            {
+                return settings.GetImageServerPath(orchestrationImage.AssetId);
+            }
         }
 
         private async Task SetCustomHeaders(OrchestrationImage orchestrationImage, 

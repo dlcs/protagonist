@@ -8,9 +8,9 @@ using Version = IIIF.ImageApi.Version;
 namespace DLCS.Web.IIIF;
 
 /// <summary>
-/// Class containing helpers for dealing with reading/setting headers for IIIF Image Api
+/// Class containing helpers for dealing with parsing values for IIIF Image Api
 /// </summary>
-public static class ImageApiHeaders
+public static class ImageApiVersionHelpers
 {
     /// <summary>
     /// Parse Accepts headers to find requested IIIF ImageApi version, falling back to specified version if not found.  
@@ -29,7 +29,6 @@ public static class ImageApiHeaders
     /// Parse "version" RouteValues and convert to IIIF ImageApi version.
     /// </summary>
     /// <param name="request">Current HttpRequest</param>
-    /// <param name="fallbackVersion">ImageApi version to fallback to if no RouteValue found found.</param>
     /// <returns>ImageApi version</returns>
     public static Version? GetIIIFImageApiVersionFromRoute(this HttpRequest request)
     {
@@ -38,10 +37,19 @@ public static class ImageApiHeaders
             return null;
         }
 
-        var stringVal = versionValue.ToString();
-        if (!stringVal.IsNullOrEmpty())
+        return versionValue.ToString().ParseToIIIFImageApiVersion();
+    }
+    
+    /// <summary>
+    /// Get IIIF Image version from "version" RouteValue. Will be in form "v1", "v2" etc
+    /// </summary>
+    /// <param name="version">Current HttpRequest</param>
+    /// <returns>ImageApi version</returns>
+    public static Version? ParseToIIIFImageApiVersion(this string? version)
+    {
+        if (!version.IsNullOrEmpty())
         {
-            switch (stringVal![1])
+            switch (version![1])
             {
                 case '2':
                     return Version.V2;
