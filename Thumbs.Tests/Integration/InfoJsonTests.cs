@@ -30,23 +30,20 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Theory]
-    [InlineData("/thumbs/99/1/image")]
-    [InlineData("/thumbs/99/1/image/")]
-    [InlineData("/thumbs/test/1/image")]
-    [InlineData("/thumbs/test/1/image/")]
-    [InlineData("/thumbs/v2/99/1/image")]
-    [InlineData("/thumbs/v2/99/1/image/")]
-    [InlineData("/thumbs/v2/test/1/image")]
-    [InlineData("/thumbs/v2/test/1/image/")]
-    [InlineData("/thumbs/v3/99/1/image")]
-    [InlineData("/thumbs/v3/99/1/image/")]
-    [InlineData("/thumbs/v3/test/1/image")]
-    [InlineData("/thumbs/v3/test/1/image/")]
-    public async Task Get_ImageRoot_RedirectsToInfoJson(string path)
+    [InlineData("/thumbs/99/1/image", "http://localhost/thumbs/99/1/image/info.json")]
+    [InlineData("/thumbs/99/1/image/", "http://localhost/thumbs/99/1/image/info.json")]
+    [InlineData("/thumbs/test/1/image", "http://localhost/thumbs/test/1/image/info.json")]
+    [InlineData("/thumbs/test/1/image/", "http://localhost/thumbs/test/1/image/info.json")]
+    [InlineData("/thumbs/v2/99/1/image", "http://localhost/thumbs/v2/99/1/image/info.json")]
+    [InlineData("/thumbs/v2/99/1/image/", "http://localhost/thumbs/v2/99/1/image/info.json")]
+    [InlineData("/thumbs/v2/test/1/image", "http://localhost/thumbs/v2/test/1/image/info.json")]
+    [InlineData("/thumbs/v2/test/1/image/", "http://localhost/thumbs/v2/test/1/image/info.json")]
+    [InlineData("/thumbs/v3/99/1/image", "http://localhost/thumbs/99/1/image/info.json")] // Canonical version goes to canonical url
+    [InlineData("/thumbs/v3/99/1/image/", "http://localhost/thumbs/99/1/image/info.json")]
+    [InlineData("/thumbs/v3/test/1/image", "http://localhost/thumbs/test/1/image/info.json")]
+    [InlineData("/thumbs/v3/test/1/image/", "http://localhost/thumbs/test/1/image/info.json")]
+    public async Task Get_ImageRoot_RedirectsToInfoJson(string path, string expected)
     {
-        // Arrange
-        var expected = path[^1] == '/' ? $"http://localhost{path}info.json" : $"http://localhost{path}/info.json";
-
         // Act
         var response = await httpClient.GetAsync(path);
 
@@ -122,11 +119,10 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task GetInfoJsonV3_Correct_ViaDirectPath()
+    public async Task GetInfoJsonV3_RedirectsToCanonical_AsV3IsDefault()
     {
         // Arrange
-        var id = $"99/1/{nameof(GetInfoJsonV3_Correct_ViaDirectPath)}";
-        const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
+        var id = $"99/1/{nameof(GetInfoJsonV3_RedirectsToCanonical_AsV3IsDefault)}";
         await dbFixture.DbContext.Images.AddTestAsset(id);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -136,21 +132,14 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
         });
         await dbFixture.DbContext.SaveChangesAsync();
+        var expected = $"http://localhost/thumbs/{id}/info.json";
 
         // Act
         var response = await httpClient.GetAsync($"thumbs/v3/{id}/info.json");
 
         // Assert
-        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["id"].ToString().Should()
-            .Be("http://localhost/thumbs/v3/99/1/GetInfoJsonV3_Correct_ViaDirectPath");
-        jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/3/context.json");
-        jsonResponse["height"].ToString().Should().Be("800");
-        jsonResponse["width"].ToString().Should().Be("800");
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Headers.CacheControl.Public.Should().BeTrue();
-        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
-        response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location.Should().Be(expected);
     }
 
     [Fact]
