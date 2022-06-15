@@ -54,8 +54,8 @@ public class YarpImageServerClient : IImageServerClient
         try
         {
             // TODO - return something more descriptive here?
-            var infoJson = await httpClient.GetStringAsync(imageServerPath, cancellationToken);
-            return infoJson.FromJson<TImageService>();
+            await using var infoJson = await httpClient.GetStreamAsync(imageServerPath, cancellationToken);
+            return infoJson.FromJsonStream<TImageService>();
         }
         catch (Exception ex)
         {

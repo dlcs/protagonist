@@ -47,7 +47,7 @@ public class InfoJsonService
         Version version, CancellationToken cancellationToken = default)
     {
         var infoJsonKey = GetInfoJsonKey(orchestrationImage, version);
-        var infoJson = await GetStoredInfoJson(infoJsonKey, cancellationToken);
+        await using var infoJson = await GetStoredInfoJson(infoJsonKey, cancellationToken);
 
         if (infoJson != null && infoJson != Stream.Null)
         {
