@@ -118,6 +118,8 @@ E.g. assuming defaults of `Cantaloupe` and `V3` for both Image and Presentation:
 * `/iiif-manifest/v3/1/1/test-image` will return `V3` manifest.
 * `/iiif-manifest/v2/1/1/test-image` will return `V2` manifest.
 
+`DefaultIIIFImageVersion` also specified which version to target on downstream image-server.
+
 ## Deployment
 
 See `Dockerfile.Orchestrator` in the solution root for deployment artifacts.

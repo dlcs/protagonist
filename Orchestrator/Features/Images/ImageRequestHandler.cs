@@ -210,7 +210,7 @@ namespace Orchestrator.Features.Images
             }
             else
             {
-                return settings.GetImageServerPath(orchestrationImage.AssetId);
+                return settings.GetImageServerPath(orchestrationImage.AssetId, settings.DefaultIIIFImageVersion);
             }
         }
 
