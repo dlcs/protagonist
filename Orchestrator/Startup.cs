@@ -80,7 +80,8 @@ namespace Orchestrator
                 .AddOrchestration(orchestratorSettings)
                 .AddApiClient(orchestratorSettings)
                 .ConfigureHealthChecks(proxySection, configuration)
-                .AddAws(configuration, webHostEnvironment);
+                .AddAws(configuration, webHostEnvironment)
+                .AddInfoJsonClient();
             
             // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
             services.Configure<ForwardedHeadersOptions>(opts =>

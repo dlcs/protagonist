@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using DLCS.Core.Collections;
 using IIIF.ImageApi;
 using Microsoft.AspNetCore.Http;
 using Version = IIIF.ImageApi.Version;
@@ -7,9 +8,9 @@ using Version = IIIF.ImageApi.Version;
 namespace DLCS.Web.IIIF;
 
 /// <summary>
-/// Class containing helpers for dealing with reading/setting headers for IIIF Image Api
+/// Class containing helpers for dealing with parsing values for IIIF Image Api
 /// </summary>
-public static class ImageApiHeaders
+public static class ImageApiVersionHelpers
 {
     /// <summary>
     /// Parse Accepts headers to find requested IIIF ImageApi version, falling back to specified version if not found.  
@@ -22,6 +23,42 @@ public static class ImageApiHeaders
         var requestedVersion = request.GetTypedHeaders().Accept.GetIIIFImageApiType();
         var version = requestedVersion == Version.Unknown ? fallbackVersion : requestedVersion;
         return version;
+    }
+
+    /// <summary>
+    /// Parse "version" RouteValues and convert to IIIF ImageApi version.
+    /// </summary>
+    /// <param name="request">Current HttpRequest</param>
+    /// <returns>ImageApi version</returns>
+    public static Version? GetIIIFImageApiVersionFromRoute(this HttpRequest request)
+    {
+        if (!request.RouteValues.TryGetValue("version", out var versionValue) || versionValue == null)
+        {
+            return null;
+        }
+
+        return versionValue.ToString().ParseToIIIFImageApiVersion();
+    }
+    
+    /// <summary>
+    /// Get IIIF Image version from "version" RouteValue. Will be in form "v1", "v2" etc
+    /// </summary>
+    /// <param name="version">Current HttpRequest</param>
+    /// <returns>ImageApi version</returns>
+    public static Version? ParseToIIIFImageApiVersion(this string? version)
+    {
+        if (!version.IsNullOrEmpty())
+        {
+            switch (version![1])
+            {
+                case '2':
+                    return Version.V2;
+                case '3':
+                    return Version.V3;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

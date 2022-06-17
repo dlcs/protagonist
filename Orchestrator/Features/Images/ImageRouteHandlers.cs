@@ -54,6 +54,10 @@ namespace Orchestrator.Features.Images
             var orchestrator = endpoints.GetRequiredService<IImageOrchestrator>();
             var destinationSelector = endpoints.GetRequiredService<DownstreamDestinationSelector>();
 
+            /*
+             * NOTE: This route also handles /iiif-img/{version}/{customer}/{space}/{image}/{**assetRequest}
+             * We don't use route values, instead parse using AssetDeliveryPathParser
+             */
             endpoints.MapGet("/iiif-img/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
             {
                 logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);

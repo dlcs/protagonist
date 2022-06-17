@@ -35,7 +35,6 @@ namespace DLCS.Core.Collections
             var list = strings.ToList();
             list.RemoveAll(s => s == toRemove);
             return list.ToArray();
-            
         }
     }
 }

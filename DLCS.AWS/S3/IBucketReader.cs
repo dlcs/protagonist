@@ -1,7 +1,4 @@
-﻿using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using DLCS.AWS.S3.Models;
+﻿using DLCS.AWS.S3.Models;
 
 namespace DLCS.AWS.S3
 {
@@ -20,7 +17,8 @@ namespace DLCS.AWS.S3
         /// Get specified object from bucket.
         /// </summary>
         /// <param name="objectInBucket">Object to read.</param>
-        Task<Stream?> GetObjectContentFromBucket(ObjectInBucket objectInBucket);
+        Task<Stream?> GetObjectContentFromBucket(ObjectInBucket objectInBucket,
+            CancellationToken cancellationToken = default);
         
         /// <summary>
         /// Get a list of all keys within specified root.

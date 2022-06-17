@@ -27,7 +27,7 @@ namespace DLCS.Web.Requests.AssetDelivery
         private readonly IPathCustomerRepository pathCustomerRepository;
         
         // regex to match v1, v2 etc but not a v23
-        private static Regex versionRegex = new("^(v\\d)$", RegexOptions.Compiled);
+        private static readonly Regex VersionRegex = new("^(v\\d)$", RegexOptions.Compiled);
 
         public AssetDeliveryPathParser(IPathCustomerRepository pathCustomerRepository)
         {
@@ -63,7 +63,7 @@ namespace DLCS.Web.Requests.AssetDelivery
             // The first slug after prefix is generally customer but it might be version number
             // If the latter, offset standard indexes by 1
             var versionCandidate = parts[defaultCustomerIndex];
-            var isVersioned = versionRegex.IsMatch(versionCandidate);
+            var isVersioned = VersionRegex.IsMatch(versionCandidate);
             var versionOffset = isVersioned ? 1 : 0;
             
             request.RoutePrefix = parts[routeIndex];
@@ -103,15 +103,15 @@ namespace DLCS.Web.Requests.AssetDelivery
             var outputLength = route.Length + customer.Length + space.Length + numberOfSlashes +
                                (isVersioned ? version.Length : 0);
             
-            var stringBuilder = new StringBuilder("/", outputLength).Append(route).Append("/");
+            var stringBuilder = new StringBuilder("/", outputLength).Append(route).Append('/');
 
-            if (isVersioned) stringBuilder.Append(version).Append("/");
+            if (isVersioned) stringBuilder.Append(version).Append('/');
 
             return stringBuilder
                 .Append(customer)
-                .Append("/")
+                .Append('/')
                 .Append(space)
-                .Append("/")
+                .Append('/')
                 .ToString();
         }
     }

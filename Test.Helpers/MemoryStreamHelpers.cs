@@ -10,5 +10,14 @@ namespace Test.Helpers
         /// </summary>
         public static MemoryStream ToMemoryStream(this string content)
             => new(Encoding.UTF8.GetBytes(content));
+
+        /// <summary>
+        /// Return string from Stream
+        /// </summary>
+        public static string GetContentString(this Stream stream)
+        {
+            using var sr = new StreamReader(stream);
+            return sr.ReadToEnd();
+        }
     }
 }

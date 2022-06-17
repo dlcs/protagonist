@@ -1,24 +1,24 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core;
-using DLCS.Model.Assets;
+using DLCS.Core.Types;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
-using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Features.Images.ImageServer;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.Auth;
-using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
 using Orchestrator.Settings;
+using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Features.Images.Requests
 {
@@ -45,26 +45,26 @@ namespace Orchestrator.Features.Images.Requests
     {
         private readonly IAssetTracker assetTracker;
         private readonly IAssetPathGenerator assetPathGenerator;
-        private readonly IIIFAuthBuilder iiifAuthBuilder;
         private readonly IOrchestrationQueue orchestrationQueue;
         private readonly IAssetAccessValidator accessValidator;
+        private readonly InfoJsonService infoJsonService;
         private readonly ILogger<GetImageInfoJsonHandler> logger;
         private readonly OrchestratorSettings orchestratorSettings;
 
         public GetImageInfoJsonHandler(
             IAssetTracker assetTracker,
             IAssetPathGenerator assetPathGenerator,
-            IIIFAuthBuilder iiifAuthBuilder,
             IOrchestrationQueue orchestrationQueue,
             IAssetAccessValidator accessValidator,
             IOptions<OrchestratorSettings> orchestratorSettings,
+            InfoJsonService infoJsonService,
             ILogger<GetImageInfoJsonHandler> logger)
         {
             this.assetTracker = assetTracker;
             this.assetPathGenerator = assetPathGenerator;
-            this.iiifAuthBuilder = iiifAuthBuilder;
             this.orchestrationQueue = orchestrationQueue;
             this.accessValidator = accessValidator;
+            this.infoJsonService = infoJsonService;
             this.logger = logger;
             this.orchestratorSettings = orchestratorSettings.Value;
         }
@@ -72,19 +72,34 @@ namespace Orchestrator.Features.Images.Requests
         public async Task<DescriptionResourceResponse> Handle(GetImageInfoJson request, CancellationToken cancellationToken)
         {
             var assetId = request.AssetRequest.GetAssetId();
+
+            if (!IsRequestedVersionSupportedByImageServer(assetId, request.Version))
+            {
+                return DescriptionResourceResponse.BadRequest();
+            }
+
             var asset = await assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId);
             if (asset == null)
             {
                 return DescriptionResourceResponse.Empty;
             }
-
-            var orchestrationTask =
-                DoOrchestrationIfRequired(asset, request.NoOrchestrationOverride, cancellationToken);
-
-            var imageId = GetImageId(request);
             
-            var infoJson = GetInfoJson(imageId, asset, request.Version);
+            var infoJsonResponse =
+                await infoJsonService.GetInfoJson(asset, request.Version, CancellationToken.None);
+            if (infoJsonResponse == null)
+            {
+                return DescriptionResourceResponse.Empty;
+            }
 
+            var infoJson = infoJsonResponse.InfoJson;
+            SetIdProperty(request, infoJson);
+
+            // TODO - handle err codes
+
+            ValueTask orchestrationTask = infoJsonResponse.WasOrchestrated
+                ? ValueTask.CompletedTask
+                : DoOrchestrationIfRequired(asset, request.NoOrchestrationOverride, cancellationToken);
+            
             if (!asset.RequiresAuth)
             {
                 await orchestrationTask;
@@ -93,11 +108,16 @@ namespace Orchestrator.Features.Images.Requests
 
             var accessResult =
                 await accessValidator.TryValidate(assetId.Customer, asset.Roles, AuthMechanism.BearerToken);
-            await AddAuthServicesToInfoJson(infoJson, asset);
             await orchestrationTask;
             return accessResult == AssetAccessResult.Authorized
                 ? DescriptionResourceResponse.Restricted(infoJson)
                 : DescriptionResourceResponse.Unauthorised(infoJson);
+        }
+
+        private bool IsRequestedVersionSupportedByImageServer(AssetId assetId, Version version)
+        {
+            var targetPath = orchestratorSettings.GetImageServerPath(assetId, version);
+            return !string.IsNullOrEmpty(targetPath);
         }
 
         private ValueTask DoOrchestrationIfRequired(OrchestrationImage orchestrationImage, bool noOrchestrationOverride,
@@ -108,16 +128,26 @@ namespace Orchestrator.Features.Images.Requests
                 return ValueTask.CompletedTask;
             }
 
-            logger.LogDebug("Info.json starting orchestration for asset {Asset}", orchestrationImage.AssetId);
+            logger.LogDebug("Info.json queueing orchestration for asset {Asset}", orchestrationImage.AssetId);
             return orchestrationQueue.QueueRequest(orchestrationImage, cancellationToken);
         }
-
-        // TODO this is returning ImageApi 3 level 0 for now - next ticket will properly implement this to use
-        // downstream image-server to generate info.json 
-        private JsonLdBase GetInfoJson(string imageId, OrchestrationImage asset, Version version)
-            => version == Version.V2
-                ? InfoJsonBuilder.GetImageApi2_1Level1(imageId, asset.Width, asset.Height, asset.OpenThumbs)
-                : InfoJsonBuilder.GetImageApi3_Level0(imageId, asset.OpenThumbs, asset.Width, asset.Height);
+        
+        private void SetIdProperty(GetImageInfoJson request, JsonLdBase infoJson)
+        {
+            // The Id property can differ depending on config (DefaultIIIFImageVersion) or hostname if serving
+            // via a cdn so simplest option is to rewrite it on way out.
+            switch (infoJson)
+            {
+                case ImageService2 imageService2:
+                    imageService2.Id = GetImageId(request);
+                    break;
+                case ImageService3 imageService3:
+                    imageService3.Id = GetImageId(request);
+                    break;
+                default:
+                    throw new InvalidOperationException("Info.json is unknown version");
+            }
+        }
 
         private string GetImageId(GetImageInfoJson request)
             => assetPathGenerator.GetFullPathForRequest(
@@ -132,22 +162,5 @@ namespace Orchestrator.Features.Images.Requests
                         baseAssetRequest.Space.ToString(),
                         baseAssetRequest.AssetId);
                 });
-
-        private async Task AddAuthServicesToInfoJson(JsonLdBase infoJson, OrchestrationImage image)
-        {
-            var authService = await iiifAuthBuilder.GetAuthCookieServiceForAsset(image);
-            if (authService != null)
-            {
-                switch (infoJson)
-                {
-                    case ImageService3 imageService3:
-                        imageService3.Service = new List<IService> { authService };
-                        break;
-                    case ImageService2 imageService2:
-                        imageService2.Service = new List<IService> { authService };
-                        break;
-                }
-            }
-        }
     }
 }

@@ -18,7 +18,7 @@ namespace API.Client
         public static async Task<T?> ReadAsHydraResponseAsync<T>(this HttpResponseMessage response,
             JsonSerializerSettings? settings = null)
         {
-            if ((int) response.StatusCode < 400)
+            if ((int)response.StatusCode < 400)
             {
                 return await response.ReadWithHydraContext<T>(true, settings);
             }
@@ -28,14 +28,16 @@ namespace API.Client
             {
                 error = await response.ReadAsJsonAsync<Error>(false, settings);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new DlcsException("Could not find a Hydra error in response", ex);
             }
+
             if (error != null)
             {
                 throw new DlcsException(error.Description);
             }
+
             throw new DlcsException("Unable to process error condition");
         }
 

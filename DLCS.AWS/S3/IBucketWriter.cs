@@ -20,12 +20,13 @@ namespace DLCS.AWS.S3
         /// Copy bucket object from source to destination
         /// </summary>
         Task CopyObject(ObjectInBucket source, ObjectInBucket destination);
-        
+
         /// <summary>
         /// Write content from provided string to S3 
         /// </summary>
         /// <returns></returns>
-        Task WriteToBucket(ObjectInBucket dest, string content, string contentType);
+        Task WriteToBucket(ObjectInBucket dest, string content, string contentType,
+            CancellationToken cancellationToken = default);
         
         /// <summary>
         /// Write content from provided stream to S3
