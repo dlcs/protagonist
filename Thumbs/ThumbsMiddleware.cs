@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
-using Newtonsoft.Json;
 using Version = IIIF.ImageApi.Version;
 
 namespace Thumbs
@@ -61,16 +60,7 @@ namespace Thumbs
                 }
                 else
                 {
-                    // mode for debugging etc
-                    switch (context.Request.Query["mode"])
-                    {
-                        case "dump":
-                            await WriteRequestDump(context, thumbnailRequest);
-                            break;
-                        default:
-                            await WritePixels(context, thumbnailRequest);
-                            break;
-                    }
+                    await WritePixels(context, thumbnailRequest);
                 }
             }
             catch (Exception ex)
@@ -82,9 +72,18 @@ namespace Thumbs
 
         private async Task WritePixels(HttpContext context, ImageAssetDeliveryRequest request)
         {
+            var imageRequest = request.IIIFImageRequest;
+            if (!imageRequest.IsCandidateForThumbHandling(out var errorMessage))
+            {
+                await StatusCodeResponse
+                    .BadRequest(errorMessage!)
+                    .WriteJsonResponse(context.Response);
+                return;
+            }
+
             await using var thumbnailResponse =
-                await thumbnailHandler.GetThumbnail(request.GetAssetId(), request.IIIFImageRequest);
-            
+                await thumbnailHandler.GetThumbnail(request.GetAssetId(), imageRequest);
+
             if (thumbnailResponse.IsEmpty)
             {
                 await StatusCodeResponse
@@ -104,9 +103,6 @@ namespace Thumbs
                 await thumbnailResponse.ThumbnailStream.CopyToAsync(context.Response.Body);
             }
         }
-
-        private static Task WriteRequestDump(HttpContext context, ImageAssetDeliveryRequest request) 
-            => context.Response.WriteAsync(JsonConvert.SerializeObject(request));
 
         private async Task HandleInfoJsonRequest(HttpContext context, ImageAssetDeliveryRequest request)
         {
@@ -179,10 +175,10 @@ namespace Thumbs
         private string GetInfoJsonPath(ImageAssetDeliveryRequest imageAssetDeliveryRequest, Version requestedVersion)
         {
             var redirectPath = GetFullImagePath(imageAssetDeliveryRequest, requestedVersion);
-            if (!redirectPath.EndsWith('/'))
+            /*if (!redirectPath.EndsWith('/'))
             {
                 redirectPath += "/";
-            }
+            }*/
 
             var infoJson = redirectPath.ToConcatenated('/', "info.json");
             return infoJson;
