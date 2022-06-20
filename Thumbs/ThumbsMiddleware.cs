@@ -175,10 +175,6 @@ namespace Thumbs
         private string GetInfoJsonPath(ImageAssetDeliveryRequest imageAssetDeliveryRequest, Version requestedVersion)
         {
             var redirectPath = GetFullImagePath(imageAssetDeliveryRequest, requestedVersion);
-            /*if (!redirectPath.EndsWith('/'))
-            {
-                redirectPath += "/";
-            }*/
 
             var infoJson = redirectPath.ToConcatenated('/', "info.json");
             return infoJson;
