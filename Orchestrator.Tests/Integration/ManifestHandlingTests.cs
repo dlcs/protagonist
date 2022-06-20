@@ -107,7 +107,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             
         // Assert
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+        jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/v2/{id}");
         jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
             .Should().StartWith($"http://localhost/thumbs/{id}/full");
 
@@ -131,7 +131,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             
         // Assert
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+        jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/v2/{id}");
         jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
             .Should().StartWith($"http://localhost/thumbs/{id}/full");
 
@@ -161,6 +161,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/{id}");
         jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/2/context.json");
         jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(1);
     }
@@ -183,6 +184,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/v2/{id}");
         jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/2/context.json");
         jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(1);
     }
@@ -208,6 +210,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-manifest/{id}");
         jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/3/context.json");
         jsonResponse.SelectToken("items").Count().Should().Be(1);
     }
@@ -230,6 +233,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-manifest/{id}");
         jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/3/context.json");
         jsonResponse.SelectToken("items").Count().Should().Be(1);
     }
