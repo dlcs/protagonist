@@ -48,19 +48,16 @@ namespace Orchestrator.Features.Manifests.Requests
         private readonly IAssetPathGenerator assetPathGenerator;
         private readonly IIIFCanvasFactory canvasFactory;
         private readonly ILogger<GetManifestForAssetHandler> logger;
-        private readonly OrchestratorSettings orchestratorSettings;
 
         public GetManifestForAssetHandler(
             IAssetRepository assetRepository,
             IAssetPathGenerator assetPathGenerator,
-            IOptions<OrchestratorSettings> orchestratorSettings,
             IIIFCanvasFactory canvasFactory,
             ILogger<GetManifestForAssetHandler> logger)
         {
             this.assetRepository = assetRepository;
             this.assetPathGenerator = assetPathGenerator;
             this.canvasFactory = canvasFactory;
-            this.orchestratorSettings = orchestratorSettings.Value;
             this.logger = logger;
         }
 
@@ -84,8 +81,7 @@ namespace Orchestrator.Features.Manifests.Requests
 
         private async Task<IIIF3.Manifest> GenerateV3Manifest(BaseAssetRequest assetRequest, Asset asset)
         {
-            // TODO - this shouldn't be image path
-            var fullyQualifiedImageId = GetFullyQualifiedId(assetRequest, orchestratorSettings.Proxy.ImagePath);
+            var fullyQualifiedImageId = GetFullyQualifiedId(assetRequest);
             var manifest = new IIIF3.Manifest
             {
                 Id = fullyQualifiedImageId,
@@ -100,8 +96,7 @@ namespace Orchestrator.Features.Manifests.Requests
 
         private async Task<IIIF2.Manifest> GenerateV2Manifest(BaseAssetRequest assetRequest, Asset asset)
         {
-            // TODO - this shouldn't be image path
-            var fullyQualifiedImageId = GetFullyQualifiedId(assetRequest, orchestratorSettings.Proxy.ImagePath);
+            var fullyQualifiedImageId = GetFullyQualifiedId(assetRequest);
             var manifest = new IIIF2.Manifest
             {
                 Id = fullyQualifiedImageId,
@@ -125,7 +120,7 @@ namespace Orchestrator.Features.Manifests.Requests
             return manifest;
         }
 
-        private string GetFullyQualifiedId(BaseAssetRequest baseAssetRequest, string prefix)
+        private string GetFullyQualifiedId(BaseAssetRequest baseAssetRequest)
             => assetPathGenerator.GetFullPathForRequest(
                 baseAssetRequest,
                 (assetRequest, template) =>
@@ -133,7 +128,7 @@ namespace Orchestrator.Features.Manifests.Requests
                     var request = assetRequest as BaseAssetRequest;
                     return DlcsPathHelpers.GeneratePathFromTemplate(
                         template,
-                        prefix,
+                        request.VersionedRoutePrefix,
                         request.CustomerPathValue,
                         request.Space.ToString(),
                         request.AssetId);
