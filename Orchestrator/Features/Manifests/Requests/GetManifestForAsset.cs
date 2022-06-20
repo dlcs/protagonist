@@ -84,6 +84,7 @@ namespace Orchestrator.Features.Manifests.Requests
 
         private async Task<IIIF3.Manifest> GenerateV3Manifest(BaseAssetRequest assetRequest, Asset asset)
         {
+            // TODO - this shouldn't be image path
             var fullyQualifiedImageId = GetFullyQualifiedId(assetRequest, orchestratorSettings.Proxy.ImagePath);
             var manifest = new IIIF3.Manifest
             {
@@ -99,6 +100,7 @@ namespace Orchestrator.Features.Manifests.Requests
 
         private async Task<IIIF2.Manifest> GenerateV2Manifest(BaseAssetRequest assetRequest, Asset asset)
         {
+            // TODO - this shouldn't be image path
             var fullyQualifiedImageId = GetFullyQualifiedId(assetRequest, orchestratorSettings.Proxy.ImagePath);
             var manifest = new IIIF2.Manifest
             {

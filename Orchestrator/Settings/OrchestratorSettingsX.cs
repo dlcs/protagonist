@@ -14,32 +14,26 @@ public static class OrchestratorSettingsX
     /// </summary>
     public static string GetImageLocalPath(this OrchestratorSettings settings, AssetId assetId)
         => TemplatedFolders.GenerateFolderTemplate(settings.ImageFolderTemplateOrchestrator, assetId);
-    
+
     /// <summary>
     /// Get the full redirect path for ImageServer. Includes path prefix and parsed location where image-server can
     /// access Asset file.
     /// This will return the endpoint for highest supported ImageApiVersion 
     /// </summary>
     public static string GetImageServerPath(this OrchestratorSettings settings, AssetId assetId)
-    {
-        var imageServerConfig = settings.ImageServerPathConfig[settings.ImageServer];
-        return GetImageServerFilePathInternal(assetId, imageServerConfig,
-            imageServerConfig.DefaultVersionPathTemplate);
-    }
+        => GetImageServerFilePathInternal(assetId, settings.ImageServerConfig,
+            settings.ImageServerConfig.DefaultVersionPathTemplate);
 
     /// <summary>
     /// Get the full redirect path for ImageServer for specified ImageApi version. Includes path prefix and parsed
     /// location where image-server can access Asset file.
     /// </summary>
     /// <returns>Path for image-server if image-server can handle requested version, else null</returns>
-    public static string? GetImageServerPath(this OrchestratorSettings settings, AssetId assetId, IIIF.ImageApi.Version targetVersion)
-    {
-        var imageServerConfig = settings.ImageServerPathConfig[settings.ImageServer];
-
-        return imageServerConfig.VersionPathTemplates.TryGetValue(targetVersion, out var pathTemplate)
-            ? GetImageServerFilePathInternal(assetId, imageServerConfig, pathTemplate)
+    public static string? GetImageServerPath(this OrchestratorSettings settings, AssetId assetId,
+        IIIF.ImageApi.Version targetVersion)
+        => settings.ImageServerConfig.VersionPathTemplates.TryGetValue(targetVersion, out var pathTemplate)
+            ? GetImageServerFilePathInternal(assetId, settings.ImageServerConfig, pathTemplate)
             : null;
-    }
 
     private static string GetImageServerFilePathInternal(AssetId assetId, ImageServerConfig imageServerConfig,
         string versionTemplate)

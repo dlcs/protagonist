@@ -14,17 +14,20 @@ namespace DLCS.Web.Response
     {
         /// <summary>
         /// Generate path for specified <see cref="BaseAssetRequest"/> excluding host.
+        /// Uses default template replacements.
         /// </summary>
         string GetPathForRequest(IBasicPathElements assetRequest);
 
         /// <summary>
-        /// Generate full path for specified <see cref="BaseAssetRequest"/>, including host. 
+        /// Generate full path for specified <see cref="BaseAssetRequest"/>, including host.
+        /// Uses default template replacements. 
         /// </summary>
         string GetFullPathForRequest(IBasicPathElements assetRequest);
 
         /// <summary>
         /// Generate full path for specified <see cref="BaseAssetRequest"/>, using provided delegate to generate
-        /// path element. 
+        /// path element.
+        /// This can be useful for constructing paths that do not use the default path elements.
         /// </summary>
         string GetFullPathForRequest(IBasicPathElements assetRequest, PathGenerator pathGenerator);
     }

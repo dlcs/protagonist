@@ -43,6 +43,11 @@ namespace Orchestrator.Settings
         public Dictionary<ImageServer, ImageServerConfig> ImageServerPathConfig { get; set; } = new();
 
         /// <summary>
+        /// The current <see cref="ImageServerConfig"/> object
+        /// </summary>
+        public ImageServerConfig ImageServerConfig => ImageServerPathConfig[ImageServer];
+
+        /// <summary>
         /// Folder template for downloading resources to.
         /// </summary>
         public string ImageFolderTemplateOrchestrator { get; set; }
@@ -71,13 +76,7 @@ namespace Orchestrator.Settings
         /// Default Image API Version to conform to when returning image description resources
         /// </summary>
         public IIIF.ImageApi.Version DefaultIIIFImageVersion { get; set; } = IIIF.ImageApi.Version.V3;
-
-        /// <summary>
-        /// Defines which IIIF ImageAPI version to return in Presentation description resources. 
-        /// </summary>
-        public PresentationImageServiceBehaviour PresentationImageBehaviour { get; init; } =
-            PresentationImageServiceBehaviour.UseImageDefault;
-
+        
         /// <summary>
         /// Root URL for dlcs api
         /// </summary>
@@ -209,22 +208,6 @@ namespace Orchestrator.Settings
         /// IIP Image Server
         /// </summary>
         IIPImage
-    }
-    
-    /// <summary>
-    /// Defines which version IIIF image service should be linked to in generated manifests 
-    /// </summary>
-    public enum PresentationImageServiceBehaviour
-    {
-        /// <summary>
-        /// Image services will use the version specified in DefaultIIIFImageVersion
-        /// </summary>
-        UseImageDefault,
-        
-        /// <summary>
-        /// Image services will match the IIIF Presentation version
-        /// </summary>
-        MatchPresentationVersion
     }
 
     /// <summary>
