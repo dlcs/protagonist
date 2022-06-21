@@ -2,6 +2,8 @@
 using DLCS.Web.Requests;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace DLCS.Web.Response
@@ -9,6 +11,11 @@ namespace DLCS.Web.Response
     /// <summary>
     /// Generate paths related to running Dlcs instance using appSettings config for rules.
     /// </summary>
+    /// <remarks>
+    /// This class uses <see cref="PathTemplateOptions"/> to determine different URL patterns for different hostnames,
+    /// this allows e.g. "id" values on manifests to use different URL structures than the default DLCS paths.
+    /// e.g. /images/{image}/ rather than default of /iiif-img/{cust}/{space}/{image} 
+    /// </remarks>
     public class ConfigDrivenAssetPathGenerator : IAssetPathGenerator
     {
         private readonly IHttpContextAccessor httpContextAccessor;

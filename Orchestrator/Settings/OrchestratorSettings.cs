@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using DLCS.Core.Types;
-using DLCS.Model.Templates;
 using DLCS.Repository.Caching;
-using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Settings
 {
@@ -46,6 +43,11 @@ namespace Orchestrator.Settings
         public Dictionary<ImageServer, ImageServerConfig> ImageServerPathConfig { get; set; } = new();
 
         /// <summary>
+        /// The current <see cref="ImageServerConfig"/> object
+        /// </summary>
+        public ImageServerConfig ImageServerConfig => ImageServerPathConfig[ImageServer];
+
+        /// <summary>
         /// Folder template for downloading resources to.
         /// </summary>
         public string ImageFolderTemplateOrchestrator { get; set; }
@@ -73,8 +75,8 @@ namespace Orchestrator.Settings
         /// <summary>
         /// Default Image API Version to conform to when returning image description resources
         /// </summary>
-        public IIIF.ImageApi.Version DefaultIIIFImageVersion { get; set; } = Version.V3;
-
+        public IIIF.ImageApi.Version DefaultIIIFImageVersion { get; set; } = IIIF.ImageApi.Version.V3;
+        
         /// <summary>
         /// Root URL for dlcs api
         /// </summary>
@@ -93,48 +95,6 @@ namespace Orchestrator.Settings
         public AuthSettings Auth { get; set; }
 
         public NamedQuerySettings NamedQuery { get; set; }
-
-        /// <summary>
-        /// Get the local folder path for Asset. This is where it will be orchestrated to, or found on fast disk after
-        /// orchestration.
-        /// </summary>
-        public string GetImageLocalPath(AssetId assetId)
-            => TemplatedFolders.GenerateFolderTemplate(ImageFolderTemplateOrchestrator, assetId);
-
-        /// <summary>
-        /// Get the full redirect path for ImageServer. Includes path prefix and parsed location where image-server can
-        /// access Asset file.
-        /// This will return the endpoint for highest supported ImageApiVersion 
-        /// </summary>
-        public string GetImageServerPath(AssetId assetId)
-        {
-            var imageServerConfig = ImageServerPathConfig[ImageServer];
-            return GetImageServerFilePathInternal(assetId, imageServerConfig,
-                imageServerConfig.DefaultVersionPathTemplate);
-        }
-
-        /// <summary>
-        /// Get the full redirect path for ImageServer for specified ImageApi version. Includes path prefix and parsed
-        /// location where image-server can access Asset file.
-        /// </summary>
-        /// <returns>Path for image-server if image-server can handle requested version, else null</returns>
-        public string? GetImageServerPath(AssetId assetId, Version targetVersion)
-        {
-            var imageServerConfig = ImageServerPathConfig[ImageServer];
-
-            return imageServerConfig.VersionPathTemplates.TryGetValue(targetVersion, out var pathTemplate)
-                ? GetImageServerFilePathInternal(assetId, imageServerConfig, pathTemplate)
-                : null;
-        }
-
-        private static string GetImageServerFilePathInternal(AssetId assetId, ImageServerConfig imageServerConfig,
-            string versionTemplate)
-        {
-            var imageServerFilePath = TemplatedFolders.GenerateTemplate(imageServerConfig.PathTemplate, assetId,
-                imageServerConfig.Separator);
-
-            return $"{versionTemplate}{imageServerFilePath}";
-        }
     }
 
     public class ProxySettings
@@ -274,7 +234,7 @@ namespace Orchestrator.Settings
         /// The prefix for forwarding requests to this image-server by supported Image Api version. The final URL sent
         /// to the image-server is {image-server-root}{url-prefix}{path-template}{image-request}
         /// </summary>
-        public Dictionary<Version, string> VersionPathTemplates { get; set; }
+        public Dictionary<IIIF.ImageApi.Version, string> VersionPathTemplates { get; set; }
 
         private string? defaultVersionPathTemplate;
 
@@ -291,9 +251,9 @@ namespace Orchestrator.Settings
                     // On first request find the value with highest Version
                     defaultVersionPathTemplate = VersionPathTemplates.MaxBy(t => t.Key switch
                     {
-                        Version.Unknown => 1,
-                        Version.V2 => 2,
-                        Version.V3 => 3,
+                        IIIF.ImageApi.Version.Unknown => 1,
+                        IIIF.ImageApi.Version.V2 => 2,
+                        IIIF.ImageApi.Version.V3 => 3,
                         _ => throw new ArgumentOutOfRangeException(nameof(VersionPathTemplates),
                             "Unknown IIIFImageVersion")
                     }).Value;
