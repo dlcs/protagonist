@@ -5,15 +5,15 @@ using DLCS.Core.Collections;
 
 namespace DLCS.Model.Spaces
 {
-    public partial class Space
+    public class Space
     {
         public int Id { get; set; }
         public string Name { get; set; }
         public int Customer { get; set; }
         public DateTime Created { get; set; }
         public string ImageBucket { get; set; } = string.Empty;
-        public string[] Tags { get; set; }
-        public string[] Roles { get; set; }
+        public string[] Tags { get; set; } = {};
+        public string[] Roles { get; set; } = {};
         
         public bool Keep { get; set; }
         public bool Transform { get; set; }
