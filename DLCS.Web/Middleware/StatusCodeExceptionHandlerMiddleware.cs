@@ -10,18 +10,18 @@ namespace DLCS.Web.Middleware
     /// </summary>
     public class StatusCodeExceptionHandlerMiddleware
     {
-        private readonly RequestDelegate _next;
+        private readonly RequestDelegate next;
 
         public StatusCodeExceptionHandlerMiddleware(RequestDelegate next)
         {
-            _next = next;
+            this.next = next;
         }
  
         public async Task InvokeAsync(HttpContext httpContext)
         {
             try
             {
-                await _next(httpContext);
+                await next(httpContext);
             }
             catch (HttpException ex)
             {
@@ -30,6 +30,7 @@ namespace DLCS.Web.Middleware
         }
 
         private static Task HandleExceptionAsync(HttpContext context, HttpException exception)
-            => new StatusCodeResponse(exception.StatusCode, exception.Message).WriteJsonResponse(context.Response);
+            => new StatusCodeResponse(exception.StatusCode, exception.Message)
+                .WriteJsonResponse(context.Response);
     }
 }

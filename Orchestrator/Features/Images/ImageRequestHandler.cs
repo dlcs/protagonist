@@ -138,18 +138,22 @@ namespace Orchestrator.Features.Images
             => assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max;
 
         // TODO handle known thumb size that doesn't exist yet - call image-server and save to s3 on way back
-        private (bool CanHandle, bool IsResize) CanRequestBeHandledByThumb(ImageAssetDeliveryRequest requestModel, OrchestrationImage orchestrationImage)
+        private (bool CanHandle, bool IsResize) CanRequestBeHandledByThumb(ImageAssetDeliveryRequest requestModel,
+            OrchestrationImage orchestrationImage)
         {
-            // TODO - must be for a jpg
+            var imageRequest = requestModel.IIIFImageRequest;
+            // Contains Image Request Parameters that thumbs can't handle, abort
+            if (!imageRequest.IsCandidateForThumbHandling(out _)) return (false, false);
+
             var openSizes = orchestrationImage.OpenThumbs.Select(wh => Size.FromArray(wh)).ToList();
-            
+
             // No open thumbs so cannot handle by thumb, abort
             if (openSizes.IsNullOrEmpty()) return (false, false);
-            
+
             // Check if settings.ThumbnailResizeConfig contains values, if not then as-is
             var canResizeThumbs = orchestratorSettings.Value.Proxy.CanResizeThumbs;
-            var candidate = ThumbnailCalculator.GetCandidate(openSizes, requestModel.IIIFImageRequest, canResizeThumbs);
-            
+            var candidate = ThumbnailCalculator.GetCandidate(openSizes, imageRequest, canResizeThumbs);
+
             // Exact match - can handle
             if (candidate.KnownSize) return (true, false);
 
@@ -160,7 +164,7 @@ namespace Orchestrator.Features.Images
             if (resizeCandidate.LargerSize != null) return (true, true);
 
             // There are no upscale rules OR no smaller sizes to upscale so abort
-            if (!haveUpscaleRules || resizeCandidate.SmallerSize == null) return (false, false); 
+            if (!haveUpscaleRules || resizeCandidate.SmallerSize == null) return (false, false);
 
             // If here there are smaller sizes and upscaling is supported, check to see if there are any matches 
             var assetId = orchestrationImage.AssetId.ToString();

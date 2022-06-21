@@ -203,6 +203,12 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/2/2/test-image/full/90,/0/default.jpg", false)] // UV without ?t=
     [InlineData("/iiif-img/2/2/test-image/full/full/0/default.jpg", true)] // /full/full
     [InlineData("/iiif-img/2/2/test-image/full/max/0/default.jpg", true)] // /full/max
+    [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/default.png", false)] // png
+    [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/default.tif", false)] // tif
+    [InlineData("/iiif-img/2/2/test-image/full/!100,150/90/default.jpg", false)] // rotation
+    [InlineData("/iiif-img/2/2/test-image/full/!100,150/!0/default.jpg", false)] // rotation / mirrored
+    [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/bitonal.jpg", false)] // bitonal
+    [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/gray.jpg", false)] // bitonal
     public async Task HandleRequest_ProxiesToImageServer_ForAllOtherCases(string path, bool knownThumb)
     {
         // Arrange
