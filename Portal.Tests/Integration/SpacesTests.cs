@@ -27,7 +27,7 @@ namespace Portal.Tests.Integration
             dbFixture.CleanUp();
         }
         
-        [Fact]
+        [Fact(Skip = "Requires onward testing of API")]
         public async Task Get_ReturnsPage_IfNoSpacesForCustomer()
         {
             // Arrange
@@ -45,7 +45,7 @@ namespace Portal.Tests.Integration
             table.Rows.Length.Should().Be(1);
         }
 
-        [Fact]
+        [Fact(Skip = "Requires onward testing of API")]
         public async Task Get_ReturnsAllSpacesForCustomer()
         {
             // Arrange
