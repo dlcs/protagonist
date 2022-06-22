@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using DLCS.Core.Types;
-using DLCS.Model.Templates;
+using System.Linq;
 using DLCS.Repository.Caching;
 
 namespace Orchestrator.Settings
@@ -12,12 +11,12 @@ namespace Orchestrator.Settings
         /// PathBase to host app on.
         /// </summary>
         public string PathBase { get; set; }
-        
+
         /// <summary>
         /// Regex for S3-origin, for objects uploaded directly to DLCS.
         /// </summary>
         public string S3OriginRegex { get; set; }
-        
+
         /// <summary>
         /// URI template for auth services
         /// </summary>
@@ -44,10 +43,15 @@ namespace Orchestrator.Settings
         public Dictionary<ImageServer, ImageServerConfig> ImageServerPathConfig { get; set; } = new();
 
         /// <summary>
+        /// The current <see cref="ImageServerConfig"/> object
+        /// </summary>
+        public ImageServerConfig ImageServerConfig => ImageServerPathConfig[ImageServer];
+
+        /// <summary>
         /// Folder template for downloading resources to.
         /// </summary>
         public string ImageFolderTemplateOrchestrator { get; set; }
-        
+
         /// <summary>
         /// If true, requests for info.json will cause image to be orchestrated.
         /// </summary>
@@ -57,7 +61,7 @@ namespace Orchestrator.Settings
         /// If <see cref="OrchestrateOnInfoJson"/> is true, this is the max number of requests that will be honoured
         /// </summary>
         public int OrchestrateOnInfoJsonMaxCapacity { get; set; } = 50;
-        
+
         /// <summary>
         /// String used for salting requests to API
         /// </summary>
@@ -66,27 +70,13 @@ namespace Orchestrator.Settings
         /// <summary>
         /// Default Presentation API Version to conform to when returning presentation resources  
         /// </summary>
-        public string DefaultIIIFPresentationVersion { get; set; } = "3.0";
-
+        public IIIF.Presentation.Version DefaultIIIFPresentationVersion { get; set; } = IIIF.Presentation.Version.V3;
+        
         /// <summary>
-        /// Get default Presentation API Version to conform to when returning resources from as enum.
-        /// Defaults to V3 if unsupported, or unknown version specified
+        /// Default Image API Version to conform to when returning image description resources
         /// </summary>
-        public IIIF.Presentation.Version GetDefaultIIIFPresentationVersion() 
-            => DefaultIIIFPresentationVersion[0] == '2' ? IIIF.Presentation.Version.V2 : IIIF.Presentation.Version.V3;
-
-        /// <summary>
-        /// Default Image API Version to conform to when returning image resources
-        /// </summary>
-        public string DefaultIIIFImageVersion { get; set; } = "3.0";
-
-        /// <summary>
-        /// Get default IIIF Image API Version to conform to when returning resources as enum.
-        /// Defaults to V3 if unsupported, or unknown version specified
-        /// </summary>
-        public IIIF.ImageApi.Version GetDefaultIIIFImageVersion()
-            => DefaultIIIFImageVersion[0] == '2' ? IIIF.ImageApi.Version.V2 : IIIF.ImageApi.Version.V3;
-
+        public IIIF.ImageApi.Version DefaultIIIFImageVersion { get; set; } = IIIF.ImageApi.Version.V3;
+        
         /// <summary>
         /// Root URL for dlcs api
         /// </summary>
@@ -99,31 +89,12 @@ namespace Orchestrator.Settings
         public int TargetThumbnailSize { get; set; } = 200;
 
         public ProxySettings Proxy { get; set; }
-        
-        public CacheSettings Caching { get; set; }
-        
-        public AuthSettings Auth { get; set; }
-        
-        public NamedQuerySettings NamedQuery { get; set; }
 
-        /// <summary>
-        /// Get the local folder path for Asset. This is where it will be orchestrated to, or found on fast disk after
-        /// orchestration.
-        /// </summary>
-        public string GetImageLocalPath(AssetId assetId)
-            => TemplatedFolders.GenerateFolderTemplate(ImageFolderTemplateOrchestrator, assetId);
-        
-        /// <summary>
-        /// Get the folder path where ImageServer can access Asset file.
-        /// </summary>
-        public string GetImageServerFilePath(AssetId assetId)
-        {
-            var imageServerConfig = ImageServerPathConfig[ImageServer];
-            var imageServerFilePath = TemplatedFolders.GenerateTemplate(imageServerConfig.PathTemplate, assetId,
-                imageServerConfig.Separator);
-            
-            return $"{imageServerConfig.UrlPrefixTemplate}{imageServerFilePath}";
-        }
+        public CacheSettings Caching { get; set; }
+
+        public AuthSettings Auth { get; set; }
+
+        public NamedQuerySettings NamedQuery { get; set; }
     }
 
     public class ProxySettings
@@ -137,12 +108,12 @@ namespace Orchestrator.Settings
         /// Whether resizing thumbs is supported
         /// </summary>
         public bool CanResizeThumbs { get; set; }
-        
+
         /// <summary>
         /// Get the root path that thumb handler is listening on
         /// </summary>
         public string ThumbResizePath { get; set; } = "thumbs";
-        
+
         /// <summary>
         /// Get the root path for serving images
         /// </summary>
@@ -177,7 +148,7 @@ namespace Orchestrator.Settings
         /// {0} is replaced with customer id
         /// </summary>
         public string CookieNameFormat { get; set; } = "dlcs-token-{0}";
-        
+
         /// <summary>
         /// A list of domains to set on auth cookie.
         /// </summary>
@@ -199,7 +170,7 @@ namespace Orchestrator.Settings
         /// Supported replacements are {customer}/{queryname}/{args}
         /// </summary>
         public string PdfStorageTemplate { get; set; } = "{customer}/pdf/{queryname}/{args}";
-        
+
         /// <summary>
         /// String format for generating keys for Zip object storage.
         /// Supported replacements are {customer}/{queryname}/{args}
@@ -211,7 +182,7 @@ namespace Orchestrator.Settings
         /// After this time has elapsed it will be recreated.
         /// </summary>
         public int ControlStaleSecs { get; set; } = 600;
-        
+
         /// <summary>
         /// URL root of fireball service for PDF generation
         /// </summary>
@@ -222,7 +193,7 @@ namespace Orchestrator.Settings
         /// </summary>
         public string ZipFolderTemplate { get; set; }
     }
-    
+
     /// <summary>
     /// Enum representing image server used for serving image requests
     /// </summary>
@@ -232,13 +203,13 @@ namespace Orchestrator.Settings
         /// Cantaloupe image server
         /// </summary>
         Cantaloupe,
-        
+
         /// <summary>
         /// IIP Image Server
         /// </summary>
         IIPImage
     }
-    
+
     /// <summary>
     /// Represents redirect configuration for redirecting ImageServer requests
     /// </summary>
@@ -249,7 +220,7 @@ namespace Orchestrator.Settings
         /// Used when constructing {image-dir} template replacement.
         /// </summary>
         public string Separator { get; set; }
-        
+
         /// <summary>
         /// Path template for sending requests to image server.
         /// Supports {customer}, {space}, {image-dir} and {image} replacements.
@@ -258,11 +229,38 @@ namespace Orchestrator.Settings
         /// This is the template used to construct requests to image servers. 
         /// </remarks>
         public string PathTemplate { get; set; }
-        
+
         /// <summary>
-        /// The prefix for forwarding requests to this image-server. The final URL sent to the image-server is
-        /// {image-server-root}{url-prefix}{path-template}{image-request}
+        /// The prefix for forwarding requests to this image-server by supported Image Api version. The final URL sent
+        /// to the image-server is {image-server-root}{url-prefix}{path-template}{image-request}
         /// </summary>
-        public string UrlPrefixTemplate { get; set; }
+        public Dictionary<IIIF.ImageApi.Version, string> VersionPathTemplates { get; set; }
+
+        private string? defaultVersionPathTemplate;
+
+        /// <summary>
+        /// The default version path template to use for non-versioned requests.
+        /// This is the VersionPathTemplates list with highest version.
+        /// </summary>
+        public string DefaultVersionPathTemplate
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(defaultVersionPathTemplate))
+                {
+                    // On first request find the value with highest Version
+                    defaultVersionPathTemplate = VersionPathTemplates.MaxBy(t => t.Key switch
+                    {
+                        IIIF.ImageApi.Version.Unknown => 1,
+                        IIIF.ImageApi.Version.V2 => 2,
+                        IIIF.ImageApi.Version.V3 => 3,
+                        _ => throw new ArgumentOutOfRangeException(nameof(VersionPathTemplates),
+                            "Unknown IIIFImageVersion")
+                    }).Value;
+                }
+
+                return defaultVersionPathTemplate;
+            }
+        }
     }
 }

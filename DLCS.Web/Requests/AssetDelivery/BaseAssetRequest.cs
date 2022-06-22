@@ -62,7 +62,7 @@ namespace DLCS.Web.Requests.AssetDelivery
         public string NormalisedBasePath { get; set; }
         
         /// <summary>
-        /// The normalised original full request Path, always using numeric  value for {customer}, regardless of what
+        /// The normalised original full request Path, always using numeric value for {customer}, regardless of what
         /// was passed. 
         /// </summary>
         public string NormalisedFullPath { get; set; }

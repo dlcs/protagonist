@@ -169,5 +169,23 @@ namespace DLCS.AWS.Tests.S3
             actual.Bucket.Should().Be("test-storage");
             actual.Region.Should().Be("eu-west-1");
         }
+
+        [Theory]
+        [InlineData("Cantaloupe", IIIF.ImageApi.Version.V2, "info/Cantaloupe/v2/10/20/foo-bar/info.json")]
+        [InlineData("Cantaloupe", IIIF.ImageApi.Version.V3, "info/Cantaloupe/v3/10/20/foo-bar/info.json")]
+        [InlineData("IIPImage", IIIF.ImageApi.Version.V2, "info/IIPImage/v2/10/20/foo-bar/info.json")]
+        public void GetInfoJsonLocation_ReturnsExpected(string imageServer, IIIF.ImageApi.Version version,
+            string expected)
+        {
+            // Arrange
+            var asset = new AssetId(10, 20, "foo-bar");
+
+            // Act
+            var actual = sut.GetInfoJsonLocation(asset, imageServer, version);
+
+            // Assert
+            actual.Key.Should().Be(expected);
+            actual.Bucket.Should().Be("test-storage");
+        }
     }
 }

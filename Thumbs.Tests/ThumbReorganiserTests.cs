@@ -103,7 +103,7 @@ namespace Thumbs.Tests
                     bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
-                        "application/json"))
+                        "application/json", A<CancellationToken>._))
                 .MustHaveHappened();
         }
         
@@ -155,7 +155,7 @@ namespace Thumbs.Tests
                     bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
-                        "application/json"))
+                        "application/json", A<CancellationToken>._))
                 .MustHaveHappened();
         }
         
@@ -214,7 +214,7 @@ namespace Thumbs.Tests
                     bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
-                        "application/json"))
+                        "application/json", A<CancellationToken>._))
                 .MustHaveHappened();
         }
 
@@ -272,7 +272,7 @@ namespace Thumbs.Tests
                     bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
-                        "application/json"))
+                        "application/json", A<CancellationToken>._))
                 .MustHaveHappened();
         }
         
@@ -330,7 +330,7 @@ namespace Thumbs.Tests
                     bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
-                        "application/json"))
+                        "application/json", A<CancellationToken>._))
                 .MustHaveHappened();
         }
         
@@ -382,7 +382,7 @@ namespace Thumbs.Tests
                 .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
             
             // Once called, add s.json to return list of bucket contents
-            A.CallTo(() => bucketWriter.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._))
+            A.CallTo(() => bucketWriter.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, A<CancellationToken>._))
                 .Invokes(() => fakeBucketContents.Add("2/1/the-astronaut/s.json"));
 
             A.CallTo(() => bucketWriter.CopyObject(A<ObjectInBucket>._, A<ObjectInBucket>._))
@@ -416,7 +416,7 @@ namespace Thumbs.Tests
                 .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
             
             // Once called, add sizes.json to return list of bucket contents
-            A.CallTo(() => bucketWriter.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._))
+            A.CallTo(() => bucketWriter.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, A<CancellationToken>._))
                 .Invokes((ObjectInBucket dest, string _, string _) =>
                     fakeBucketContents.Add(dest.Key + "sizes.json"));
 
@@ -493,7 +493,7 @@ namespace Thumbs.Tests
                     bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
                             o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
-                        "application/json"))
+                        "application/json", A<CancellationToken>._))
                 .MustHaveHappened();
         }
     }

@@ -73,7 +73,7 @@ namespace Thumbs
             {
                 app.UseDeveloperExceptionPage();
             }
-            
+
             app.UseRouting();
             // TODO: Consider better caching solutions
             app.UseResponseCaching();

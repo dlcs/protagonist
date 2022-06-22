@@ -72,7 +72,8 @@ namespace DLCS.AWS.S3
             }
         }
 
-        public async Task WriteToBucket(ObjectInBucket dest, string content, string contentType)
+        public async Task WriteToBucket(ObjectInBucket dest, string content, string contentType,
+            CancellationToken cancellationToken = default)
         {
             // 1. Put object-specify only key name for the new object.
             var putRequest = new PutObjectRequest
@@ -83,7 +84,7 @@ namespace DLCS.AWS.S3
                 ContentType = contentType
             };
 
-            PutObjectResponse? response = await WriteToBucketInternal(putRequest);
+            PutObjectResponse? response = await WriteToBucketInternal(putRequest, cancellationToken);
         }
 
         public async Task<bool> WriteToBucket(ObjectInBucket dest, Stream content, string? contentType = null)
@@ -139,12 +140,13 @@ namespace DLCS.AWS.S3
                     "Unknown encountered on server. Message:'{Message}' when deleting objects from bucket", e.Message);
             }
         }
-        
-        private async Task<PutObjectResponse?> WriteToBucketInternal(PutObjectRequest putRequest)
+
+        private async Task<PutObjectResponse?> WriteToBucketInternal(PutObjectRequest putRequest,
+            CancellationToken cancellationToken = default)
         {
             try
             {
-                PutObjectResponse response = await s3Client.PutObjectAsync(putRequest);
+                PutObjectResponse response = await s3Client.PutObjectAsync(putRequest, cancellationToken);
                 return response;
             }
             catch (AmazonS3Exception e)

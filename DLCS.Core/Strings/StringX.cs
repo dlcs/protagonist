@@ -53,9 +53,9 @@ namespace DLCS.Core.Strings
         /// <summary>
         /// Build string concatenated with specified separator. Will ensure only 1 separator between elements 
         /// </summary>
-        /// <param name="str"></param>
-        /// <param name="separator"></param>
-        /// <param name="toAppend"></param>
+        /// <param name="str">Initial string to add further strings to</param>
+        /// <param name="separator">Separator to place between initial string + further strings</param>
+        /// <param name="toAppend">List of strings to add, separated by separator</param>
         /// <returns></returns>
         public static string ToConcatenated(this string str, char separator, params string[] toAppend)
         {

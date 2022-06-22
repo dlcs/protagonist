@@ -4,9 +4,11 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
+using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Repository.Assets;
+using DLCS.Web.IIIF;
 using DLCS.Web.Requests.AssetDelivery;
 using IIIF;
 using Microsoft.AspNetCore.Http;
@@ -67,7 +69,7 @@ namespace Orchestrator.Features.Images
             {
                 return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
             }
-
+            
             // If "HEAD" then add CORS - is this required here?
             var orchestrationAsset = await assetRequestProcessor.GetAsset(assetRequest);
             if (orchestrationAsset is not OrchestrationImage orchestrationImage)
@@ -136,18 +138,22 @@ namespace Orchestrator.Features.Images
             => assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max;
 
         // TODO handle known thumb size that doesn't exist yet - call image-server and save to s3 on way back
-        private (bool CanHandle, bool IsResize) CanRequestBeHandledByThumb(ImageAssetDeliveryRequest requestModel, OrchestrationImage orchestrationImage)
+        private (bool CanHandle, bool IsResize) CanRequestBeHandledByThumb(ImageAssetDeliveryRequest requestModel,
+            OrchestrationImage orchestrationImage)
         {
-            // TODO - must be for a jpg
+            var imageRequest = requestModel.IIIFImageRequest;
+            // Contains Image Request Parameters that thumbs can't handle, abort
+            if (!imageRequest.IsCandidateForThumbHandling(out _)) return (false, false);
+
             var openSizes = orchestrationImage.OpenThumbs.Select(wh => Size.FromArray(wh)).ToList();
-            
+
             // No open thumbs so cannot handle by thumb, abort
             if (openSizes.IsNullOrEmpty()) return (false, false);
-            
+
             // Check if settings.ThumbnailResizeConfig contains values, if not then as-is
             var canResizeThumbs = orchestratorSettings.Value.Proxy.CanResizeThumbs;
-            var candidate = ThumbnailCalculator.GetCandidate(openSizes, requestModel.IIIFImageRequest, canResizeThumbs);
-            
+            var candidate = ThumbnailCalculator.GetCandidate(openSizes, imageRequest, canResizeThumbs);
+
             // Exact match - can handle
             if (candidate.KnownSize) return (true, false);
 
@@ -158,7 +164,7 @@ namespace Orchestrator.Features.Images
             if (resizeCandidate.LargerSize != null) return (true, true);
 
             // There are no upscale rules OR no smaller sizes to upscale so abort
-            if (!haveUpscaleRules || resizeCandidate.SmallerSize == null) return (false, false); 
+            if (!haveUpscaleRules || resizeCandidate.SmallerSize == null) return (false, false);
 
             // If here there are smaller sizes and upscaling is supported, check to see if there are any matches 
             var assetId = orchestrationImage.AssetId.ToString();
@@ -178,16 +184,38 @@ namespace Orchestrator.Features.Images
             return (false, false);
         }
 
-        private async Task<ProxyImageServerResult> GenerateImageResult(OrchestrationImage orchestrationImage,
+        private async Task<IProxyActionResult> GenerateImageResult(OrchestrationImage orchestrationImage,
             ImageAssetDeliveryRequest requestModel)
         {
-            var settings = orchestratorSettings.Value;
-            var targetPath = settings.GetImageServerFilePath(orchestrationImage.AssetId);
+            string? targetPath = GetImageServerPath(orchestrationImage, requestModel);
+            if (string.IsNullOrEmpty(targetPath))
+            {
+                logger.LogDebug("Unable to fulfil image request: {Path}. ImageServer path found",
+                    requestModel.NormalisedFullPath);
+                return new StatusCodeResult(HttpStatusCode.BadRequest);
+            }
+
             var imageServerPath = $"{targetPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
             var proxyImageServerResult = new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth,
                 ProxyDestination.ImageServer, imageServerPath);
             await SetCustomHeaders(orchestrationImage, proxyImageServerResult);
             return proxyImageServerResult;
+        }
+
+        private string? GetImageServerPath(OrchestrationImage orchestrationImage, ImageAssetDeliveryRequest requestModel)
+        {
+            var settings = orchestratorSettings.Value;
+            if (requestModel.VersionPathValue.HasText())
+            {
+                var imageApiVersion = requestModel.VersionPathValue.ParseToIIIFImageApiVersion();
+                if (!imageApiVersion.HasValue) return null;
+
+                return settings.GetImageServerPath(orchestrationImage.AssetId, imageApiVersion.Value);
+            }
+            else
+            {
+                return settings.GetImageServerPath(orchestrationImage.AssetId, settings.DefaultIIIFImageVersion);
+            }
         }
 
         private async Task SetCustomHeaders(OrchestrationImage orchestrationImage, 

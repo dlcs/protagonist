@@ -17,8 +17,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Assets;
+using Orchestrator.Features.Images.ImageServer;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Features.Images.Orchestration.Status;
+using Orchestrator.Features.Images.Requests;
 using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
@@ -70,6 +72,23 @@ namespace Orchestrator.Infrastructure
                 {
                     client.DefaultRequestHeaders.WithRequestedBy();
                     client.BaseAddress = apiRoot;
+                });
+
+            return services;
+        }
+        
+        /// <summary>
+        /// Add ImageServerClient dependencies for building and managing info.json requests.
+        /// </summary>
+        /// <returns></returns>
+        public static IServiceCollection AddInfoJsonClient(this IServiceCollection services)
+        {
+            services
+                .AddScoped<InfoJsonConstructor>()
+                .AddScoped<InfoJsonService>()
+                .AddHttpClient<IImageServerClient, YarpImageServerClient>(client =>
+                {
+                    client.DefaultRequestHeaders.WithRequestedBy();
                 });
 
             return services;

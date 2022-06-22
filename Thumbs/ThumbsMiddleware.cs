@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
-using Newtonsoft.Json;
 using Version = IIIF.ImageApi.Version;
 
 namespace Thumbs
@@ -42,8 +41,7 @@ namespace Thumbs
             this.pathGenerator = pathGenerator;
             this.thumbRepository = thumbRepository;
 
-            var defaultImageVersion = configuration.GetValue("DefaultIIIFImageVersion", "3");
-            defaultImageApiVersion = defaultImageVersion[0] == '2' ? Version.V2 : Version.V3;
+            defaultImageApiVersion = configuration.GetValue<Version>("DefaultIIIFImageVersion", Version.V3);
         }
 
         public async Task Invoke(HttpContext context,
@@ -58,20 +56,11 @@ namespace Thumbs
                 }
                 else if (thumbnailRequest.IIIFImageRequest.IsInformationRequest)
                 {
-                    await WriteInfoJson(context, thumbnailRequest);
+                    await HandleInfoJsonRequest(context, thumbnailRequest);
                 }
                 else
                 {
-                    // mode for debugging etc
-                    switch (context.Request.Query["mode"])
-                    {
-                        case "dump":
-                            await WriteRequestDump(context, thumbnailRequest);
-                            break;
-                        default:
-                            await WritePixels(context, thumbnailRequest);
-                            break;
-                    }
+                    await WritePixels(context, thumbnailRequest);
                 }
             }
             catch (Exception ex)
@@ -83,9 +72,18 @@ namespace Thumbs
 
         private async Task WritePixels(HttpContext context, ImageAssetDeliveryRequest request)
         {
+            var imageRequest = request.IIIFImageRequest;
+            if (!imageRequest.IsCandidateForThumbHandling(out var errorMessage))
+            {
+                await StatusCodeResponse
+                    .BadRequest(errorMessage!)
+                    .WriteJsonResponse(context.Response);
+                return;
+            }
+
             await using var thumbnailResponse =
-                await thumbnailHandler.GetThumbnail(request.GetAssetId(), request.IIIFImageRequest);
-            
+                await thumbnailHandler.GetThumbnail(request.GetAssetId(), imageRequest);
+
             if (thumbnailResponse.IsEmpty)
             {
                 await StatusCodeResponse
@@ -106,9 +104,20 @@ namespace Thumbs
             }
         }
 
-        private static async Task WriteRequestDump(HttpContext context, ImageAssetDeliveryRequest request)
+        private async Task HandleInfoJsonRequest(HttpContext context, ImageAssetDeliveryRequest request)
         {
-            await context.Response.WriteAsync(JsonConvert.SerializeObject(request));
+            var (requestedVersion, directRequest) = DiscoverRequestedImageApiVersion(context, request);
+            if (IsCanonical(requestedVersion) && directRequest)
+            {
+                // If request was direct on v2/v3 path and for canonical version - redirect to canonical version
+                var infoJson = GetInfoJsonPath(request, requestedVersion);
+                context.Response.Redirect(infoJson);
+                await context.Response.CompleteAsync();
+            }
+            else
+            {
+                await WriteInfoJson(context, request);
+            }
         }
 
         private async Task WriteInfoJson(HttpContext context, ImageAssetDeliveryRequest request)
@@ -122,13 +131,13 @@ namespace Thumbs
                 return;
             }
             
-            var requestedVersion = DiscoverRequestedImageApiVersion(context, request);
+            var (requestedVersion, _) = DiscoverRequestedImageApiVersion(context, request);
             
             context.Response.ContentType = context.Request.GetIIIFContentType(requestedVersion);
             context.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
             SetCacheControl(context);
             
-            var id = GetFullImagePath(request);
+            var id = GetFullImagePath(request, requestedVersion);
             
             JsonLdBase infoJsonText = requestedVersion == Version.V2
                 ? InfoJsonBuilder.GetImageApi2_1Level0(id, sizes)
@@ -136,33 +145,44 @@ namespace Thumbs
             await context.Response.WriteAsync(infoJsonText.AsJson());
         }
 
-        private Version DiscoverRequestedImageApiVersion(HttpContext context, ImageAssetDeliveryRequest request)
+        private (Version version, bool directRequest) DiscoverRequestedImageApiVersion(HttpContext context,
+            ImageAssetDeliveryRequest request)
         {
             // If the request has /v2/ or /v3/ before customer etc use that to determine image api version
             if (request.VersionPathValue.HasText())
             {
-                return request.VersionPathValue == "v2" ? Version.V2 : Version.V3;
+                var iiifImageApiVersion = request.VersionPathValue.ParseToIIIFImageApiVersion();
+                if (iiifImageApiVersion.HasValue)
+                {
+                    return (iiifImageApiVersion.Value, true);
+                }
             }
 
             // Else look at any Accepts headers, falling back to configured version
-            return context.Request.GetIIIFImageApiVersion(defaultImageApiVersion);
+            return (context.Request.GetIIIFImageApiVersion(defaultImageApiVersion), false);
         }
 
         private Task RedirectToInfoJson(HttpContext context, ImageAssetDeliveryRequest imageAssetDeliveryRequest)
         {
-            var redirectPath = GetFullImagePath(imageAssetDeliveryRequest);
-            if (!redirectPath.EndsWith('/'))
-            {
-                redirectPath += "/";
-            }
+            // If this path is versioned and for the canonical version then redirect to that
+            var (requestedVersion, _) = DiscoverRequestedImageApiVersion(context, imageAssetDeliveryRequest);
 
-            var infoJson = $"{redirectPath}info.json";
+            var infoJson = GetInfoJsonPath(imageAssetDeliveryRequest, requestedVersion);
             context.Response.SeeOther(infoJson);
             return context.Response.CompleteAsync();
         }
 
-        private string GetFullImagePath(ImageAssetDeliveryRequest imageAssetDeliveryRequest)
+        private string GetInfoJsonPath(ImageAssetDeliveryRequest imageAssetDeliveryRequest, Version requestedVersion)
         {
+            var redirectPath = GetFullImagePath(imageAssetDeliveryRequest, requestedVersion);
+
+            var infoJson = redirectPath.ToConcatenated('/', "info.json");
+            return infoJson;
+        }
+
+        private string GetFullImagePath(ImageAssetDeliveryRequest imageAssetDeliveryRequest, Version requestedVersion)
+        {
+            var isCanonical = IsCanonical(requestedVersion);
             return pathGenerator.GetFullPathForRequest(
                 imageAssetDeliveryRequest,
                 (assetRequest, template) =>
@@ -170,11 +190,17 @@ namespace Thumbs
                     var baseAssetRequest = assetRequest as BaseAssetRequest;
                     return DlcsPathHelpers.GeneratePathFromTemplate(
                         template,
-                        baseAssetRequest.VersionedRoutePrefix,
+                        isCanonical ? baseAssetRequest.RoutePrefix : baseAssetRequest.VersionedRoutePrefix,
                         baseAssetRequest.CustomerPathValue,
                         baseAssetRequest.Space.ToString(),
                         baseAssetRequest.AssetId);
                 });
+        }
+
+        private bool IsCanonical(Version requestedVersion)
+        {
+            var isCanonical = requestedVersion == defaultImageApiVersion;
+            return isCanonical;
         }
 
         private void SetCacheControl(HttpContext context)
