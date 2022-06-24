@@ -18,6 +18,15 @@ namespace DLCS.Core.Types
             return stringBuilder.ToString();
         }
 
+        /// <summary>
+        /// Return a path for use in the private DLCS API (not the IIIF API)
+        /// </summary>
+        /// <returns></returns>
+        public string ToApiResourcePath()
+        {
+            return $"/customers/{Customer}/spaces/{Space}/images/{Asset}";
+        }
+
         protected virtual bool PrintMembers(StringBuilder builder)
         {
             builder.Append(Customer);
