@@ -52,10 +52,19 @@ namespace API.Client
             };
         }
 
-        public async Task<HydraCollection<Space>?> GetSpaces(int page, int pageSize, int? customerId = null)
+        public async Task<HydraCollection<Space>?> GetSpaces(int page, int pageSize, 
+            string? orderBy=null, bool ascending = true, int? customerId = null)
         {
             customerId ??= currentUser.GetCustomerId();
             var url = $"/customers/{customerId}/spaces?page={page}&pageSize={pageSize}";
+            if (orderBy != null)
+            {
+                url = $"{url}&orderBy={orderBy}";
+            }
+            if (ascending == false)
+            {
+                url = $"{url}&ascending=false";
+            }
             var response = await httpClient.GetAsync(url);
             var space = await response.ReadAsHydraResponseAsync<HydraCollection<Space>>(jsonSerializerSettings);
             return space;

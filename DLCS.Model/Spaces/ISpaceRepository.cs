@@ -12,7 +12,9 @@ namespace DLCS.Model.Spaces
         Task<Space> CreateSpace(int customer, string name, string? imageBucket, 
             string[]? tags, string[]? roles, int? maxUnauthorised, CancellationToken cancellationToken);
 
-        Task<PageOfSpaces> GetPageOfSpaces(int customerId, int page, int pageSize, CancellationToken cancellationToken);
+        Task<PageOfSpaces> GetPageOfSpaces(int customerId, int page, int pageSize,
+            string orderBy, bool ascending, 
+            CancellationToken cancellationToken);
         Task<Space> PatchSpace(int customerId, int spaceId, string? name,
             int? maxUnauthorised, string[]? tags, string[]? roles, CancellationToken cancellationToken);
     }

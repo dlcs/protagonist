@@ -31,7 +31,7 @@ namespace Portal.Pages.Admin.Customers
         public async Task<IActionResult> OnGetAsync(int id)
         {
             Customer = await mediator.Send(new GetCustomer(id)); // TODO -> API
-            PageOfSpaces = await dlcsClient.GetSpaces(1, 10, Customer.Id);
+            PageOfSpaces = await dlcsClient.GetSpaces(1, 10, null, true, Customer.Id);
             Users = await mediator.Send(new GetUsers(Customer.Id)); // TODO -> API
             return Page();
         }

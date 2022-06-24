@@ -7,9 +7,9 @@ using Microsoft.Extensions.Logging;
 
 namespace API.Features.Space.Requests
 {
-    /// <summary>
+    /// <remark>
     /// See Deliverator: API/Architecture/Request/API/Entities/CustomerSpaces.cs
-    /// </summary>
+    /// </remark>
     public class CreateSpace : IRequest<DLCS.Model.Spaces.Space>
     {
         public string Name { get; set; }

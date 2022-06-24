@@ -39,7 +39,8 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Post_SimpleSpace_Creates_Space()
     {
         // arrange
-        int? customerId = await EnsureCustomerForSpaceTests("post_space_creates_space");
+        int? customerId = await EnsureCustomerForSpaceTests("Post_SimpleSpace_Creates_Space");
+        int expectedSpace = 1; 
         const string newSpaceJson = @"{
   ""@type"": ""Space"",
   ""name"": ""Test Space""
@@ -51,6 +52,8 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var apiSpace = await response.ReadAsHydraResponseAsync<Space>();
         
         // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be($"{postUrl}/{expectedSpace}");
         apiSpace.Should().NotBeNull();
         apiSpace.Name.Should().Be("Test Space");
         apiSpace.MaxUnauthorised.Should().Be(-1);
@@ -60,7 +63,8 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Post_ComplexSpace_Creates_Space()
     {
         // arrange
-        int? customerId = await EnsureCustomerForSpaceTests("post_space_creates_space");
+        int? customerId = await EnsureCustomerForSpaceTests("Post_ComplexSpace_Creates_Space");
+        
         const string newSpaceJson = @"{
   ""@type"": ""Space"",
   ""name"": ""Test Complex Space"",
@@ -76,18 +80,20 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         apiSpace.Should().NotBeNull();
-        apiSpace.Name.Should().Be("Test Complex Space");
-        apiSpace.DefaultRoles.Should().BeEquivalentTo("role1", "role2");
-        apiSpace.DefaultTags.Should().BeEquivalentTo("tag1", "tag2");
-        apiSpace.MaxUnauthorised.Should().Be(400);
-        
+        AssertSpace(apiSpace);
+
         // verify that we can re-obtain the space with GET
         var newResponse = await httpClient.AsCustomer(customerId.Value).GetAsync(apiSpace.Id);
         var reObtainedSpace = await newResponse.ReadAsHydraResponseAsync<Space>();
-        reObtainedSpace.Name.Should().Be("Test Complex Space");
-        reObtainedSpace.DefaultRoles.Should().BeEquivalentTo("role1", "role2");
-        reObtainedSpace.DefaultTags.Should().BeEquivalentTo("tag1", "tag2");
-        reObtainedSpace.MaxUnauthorised.Should().Be(400);
+        AssertSpace(reObtainedSpace);
+
+        void AssertSpace(Space space)
+        {
+            space.Name.Should().Be("Test Complex Space");
+            space.DefaultRoles.Should().BeEquivalentTo("role1", "role2");
+            space.DefaultTags.Should().BeEquivalentTo("tag1", "tag2");
+            space.MaxUnauthorised.Should().Be(400);
+        }
     }
 
 
@@ -108,7 +114,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         int? customerId = await EnsureCustomerForSpaceTests();
 
-        var currentCounter = await dbContext.EntityCounters.AsNoTracking().SingleAsync(
+        var currentCounter = await dbContext.EntityCounters.SingleAsync(
             ec => ec.Type == "space" && ec.Scope == customerId.ToString() && ec.Customer == customerId);
 
         var next = (int)currentCounter.Next;
@@ -123,10 +129,10 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var apiSpace = await response.ReadAsHydraResponseAsync<Space>();
 
         apiSpace.Id.Should().EndWith($"{postUrl}/{next}");
-        currentCounter = await dbContext.EntityCounters.AsNoTracking().SingleAsync(
+        currentCounter = await dbContext.EntityCounters.SingleAsync(
             ec => ec.Type == "space" && ec.Scope == customerId.ToString() && ec.Customer == customerId);
         currentCounter.Next.Should().Be(next + 1);
-        var spaceImageCounter = await dbContext.EntityCounters.AsNoTracking().SingleOrDefaultAsync(
+        var spaceImageCounter = await dbContext.EntityCounters.SingleOrDefaultAsync(
             ec => 
                 ec.Type == "space-images" && 
                 ec.Customer == customerId.Value && 
@@ -216,33 +222,53 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         }
     }
 
+    [Fact]
+    public async Task Paged_Requests_Support_Ordering()
+    {
+        // arrange
+        int? customerId = await EnsureCustomerForSpaceTests("hydracollection_space");
+        await EnsureSpaces(customerId.Value, 25);
+        
+        var spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderBy=name";
+        
+        // act
+        var response = await httpClient.AsCustomer(customerId.Value).GetAsync(spacesUrl);
+        
+        // assert
+        var coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members[0]["name"].ToString().Should().Be("Space 0001");
+        coll.Members[1]["name"].ToString().Should().Be("Space 0002");
+        
+        spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderBy=name&ascending=false";
+        response = await httpClient.AsCustomer(customerId.Value).GetAsync(spacesUrl);
+        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members[0]["name"].ToString().Should().Be("Space 0025");
+        coll.Members[1]["name"].ToString().Should().Be("Space 0024");
+        
+        var nextPage = await httpClient.AsCustomer(customerId.Value).GetAsync(coll.View.Next);
+        coll = await nextPage.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members[0]["name"].ToString().Should().Be("Space 0015");
+        coll.Members[1]["name"].ToString().Should().Be("Space 0014");
+
+    }
 
     [Fact]
     public async Task Patch_Space_Updates_Name()
     {
-        // arrange
         int? customerId = await EnsureCustomerForSpaceTests("Patch_Space_Updates_Name");
-        const string newSpaceJson = @"{
-  ""@type"": ""Space"",
-  ""name"": ""Patch Space Before""
-}";
-        // act
-        var content = new StringContent(newSpaceJson, Encoding.UTF8, "application/json");
-        var postUrl = $"/customers/{customerId}/spaces";
-        var response = await httpClient.AsCustomer(customerId.Value).PostAsync(postUrl, content);
-        var apiSpace = await response.ReadAsHydraResponseAsync<Space>();
-        
-        // assert
-        apiSpace.Name.Should().Be("Patch Space Before");
+        await dbContext.Spaces.AddTestSpace(customerId.Value, 1, "Patch Space Before");
+        await dbContext.SaveChangesAsync();
         
         const string patchJson = @"{
-  ""@type"": ""Space"",
-  ""name"": ""Patch Space After""
+""@type"": ""Space"",
+""name"": ""Patch Space After""
 }";
         var patchContent = new StringContent(patchJson, Encoding.UTF8, "application/json");
-        var patchResponse = await httpClient.AsCustomer(customerId.Value).PatchAsync(apiSpace.Id, patchContent);
+        var patchUrl = $"/customers/{customerId}/spaces/1";
+        var patchResponse = await httpClient.AsCustomer(customerId.Value).PatchAsync(patchUrl, patchContent);
         var patchedSpace = await patchResponse.ReadAsHydraResponseAsync<Space>();
 
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         patchedSpace.Name.Should().Be("Patch Space After");
     }
     
@@ -317,7 +343,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         for (int i = 1; i <= numberOfSpaces; i++)
         {
-            var spaceName = $"{seed} Space {i}";
+            var spaceName = $"Space {i.ToString().PadLeft(4, '0')}";
             var newSpaceJson = newSpaceJsonTemplate.Replace("{space-name}", spaceName);
             
             var content = new StringContent(newSpaceJson, Encoding.UTF8, "application/json");

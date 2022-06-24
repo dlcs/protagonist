@@ -75,7 +75,7 @@ namespace DLCS.Repository.Spaces
         private async Task<int> GetIdForNewSpace(int requestCustomer)
         {
             int newModelId;
-            Space existingSpaceInCustomer;
+            Space? existingSpaceInCustomer;
             do
             {
                 var next = await entityCounterRepository
@@ -92,7 +92,7 @@ namespace DLCS.Repository.Spaces
         private async Task<Space?> GetSpaceInternal(int customerId, int spaceId, 
             CancellationToken cancellationToken, string? name = null)
         {
-            Space space;
+            Space? space;
             if (name != null)
             {
                 space = await dlcsContext.Spaces
@@ -115,7 +115,8 @@ namespace DLCS.Repository.Spaces
             return space;
         }
 
-        public async Task<PageOfSpaces> GetPageOfSpaces(int customerId, int page, int pageSize, CancellationToken cancellationToken)
+        public async Task<PageOfSpaces> GetPageOfSpaces(
+            int customerId, int page, int pageSize, string orderBy, bool ascending, CancellationToken cancellationToken)
         {
             var result = new PageOfSpaces
             {
@@ -123,7 +124,7 @@ namespace DLCS.Repository.Spaces
                 Total = await dlcsContext.Spaces.CountAsync(s => s.Customer == customerId, cancellationToken: cancellationToken),
                 Spaces = await dlcsContext.Spaces.AsNoTracking()
                     .Where(s => s.Customer == customerId)
-                    .OrderBy(s => s.Id) // TODO - use request.OrderBy
+                    .AsOrderedSpaceQuery(orderBy, ascending)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync(cancellationToken: cancellationToken)

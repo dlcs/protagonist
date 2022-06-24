@@ -13,32 +13,32 @@ namespace API.Features.Space.Requests
     /// </summary>
     public class GetPageOfSpaces : IRequest<PageOfSpaces>
     {
-        public GetPageOfSpaces(int page, int pageSize, int? customerId = null, string? orderBy = null)
+        public GetPageOfSpaces(int page, int pageSize, int? customerId = null,
+            string? orderBy = null, bool ascending=true)
         {
             Page = page;
             PageSize = pageSize;
             CustomerId = customerId;
             OrderBy = orderBy;
+            Ascending = ascending;
         }
 
         public int? CustomerId { get; }
         public int Page { get; }
         public int PageSize { get; }
         public string OrderBy { get; }
+        public bool Ascending { get; }
     }
 
     public class GetAllSpacesHandler : IRequestHandler<GetPageOfSpaces, PageOfSpaces>
     {
         private readonly ISpaceRepository spaceRepository;
         private readonly ClaimsPrincipal principal;
-        private readonly ILogger logger;
 
-        public GetAllSpacesHandler(ISpaceRepository spaceRepository, ClaimsPrincipal principal,
-            ILogger<GetAllSpacesHandler> logger)
+        public GetAllSpacesHandler(ISpaceRepository spaceRepository, ClaimsPrincipal principal)
         {
             this.spaceRepository = spaceRepository;
             this.principal = principal;
-            this.logger = logger;
         }
         
         public async Task<PageOfSpaces> Handle(GetPageOfSpaces request, CancellationToken cancellationToken)
@@ -48,7 +48,8 @@ namespace API.Features.Space.Requests
             {
                 throw new BadRequestException("No customer Id supplied");
             }
-            var result = await spaceRepository.GetPageOfSpaces(customerId.Value, request.Page, request.PageSize, cancellationToken);
+            var result = await spaceRepository.GetPageOfSpaces(customerId.Value, 
+                request.Page, request.PageSize, request.OrderBy, request.Ascending, cancellationToken);
             return result;
         }
         
