@@ -252,6 +252,30 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         coll = await nextPage.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
         coll.Members[0]["name"].ToString().Should().Be("Space 0015");
         coll.Members[1]["name"].ToString().Should().Be("Space 0014");
+        
+        // Add another space just to be sure we are testing created properly
+        const string newSpaceJson = @"{
+  ""@type"": ""Space"",
+  ""name"": ""Aardvark space""
+}";
+        var content = new StringContent(newSpaceJson, Encoding.UTF8, "application/json");
+        var postUrl = $"/customers/{customerId}/spaces";
+        await httpClient.AsCustomer(customerId.Value).PostAsync(postUrl, content);
+        
+        spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderBy=name";
+        response = await httpClient.AsCustomer(customerId.Value).GetAsync(spacesUrl);
+        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members[0]["name"].ToString().Should().Be("Aardvark space");
+        
+        spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderBy=created";
+        response = await httpClient.AsCustomer(customerId.Value).GetAsync(spacesUrl);
+        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members[0]["name"].ToString().Should().Be("Space 0001");
+        
+        spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderBy=created&ascending=false";
+        response = await httpClient.AsCustomer(customerId.Value).GetAsync(spacesUrl);
+        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members[0]["name"].ToString().Should().Be("Aardvark space");
 
     }
 

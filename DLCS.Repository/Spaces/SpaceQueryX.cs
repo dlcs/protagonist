@@ -24,7 +24,7 @@ public static class SpaceQueryX
                 case "name":
                     return ascending ? spaceQuery.OrderBy(s => s.Name) : spaceQuery.OrderByDescending(s => s.Name);
                 case "created":
-                    return ascending ? spaceQuery.OrderBy(s => s.Name) : spaceQuery.OrderByDescending(s => s.Name);
+                    return ascending ? spaceQuery.OrderBy(s => s.Created) : spaceQuery.OrderByDescending(s => s.Created);
             }
         }
 
