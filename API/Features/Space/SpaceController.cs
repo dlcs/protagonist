@@ -7,6 +7,7 @@ using API.Settings;
 using DLCS.Web.Requests;
 using Hydra.Collections;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -78,7 +79,6 @@ namespace API.Features.Space
             
             var command = new CreateSpace(customerId, space.Name)
             {
-                // ImageBucket = space.ImageBucket, // not there
                 Roles = space.DefaultRoles,
                 Tags = space.DefaultTags ?? Array.Empty<string>(),
                 MaxUnauthorised = space.MaxUnauthorised
@@ -100,11 +100,18 @@ namespace API.Features.Space
         
         [HttpGet]
         [Route("{spaceId}")]
-        public async Task<DLCS.HydraModel.Space> Index(int customerId, int spaceId)
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.Space))]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Index(int customerId, int spaceId)
         {
             var baseUrl = Request.GetBaseUrl();
             var dbSpace = await mediator.Send(new GetSpace(customerId, spaceId));
-            return dbSpace.ToHydra(baseUrl);
+            if (dbSpace != null)
+            {
+                return Ok(dbSpace.ToHydra(baseUrl));
+            }
+
+            return NotFound();
         }
         
         [HttpPatch]

@@ -39,7 +39,7 @@ namespace DLCS.Repository.Spaces
 
         public async Task<Space?> GetSpace(int customerId, int spaceId, CancellationToken cancellationToken)
         {
-            var space = await GetSpaceInternal(customerId, spaceId, cancellationToken);
+            var space = await GetSpaceInternal(customerId, spaceId, cancellationToken, null, true);
             return space;
         }
         
@@ -90,7 +90,7 @@ namespace DLCS.Repository.Spaces
         
 
         private async Task<Space?> GetSpaceInternal(int customerId, int spaceId, 
-            CancellationToken cancellationToken, string? name = null)
+            CancellationToken cancellationToken, string? name = null, bool withApproximateImageCount = false)
         {
             Space? space;
             if (name != null)
@@ -104,10 +104,15 @@ namespace DLCS.Repository.Spaces
                 space = await dlcsContext.Spaces.AsNoTracking().SingleOrDefaultAsync(s =>
                     s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
             }
+
+            if (space == null || withApproximateImageCount == false)
+            {
+                return space;
+            }
             var counter = await dlcsContext.EntityCounters.AsNoTracking().SingleOrDefaultAsync(ec =>
                 ec.Customer == customerId && ec.Type == "space-images" &&
                 ec.Scope == spaceId.ToString(), cancellationToken: cancellationToken);
-            if (space != null && counter != null)
+            if (counter != null)
             {
                 space.ApproximateNumberOfImages = counter.Next;
             }
@@ -174,7 +179,7 @@ namespace DLCS.Repository.Spaces
             
             await dlcsContext.SaveChangesAsync(cancellationToken);
 
-            var retrievedSpace = await GetSpace(customerId, spaceId, cancellationToken);
+            var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken);
             return retrievedSpace;
         }
     }

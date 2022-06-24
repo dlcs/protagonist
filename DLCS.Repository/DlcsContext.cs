@@ -453,10 +453,6 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Aliases)
                     .HasMaxLength(1000);
-                    // We have to roll this back because we have a Dapper mapping for this
-                    // .HasConversion(
-                    //    v => string.Join(",", v),
-                    //    v => v.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray());;
 
                 entity.Property(e => e.AuthService)
                     .IsRequired()
