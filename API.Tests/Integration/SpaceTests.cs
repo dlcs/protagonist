@@ -39,8 +39,11 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Post_SimpleSpace_Creates_Space()
     {
         // arrange
-        int? customerId = await EnsureCustomerForSpaceTests("Post_SimpleSpace_Creates_Space");
-        int expectedSpace = 1; 
+        int? customerId = 99;
+        var counter = await dbContext.EntityCounters.SingleAsync(
+                ec => ec.Customer == 99 && ec.Scope == "99" && ec.Type == "space");
+        int expectedSpace = (int) counter.Next;
+        
         const string newSpaceJson = @"{
   ""@type"": ""Space"",
   ""name"": ""Test Space""
@@ -63,7 +66,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Post_ComplexSpace_Creates_Space()
     {
         // arrange
-        int? customerId = await EnsureCustomerForSpaceTests("Post_ComplexSpace_Creates_Space");
+        int? customerId = 99; //  await EnsureCustomerForSpaceTests("Post_ComplexSpace_Creates_Space");
         
         const string newSpaceJson = @"{
   ""@type"": ""Space"",
