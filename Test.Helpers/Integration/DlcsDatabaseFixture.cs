@@ -79,6 +79,13 @@ namespace Test.Helpers.Integration
                 Name = "test",
                 Keys = Array.Empty<string>()
             });
+            await DbContext.EntityCounters.AddAsync(new EntityCounter
+            {
+                Type = "space",
+                Customer = customer,
+                Scope = customer.ToString(),
+                Next = 1
+            });
             await DbContext.Spaces.AddAsync(new Space
                 { Created = DateTime.UtcNow, Id = 1, Customer = customer, Name = "space-1" });
             await DbContext.ThumbnailPolicies.AddAsync(new ThumbnailPolicy

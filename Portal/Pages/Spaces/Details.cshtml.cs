@@ -1,17 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using API.Client;
+using DLCS.Core;
 using DLCS.Core.Settings;
 using DLCS.HydraModel;
 using DLCS.Web.Auth;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
 using Portal.Features.Spaces.Models;
-using Portal.Features.Spaces.Requests;
+using Portal.Settings;
 using Portal.ViewComponents;
 
 namespace Portal.Pages.Spaces
@@ -19,41 +20,49 @@ namespace Portal.Pages.Spaces
     [BindProperties]
     public class Details : PageModel
     {
-        private readonly IMediator mediator;
-        
+        private readonly IDlcsClient dlcsClient;
         public DlcsSettings DlcsSettings { get; }
-        
+        private readonly PortalSettings portalSettings;
         public SpacePageModel SpacePageModel { get; set; }
-        
         public PagerValues? PagerValues { get; private set; }
-        
         public string Customer { get; set; }
-        
-        public string Space { get; set; }
+        public int SpaceId { get; set; }
 
         public Details(
-            IMediator mediator,
+            IDlcsClient dlcsClient,
             IOptions<DlcsSettings> dlcsSettings,
+            IOptions<PortalSettings> portalSettings,
             ClaimsPrincipal currentUser)
         {
-            this.mediator = mediator;
+            this.dlcsClient = dlcsClient;
             DlcsSettings = dlcsSettings.Value;
+            this.portalSettings = portalSettings.Value;
             Customer = (currentUser.GetCustomerId() ?? -1).ToString();
         }
         
         public async Task<IActionResult> OnGetAsync(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize)
         {
-            Space = id.ToString();
-            // At the moment the DLCS API does not provide the option of setting the page size.
-            // So the page size coming back from the Hydra API will override whatever value is set on the query string.
-            // See http://www.hydra-cg.com/spec/latest/core/#example-20-a-hydra-partialcollectionview-splits-a-collection-into-multiple-views
-            SpacePageModel = await mediator.Send(new GetSpaceDetails(id, page, pageSize, nameof(Image.Number1)));
-
-            if (SpacePageModel.Space == null)
+            SpaceId = id;
+            var space = await dlcsClient.GetSpaceDetails(SpaceId);
+            if (space == null)
             {
                 return NotFound();
             }
 
+            var images = await dlcsClient.GetSpaceImages(page, pageSize, SpaceId, nameof(Image.Number1));
+            var model = new SpacePageModel
+            {
+                Space = space,
+                Images = images,
+                IsManifestSpace = space?.IsManifestSpace() ?? false
+            };
+
+            if (model.IsManifestSpace)
+            {
+                SetManifestLinks(model);
+            }
+
+            SpacePageModel = model;
             SetPager(page, pageSize);
             return Page();
         }
@@ -67,12 +76,46 @@ namespace Portal.Pages.Spaces
                 partialImageCollection?.PageSize ?? pageSize);
         }
 
+        private void SetManifestLinks(SpacePageModel model)
+        {
+            var namedQuery = DlcsPathHelpers.GeneratePathFromTemplate(
+                DlcsSettings.SpaceManifestQuery,
+                customer: User.GetCustomerId().ToString(),
+                space: model.Space.ModelId.ToString());
+                
+            model.NamedQuery = new Uri(namedQuery);
+            model.UniversalViewer = new Uri(string.Concat(portalSettings.UVUrl, "?manifest=", namedQuery));
+            model.MiradorViewer = new Uri(string.Concat(portalSettings.MiradorUrl, "?manifest=", namedQuery));
+        }
+        
+        /// <summary>
+        /// Toggle space between manifest mode and normal mode by adding/removing special tag
+        /// </summary>
+        /// <param name="spaceId"></param>
+        /// <returns></returns>
         public async Task<IActionResult> OnPostConvert(int spaceId)
         {
             var manifestMode = Request.Form.ContainsKey("manifest-mode");
-            // TODO - handle failure
-            var result = await mediator.Send(new ToggleManifestMode(spaceId, manifestMode));
-
+            var space = await dlcsClient.GetSpaceDetails(spaceId);
+            if (space != null)
+            {
+                if (manifestMode)
+                {
+                    space.AddDefaultTag(SpaceX.ManifestTag);
+                }
+                else
+                {
+                    space.RemoveDefaultTag(SpaceX.ManifestTag);
+                }
+                try
+                {
+                    await dlcsClient.PatchSpace(spaceId, space);
+                }
+                catch (DlcsException dlcsException)
+                {
+                    TempData["error-message"] = dlcsException.Message;
+                }
+            }
             return RedirectToPage("/spaces/details", new {id = spaceId});
         }
 
@@ -91,9 +134,8 @@ namespace Portal.Pages.Spaces
                     orderDict[imageId] = order;
                 }
             }
-            SpacePageModel = await mediator.Send(new GetSpaceDetails(spaceId, page, pageSize));
-            var images = SpacePageModel.Images;
-            if (images != null)
+            var images = await dlcsClient.GetSpaceImages(page, pageSize, spaceId, nameof(Image.Number1));
+            if (images.Members != null && images.Members.Any())
             {
                 var highest = orderDict.Values.Max();
                 foreach (Image image in images.Members)
@@ -107,9 +149,7 @@ namespace Portal.Pages.Spaces
                         image.Number1 = ++highest;
                     }
                 }
-
-                var patchRequest = new PatchImages {Images = images, SpaceId = spaceId};
-                await mediator.Send(patchRequest);
+                await dlcsClient.PatchImages(images, spaceId);
             }
 
             return RedirectToPage("/spaces/details", new {id = spaceId});

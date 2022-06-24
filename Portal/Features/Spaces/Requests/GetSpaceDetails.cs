@@ -69,7 +69,8 @@ namespace Portal.Features.Spaces.Requests
         
         public async Task<SpacePageModel> Handle(GetSpaceDetails request, CancellationToken cancellationToken)
         {
-            var images = await GetSpaceImages(request);
+            var images = await dlcsClient.GetSpaceImages(
+                request.Page, request.PageSize, request.SpaceId, request.ImageOrderBy);
             var space = await dlcsClient.GetSpaceDetails(request.SpaceId);
             
             var model = new SpacePageModel
@@ -85,19 +86,6 @@ namespace Portal.Features.Spaces.Requests
             }
 
             return model;
-        }
-
-        private async Task<HydraCollection<Image>?> GetSpaceImages(GetSpaceDetails request)
-        {
-            var images = await dlcsClient.GetSpaceImages(request.SpaceId);
-
-            if (!string.IsNullOrWhiteSpace(request.ImageOrderBy))
-            {
-                logger.LogDebug("Ordering space queries by '{orderBy}'", request.ImageOrderBy);
-                images.Members = images.Members.AsQueryable().OrderBy(request.ImageOrderBy).ToArray();
-            }
-
-            return images;
         }
         
         private void SetManifestLinks(SpacePageModel model, GetSpaceDetails request)

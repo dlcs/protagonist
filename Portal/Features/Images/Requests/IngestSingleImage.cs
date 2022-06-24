@@ -20,15 +20,17 @@ namespace Portal.Features.Images.Requests
     {
         public int SpaceId { get; }
         public string ImageId { get; }
-        public Stream File { get; }
+        public Stream UploadedFileStream { get; }
         public string MediaType { get; }
+        public int ImageIndex { get; }
         
-        public IngestSingleImage(int spaceId, string imageId, Stream file, string mediaType)
+        public IngestSingleImage(int spaceId, string imageId, Stream uploadedFileStream, string mediaType, int imageIndex)
         {
             SpaceId = spaceId;
             ImageId = imageId;
-            File = file;
+            UploadedFileStream = uploadedFileStream;
             MediaType = mediaType;
+            ImageIndex = imageIndex;
         }
     }
     
@@ -39,29 +41,26 @@ namespace Portal.Features.Images.Requests
         private readonly AWSSettings awsSettings;
         private readonly IDlcsClient dlcsClient;
         private readonly ILogger<IngestImageFromFileHandler> logger;
-        private readonly ISpaceRepository spaceRepository;
 
         public IngestImageFromFileHandler(
             ClaimsPrincipal claimsPrincipal,
             IBucketWriter bucketWriter,
             IOptions<AWSSettings> awsSettings,
             IDlcsClient dlcsClient,
-            ILogger<IngestImageFromFileHandler> logger,
-            ISpaceRepository spaceRepository)
+            ILogger<IngestImageFromFileHandler> logger)
         {
             this.claimsPrincipal = claimsPrincipal;
             this.bucketWriter = bucketWriter;
             this.awsSettings = awsSettings.Value;
             this.dlcsClient = dlcsClient;
             this.logger = logger;
-            this.spaceRepository = spaceRepository;
         }
         
         public async Task<Image?> Handle(IngestSingleImage request, CancellationToken cancellationToken)
         {
             // Save to S3
             var objectInBucket = GetObjectInBucket(request);
-            var bucketSuccess = await bucketWriter.WriteToBucket(objectInBucket, request.File, request.MediaType);
+            var bucketSuccess = await bucketWriter.WriteToBucket(objectInBucket, request.UploadedFileStream, request.MediaType);
             
             if (!bucketSuccess)
             {
@@ -82,13 +81,11 @@ namespace Portal.Features.Images.Requests
 
         private async Task<Image> CreateJsonBody(RegionalisedObjectInBucket objectInBucket, IngestSingleImage request)
         {
-            var spaceCount =
-                await spaceRepository.GetImageCountForSpace(claimsPrincipal.GetCustomerId().Value, request.SpaceId);
             return new Image
             {
                 Origin = objectInBucket.GetHttpUri().ToString(),
-                Number1 = spaceCount,
-                String1 = spaceCount.ToString()
+                Number1 = request.ImageIndex,
+                String1 = request.ImageIndex.ToString()
             };
         }
     }

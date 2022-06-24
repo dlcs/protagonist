@@ -17,11 +17,16 @@ namespace Portal.Features.Spaces
     {
         private readonly ClaimsPrincipal currentUser;
         private readonly IMediator mediator;
+        private readonly IDlcsClient dlcsClient;
 
-        public DropzoneController(ClaimsPrincipal currentUser, IMediator mediator)
+        public DropzoneController(
+            ClaimsPrincipal currentUser, 
+            IMediator mediator,
+            IDlcsClient dlcsClient)
         {
             this.currentUser = currentUser;
             this.mediator = mediator;
+            this.dlcsClient = dlcsClient;
         }
         
         [HttpPost]
@@ -66,6 +71,10 @@ namespace Portal.Features.Spaces
         [Route("[controller]/{customer}/{space}/[action]")]
         public async Task<IActionResult> Upload(int customer, int space, List<IFormFile> file)
         {
+            // Give the images numbering metadata, starting at the current number of images.
+            // This is not the most elegant way of doing this.
+            var firstPageOfImages = await dlcsClient.GetSpaceImages(1,1, space);
+            var currentIndex = firstPageOfImages.TotalItems;
             if (currentUser.GetCustomerId() != customer)
             {
                 throw new InvalidOperationException("Customer ID mismatch");
@@ -82,7 +91,8 @@ namespace Portal.Features.Spaces
                         fileNameForSaving = Path.GetFileName(formFile.FileName) ?? formFile.FileName;
                         await formFile.CopyToAsync(ms);
                         
-                        var ingestRequest = new IngestSingleImage(space, fileNameForSaving, ms, formFile.ContentType);
+                        var ingestRequest = new IngestSingleImage(space, 
+                            fileNameForSaving, ms, formFile.ContentType, ++currentIndex);
                         await mediator.Send(ingestRequest);
                     }
                 }

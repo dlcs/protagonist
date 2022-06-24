@@ -18,7 +18,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -83,8 +82,7 @@ namespace Portal
                 .AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditBehaviour<,>))
                 .AddAWSService<IAmazonS3>()
                 .AddSingleton<IBucketReader, S3BucketReader>()
-                .AddSingleton<IBucketWriter, S3BucketWriter>()
-                .AddTransient<ISpaceRepository, SpaceRepository>();
+                .AddSingleton<IBucketWriter, S3BucketWriter>();
 
             services.AddDlcsContext(configuration);
 

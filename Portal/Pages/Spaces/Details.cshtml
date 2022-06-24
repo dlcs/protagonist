@@ -3,9 +3,17 @@
 @model Portal.Pages.Spaces.Details
 
 @{
-    var spaceId = Model.SpacePageModel.Space.GetLastPathElementAsInt();
-    ViewData["Title"] = $"Space {spaceId}: {Model.SpacePageModel.Space.Name}";
+    ViewData["Title"] = $"Space {Model.SpaceId}: {Model.SpacePageModel.Space?.Name}";
 }
+
+@if (TempData["error-message"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Error:</strong> @TempData["error-message"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
 
 @section header
 {
@@ -16,13 +24,13 @@
 
 
 
-<form action="/dropzone/@Model.Customer/@Model.Space/upload"
+<form action="/dropzone/@Model.Customer/@Model.SpaceId/upload"
       class="dropzone"
       id="dropzoneForm">
 </form>
 
 <form method="post" asp-page-handler="Convert" id="manifestForm">
-    <input type="hidden" value="@spaceId" name="spaceId">
+    <input type="hidden" value="@Model.SpaceId" name="spaceId">
     @if (Model.SpacePageModel.IsManifestSpace)
     {
         <div class="form-check form-switch">
@@ -30,7 +38,7 @@
             <label class="form-check-label" for="toggleManifest">Space is IIIF Manifest</label>
         </div>
         <ul class="list-group list-group-horizontal" id="iiifConverter">
-            <li class="list-group-item"><img src="https://avatars.githubusercontent.com/u/5812589?s=100&v=4" height="20" /></li>
+            <li class="list-group-item"><img src="https://avatars.githubusercontent.com/u/5812589?s=100&v=4" height="20" alt="IIIF logo"/></li>
             <li class="list-group-item"><a href="@Model.SpacePageModel.NamedQuery" target="_blank" rel="noopener noreferrer">IIIF Manifest <span data-feather="external-link"></span></a></li>
             <li class="list-group-item"><a href="@Model.SpacePageModel.UniversalViewer" target="_blank" rel="noopener noreferrer">Universal Viewer <span data-feather="external-link"></span></a></li>
             <li class="list-group-item"><a href="@Model.SpacePageModel.MiradorViewer" target="_blank" rel="noopener noreferrer">Mirador <span data-feather="external-link"></span></a></li>
@@ -51,7 +59,7 @@
 })
 
 <form method="post" asp-page-handler="ReOrder">
-    <input type="hidden" value="@spaceId" name="spaceId">
+    <input type="hidden" value="@Model.SpaceId" name="spaceId">
     
     @{
         var tableClass = "table";
@@ -88,7 +96,7 @@
                         {
                             <iiif-thumb
                                 customer-url-part="@Model.Customer"
-                                space-url-part="@Model.Space"
+                                space-url-part="@Model.SpaceId"
                                 api-image="@image"
                                 class="iiifpreview"
                                 settings="@Model.DlcsSettings"
@@ -96,9 +104,8 @@
                         }
                     </td>
                     <td>@image.Number1</td>
-                    <td>
-                        <a asp-page="/Images/Index"
-                           asp-route-space="@Model.Space"
+                    <td><a asp-page="/Images/Index"
+                           asp-route-space="@Model.SpaceId"
                            asp-route-image="@image.GetLastPathElement()">@image.GetLastPathElement()</a></td>
                     <td>@image.Created</td>
                     @if (Model.SpacePageModel.IsManifestSpace)
@@ -191,7 +198,7 @@
 
             // Make sure that there is no progress bar, etc...
             window.pDropZone.emit("complete", mockFile);
-            fetch('/dropzone/@Model.Customer/@Model.Space/external', {
+            fetch('/dropzone/@Model.Customer/@Model.SpaceId/external', {
               method: 'POST',
               credentials: 'same-origin',
               headers: {'Content-Type': 'application/json'},
