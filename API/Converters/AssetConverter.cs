@@ -75,17 +75,39 @@ namespace API.Converters
             return image;
         }
 
-        public static Asset ToDlcsModel(this Image hydraImage)
+        public static Asset ToDlcsModel(this Image hydraImage, int customerId, int? spaceId = null)
         {
+            if (customerId <= 0)
+            {
+                throw new APIException("Caller must assert which customer this Asset belongs to.");
+            }
+            
+            hydraImage.CustomerId = customerId;
+
+            if (hydraImage.Space > 0 && spaceId.HasValue && spaceId.Value != hydraImage.Space)
+            {
+                throw new APIException("Asserted space does not agree with supplied space.");
+            }
+            if (hydraImage.Space <= 0)
+            {
+                if (spaceId.HasValue)
+                {
+                    hydraImage.Space = spaceId.Value;
+                }
+                else
+                {
+                    throw new APIException("No Space provided for this Asset.");
+                }
+            }
             string? modelId = hydraImage.ModelId;
-            if (!modelId.HasText())
+            if (!modelId.HasText() && hydraImage.Id.HasText())
             {
                 modelId = hydraImage.Id.GetLastPathElement();
             }
 
             if (!modelId.HasText())
             {
-                throw new APIException("Hydra Image does not have a ModelId");
+                throw new APIException("Hydra Image does not have a ModelId, and no ModelId could be inferred.");
             }
             
             // This is a silent test for backwards compatibility with Deliverator.
@@ -97,14 +119,34 @@ namespace API.Converters
                 modelId = modelId.Substring(testPrefix.Length);
             }
 
-            var assetId = new AssetId(hydraImage.CustomerId, hydraImage.Space, modelId);
+            var assetId = new AssetId(hydraImage.CustomerId, hydraImage.Space, modelId).ToString();
+            if (hydraImage.Id.HasText())
+            {
+                var idParts = hydraImage.Id.Split("/");
+                if (idParts.Length < 6)
+                {
+                    throw new APIException("Caller supplied an ID that is in the correct form");
+                }
+                idParts = idParts[^6..];
+                if (idParts[0] != "customers" || idParts[2] != "spaces" || idParts[4] != "images")
+                {
+                    throw new APIException("Caller supplied an ID that is in the correct form");
+                }
+                var assetIdFromHydraId = $"{idParts[1]}/{idParts[3]}/{idParts[5]}";
+                if (assetIdFromHydraId != assetId)
+                {
+                    throw new APIException("Caller supplied an ID that is not supported by the request URL");
+                }
+                // it's OK if the caller didn't explicitly provide an Id in the JSON body
+            }
             var asset = new Asset
             {
-                Id = assetId.ToString(),
+                Id = assetId,
                 Customer = hydraImage.CustomerId,
                 Space = hydraImage.Space
             };
             
+            // This conversion should not be supported?
             if (hydraImage.Batch != null)
             {
                 asset.Batch = hydraImage.Batch.GetLastPathElementAsInt()!.Value;
@@ -112,7 +154,7 @@ namespace API.Converters
 
             if (hydraImage.Created != null)
             {
-                asset.Created = hydraImage.Created.Value;
+                asset.Created = hydraImage.Created.Value.ToUniversalTime();
             }
 
             if (hydraImage.Duration != null)

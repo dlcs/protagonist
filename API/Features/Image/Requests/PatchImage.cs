@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
-using DLCS.Repository;
 using MediatR;
 
 namespace API.Features.Image.Requests

@@ -138,12 +138,6 @@ public class ImageController : HydraController
         // Should there be a size limit on how many assets can be patched in a single go?
         if (images.Members is { Length: > 0 })
         {
-            if (images.Members.Any(image => image.CustomerId != customerId))
-            {
-                return HydraProblem(
-                    "At least one supplied image does not have the correct customer Id", 
-                    null, 400, "Wrong customer", null);
-                ;               }
             // Is it OK if a patched image has a different space? 
             // Yes, I think this is OK, it's a Move operation.
                 
@@ -162,7 +156,7 @@ public class ImageController : HydraController
                 {
                     // Here a Hydra object is being passed into the MediatR layer.
                     // Should it get converted to a DLCS Model Asset first?
-                    var dbAsset = hydraImage.ToDlcsModel();
+                    var dbAsset = hydraImage.ToDlcsModel(customerId);
                     var request = new PatchImage(customerId, spaceId, dbAsset);
                     var patched = await mediator.Send(request);
                     patchedAssets.Add(patched);
@@ -224,7 +218,7 @@ public class ImageController : HydraController
         // DELIVERATOR: https://github.com/digirati-co-uk/deliverator/blob/master/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L74
             
         var assetId = new AssetId(customerId, spaceId, imageId);
-        var putAsset = hydraAsset.ToDlcsModel();
+        var putAsset = hydraAsset.ToDlcsModel(customerId, spaceId);
         putAsset.Id = assetId.ToString();
             
         // It has to have that ID! That's where it's being put, regardless of the incoming Hydra object's Id.

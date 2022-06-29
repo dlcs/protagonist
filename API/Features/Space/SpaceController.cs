@@ -116,7 +116,7 @@ namespace API.Features.Space
         
         [HttpPatch]
         [Route("{spaceId}")]
-        public async Task<DLCS.HydraModel.Space> Patch(
+        public async Task<IActionResult> Patch(
             int customerId, int spaceId, [FromBody] DLCS.HydraModel.Space space)
         {
             var baseUrl = Request.GetBaseUrl();
@@ -130,8 +130,17 @@ namespace API.Features.Space
                 Roles = space.DefaultRoles
             };
             
-            var dbSpace = await mediator.Send(patchSpace);
-            return dbSpace.ToHydra(baseUrl);
+            var result = await mediator.Send(patchSpace);
+            if (!result.ErrorMessages.Any() && result.Space != null)
+            {
+                return Ok(result.Space.ToHydra(baseUrl));
+            }
+            
+            if (result.Conflict)
+            {
+                return HydraProblem(result.ErrorMessages, null, 409, "Space name taken", null);
+            }
+            return HydraProblem(result.ErrorMessages, null, 500, "Cannot patch space", null);
         }
         
         

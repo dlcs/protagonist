@@ -12,21 +12,17 @@ namespace DLCS.Repository.Storage
 {
     public class DapperCustomerStorageRepository : DapperRepository, IStorageRepository
     {
-        // This repository uses both Dapper and EF...
-        private readonly DlcsContext dlcsContext;
         private readonly CacheSettings cacheSettings;
         private readonly IAppCache appCache;
         private readonly ILogger<DapperCustomerStorageRepository> logger;
         private static readonly StoragePolicy NullStoragePolicy = new() { Id = "__nullstoragepolicy__" };
         
         public DapperCustomerStorageRepository(
-            DlcsContext dlcsContext,
             IConfiguration configuration, 
             IAppCache appCache,
             IOptions<CacheSettings> cacheOptions,
             ILogger<DapperCustomerStorageRepository> logger) : base(configuration)
         {
-            this.dlcsContext = dlcsContext;
             this.appCache = appCache;
             this.logger = logger;
             cacheSettings = cacheOptions.Value;

@@ -300,6 +300,24 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Patch_Space_Prevents_Name_Conflict()
+    {
+        int? customerId = await EnsureCustomerForSpaceTests("Patch_Space_Prevents_Name_Conflict");
+        await dbContext.Spaces.AddTestSpace(customerId.Value, 1, "Patch Space Name 1");
+        await dbContext.Spaces.AddTestSpace(customerId.Value, 2, "Patch Space Name 2");
+        await dbContext.SaveChangesAsync();
+        
+        const string patchJson = @"{
+""@type"": ""Space"",
+""name"": ""Patch Space Name 2""
+}";
+        var patchContent = new StringContent(patchJson, Encoding.UTF8, "application/json");
+        var patchUrl = $"/customers/{customerId}/spaces/1";
+        var patchResponse = await httpClient.AsCustomer(customerId.Value).PatchAsync(patchUrl, patchContent);
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+    
+    [Fact]
     public async Task Patch_Space_Leaves_Omitted_Fields_Intact()
     {
         // arrange
