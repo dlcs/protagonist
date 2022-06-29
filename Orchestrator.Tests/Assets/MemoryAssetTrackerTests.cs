@@ -49,8 +49,8 @@ namespace Orchestrator.Tests.Assets
 
         [Theory]
         [InlineData(AssetFamily.Image, typeof(OrchestrationImage))]
-        //[InlineData('T', typeof(OrchestrationAsset))]
-        //[InlineData('F', typeof(OrchestrationFile))]
+        [InlineData(AssetFamily.Timebased, typeof(OrchestrationAsset))]
+        [InlineData(AssetFamily.File, typeof(OrchestrationFile))]
         public async Task GetOrchestrationAsset_ReturnsCorrectType(AssetFamily family, Type expectedType)
         {
             // Arrange
@@ -116,7 +116,10 @@ namespace Orchestrator.Tests.Assets
             // Arrange
             var assetId = new AssetId(1, 1, "go!");
             var sizes = new List<int[]> { new[] { 100, 200 } };
-            A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset { Family = AssetFamily.Image });
+            A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+            {
+                Family = AssetFamily.Image, Height = 10, Width = 50, MaxUnauthorised = -1
+            });
             A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
 
             // Act
@@ -124,6 +127,9 @@ namespace Orchestrator.Tests.Assets
             
             // Assert
             result.AssetId.Should().Be(assetId);
+            result.Height.Should().Be(10);
+            result.Width.Should().Be(50);
+            result.MaxUnauthorised.Should().Be(-1);
             result.OpenThumbs.Should().BeEquivalentTo(sizes);
         }
         
@@ -141,6 +147,15 @@ namespace Orchestrator.Tests.Assets
             
             // Assert
             result.Should().BeNull();
+        }
+
+        public async Task GetOrchestrationAsset_SetsRequiresAuthCorrectly()
+        {
+            var open = new AssetId(1, 1, "open");
+            var noRoles = new AssetId(1, 1, "noRoles");
+            var noMax = new AssetId(1, 1, "noMax");
+            var noneVisible = new AssetId(1, 1, "noneVisible");
+            var someVisible = new AssetId(1, 1, "someVisible");
         }
     }
 }
