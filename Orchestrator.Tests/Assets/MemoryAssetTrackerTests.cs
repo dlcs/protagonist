@@ -149,13 +149,25 @@ namespace Orchestrator.Tests.Assets
             result.Should().BeNull();
         }
 
-        public async Task GetOrchestrationAsset_SetsRequiresAuthCorrectly()
+        [Theory]
+        [InlineData("", 10, false)]
+        [InlineData("role", -1, false)]
+        [InlineData("role", 0, true)]
+        [InlineData("role", 10, true)]
+        public async Task GetOrchestrationAsset_SetsRequiresAuthCorrectly(string roles, int maxUnauth, bool requiresAuth)
         {
-            var open = new AssetId(1, 1, "open");
-            var noRoles = new AssetId(1, 1, "noRoles");
-            var noMax = new AssetId(1, 1, "noMax");
-            var noneVisible = new AssetId(1, 1, "noneVisible");
-            var someVisible = new AssetId(1, 1, "someVisible");
+            // Arrange
+            var assetId = new AssetId(1, 1, "go!");
+            A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+            {
+                Family = AssetFamily.Image, MaxUnauthorised = maxUnauth, Roles = roles
+            });
+            
+            // Act
+            var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
+            
+            // Assert
+            result.RequiresAuth.Should().Be(requiresAuth);
         }
     }
 }
