@@ -62,8 +62,12 @@ namespace API.Features.Image.Requests
         {
             var putAsset = request.Asset;
 
+            // Need to set defaults (see convo with Donald) before we get to the DB
+            // And then have subsequent tests for null PUTs not breaking defaults.
+            // if not an existing asset, should set defaults from BEAST.
+            
             // temporary happy path just for images
-            if (putAsset.Family != AssetFamily.Image)
+            if (putAsset.Family > 0 && putAsset.Family != AssetFamily.Image)
             {
                 return new PutImageResult
                 {
@@ -118,6 +122,16 @@ namespace API.Features.Image.Requests
                 {
                     StatusCode = HttpStatusCode.InternalServerError,
                     Message = e.Message
+                };
+            }
+
+            // Prevent PUT upserts of non-images for now, too.
+            if (existingAsset != null && existingAsset.Family != AssetFamily.Image)
+            {
+                return new PutImageResult
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    Message = "Just images for the moment!!!"
                 };
             }
 

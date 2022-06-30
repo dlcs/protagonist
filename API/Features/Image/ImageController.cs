@@ -95,32 +95,47 @@ public class ImageController : HydraController
         
         
         
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="spaceId"></param>
+    /// <param name="page"></param>
+    /// <param name="pageSize"></param>
+    /// <param name="orderBy"></param>
+    /// <param name="orderByDescending"></param>
+    /// <returns></returns>
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
-    public async Task<HydraCollection<DLCS.HydraModel.Image>> Images(
+    [ProducesResponseType(404, Type = typeof(Error))]
+    public async Task<IActionResult> Images(
         int customerId, int spaceId,
         int? page = 1, int? pageSize = -1,
         string? orderBy = null, string? orderByDescending = null)
     {
-        if (pageSize < 0) pageSize = settings.PageSize;
-        if (page < 0) page = 1;
-        bool ascending = string.IsNullOrWhiteSpace(orderByDescending);
+        if (pageSize is null or < 0) pageSize = settings.PageSize;
+        if (page is null or < 0) page = 1;
+        var ascending = string.IsNullOrWhiteSpace(orderByDescending);
         if (!ascending) orderBy = orderByDescending;
         var imagesRequest = new GetSpaceImages(ascending, page.Value, pageSize.Value, spaceId, customerId, orderBy);
-        var pageOfAssets = await mediator.Send(imagesRequest);
-            
+        var spaceImagesResult = await mediator.Send(imagesRequest);
+        if (!spaceImagesResult.SpaceExistsForCustomer || spaceImagesResult.PageOfAssets == null)
+        {
+            return HydraNotFound(spaceImagesResult.Errors?[0]);
+        }
         var baseUrl = Request.GetBaseUrl();
         var resourceRoot = settings.DLCS.ResourceRoot.ToString();
         var collection = new HydraCollection<DLCS.HydraModel.Image>
         {
             WithContext = true,
-            Members = pageOfAssets.Assets.Select(a => a.ToHydra(baseUrl, resourceRoot)).ToArray(),
-            TotalItems = pageOfAssets.Total,
+            Members = spaceImagesResult.PageOfAssets.Assets
+                .Select(a => a.ToHydra(baseUrl, resourceRoot)).ToArray(),
+            TotalItems = spaceImagesResult.PageOfAssets.Total,
             PageSize = pageSize,
             Id = Request.GetJsonLdId()
         };
         PartialCollectionView.AddPaging(collection, page.Value, pageSize.Value);
-        return collection;
+        return Ok(collection);
     }
 
 
@@ -218,18 +233,9 @@ public class ImageController : HydraController
         // DELIVERATOR: https://github.com/digirati-co-uk/deliverator/blob/master/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L74
             
         var assetId = new AssetId(customerId, spaceId, imageId);
-        var putAsset = hydraAsset.ToDlcsModel(customerId, spaceId);
+        var putAsset = hydraAsset.ToDlcsModel(customerId, spaceId, imageId);
         putAsset.Id = assetId.ToString();
             
-        // It has to have that ID! That's where it's being put, regardless of the incoming Hydra object's Id.
-        // Shall we validate that the incoming object is the same ID?
-        // We could omit the following check, just override it/allow it to be missing:
-        if (hydraAsset.Id == null || !hydraAsset.Id.EndsWith(putAsset.Id))
-        {
-            throw new BadRequestException(
-                $"Incoming asset Id '{hydraAsset.Id}' does not match PUT URL '{Request.GetDisplayUrl()}'");
-        }
-
         var request = new PutImage(putAsset);
         var putImageResult = await mediator.Send(request);
         if (putImageResult.Asset != null && putImageResult.StatusCode is HttpStatusCode.OK or HttpStatusCode.Created)

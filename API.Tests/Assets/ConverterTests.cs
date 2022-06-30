@@ -61,6 +61,18 @@ public class ConverterTests
         Action action = () => hydraImage.ToDlcsModel(1, 98);
         action.Should().Throw<APIException>();
     }
+
+    [Fact]
+    public void All_Id_Parts_Can_be_Provided()
+    {
+        // This is for a scenario where customer, space and modelId can all be obtained from the path,
+        // e.g., a PUT operation
+        var hydraImage = new Image();
+        var asset = hydraImage.ToDlcsModel(99, 55, "model-id");
+        asset.Customer.Should().Be(99);
+        asset.Space.Should().Be(55);
+        asset.Id.Should().Be("99/55/model-id");
+    }
     
     // Now do Model -> Hydra tests
 

@@ -5,6 +5,7 @@ using System.Security.Claims;
 using Amazon.S3;
 using API.Client;
 using DLCS.AWS.S3;
+using DLCS.AWS.Settings;
 using DLCS.Core.Encryption;
 using DLCS.Core.Settings;
 using DLCS.Mediatr.Behaviours;
@@ -39,6 +40,7 @@ namespace Portal
         {
             services.Configure<PortalSettings>(configuration.GetSection("Portal"));
             services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
+            services.Configure<AWSSettings>(configuration.GetSection("AWS"));
             services.Configure<ApiClientSettings>(configuration.GetSection("API"));
             var dlcsSettings = configuration.GetSection("DLCS").Get<DlcsSettings>();
             

@@ -61,9 +61,15 @@ namespace DLCS.Repository.Assets
             dlcsContext.Remove(entry);
         }
 
-        public async Task<PageOfAssets> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize, 
+        public async Task<PageOfAssets?> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize, 
             string orderBy, bool ascending, CancellationToken cancellationToken)
         {
+            var space = await dlcsContext.Spaces.SingleOrDefaultAsync(
+                s => s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
+            if (space == null)
+            {
+                return null;
+            }
             var result = new PageOfAssets
             {
                 Page = page,

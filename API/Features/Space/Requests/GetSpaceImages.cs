@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace API.Features.Space.Requests
 {
-    public class GetSpaceImages : IRequest<PageOfAssets>
+    public class GetSpaceImages : IRequest<GetSpaceImagesResult>
     {
         public GetSpaceImages(bool ascending, int page, int pageSize, int spaceId, int? customerId = null, string? orderBy = null)
         {
@@ -28,7 +29,14 @@ namespace API.Features.Space.Requests
         public bool Ascending { get; }
     }
 
-    public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, PageOfAssets>
+    public class GetSpaceImagesResult
+    {
+        public PageOfAssets? PageOfAssets { get; set; }
+        public List<string>? Errors { get; set; }
+        public bool SpaceExistsForCustomer { get; set; }
+    }
+
+    public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, GetSpaceImagesResult>
     {
         private readonly IAssetRepository assetRepository;
         private readonly ClaimsPrincipal principal;
@@ -44,7 +52,7 @@ namespace API.Features.Space.Requests
             this.logger = logger;
         }
         
-        public async Task<PageOfAssets> Handle(GetSpaceImages request, CancellationToken cancellationToken)
+        public async Task<GetSpaceImagesResult> Handle(GetSpaceImages request, CancellationToken cancellationToken)
         {
             int? customerId = request.CustomerId ?? principal.GetCustomerId();
             if (customerId == null)
@@ -52,12 +60,26 @@ namespace API.Features.Space.Requests
                 throw new BadRequestException("No customer Id supplied");
             }
             
-            var result = await assetRepository.GetPageOfAssets(
+            var pageOfAssets = await assetRepository.GetPageOfAssets(
                 customerId.Value, request.SpaceId,
                 request.Page, request.PageSize,
                 request.OrderBy, request.Ascending,
                 cancellationToken);
-            return result;
+
+            if (pageOfAssets == null)
+            {
+                return new GetSpaceImagesResult
+                {
+                    Errors = new List<string>() { "Space not found" },
+                    SpaceExistsForCustomer = false
+                };
+            }
+
+            return new GetSpaceImagesResult
+            {
+                PageOfAssets = pageOfAssets,
+                SpaceExistsForCustomer = true
+            };
         }
     }
 }

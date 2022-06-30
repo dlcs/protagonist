@@ -70,7 +70,7 @@ namespace Portal.Features.Images.Requests
                 return null;
             }
             
-            var asset = await CreateJsonBody(objectInBucket, request);
+            var asset = CreateJsonBody(objectInBucket, request);
             var ingestResponse = await dlcsClient.DirectIngestImage(request.SpaceId, request.ImageId, asset);
             return ingestResponse;
         }
@@ -79,7 +79,7 @@ namespace Portal.Features.Images.Requests
             => new RegionalisedObjectInBucket(awsSettings.S3.OriginBucket,
                 $"{claimsPrincipal.GetCustomerId()}/{request.SpaceId}/{request.ImageId}", awsSettings.Region);
 
-        private async Task<Image> CreateJsonBody(RegionalisedObjectInBucket objectInBucket, IngestSingleImage request)
+        private Image CreateJsonBody(RegionalisedObjectInBucket objectInBucket, IngestSingleImage request)
         {
             return new Image
             {

@@ -75,7 +75,7 @@ namespace API.Converters
             return image;
         }
 
-        public static Asset ToDlcsModel(this Image hydraImage, int customerId, int? spaceId = null)
+        public static Asset ToDlcsModel(this Image hydraImage, int customerId, int? spaceId = null, string? modelId = null)
         {
             if (customerId <= 0)
             {
@@ -99,8 +99,12 @@ namespace API.Converters
                     throw new APIException("No Space provided for this Asset.");
                 }
             }
-            string? modelId = hydraImage.ModelId;
-            if (!modelId.HasText() && hydraImage.Id.HasText())
+
+            if (modelId.IsNullOrEmpty())
+            {
+                modelId = hydraImage.ModelId;
+            }
+            if (modelId.IsNullOrEmpty() && hydraImage.Id.HasText())
             {
                 modelId = hydraImage.Id.GetLastPathElement();
             }
