@@ -36,7 +36,8 @@ namespace Test.Helpers.Integration
                 Width = width, Height = height, Roles = roles, Family = family, MediaType = mediaType,
                 ThumbnailPolicy = "default", MaxUnauthorised = maxUnauthorised, Reference1 = ref1,
                 Reference2 = ref2, Reference3 = ref3, NumberReference1 = num1, NumberReference2 = num2,
-                NumberReference3 = num3
+                NumberReference3 = num3, Tags = "", PreservedUri = "", Error = "", ImageOptimisationPolicy = "",
+                Batch = 0, Ingesting = false
             });
 
         public static ValueTask<EntityEntry<AuthToken>> AddTestToken(this DbSet<AuthToken> authTokens,

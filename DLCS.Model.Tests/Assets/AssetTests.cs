@@ -52,5 +52,38 @@ namespace DLCS.Model.Tests.Assets
             // Assert
             asset.GetUniqueName().Should().Be(expected);
         }
+
+        [Fact]
+        public void Roles_Convert_To_List()
+        {
+            var asset = new Asset { Roles = "a,b,c" };
+            var expected = new[] { "a", "b", "c" };
+            asset.RolesList.Should().BeEquivalentTo(expected);
+        }
+        
+        [Fact]
+        public void Roles_Convert_From_List()
+        {
+            var asset = new Asset { RolesList = new[] { "a", "b", "c" } };
+            var expected = "a,b,c";
+            asset.Roles.Should().Be(expected);
+        }
+        
+        [Fact]
+        public void Tags_Convert_To_List()
+        {
+            var asset = new Asset { Tags = "a,b,c" };
+            var expected = new[] { "a", "b", "c" };
+            asset.TagsList.Should().BeEquivalentTo(expected);
+        }
+        
+        
+        [Fact]
+        public void Tags_Convert_From_List()
+        {
+            var asset = new Asset { TagsList = new[] { "a", "b", "c" } };
+            var expected = "a,b,c";
+            asset.Tags.Should().Be(expected);
+        }
     }
 }

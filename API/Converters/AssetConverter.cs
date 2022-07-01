@@ -49,7 +49,7 @@ namespace API.Converters
                 Finished = dbAsset.Finished,
                 Ingesting = dbAsset.Ingesting,
                 Error = dbAsset.Error,
-                Tags = dbAsset.Tags.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray(), // TODO - add a hasconversion?,
+                Tags = dbAsset.TagsList.ToArray(),
                 String1 = dbAsset.Reference1,
                 String2 = dbAsset.Reference2,
                 String3 = dbAsset.Reference3,
@@ -63,9 +63,7 @@ namespace API.Converters
                 Family = (AssetFamily)dbAsset.Family,
                 // Text (to replace with https://github.com/dlcs/protagonist/issues/148)
                 // TextType
-                Roles = dbAsset.Roles.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray(), // TODO - add a hasconversion?,
-                
-                
+                Roles = dbAsset.RolesList.ToArray()
             };
             if (dbAsset.Batch > 0)
             {
@@ -75,6 +73,21 @@ namespace API.Converters
             return image;
         }
 
+        /// <summary>
+        /// This will create a DLCS.Model.Assets.Asset with the correct Id, Customer and Space.
+        /// It will still have null fields, if the incoming Hydra object doesn't supply them.
+        ///
+        /// So it's not yet ready to be inserted or updated in the DB; it needs further
+        /// validation and default settings applied.
+        /// </summary>
+        /// <param name="hydraImage">The incoming request</param>
+        /// <param name="customerId">Required: an assertion of who this Asset belongs to</param>
+        /// <param name="spaceId">Optional: an assertion of the Space it's in. If not supplied will be determined from Hydra object.</param>
+        /// <param name="modelId">
+        /// Optional: an assertion of the Model id component of the Id, as in `customer/space/modelId`.
+        /// If not supplied, will be determined from Hydra object.</param>
+        /// <returns>The partially populated Asset</returns>
+        /// <exception cref="APIException"></exception>
         public static Asset ToDlcsModel(this Image hydraImage, int customerId, int? spaceId = null, string? modelId = null)
         {
             if (customerId <= 0)
@@ -129,19 +142,21 @@ namespace API.Converters
                 var idParts = hydraImage.Id.Split("/");
                 if (idParts.Length < 6)
                 {
-                    throw new APIException("Caller supplied an ID that is in the correct form");
+                    throw new APIException("Caller supplied an ID that is not in the correct form");
                 }
                 idParts = idParts[^6..];
                 if (idParts[0] != "customers" || idParts[2] != "spaces" || idParts[4] != "images")
                 {
-                    throw new APIException("Caller supplied an ID that is in the correct form");
+                    throw new APIException("Caller supplied an ID that is not in the correct form");
                 }
                 var assetIdFromHydraId = $"{idParts[1]}/{idParts[3]}/{idParts[5]}";
                 if (assetIdFromHydraId != assetId)
                 {
                     throw new APIException("Caller supplied an ID that is not supported by the request URL");
                 }
-                // it's OK if the caller didn't explicitly provide an Id in the JSON body
+                // it's OK if the caller didn't explicitly provide an Id in the JSON body - but it's an error
+                // if they supply one that disagrees with the assertions provided in the method call.
+                // e.g., used for PUT to a URL, the route params are passed to this method.
             }
             var asset = new Asset
             {
@@ -228,11 +243,11 @@ namespace API.Converters
 
             if (hydraImage.Roles != null)
             {
-                asset.Roles = string.Join(",", hydraImage.Roles);
+                asset.RolesList = hydraImage.Roles;
             }
             if (hydraImage.Tags != null)
             {
-                asset.Tags = string.Join(",", hydraImage.Tags);
+                asset.TagsList = hydraImage.Tags;
             }
 
             if (hydraImage.MaxUnauthorised != null)
@@ -257,12 +272,15 @@ namespace API.Converters
                 asset.ImageOptimisationPolicy = imageOptimisationPolicy;
             }
             
-            // Not patchable?
+            // Not patchable? Does Engine set this?
             // if (hydraImage.InitialOrigin != null)
             // {
             //     asset.InitialOrigin = hydraImage.InitialOrigin;
             // }
 
+            // We now have an asset that likely has many null fields.
+            // It's not safe to insert this into the database as-is, subsequent users will need to
+            // ensure that default values are set for INSERTs and UPDATEs.
             return asset;
         }
         

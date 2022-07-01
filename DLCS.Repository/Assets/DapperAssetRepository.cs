@@ -37,15 +37,25 @@ namespace DLCS.Repository.Assets
             this.logger = logger;
             cacheSettings = cacheOptions.Value;
         }
-
-        public async Task<Asset?> GetAsset(string id)
+        
+        public Task<Asset?> GetAsset(string id)
         {
-            var asset = await GetAssetInternal(id);
-            return asset.Id == NullAsset.Id ? null : asset;
+            return GetAsset(id, false);
         }
 
         public Task<Asset?> GetAsset(AssetId id)
-            => GetAsset(id.ToString());
+        {
+            return GetAsset(id, false);
+        }
+        
+        public async Task<Asset?> GetAsset(string id, bool noCache)
+        {
+            var asset = await GetAssetInternal(id, noCache);
+            return asset.Id == NullAsset.Id ? null : asset;
+        }
+
+        public Task<Asset?> GetAsset(AssetId id, bool noCache)
+            => GetAsset(id.ToString(), noCache);
 
         public async Task<ImageLocation> GetImageLocation(AssetId assetId)
         {
@@ -88,22 +98,48 @@ namespace DLCS.Repository.Assets
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="putAsset"></param>
+        /// <param name="putAsset">
+        /// An Asset that is ready to be inserted/updated in the DB, that
+        /// has usually come from an incoming
+        /// </param>
         /// <param name="cancellationToken"></param>
         /// <param name="operation">TEMPORARY</param>
         public async Task Put(Asset putAsset, CancellationToken cancellationToken, string operation)
         {
-            // putAsset has not been obtained from a DB context.
+            // Consider that this may be used for an already-tracked entity, or more likely, one that's
+            // been constructed from API calls and therefore not tracked.
+            if (dlcsContext.Images.Local.Any(asset => asset.Id == putAsset.Id))
+            {
+                // asset with this ID is already being tracked
+                if (dlcsContext.Entry(putAsset).State == EntityState.Detached)
+                {
+                    // but it ain't this instance!
+                    // what do we do? EF will throw an exception if we try to save this. 
+                    throw new InvalidOperationException("There is already an Asset with this ID being tracked");
+                }
+                // As it's already tracked, we don't need to do anything here.
+            }
+            else
+            {
+                var existing = await dlcsContext.Images.FindAsync(new object[] { putAsset.Id }, cancellationToken);
+                if (existing == null)
+                {
+                    await dlcsContext.Images.AddAsync(putAsset, cancellationToken);
+                }
+                else
+                {
+                    dlcsContext.Images.Update(putAsset);
+                }
+            }
+        
+            
+            
+            
+            
+            
             // TODO: what does this have in common with Patch?
             // Business logic has already happened in the Mediatr handler.
             // Whatever you want to put in the database...
-            var dbAsset = await dlcsContext.Images.FindAsync(new object[] { putAsset.Id }, cancellationToken);
-            if (dbAsset == null)
-            {
-                dbAsset = new Asset { Id = putAsset.Id };
-                dlcsContext.Images.Add(dbAsset);
-            }
-            CopyAssetFields(putAsset, dbAsset);
             
             // In deliverator, a PATCH of an asset deletes the image location
             // but a PUT creates a new, blank one.
@@ -133,42 +169,13 @@ namespace DLCS.Repository.Assets
             await dlcsContext.SaveChangesAsync(cancellationToken);
         }
 
-        private static void CopyAssetFields(Asset source, Asset dest)
-        {
-            // https://github.com/digirati-co-uk/deliverator/blob/8e7eb3ea7a839f4caad7b9085b7680a69ae726ca/DLCS.SqlServer/Data/Store/SqlImageStore.cs#L187
-            dest.Customer = source.Customer;
-            dest.Created = source.Created;
-            dest.Origin = source.Origin;
-            dest.PreservedUri = source.PreservedUri;
-            dest.Space = source.Space;
-            dest.Tags = source.Tags;
-            dest.Roles = source.Roles;
-            dest.Reference1 = source.Reference1;
-            dest.Reference2 = source.Reference2;
-            dest.Reference3 = source.Reference3;
-            dest.MaxUnauthorised = source.MaxUnauthorised;
-            dest.NumberReference1 = source.NumberReference1;
-            dest.NumberReference2 = source.NumberReference2;
-            dest.NumberReference3 = source.NumberReference3;
-            dest.Width = source.Width;
-            dest.Height = source.Height;
-            dest.Duration = source.Duration;
-            dest.Error = source.Error;
-            dest.Batch = source.Batch;
-            if (source.Finished != DateTime.MinValue)
-            {
-                dest.Finished = source.Finished;
-            }
-            dest.Ingesting = source.Ingesting;
-            dest.ImageOptimisationPolicy = source.ImageOptimisationPolicy;
-            dest.ThumbnailPolicy = source.ThumbnailPolicy;
-            dest.Family = source.Family;
-            dest.MediaType = source.MediaType;
-        }
-
-        private async Task<Asset> GetAssetInternal(string id)
+        private async Task<Asset> GetAssetInternal(string id, bool noCache = false)
         {
             var key = $"asset:{id}";
+            if (noCache)
+            {
+                appCache.Remove(key);
+            }
             return await appCache.GetOrAddAsync(key, async entry =>
             {
                 logger.LogInformation("Refreshing assetCache from database {Asset}", id);

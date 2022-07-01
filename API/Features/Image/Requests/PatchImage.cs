@@ -37,6 +37,11 @@ namespace API.Features.Image.Requests
 
         public async Task<Asset> Handle(PatchImage request, CancellationToken cancellationToken)
         {
+            // So same as PutImage request; we need to be sure that the incoming asset has been prepared for upsert.
+            
+            
+            
+            
             // Deliverator version throws exception if you try to change customer, space, family.
             // This currently ignores those (not patchable but won't error)
             var patch = request.Asset;

@@ -75,7 +75,7 @@ namespace Thumbs.Reorganising
 
             var maxAvailableThumb = GetMaxAvailableThumb(asset, policy);
 
-            var realSize = new Size(asset.Width, asset.Height);
+            var realSize = new Size(asset.Width.Value, asset.Height.Value);
             var boundingSquares = policy.SizeList.OrderByDescending(i => i).ToList();
 
             var thumbnailSizes = new ThumbnailSizes(boundingSquares.Count);

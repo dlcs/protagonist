@@ -66,7 +66,7 @@ namespace API.Features.Image.Requests
             // And then have subsequent tests for null PUTs not breaking defaults.
             // if not an existing asset, should set defaults from BEAST.
             
-            // temporary happy path just for images
+            // TEMPORARY happy path just for images
             if (putAsset.Family > 0 && putAsset.Family != AssetFamily.Image)
             {
                 return new PutImageResult
@@ -96,7 +96,7 @@ namespace API.Features.Image.Requests
             Asset? existingAsset;
             try
             {
-                existingAsset = await assetRepository.GetAsset(putAsset.Id);
+                existingAsset = await assetRepository.GetAsset(putAsset.Id, noCache:true);
                 if (existingAsset == null)
                 {
                     // LoadCustomerStorageBehaviour - if a new image, CustomerStorageCalculation
@@ -125,7 +125,7 @@ namespace API.Features.Image.Requests
                 };
             }
 
-            // Prevent PUT upserts of non-images for now, too.
+            // TEMPORARY! Prevent PUT upserts of non-images for now, too.
             if (existingAsset != null && existingAsset.Family != AssetFamily.Image)
             {
                 return new PutImageResult
@@ -134,8 +134,17 @@ namespace API.Features.Image.Requests
                     Message = "Just images for the moment!!!"
                 };
             }
-
-            var validationResult = AssetValidator.ValidateImageUpsert(existingAsset, putAsset);
+            
+            // In the deliverator flow, the equivalent of this came after the validation below.
+            // But it seems better to do it before.
+            if (existingAsset == null)
+            {
+                await SelectImageOptimisationPolicy(putAsset);
+                await SelectThumbnailPolicy(putAsset);
+            }
+            
+            var validationResult = AssetPreparer.PrepareAssetForUpsert(
+                existingAsset, putAsset, allowNonApiUpdates:false);
             if (!validationResult.Success)
             {
                 // ValidateImageUpsertBehaviour
@@ -146,11 +155,8 @@ namespace API.Features.Image.Requests
                 };
             }
 
-            if (existingAsset == null)
-            {
-                await SelectImageOptimisationPolicy(putAsset);
-                await SelectThumbnailPolicy(putAsset);
-            }
+            // (SelectImageOptimisationPolicy, SelectThumbnailPolicy was done here)
+
 
             // UpdateImageBehaviour - store in DB
             await assetRepository.Put(putAsset, cancellationToken, "PUT");

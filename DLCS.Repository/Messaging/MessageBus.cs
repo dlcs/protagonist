@@ -151,14 +151,14 @@ namespace DLCS.Repository.Messaging
             writer.WriteValue(asset.Origin);
             writer.WritePropertyName("tags");
             writer.WriteStartArray();
-            foreach (string tag in asset.Tags.Split(','))
+            foreach (string tag in asset.TagsList)
             {
                 writer.WriteValue(tag);
             }
             writer.WriteEndArray();
             writer.WritePropertyName("roles");
             writer.WriteStartArray();
-            foreach (string role in asset.Roles.Split(','))
+            foreach (string role in asset.RolesList)
             {
                 if (!asLinkedData)
                 {

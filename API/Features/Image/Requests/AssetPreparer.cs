@@ -1,0 +1,222 @@
+using System;
+using System.Diagnostics.CodeAnalysis;
+using DLCS.Core.Strings;
+using DLCS.Model.Assets;
+
+namespace API.Features.Image.Requests;
+
+/// <summary>
+/// Conveys whether an attempt to prepare an asset for upsert encountered an invalid state.
+/// </summary>
+public record AssetPreparationResult
+{
+    /// <summary>
+    /// The asset is OK to go to the database
+    /// </summary>
+    public bool Success { get; set; }
+    
+    /// <summary>
+    /// The asset cannot go to the DB for this reason.
+    /// </summary>
+    public string? ErrorMessage { get; set; }
+}
+    
+/// <summary>
+/// Prepares an asset for insert or update operations.
+/// Validates that things aren't being modified that shouldn't be,
+/// and that no null fields remain on the asset being upserted.
+/// </summary>
+public static class AssetPreparer
+{
+    private static readonly Asset DefaultAsset;
+
+    /// <summary>
+    /// This is essentially the logic in 
+    /// https://github.com/digirati-co-uk/deliverator/blob/master/DLCS.Application/Behaviour/API/ValidateImageUpsertBehaviour.cs
+    /// 
+    /// DISCUSS: should this be used for PatchImage too? YES
+    /// </summary>
+    /// <param name="existingAsset">If this is an update, the current version of the asset</param>
+    /// <param name="updateAsset">The new or updated asset</param>
+    /// <param name="allowNonApiUpdates">Permit setting of fields that would not be allowed on API calls</param>
+    /// <returns>A validation result</returns>
+    public static AssetPreparationResult PrepareAssetForUpsert(
+        Asset? existingAsset,
+        Asset updateAsset,
+        bool allowNonApiUpdates)
+    {
+        // This method was called ValidateImageUpsert to match deliverator; now renamed
+
+
+        if (allowNonApiUpdates == false)
+        {
+            // These cannot be created or modified via the API
+            if (updateAsset.Finished.HasValue)
+            {
+                return new AssetPreparationResult { ErrorMessage = "Cannot set Finished timestamp via API." };
+            }
+            if (updateAsset.Error != null)
+            {
+                return new AssetPreparationResult { ErrorMessage = "Cannot set Error state via API." };
+            }
+        }
+        
+        // Do we need this now?
+        if (existingAsset != null)
+        {
+            if (updateAsset.Customer == 0)
+            {
+                updateAsset.Customer = existingAsset.Customer;
+            }
+            if (updateAsset.Space == 0)
+            {
+                updateAsset.Space = existingAsset.Space;
+            }
+        }
+
+        if (updateAsset.Created == null || updateAsset.Created == DateTime.MinValue)
+        {
+            if (existingAsset != null && existingAsset.Created != DateTime.MinValue)
+            {
+                updateAsset.Created = existingAsset.Created;
+            }
+            else
+            {
+                updateAsset.Created = DateTime.UtcNow;
+            }
+        }
+            
+        // TODO:
+        // 1. Deliverator has Image.ReservedIds, but it's { } (empty). So will leave out that check.
+        // 2. Eventually Protagonist will restrict IDs to url-safe paths, but not for now.
+            
+        if (existingAsset != null && allowNonApiUpdates == false)
+        {
+            // Prevent the modification of some fields via API.
+            // They can be set by API at create time, but not afterwards.
+            // TODO: Some of these should be modifiable even if Deliverator says no.
+                
+            // Don't allow dimensions to be edited; setting to 0 does not 
+            // TODO: we could also validate combinations here - w,h | w,h,d | d | <none>
+            if (updateAsset.Width.HasValue && updateAsset.Width != 0 && updateAsset.Width != existingAsset.Width)
+            {
+                return new AssetPreparationResult { ErrorMessage = "Width cannot be edited." };
+            }
+            if (updateAsset.Height.HasValue && updateAsset.Height != 0 && updateAsset.Height != existingAsset.Height)
+            {
+                return new AssetPreparationResult { ErrorMessage = "Height cannot be edited." };
+            }
+            if (updateAsset.Duration.HasValue && updateAsset.Duration != 0 && updateAsset.Duration != existingAsset.Duration)
+            {
+                return new AssetPreparationResult { ErrorMessage = "Duration cannot be edited." };
+            }
+                
+            if (updateAsset.PreservedUri != null && updateAsset.PreservedUri != existingAsset.PreservedUri)
+            {
+                return new AssetPreparationResult { ErrorMessage = "PreservedUri cannot be edited." };
+            }
+            if (updateAsset.Error != null && updateAsset.Error != existingAsset.Error)
+            {
+                return new AssetPreparationResult { ErrorMessage = "Error cannot be edited." };
+            }
+            if (updateAsset.Batch.HasValue && updateAsset.Batch != 0 && updateAsset.Batch != existingAsset.Batch)
+            {
+                return new AssetPreparationResult { ErrorMessage = "Batch cannot be edited." };
+            }
+
+            if (updateAsset.ImageOptimisationPolicy != null && updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
+            {
+                // I think it should be editable though, and doing so should trigger a re-ingest.
+                return new AssetPreparationResult { ErrorMessage = "ImageOptimisationPolicy cannot be edited." };
+            }
+            if (updateAsset.ThumbnailPolicy != null && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
+            {
+                // And this one DEFINITELY should be editable!
+                return new AssetPreparationResult { ErrorMessage = "ThumbnailPolicy cannot be edited." };
+            }
+                
+            if (updateAsset.Family != null && updateAsset.Family != existingAsset.Family)
+            {
+                return new AssetPreparationResult { ErrorMessage = "Family cannot be edited." };
+            }
+        }
+
+        SetNullFieldsToDefaults(existingAsset, updateAsset);
+
+        return new AssetPreparationResult { Success = true };
+    }
+
+    /// <summary>
+    /// Ensure that any unset fields are given their default Asset value.
+    /// </summary>
+    /// <param name="templateAsset"></param>
+    /// <param name="upsertAsset"></param>
+    [SuppressMessage("ReSharper", "NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract")]
+    private static void SetNullFieldsToDefaults(Asset? templateAsset, Asset upsertAsset)
+    {
+        templateAsset ??= DefaultAsset;
+            
+        // set if null
+        upsertAsset.Origin ??= templateAsset.Origin;
+        upsertAsset.Tags ??= templateAsset.Tags;
+        upsertAsset.Roles ??= templateAsset.Roles;
+        upsertAsset.PreservedUri ??= templateAsset.PreservedUri;
+        upsertAsset.Reference1 ??= templateAsset.Reference1;
+        upsertAsset.Reference2 ??= templateAsset.Reference2;
+        upsertAsset.Reference3 ??= templateAsset.Reference3;
+        upsertAsset.Error ??= templateAsset.Error;
+        upsertAsset.ImageOptimisationPolicy ??= templateAsset.ImageOptimisationPolicy;
+        upsertAsset.ThumbnailPolicy ??= templateAsset.ThumbnailPolicy;
+        upsertAsset.InitialOrigin ??= templateAsset.InitialOrigin;
+        upsertAsset.MediaType ??= templateAsset.MediaType;
+        
+        // These were previously non-nullable fields
+        upsertAsset.Created ??= templateAsset.Created;
+        upsertAsset.NumberReference1 ??= templateAsset.NumberReference1;
+        upsertAsset.NumberReference2 ??= templateAsset.NumberReference2;
+        upsertAsset.NumberReference3 ??= templateAsset.NumberReference3;
+        upsertAsset.MaxUnauthorised ??= templateAsset.MaxUnauthorised;
+        upsertAsset.Width ??= templateAsset.Width;
+        upsertAsset.Height ??= templateAsset.Height;
+        upsertAsset.Duration ??= templateAsset.Duration;
+        upsertAsset.Batch ??= templateAsset.Batch;
+        upsertAsset.Finished ??= templateAsset.Finished;
+        upsertAsset.Ingesting ??= templateAsset.Ingesting;
+        upsertAsset.Family ??= templateAsset.Family;
+    }
+
+
+    static AssetPreparer()
+    {
+        DefaultAsset = new Asset
+        {
+            Id = String.Empty,
+            Customer = 0,
+            Space = 0,
+            Created = DateTime.MinValue.ToUniversalTime(),
+            Origin = String.Empty,
+            Tags = String.Empty,
+            Roles = String.Empty,
+            PreservedUri = String.Empty,
+            Reference1 = String.Empty,
+            Reference2 = String.Empty,
+            Reference3 = String.Empty,
+            NumberReference1 = 0,
+            NumberReference2 = 0,
+            NumberReference3 = 0,
+            MaxUnauthorised = 0,
+            Width = 0,
+            Height = 0,
+            Duration = 0,
+            Error = String.Empty,
+            Batch = 0,
+            Finished = null,
+            Ingesting = false,
+            ImageOptimisationPolicy = String.Empty,
+            ThumbnailPolicy = String.Empty,
+            InitialOrigin = String.Empty,
+            Family = AssetFamily.Image,
+            MediaType = "unknown"
+        };
+    }
+}

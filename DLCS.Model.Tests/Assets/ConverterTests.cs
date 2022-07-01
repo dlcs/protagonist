@@ -1,10 +1,11 @@
 using System;
+using API;
 using API.Converters;
 using DLCS.HydraModel;
 using FluentAssertions;
 using Xunit;
 
-namespace API.Tests.Assets;
+namespace DLCS.Model.Tests.Assets;
 
 public class ConverterTests
 {
