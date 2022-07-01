@@ -120,3 +120,8 @@ dotnet run ./Utils/TestData/TestData.csproj
 ```
 
 > Note that the seed data added by `TestData` is insufficient to fully run DLCS and will need expanded as Engine and API are ported.
+
+Migrations are added using:
+```bash
+dotnet ef migrations add "Table gains column" -p DLCS.Repository -s API
+```
