@@ -110,14 +110,14 @@ namespace Orchestrator.Assets
             var key = GetCacheKey(assetId);
             return await appCache.GetOrAddAsync(key, async entry =>
             {
-                logger.LogDebug("Refreshing cache for {AssetId}", assetId);
+                logger.LogTrace("Refreshing cache for {AssetId}", assetId);
                 var orchestrationAsset = await GetOrchestrationAssetFromSource(assetId);
                 if (orchestrationAsset != null)
                 {
                     return orchestrationAsset;
                 }
 
-                logger.LogInformation("Asset {AssetId} not found, caching null object", assetId);
+                logger.LogDebug("Asset {AssetId} not found, caching null object", assetId);
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings .GetTtl(CacheDuration.Short));
                 return NullOrchestrationAsset;
             }, cacheSettings.GetMemoryCacheOptions());
@@ -126,7 +126,9 @@ namespace Orchestrator.Assets
         private async Task<OrchestrationAsset?> GetOrchestrationAssetFromSource(AssetId assetId)
         {
             var asset = await assetRepository.GetAsset(assetId);
-            return asset != null ? await ConvertAssetToTrackedAsset(assetId, asset) : null;
+            return asset == null || asset.NotForDelivery
+                ? null
+                : await ConvertAssetToTrackedAsset(assetId, asset);
         }
 
         private static string GetCacheKey(AssetId assetId) => $"Track:{assetId}";
