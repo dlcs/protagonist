@@ -66,7 +66,8 @@ namespace Orchestrator.Features.Manifests.Requests
         {
             var assetId = request.AssetRequest.GetAssetId();
             var asset = await assetRepository.GetAsset(assetId);
-            if (asset is not { Family: AssetFamily.Image })
+
+            if (asset is not { Family: AssetFamily.Image, NotForDelivery: false })
             {
                 logger.LogDebug("Request iiif-manifest for asset {AssetId} but is not found or not an image", assetId);
                 return DescriptionResourceResponse.Empty;
