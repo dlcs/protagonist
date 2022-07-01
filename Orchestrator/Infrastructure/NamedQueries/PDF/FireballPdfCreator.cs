@@ -55,7 +55,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
 
             try
             {
-                Logger.LogInformation("Creating new pdf document at {PdfS3Key}", pdfKey);
+                Logger.LogDebug("Creating new pdf document at {PdfS3Key}", pdfKey);
                 var playbook = GeneratePlaybook(pdfKey, parsedNamedQuery, assets);
 
                 var fireballResponse = await CallFireball(cancellationToken, playbook, pdfKey);
@@ -92,9 +92,9 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
             foreach (var i in NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery))
             {
                 Logger.LogTrace("Adding PDF page {PdfPage} to {PdfS3Key} for {Image}", pageNumber++, pdfKey, i.Id);
-                if (i.Roles.HasText())
+                if (i.RequiresAuth)
                 {
-                    Logger.LogDebug("Image {Image} on page {PdfPage} of {PdfS3Key} has roles, redacting", i.Id,
+                    Logger.LogDebug("Image {Image} on page {PdfPage} of {PdfS3Key} requires auth, redacting", i.Id,
                         pageNumber++, pdfKey);
                     playbook.Pages.Add(FireballPage.Redacted());
                 }

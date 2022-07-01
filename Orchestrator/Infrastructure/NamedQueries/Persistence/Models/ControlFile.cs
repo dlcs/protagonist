@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace Orchestrator.Infrastructure.NamedQueries.Persistence.Models
@@ -43,6 +44,12 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence.Models
         /// </summary>
         [JsonProperty("sizeBytes")]
         public long SizeBytes { get; set; }
+        
+        /// <summary>
+        /// List of unique roles for all images included in related projection
+        /// </summary>
+        [JsonProperty("roles")]
+        public List<string>? Roles { get; set; }
 
         /// <summary>
         /// Check if this is control file is stale (in process for longer than X secs)
