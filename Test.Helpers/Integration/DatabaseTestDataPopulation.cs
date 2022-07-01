@@ -29,14 +29,15 @@ namespace Test.Helpers.Integration
             string ref3 = "",
             int num1 = 0,
             int num2 = 0,
-            int num3 = 0)
+            int num3 = 0,
+            bool notForDelivery = false)
             => assets.AddAsync(new Asset
             {
                 Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
                 Width = width, Height = height, Roles = roles, Family = family, MediaType = mediaType,
                 ThumbnailPolicy = "default", MaxUnauthorised = maxUnauthorised, Reference1 = ref1,
                 Reference2 = ref2, Reference3 = ref3, NumberReference1 = num1, NumberReference2 = num2,
-                NumberReference3 = num3
+                NumberReference3 = num3, NotForDelivery = notForDelivery
             });
 
         public static ValueTask<EntityEntry<AuthToken>> AddTestToken(this DbSet<AuthToken> authTokens,
