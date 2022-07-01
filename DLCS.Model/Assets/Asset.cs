@@ -23,8 +23,11 @@ namespace DLCS.Model.Assets
         public int NumberReference1 { get; set; }
         public int NumberReference2 { get; set; }
         public int NumberReference3 { get; set; }
-        
-        // -1 = null (all open), 0 = no allowed size without being auth
+
+        /// <summary>
+        /// The maximum size of longest dimension that is viewable by unauthorised users.
+        /// -1 = null (all open), 0 = no allowed size without being auth 
+        /// </summary>
         public int MaxUnauthorised { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
