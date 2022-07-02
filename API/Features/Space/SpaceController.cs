@@ -19,16 +19,14 @@ namespace API.Features.Space
     public class SpaceController : HydraController
     {
         private readonly IMediator mediator;
-        private readonly ApiSettings settings;
         private readonly ILogger<SpaceController> logger;
 
         public SpaceController(
             IMediator mediator,
             IOptions<ApiSettings> options,
-            ILogger<SpaceController> logger)
+            ILogger<SpaceController> logger) : base(options.Value)
         {
             this.mediator = mediator;
-            settings = options.Value;
             this.logger = logger;
         }
         
@@ -38,9 +36,9 @@ namespace API.Features.Space
             int customerId, int? page = 1, int? pageSize = -1, 
             string? orderBy = null, bool ascending = true)
         {
-            if (pageSize < 0) pageSize = settings.PageSize;
+            if (pageSize < 0) pageSize = Settings.PageSize;
             if (page < 0) page = 1;
-            var baseUrl = Request.GetBaseUrl();
+            var baseUrl = getUrlRoots().BaseUrl;
             var pageOfSpaces = await mediator.Send(new GetPageOfSpaces(
                 page.Value, pageSize.Value, customerId, orderBy, ascending));
             
@@ -87,7 +85,7 @@ namespace API.Features.Space
             try
             {
                 var newDbSpace = await mediator.Send(command);
-                var newApiSpace = newDbSpace.ToHydra(Request.GetBaseUrl());
+                var newApiSpace = newDbSpace.ToHydra(getUrlRoots().BaseUrl);
                 return Created(newApiSpace.Id, newApiSpace);
             }
             catch (BadRequestException badRequestException)
@@ -104,11 +102,10 @@ namespace API.Features.Space
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Index(int customerId, int spaceId)
         {
-            var baseUrl = Request.GetBaseUrl();
             var dbSpace = await mediator.Send(new GetSpace(customerId, spaceId));
             if (dbSpace != null)
             {
-                return Ok(dbSpace.ToHydra(baseUrl));
+                return Ok(dbSpace.ToHydra(getUrlRoots().BaseUrl));
             }
 
             return NotFound();
@@ -119,7 +116,6 @@ namespace API.Features.Space
         public async Task<IActionResult> Patch(
             int customerId, int spaceId, [FromBody] DLCS.HydraModel.Space space)
         {
-            var baseUrl = Request.GetBaseUrl();
             var patchSpace = new PatchSpace
             {
                 CustomerId = customerId,
@@ -133,7 +129,7 @@ namespace API.Features.Space
             var result = await mediator.Send(patchSpace);
             if (!result.ErrorMessages.Any() && result.Space != null)
             {
-                return Ok(result.Space.ToHydra(baseUrl));
+                return Ok(result.Space.ToHydra(getUrlRoots().BaseUrl));
             }
             
             if (result.Conflict)

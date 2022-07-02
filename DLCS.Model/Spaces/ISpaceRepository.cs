@@ -8,6 +8,7 @@ namespace DLCS.Model.Spaces
         Task<int?> GetImageCountForSpace(int customerId, int spaceId);
 
         Task<Space?> GetSpace(int customerId, int spaceId, CancellationToken cancellationToken);
+        Task<Space?> GetSpace(int customerId, int spaceId, CancellationToken cancellationToken, bool noCache);
         Task<Space?> GetSpace(int customerId, string name, CancellationToken cancellationToken);
         Task<Space> CreateSpace(int customer, string name, string? imageBucket, 
             string[]? tags, string[]? roles, int? maxUnauthorised, CancellationToken cancellationToken);

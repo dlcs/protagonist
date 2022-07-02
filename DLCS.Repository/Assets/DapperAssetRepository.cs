@@ -98,20 +98,20 @@ namespace DLCS.Repository.Assets
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="putAsset">
+        /// <param name="asset">
         /// An Asset that is ready to be inserted/updated in the DB, that
-        /// has usually come from an incoming
+        /// has usually come from an incoming Hydra object.
+        ///It can also have been obtained from the database by another repository class.
         /// </param>
         /// <param name="cancellationToken"></param>
-        /// <param name="operation">TEMPORARY</param>
-        public async Task Put(Asset putAsset, CancellationToken cancellationToken, string operation)
+        public async Task Save(Asset asset, CancellationToken cancellationToken)
         {
             // Consider that this may be used for an already-tracked entity, or more likely, one that's
             // been constructed from API calls and therefore not tracked.
-            if (dlcsContext.Images.Local.Any(asset => asset.Id == putAsset.Id))
+            if (dlcsContext.Images.Local.Any(trackedAsset => trackedAsset.Id == asset.Id))
             {
                 // asset with this ID is already being tracked
-                if (dlcsContext.Entry(putAsset).State == EntityState.Detached)
+                if (dlcsContext.Entry(asset).State == EntityState.Detached)
                 {
                     // but it ain't this instance!
                     // what do we do? EF will throw an exception if we try to save this. 
@@ -121,51 +121,32 @@ namespace DLCS.Repository.Assets
             }
             else
             {
-                var existing = await dlcsContext.Images.FindAsync(new object[] { putAsset.Id }, cancellationToken);
+                var existing = await dlcsContext.Images.FindAsync(new object[] { asset.Id }, cancellationToken);
                 if (existing == null)
                 {
-                    await dlcsContext.Images.AddAsync(putAsset, cancellationToken);
+                    await dlcsContext.Images.AddAsync(asset, cancellationToken);
                 }
                 else
                 {
-                    dlcsContext.Images.Update(putAsset);
+                    dlcsContext.Images.Update(asset);
                 }
             }
         
+            // In Deliverator, if this is a PATCH, the ImageLocation is simply removed.
+            //  - (DeleteImageLocationBehaviour) - https://github.com/digirati-co-uk/deliverator/blob/87f6cfde97be94d2e9e00c11c4dc0fcfacfdd087/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L554
+            // but if it's a PUT, a new ImageLocation row is created.
+            //  - (CreateSkeletonImageLocationBehaviour, UpdateImageLocationBehaviour) - https://github.com/digirati-co-uk/deliverator/blob/87f6cfde97be94d2e9e00c11c4dc0fcfacfdd087/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L303
             
-            
-            
-            
-            
-            // TODO: what does this have in common with Patch?
-            // Business logic has already happened in the Mediatr handler.
-            // Whatever you want to put in the database...
-            
-            // In deliverator, a PATCH of an asset deletes the image location
-            // but a PUT creates a new, blank one.
-            // Ideally this is a single line,
-            // RemoveImageLocationInternal(putAsset.Id);
-            // This would be fronted by a cache.
-            if (operation == "PATCH")
+            // As a common operation, we'll just upsert an Image Location and clear its fields.
+            var imageLocation = await dlcsContext.ImageLocations.FindAsync(new object[] { asset.Id }, cancellationToken);
+            if (imageLocation == null)
             {
-                // https://github.com/digirati-co-uk/deliverator/blob/87f6cfde97be94d2e9e00c11c4dc0fcfacfdd087/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L554
-                RemoveImageLocationInternal(putAsset.Id);
+                imageLocation = new ImageLocation { Id = asset.Id };
+                dlcsContext.ImageLocations.Add(imageLocation);
             }
-            else
-            {
-                // CreateSkeletonImageLocationBehaviour
-                // UpdateImageLocationBehaviour
-                // https://github.com/digirati-co-uk/deliverator/blob/87f6cfde97be94d2e9e00c11c4dc0fcfacfdd087/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L303
-                var imageLocation = await dlcsContext.ImageLocations.FindAsync(new object[] { putAsset.Id }, cancellationToken);
-                if (imageLocation == null)
-                {
-                    imageLocation = new ImageLocation { Id = putAsset.Id };
-                    dlcsContext.ImageLocations.Add(imageLocation);
-                }
-                imageLocation.S3 = string.Empty;
-                imageLocation.Nas = string.Empty;
-            }
-            
+            imageLocation.S3 = string.Empty;
+            imageLocation.Nas = string.Empty;
+
             await dlcsContext.SaveChangesAsync(cancellationToken);
         }
 

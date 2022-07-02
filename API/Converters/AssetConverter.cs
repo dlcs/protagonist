@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
@@ -19,10 +18,9 @@ namespace API.Converters
         /// Converts the EF model object to an API resource.
         /// </summary>
         /// <param name="dbAsset"></param>
-        /// <param name="baseUrl">The API base URL</param>
-        /// <param name="resourceBaseUrl">The base URI for image services and other public-facing resources</param>
+        /// <param name="urlRoots">The domain name of the API and orchestrator applications</param>
         /// <returns></returns>
-        public static Image ToHydra(this Asset dbAsset, string baseUrl, string resourceBaseUrl)
+        public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots)
         {
             // This seems fragile
             // The database Id/PK is {customer}/{space}/{modelId}
@@ -36,10 +34,10 @@ namespace API.Converters
 
             var modelId = dbAsset.Id.Substring(prefix.Length);
             
-            var image = new Image(baseUrl, dbAsset.Customer, dbAsset.Space, modelId)
+            var image = new Image(urlRoots.BaseUrl, dbAsset.Customer, dbAsset.Space, modelId)
             {
-                InfoJson = $"{resourceBaseUrl}iiif-img/{dbAsset.Id}",
-                ThumbnailInfoJson = $"{resourceBaseUrl}thumbs/{dbAsset.Id}",
+                InfoJson = $"{urlRoots.ResourceRoot}iiif-img/{dbAsset.Id}",
+                ThumbnailInfoJson = $"{urlRoots.ResourceRoot}thumbs/{dbAsset.Id}",
                 Created = dbAsset.Created,
                 Origin = dbAsset.Origin,
                 InitialOrigin = dbAsset.InitialOrigin,
@@ -68,7 +66,7 @@ namespace API.Converters
             if (dbAsset.Batch > 0)
             {
                 // TODO - this should be set by HydraProperty - but where does the template come from?
-                image.Batch = $"{baseUrl}/customers/{dbAsset.Customer}/queue/batches/{dbAsset.Batch}";
+                image.Batch = $"{urlRoots.BaseUrl}/customers/{dbAsset.Customer}/queue/batches/{dbAsset.Batch}";
             }
             return image;
         }

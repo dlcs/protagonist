@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using API.Converters;
+using API.Settings;
 using DLCS.Web.Requests;
 using Hydra.Model;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +13,22 @@ namespace API;
 /// </summary>
 public abstract class HydraController : Controller
 {
+    protected ApiSettings Settings;
+    
+    protected HydraController(ApiSettings settings)
+    {
+        Settings = settings;
+    }
+
+    protected UrlRoots getUrlRoots()
+    {
+        return new UrlRoots
+        {
+            BaseUrl = Request.GetBaseUrl(),
+            ResourceRoot = Settings.DLCS.ResourceRoot.ToString()
+        };
+    }
+
     /// <summary>
     /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
     /// </summary>
@@ -94,3 +112,4 @@ public abstract class HydraController : Controller
         return HydraProblem(detail, null, 404, "Not Found", null);
     }
 }
+

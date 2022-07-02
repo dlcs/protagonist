@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 
@@ -19,6 +18,11 @@ public record AssetPreparationResult
     /// The asset cannot go to the DB for this reason.
     /// </summary>
     public string? ErrorMessage { get; set; }
+    
+    /// <summary>
+    /// As aspect of the Asset has changed that means it needs to be re-processed by Engine.
+    /// </summary>
+    public bool RequiresReingest { get; set; }
 }
     
 /// <summary>
@@ -46,7 +50,7 @@ public static class AssetPreparer
         bool allowNonApiUpdates)
     {
         // This method was called ValidateImageUpsert to match deliverator; now renamed
-
+        bool requiresReingest = (existingAsset == null);
 
         if (allowNonApiUpdates == false)
         {
@@ -141,9 +145,31 @@ public static class AssetPreparer
             }
         }
 
-        SetNullFieldsToDefaults(existingAsset, updateAsset);
+        if (existingAsset != null)
+        {
+            if (updateAsset.Origin.HasText() && updateAsset.Origin != existingAsset.Origin)
+            {
+                requiresReingest = true;
+            }
+            if (updateAsset.ThumbnailPolicy.HasText() && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
+            {
+                // requiresReingest = true; NO, because we'll re-create thumbs on demand - "backfill"
+                // However, we can treat a PUT as always triggering reingest, whereas a PATCH does not,
+                // even if they are otherwise equivalent - see PutOrPatchImage
+            }
+            if (updateAsset.ImageOptimisationPolicy.HasText() && updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
+            {
+                requiresReingest = true; // YES, because we've changed the way this image should be processed
+            }
+        }
 
-        return new AssetPreparationResult { Success = true };
+        SetNullFieldsToExistingOrDefaults(existingAsset, updateAsset);
+
+        return new AssetPreparationResult
+        {
+            Success = true,
+            RequiresReingest = requiresReingest
+        };
     }
 
     /// <summary>
@@ -151,8 +177,7 @@ public static class AssetPreparer
     /// </summary>
     /// <param name="templateAsset"></param>
     /// <param name="upsertAsset"></param>
-    [SuppressMessage("ReSharper", "NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract")]
-    private static void SetNullFieldsToDefaults(Asset? templateAsset, Asset upsertAsset)
+    private static void SetNullFieldsToExistingOrDefaults(Asset? templateAsset, Asset upsertAsset)
     {
         templateAsset ??= DefaultAsset;
             
@@ -188,19 +213,21 @@ public static class AssetPreparer
 
     static AssetPreparer()
     {
+        // While our Asset object allows nulls, the DB Image row does not (apart from Finished).
+        // So we need a set of default values to fill in any nulls.
         DefaultAsset = new Asset
         {
-            Id = String.Empty,
+            Id = string.Empty,
             Customer = 0,
             Space = 0,
             Created = DateTime.MinValue.ToUniversalTime(),
-            Origin = String.Empty,
-            Tags = String.Empty,
-            Roles = String.Empty,
-            PreservedUri = String.Empty,
-            Reference1 = String.Empty,
-            Reference2 = String.Empty,
-            Reference3 = String.Empty,
+            Origin = string.Empty,
+            Tags = string.Empty,
+            Roles = string.Empty,
+            PreservedUri = string.Empty,
+            Reference1 = string.Empty,
+            Reference2 = string.Empty,
+            Reference3 = string.Empty,
             NumberReference1 = 0,
             NumberReference2 = 0,
             NumberReference3 = 0,
@@ -208,13 +235,13 @@ public static class AssetPreparer
             Width = 0,
             Height = 0,
             Duration = 0,
-            Error = String.Empty,
+            Error = string.Empty,
             Batch = 0,
             Finished = null,
             Ingesting = false,
-            ImageOptimisationPolicy = String.Empty,
-            ThumbnailPolicy = String.Empty,
-            InitialOrigin = String.Empty,
+            ImageOptimisationPolicy = string.Empty,
+            ThumbnailPolicy = string.Empty,
+            InitialOrigin = string.Empty,
             Family = AssetFamily.Image,
             MediaType = "unknown"
         };

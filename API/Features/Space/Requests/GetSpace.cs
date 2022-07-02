@@ -28,7 +28,8 @@ namespace API.Features.Space.Requests
         
         public async Task<DLCS.Model.Spaces.Space?> Handle(GetSpace request, CancellationToken cancellationToken)
         {
-            var space = await spaceRepository.GetSpace(request.CustomerId, request.SpaceId, cancellationToken);
+            var space = await spaceRepository.GetSpace(
+                request.CustomerId, request.SpaceId, cancellationToken, noCache:true);
             return space;
         }
     }

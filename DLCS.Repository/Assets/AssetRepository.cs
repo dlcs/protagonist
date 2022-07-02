@@ -42,7 +42,7 @@ namespace DLCS.Repository.Assets
             throw new System.NotImplementedException();
         }
 
-        public Task Put(Asset putAsset, CancellationToken cancellationToken, string operation)
+        public Task Save(Asset asset, CancellationToken cancellationToken)
         {
             throw new System.NotImplementedException();
         }
