@@ -138,7 +138,7 @@ public class ImageRequestHandlerTests
         var roles = new List<string> { "role" };
         A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
-            .Returns(new OrchestrationImage { Roles = roles });
+            .Returns(new OrchestrationImage { Roles = roles, RequiresAuth = true});
         A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie))
             .Returns(AssetAccessResult.Unauthorized);
         var sut = GetImageRequestHandlerWithMockPathParser();
@@ -165,7 +165,10 @@ public class ImageRequestHandlerTests
         A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
             .Returns(new OrchestrationImage
-                { AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } } });
+            {
+                AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } },
+                RequiresAuth = true, Height = 1000, Width = 1000, MaxUnauthorised = 300
+            });
         A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie)).Returns(accessResult);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
@@ -175,6 +178,122 @@ public class ImageRequestHandlerTests
         // Assert
         result.Target.Should().Be(ProxyDestination.ImageServer);
         result.HasPath.Should().BeTrue();
+    }
+    
+    [Theory]
+    [InlineData("900,")]
+    [InlineData("900,900")]
+    [InlineData(",900")]
+    [InlineData("!900,900")]
+    [InlineData("pct:50")]
+    public async Task HandleRequest_ProxiesToImageServer_IfAssetRequiresAuth_AndUserNotAuthorised_ButFullRequestSmallerThanMaxUnauthorised(
+        string sizeParameter)
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = $"/iiif-img/2/2/test-image/full/{sizeParameter}/0/default.jpg";
+
+        var roles = new List<string> { "role" };
+        var assetId = new AssetId(2, 2, "test-image");
+        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } },
+                MaxUnauthorised = 900, Width = 1800, Height = 1800, RequiresAuth = true
+            });
+        var sut = GetImageRequestHandlerWithMockPathParser();
+
+        // Act
+        var result = await sut.HandleRequest(context) as ProxyImageServerResult;
+
+        // Assert
+        result.Target.Should().Be(ProxyDestination.ImageServer);
+        result.HasPath.Should().BeTrue();
+        A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie)).MustNotHaveHappened();
+    }
+    
+    [Fact]
+    public async Task HandleRequest_ProxiesToImageServer_IfAssetRequiresAuth_AndUserNotAuthorised_ButFullRequestSmallerThanMaxUnauthorised_MaxSize()
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = $"/iiif-img/2/2/test-image/full/max/0/default.jpg";
+
+        var roles = new List<string> { "role" };
+        var assetId = new AssetId(2, 2, "test-image");
+        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } },
+                MaxUnauthorised = 900, Width = 900, Height = 900, RequiresAuth = true
+            });
+        var sut = GetImageRequestHandlerWithMockPathParser();
+
+        // Act
+        var result = await sut.HandleRequest(context) as ProxyImageServerResult;
+
+        // Assert
+        result.Target.Should().Be(ProxyDestination.ImageServer);
+        result.HasPath.Should().BeTrue();
+        A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie)).MustNotHaveHappened();
+    }
+
+    [Theory]
+    [InlineData("/full/901,901/", "Size too large")]
+    [InlineData("/full/max/", "Max size")]
+    [InlineData("/0,0,512,512/900,/", "Tiled region")]
+    [InlineData("/pct:0,0,512,512/!10,10/", "Percent region")]
+    [InlineData("/square/!90,90/", "Square region")]
+    public async Task HandleRequest_Returns401_IfAssetRequiresAuth_AndUserNotAuthorised_AndRequestNotForMaxUnauthorised(
+        string iiifRequest, string reason)
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = $"/iiif-img/2/2/test-image{iiifRequest}0/default.jpg";
+
+        var roles = new List<string> { "role" };
+        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
+            .Returns(new OrchestrationImage
+            {
+                Roles = roles, MaxUnauthorised = 900, Width = 1800, Height = 1800, RequiresAuth = true
+            });
+        A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie))
+            .Returns(AssetAccessResult.Unauthorized);
+        var sut = GetImageRequestHandlerWithMockPathParser();
+
+        // Act
+        var result = await sut.HandleRequest(context);
+
+        // Assert
+        result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(HttpStatusCode.Unauthorized, reason);
+    }
+
+    [Fact]
+    public async Task HandleRequest_ProxiesToThumbs_IfRequiresAuth_AndFullRegionOfKnownSize_SmallerThanMaxUnauthorised()
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/iiif-img/2/2/test-image/full/!100,150/0/default.jpg";
+
+        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        var assetId = new AssetId(2, 2, "test-image");
+        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, OpenThumbs = new List<int[]> { new[] { 150, 150 } }, Height = 1000, Width = 1000,
+                RequiresAuth = true, Roles = new List<string> { "role" }, MaxUnauthorised = 200
+            });
+        var sut = GetImageRequestHandlerWithMockPathParser();
+
+        // Act
+        var result = await sut.HandleRequest(context) as ProxyActionResult;
+            
+        // Assert
+        result.Target.Should().Be(ProxyDestination.Thumbs);
+        result.Path.Should().Be("thumbs/2/2/test-image/full/!100,150/0/default.jpg");
     }
 
     [Fact]

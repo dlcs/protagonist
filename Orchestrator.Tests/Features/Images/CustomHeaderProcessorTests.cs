@@ -189,7 +189,8 @@ namespace Orchestrator.Tests.Features.Images
 
         private OrchestrationImage GetOrchestrationImage(bool isRestricted)
         {
-            var image = new OrchestrationImage { AssetId = new AssetId(99, Space, "whatever") };
+            var image = new OrchestrationImage
+                { AssetId = new AssetId(99, Space, "whatever"), RequiresAuth = isRestricted };
             if (isRestricted) image.Roles = Role.AsList();
 
             return image;
