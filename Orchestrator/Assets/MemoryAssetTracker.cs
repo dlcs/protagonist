@@ -136,6 +136,15 @@ namespace Orchestrator.Assets
 
         private async Task<OrchestrationAsset> ConvertAssetToTrackedAsset(AssetId assetId, Asset asset)
         {
+            T SetDefaults<T>(T orchestrationAsset)
+                where T : OrchestrationAsset
+            {
+                orchestrationAsset.AssetId = assetId;
+                orchestrationAsset.Roles = asset.RolesList.ToList();
+                orchestrationAsset.RequiresAuth = asset.RequiresAuth;
+                return orchestrationAsset;
+            }
+
             switch (asset.Family)
             {
                 case AssetFamily.Image:
@@ -145,23 +154,19 @@ namespace Orchestrator.Assets
 
                     await Task.WhenAll(getImageLocation, getOpenThumbs, getOrchestrationStatus);
                     
-                    return new OrchestrationImage
+                    return SetDefaults(new OrchestrationImage
                     {
-                        AssetId = assetId,
-                        Roles = asset.RolesList.ToList(),
                         S3Location = getImageLocation.Result?.S3, // TODO - error handling
                         Width = asset.Width ?? 0,
                         Height = asset.Height ?? 0,
+                        MaxUnauthorised = asset.MaxUnauthorised ?? 0,
                         OpenThumbs = getOpenThumbs.Result, // TODO - reorganise thumb layout + create missing eventually
                         Status = getOrchestrationStatus.Result
-                    };
+                    });
                 case AssetFamily.File:
-                    return new OrchestrationFile
-                    {
-                        AssetId = assetId, Roles = asset.RolesList.ToList(), Origin = asset.Origin,
-                    };
+                    return SetDefaults(new OrchestrationFile { Origin = asset.Origin, });
                 default:
-                    return new OrchestrationAsset { AssetId = assetId, Roles = asset.RolesList.ToList(), };
+                    return SetDefaults(new OrchestrationAsset());
             }
         }
     }

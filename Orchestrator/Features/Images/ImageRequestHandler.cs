@@ -11,6 +11,7 @@ using DLCS.Repository.Assets;
 using DLCS.Web.IIIF;
 using DLCS.Web.Requests.AssetDelivery;
 using IIIF;
+using IIIF.ImageApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -79,18 +80,8 @@ namespace Orchestrator.Features.Images
             }
 
             if (orchestrationImage.RequiresAuth)
-            {
-                // IAssetAccessValidator is in container with a Lifetime.Scope
-                using var scope = scopeFactory.CreateScope();
-                var assetAccessValidator = scope.ServiceProvider.GetRequiredService<IAssetAccessValidator>();
-                var authResult =
-                    await assetAccessValidator.TryValidate(assetRequest.Customer.Id,
-                        orchestrationImage.Roles, AuthMechanism.Cookie);
-
-                logger.LogDebug("Request for {Path} requires auth, result {AuthResult}", httpContext.Request.Path,
-                    authResult);
-
-                if (authResult == AssetAccessResult.Unauthorized)
+            { 
+                if (await IsRequestUnauthorised(assetRequest, orchestrationImage))
                 {
                     return new StatusCodeResult(HttpStatusCode.Unauthorized);
                 }
@@ -134,8 +125,39 @@ namespace Orchestrator.Features.Images
             return await GenerateImageResult(orchestrationImage, assetRequest);
         }
         
-        private static bool RegionFullNotMax(ImageAssetDeliveryRequest? assetRequest) 
+        private static bool RegionFullNotMax(ImageAssetDeliveryRequest assetRequest) 
             => assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max;
+
+        private async Task<bool> IsRequestUnauthorised(ImageAssetDeliveryRequest assetRequest,
+            OrchestrationImage orchestrationImage)
+        {
+            // If the image has a maxUnauthorised, and the region is /full/ then user may be able to see requested
+            // size without doing auth check
+            var imageRequest = assetRequest.IIIFImageRequest;
+            if (imageRequest.Region.Full && orchestrationImage.MaxUnauthorised > 0)
+            {
+                var imageSize = new Size(orchestrationImage.Width, orchestrationImage.Height);
+                var proposedSize = imageRequest.Size.GetResultingSize(imageSize);
+                
+                // If resulting maxDimension < maxUnauthorised then anyone can view
+                if (proposedSize.MaxDimension <= orchestrationImage.MaxUnauthorised)
+                {
+                    logger.LogDebug(
+                        "Request for {ImageRequest} requires auth but viewable due to maxUnauthorised size of {MaxUnauth}",
+                        imageRequest.OriginalPath, orchestrationImage.MaxUnauthorised);
+                    return false;
+                }
+            }
+
+            // IAssetAccessValidator is in container with a Lifetime.Scope
+            using var scope = scopeFactory.CreateScope();
+            var assetAccessValidator = scope.ServiceProvider.GetRequiredService<IAssetAccessValidator>();
+            var authResult =
+                await assetAccessValidator.TryValidate(assetRequest.Customer.Id,
+                    orchestrationImage.Roles, AuthMechanism.Cookie);
+
+            return authResult == AssetAccessResult.Unauthorized;
+        }
 
         // TODO handle known thumb size that doesn't exist yet - call image-server and save to s3 on way back
         private (bool CanHandle, bool IsResize) CanRequestBeHandledByThumb(ImageAssetDeliveryRequest requestModel,

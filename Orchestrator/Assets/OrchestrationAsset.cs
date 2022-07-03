@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using DLCS.Core.Collections;
+﻿using System.Collections.Generic;
 using DLCS.Core.Types;
 
 namespace Orchestrator.Assets
@@ -18,7 +16,7 @@ namespace Orchestrator.Assets
         /// <summary>
         /// Get boolean indicating whether asset is restricted or not.
         /// </summary>
-        public bool RequiresAuth => !Roles.IsNullOrEmpty();
+        public bool RequiresAuth { get; set; }
 
         /// <summary>
         /// Gets list of roles associated with Asset
@@ -50,6 +48,11 @@ namespace Orchestrator.Assets
         /// Get or set asset Height
         /// </summary>
         public int Height { get; set; }
+        
+        /// <summary>
+        /// Get maximum dimension available for unauthorised user
+        /// </summary>
+        public int MaxUnauthorised { get; set; }
 
         /// <summary>
         /// Gets or sets list of thumbnail sizes
