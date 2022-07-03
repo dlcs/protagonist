@@ -274,8 +274,8 @@ public class IIIFCanvasFactory
                 Id = GetFullyQualifiedId(asset, customerPathElement, false, ImageApi.Version.V2),
                 Profile = ImageService2.Level2Profile,
                 Context = ImageService2.Image2Context,
-                Width = asset.Width.Value,
-                Height = asset.Height.Value,
+                Width = asset.Width ?? 0,
+                Height = asset.Height ?? 0
             });
         }
 
@@ -286,8 +286,8 @@ public class IIIFCanvasFactory
                 Id = GetFullyQualifiedId(asset, customerPathElement, false, ImageApi.Version.V3),
                 Profile = ImageService3.Level2Profile,
                 Context = ImageService3.Image3Context,
-                Width = asset.Width.Value,
-                Height = asset.Height.Value,
+                Width = asset.Width ?? 0,
+                Height = asset.Height ?? 0
             });
         }
         

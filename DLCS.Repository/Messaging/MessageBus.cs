@@ -30,11 +30,24 @@ namespace DLCS.Repository.Messaging
             this.logger = logger;
         }
         
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="ingestAssetRequest"></param>
         public async Task SendIngestAssetRequest(IngestAssetRequest ingestAssetRequest)
         {
             logger.LogInformation("Message Bus: " + ingestAssetRequest);
         }
 
+        /// <summary>
+        /// This currently produces the legacy JSON body that Deliverator Engine expects.
+        ///
+        /// A much simpler implementation simply sends ingestAssetRequest to Engine directly.
+        /// It still needs to be synchronous - callers need the result from Engine.
+        /// </summary>
+        /// <param name="ingestAssetRequest"></param>
+        /// <param name="derivativesOnly"></param>
+        /// <returns></returns>
         public async Task<HttpStatusCode> SendImmediateIngestAssetRequest(IngestAssetRequest ingestAssetRequest, bool derivativesOnly)
         {
             // https://github.com/digirati-co-uk/deliverator/blob/87f6cfde97be94d2e9e00c11c4dc0fcfacfdd087/DLCS.Application/Behaviour/Ingest/CallImageIngestEndpointBehaviour.cs
@@ -54,9 +67,9 @@ namespace DLCS.Repository.Messaging
             await using StringWriter writer = new StringWriter();
             using (JsonTextWriter writer1 = new JsonTextWriter(writer))
             {
-                await writer1.WriteStartObjectAsync();
+                //await writer1.WriteStartObjectAsync();
                 ToLegacyMessageJson(writer1, "event::image-ingest", stringParams);
-                await writer1.WriteEndObjectAsync();
+                //await writer1.WriteEndObjectAsync();
             }
             var content = new ByteArrayContent(Encoding.ASCII.GetBytes(writer.ToString()));
             try

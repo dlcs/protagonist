@@ -150,8 +150,8 @@ namespace Orchestrator.Assets
                         AssetId = assetId,
                         Roles = asset.RolesList.ToList(),
                         S3Location = getImageLocation.Result?.S3, // TODO - error handling
-                        Width = asset.Width.Value,
-                        Height = asset.Height.Value,
+                        Width = asset.Width ?? 0,
+                        Height = asset.Height ?? 0,
                         OpenThumbs = getOpenThumbs.Result, // TODO - reorganise thumb layout + create missing eventually
                         Status = getOrchestrationStatus.Result
                     };
