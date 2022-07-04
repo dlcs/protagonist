@@ -2,11 +2,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using API.Client;
 using API.Features.Image.Requests;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Model.Assets;
-using DLCS.Model.Spaces;
 using DLCS.Repository;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +18,7 @@ namespace API.Tests.Integration;
 [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
 public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
+    
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
     
