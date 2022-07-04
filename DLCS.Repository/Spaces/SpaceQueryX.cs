@@ -11,10 +11,12 @@ public static class SpaceQueryX
     /// </summary>
     /// <param name="spaceQuery"></param>
     /// <param name="orderBy"></param>
-    /// <param name="ascending"></param>
+    /// <param name="descending"></param>
     /// <returns></returns>
-    public static IQueryable<Space> AsOrderedSpaceQuery(this IQueryable<Space> spaceQuery, string orderBy,
-        bool ascending = true)
+    public static IQueryable<Space> AsOrderedSpaceQuery(
+        this IQueryable<Space> spaceQuery, 
+        string orderBy,
+        bool descending = false)
     {
         if (orderBy.HasText())
         {
@@ -22,9 +24,9 @@ public static class SpaceQueryX
             switch (field)
             {
                 case "name":
-                    return ascending ? spaceQuery.OrderBy(s => s.Name) : spaceQuery.OrderByDescending(s => s.Name);
+                    return descending ? spaceQuery.OrderByDescending(s => s.Name) : spaceQuery.OrderBy(s => s.Name);
                 case "created":
-                    return ascending ? spaceQuery.OrderBy(s => s.Created) : spaceQuery.OrderByDescending(s => s.Created);
+                    return descending ? spaceQuery.OrderByDescending(s => s.Created) : spaceQuery.OrderBy(s => s.Created);
             }
         }
 

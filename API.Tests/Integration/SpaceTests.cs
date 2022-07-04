@@ -242,7 +242,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         coll.Members[0]["name"].ToString().Should().Be("Space 0001");
         coll.Members[1]["name"].ToString().Should().Be("Space 0002");
         
-        spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderBy=name&ascending=false";
+        spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderByDescending=name";
         response = await httpClient.AsCustomer(customerId.Value).GetAsync(spacesUrl);
         coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
         coll.Members[0]["name"].ToString().Should().Be("Space 0025");
@@ -272,7 +272,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
         coll.Members[0]["name"].ToString().Should().Be("Space 0001");
         
-        spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderBy=created&ascending=false";
+        spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderByDescending=created";
         response = await httpClient.AsCustomer(customerId.Value).GetAsync(spacesUrl);
         coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
         coll.Members[0]["name"].ToString().Should().Be("Aardvark space");

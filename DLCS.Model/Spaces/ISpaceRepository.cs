@@ -14,7 +14,7 @@ namespace DLCS.Model.Spaces
             string[]? tags, string[]? roles, int? maxUnauthorised, CancellationToken cancellationToken);
 
         Task<PageOfSpaces> GetPageOfSpaces(int customerId, int page, int pageSize,
-            string orderBy, bool ascending, 
+            string orderBy, bool descending, 
             CancellationToken cancellationToken);
         Task<Space> PatchSpace(int customerId, int spaceId, string? name,
             int? maxUnauthorised, string[]? tags, string[]? roles, CancellationToken cancellationToken);

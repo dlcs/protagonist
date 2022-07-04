@@ -53,17 +53,20 @@ namespace API.Client
         }
 
         public async Task<HydraCollection<Space>?> GetSpaces(int page, int pageSize, 
-            string? orderBy=null, bool ascending = true, int? customerId = null)
+            string? orderBy=null, bool descending = false, int? customerId = null)
         {
             customerId ??= currentUser.GetCustomerId();
             var url = $"/customers/{customerId}/spaces?page={page}&pageSize={pageSize}";
             if (orderBy != null)
             {
-                url = $"{url}&orderBy={orderBy}";
-            }
-            if (ascending == false)
-            {
-                url = $"{url}&ascending=false";
+                if (descending)
+                {
+                    url = $"{url}&orderByDescending={orderBy}";
+                }
+                else
+                {
+                    url = $"{url}&orderBy={orderBy}";
+                }
             }
             var response = await httpClient.GetAsync(url);
             var space = await response.ReadAsHydraResponseAsync<HydraCollection<Space>>(jsonSerializerSettings);

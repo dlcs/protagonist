@@ -15,15 +15,15 @@ namespace DLCS.Repository.Assets
         /// </summary>
         /// <param name="assetQuery"></param>
         /// <param name="orderBy"></param>
-        /// <param name="ascending"></param>
+        /// <param name="descending"></param>
         /// <returns></returns>
-        public static IQueryable<Asset> AsOrderedAssetQuery(this IQueryable<Asset> assetQuery, string orderBy, bool ascending = true)
+        public static IQueryable<Asset> AsOrderedAssetQuery(this IQueryable<Asset> assetQuery, string orderBy, bool descending = false)
         {
             var field = GetPropertyName(orderBy);
             var lambda = (dynamic)CreateExpression(typeof(Asset), field);
-            return ascending
-                ? Queryable.OrderBy(assetQuery, lambda)
-                : Queryable.OrderByDescending(assetQuery, lambda);
+            return descending
+                ? Queryable.OrderByDescending(assetQuery, lambda)
+                : Queryable.OrderBy(assetQuery, lambda);
         }
 
         private static string GetPropertyName(string orderBy)

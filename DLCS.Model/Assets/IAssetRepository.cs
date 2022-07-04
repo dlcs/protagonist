@@ -18,7 +18,7 @@ namespace DLCS.Model.Assets
         
         public Task<PageOfAssets?> GetPageOfAssets(
             int customerId, int spaceId, int page, int pageSize, 
-            string orderBy, bool ascending,
+            string orderBy, bool descending,
             CancellationToken cancellationToken);
 
         public Task Save(Asset asset, CancellationToken cancellationToken);

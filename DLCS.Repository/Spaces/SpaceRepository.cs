@@ -145,7 +145,7 @@ namespace DLCS.Repository.Spaces
         }
 
         public async Task<PageOfSpaces> GetPageOfSpaces(
-            int customerId, int page, int pageSize, string orderBy, bool ascending, CancellationToken cancellationToken)
+            int customerId, int page, int pageSize, string orderBy, bool descending, CancellationToken cancellationToken)
         {
             var result = new PageOfSpaces
             {
@@ -153,7 +153,7 @@ namespace DLCS.Repository.Spaces
                 Total = await dlcsContext.Spaces.CountAsync(s => s.Customer == customerId, cancellationToken: cancellationToken),
                 Spaces = await dlcsContext.Spaces.AsNoTracking()
                     .Where(s => s.Customer == customerId)
-                    .AsOrderedSpaceQuery(orderBy, ascending)
+                    .AsOrderedSpaceQuery(orderBy, descending)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync(cancellationToken: cancellationToken)

@@ -56,12 +56,17 @@ public class ImageController : HydraController
     /// <returns>A Hydra JSON-LD Image object representing the Asset.</returns>
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(DLCS.HydraModel.Image))]
+    [ProducesResponseType(404, Type = typeof(Error))]
     [Route("{imageId}")]
-    public async Task<DLCS.HydraModel.Image> Image(int customerId, int spaceId, string imageId)
+    public async Task<IActionResult> Image(int customerId, int spaceId, string imageId)
     {
         var assetId = new AssetId(customerId, spaceId, imageId);
         var dbImage = await mediator.Send(new GetImage(assetId));
-        return dbImage.ToHydra(getUrlRoots());
+        if (dbImage == null)
+        {
+            return HydraNotFound();
+        }
+        return Ok(dbImage.ToHydra(getUrlRoots()));
     }
     
     
@@ -86,9 +91,8 @@ public class ImageController : HydraController
     {
         if (pageSize is null or < 0) pageSize = Settings.PageSize;
         if (page is null or < 0) page = 1;
-        var ascending = string.IsNullOrWhiteSpace(orderByDescending);
-        if (!ascending) orderBy = orderByDescending;
-        var imagesRequest = new GetSpaceImages(ascending, page.Value, pageSize.Value, spaceId, customerId, orderBy);
+        var orderByField = GetOrderBy(orderBy, orderByDescending, out var descending);
+        var imagesRequest = new GetSpaceImages(descending, page.Value, pageSize.Value, spaceId, customerId, orderByField);
         var spaceImagesResult = await mediator.Send(imagesRequest);
         if (!spaceImagesResult.SpaceExistsForCustomer || spaceImagesResult.PageOfAssets == null)
         {
@@ -105,7 +109,7 @@ public class ImageController : HydraController
             PageSize = pageSize,
             Id = Request.GetJsonLdId()
         };
-        PartialCollectionView.AddPaging(collection, page.Value, pageSize.Value);
+        PartialCollectionView.AddPaging(collection, page.Value, pageSize.Value, orderByField, descending);
         return Ok(collection);
     }
     
@@ -122,9 +126,14 @@ public class ImageController : HydraController
     /// <param name="imageId">(from resource path)</param>
     /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
     /// <returns>The created or updated Hydra Image object for the Asset</returns>
-    [ProducesResponseType(200, Type = typeof(DLCS.HydraModel.Image))] // for Patch
-    [ProducesResponseType(201, Type = typeof(DLCS.HydraModel.Image))] // for PUT when created
-    [ProducesResponseType(400, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))] // for Patch
+    [ProducesResponseType((int)HttpStatusCode.Created, Type = typeof(DLCS.HydraModel.Image))] // for PUT when created
+    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(ProblemDetails))]
     [HttpPut]
     [HttpPatch]
     [Route("{imageId}")]

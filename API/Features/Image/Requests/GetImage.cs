@@ -7,7 +7,7 @@ using MediatR;
 
 namespace API.Features.Image.Requests
 {
-    public class GetImage : IRequest<Asset>
+    public class GetImage : IRequest<Asset?>
     {
         public GetImage(AssetId assetId)
         {

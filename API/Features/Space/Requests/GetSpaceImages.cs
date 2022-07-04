@@ -11,14 +11,14 @@ namespace API.Features.Space.Requests
 {
     public class GetSpaceImages : IRequest<GetSpaceImagesResult>
     {
-        public GetSpaceImages(bool ascending, int page, int pageSize, int spaceId, int? customerId = null, string? orderBy = null)
+        public GetSpaceImages(bool descending, int page, int pageSize, int spaceId, int? customerId = null, string? orderBy = null)
         {
             Page = page;
             PageSize = pageSize;
             CustomerId = customerId;
             SpaceId = spaceId;
             OrderBy = orderBy;
-            Ascending = ascending;
+            Descending = descending;
         }
         
         public int SpaceId { get; set; }
@@ -26,7 +26,7 @@ namespace API.Features.Space.Requests
         public int Page { get; }
         public int PageSize { get; }
         public string OrderBy { get; }
-        public bool Ascending { get; }
+        public bool Descending { get; }
     }
 
     public class GetSpaceImagesResult
@@ -63,7 +63,7 @@ namespace API.Features.Space.Requests
             var pageOfAssets = await assetRepository.GetPageOfAssets(
                 customerId.Value, request.SpaceId,
                 request.Page, request.PageSize,
-                request.OrderBy, request.Ascending,
+                request.OrderBy, request.Descending,
                 cancellationToken);
 
             if (pageOfAssets == null)

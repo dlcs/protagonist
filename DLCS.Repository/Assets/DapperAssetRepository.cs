@@ -72,7 +72,7 @@ namespace DLCS.Repository.Assets
         }
 
         public async Task<PageOfAssets?> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize, 
-            string orderBy, bool ascending, CancellationToken cancellationToken)
+            string orderBy, bool descending, CancellationToken cancellationToken)
         {
             var space = await dlcsContext.Spaces.SingleOrDefaultAsync(
                 s => s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
@@ -87,7 +87,7 @@ namespace DLCS.Repository.Assets
                     a => a.Customer == customerId && a.Space == spaceId, cancellationToken: cancellationToken),
                 Assets = await dlcsContext.Images.AsNoTracking()
                     .Where(a => a.Customer == customerId && a.Space == spaceId)
-                    .AsOrderedAssetQuery(orderBy, ascending)
+                    .AsOrderedAssetQuery(orderBy, descending)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync(cancellationToken: cancellationToken)

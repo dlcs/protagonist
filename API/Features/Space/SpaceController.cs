@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Space.Requests;
 using API.Settings;
+using DLCS.Core.Strings;
 using DLCS.Web.Requests;
 using Hydra.Collections;
 using MediatR;
@@ -34,13 +35,14 @@ namespace API.Features.Space
         [HttpGet]
         public async Task<HydraCollection<DLCS.HydraModel.Space>> Index(
             int customerId, int? page = 1, int? pageSize = -1, 
-            string? orderBy = null, bool ascending = true)
+            string? orderBy = null, string? orderByDescending = null)
         {
             if (pageSize < 0) pageSize = Settings.PageSize;
             if (page < 0) page = 1;
+            var orderByField = GetOrderBy(orderBy, orderByDescending, out var descending);
             var baseUrl = getUrlRoots().BaseUrl;
             var pageOfSpaces = await mediator.Send(new GetPageOfSpaces(
-                page.Value, pageSize.Value, customerId, orderBy, ascending));
+                page.Value, pageSize.Value, customerId, orderByField, descending));
             
             var collection = new HydraCollection<DLCS.HydraModel.Space>
             {
@@ -50,9 +52,10 @@ namespace API.Features.Space
                 PageSize = pageSize,
                 Id = Request.GetJsonLdId()
             };
-            PartialCollectionView.AddPaging(collection, page.Value, pageSize.Value, orderBy, ascending);
+            PartialCollectionView.AddPaging(collection, page.Value, pageSize.Value, orderByField, descending);
             return collection;
         }
+
 
         /// <summary>
         /// Create a new space within this customer.
