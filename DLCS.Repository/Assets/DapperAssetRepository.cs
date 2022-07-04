@@ -113,7 +113,7 @@ namespace DLCS.Repository.Assets
                 // asset with this ID is already being tracked
                 if (dlcsContext.Entry(asset).State == EntityState.Detached)
                 {
-                    // but it ain't this instance!
+                    // but it isn't this instance!
                     // what do we do? EF will throw an exception if we try to save this. 
                     throw new InvalidOperationException("There is already an Asset with this ID being tracked");
                 }
