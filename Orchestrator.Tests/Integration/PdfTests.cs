@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using FluentAssertions;
@@ -59,6 +60,9 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
             maxUnauthorised: 10, roles: "default");
         dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-4", num1: 4, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-5", num1: 5, ref1: "my-ref");
+        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-6", num1: 6, ref1: "my-ref");
+        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-6-auth", num1: 6, ref1: "my-ref",
+            maxUnauthorised: 10, roles: "clickthrough");
         dbFixture.DbContext.SaveChanges();
     }
         
@@ -217,7 +221,44 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
+    
+    [Fact]
+    public async Task GetPdf_Returns200_WithPdf_IfControlFileFound_HasRoles_AndUserCanAccess()
+    {
+        // Arrange
+        var fakePdfContent = nameof(GetPdf_Returns200_WithPdf_IfControlFileFound_HasRoles_AndUserCanAccess);
+        const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/6/tester";
+        const string path = "pdf/99/test-pdf/my-ref/1/6";
+        await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/6/tester.json",
+            new ControlFile
+            {
+                Created = DateTime.UtcNow.AddHours(-1), InProcess = false,
+                Roles = new List<string> { "clickthrough" }
+            });
+        pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
+        {
+            AddPdf(pdfStorageKey, fakePdfContent).Wait();
+            return true;
+        });
         
+        var userSession =
+            await dbFixture.DbContext.SessionUsers.AddTestSession(
+                DlcsDatabaseFixture.ClickThroughAuthService.AsList());
+        var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddMinutes(15),
+            sessionUserId: userSession.Entity.Id);
+        await dbFixture.DbContext.SaveChangesAsync();
+        
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Add("Cookie", $"dlcs-token-99=id={authToken.Entity.CookieId};");
+        var response = await httpClient.SendAsync(request);
+            
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await response.Content.ReadAsStringAsync()).Should().Be(fakePdfContent);
+        response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/pdf"));
+    }
+
     [Fact]
     public async Task GetPdf_Returns500_IfPdfCreatedButCannotBeFound()
     {
