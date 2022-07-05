@@ -43,11 +43,6 @@ namespace Orchestrator.Settings
         public Dictionary<ImageServer, ImageServerConfig> ImageServerPathConfig { get; set; } = new();
 
         /// <summary>
-        /// Customer-specific overrides
-        /// </summary>
-        public Dictionary<string, CustomerOverride> CustomerOverrides { get; set; } = new();
-
-        /// <summary>
         /// The current <see cref="ImageServerConfig"/> object
         /// </summary>
         public ImageServerConfig ImageServerConfig => ImageServerPathConfig[ImageServer];
@@ -100,16 +95,6 @@ namespace Orchestrator.Settings
         public AuthSettings Auth { get; set; }
 
         public NamedQuerySettings NamedQuery { get; set; }
-    }
-
-    public class CustomerOverride
-    {
-        /// <summary>
-        /// List of roles that are whitelisted for PDF inclusion.
-        /// When generating a PDF, images with roles are redacted, unless the role is on whitelist.
-        /// When serving, if a PDF contains an image that has a role on the whitelist - authentication will be required.
-        /// </summary>
-        public List<string> PdfRolesWhitelist { get; set; } = new();
     }
 
     public class ProxySettings
@@ -207,6 +192,21 @@ namespace Orchestrator.Settings
         /// Folder template for creating local Zip file
         /// </summary>
         public string ZipFolderTemplate { get; set; }
+        
+        /// <summary>
+        /// Customer-specific overrides; keyed by customer Id
+        /// </summary>
+        public Dictionary<int, CustomerOverride> CustomerOverrides { get; set; } = new();
+    }
+    
+    public class CustomerOverride
+    {
+        /// <summary>
+        /// List of roles that are whitelisted for PDF inclusion.
+        /// When generating a PDF, images with roles are redacted, unless the role is on whitelist.
+        /// When serving, if a PDF contains an image that has a role on the whitelist - authentication will be required.
+        /// </summary>
+        public List<string> PdfRolesWhitelist { get; set; } = new();
     }
 
     /// <summary>
