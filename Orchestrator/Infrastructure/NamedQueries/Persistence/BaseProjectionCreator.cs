@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
+using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using Microsoft.Extensions.Logging;
@@ -67,6 +69,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             StoredParsedNamedQuery parsedNamedQuery)
         {
             Logger.LogInformation("Creating new control file: {ControlS3Key}", parsedNamedQuery.ControlFileStorageKey);
+            var distinctRoles = enumeratedResults.SelectMany(a => a.RolesList).Distinct().ToList();
             var controlFile = new ControlFile
             {
                 Created = DateTime.UtcNow,
@@ -74,7 +77,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
                 Exists = false,
                 InProcess = true,
                 ItemCount = enumeratedResults.Count,
-                SizeBytes = 0
+                SizeBytes = 0,
+                Roles = distinctRoles.IsNullOrEmpty() ? null : distinctRoles,
             };
 
             await UpdateControlFile(parsedNamedQuery.ControlFileStorageKey, controlFile);

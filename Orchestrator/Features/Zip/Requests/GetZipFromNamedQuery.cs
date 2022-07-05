@@ -23,13 +23,13 @@ namespace Orchestrator.Features.Zip.Requests
         }
     }
     
-    public class GetPdfFromNamedQueryHandler : IRequestHandler<GetZipFromNamedQuery, PersistedNamedQueryProjection>
+    public class GetZipFromNamedQueryHandler : IRequestHandler<GetZipFromNamedQuery, PersistedNamedQueryProjection>
     {
         private readonly StoredNamedQueryService storedNamedQueryService;
         private readonly NamedQueryResultGenerator namedQueryResultGenerator;
         private readonly IProjectionCreator<ZipParsedNamedQuery> zipCreator;
 
-        public GetPdfFromNamedQueryHandler(
+        public GetZipFromNamedQueryHandler(
             StoredNamedQueryService storedNamedQueryService,
             NamedQueryResultGenerator namedQueryResultGenerator,
             IProjectionCreator<ZipParsedNamedQuery> zipCreator)
