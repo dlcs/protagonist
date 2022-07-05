@@ -198,14 +198,6 @@ namespace API.Features.Image.Requests
                 };
             }
             
-            // In the deliverator flow, the equivalent of this came after the validation below.
-            // But it seems better to do it before.
-            if (existingAsset == null)
-            {
-                await SelectImageOptimisationPolicy(asset);
-                await SelectThumbnailPolicy(asset);
-            }
-            
             var validationResult = AssetPreparer.PrepareAssetForUpsert(
                 existingAsset, asset, allowNonApiUpdates:false);
             if (!validationResult.Success)
@@ -218,7 +210,27 @@ namespace API.Features.Image.Requests
                 };
             }
 
-            // (SelectImageOptimisationPolicy, SelectThumbnailPolicy was done after validation in Deliverator)
+            // we treat a PUT as a re-process instruction
+            var requiresEngineNotification = validationResult.RequiresReingest || request.Method == "PUT";
+
+            // Deliverator only does this for new assets, but it should verify PATCH assets too.
+            if (existingAsset == null)
+            {
+                var imagePolicyChanged = await SelectImageOptimisationPolicy(asset);
+                if (imagePolicyChanged)
+                {
+                    // NB the AssetPreparer has already inspected image policy, but this will pick up
+                    // a change from default.
+                    requiresEngineNotification = true;
+                }
+                var thumbnailPolicyChanged = await SelectThumbnailPolicy(asset);
+                if (thumbnailPolicyChanged)
+                {
+                    // We won't alter the value of requiresEngineNotification
+                    // thumbs will be backfilled.
+                    // This could be a config setting.
+                }
+            }
 
             // UpdateImageBehaviour - store in DB
             await assetRepository.Save(asset, cancellationToken);
@@ -240,11 +252,10 @@ namespace API.Features.Image.Requests
             if (asset.Family == AssetFamily.Image)
             {
                 await messageBus.SendAssetModifiedNotification(asset, assetAfterSave);
-                if (validationResult.RequiresReingest || request.Method == "PUT")
+                if (requiresEngineNotification)
                 {
-                    // we treat a PUT as a re-process
-                    // await call to engine load-balancer, which processes synchronously (not a queue)
                     var ingestAssetRequest = new IngestAssetRequest(assetAfterSave, DateTime.UtcNow);
+                    // await call to engine load-balancer, which processes synchronously (not a queue)
                     var statusCode = await messageBus.SendImmediateIngestAssetRequest(ingestAssetRequest, false);
                     if (statusCode is HttpStatusCode.Created or HttpStatusCode.OK)
                     {
@@ -282,55 +293,86 @@ namespace API.Features.Image.Requests
             };
         }
 
-        private async Task SelectThumbnailPolicy(Asset asset)
+        private async Task<bool> SelectThumbnailPolicy(Asset asset)
         {
+            bool changed = false;
             if (asset.Family == AssetFamily.Image)
             {
-                await SetThumbnailPolicy(settings.IngestDefaults.ThumbnailPolicies.Graphics, asset);
+                changed = await SetThumbnailPolicy(settings.IngestDefaults.ThumbnailPolicies.Graphics, asset);
             }
             else if (asset.Family == AssetFamily.Timebased && asset.MediaType.HasText() && asset.MediaType.Contains("video/"))
             {
-                await SetThumbnailPolicy(settings.IngestDefaults.ThumbnailPolicies.Video, asset);
+                changed = await SetThumbnailPolicy(settings.IngestDefaults.ThumbnailPolicies.Video, asset);
             }
+
+            return changed;
         }
 
-        private async Task SelectImageOptimisationPolicy(Asset asset)
+        private async Task<bool> SelectImageOptimisationPolicy(Asset asset)
         {
+            bool changed = false;
             if (asset.Family == AssetFamily.Image)
             {
-                await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Graphics, asset);
+                changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Graphics, asset);
             }
             else if (asset.Family == AssetFamily.Timebased && asset.MediaType.HasText())
             {
                 if (asset.MediaType.Contains("video/"))
                 {
-                    await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Video, asset);
+                    changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Video, asset);
                 }
                 else if (asset.MediaType.Contains("audio/"))
                 {
-                    await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Audio, asset);
+                    changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Audio, asset);
                 }
             }
+
+            return changed;
         }
 
-        private async Task SetImagePolicy(string key, Asset asset)
+        private async Task<bool> SetImagePolicy(string key, Asset asset)
         {
-            // This is adapted from Deliverator, but there doesn't seem to be a way of 
-            // taking the policy from the incoming PUT
-            var imagePolicy = await imageOptimisationPolicyRepository.GetImageOptimisationPolicy(key);
-            if (imagePolicy != null)
+            string? incomingPolicy = asset.ImageOptimisationPolicy;
+            ImageOptimisationPolicy? policy = null;
+            if (incomingPolicy.HasText())
             {
-                asset.ImageOptimisationPolicy = imagePolicy.Id;
+                policy = await imageOptimisationPolicyRepository.GetImageOptimisationPolicy(incomingPolicy);
             }
+
+            if (policy == null)
+            {
+                // The asset doesn't have a valid ImageOptimisationPolicy
+                // This is adapted from Deliverator, but there wasn't a way of 
+                // taking the policy from the incoming PUT. There now is.
+                var imagePolicy = await imageOptimisationPolicyRepository.GetImageOptimisationPolicy(key);
+                if (imagePolicy != null)
+                {
+                    asset.ImageOptimisationPolicy = imagePolicy.Id;
+                }
+            }
+
+            return asset.ImageOptimisationPolicy != incomingPolicy;
         }
         
-        private async Task SetThumbnailPolicy(string key, Asset asset)
+        private async Task<bool> SetThumbnailPolicy(string key, Asset asset)
         {
-            var thumbnailPolicy = await thumbnailPolicyRepository.GetThumbnailPolicy(key);
-            if (thumbnailPolicy != null)
+            string? incomingPolicy = asset.ThumbnailPolicy;
+            ThumbnailPolicy? policy = null;
+            if (incomingPolicy.HasText())
             {
-                asset.ThumbnailPolicy = thumbnailPolicy.Id;
+                policy = await thumbnailPolicyRepository.GetThumbnailPolicy(incomingPolicy);
             }
+
+            if (policy == null)
+            {
+                var thumbnailPolicy = await thumbnailPolicyRepository.GetThumbnailPolicy(key);
+                if (thumbnailPolicy != null)
+                {
+                    asset.ThumbnailPolicy = thumbnailPolicy.Id;
+                }
+            }
+
+            return asset.ThumbnailPolicy != incomingPolicy;
         }
     }
 }

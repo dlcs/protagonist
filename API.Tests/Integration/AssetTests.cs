@@ -1,10 +1,12 @@
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using API.Client;
 using API.Features.Image.Requests;
 using API.Tests.Integration.Infrastructure;
+using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Repository;
@@ -214,9 +216,24 @@ public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_Asset_Creates_Asset()
     {
+        var assetId = new AssetId(99, 1, nameof(Put_Asset_Creates_Asset));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""customer"": {assetId.Customer},
+  ""space"": {assetId.Space},
+  ""modelId"": ""{assetId.Asset}""
+}}";
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
         
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = await dbContext.Images.FindAsync(assetId.ToString());
+        asset.Id.Should().Be(assetId.ToString());
     }
-    
+
     
     [Fact]
     public async Task Put_Asset_Updates_Asset()

@@ -7,6 +7,7 @@ using API.Settings;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.Core.Encryption;
+using DLCS.Core.Settings;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
@@ -56,8 +57,10 @@ namespace API
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<ApiSettings>(configuration);
+            services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
             var cachingSection = configuration.GetSection("Caching");
             services.Configure<CacheSettings>(cachingSection);
+            
             
             var apiSettings = configuration.Get<ApiSettings>();
             var cacheSettings = cachingSection.Get<CacheSettings>();

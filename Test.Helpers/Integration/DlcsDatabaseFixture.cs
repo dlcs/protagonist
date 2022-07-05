@@ -57,6 +57,7 @@ namespace Test.Helpers.Integration
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Spaces\" WHERE \"Customer\" != 99 AND \"Id\" != 1");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
+            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" != 'fast-higher'");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerOriginStrategies\"");
             DbContext.Database.ExecuteSqlRaw($"DELETE FROM \"AuthServices\" WHERE \"Id\" != '{ClickThroughAuthService}'");
@@ -90,6 +91,8 @@ namespace Test.Helpers.Integration
                 { Created = DateTime.UtcNow, Id = 1, Customer = customer, Name = "space-1" });
             await DbContext.ThumbnailPolicies.AddAsync(new ThumbnailPolicy
                 { Id = "default", Name = "default", Sizes = "800,400,200" });
+            await DbContext.ImageOptimisationPolicies.AddAsync(new ImageOptimisationPolicy
+                { Id = "fast-higher", Name = "Fast higher quality", TechnicalDetails = "kdu_max" });
             await DbContext.AuthServices.AddAsync(new AuthService
             {
                 Customer = customer, Name = "clickthrough", Id = ClickThroughAuthService,
