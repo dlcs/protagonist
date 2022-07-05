@@ -198,6 +198,25 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         (await response.Content.ReadAsStringAsync()).Should().Be(fakePdfContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/pdf"));
     }
+    
+    [Fact]
+    public async Task GetPdf_Returns401_IfControlFileFound_HasRoles_UserCannotAccess()
+    {
+        // Arrange
+        const string path = "pdf/99/test-pdf/my-ref/1/99";
+        await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/99/tester.json",
+            new ControlFile
+            {
+                Created = DateTime.UtcNow.AddHours(-1), InProcess = false,
+                Roles = new List<string> { "whitelisted-role" }
+            });
+        
+        // Act
+        var response = await httpClient.GetAsync(path);
+            
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
         
     [Fact]
     public async Task GetPdf_Returns500_IfPdfCreatedButCannotBeFound()
@@ -376,12 +395,12 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         public void AddCallbackFor(string pdfKey, Func<ParsedNamedQuery, List<Asset>, bool> callback)
             => callbacks.Add(pdfKey, callback);
 
-        public Task<bool> PersistProjection(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images,
+        public Task<(bool success, ControlFile controlFile)> PersistProjection(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images,
             CancellationToken cancellationToken = default)
         {
             if (callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
             {
-                return Task.FromResult(cb(parsedNamedQuery, images));
+                return Task.FromResult((cb(parsedNamedQuery, images), new ControlFile()));
             }
 
             throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");

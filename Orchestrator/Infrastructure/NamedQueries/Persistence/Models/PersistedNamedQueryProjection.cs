@@ -69,6 +69,11 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence.Models
         NotFound,
         
         /// <summary>
+        /// Projected asset requires auth to view and user doesn't have appropriate access.
+        /// </summary>
+        Restricted,
+        
+        /// <summary>
         /// There was an error in handling the request.
         /// </summary>
         Error

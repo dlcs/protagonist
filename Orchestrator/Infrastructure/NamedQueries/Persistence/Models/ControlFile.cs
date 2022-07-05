@@ -46,7 +46,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence.Models
         public long SizeBytes { get; set; }
         
         /// <summary>
-        /// List of unique roles for all images included in related projection
+        /// List of unique whitelisted roles for all images included in related projection, user will require access
+        /// to these roles in order to view pdf.
         /// </summary>
         [JsonProperty("roles")]
         public List<string>? Roles { get; set; }

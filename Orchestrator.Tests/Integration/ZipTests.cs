@@ -377,12 +377,12 @@ namespace Orchestrator.Tests.Integration
             public void AddCallbackFor(string s3Key, Func<ParsedNamedQuery, List<Asset>, bool> callback)
                 => callbacks.Add(s3Key, callback);
 
-            public Task<bool> PersistProjection(ZipParsedNamedQuery parsedNamedQuery, List<Asset> images,
+            public Task<(bool success, ControlFile controlFile)> PersistProjection(ZipParsedNamedQuery parsedNamedQuery, List<Asset> images,
                 CancellationToken cancellationToken = default)
             {
                 if (callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
                 {
-                    return Task.FromResult(cb(parsedNamedQuery, images));
+                    return Task.FromResult<(bool, ControlFile)>((cb(parsedNamedQuery, images), null));
                 }
 
                 throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");

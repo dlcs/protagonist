@@ -50,7 +50,8 @@ namespace Orchestrator.Features.Zip.Requests
                 return PersistedNamedQueryProjection.BadRequest();
             
             // Stream ZIP 
-            var zipResult = await storedNamedQueryService.GetResults(namedQueryResult, zipCreator, cancellationToken);
+            var zipResult =
+                await storedNamedQueryService.GetResults(namedQueryResult, zipCreator, false, cancellationToken);
 
             return zipResult.Status == PersistedProjectionStatus.InProcess
                 ? new PersistedNamedQueryProjection(PersistedProjectionStatus.InProcess)

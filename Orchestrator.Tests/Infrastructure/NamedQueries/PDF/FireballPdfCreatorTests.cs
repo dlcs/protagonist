@@ -88,10 +88,10 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
                 .Throws(new Exception());
             
             // Act
-            var response = await sut.PersistProjection(parsedNamedQuery, images);
+            var (success, _) = await sut.PersistProjection(parsedNamedQuery, images);
             
             // Assert
-            response.Should().BeFalse();
+            success.Should().BeFalse();
             A.CallTo(() => bucketWriter
                     .WriteToBucket(
                         A<ObjectInBucket>.That.Matches(b => b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
@@ -117,10 +117,10 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadGateway));
             
             // Act
-            var response = await sut.PersistProjection(parsedNamedQuery, images);
+            var (success, _) = await sut.PersistProjection(parsedNamedQuery, images);
             
             // Assert
-            response.Should().BeFalse();
+            success.Should().BeFalse();
             httpHandler.CallsMade.Should().Contain("https://fireball/pdf");
         }
         
@@ -145,10 +145,10 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             httpHandler.SetResponse(responseMessage);
             
             // Act
-            var response = await sut.PersistProjection(parsedNamedQuery, images);
+            var (success, _) = await sut.PersistProjection(parsedNamedQuery, images);
             
             // Assert
-            response.Should().BeFalse();
+            success.Should().BeFalse();
             httpHandler.CallsMade.Should().Contain("https://fireball/pdf");
         }
 
@@ -174,10 +174,10 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             httpHandler.SetResponse(responseMessage);
             
             // Act
-            var response = await sut.PersistProjection(parsedNamedQuery, images);
+            var (success, _) = await sut.PersistProjection(parsedNamedQuery, images);
             
             // Assert
-            response.Should().BeTrue();
+            success.Should().BeTrue();
             httpHandler.CallsMade.Should().Contain("https://fireball/pdf");
             A.CallTo(() => bucketWriter
                     .WriteToBucket(

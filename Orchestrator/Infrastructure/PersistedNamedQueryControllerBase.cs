@@ -61,6 +61,7 @@ namespace Orchestrator.Infrastructure
 
                 // Handle known non-200 status
                 if (result.IsBadRequest) return BadRequest();
+                if (result.Status == PersistedProjectionStatus.Restricted) return Unauthorized();
                 if (result.Status == PersistedProjectionStatus.Error) return StatusCode(500);
                 if (result.Status == PersistedProjectionStatus.InProcess)
                     return InProcess(NamedQuerySettings.ControlStaleSecs);

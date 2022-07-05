@@ -1,13 +1,16 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets.NamedQueries;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Settings;
 
@@ -20,6 +23,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
     {
         private readonly IBucketReader bucketReader;
         private readonly ILogger<StoredNamedQueryService> logger;
+        private readonly IAssetAccessValidator assetAccessValidator;
         private readonly NamedQuerySettings namedQuerySettings;
         private readonly IStorageKeyGenerator storageKeyGenerator;
 
@@ -27,11 +31,13 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             IBucketReader bucketReader,
             IOptions<NamedQuerySettings> namedQuerySettings,
             ILogger<StoredNamedQueryService> logger, 
+            IAssetAccessValidator assetAccessValidator,
             IStorageKeyGenerator storageKeyGenerator)
         {
             this.bucketReader = bucketReader;
             this.namedQuerySettings = namedQuerySettings.Value;
             this.logger = logger;
+            this.assetAccessValidator = assetAccessValidator;
             this.storageKeyGenerator = storageKeyGenerator;
         }
 
@@ -39,7 +45,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         /// Get <see cref="StoredResult"/> containing data stream and status for specific named query result.
         /// </summary>
         public async Task<StoredResult> GetResults<T>(NamedQueryResult<T> namedQueryResult,
-            IProjectionCreator<T> projectionCreator, CancellationToken cancellationToken)
+            IProjectionCreator<T> projectionCreator, bool validateRoles, 
+            CancellationToken cancellationToken = default)
             where T : StoredParsedNamedQuery
         {
             namedQueryResult.ParsedQuery.ThrowIfNull(nameof(namedQueryResult.ParsedQuery));
@@ -47,10 +54,11 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             var parsedNamedQuery = namedQueryResult.ParsedQuery!;
 
             // Check to see if we can use an existing item
-            var existingResult = await TryGetExistingResource(parsedNamedQuery, cancellationToken);
+            var existingResult = await TryGetExistingResource(parsedNamedQuery, validateRoles, cancellationToken);
 
             // If it's Found or InProcess then no further processing for now, returns what's found
-            if (existingResult.Status is PersistedProjectionStatus.Available or PersistedProjectionStatus.InProcess)
+            if (existingResult.Status is PersistedProjectionStatus.Available or PersistedProjectionStatus.InProcess
+                or PersistedProjectionStatus.Restricted)
             {
                 return existingResult;
             }
@@ -61,9 +69,18 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
                 logger.LogWarning("No results found for PDF file {PdfS3Key}, aborting", parsedNamedQuery.StorageKey);
                 return new StoredResult(Stream.Null, PersistedProjectionStatus.NotFound);
             }
-            
-            var success = await projectionCreator.PersistProjection(parsedNamedQuery, imageResults, cancellationToken);
+
+            var (success, controlFile) =
+                await projectionCreator.PersistProjection(parsedNamedQuery, imageResults, cancellationToken);
             if (!success) return new StoredResult(Stream.Null, PersistedProjectionStatus.Error);
+            
+            if (validateRoles)
+            {
+                if (!await CanUserViewItem(parsedNamedQuery, controlFile!))
+                {
+                    return new(Stream.Null, PersistedProjectionStatus.Restricted);
+                }
+            }
 
             var projection = await LoadStoredObject(parsedNamedQuery.StorageKey, cancellationToken);
             if (projection.Stream != null && projection.Stream != Stream.Null)
@@ -87,12 +104,20 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         }
 
         private async Task<StoredResult> TryGetExistingResource(StoredParsedNamedQuery parsedNamedQuery,
-            CancellationToken cancellationToken)
+            bool validateRoles, CancellationToken cancellationToken)
         {
             var controlFile = await GetControlFile(parsedNamedQuery.ControlFileStorageKey, cancellationToken);
             if (controlFile == null) return new(Stream.Null, PersistedProjectionStatus.NotFound);
 
             var itemKey = parsedNamedQuery.StorageKey;
+            
+            if (validateRoles)
+            {
+                if (!await CanUserViewItem(parsedNamedQuery, controlFile))
+                {
+                    return new(Stream.Null, PersistedProjectionStatus.Restricted);
+                }
+            }
 
             if (controlFile.IsStale(namedQuerySettings.ControlStaleSecs)) // TODO - allow different values
             {
@@ -115,6 +140,16 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
 
             logger.LogWarning("File {S3Key} has valid control-file but item not found. Will recreate", itemKey);
             return new(Stream.Null, PersistedProjectionStatus.NotFound);
+        }
+
+        private async Task<bool> CanUserViewItem(StoredParsedNamedQuery parsedNamedQuery, ControlFile controlFile)
+        {
+            if (controlFile.Roles.IsNullOrEmpty()) return true;
+            
+            var access =
+                await assetAccessValidator.TryValidate(parsedNamedQuery.Customer, controlFile.Roles,
+                    AuthMechanism.Cookie);
+            return access is AssetAccessResult.Open or AssetAccessResult.Authorized;
         }
 
         private Task<ObjectFromBucket> LoadStoredObject(string key, CancellationToken cancellationToken)

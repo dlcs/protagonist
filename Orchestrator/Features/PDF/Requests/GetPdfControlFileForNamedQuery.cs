@@ -67,6 +67,7 @@ namespace Orchestrator.Features.PDF.Requests
             Created = controlFile.Created;
             ItemCount = controlFile.ItemCount;
             SizeBytes = controlFile.SizeBytes;
+            Roles = controlFile.Roles;
         }
     }
 }
