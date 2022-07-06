@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core;
@@ -6,6 +8,7 @@ using DLCS.Core.Types;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
+using IIIF.Auth.V1;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
 using MediatR;
@@ -92,7 +95,7 @@ namespace Orchestrator.Features.Images.Requests
             }
 
             var infoJson = infoJsonResponse.InfoJson;
-            SetIdProperty(request, infoJson);
+            SetIdProperties(request, infoJson);
 
             // TODO - handle err codes
 
@@ -132,17 +135,19 @@ namespace Orchestrator.Features.Images.Requests
             return orchestrationQueue.QueueRequest(orchestrationImage, cancellationToken);
         }
         
-        private void SetIdProperty(GetImageInfoJson request, JsonLdBase infoJson)
+        private void SetIdProperties(GetImageInfoJson request, JsonLdBase infoJson)
         {
-            // The Id property can differ depending on config (DefaultIIIFImageVersion) or hostname if serving
+            // The Id properties can differ depending on config (DefaultIIIFImageVersion) or hostname if serving
             // via a cdn so simplest option is to rewrite it on way out.
             switch (infoJson)
             {
                 case ImageService2 imageService2:
                     imageService2.Id = GetImageId(request);
+                    SetServiceIdProperties(request.AssetRequest.GetAssetId(), imageService2.Service);
                     break;
                 case ImageService3 imageService3:
                     imageService3.Id = GetImageId(request);
+                    SetServiceIdProperties(request.AssetRequest.GetAssetId(), imageService3.Service);
                     break;
                 default:
                     throw new InvalidOperationException("Info.json is unknown version");
@@ -162,5 +167,38 @@ namespace Orchestrator.Features.Images.Requests
                         baseAssetRequest.Space.ToString(),
                         baseAssetRequest.AssetId);
                 });
+        
+        private void SetServiceIdProperties(AssetId assetId, List<IService>? services)
+        {
+            void SetAuthId(IService service)
+            {
+                // TODO - this needs to be aware of incoming host headers and alter paths accordingly
+                var authServicesUriFormat = orchestratorSettings.Auth.AuthServicesUriTemplate;
+                var id = authServicesUriFormat
+                    .Replace("{customer}", assetId.Customer.ToString())
+                    .Replace("{behaviour}", service.Id);
+                service.Id = id;
+            }
+            
+            foreach (var service in services ?? Enumerable.Empty<IService>())
+            {
+                if (service == null) continue;
+                if (service is AuthCookieService cookieService)
+                {
+                    SetAuthId(cookieService);
+                    SetServiceIdProperties(assetId, cookieService.Service);
+                }
+                else if (service is AuthLogoutService or AuthTokenService)
+                {
+                    SetAuthId(service);
+                }
+                else
+                {
+                    logger.LogWarning(
+                        "Encountered unknown service type on info.json, unable to update Id '{ServiceType}'",
+                        service.GetType());
+                }
+            }
+        }
     }
 }

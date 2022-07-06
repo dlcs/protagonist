@@ -18,11 +18,6 @@ namespace Orchestrator.Settings
         public string S3OriginRegex { get; set; }
 
         /// <summary>
-        /// URI template for auth services
-        /// </summary>
-        public string AuthServicesUriTemplate { get; set; }
-
-        /// <summary>
         /// Timeout for critical orchestration path. How long to wait to achieve lock when orchestrating asset.
         /// If timeout breached, multiple orchestrations can happen for same item.
         /// </summary>
@@ -158,6 +153,11 @@ namespace Orchestrator.Settings
         /// If true the current domain is automatically added to auth token domains.
         /// </summary>
         public bool UseCurrentDomainForCookie { get; set; } = true;
+        
+        /// <summary>
+        /// URI template for auth services
+        /// </summary>
+        public string AuthServicesUriTemplate { get; set; }
     }
 
     /// <summary>
