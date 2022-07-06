@@ -110,7 +110,7 @@ namespace API.Converters
                     throw new APIException("No Space provided for this Asset.");
                 }
             }
-
+            
             if (modelId.IsNullOrEmpty())
             {
                 modelId = hydraImage.ModelId;

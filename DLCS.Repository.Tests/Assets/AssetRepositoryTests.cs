@@ -27,6 +27,8 @@ namespace DLCS.Repository.Tests.Assets
         public AssetRepositoryTests(DlcsDatabaseFixture dbFixture)
         {
             dbContext = dbFixture.DbContext;
+            // We want this turned on to match live behaviour
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new[]
                     { new KeyValuePair<string, string>("ConnectionString:PostgreSQLConnection", dbFixture.ConnectionString) })
@@ -46,7 +48,8 @@ namespace DLCS.Repository.Tests.Assets
         public async Task AssetRepository_Saves_New_Asset()
         {
             var id = "new-asset";
-            var newAsset = new Asset { Id = id, Customer = 100, Space = 10, Reference1 = "I am new"};
+            var newAsset = new Asset { Id = id, Customer = 100, Space = 10, Reference1 = "I am new", 
+                Origin = "https://example.org/image1.tiff"};
         
             var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false);
             result.Success.Should().BeTrue();
@@ -88,7 +91,8 @@ namespace DLCS.Repository.Tests.Assets
         {
             var id = "tracked-asset";
             // previously
-            var assetEntry = await dbContext.Images.AddTestAsset(id, ref1:"I am original 1", ref2:"I am original 2");
+            var assetEntry = await dbContext.Images.AddTestAsset(id, ref1: "I am original 1", ref2: "I am original 2",
+                origin: "https://example.org/image1.tiff");
             await dbContext.SaveChangesAsync();
 
             var trackedAsset = assetEntry.Entity;

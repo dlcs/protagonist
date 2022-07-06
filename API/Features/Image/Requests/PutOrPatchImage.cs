@@ -200,9 +200,10 @@ namespace API.Features.Image.Requests
             
             var validationResult = AssetPreparer.PrepareAssetForUpsert(
                 existingAsset, asset, allowNonApiUpdates:false);
+            
             if (!validationResult.Success)
             {
-                // ValidateImageUpsertBehaviour
+                // ValidateImageUpsertBehaviour (though has been modified quite a bit)
                 return new PutOrPatchImageResult
                 {
                     StatusCode = HttpStatusCode.BadRequest,
@@ -210,7 +211,7 @@ namespace API.Features.Image.Requests
                 };
             }
 
-            // we treat a PUT as a re-process instruction
+            // we treat a PUT as a re-process instruction regardless
             var requiresEngineNotification = validationResult.RequiresReingest || request.Method == "PUT";
 
             // Deliverator only does this for new assets, but it should verify PATCH assets too.
@@ -264,7 +265,7 @@ namespace API.Features.Image.Requests
                         return new PutOrPatchImageResult
                         {
                             Asset = assetAfterEngine,
-                            StatusCode = statusCode
+                            StatusCode = existingAsset == null ? HttpStatusCode.Created : HttpStatusCode.OK
                         };
                     }
 

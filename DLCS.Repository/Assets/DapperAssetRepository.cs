@@ -121,8 +121,9 @@ namespace DLCS.Repository.Assets
             }
             else
             {
-                var existing = await dlcsContext.Images.FindAsync(new object[] { asset.Id }, cancellationToken);
-                if (existing == null)
+                var exists = await dlcsContext.Images.AnyAsync(a => a.Id == asset.Id, cancellationToken: cancellationToken);
+                //var existing = await dlcsContext.Images.FindAsync(new object[] { asset.Id }, cancellationToken);
+                if (!exists)
                 {
                     await dlcsContext.Images.AddAsync(asset, cancellationToken);
                 }

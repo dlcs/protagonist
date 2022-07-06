@@ -1,4 +1,5 @@
 using System;
+using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 
@@ -164,7 +165,13 @@ public static class AssetPreparer
         }
 
         SetNullFieldsToExistingOrDefaults(existingAsset, updateAsset);
-
+        // updateAsset is now ready to be upserted into the database
+        
+        if (requiresReingest && updateAsset.Origin.IsNullOrEmpty())
+        {
+            return new AssetPreparationResult { ErrorMessage = "Asset Origin must be supplied." };
+        }
+    
         return new AssetPreparationResult
         {
             Success = true,

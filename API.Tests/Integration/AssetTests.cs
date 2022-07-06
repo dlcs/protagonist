@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -6,15 +7,22 @@ using System.Threading.Tasks;
 using API.Client;
 using API.Features.Image.Requests;
 using API.Tests.Integration.Infrastructure;
+using DLCS.Core.Settings;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
+using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Messaging;
 using FluentAssertions;
 using Hydra.Collections;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
+using Test.Helpers.Http;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using Xunit;
@@ -28,12 +36,33 @@ public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
+    private readonly ControllableHttpMessageHandler httpHandler;
     
     public AssetTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
+        httpHandler = new ControllableHttpMessageHandler();
+        
         dbContext = dbFixture.DbContext;
-        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
+        httpClient = factory
+            .WithTestServices(services =>
+            {
+                // swap out our MessageBus for a version with a controllable httpClient
+                // What would be more elegant is just replacing the HttpClient but how?
+                var messageBusDescriptor = services.FirstOrDefault(
+                    descriptor => descriptor.ServiceType == typeof(IMessageBus));
+                services.Remove(messageBusDescriptor);
+                services.AddScoped<IMessageBus>(GetTestMessageBus);
+            })
+            .ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
         dbFixture.CleanUp();
+    }
+
+    private IMessageBus GetTestMessageBus(IServiceProvider arg)
+    {
+        var controllableHttpMessageClient = new HttpClient(httpHandler);
+        var options = Options.Create(new DlcsSettings { EngineDirectIngestUri = new Uri("http://engine.dlcs/ingest") });
+        var logger = new NullLogger<MessageBus>();
+        return new MessageBus(controllableHttpMessageClient, options, logger);
     }
 
     private async Task AddMultipleAssets(int space, string name)
@@ -219,32 +248,94 @@ public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = new AssetId(99, 1, nameof(Put_Asset_Creates_Asset));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
-  ""customer"": {assetId.Customer},
-  ""space"": {assetId.Space},
-  ""modelId"": ""{assetId.Asset}""
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff""
 }}";
+        
+        HttpRequestMessage engineMessage = null;
+        httpHandler.RegisterCallback(r => engineMessage = r);
+        httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
+        
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
+        engineMessage.Should().NotBeNull();
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
         var asset = await dbContext.Images.FindAsync(assetId.ToString());
         asset.Id.Should().Be(assetId.ToString());
-    }
 
+        asset.ThumbnailPolicy.Should().Be("default");
+        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
+    }
     
+    [Fact]
+    public async Task Put_New_Asset_Requires_Origin()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Requires_Origin));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image""
+}}";
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+
     [Fact]
     public async Task Put_Asset_Updates_Asset()
     {
+        var assetId = new AssetId(99, 1, nameof(Put_Asset_Updates_Asset));
         
+        var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(),
+            ref1: "I am string 1", origin:"https://images.org/image1.tiff");
+        await dbContext.SaveChangesAsync();
+        testAsset.State = EntityState.Detached; // need to untrack before update
+        
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""string1"": ""I am edited""
+}}";
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var asset = await dbContext.Images.FindAsync(assetId.ToString());
+        asset.Reference1.Should().Be("I am edited");
     }
     
     
     [Fact]
     public async Task Patch_Asset_Updates_Asset()
     {
+        // This is the same as Put_Asset_Updates_Asset, but with a PATCH
+        var assetId = new AssetId(99, 1, nameof(Patch_Asset_Updates_Asset));
+        
+        var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(),
+            ref1: "I am string 1", origin:"https://images.org/image2.tiff");
+        await dbContext.SaveChangesAsync();
+        testAsset.State = EntityState.Detached; // need to untrack before update
+        
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""string1"": ""I am edited""
+}}";
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var asset = await dbContext.Images.FindAsync(assetId.ToString());
+        asset.Reference1.Should().Be("I am edited");
         
     }
     
