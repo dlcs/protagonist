@@ -67,30 +67,33 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             if (imageResults.Count == 0)
             {
                 logger.LogWarning("No results found for PDF file {PdfS3Key}, aborting", parsedNamedQuery.StorageKey);
-                return new StoredResult(Stream.Null, PersistedProjectionStatus.NotFound);
+                return new StoredResult(Stream.Null, PersistedProjectionStatus.NotFound, existingResult.RequiresAuth);
             }
 
             var (success, controlFile) =
                 await projectionCreator.PersistProjection(parsedNamedQuery, imageResults, cancellationToken);
-            if (!success) return new StoredResult(Stream.Null, PersistedProjectionStatus.Error);
+            if (!success)
+                return new StoredResult(Stream.Null, PersistedProjectionStatus.Error, existingResult.RequiresAuth);
             
-            if (validateRoles)
+            var requiresAuth = !controlFile!.Roles.IsNullOrEmpty();
+            
+            if (validateRoles && requiresAuth)
             {
-                if (!await CanUserViewItem(parsedNamedQuery, controlFile!))
+                if (!await CanUserViewItem(parsedNamedQuery, controlFile))
                 {
-                    return new(Stream.Null, PersistedProjectionStatus.Restricted);
+                    return new(Stream.Null, PersistedProjectionStatus.Restricted, requiresAuth);
                 }
             }
 
             var projection = await LoadStoredObject(parsedNamedQuery.StorageKey, cancellationToken);
             if (projection.Stream != null && projection.Stream != Stream.Null)
             {
-                return new(projection.Stream!, PersistedProjectionStatus.Available);
+                return new(projection.Stream!, PersistedProjectionStatus.Available, requiresAuth);
             }
 
             logger.LogWarning("File {S3Key} was successfully created but now cannot be loaded",
                 parsedNamedQuery.StorageKey);
-            return new(Stream.Null, PersistedProjectionStatus.Error);
+            return new(Stream.Null, PersistedProjectionStatus.Error, requiresAuth);
         }
 
         /// <summary>
@@ -107,15 +110,16 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             bool validateRoles, CancellationToken cancellationToken)
         {
             var controlFile = await GetControlFile(parsedNamedQuery.ControlFileStorageKey, cancellationToken);
-            if (controlFile == null) return new(Stream.Null, PersistedProjectionStatus.NotFound);
+            if (controlFile == null) return new(Stream.Null, PersistedProjectionStatus.NotFound, null);
 
             var itemKey = parsedNamedQuery.StorageKey;
+            var requiresAuth = !controlFile.Roles.IsNullOrEmpty();
             
-            if (validateRoles)
+            if (validateRoles && requiresAuth)
             {
                 if (!await CanUserViewItem(parsedNamedQuery, controlFile))
                 {
-                    return new(Stream.Null, PersistedProjectionStatus.Restricted);
+                    return new(Stream.Null, PersistedProjectionStatus.Restricted, true);
                 }
             }
 
@@ -123,29 +127,27 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             {
                 logger.LogWarning("File {S3Key} has valid control-file but it is stale. Will recreate",
                     itemKey);
-                return new(Stream.Null, PersistedProjectionStatus.NotFound);
+                return new(Stream.Null, PersistedProjectionStatus.NotFound, requiresAuth);
             }
 
             if (controlFile.InProcess)
             {
                 logger.LogWarning("File {S3Key} has valid control-file but it's in progress", itemKey);
-                return new(Stream.Null, PersistedProjectionStatus.InProcess);
+                return new(Stream.Null, PersistedProjectionStatus.InProcess, requiresAuth);
             }
 
             var resource = await LoadStoredObject(itemKey, cancellationToken);
             if (resource.Stream != null && resource.Stream != Stream.Null)
             {
-                return new(resource.Stream!, PersistedProjectionStatus.Available);
+                return new(resource.Stream!, PersistedProjectionStatus.Available, requiresAuth);
             }
 
             logger.LogWarning("File {S3Key} has valid control-file but item not found. Will recreate", itemKey);
-            return new(Stream.Null, PersistedProjectionStatus.NotFound);
+            return new(Stream.Null, PersistedProjectionStatus.NotFound, requiresAuth);
         }
 
         private async Task<bool> CanUserViewItem(StoredParsedNamedQuery parsedNamedQuery, ControlFile controlFile)
         {
-            if (controlFile.Roles.IsNullOrEmpty()) return true;
-            
             var access =
                 await assetAccessValidator.TryValidate(parsedNamedQuery.Customer, controlFile.Roles,
                     AuthMechanism.Cookie);
@@ -159,5 +161,5 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
         }
     }
     
-    public record StoredResult(Stream? Stream, PersistedProjectionStatus Status);
+    public record StoredResult(Stream? Stream, PersistedProjectionStatus Status, bool? RequiresAuth);
 }

@@ -198,6 +198,7 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.GetAsync(path);
             
         // Assert
+        response.Headers.CacheControl.Public.Should().BeTrue();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Be(fakePdfContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/pdf"));
@@ -240,6 +241,12 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
             AddPdf(pdfStorageKey, fakePdfContent).Wait();
             return true;
         });
+        pdfCreator.AddCallbackFor(pdfStorageKey, cf =>
+        {
+            // Ensure the newly created ControlFile reflects roles
+            cf.Roles = new List<string> { "clickthrough" };
+            return cf;
+        });
         
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
@@ -255,6 +262,7 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
             
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl.Public.Should().BeFalse();
         (await response.Content.ReadAsStringAsync()).Should().Be(fakePdfContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/pdf"));
     }
@@ -429,19 +437,32 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
             ContentBody = fakeContent
         });
         
+    /// <summary>
+    /// Fake projection creator that handles configured callbacks for when ParsedNamedQuery is persisted.
+    /// Also optional callback for when ControlFile is created during persistence.
+    /// </summary>
     private class FakePdfCreator : IProjectionCreator<PdfParsedNamedQuery>
     {
-        private static readonly Dictionary<string, Func<ParsedNamedQuery, List<Asset>, bool>> callbacks = new();
-
+        private static readonly Dictionary<string, Func<ParsedNamedQuery, List<Asset>, bool>> Callbacks = new();
+        
+        private static readonly Dictionary<string, Func<ControlFile, ControlFile>> ControlFileCallbacks = new();
+        
         public void AddCallbackFor(string pdfKey, Func<ParsedNamedQuery, List<Asset>, bool> callback)
-            => callbacks.Add(pdfKey, callback);
+            => Callbacks.Add(pdfKey, callback);
 
-        public Task<(bool success, ControlFile controlFile)> PersistProjection(PdfParsedNamedQuery parsedNamedQuery, List<Asset> images,
-            CancellationToken cancellationToken = default)
+        public void AddCallbackFor(string pdfKey, Func<ControlFile, ControlFile> callback)
+            => ControlFileCallbacks.Add(pdfKey, callback);
+
+        public Task<(bool success, ControlFile controlFile)> PersistProjection(PdfParsedNamedQuery parsedNamedQuery,
+            List<Asset> images, CancellationToken cancellationToken = default)
         {
-            if (callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
+            if (Callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
             {
-                return Task.FromResult((cb(parsedNamedQuery, images), new ControlFile()));
+                var controlFileCallback = ControlFileCallbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cfcb)
+                    ? cfcb
+                    : file => file;
+
+                return Task.FromResult((cb(parsedNamedQuery, images), controlFileCallback(new ControlFile())));
             }
 
             throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");

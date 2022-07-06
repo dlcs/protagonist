@@ -55,9 +55,10 @@ namespace Orchestrator.Features.PDF.Requests
             var pdfResult =
                 await storedNamedQueryService.GetResults(namedQueryResult, pdfCreator, true, cancellationToken);
 
-            return pdfResult.Status is PersistedProjectionStatus.InProcess or PersistedProjectionStatus.Restricted 
+            return pdfResult.Status is PersistedProjectionStatus.InProcess or PersistedProjectionStatus.Restricted
                 ? new PersistedNamedQueryProjection(pdfResult.Status)
-                : new PersistedNamedQueryProjection(pdfResult.Stream, pdfResult.Status);
+                : new PersistedNamedQueryProjection(pdfResult.Stream, pdfResult.Status,
+                    pdfResult.RequiresAuth ?? false);
         }
     }
 }

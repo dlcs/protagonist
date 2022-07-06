@@ -382,7 +382,7 @@ namespace Orchestrator.Tests.Integration
             {
                 if (callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
                 {
-                    return Task.FromResult<(bool, ControlFile)>((cb(parsedNamedQuery, images), null));
+                    return Task.FromResult((cb(parsedNamedQuery, images), new ControlFile()));
                 }
 
                 throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");

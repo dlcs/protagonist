@@ -55,7 +55,7 @@ namespace Orchestrator.Features.Zip.Requests
 
             return zipResult.Status == PersistedProjectionStatus.InProcess
                 ? new PersistedNamedQueryProjection(PersistedProjectionStatus.InProcess)
-                : new PersistedNamedQueryProjection(zipResult.Stream, zipResult.Status);
+                : new PersistedNamedQueryProjection(zipResult.Stream, zipResult.Status, false);
         }
     }
 }
