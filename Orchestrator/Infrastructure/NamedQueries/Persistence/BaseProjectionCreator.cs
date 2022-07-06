@@ -96,7 +96,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence
             // Only add whitelisted roles that are present in the result collection to the ControlFile as those are
             // the only roles that will be required for access
             var whitelistRoles =
-                NamedQuerySettings.CustomerOverrides.TryGetValue(parsedNamedQuery.Customer, out var overrides)
+                NamedQuerySettings.CustomerOverrides.TryGetValue(parsedNamedQuery.Customer.ToString(), out var overrides)
                     ? overrides.PdfRolesWhitelist
                     : Enumerable.Empty<string>();
 

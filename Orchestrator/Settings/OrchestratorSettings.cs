@@ -196,7 +196,7 @@ namespace Orchestrator.Settings
         /// <summary>
         /// Customer-specific overrides; keyed by customer Id
         /// </summary>
-        public Dictionary<int, CustomerOverride> CustomerOverrides { get; set; } = new();
+        public Dictionary<string, CustomerOverride> CustomerOverrides { get; set; } = new();
     }
     
     public class CustomerOverride

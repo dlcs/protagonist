@@ -111,7 +111,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF
         }
 
         private CustomerOverride GetCustomerOverride(PdfParsedNamedQuery parsedNamedQuery) 
-            => NamedQuerySettings.CustomerOverrides.TryGetValue(parsedNamedQuery.Customer, out var overrides)
+            => NamedQuerySettings.CustomerOverrides.TryGetValue(parsedNamedQuery.Customer.ToString(), out var overrides)
                 ? overrides
                 : new CustomerOverride();
         

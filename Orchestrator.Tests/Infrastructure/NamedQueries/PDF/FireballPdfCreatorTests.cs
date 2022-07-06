@@ -37,9 +37,9 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
         {
             var namedQuerySettings = Options.Create(new NamedQuerySettings
             {
-                CustomerOverrides = new Dictionary<int, CustomerOverride>
+                CustomerOverrides = new Dictionary<string, CustomerOverride>
                 {
-                    [99] = new()
+                    ["99"] = new()
                     {
                         PdfRolesWhitelist = new List<string> { "whitelist" }
                     }
