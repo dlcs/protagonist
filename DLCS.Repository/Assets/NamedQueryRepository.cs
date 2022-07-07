@@ -53,7 +53,7 @@ namespace DLCS.Repository.Assets
 
         public IQueryable<Asset> GetNamedQueryResults(ParsedNamedQuery query)
         {
-            var imageFilter = dlcsContext.Images.Where(i => i.Customer == query.Customer);
+            var imageFilter = dlcsContext.Images.Where(i => i.Customer == query.Customer && !i.NotForDelivery);
 
             if (query.String1.HasText())
             {

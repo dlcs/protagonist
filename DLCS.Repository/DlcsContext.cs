@@ -9,7 +9,6 @@ using DLCS.Core.Enum;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
 using DLCS.Model.Spaces;

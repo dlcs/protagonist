@@ -50,7 +50,7 @@ namespace Thumbs.Tests
             
             // Assert
             response.Should().Be(ReorganiseResult.HasExpectedLayout);
-            A.CallTo(() => assetRepository.GetAsset(A<string>._))
+            A.CallTo(() => assetRepository.GetAsset(A<AssetId>._))
                 .MustNotHaveHappened();
         }
 

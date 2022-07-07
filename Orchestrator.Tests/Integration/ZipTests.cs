@@ -58,6 +58,8 @@ namespace Orchestrator.Tests.Integration
                 maxUnauthorised: 10, roles: "default");
             dbFixture.DbContext.Images.AddTestAsset("99/1/matching-zip-4", num1: 4, ref1: "my-ref");
             dbFixture.DbContext.Images.AddTestAsset("99/1/matching-zip-5", num1: 5, ref1: "my-ref");
+            dbFixture.DbContext.Images.AddTestAsset("99/1/not-for-delivery", num1: 6, ref1: "my-ref",
+                notForDelivery: true);
             dbFixture.DbContext.SaveChanges();
         }
         

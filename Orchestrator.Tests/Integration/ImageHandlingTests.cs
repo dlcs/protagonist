@@ -910,6 +910,29 @@ namespace Orchestrator.Tests.Integration
             response.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromDays(28));
             response.Headers.Should().ContainKey("x-test-key").WhoseValue.Should().BeEquivalentTo("foo bar");
         }
+        
+        [Theory]
+        [InlineData("/info.json")]
+        [InlineData("/full/max/0/default.jpg")]
+        [InlineData("/0,0,1000,1000/200,200/0/default.jpg")]
+        public async Task Get_404_IfNotForDelivery(string path)
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_404_IfNotForDelivery)}";
+
+            // test runs 3 times so only add on first run
+            if (await dbFixture.DbContext.Images.FindAsync(id) == null)
+            {
+                await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true);
+                await dbFixture.DbContext.SaveChangesAsync();
+            }
+
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/{id}/{path}");
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
     }
     
     public class FakeImageOrchestrator : IImageOrchestrator

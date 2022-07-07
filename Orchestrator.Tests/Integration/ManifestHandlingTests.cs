@@ -26,14 +26,14 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public ManifestHandlingTests(ProtagonistAppFactory<Startup> factory, DlcsDatabaseFixture databaseFixture)
     {
         dbFixture = databaseFixture;
-            
+
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .CreateClient();
             
         dbFixture.CleanUp();
     }
-        
+    
     [Theory]
     [InlineData("iiif-manifest/1/1/my-asset")]
     [InlineData("iiif-manifest/v2/1/1/my-asset")]
@@ -66,6 +66,23 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     [InlineData("iiif-manifest/v3/99/1/my-asset")]
     public async Task Get_UnknownImage_Returns404(string path)
     {
+        // Act
+        var response = await httpClient.GetAsync(path);
+            
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_NotForDelivery_Returns404()
+    {
+        // Arrange
+        var id = $"99/1/{nameof(Get_NotForDelivery_Returns404)}";
+        await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true);
+        await dbFixture.DbContext.SaveChangesAsync();
+            
+        var path = $"iiif-manifest/{id}";
+
         // Act
         var response = await httpClient.GetAsync(path);
             
