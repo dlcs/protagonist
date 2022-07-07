@@ -62,6 +62,23 @@ namespace Orchestrator.Tests.Integration
             
             dbFixture.CleanUp();
         }
+
+        [Theory]
+        [InlineData("/iiif-img/1/1")]
+        [InlineData("/iiif-img/1/1/info.json")]
+        [InlineData("/iiif-img/1/1/full/1000,/0/default.jpg")]
+        public async Task Options_Returns200_WithCorsHeaders(string path)
+        {
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Options, path);
+            var response = await httpClient.SendAsync(request);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Should().ContainKey("Access-Control-Allow-Origin");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Headers");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Methods");
+        }
         
         [Theory]
         [InlineData("/iiif-img/2/1/image")]

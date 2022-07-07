@@ -41,6 +41,23 @@ namespace Orchestrator.Tests.Integration
             
             dbFixture.CleanUp();
         }
+
+        [Fact]
+        public async Task Options_Returns200_WithCorsHeaders()
+        {
+            // Arrange
+            const string path = "iiif-av/1/1/my-timebased/full/full/max/max/0/default.mp4";
+
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Options, path);
+            var response = await httpClient.SendAsync(request);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Should().ContainKey("Access-Control-Allow-Origin");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Headers");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Methods");
+        }
         
         [Fact]
         public async Task Get_UnknownCustomer_Returns404()
