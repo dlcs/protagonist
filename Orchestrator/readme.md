@@ -36,25 +36,12 @@ Handle requests for TimeBased assets. Will:
 * Redirect to s3 for open assets.
 * Proxy s3 for restricted assets.
 
-Decision logic in `TimeBasedRequestHandler` and routing logic in `TimeBasedRouteHandlers`. 
-
-### Standard Proxied Routes
-
-The following routes are defined for YARP to handle:
-
-* img_options - handles any `OPTIONS` requests for images, proxied to deliverator
-* av_infojson - handles `GET` requests for timebased media `info.json` requests, proxied to deliverator
-* av_only - handles `GET` requests for `/iiif-av/{cust}/{space}/{image}` requests, proxied to deliverator as these are info.json requests (without info.json)
-* av_options - handles any `OPTIONS` requests for images `/iiif-av/`, proxied to deliverator
-* fallback - handles any requests, for any verb, that are not `iiif-img` or `iiif-av` requests.
-
-> Note - YARP is initially acting as a replacement to NGINX in legacy DLCS, most of these routes will be removed in time.
+Decision logic in `TimeBasedRequestHandler` and routing logic in `TimeBasedRouteHandlers`.
 
 ## Clusters
 
 The following YARP Clusters are used:
 
-* deliverator - legacy DLCS orchestrator implementation (temporary during migration).
 * cantaloupe - Cantaloupe image-server.
 * iip - IIP image-server
 * thumbs - Protagonist thumbs service.
