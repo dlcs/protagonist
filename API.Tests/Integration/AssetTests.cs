@@ -30,17 +30,19 @@ namespace API.Tests.Integration;
 
 [Trait("Category", "Integration")]
 [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
-public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
+public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>, IClassFixture<ControllableHttpMessageHandler>
 {
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
     private readonly ControllableHttpMessageHandler httpHandler;
     
-    public AssetTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
+    public AssetTests(
+        DlcsDatabaseFixture dbFixture, 
+        ProtagonistAppFactory<Startup> factory,
+        ControllableHttpMessageHandler httpHandler)
     {
-        httpHandler = new ControllableHttpMessageHandler();
-        
         dbContext = dbFixture.DbContext;
+        this.httpHandler = httpHandler;
         
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
