@@ -80,6 +80,21 @@ namespace Orchestrator.Tests.Integration
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
+        
+        [Fact]
+        public async Task Get_Returns404_IfNotForDelivery()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_Returns404_IfNotForDelivery)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true);
+            await dbFixture.DbContext.SaveChangesAsync();
+
+            // Act
+            var response = await httpClient.GetAsync($"iiif-av/{id}/full/full/max/max/0/default.mp4");
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
 
         [Fact]
         public async Task Get_AssetDoesNotRequireAuth_Returns302ToS3Location()

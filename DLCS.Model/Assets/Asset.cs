@@ -40,6 +40,11 @@ namespace DLCS.Model.Assets
         public AssetFamily Family { get; set; }
         public string MediaType { get; set; }
         public long Duration { get; set; }
+        
+        /// <summary>
+        /// Flags the asset as not to be delivered for viewing under any circumstances
+        /// </summary>
+        public bool NotForDelivery { get; set; }
 
         private IEnumerable<string>? rolesList;
         

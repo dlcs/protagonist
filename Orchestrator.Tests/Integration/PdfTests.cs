@@ -63,6 +63,8 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-6", num1: 6, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-6-auth", num1: 6, ref1: "my-ref",
             maxUnauthorised: 10, roles: "clickthrough");
+        dbFixture.DbContext.Images.AddTestAsset("99/1/not-for-delivery", num1: 6, ref1: "my-ref",
+            notForDelivery: true);
         dbFixture.DbContext.SaveChanges();
     }
         
