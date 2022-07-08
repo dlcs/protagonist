@@ -10,7 +10,7 @@ using DLCS.Repository.Strategy;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using Test.Helpers.Web;
+using Test.Helpers.Http;
 using Xunit;
 
 namespace DLCS.Repository.Tests.Strategy

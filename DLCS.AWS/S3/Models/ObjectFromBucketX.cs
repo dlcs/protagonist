@@ -1,32 +1,29 @@
-﻿using System.IO;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
-namespace DLCS.AWS.S3.Models
+namespace DLCS.AWS.S3.Models;
+
+public static class ObjectFromBucketX
 {
-    public static class ObjectFromBucketX
-    {
-        private static readonly JsonSerializer Serializer = new();
+    private static readonly JsonSerializer Serializer = new();
         
-        /// <summary>
-        /// Deserialize objectFromBucket stream to specified type.
-        /// </summary>
-        /// <param name="objectFromBucket"><see cref="ObjectFromBucket"/> containing stream to deserialize</param>
-        /// <typeparam name="T">Target type</typeparam>
-        /// <returns>Deserialized object, or null of not found</returns>
-        public static async Task<T?> DeserializeFromJson<T>(this ObjectFromBucket objectFromBucket)
-            where T : class
+    /// <summary>
+    /// Deserialize objectFromBucket stream to specified type.
+    /// </summary>
+    /// <param name="objectFromBucket"><see cref="ObjectFromBucket"/> containing stream to deserialize</param>
+    /// <typeparam name="T">Target type</typeparam>
+    /// <returns>Deserialized object, or null of not found</returns>
+    public static async Task<T?> DeserializeFromJson<T>(this ObjectFromBucket objectFromBucket)
+        where T : class
+    {
+        await using var stream = objectFromBucket.Stream;
+        if (stream == null || stream == Stream.Null)
         {
-            await using var stream = objectFromBucket.Stream;
-            if (stream == null || stream == Stream.Null)
-            {
-                return null;
-            }
-
-            using var sr = new StreamReader(stream);
-            using var jsonTextReader = new JsonTextReader(sr);
-            var objects = Serializer.Deserialize<T>(jsonTextReader);
-            return objects;
+            return null;
         }
+
+        using var sr = new StreamReader(stream);
+        using var jsonTextReader = new JsonTextReader(sr);
+        var objects = Serializer.Deserialize<T>(jsonTextReader);
+        return objects;
     }
 }

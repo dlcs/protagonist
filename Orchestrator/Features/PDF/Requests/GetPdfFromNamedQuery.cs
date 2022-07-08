@@ -52,11 +52,13 @@ namespace Orchestrator.Features.PDF.Requests
             if (namedQueryResult.ParsedQuery is { IsFaulty: true })
                 return PersistedNamedQueryProjection.BadRequest();
 
-            var pdfResult = await storedNamedQueryService.GetResults(namedQueryResult, pdfCreator, cancellationToken);
+            var pdfResult =
+                await storedNamedQueryService.GetResults(namedQueryResult, pdfCreator, true, cancellationToken);
 
-            return pdfResult.Status == PersistedProjectionStatus.InProcess
-                ? new PersistedNamedQueryProjection(PersistedProjectionStatus.InProcess)
-                : new PersistedNamedQueryProjection(pdfResult.Stream, pdfResult.Status);
+            return pdfResult.Status is PersistedProjectionStatus.InProcess or PersistedProjectionStatus.Restricted
+                ? new PersistedNamedQueryProjection(pdfResult.Status)
+                : new PersistedNamedQueryProjection(pdfResult.Stream, pdfResult.Status,
+                    pdfResult.RequiresAuth ?? false);
         }
     }
 }

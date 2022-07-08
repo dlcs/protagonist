@@ -382,7 +382,7 @@ namespace Orchestrator.Tests.Integration
             response.Headers.CacheControl.Public.Should().BeTrue();
             response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         }
-        
+
         [Fact]
         public async Task GetInfoJson_RestrictedImage_Correct()
         {
@@ -407,7 +407,7 @@ namespace Orchestrator.Tests.Integration
                 ContentBody = "{\"o\": [[400,400],[200,200]]}"
             });
             await dbFixture.DbContext.SaveChangesAsync();
-            
+
             // Act
             var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
 
@@ -416,7 +416,8 @@ namespace Orchestrator.Tests.Integration
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["id"].ToString().Should()
                 .Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_Correct");
-            jsonResponse["service"].Should().NotBeNull();
+            jsonResponse.SelectToken("service.[0].@id").Value<string>().Should()
+                .Be("https://localhost/auth/99/test-service");
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
