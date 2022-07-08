@@ -43,6 +43,23 @@ namespace Orchestrator.Tests.Integration
                 notForDelivery: true);
             dbFixture.DbContext.SaveChanges();
         }
+        
+        [Theory]
+        [InlineData("iiif-resource/99/unknown-nq")]
+        [InlineData("iiif-resource/v2/99/unknown-nq")]
+        [InlineData("iiif-resource/v3/99/unknown-nq")]
+        public async Task Options_Returns200_WithCorsHeaders(string path)
+        {
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Options, path);
+            var response = await httpClient.SendAsync(request);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Should().ContainKey("Access-Control-Allow-Origin");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Headers");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Methods");
+        }
 
         [Theory]
         [InlineData("iiif-resource/99/unknown-nq")]

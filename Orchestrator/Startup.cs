@@ -5,6 +5,7 @@ using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Configuration;
+using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using DLCS.Web.Views;
@@ -135,6 +136,7 @@ namespace Orchestrator
                 .HandlePathBase(pathBase, logger)
                 .UseForwardedHeaders()
                 .UseRouting()
+                .UseOptions()
                 .UseSerilogRequestLogging()
                 .UseCors("CorsPolicy")
                 .UseAuthorization()

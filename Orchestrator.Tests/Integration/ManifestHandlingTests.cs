@@ -33,7 +33,24 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             
         dbFixture.CleanUp();
     }
-    
+
+    [Theory]
+    [InlineData("iiif-manifest/1/1/my-asset")]
+    [InlineData("iiif-manifest/v2/1/1/my-asset")]
+    [InlineData("iiif-manifest/v3/1/1/my-asset")]
+    public async Task Options_Returns200_WithCorsHeaders(string path)
+    {
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Options, path);
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("Access-Control-Allow-Origin");
+        response.Headers.Should().ContainKey("Access-Control-Allow-Headers");
+        response.Headers.Should().ContainKey("Access-Control-Allow-Methods");
+    }
+
     [Theory]
     [InlineData("iiif-manifest/1/1/my-asset")]
     [InlineData("iiif-manifest/v2/1/1/my-asset")]
