@@ -24,7 +24,7 @@ namespace DLCS.Model.Storage
         public Task<CustomerStorage?> GetCustomerStorage(int customerId, int spaceId, bool createOnDemand,
             CancellationToken cancellationToken);
 
-        public Task<CustomerStorageSummary> GetCustomerStorageSummary(int customerId);
-        public Task<ImageCountStorageMetric> GetImageCounts(int putAssetCustomer);
+        public Task<CustomerStorageSummary> GetCustomerStorageSummary(int customerId, CancellationToken cancellationToken);
+        public Task<ImageCountStorageMetric> GetImageCounts(int customerId, CancellationToken cancellationToken);
     }
 }

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Storage
 {
+    [Obsolete("Use the EF version, keep this one for a little while just to check")]
     public class DapperCustomerStorageRepository : DapperRepository, IStorageRepository
     {
         private readonly CacheSettings cacheSettings;
@@ -69,9 +70,9 @@ FROM public.""StoragePolicies""  WHERE ""Id""=@Id;";
 FROM public.""CustomerStorage""  WHERE ""Customer""=@Customer;";
         
         
-        public async Task<CustomerStorageSummary> GetCustomerStorageSummary(int customerId)
+        public async Task<CustomerStorageSummary> GetCustomerStorageSummary(int customerId, CancellationToken cancellationToken)
         {
-            // Is it quicker to do ths in the database? Depends how many spaces the customer has.
+            // Is it quicker to do this with a SUM in the database? Depends how many spaces the customer has.
             
             // TODO: this logic is not correct!
             var spaceStorageList =
@@ -90,7 +91,7 @@ FROM public.""CustomerStorage""  WHERE ""Customer""=@Customer;";
             return summary;
         }
 
-        public async Task<ImageCountStorageMetric> GetImageCounts(int putAssetCustomer)
+        public async Task<ImageCountStorageMetric> GetImageCounts(int customerId, CancellationToken cancellationToken)
         {
             // TODO: this is fake for now
             return await Task.FromResult(new ImageCountStorageMetric

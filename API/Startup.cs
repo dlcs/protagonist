@@ -86,7 +86,7 @@ namespace API
                 .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
                 // Do not use a DlcsContext, _may_ be Singleton (but should they)
                 .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
-                .AddSingleton<IStorageRepository, DapperCustomerStorageRepository>()
+                .AddSingleton<IStorageRepository, CustomerStorageRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
                 .AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>()
                 .AddSingleton<IImageOptimisationPolicyRepository, ImageOptimisationPolicyRepository>()

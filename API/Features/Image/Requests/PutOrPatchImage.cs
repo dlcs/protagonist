@@ -167,8 +167,7 @@ namespace API.Features.Image.Requests
                     // EnforceStoragePolicyForNumberOfImagesBehaviour
                     // This is a temporary simple solution
                     // will use this policy, somewhere... go back through deliverator.
-                    var storagePolicy = settings.IngestDefaults.StoragePolicy;
-                    var counts = await storageRepository.GetImageCounts(asset.Customer);
+                    var counts = await storageRepository.GetImageCounts(asset.Customer, cancellationToken);
                     if (counts.CurrentNumberOfStoredImages >= counts.MaximumNumberOfStoredImages)
                     {
                         return new PutOrPatchImageResult

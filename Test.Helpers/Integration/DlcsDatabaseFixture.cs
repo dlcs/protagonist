@@ -5,6 +5,7 @@ using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
 using DLCS.Model.Spaces;
+using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using DotNet.Testcontainers.Containers.Builders;
@@ -56,6 +57,7 @@ namespace Test.Helpers.Integration
         {
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Spaces\" WHERE \"Customer\" != 99 AND \"Id\" != 1");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
+            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"StoragePolicies\" WHERE \"Id\" != 'default'");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" != 'fast-higher'");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
@@ -71,7 +73,6 @@ namespace Test.Helpers.Integration
         private async Task SeedCustomer()
         {
             const int customer = 99;
-
             await DbContext.Customers.AddAsync(new Customer
             {
                 Created = DateTime.UtcNow,
@@ -79,6 +80,12 @@ namespace Test.Helpers.Integration
                 DisplayName = "TestUser",
                 Name = "test",
                 Keys = Array.Empty<string>()
+            });
+            await DbContext.StoragePolicies.AddAsync(new StoragePolicy
+            {
+                Id = "default",
+                MaximumNumberOfStoredImages = 1000000,
+                MaximumTotalSizeOfStoredImages = 1000000000
             });
             await DbContext.EntityCounters.AddAsync(new EntityCounter
             {
