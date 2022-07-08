@@ -7,6 +7,7 @@ using API.Converters;
 using API.Features.Image.Requests;
 using API.Features.Space.Requests;
 using API.Settings;
+using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
@@ -148,8 +149,12 @@ public class ImageController : HydraController
         var assetId = new AssetId(customerId, spaceId, imageId);
         var asset = hydraAsset.ToDlcsModel(customerId, spaceId, imageId);
         asset.Id = assetId.ToString();
-
-        var request = new PutOrPatchImage { Asset = asset, Method = Request.Method };
+    
+        // In the special case where we were passed ImageWithFile from the IngestBytes action, 
+        // it was a POST - but we should revisit that as the direct image ingest should be a PUT as well I think
+        var method = hydraAsset is ImageWithFile ? "PUT" : Request.Method;
+        
+        var request = new PutOrPatchImage { Asset = asset, Method = method };
         var result = await mediator.Send(request);
         if (result.Asset != null && result.StatusCode is HttpStatusCode.OK or HttpStatusCode.Created)
         {
@@ -230,7 +235,7 @@ public class ImageController : HydraController
                 {
                     // Here a Hydra object is being passed into the MediatR layer.
                     // Should it get converted to a DLCS Model Asset first?
-                    var asset = hydraImage.ToDlcsModel(customerId);
+                    var asset = hydraImage.ToDlcsModel(customerId, spaceId);
                     var request = new PutOrPatchImage { Asset = asset, Method = "PATCH" };
                     var result = await mediator.Send(request);
                     if (result.Asset != null)
@@ -310,10 +315,16 @@ public class ImageController : HydraController
             return Problem("No file bytes in request body", assetId.ToString(),
                 (int?)HttpStatusCode.BadRequest, errorTitle);
         }
+        if (asset.MediaType.IsNullOrEmpty())
+        {
+            return Problem("MediaType must be supplied", assetId.ToString(),
+                (int?)HttpStatusCode.BadRequest, errorTitle);
+        }
         var saveRequest = new HostAssetAtOrigin
         {
             AssetId = assetId,
-            FileBytes = asset.File
+            FileBytes = asset.File,
+            MediaType = asset.MediaType
         };
 
         var result = await mediator.Send(saveRequest);
@@ -324,6 +335,7 @@ public class ImageController : HydraController
 
         asset.Origin = result.Origin;
         asset.File = null;
+
         return await Image(customerId, spaceId, imageId, asset);
 
     }

@@ -1,17 +1,22 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
+using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.Core.Settings;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Messaging;
+using FakeItEasy;
 using FluentAssertions;
 using Hydra.Collections;
 using Microsoft.AspNetCore.Authentication;
@@ -20,6 +25,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Test.Helpers.Http;
 using Test.Helpers.Integration;
@@ -35,6 +41,7 @@ public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>, IClassF
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
     private readonly ControllableHttpMessageHandler httpHandler;
+    private readonly IBucketWriter bucketWriter;
     
     public AssetTests(
         DlcsDatabaseFixture dbFixture, 
@@ -43,6 +50,7 @@ public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>, IClassF
     {
         dbContext = dbFixture.DbContext;
         this.httpHandler = httpHandler;
+        bucketWriter = A.Fake<IBucketWriter>();
         
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
@@ -54,6 +62,7 @@ public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>, IClassF
                     descriptor => descriptor.ServiceType == typeof(IMessageBus));
                 services.Remove(messageBusDescriptor);
                 services.AddScoped<IMessageBus>(GetTestMessageBus);
+                services.AddSingleton<IBucketWriter>(bucketWriter);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                         "API-Test", _ => { });
@@ -486,7 +495,88 @@ public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>, IClassF
     [Fact]
     public async Task Patch_Images_Updates_multiple_images()
     {
+        // note "member" not "members"
+        await AddMultipleAssets(3003, nameof(Patch_Images_Updates_multiple_images));
+        var hydraCollectionBody = $@"{{
+  ""@type"": ""Collection"",
+  ""member"": [
+   {{
+        ""@type"": ""Image"",
+        ""id"": ""asset-0010"",
+        ""string1"": ""Asset 10 patched""
+   }},
+    {{
+        ""@type"": ""Image"",
+        ""id"": ""asset-0011"",
+        ""string1"": ""Asset 11 patched""
+    }},
+    {{
+        ""@type"": ""Image"",
+        ""id"": ""asset-0012"",
+        ""string1"": ""Asset 12 patched"",
+        ""string3"": ""Asset 12 string3 added""
+    }}   
+  ]
+}}";
         
+                 
+        
+        // act
+        var content = new StringContent(hydraCollectionBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync("/customers/99/spaces/3003/images", content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members.Should().HaveCount(3);
+        var hydra10 = coll.Members.Single(m =>
+            m["@id"].Value<string>().EndsWith("/customers/99/spaces/3003/images/asset-0010"));
+        hydra10["string1"].Value<string>().Should().Be("Asset 10 patched");
+        var hydra12 = coll.Members.Single(m =>
+            m["@id"].Value<string>().EndsWith("/customers/99/spaces/3003/images/asset-0012"));
+        hydra12["string1"].Value<string>().Should().Be("Asset 12 patched");
+        hydra12["string3"].Value<string>().Should().Be("Asset 12 string3 added");
+        
+        dbContext.ChangeTracker.Clear();
+        var img10 = await dbContext.Images.FindAsync("99/3003/asset-0010");
+        img10.Reference1.Should().Be("Asset 10 patched");
+        var img12 = await dbContext.Images.FindAsync("99/3003/asset-0012");
+        img12.Reference1.Should().Be("Asset 12 patched");
+        img12.Reference3.Should().Be("Asset 12 string3 added");
+
+
+    }
+    
+    
+    [Fact]
+    public async Task Bulk_Patch_Prevents_Engine_Call()
+    {
+        var assetId = new AssetId(99, 1, nameof(Bulk_Patch_Prevents_Engine_Call));
+        
+        var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(),
+            ref1: "I am string 1", origin:$"https://images.org/{assetId.Asset}.tiff");
+        await dbContext.SaveChangesAsync();
+        testAsset.State = EntityState.Detached; // need to untrack before update
+        
+        // There's only one member here, but we still don't allow engine-calling changes
+        // via collections.
+        var hydraCollectionBody = $@"{{
+  ""@type"": ""Collection"",
+  ""member"": [
+   {{
+        ""@type"": ""Image"",
+        ""id"": ""{assetId.Asset}"",
+        ""origin"": ""https://images.org/{assetId.Asset}-PATCHED.tiff"",
+        ""string1"": ""PATCHED""
+   }}
+  ]
+}}";
+        // act
+        var content = new StringContent(hydraCollectionBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync("/customers/99/spaces/1/images", content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
 
@@ -495,7 +585,54 @@ public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>, IClassF
     [Fact]
     public async Task Post_ImageBytes_Ingests_New_Image()
     {
-        // requires S3 test
+        var assetId = new AssetId(99, 1, nameof(Post_ImageBytes_Ingests_New_Image));
+        var hydraBody = await File.ReadAllTextAsync("Direct_Bytes_Upload.json");
+        
+        // The test just uses the string form, but we want this to validate later calls more easily
+        var hydraJson = JsonConvert.DeserializeObject<ImageWithFile>(hydraBody);
+        var stream = new MemoryStream(hydraJson.File);
+        
+        // Bucketwriter returns success if it writes that stream
+        A.CallTo(() =>
+                bucketWriter.WriteToBucket(
+                    A<ObjectInBucket>.That.Matches(o =>
+                        o.Bucket == "protagonist-test-origin" && 
+                        o.Key == assetId.ToString()), 
+                    A<MemoryStream>.That.Matches(s => s.Length == stream.Length),
+                    hydraJson.MediaType))
+            .Returns(true);
+        
+        // make a callback for engine
+        HttpRequestMessage engineMessage = null;
+        httpHandler.RegisterCallback(assetId.ToApiResourcePath(), 
+            r => engineMessage = r, 
+            "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
+        httpHandler.RegisterCallbackSelector(assetId.ToApiResourcePath(),  
+            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset));
+        
+        // act
+        var content = new StringContent(hydraBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PostAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        // The image was saved to S3
+        A.CallTo(() =>
+                bucketWriter.WriteToBucket(
+                    A<ObjectInBucket>.That.Matches(o =>
+                        o.Bucket == "protagonist-test-origin" && 
+                        o.Key == assetId.ToString()), 
+                    A<MemoryStream>.That.Matches(s => s.Length == stream.Length),
+                    hydraJson.MediaType))
+            .MustHaveHappened();
+        
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        // engine was called
+        engineMessage.Should().NotBeNull();
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = await dbContext.Images.FindAsync(assetId.ToString());
+        asset.Should().NotBeNull();
+        asset.Origin.Should().Be("https://protagonist-test-origin.s3.eu-west-1.amazonaws.com/99/1/Post_ImageBytes_Ingests_New_Image");
+
     }
     
     

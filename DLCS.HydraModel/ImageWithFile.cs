@@ -2,6 +2,11 @@ namespace DLCS.HydraModel
 {
     public class ImageWithFile : Image
     {
+        public ImageWithFile()
+        {
+            
+        }
+        
         public ImageWithFile(string baseUrl, int customerId, int space, string modelId) : base(baseUrl, customerId, space, modelId)
         {
         }
