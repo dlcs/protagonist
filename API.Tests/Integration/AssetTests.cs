@@ -406,6 +406,7 @@ public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert CURRENT DELIVERATOR
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        engineMessage.Should().BeNull();
         
         // assert THIS IS WHAT IT SHOULD BE!
         // response.StatusCode.Should().Be(HttpStatusCode.OK);
