@@ -287,15 +287,11 @@ public class AssetTests :
 }}";
         
         HttpRequestMessage engineMessage = null;
-        // Register a callback for the API path we're going to call
-        httpHandler.RegisterCallback(assetId.ToApiResourcePath(), 
+        httpHandler.RegisterCallbackWithSelector(
+            assetId.ToApiResourcePath(),
             r => engineMessage = r, 
-            "{ \"engine\": \"hello\" }", HttpStatusCode.OK);
-        // Register a predicate that will match this path in the request body
-        // We need to do this because the request path to Engine that we are
-        // intercepting here is just /ingest
-        httpHandler.RegisterCallbackSelector(assetId.ToApiResourcePath(),  
-            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset));
+            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
+            "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -340,11 +336,11 @@ public class AssetTests :
         
         
         HttpRequestMessage engineMessage = null;
-        httpHandler.RegisterCallback(assetId.ToApiResourcePath(), 
+        httpHandler.RegisterCallbackWithSelector(
+            assetId.ToApiResourcePath(),
             r => engineMessage = r, 
+            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
             "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
-        httpHandler.RegisterCallbackSelector(assetId.ToApiResourcePath(),  
-            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset));
         
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
@@ -380,11 +376,11 @@ public class AssetTests :
 }}";
         
         HttpRequestMessage engineMessage = null;
-        httpHandler.RegisterCallback(assetId.ToApiResourcePath(), 
+        httpHandler.RegisterCallbackWithSelector(
+            assetId.ToApiResourcePath(),
             r => engineMessage = r, 
+            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
             "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
-        httpHandler.RegisterCallbackSelector(assetId.ToApiResourcePath(),  
-            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset));
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -423,11 +419,11 @@ public class AssetTests :
 }}";
         
         HttpRequestMessage engineMessage = null;
-        httpHandler.RegisterCallback(assetId.ToApiResourcePath(), 
+        httpHandler.RegisterCallbackWithSelector(
+            assetId.ToApiResourcePath(),
             r => engineMessage = r, 
+            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
             "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
-        httpHandler.RegisterCallbackSelector(assetId.ToApiResourcePath(),  
-            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset));
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -608,9 +604,9 @@ public class AssetTests :
         
         // The test just uses the string form, but we want this to validate later calls more easily
         var hydraJson = JsonConvert.DeserializeObject<ImageWithFile>(hydraBody);
-        var stream = new MemoryStream(hydraJson.File);
+        var stream = new MemoryStream(hydraJson.File); // we'll make sure the stream written to S3 is the same length 
         
-        // Bucketwriter returns success if it writes that stream
+        // BucketWriter returns success if it writes that stream
         A.CallTo(() =>
                 bucketWriter.WriteToBucket(
                     A<ObjectInBucket>.That.Matches(o =>
@@ -622,18 +618,18 @@ public class AssetTests :
         
         // make a callback for engine
         HttpRequestMessage engineMessage = null;
-        httpHandler.RegisterCallback(assetId.ToApiResourcePath(), 
+        httpHandler.RegisterCallbackWithSelector(
+            assetId.ToApiResourcePath(),
             r => engineMessage = r, 
+            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
             "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
-        httpHandler.RegisterCallbackSelector(assetId.ToApiResourcePath(),  
-            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset));
         
         // act
         var content = new StringContent(hydraBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PostAsync(assetId.ToApiResourcePath(), content);
         
         // assert
-        // The image was saved to S3
+        // The image was saved to S3:
         A.CallTo(() =>
                 bucketWriter.WriteToBucket(
                     A<ObjectInBucket>.That.Matches(o =>
@@ -643,9 +639,11 @@ public class AssetTests :
                     hydraJson.MediaType))
             .MustHaveHappened();
         
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        // engine was called
+        // Engine was called during this process.
         engineMessage.Should().NotBeNull();
+        
+        // The API created an Image whose origin is the S3 location
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
         var asset = await dbContext.Images.FindAsync(assetId.ToString());
         asset.Should().NotBeNull();

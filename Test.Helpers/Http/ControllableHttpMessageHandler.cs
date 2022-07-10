@@ -77,6 +77,24 @@ namespace Test.Helpers.Http
         {
             CallbackSelectors[callbackKey] = selector;
         }
+
+        /// <summary>
+        /// Combines the two operations above for simpler Unit Tests
+        /// </summary>
+        /// <param name="callbackKey">A string that uniquely identifies this callback</param>
+        /// <param name="callback">The action to invoke when httpHandler handles a message</param>
+        /// <param name="selector">A predicate that matches the HttpRequestMessage, so the handler can find _this_ callback</param>
+        /// <param name="responseContent">The response body the handler should return</param>
+        /// <param name="responseStatusCode">The status code the handler should return</param>
+        public void RegisterCallbackWithSelector(
+            string callbackKey,
+            Action<HttpRequestMessage> callback,
+            Predicate<HttpRequestMessage> selector,
+            string responseContent, HttpStatusCode responseStatusCode)
+        {
+            RegisterCallback(callbackKey, callback, responseContent, responseStatusCode);
+            RegisterCallbackSelector(callbackKey, selector);
+        }
         
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
