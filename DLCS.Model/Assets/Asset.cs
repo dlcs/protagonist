@@ -46,7 +46,7 @@ namespace DLCS.Model.Assets
         /// <summary>
         /// Flags the asset as not to be delivered for viewing under any circumstances
         /// </summary>
-        public bool? NotForDelivery { get; set; }
+        public bool NotForDelivery { get; set; }
 
         private IEnumerable<string>? rolesList;
         

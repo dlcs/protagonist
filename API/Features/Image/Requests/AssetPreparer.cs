@@ -50,6 +50,15 @@ public static class AssetPreparer
         Asset updateAsset,
         bool allowNonApiUpdates)
     {
+        if (existingAsset != null && existingAsset.NotForDelivery)
+        {
+            // We can relax this later but for now, you cannot use the API
+            // to modify an asset marked NotForDelivery.
+            return new AssetPreparationResult { ErrorMessage = "Cannot use API to modify a NotForDelivery asset." };
+            // However, this DOES allow the *creation* of a NotForDelivery asset.
+            // discuss...
+        }
+        
         // This method was called ValidateImageUpsert to match deliverator; now renamed
         bool requiresReingest = (existingAsset == null);
 
