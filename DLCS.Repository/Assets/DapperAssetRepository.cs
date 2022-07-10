@@ -196,7 +196,8 @@ namespace DLCS.Repository.Assets
                     NumberReference3 = rawAsset.NumberReference3,
                     PreservedUri = rawAsset.PreservedUri,
                     ThumbnailPolicy = rawAsset.ThumbnailPolicy,
-                    ImageOptimisationPolicy = rawAsset.ImageOptimisationPolicy
+                    ImageOptimisationPolicy = rawAsset.ImageOptimisationPolicy,
+                    NotForDelivery = rawAsset.NotForDelivery
                 };
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short));
         }
@@ -206,7 +207,7 @@ SELECT ""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Rol
 ""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", 
 ""NumberReference1"", ""NumberReference2"", ""NumberReference3"", ""Width"", 
 ""Height"", ""Error"", ""Batch"", ""Finished"", ""Ingesting"", ""ImageOptimisationPolicy"", 
-""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration""
+""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery""
   FROM public.""Images""
   WHERE ""Id""=@Id;";
 

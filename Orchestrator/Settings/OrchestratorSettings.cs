@@ -18,11 +18,6 @@ namespace Orchestrator.Settings
         public string S3OriginRegex { get; set; }
 
         /// <summary>
-        /// URI template for auth services
-        /// </summary>
-        public string AuthServicesUriTemplate { get; set; }
-
-        /// <summary>
         /// Timeout for critical orchestration path. How long to wait to achieve lock when orchestrating asset.
         /// If timeout breached, multiple orchestrations can happen for same item.
         /// </summary>
@@ -158,6 +153,11 @@ namespace Orchestrator.Settings
         /// If true the current domain is automatically added to auth token domains.
         /// </summary>
         public bool UseCurrentDomainForCookie { get; set; } = true;
+        
+        /// <summary>
+        /// URI template for auth services
+        /// </summary>
+        public string AuthServicesUriTemplate { get; set; }
     }
 
     /// <summary>
@@ -192,6 +192,21 @@ namespace Orchestrator.Settings
         /// Folder template for creating local Zip file
         /// </summary>
         public string ZipFolderTemplate { get; set; }
+        
+        /// <summary>
+        /// Customer-specific overrides; keyed by customer Id
+        /// </summary>
+        public Dictionary<string, CustomerOverride> CustomerOverrides { get; set; } = new();
+    }
+    
+    public class CustomerOverride
+    {
+        /// <summary>
+        /// List of roles that are whitelisted for PDF inclusion.
+        /// When generating a PDF, images with roles are redacted, unless the role is on whitelist.
+        /// When serving, if a PDF contains an image that has a role on the whitelist - authentication will be required.
+        /// </summary>
+        public List<string> PdfRolesWhitelist { get; set; } = new();
     }
 
     /// <summary>

@@ -61,12 +61,13 @@ namespace Orchestrator.Infrastructure
 
                 // Handle known non-200 status
                 if (result.IsBadRequest) return BadRequest();
+                if (result.Status == PersistedProjectionStatus.Restricted) return Unauthorized();
                 if (result.Status == PersistedProjectionStatus.Error) return StatusCode(500);
                 if (result.Status == PersistedProjectionStatus.InProcess)
                     return InProcess(NamedQuerySettings.ControlStaleSecs);
                 if (result.IsEmpty) return NotFound();
 
-                SetCacheControl();
+                SetCacheControl(result.RequiresAuth);
                 return File(result.DataStream, contentType);
             }
             catch (KeyNotFoundException ex)
@@ -125,15 +126,16 @@ namespace Orchestrator.Infrastructure
             return new StatusCodeResult(202);
         }
         
-        private void SetCacheControl()
+        private void SetCacheControl(bool requiresAuth)
         {
             var maxAge = TimeSpan.FromSeconds(CacheSettings.GetTtl(CacheDuration.Default, CacheSource.Http));
             HttpContext.Response.GetTypedHeaders().CacheControl =
                 new CacheControlHeaderValue
                 {
-                    Public = true,
+                    Public = !requiresAuth,
+                    Private = requiresAuth,
                     MaxAge = maxAge,
-                    SharedMaxAge = maxAge
+                    SharedMaxAge = requiresAuth ? null : maxAge
                 };
         }
     }

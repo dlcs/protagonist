@@ -62,6 +62,23 @@ namespace Orchestrator.Tests.Integration
             
             dbFixture.CleanUp();
         }
+
+        [Theory]
+        [InlineData("/iiif-img/1/1")]
+        [InlineData("/iiif-img/1/1/info.json")]
+        [InlineData("/iiif-img/1/1/full/1000,/0/default.jpg")]
+        public async Task Options_Returns200_WithCorsHeaders(string path)
+        {
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Options, path);
+            var response = await httpClient.SendAsync(request);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Should().ContainKey("Access-Control-Allow-Origin");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Headers");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Methods");
+        }
         
         [Theory]
         [InlineData("/iiif-img/2/1/image")]
@@ -382,7 +399,7 @@ namespace Orchestrator.Tests.Integration
             response.Headers.CacheControl.Public.Should().BeTrue();
             response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         }
-        
+
         [Fact]
         public async Task GetInfoJson_RestrictedImage_Correct()
         {
@@ -407,7 +424,7 @@ namespace Orchestrator.Tests.Integration
                 ContentBody = "{\"o\": [[400,400],[200,200]]}"
             });
             await dbFixture.DbContext.SaveChangesAsync();
-            
+
             // Act
             var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
 
@@ -416,7 +433,8 @@ namespace Orchestrator.Tests.Integration
             var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
             jsonResponse["id"].ToString().Should()
                 .Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_Correct");
-            jsonResponse["service"].Should().NotBeNull();
+            jsonResponse.SelectToken("service.[0].@id").Value<string>().Should()
+                .Be("https://localhost/auth/99/test-service");
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
             response.Headers.CacheControl.Public.Should().BeFalse();
             response.Headers.CacheControl.Private.Should().BeTrue();
@@ -909,6 +927,29 @@ namespace Orchestrator.Tests.Integration
             response.Headers.CacheControl.SharedMaxAge.Should().Be(TimeSpan.FromDays(28));
             response.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromDays(28));
             response.Headers.Should().ContainKey("x-test-key").WhoseValue.Should().BeEquivalentTo("foo bar");
+        }
+        
+        [Theory]
+        [InlineData("/info.json")]
+        [InlineData("/full/max/0/default.jpg")]
+        [InlineData("/0,0,1000,1000/200,200/0/default.jpg")]
+        public async Task Get_404_IfNotForDelivery(string path)
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_404_IfNotForDelivery)}";
+
+            // test runs 3 times so only add on first run
+            if (await dbFixture.DbContext.Images.FindAsync(id) == null)
+            {
+                await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true);
+                await dbFixture.DbContext.SaveChangesAsync();
+            }
+
+            // Act
+            var response = await httpClient.GetAsync($"iiif-img/{id}/{path}");
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
     }
     

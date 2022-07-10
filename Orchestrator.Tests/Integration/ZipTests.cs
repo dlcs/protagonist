@@ -58,9 +58,28 @@ namespace Orchestrator.Tests.Integration
                 maxUnauthorised: 10, roles: "default");
             dbFixture.DbContext.Images.AddTestAsset("99/1/matching-zip-4", num1: 4, ref1: "my-ref");
             dbFixture.DbContext.Images.AddTestAsset("99/1/matching-zip-5", num1: 5, ref1: "my-ref");
+            dbFixture.DbContext.Images.AddTestAsset("99/1/not-for-delivery", num1: 6, ref1: "my-ref",
+                notForDelivery: true);
             dbFixture.DbContext.SaveChanges();
         }
-        
+
+        [Fact]
+        public async Task Options_Returns200_WithCorsHeaders()
+        {
+            // Arrange
+            const string path = "zip/98/test-zip";
+
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Options, path);
+            var response = await httpClient.SendAsync(request);
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Should().ContainKey("Access-Control-Allow-Origin");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Headers");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Methods");
+        }
+
         [Fact]
         public async Task GetZip_Returns404_IfCustomerNotFound()
         {
@@ -377,12 +396,12 @@ namespace Orchestrator.Tests.Integration
             public void AddCallbackFor(string s3Key, Func<ParsedNamedQuery, List<Asset>, bool> callback)
                 => callbacks.Add(s3Key, callback);
 
-            public Task<bool> PersistProjection(ZipParsedNamedQuery parsedNamedQuery, List<Asset> images,
+            public Task<(bool success, ControlFile controlFile)> PersistProjection(ZipParsedNamedQuery parsedNamedQuery, List<Asset> images,
                 CancellationToken cancellationToken = default)
             {
                 if (callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
                 {
-                    return Task.FromResult(cb(parsedNamedQuery, images));
+                    return Task.FromResult((cb(parsedNamedQuery, images), new ControlFile()));
                 }
 
                 throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");

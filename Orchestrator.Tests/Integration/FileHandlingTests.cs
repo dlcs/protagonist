@@ -48,6 +48,23 @@ namespace Orchestrator.Tests.Integration
         }
 
         [Fact]
+        public async Task Options_Returns200_WithCorsHeaders()
+        {
+            // Arrange
+            const string path = "file/1/1/my-file.pdf";
+
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Options, path);
+            var response = await httpClient.SendAsync(request);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Should().ContainKey("Access-Control-Allow-Origin");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Headers");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Methods");
+        }        
+
+        [Fact]
         public async Task Get_UnknownCustomer_Returns404()
         {
             // Arrange
@@ -87,16 +104,31 @@ namespace Orchestrator.Tests.Integration
         }
         
         [Fact]
-        public async Task Get_NotFoundHttOrigin_Returns404()
+        public async Task Get_NotFoundHttpOrigin_Returns404()
         {
             // Arrange
-            var id = "99/1/Get_NotFoundHttOrigin_Returns404";
+            var id = $"99/1/{nameof(Get_NotFoundHttpOrigin_Returns404)}";
             await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
                 origin: $"{stubAddress}/not-found");
             await dbFixture.DbContext.SaveChangesAsync();
 
             // Act
-            var response = await httpClient.GetAsync("file/99/1/Get_DefaultOrigin_ReturnsFile");
+            var response = await httpClient.GetAsync($"file/{id}");
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+        
+        [Fact]
+        public async Task Get_Returns404_IfNotForDelivery()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_Returns404_IfNotForDelivery)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true);
+            await dbFixture.DbContext.SaveChangesAsync();
+
+            // Act
+            var response = await httpClient.GetAsync($"file/{id}");
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -106,13 +138,13 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_HttpOrigin_ReturnsFile()
         {
             // Arrange
-            var id = "99/1/Get_HttpOrigin_ReturnsFile";
+            var id = $"99/1/{nameof(Get_HttpOrigin_ReturnsFile)}";
             await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
                 origin: $"{stubAddress}/testfile");
             await dbFixture.DbContext.SaveChangesAsync();
 
             // Act
-            var response = await httpClient.GetAsync("file/99/1/Get_HttpOrigin_ReturnsFile");
+            var response = await httpClient.GetAsync($"file/{id}");
             
             // Assert
             response.Content.Headers.ContentType.MediaType.Should().Be("application/pdf");
@@ -123,7 +155,7 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_BasicAuthHttpOrigin_ReturnsFile()
         {
             // Arrange
-            var id = "99/1/Get_BasicAuthHttpOrigin_ReturnsFile";
+            var id = $"99/1/{nameof(Get_BasicAuthHttpOrigin_ReturnsFile)}";
             await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
                 origin: $"{stubAddress}/authfile");
             await dbFixture.DbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
@@ -134,7 +166,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.SaveChangesAsync();
 
             // Act
-            var response = await httpClient.GetAsync("file/99/1/Get_BasicAuthHttpOrigin_ReturnsFile");
+            var response = await httpClient.GetAsync($"file/{id}");
             
             // Assert
             response.Content.Headers.ContentType.MediaType.Should().Be("application/pdf");
@@ -145,7 +177,7 @@ namespace Orchestrator.Tests.Integration
         public async Task Get_BasicAuthHttpOrigin_BadCredentials_Returns404()
         {
             // Arrange
-            var id = "99/1/Get_BasicAuthHttpOrigin_BadCredentials_Returns404";
+            var id = $"99/1/{nameof(Get_BasicAuthHttpOrigin_BadCredentials_Returns404)}";
             await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
                 origin: $"{stubAddress}/forbiddenfile");
             await dbFixture.DbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
@@ -156,7 +188,7 @@ namespace Orchestrator.Tests.Integration
             await dbFixture.DbContext.SaveChangesAsync();
 
             // Act
-            var response = await httpClient.GetAsync("file/99/1/Get_BasicAuthHttpOrigin_BadCredentials_Returns404");
+            var response = await httpClient.GetAsync($"file/{id}");
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);

@@ -65,6 +65,24 @@ namespace Orchestrator.Tests.Assets
             result.Should().BeOfType(expectedType);
         }
         
+        [Theory]
+        [InlineData(AssetFamily.Image)]
+        [InlineData(AssetFamily.Timebased)]
+        [InlineData(AssetFamily.File)]
+        public async Task GetOrchestrationAsset_Null_IfAssetFoundButNotForDelivery(AssetFamily family)
+        {
+            // Arrange
+            var assetId = new AssetId(1, 1, "go!");
+            A.CallTo(() => assetRepository.GetAsset(assetId))
+                .Returns(new Asset { Family = family, NotForDelivery = true });
+            
+            // Act
+            var result = await sut.GetOrchestrationAsset(assetId);
+            
+            // Assert
+            result.Should().BeNull();
+        }
+        
         [Fact]
         public async Task GetOrchestrationAssetT_Null_IfOrchestrationAssetNotFound()
         {
@@ -85,6 +103,20 @@ namespace Orchestrator.Tests.Assets
             // Arrange
             var assetId = new AssetId(1, 1, "go!");
             A.CallTo(() => assetRepository.GetAsset(assetId)).Returns<Asset>(null);
+            
+            // Act
+            var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
+            
+            // Assert
+            result.Should().BeNull();
+        }
+        
+        [Fact]
+        public async Task GetOrchestrationAssetT_Null_IfAssetFoundButNotForDelivery()
+        {
+            // Arrange
+            var assetId = new AssetId(1, 1, "go!");
+            A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset { NotForDelivery = true });
             
             // Act
             var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);

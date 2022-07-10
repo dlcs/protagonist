@@ -25,12 +25,7 @@ public class IIIFAuthBuilderTests
     public IIIFAuthBuilderTests()
     {
         authServicesRepository = A.Fake<IAuthServicesRepository>();
-        var settings = Options.Create(new OrchestratorSettings
-        {
-            AuthServicesUriTemplate = "https://localhost/auth/{customer}/{behaviour}"
-        });
-        
-        sut = new IIIFAuthBuilder(authServicesRepository, settings, new NullLogger<IIIFAuthBuilder>());
+        sut = new IIIFAuthBuilder(authServicesRepository, new NullLogger<IIIFAuthBuilder>());
     }
 
     [Fact]
@@ -61,7 +56,7 @@ public class IIIFAuthBuilderTests
         var result = await sut.GetAuthCookieServiceForAsset(asset);
         
         // Assert
-        result.Id.Should().Be("https://localhost/auth/99/The-Parent");
+        result.Id.Should().Be("The-Parent");
         result.Label.LanguageValues
             .Should().HaveCount(1)
             .And.Subject.Should().OnlyContain(v => v.Value == "Parent");
@@ -96,21 +91,21 @@ public class IIIFAuthBuilderTests
 
         var authLogoutService = new AuthLogoutService
         {
-            Id = "https://localhost/auth/99/The-Parent/logout",
+            Id = "The-Parent/logout",
             Label = new MetaDataValue("Logout"),
             Description = new MetaDataValue("Logout Description"),
         };
         
         var authTokenService = new AuthTokenService
         {
-            Id = "https://localhost/auth/99/The-Token",
+            Id = "The-Token",
         };
         
         // Act 
         var result = await sut.GetAuthCookieServiceForAsset(asset);
         
         // Assert
-        result.Id.Should().Be("https://localhost/auth/99/The-Parent");
+        result.Id.Should().Be("The-Parent");
         result.Label.LanguageValues
             .Should().HaveCount(1)
             .And.Subject.Should().OnlyContain(v => v.Value == "Parent");

@@ -41,6 +41,23 @@ namespace Orchestrator.Tests.Integration
             
             dbFixture.CleanUp();
         }
+
+        [Fact]
+        public async Task Options_Returns200_WithCorsHeaders()
+        {
+            // Arrange
+            const string path = "iiif-av/1/1/my-timebased/full/full/max/max/0/default.mp4";
+
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Options, path);
+            var response = await httpClient.SendAsync(request);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Should().ContainKey("Access-Control-Allow-Origin");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Headers");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Methods");
+        }
         
         [Fact]
         public async Task Get_UnknownCustomer_Returns404()
@@ -76,6 +93,21 @@ namespace Orchestrator.Tests.Integration
 
             // Act
             var response = await httpClient.GetAsync(path);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+        
+        [Fact]
+        public async Task Get_Returns404_IfNotForDelivery()
+        {
+            // Arrange
+            var id = $"99/1/{nameof(Get_Returns404_IfNotForDelivery)}";
+            await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true);
+            await dbFixture.DbContext.SaveChangesAsync();
+
+            // Act
+            var response = await httpClient.GetAsync($"iiif-av/{id}/full/full/max/max/0/default.mp4");
             
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);

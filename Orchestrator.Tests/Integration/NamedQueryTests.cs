@@ -39,7 +39,26 @@ namespace Orchestrator.Tests.Integration
             dbFixture.DbContext.Images.AddTestAsset("99/1/matching-2", num1: 1, ref1: "my-ref");
             dbFixture.DbContext.Images.AddTestAsset("99/1/matching-nothumbs", num1: 3, ref1: "my-ref",
                 maxUnauthorised: 10, roles: "default");
+            dbFixture.DbContext.Images.AddTestAsset("99/1/not-for-delivery", num1: 4, ref1: "my-ref",
+                notForDelivery: true);
             dbFixture.DbContext.SaveChanges();
+        }
+        
+        [Theory]
+        [InlineData("iiif-resource/99/unknown-nq")]
+        [InlineData("iiif-resource/v2/99/unknown-nq")]
+        [InlineData("iiif-resource/v3/99/unknown-nq")]
+        public async Task Options_Returns200_WithCorsHeaders(string path)
+        {
+            // Act
+            var request = new HttpRequestMessage(HttpMethod.Options, path);
+            var response = await httpClient.SendAsync(request);
+            
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.Headers.Should().ContainKey("Access-Control-Allow-Origin");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Headers");
+            response.Headers.Should().ContainKey("Access-Control-Allow-Methods");
         }
 
         [Theory]

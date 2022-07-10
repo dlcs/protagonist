@@ -26,6 +26,12 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence.Models
         /// Whether this request could not be satisfied as a result of a bad request
         /// </summary>
         public bool IsBadRequest { get; private init; }
+        
+        /// <summary>
+        /// A value indicating whether this projection requires auth to view, regardless of whether user can view
+        /// or not
+        /// </summary>
+        public bool RequiresAuth { get; }
 
         public static PersistedNamedQueryProjection BadRequest() => new() { IsBadRequest = true };
 
@@ -37,12 +43,14 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence.Models
         {
             DataStream = Stream.Null;
             Status = status;
+            RequiresAuth = false;
         }
 
-        public PersistedNamedQueryProjection(Stream? pdfStream, PersistedProjectionStatus status)
+        public PersistedNamedQueryProjection(Stream? pdfStream, PersistedProjectionStatus status, bool requiresAuth)
         {
             DataStream = pdfStream ?? Stream.Null;
             Status = status;
+            RequiresAuth = requiresAuth;
         }
     }
     
@@ -67,6 +75,11 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence.Models
         /// Projected asset cannot be found.
         /// </summary>
         NotFound,
+        
+        /// <summary>
+        /// Projected asset requires auth to view and user doesn't have appropriate access.
+        /// </summary>
+        Restricted,
         
         /// <summary>
         /// There was an error in handling the request.

@@ -13,9 +13,7 @@ using IIIF.Auth.V1;
 using IIIF.Presentation.V2;
 using IIIF.Presentation.V2.Strings;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Orchestrator.Settings;
 
 namespace Orchestrator.Infrastructure.IIIF;
 
@@ -23,19 +21,17 @@ public class IIIFAuthBuilder
 {
     private readonly IAuthServicesRepository authServicesRepository;
     private readonly ILogger<IIIFAuthBuilder> logger;
-    private readonly OrchestratorSettings orchestratorSettings;
 
     public IIIFAuthBuilder(IAuthServicesRepository authServicesRepository,
-        IOptions<OrchestratorSettings> orchestratorSettings,
         ILogger<IIIFAuthBuilder> logger)
     {
         this.authServicesRepository = authServicesRepository;
         this.logger = logger;
-        this.orchestratorSettings = orchestratorSettings.Value;
     }
 
     /// <summary>
     /// Generate a IIIF <see cref="AuthCookieService"/> for specified asset.
+    /// The 'id'/'@id' parameters will the the name of the auth service only
     /// </summary>
     /// <returns><see cref="AuthCookieService"/> if found, else null</returns>
     public async Task<AuthCookieService?> GetAuthCookieServiceForAsset(OrchestrationImage asset,
@@ -50,7 +46,7 @@ public class IIIFAuthBuilder
             return null;
         }
 
-        var id = GetAuthServiceUri(assetId, authServices[0]);
+        var id = authServices[0].Name;
 
         var parentService = authServices[0];
         var authCookieService = new AuthCookieService(parentService.Profile)
@@ -84,7 +80,7 @@ public class IIIFAuthBuilder
                 case AuthTokenService.AuthToken1Profile:
                     subService = new AuthTokenService
                     {
-                        Id = GetAuthServiceUri(assetId, childAuthService)
+                        Id = childAuthService.Name
                     };
                     break;
                 default:
@@ -119,14 +115,5 @@ public class IIIFAuthBuilder
         }
 
         return authServices;
-    }
-
-    private string GetAuthServiceUri(AssetId assetId, AuthService authService)
-    {
-        var authServicesUriFormat = orchestratorSettings.AuthServicesUriTemplate;
-        var id = authServicesUriFormat
-            .Replace("{customer}", assetId.Customer.ToString())
-            .Replace("{behaviour}", authService.Name);
-        return id;
     }
 }
