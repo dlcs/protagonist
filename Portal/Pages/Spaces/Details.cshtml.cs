@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using API.Client;
 using DLCS.Core;
 using DLCS.Core.Settings;
+using DLCS.Core.Strings;
 using DLCS.HydraModel;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Mvc;
@@ -40,8 +41,17 @@ namespace Portal.Pages.Spaces
             Customer = (currentUser.GetCustomerId() ?? -1).ToString();
         }
         
-        public async Task<IActionResult> OnGetAsync(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize)
+        public async Task<IActionResult> OnGetAsync(int id, 
+            [FromQuery] int page = 1, [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize,
+            [FromQuery] string? orderBy = null, [FromQuery] string? orderByDescending = null)
         {
+            var descending = false;
+            if (orderByDescending.HasText())
+            {
+                orderBy = orderByDescending;
+                descending = true;
+            }
+            
             SpaceId = id;
             var space = await dlcsClient.GetSpaceDetails(SpaceId);
             if (space == null)
@@ -49,7 +59,8 @@ namespace Portal.Pages.Spaces
                 return NotFound();
             }
 
-            var images = await dlcsClient.GetSpaceImages(page, pageSize, SpaceId, nameof(Image.Number1));
+            var images = await dlcsClient.GetSpaceImages(page, pageSize, SpaceId, 
+                orderBy ?? nameof(Image.Number1), descending);
             var model = new SpacePageModel
             {
                 Space = space,
@@ -63,17 +74,18 @@ namespace Portal.Pages.Spaces
             }
 
             SpacePageModel = model;
-            SetPager(page, pageSize);
+            SetPager(page, pageSize, orderBy, descending);
             return Page();
         }
 
-        private void SetPager(int page, int pageSize)
+        private void SetPager(int page, int pageSize, string? orderBy, bool descending)
         {
             var partialImageCollection = SpacePageModel.Images;
             PagerValues = new PagerValues(
                 partialImageCollection?.TotalItems ?? 0,
                 page,
-                partialImageCollection?.PageSize ?? pageSize);
+                partialImageCollection?.PageSize ?? pageSize,
+                orderBy, descending);
         }
 
         private void SetManifestLinks(SpacePageModel model)

@@ -11,7 +11,8 @@ namespace API.Client
             string? orderBy = null, bool descending = false, int? customerId = null);
         Task<Space?> GetSpaceDetails(int spaceId);
         Task<HydraCollection<Image>> GetSpaceImages(int spaceId);
-        Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, string? orderBy = null);
+        Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, 
+            string? orderBy = null, bool descending = false);
         Task<Space?> CreateSpace(Space newSpace);
         Task<Space?> PatchSpace(int spaceId, Space space);
         Task<IEnumerable<string>?> GetApiKeys();

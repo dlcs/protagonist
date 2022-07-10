@@ -86,12 +86,20 @@ namespace API.Client
             return GetSpaceImages(1, settings.PageSize, spaceId);
         }
 
-        public async Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, string? orderBy = null)
+        public async Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, 
+            string? orderBy = null, bool descending = false)
         {
             var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images?page={page}&pageSize={pageSize}";
             if (orderBy != null)
             {
-                url = $"{url}&orderBy={orderBy}";
+                if (descending)
+                {
+                    url = $"{url}&orderByDescending={orderBy}";
+                }
+                else
+                {
+                    url = $"{url}&orderBy={orderBy}";
+                }
             }
             var response = await httpClient.GetAsync(url);
             var images = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>(jsonSerializerSettings);
