@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
@@ -34,9 +33,23 @@ using Xunit;
 
 namespace API.Tests.Integration;
 
+public class FakeBucketWriterProvider
+{
+    // This also needs to be provided as a class fixture, to ensure
+    // the same instance is used when calling Engine.
+    public FakeBucketWriterProvider()
+    {
+        BucketWriter = A.Fake<IBucketWriter>();
+    }
+    public IBucketWriter BucketWriter { get; }
+}
+
 [Trait("Category", "Integration")]
 [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
-public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>, IClassFixture<ControllableHttpMessageHandler>
+public class AssetTests : 
+    IClassFixture<ProtagonistAppFactory<Startup>>, 
+    IClassFixture<ControllableHttpMessageHandler>, 
+    IClassFixture<FakeBucketWriterProvider>
 {
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
@@ -46,11 +59,16 @@ public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>, IClassF
     public AssetTests(
         DlcsDatabaseFixture dbFixture, 
         ProtagonistAppFactory<Startup> factory,
-        ControllableHttpMessageHandler httpHandler)
+        ControllableHttpMessageHandler httpHandler,
+        FakeBucketWriterProvider fakeBucketWriterProvider)
     {
         dbContext = dbFixture.DbContext;
+        
+        // If the same instance of these two is to be used when calling Engine as is used in the [Fact],
+        // they need to be single instances shared across tests. (?)
+        
         this.httpHandler = httpHandler;
-        bucketWriter = A.Fake<IBucketWriter>();
+        bucketWriter = fakeBucketWriterProvider.BucketWriter;
         
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
