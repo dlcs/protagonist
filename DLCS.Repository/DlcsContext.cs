@@ -283,12 +283,17 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.Id).HasMaxLength(500);
 
-                entity.Property(e => e.Created).HasColumnType("timestamp with time zone");
+                entity.Property(e => e.Created)
+                    .IsRequired()
+                    .HasColumnType("timestamp with time zone");
 
-                entity.Property(e => e.Duration).HasDefaultValueSql("0");
+                entity.Property(e => e.Duration)
+                    .IsRequired()
+                    .HasDefaultValueSql("0");
 
                 entity.Property(e => e.Error)
                     .HasMaxLength(1000)
+                    .IsRequired()
                     .HasDefaultValueSql("NULL::character varying");
 
                 entity.Property(e => e.Family)
@@ -343,6 +348,15 @@ namespace DLCS.Repository
                     .IsRequired()
                     .HasMaxLength(500)
                     .HasDefaultValueSql("'original'::character varying");
+
+                entity.Property(e => e.MaxUnauthorised).IsRequired();
+                entity.Property(e => e.Width).IsRequired();
+                entity.Property(e => e.Height).IsRequired();
+                entity.Property(e => e.NumberReference1).IsRequired();
+                entity.Property(e => e.NumberReference2).IsRequired();
+                entity.Property(e => e.NumberReference3).IsRequired();
+                entity.Property(e => e.Ingesting).IsRequired();
+                entity.Property(e => e.Batch).IsRequired();
 
                 entity.Ignore(e => e.InitialOrigin);
             });
