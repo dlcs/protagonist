@@ -109,10 +109,5 @@ namespace DLCS.Model.Assets
 
             return uniqueName;
         }
-
-        public Asset ShallowCopy()
-        {
-            return (Asset) this.MemberwiseClone();
-        }
     }
 }
