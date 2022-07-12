@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Threading.Tasks;
-using DLCS.AWS.S3.Models;
+﻿using DLCS.AWS.S3.Models;
 
 namespace DLCS.AWS.S3
 {

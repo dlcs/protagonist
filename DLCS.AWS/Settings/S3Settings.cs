@@ -31,6 +31,5 @@
         /// Service root for S3. Only used if running LocalStack
         /// </summary>
         public string ServiceUrl { get; set; } = "http://localhost:4566/";
-        
     }
 }

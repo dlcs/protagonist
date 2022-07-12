@@ -1,5 +1,8 @@
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
+using DLCS.AWS.SQS;
+using Engine.Ingest.Handlers;
+using Engine.Messaging;
 
 public static class ServiceCollectionX
 {
@@ -14,8 +17,21 @@ public static class ServiceCollectionX
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .SetupAWS(configuration, webHostEnvironment)
-            .WithAmazonS3();
+            .WithAmazonS3()
+            .WithAmazonSQS();
 
         return services;
     }
+
+    /// <summary>
+    /// Configure listeners for queues
+    /// </summary>
+    public static IServiceCollection AddQueueMonitoring(this IServiceCollection services)
+        => services
+            .AddSingleton<SqsListenerManager>()
+            .AddTransient(typeof(SqsListener<>))
+            .AddTransient<IngestHandler>()
+            .AddTransient<TranscodeCompletionHandler>()
+            .AddSingleton<SqsQueueUtilities>()
+            .AddHostedService<SqsListenerService>();
 }

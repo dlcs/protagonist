@@ -14,7 +14,9 @@ public class Startup
 
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddAws(configuration, webHostEnvironment);
+        services
+            .AddAws(configuration, webHostEnvironment)
+            .AddQueueMonitoring();
         
         services
             .AddHealthChecks()
