@@ -34,7 +34,7 @@ namespace DLCS.Repository.Tests.Assets
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
             var config = new ConfigurationBuilder()
                 .AddInMemoryCollection(new[]
-                    { new KeyValuePair<string, string>("ConnectionString:PostgreSQLConnection", dbFixture.ConnectionString) })
+                    { new KeyValuePair<string, string>("ConnectionStrings:PostgreSQLConnection", dbFixture.ConnectionString) })
                 .Build();
             sut = new DapperAssetRepository(
                 dbContext, // ignoring dbFixture.DbContext
