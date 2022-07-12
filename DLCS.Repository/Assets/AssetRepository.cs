@@ -17,22 +17,32 @@ namespace DLCS.Repository.Assets
             this.dlcsContext = dlcsContext;
         }
 
-        public async Task<Asset?> GetAsset(string id)
+        public Task<Asset?> GetAsset(string id)
+        {
+            return GetAsset(id, false);
+        }
+
+        public Task<Asset?> GetAsset(AssetId id)
+        {
+            return GetAsset(id, false);
+        }
+
+        public async Task<Asset?> GetAsset(string id, bool noCache)
             => await dlcsContext.Images.FindAsync(id);
 
-        public async Task<Asset?> GetAsset(AssetId id)
+        public async Task<Asset?> GetAsset(AssetId id, bool noCache)
             => await GetAsset(id.ToString());
 
         public async Task<ImageLocation> GetImageLocation(AssetId assetId)
             => await dlcsContext.ImageLocations.FindAsync(assetId.ToString());
         
-        public Task<PageOfAssets> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize, string orderBy, bool ascending,
+        public Task<PageOfAssets?> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize, string orderBy, bool descending,
             CancellationToken cancellationToken)
         {
             throw new System.NotImplementedException();
         }
 
-        public Task Put(Asset putAsset, CancellationToken cancellationToken, string operation)
+        public Task Save(Asset asset, CancellationToken cancellationToken)
         {
             throw new System.NotImplementedException();
         }

@@ -7,19 +7,24 @@ using API.Settings;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.Core.Encryption;
+using DLCS.Core.Settings;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
+using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
 using DLCS.Model.Spaces;
+using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Entities;
+using DLCS.Repository.Messaging;
 using DLCS.Repository.Spaces;
+using DLCS.Repository.Storage;
 using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
 using Hydra;
@@ -52,8 +57,10 @@ namespace API
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<ApiSettings>(configuration);
+            services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
             var cachingSection = configuration.GetSection("Caching");
             services.Configure<CacheSettings>(cachingSection);
+            
             
             var apiSettings = configuration.Get<ApiSettings>();
             var cacheSettings = cachingSection.Get<CacheSettings>();
@@ -71,15 +78,21 @@ namespace API
                     memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
                 })
                 .AddLazyCache()
-                .AddScoped<ISpaceRepository, SpaceRepository>()
-                .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
-                .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
-                .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
-                .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
+                .AddDlcsContext(configuration)
+                // Use a DlcsContext, therefore must be scoped:
                 .AddScoped<IAssetRepository, DapperAssetRepository>()
+                .AddScoped<ISpaceRepository, SpaceRepository>()
+                .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
+                .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
+                .AddScoped<IStorageRepository, CustomerStorageRepository>()
+                // Do not use a DlcsContext, _may_ be Singleton (but should they)
+                .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
+                .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
+                .AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>()
+                .AddSingleton<IImageOptimisationPolicyRepository, ImageOptimisationPolicyRepository>()
+                .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
                 .ConfigureMediatR()
-                .ConfigureSwagger()
-                .AddDlcsContext(configuration);
+                .ConfigureSwagger();
 
             services
                 .AddSingleton<IBucketReader, S3BucketReader>()

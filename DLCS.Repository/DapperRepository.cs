@@ -64,6 +64,12 @@ namespace DLCS.Repository
             await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
             return await connection.QueryAsync(sql, param);
         }
+
+        protected async Task<T> ExecuteScalarAsync<T>(string sql, object param = null)
+        {
+            await using var connection = await DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration);
+            return await connection.ExecuteScalarAsync<T>(sql, param);
+        }
         
     }
 }

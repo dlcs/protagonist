@@ -159,9 +159,9 @@ namespace Orchestrator.Assets
                     return SetDefaults(new OrchestrationImage
                     {
                         S3Location = getImageLocation.Result?.S3, // TODO - error handling
-                        Width = asset.Width,
-                        Height = asset.Height,
-                        MaxUnauthorised = asset.MaxUnauthorised,
+                        Width = asset.Width ?? 0,
+                        Height = asset.Height ?? 0,
+                        MaxUnauthorised = asset.MaxUnauthorised ?? 0,
                         OpenThumbs = getOpenThumbs.Result, // TODO - reorganise thumb layout + create missing eventually
                         Status = getOrchestrationStatus.Result
                     });

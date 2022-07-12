@@ -29,7 +29,7 @@ namespace Hydra.Collections
         public int TotalPages { get; set; }
 
         public static void AddPaging<T>(HydraCollection<T> collection, 
-            int page, int pageSize, string? orderBy = null, bool ascending = true)
+            int page, int pageSize, string? orderBy = null, bool descending = false)
         {
             if (collection.Members == null) return;
             if (collection.TotalItems <= 0) return;
@@ -56,26 +56,29 @@ namespace Hydra.Collections
                     partialView.Next = $"{baseUrl}?page={page+1}&pageSize={pageSize}";
                 }
 
-                partialView.Id = AppendCommonParams(partialView.Id, pageSize, orderBy, ascending);
-                partialView.First = AppendCommonParams(partialView.First, pageSize, orderBy, ascending);
-                partialView.Previous = AppendCommonParams(partialView.Previous, pageSize, orderBy, ascending);
-                partialView.Last = AppendCommonParams(partialView.Last, pageSize, orderBy, ascending);
-                partialView.Next = AppendCommonParams(partialView.Next, pageSize, orderBy, ascending);
+                partialView.Id = AppendCommonParams(partialView.Id, pageSize, orderBy, descending);
+                partialView.First = AppendCommonParams(partialView.First, pageSize, orderBy, descending);
+                partialView.Previous = AppendCommonParams(partialView.Previous, pageSize, orderBy, descending);
+                partialView.Last = AppendCommonParams(partialView.Last, pageSize, orderBy, descending);
+                partialView.Next = AppendCommonParams(partialView.Next, pageSize, orderBy, descending);
 
                 collection.View = partialView;
             }
         }
 
-        private static string? AppendCommonParams(string? partial, int pageSize, string? orderBy, bool ascending)
+        private static string? AppendCommonParams(string? partial, int pageSize, string? orderBy, bool descending)
         {
             if (partial == null) return null;
             var full = $"{partial}&pageSize={pageSize}";
             if (!string.IsNullOrWhiteSpace(orderBy))
             {
-                full = $"{full}&orderBy={orderBy}";
-                if (ascending == false)
+                if (descending)
                 {
-                    full = $"{full}&ascending=false";
+                    full = $"{full}&orderByDescending={orderBy}";
+                }
+                else
+                {
+                    full = $"{full}&orderBy={orderBy}";
                 }
             }
 

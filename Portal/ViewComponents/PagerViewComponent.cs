@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Strings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,10 +14,9 @@ namespace Portal.ViewComponents
         public const int DefaultWindow = 7;
         public const int DefaultEnds = 3;
 
-        public async Task<IViewComponentResult> InvokeAsync(int total, int currentPage = 1,
-            int pageSize = DefaultPageSize, int window = DefaultWindow, int ends = DefaultEnds)
+        public async Task<IViewComponentResult> InvokeAsync(PagerValues values)
         {
-            if (total < pageSize)
+            if (values.Total < values.Size)
             {
                 // Nothing to page
                 return Content(String.Empty);
@@ -28,29 +28,33 @@ namespace Portal.ViewComponents
             {
                 var path = Request.Path;
                 model = new PagerModel {Links = new List<Link>()};
-                int pages = total / pageSize;
-                if (total % pageSize > 0) pages++;
+                int pages = values.Total / values.Size;
+                if (values.Total % values.Size > 0) pages++;
                 // we don't want to loop through the pages - there could be 100,000 of them
                 // instead we want the first few, then an ellipsis,
                 // then the current "window", then another ellipsis, then the end
                 // but only if there are enough pages to justify this.
                 // prev | 1 2 3 ... 45 46 [47] 48 49 ... 654 655 656 | next
-                if (pages < (2 * ends) + window + 2)
+                if (pages < (2 * values.Ends) + values.Window + 2)
                 {
                     for (int linkPage = 1; linkPage <= pages; linkPage++)
                     {
-                        AddLinkToModel(model, path, linkPage, currentPage, pageSize);
+                        AddLinkToModel(model, path, linkPage, 
+                            values.Index, values.Size, 
+                            values.OrderBy, values.Descending);
                     }
                 }
                 else
                 {
-                    int windowStart = currentPage - (window / 2);
-                    for (int linkPage = 1; linkPage <= ends; linkPage++)
+                    int windowStart = values.Index - (values.Window / 2);
+                    for (int linkPage = 1; linkPage <= values.Ends; linkPage++)
                     {
-                        AddLinkToModel(model, path, linkPage, currentPage, pageSize);
+                        AddLinkToModel(model, path, linkPage, 
+                            values.Index, values.Size, 
+                            values.OrderBy, values.Descending);
                     }
 
-                    if (windowStart > ends + 2)
+                    if (windowStart > values.Ends + 2)
                     {
                         // we're not into the window yet, add an ellipsis
                         model.Links.Add(new Link {Page = null});
@@ -58,34 +62,42 @@ namespace Portal.ViewComponents
                     else
                     {
                         // we're into the window already
-                        AddLinkToModel(model, path, ends + 1, currentPage, pageSize);
+                        AddLinkToModel(model, path, values.Ends + 1, 
+                            values.Index, values.Size, 
+                            values.OrderBy, values.Descending);
                     }
 
-                    windowStart = Math.Max(ends + 2, windowStart);
-                    int tail = pages - ends - window;
+                    windowStart = Math.Max(values.Ends + 2, windowStart);
+                    int tail = pages - values.Ends - values.Window;
                     if (windowStart >= tail)
                     {
                         // just run through to the end
                         for (int linkPage = tail; linkPage <= pages; linkPage++)
                         {
-                            AddLinkToModel(model, path, linkPage, currentPage, pageSize);
+                            AddLinkToModel(model, path, linkPage, 
+                                values.Index, values.Size, 
+                                values.OrderBy, values.Descending);
                         }
                     }
                     else
                     {
-                        for (int linkPage = windowStart; linkPage < Math.Min(windowStart + window, pages); linkPage++)
+                        for (int linkPage = windowStart; linkPage < Math.Min(windowStart + values.Window, pages); linkPage++)
                         {
-                            AddLinkToModel(model, path, linkPage, currentPage, pageSize);
+                            AddLinkToModel(model, path, linkPage, 
+                                values.Index, values.Size, 
+                                values.OrderBy, values.Descending);
                         }
 
-                        if (model.Links.Last().Page < pages - ends)
+                        if (model.Links.Last().Page < pages - values.Ends)
                         {
                             model.Links.Add(new Link {Page = null});
                         }
 
-                        for (int linkPage = pages - ends + 1; linkPage <= pages; linkPage++)
+                        for (int linkPage = pages - values.Ends + 1; linkPage <= pages; linkPage++)
                         {
-                            AddLinkToModel(model, path, linkPage, currentPage, pageSize);
+                            AddLinkToModel(model, path, linkPage, 
+                                values.Index, values.Size, 
+                                values.OrderBy, values.Descending);
                         }
                     }
                 }
@@ -97,16 +109,16 @@ namespace Portal.ViewComponents
         }
 
         private static void AddLinkToModel(PagerModel model, PathString path, int linkPage, int currentPage,
-            int pageSize)
+            int pageSize, string? orderBy, bool descending)
         {
-            var link = GetLink(path, currentPage, pageSize, linkPage);
+            var link = GetLink(path, currentPage, pageSize, linkPage, orderBy, descending);
             model.Links.Add(link);
             if (linkPage == currentPage - 1) model.Previous = link;
             if (linkPage == currentPage + 1) model.Next = link;
         }
 
 
-        private static Link GetLink(PathString path, int currentPage, int pageSize, int linkPage)
+        private static Link GetLink(PathString path, int currentPage, int pageSize, int linkPage, string? orderBy, bool descending)
         {
             var qs = new QueryString();
             if (linkPage > 1)
@@ -117,6 +129,18 @@ namespace Portal.ViewComponents
             if (pageSize != DefaultPageSize)
             {
                 qs = qs.Add("pageSize", pageSize.ToString());
+            }
+
+            if (orderBy.HasText())
+            {
+                if (descending)
+                {
+                    qs = qs.Add("orderByDescending", orderBy);
+                }
+                else
+                {
+                    qs = qs.Add("orderBy", orderBy);
+                }
             }
 
             var link = new Link
@@ -149,15 +173,26 @@ namespace Portal.ViewComponents
     {
         public PagerValues(){}
         
-        public PagerValues(int total, int index, int size)
+        public PagerValues(
+            int total, int index, int size,
+            string? orderBy = null, bool descending = false,
+            int window = PagerViewComponent.DefaultWindow, int ends = PagerViewComponent.DefaultEnds)
         {
             Total = total;
             Index = index;
             Size = size;
+            OrderBy = orderBy;
+            Descending = descending;
+            Window = window;
+            Ends = ends;
         }
         
         public int Total { get; set; }
         public int Index { get; set; }
         public int Size { get; set; }
+        public string? OrderBy { get; set; }
+        public bool Descending { get; set; }
+        public int Window { get; set; }
+        public int Ends { get; set; }
     }
 }

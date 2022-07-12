@@ -85,5 +85,13 @@ namespace DLCS.AWS.S3
         /// <param name="imageApiVersion">IIIF ImageApi version</param>
         /// <returns><see cref="ObjectInBucket"/> for specified key in output bucket</returns>
         ObjectInBucket GetInfoJsonLocation(AssetId assetId, string imageServer, Version imageApiVersion);
+
+        /// <summary> 
+        /// Get <see cref="RegionalisedObjectInBucket"/> item for an asset that is directly uploaded to the DLCS,
+        /// and uses the DLCS' own origin bucket. 
+        /// </summary>
+        /// <param name="assetId">AssetId request is for</param>
+        /// <returns><see cref="RegionalisedObjectInBucket"/> for uploaded asset</returns>
+        RegionalisedObjectInBucket GetAssetAtOriginLocation(AssetId assetId);
     }
 }

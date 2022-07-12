@@ -5,7 +5,10 @@ using System.Threading.Tasks;
 using DLCS.Core.Strings;
 using DLCS.Model;
 using DLCS.Model.Spaces;
+using DLCS.Repository.Caching;
+using LazyCache;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Spaces
 {
@@ -13,12 +16,18 @@ namespace DLCS.Repository.Spaces
     {
         private readonly DlcsContext dlcsContext;
         private readonly IEntityCounterRepository entityCounterRepository;
+        private readonly CacheSettings cacheSettings;
+        private readonly IAppCache appCache;
 
         public SpaceRepository(
             DlcsContext dlcsContext,
+            IOptions<CacheSettings> cacheOptions,
+            IAppCache appCache,
             IEntityCounterRepository entityCounterRepository )
         {
             this.dlcsContext = dlcsContext;
+            this.appCache = appCache;
+            cacheSettings = cacheOptions.Value;
             this.entityCounterRepository = entityCounterRepository;
         }
         
@@ -37,15 +46,20 @@ namespace DLCS.Repository.Spaces
             return entity == null ? null : (int) entity.Next;*/
         }
 
-        public async Task<Space?> GetSpace(int customerId, int spaceId, CancellationToken cancellationToken)
+        public Task<Space?> GetSpace(int customerId, int spaceId, CancellationToken cancellationToken)
         {
-            var space = await GetSpaceInternal(customerId, spaceId, cancellationToken, null, true);
+            return GetSpace(customerId, spaceId, cancellationToken, false);
+        }
+        
+        public async Task<Space?> GetSpace(int customerId, int spaceId, CancellationToken cancellationToken, bool noCache)
+        {
+            var space = await GetSpaceInternal(customerId, spaceId, cancellationToken, null, true, noCache);
             return space;
         }
         
         public async Task<Space?> GetSpace(int customerId, string name, CancellationToken cancellationToken)
         {
-            var space = await GetSpaceInternal(customerId, -1, cancellationToken, name);
+            var space = await GetSpaceInternal(customerId, -1, cancellationToken, name, noCache:true);
             return space;
         }
 
@@ -90,38 +104,48 @@ namespace DLCS.Repository.Spaces
         
 
         private async Task<Space?> GetSpaceInternal(int customerId, int spaceId, 
-            CancellationToken cancellationToken, string? name = null, bool withApproximateImageCount = false)
+            CancellationToken cancellationToken, string? name = null,
+            bool withApproximateImageCount = false, bool noCache = false)
         {
-            Space? space;
-            if (name != null)
+            var key = $"space:{customerId}/{spaceId}";
+            if (noCache)
             {
-                space = await dlcsContext.Spaces
-                    .Where(s => s.Customer == customerId)
-                    .SingleOrDefaultAsync(s => s.Name == name, cancellationToken: cancellationToken);
+                appCache.Remove(key);
             }
-            else
+            
+            return await appCache.GetOrAddAsync(key, async entry =>
             {
-                space = await dlcsContext.Spaces.AsNoTracking().SingleOrDefaultAsync(s =>
-                    s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
-            }
+                Space? space;
+                if (name != null)
+                {
+                    space = await dlcsContext.Spaces
+                        .Where(s => s.Customer == customerId)
+                        .SingleOrDefaultAsync(s => s.Name == name, cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    space = await dlcsContext.Spaces.AsNoTracking().SingleOrDefaultAsync(s =>
+                        s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
+                }
 
-            if (space == null || withApproximateImageCount == false)
-            {
+                if (space == null || withApproximateImageCount == false)
+                {
+                    return space;
+                }
+                var counter = await dlcsContext.EntityCounters.AsNoTracking().SingleOrDefaultAsync(ec =>
+                    ec.Customer == customerId && ec.Type == "space-images" &&
+                    ec.Scope == spaceId.ToString(), cancellationToken: cancellationToken);
+                if (counter != null)
+                {
+                    space.ApproximateNumberOfImages = counter.Next;
+                }
+
                 return space;
-            }
-            var counter = await dlcsContext.EntityCounters.AsNoTracking().SingleOrDefaultAsync(ec =>
-                ec.Customer == customerId && ec.Type == "space-images" &&
-                ec.Scope == spaceId.ToString(), cancellationToken: cancellationToken);
-            if (counter != null)
-            {
-                space.ApproximateNumberOfImages = counter.Next;
-            }
-
-            return space;
+            }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short));
         }
 
         public async Task<PageOfSpaces> GetPageOfSpaces(
-            int customerId, int page, int pageSize, string orderBy, bool ascending, CancellationToken cancellationToken)
+            int customerId, int page, int pageSize, string orderBy, bool descending, CancellationToken cancellationToken)
         {
             var result = new PageOfSpaces
             {
@@ -129,7 +153,7 @@ namespace DLCS.Repository.Spaces
                 Total = await dlcsContext.Spaces.CountAsync(s => s.Customer == customerId, cancellationToken: cancellationToken),
                 Spaces = await dlcsContext.Spaces.AsNoTracking()
                     .Where(s => s.Customer == customerId)
-                    .AsOrderedSpaceQuery(orderBy, ascending)
+                    .AsOrderedSpaceQuery(orderBy, descending)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync(cancellationToken: cancellationToken)

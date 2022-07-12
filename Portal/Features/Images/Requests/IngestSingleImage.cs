@@ -7,6 +7,7 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.Core.Settings;
+using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Spaces;
 using DLCS.Web.Auth;
@@ -41,25 +42,29 @@ namespace Portal.Features.Images.Requests
         private readonly AWSSettings awsSettings;
         private readonly IDlcsClient dlcsClient;
         private readonly ILogger<IngestImageFromFileHandler> logger;
+        private readonly IStorageKeyGenerator storageKeyGenerator;
 
         public IngestImageFromFileHandler(
             ClaimsPrincipal claimsPrincipal,
             IBucketWriter bucketWriter,
             IOptions<AWSSettings> awsSettings,
             IDlcsClient dlcsClient,
-            ILogger<IngestImageFromFileHandler> logger)
+            ILogger<IngestImageFromFileHandler> logger,
+            IStorageKeyGenerator storageKeyGenerator)
         {
             this.claimsPrincipal = claimsPrincipal;
             this.bucketWriter = bucketWriter;
             this.awsSettings = awsSettings.Value;
             this.dlcsClient = dlcsClient;
             this.logger = logger;
+            this.storageKeyGenerator = storageKeyGenerator;
         }
         
         public async Task<Image?> Handle(IngestSingleImage request, CancellationToken cancellationToken)
         {
             // Save to S3
-            var objectInBucket = GetObjectInBucket(request);
+            var assetId = new AssetId(claimsPrincipal.GetCustomerId()!.Value, request.SpaceId, request.ImageId);
+            var objectInBucket = storageKeyGenerator.GetAssetAtOriginLocation(assetId);
             var bucketSuccess = await bucketWriter.WriteToBucket(objectInBucket, request.UploadedFileStream, request.MediaType);
             
             if (!bucketSuccess)
@@ -70,16 +75,12 @@ namespace Portal.Features.Images.Requests
                 return null;
             }
             
-            var asset = await CreateJsonBody(objectInBucket, request);
+            var asset = CreateJsonBody(objectInBucket, request);
             var ingestResponse = await dlcsClient.DirectIngestImage(request.SpaceId, request.ImageId, asset);
             return ingestResponse;
         }
 
-        private RegionalisedObjectInBucket GetObjectInBucket(IngestSingleImage request)
-            => new RegionalisedObjectInBucket(awsSettings.S3.OriginBucket,
-                $"{claimsPrincipal.GetCustomerId()}/{request.SpaceId}/{request.ImageId}", awsSettings.Region);
-
-        private async Task<Image> CreateJsonBody(RegionalisedObjectInBucket objectInBucket, IngestSingleImage request)
+        private Image CreateJsonBody(RegionalisedObjectInBucket objectInBucket, IngestSingleImage request)
         {
             return new Image
             {

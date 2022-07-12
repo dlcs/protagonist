@@ -53,10 +53,7 @@
     }   
 </form>
 
-@await Component.InvokeAsync("Pager", new
-{
-    total = @Model.PagerValues.Total, pageSize = Model.PagerValues.Size, currentPage = Model.PagerValues.Index
-})
+@await Component.InvokeAsync("Pager", new { values = Model.PagerValues })
 
 <form method="post" asp-page-handler="ReOrder">
     <input type="hidden" value="@Model.SpaceId" name="spaceId">
@@ -131,10 +128,7 @@
 
 </form>
 
-@await Component.InvokeAsync("Pager", new
-{
-    total = @Model.PagerValues.Total, pageSize = Model.PagerValues.Size, currentPage = Model.PagerValues.Index
-})
+@await Component.InvokeAsync("Pager", new { values = Model.PagerValues })
 
 @section Scripts
 {

@@ -195,15 +195,40 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
             {
                 StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
             };
-            var images = Builder<Asset>
-                .CreateListOfSize(5)
-                .TheFirst(1).With(a => a.Roles = "whitelist")
-                .TheNext(1).With(a => a.Roles = "whitelist,notwhitelist")
-                .TheNext(1).With(a => a.Roles = "notwhitelist")
-                .All()
-                .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
-                .Build()
-                .ToList();
+
+            var images = new List<Asset>
+            {
+                new()
+                {
+                    Roles = "whitelist",
+                    Id = "/99/1/image1.jpg",
+                    MaxUnauthorised = 0
+                },
+                new ()
+                {
+                    Roles = "whitelist,notwhitelist",
+                    Id = "/99/1/image1.jpg",
+                    MaxUnauthorised = 0
+                },
+                new ()
+                {
+                    Roles = "notwhitelist",
+                    Id = "/99/1/image1.jpg",
+                    MaxUnauthorised = 0
+                },
+                new ()
+                {
+                    Roles = String.Empty,
+                    Id = "/99/1/image1.jpg",
+                    MaxUnauthorised = -1
+                },
+                new ()
+                {
+                    Roles = String.Empty,
+                    Id = "/99/1/image1.jpg",
+                    MaxUnauthorised = -1
+                }
+            };
 
             var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
             responseMessage.Content =

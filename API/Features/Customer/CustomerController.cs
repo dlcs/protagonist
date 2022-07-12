@@ -25,15 +25,13 @@ namespace API.Features.Customer
     public class CustomerController : HydraController
     {
         private readonly IMediator mediator;
-        private readonly ApiSettings settings;
 
         /// <inheritdoc />
         public CustomerController(
             IMediator mediator,
-            IOptions<ApiSettings> options)
+            IOptions<ApiSettings> options) : base(options.Value)
         {
             this.mediator = mediator;
-            settings = options.Value;
         }
         
         /// <summary>
@@ -46,7 +44,7 @@ namespace API.Features.Customer
         [HttpGet]
         public async Task<HydraCollection<JObject>> Index()
         {
-            var baseUrl = Request.GetBaseUrl();
+            var baseUrl = getUrlRoots().BaseUrl;
             var dbCustomers = await mediator.Send(new GetAllCustomers());
             
             return new HydraCollection<JObject>
@@ -88,7 +86,7 @@ namespace API.Features.Customer
                     int statusCode = result.Conflict ? 409 : 500;
                     return HydraProblem(result.ErrorMessages, null, statusCode, "Could not create Customer", null);
                 }
-                var newApiCustomer = result.Customer.ToHydra(Request.GetBaseUrl());
+                var newApiCustomer = result.Customer.ToHydra(getUrlRoots().BaseUrl);
                 return Created(newApiCustomer.Id, newApiCustomer);
             }
             catch (Exception ex)
@@ -108,13 +106,12 @@ namespace API.Features.Customer
         [Route("{customerId}")]
         public async Task<IActionResult> Index(int customerId)
         {
-            var baseUrl = Request.GetBaseUrl();
             var dbCustomer = await mediator.Send(new GetCustomer(customerId));
             if (dbCustomer == null)
             {
                 return HydraNotFound();
             }
-            return Ok(dbCustomer.ToHydra(baseUrl));
+            return Ok(dbCustomer.ToHydra(getUrlRoots().BaseUrl));
         }
     }
 

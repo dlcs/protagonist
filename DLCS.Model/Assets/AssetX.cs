@@ -27,7 +27,7 @@ namespace DLCS.Model.Assets
 
             var availableSizes = new List<Size>();
 
-            var size = new Size(asset.Width, asset.Height);
+            var size = new Size(asset.Width.Value, asset.Height.Value);
 
             int maxBoundedSize = 0;
             int maxAvailableWidth = 0;

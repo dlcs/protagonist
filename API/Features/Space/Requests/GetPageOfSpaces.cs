@@ -14,20 +14,20 @@ namespace API.Features.Space.Requests
     public class GetPageOfSpaces : IRequest<PageOfSpaces>
     {
         public GetPageOfSpaces(int page, int pageSize, int? customerId = null,
-            string? orderBy = null, bool ascending=true)
+            string? orderBy = null, bool descending=false)
         {
             Page = page;
             PageSize = pageSize;
             CustomerId = customerId;
             OrderBy = orderBy;
-            Ascending = ascending;
+            Descending = descending;
         }
 
         public int? CustomerId { get; }
         public int Page { get; }
         public int PageSize { get; }
-        public string OrderBy { get; }
-        public bool Ascending { get; }
+        public string? OrderBy { get; }
+        public bool Descending { get; }
     }
 
     public class GetAllSpacesHandler : IRequestHandler<GetPageOfSpaces, PageOfSpaces>
@@ -49,7 +49,7 @@ namespace API.Features.Space.Requests
                 throw new BadRequestException("No customer Id supplied");
             }
             var result = await spaceRepository.GetPageOfSpaces(customerId.Value, 
-                request.Page, request.PageSize, request.OrderBy, request.Ascending, cancellationToken);
+                request.Page, request.PageSize, request.OrderBy, request.Descending, cancellationToken);
             return result;
         }
         

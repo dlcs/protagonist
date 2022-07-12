@@ -242,7 +242,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         coll.Members[0]["name"].ToString().Should().Be("Space 0001");
         coll.Members[1]["name"].ToString().Should().Be("Space 0002");
         
-        spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderBy=name&ascending=false";
+        spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderByDescending=name";
         response = await httpClient.AsCustomer(customerId.Value).GetAsync(spacesUrl);
         coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
         coll.Members[0]["name"].ToString().Should().Be("Space 0025");
@@ -272,7 +272,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
         coll.Members[0]["name"].ToString().Should().Be("Space 0001");
         
-        spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderBy=created&ascending=false";
+        spacesUrl = $"/customers/{customerId.Value}/spaces?pageSize=10&orderByDescending=created";
         response = await httpClient.AsCustomer(customerId.Value).GetAsync(spacesUrl);
         coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
         coll.Members[0]["name"].ToString().Should().Be("Aardvark space");
@@ -297,6 +297,24 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         patchedSpace.Name.Should().Be("Patch Space After");
+    }
+    
+    [Fact]
+    public async Task Patch_Space_Prevents_Name_Conflict()
+    {
+        int? customerId = await EnsureCustomerForSpaceTests("Patch_Space_Prevents_Name_Conflict");
+        await dbContext.Spaces.AddTestSpace(customerId.Value, 1, "Patch Space Name 1");
+        await dbContext.Spaces.AddTestSpace(customerId.Value, 2, "Patch Space Name 2");
+        await dbContext.SaveChangesAsync();
+        
+        const string patchJson = @"{
+""@type"": ""Space"",
+""name"": ""Patch Space Name 2""
+}";
+        var patchContent = new StringContent(patchJson, Encoding.UTF8, "application/json");
+        var patchUrl = $"/customers/{customerId}/spaces/1";
+        var patchResponse = await httpClient.AsCustomer(customerId.Value).PatchAsync(patchUrl, patchContent);
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
     
     [Fact]

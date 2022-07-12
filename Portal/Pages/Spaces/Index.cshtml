@@ -35,11 +35,7 @@
   </div>
 </form>
 
-
-@await Component.InvokeAsync("Pager", new
-{
-    total = @Model.PagerValues.Total, pageSize = Model.PagerValues.Size, currentPage = Model.PagerValues.Index
-})
+@await Component.InvokeAsync("Pager", new { values = Model.PagerValues })
 
 <table class="table">
     <thead>
@@ -61,8 +57,4 @@
     </tbody>
 </table>
 
-
-@await Component.InvokeAsync("Pager", new
-{
-    total = @Model.PagerValues.Total, pageSize = Model.PagerValues.Size, currentPage = Model.PagerValues.Index
-})
+@await Component.InvokeAsync("Pager", new { values = Model.PagerValues })

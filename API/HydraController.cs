@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using API.Converters;
+using API.Settings;
+using DLCS.Core.Strings;
 using DLCS.Web.Requests;
 using Hydra.Model;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +14,48 @@ namespace API;
 /// </summary>
 public abstract class HydraController : Controller
 {
+    protected ApiSettings Settings;
+    
+    protected HydraController(ApiSettings settings)
+    {
+        Settings = settings;
+    }
+
+    protected UrlRoots getUrlRoots()
+    {
+        return new UrlRoots
+        {
+            BaseUrl = Request.GetBaseUrl(),
+            ResourceRoot = Settings.DLCS.ResourceRoot.ToString()
+        };
+    }
+    
+    
+    /// <summary>
+    /// Evaluates incoming orderBy and orderByDescending fields to get a suitable
+    /// ordering field and its direction.
+    /// </summary>
+    /// <param name="orderBy"></param>
+    /// <param name="orderByDescending"></param>
+    /// <param name="descending"></param>
+    /// <returns></returns>
+    protected string? GetOrderBy(string? orderBy, string? orderByDescending, out bool descending)
+    {
+        string? orderByField = null;
+        descending = false;
+        if (orderBy.HasText())
+        {
+            orderByField = orderBy;
+        }
+        else if (orderByDescending.HasText())
+        {
+            orderByField = orderByDescending;
+            descending = true;
+        }
+
+        return orderByField;
+    }
+
     /// <summary>
     /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
     /// </summary>
@@ -94,3 +139,4 @@ public abstract class HydraController : Controller
         return HydraProblem(detail, null, 404, "Not Found", null);
     }
 }
+

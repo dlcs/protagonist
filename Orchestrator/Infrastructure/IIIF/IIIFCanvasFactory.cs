@@ -191,7 +191,7 @@ public class IIIFCanvasFactory
             {
                 OpenThumbnails = new List<Size>(0),
                 IsDerivativeOpen = false,
-                MaxDerivativeSize = Size.Confine(largestThumbnail, new Size(image.Width, image.Height))
+                MaxDerivativeSize = Size.Confine(largestThumbnail, new Size(image.Width.Value, image.Height.Value))
             };
         }
 
@@ -274,8 +274,8 @@ public class IIIFCanvasFactory
                 Id = GetFullyQualifiedId(asset, customerPathElement, false, ImageApi.Version.V2),
                 Profile = ImageService2.Level2Profile,
                 Context = ImageService2.Image2Context,
-                Width = asset.Width,
-                Height = asset.Height,
+                Width = asset.Width ?? 0,
+                Height = asset.Height ?? 0
             });
         }
 
@@ -286,8 +286,8 @@ public class IIIFCanvasFactory
                 Id = GetFullyQualifiedId(asset, customerPathElement, false, ImageApi.Version.V3),
                 Profile = ImageService3.Level2Profile,
                 Context = ImageService3.Image3Context,
-                Width = asset.Width,
-                Height = asset.Height,
+                Width = asset.Width ?? 0,
+                Height = asset.Height ?? 0
             });
         }
         

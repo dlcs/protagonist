@@ -4,12 +4,15 @@ using System.IO;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using API.Client;
+using DLCS.AWS.S3;
 using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Portal.Features.Images.Requests;
+using Portal.Settings;
 
 namespace Portal.Features.Spaces
 {
@@ -18,24 +21,31 @@ namespace Portal.Features.Spaces
         private readonly ClaimsPrincipal currentUser;
         private readonly IMediator mediator;
         private readonly IDlcsClient dlcsClient;
+        private readonly PortalSettings portalSettings;
 
         public DropzoneController(
             ClaimsPrincipal currentUser, 
             IMediator mediator,
-            IDlcsClient dlcsClient)
+            IDlcsClient dlcsClient,
+            IOptions<PortalSettings> portalSettings)
         {
             this.currentUser = currentUser;
             this.mediator = mediator;
             this.dlcsClient = dlcsClient;
+            this.portalSettings = portalSettings.Value;
         }
         
         [HttpPost]
         [Route("[controller]/{customer}/{space}/[action]")]
         public async Task<IActionResult> Local(int customer, int space, List<IFormFile> file)
         {
+            if (!portalSettings.PermitLocalDropZone)
+            {
+                return Forbid();
+            }
             if (currentUser.GetCustomerId() != customer)
             {
-                throw new InvalidOperationException("Customer ID mismatch");
+                return BadRequest("Customer ID mismatch");
             }
             string? errorMessage = null; 
             string fileNameForSaving = "";
@@ -71,14 +81,16 @@ namespace Portal.Features.Spaces
         [Route("[controller]/{customer}/{space}/[action]")]
         public async Task<IActionResult> Upload(int customer, int space, List<IFormFile> file)
         {
+            if (currentUser.GetCustomerId() != customer)
+            {
+                return BadRequest("Customer ID mismatch");
+            }
+            
             // Give the images numbering metadata, starting at the current number of images.
             // This is not the most elegant way of doing this.
             var firstPageOfImages = await dlcsClient.GetSpaceImages(1,1, space);
             var currentIndex = firstPageOfImages.TotalItems;
-            if (currentUser.GetCustomerId() != customer)
-            {
-                throw new InvalidOperationException("Customer ID mismatch");
-            }
+
             string? errorMessage = null; 
             string fileNameForSaving = "";
             try
@@ -88,7 +100,7 @@ namespace Portal.Features.Spaces
                     if (formFile.Length > 0)
                     {
                         await using var ms = new MemoryStream();
-                        fileNameForSaving = Path.GetFileName(formFile.FileName) ?? formFile.FileName;
+                        fileNameForSaving = Path.GetFileName(formFile.FileName);
                         await formFile.CopyToAsync(ms);
                         
                         var ingestRequest = new IngestSingleImage(space, 

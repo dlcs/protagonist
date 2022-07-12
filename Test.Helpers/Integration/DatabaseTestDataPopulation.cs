@@ -35,9 +35,11 @@ namespace Test.Helpers.Integration
             {
                 Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
                 Width = width, Height = height, Roles = roles, Family = family, MediaType = mediaType,
-                ThumbnailPolicy = "default", MaxUnauthorised = maxUnauthorised, Reference1 = ref1,
-                Reference2 = ref2, Reference3 = ref3, NumberReference1 = num1, NumberReference2 = num2,
-                NumberReference3 = num3, NotForDelivery = notForDelivery
+                ThumbnailPolicy = "default", MaxUnauthorised = maxUnauthorised,
+                Reference1 = ref1, Reference2 = ref2, Reference3 = ref3,
+                NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
+                NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = "",
+                ImageOptimisationPolicy = "", Batch = 0, Ingesting = false
             });
 
         public static ValueTask<EntityEntry<AuthToken>> AddTestToken(this DbSet<AuthToken> authTokens,
