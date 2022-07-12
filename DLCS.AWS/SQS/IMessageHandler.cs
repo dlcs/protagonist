@@ -8,5 +8,5 @@ public interface IMessageHandler
     /// <summary>
     /// Handle message, returning success/failure 
     /// </summary>
-    Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken);
+    Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default);
 }

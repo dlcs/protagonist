@@ -2,9 +2,10 @@ using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Repository;
-using Engine.Infrastructure;
 using Engine.Ingest.Handlers;
 using Engine.Messaging;
+
+namespace Engine.Infrastructure;
 
 public static class ServiceCollectionX
 {
@@ -32,6 +33,12 @@ public static class ServiceCollectionX
         => services
             .AddSingleton<SqsListenerManager>()
             .AddTransient(typeof(SqsListener<>))
+            .AddSingleton<QueueHandlerResolver<EngineMessageType>>(provider => messageType => messageType switch
+            {
+                EngineMessageType.Ingest => provider.GetRequiredService<IngestHandler>(),
+                EngineMessageType.TranscodeComplete => provider.GetRequiredService<TranscodeCompletionHandler>(),
+                _ => throw new ArgumentOutOfRangeException(nameof(messageType), messageType, null)
+            })
             .AddTransient<IngestHandler>()
             .AddTransient<TranscodeCompletionHandler>()
             .AddSingleton<SqsQueueUtilities>()

@@ -2,13 +2,15 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using DLCS.AWS.Settings;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DLCS.AWS.SQS;
 
-public interface IQueueListener
+/// <summary>
+/// Base marker interface for queue listener
+/// </summary>
+internal interface IQueueListener
 {
     /// <summary>
     /// Get value checking if listener is currently listening to a queue.
@@ -29,32 +31,27 @@ public interface IQueueListener
     void Listen(CancellationToken cancellationToken);
 }
 
-/// <summary>
-/// Subscribes to SQS, using long polling to receive messages
-/// </summary>
-public class SqsListener<TMessageHandler> : IQueueListener
-    where TMessageHandler : IMessageHandler
+public class SqsListener<TMessageType> : IQueueListener
+    where TMessageType : Enum
 {
     private readonly IAmazonSQS client;
+    private readonly SubscribedToQueue<TMessageType> subscribedToQueue;
     private readonly AWSSettings options;
-    private readonly IServiceScopeFactory serviceScopeFactory;
-    private readonly SqsQueueUtilities queueUtilities;
-    private readonly ILogger<SqsListener<TMessageHandler>> logger;
+    private readonly QueueHandlerResolver<TMessageType> handlerResolver;
+    private readonly ILogger<SqsListener<TMessageType>> logger;
     
     public SqsListener(
         IAmazonSQS client,
         IOptions<AWSSettings> options,
-        IServiceScopeFactory serviceScopeFactory,
-        SqsQueueUtilities queueUtilities,
-        ILogger<SqsListener<TMessageHandler>> logger,
-        string queueName)
+        SubscribedToQueue<TMessageType> subscribedToQueue,
+        QueueHandlerResolver<TMessageType> handlerResolver,
+        ILogger<SqsListener<TMessageType>> logger)
     {
         this.client = client;
+        this.subscribedToQueue = subscribedToQueue;
         this.options = options.Value;
-        this.serviceScopeFactory = serviceScopeFactory;
-        this.queueUtilities = queueUtilities;
+        this.handlerResolver = handlerResolver;
         this.logger = logger;
-        QueueName = queueName;
     }
     
     /// <summary>
@@ -62,11 +59,11 @@ public class SqsListener<TMessageHandler> : IQueueListener
     /// Value will be null if queue has not been started
     /// </summary>
     public bool? IsListening { get; private set; }
-    
+
     /// <summary>
     /// Name of queue being listened to
     /// </summary>
-    public string QueueName { get; private set; }
+    public string QueueName => subscribedToQueue.Name;
     
     public void Listen(CancellationToken cancellationToken)
     {
@@ -97,8 +94,7 @@ public class SqsListener<TMessageHandler> : IQueueListener
     /// <param name="cancellationToken">Current cancellation token</param>
     private async Task ListenLoop(CancellationToken cancellationToken = default)
     {
-        var queueUrl = await queueUtilities.GetQueueUrl(QueueName, cancellationToken);
-        logger.LogInformation("Listening to {QueueName}/{QueueUrl}", QueueName, queueUrl);
+        logger.LogInformation("Listening to {QueueName}/{QueueUrl}", subscribedToQueue.Name, subscribedToQueue.Url);
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -106,13 +102,13 @@ public class SqsListener<TMessageHandler> : IQueueListener
             var messageCount = 0;
             try
             {
-                response = await GetMessagesFromQueue(queueUrl, cancellationToken);
+                response = await GetMessagesFromQueue(subscribedToQueue.Url, cancellationToken);
                 messageCount = response.Messages?.Count ?? 0;
             }
             catch (Exception ex)
             {
                 // TODO - are there any specific issues to handle rather than generic? 
-                logger.LogError(ex, "Error receiving messages on queue {Queue}", queueUrl);
+                logger.LogError(ex, "Error receiving messages on queue {Queue}", subscribedToQueue.Url);
             }
 
             if (messageCount == 0) continue;
@@ -123,17 +119,17 @@ public class SqsListener<TMessageHandler> : IQueueListener
                 {
                     if (cancellationToken.IsCancellationRequested) return;
 
-                    var processed = await HandleMessage<TMessageHandler>(message, cancellationToken);
+                    var processed = await HandleMessage(message, cancellationToken);
 
                     if (processed)
                     {
-                        await DeleteMessage(queueUrl, message, cancellationToken);
+                        await DeleteMessage(subscribedToQueue.Url, message, cancellationToken);
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error in listen loop for queue {Queue}", queueUrl);
+                logger.LogError(ex, "Error in listen loop for queue {Queue}", subscribedToQueue.Url);
             }
         }
     }
@@ -146,8 +142,7 @@ public class SqsListener<TMessageHandler> : IQueueListener
             MaxNumberOfMessages = options.SQS.MaxNumberOfMessages,
         }, cancellationToken);
 
-    private async Task<bool> HandleMessage<T>(Message message, CancellationToken cancellationToken)
-        where T : IMessageHandler
+    private async Task<bool> HandleMessage(Message message, CancellationToken cancellationToken)
     {
         try
         {
@@ -156,18 +151,15 @@ public class SqsListener<TMessageHandler> : IQueueListener
                 logger.LogTrace("Handling message {Message} from {Queue}", message.MessageId, QueueName);
             }
 
-            var messageBody = JsonNode.Parse(message.Body)!.AsObject();
             var queueMessage = new QueueMessage
             {
                 Attributes = message.Attributes,
-                Body = messageBody["Message"]!.ToString(),
+                Body = JsonNode.Parse(message.Body)!.AsObject(),
                 MessageId = message.MessageId,
             };
 
             // create a new scope to avoid issues with Scoped dependencies
-            using var listenerScope = serviceScopeFactory.CreateScope();
-            var handler = listenerScope.ServiceProvider.GetRequiredService<T>();
-
+            var handler = handlerResolver(subscribedToQueue.MessageType);
             var processed = await handler.HandleMessage(queueMessage, cancellationToken);
             return processed;
         }

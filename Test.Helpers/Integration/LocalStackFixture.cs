@@ -40,7 +40,7 @@ namespace Test.Helpers.Integration
                 .WithCleanUp(true)
                 .WithLabel("protagonist_test", "True")
                 .WithEnvironment("DEFAULT_REGION", "eu-west-1")
-                .WithEnvironment("SERVICES", "s3")
+                .WithEnvironment("SERVICES", "s3,sqs")
                 .WithEnvironment("DOCKER_HOST", "unix:///var/run/docker.sock")
                 .WithEnvironment("DEBUG", "1")
                 .WithPortBinding(0, LocalStackContainerPort);

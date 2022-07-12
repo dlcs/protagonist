@@ -1,4 +1,5 @@
 ﻿using DLCS.AWS.Settings;
+using DLCS.AWS.SQS;
 using Engine.Ingest.Handlers;
 using Microsoft.Extensions.Options;
 
@@ -26,24 +27,28 @@ public class SqsListenerService : BackgroundService
         this.logger = logger;
     }
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Starting SqsListenerService");
         var sqsSettings = awsSettings.Value.SQS;
 
         // Listeners will only start if setting has a value
-        sqsListenerManager.AddQueueListener<IngestHandler>(sqsSettings.ImageQueueName);
-        sqsListenerManager.AddQueueListener<IngestHandler>(sqsSettings.PriorityImageQueueName);
-        sqsListenerManager.AddQueueListener<IngestHandler>(sqsSettings.TimebasedQueueName);
-        sqsListenerManager.AddQueueListener<TranscodeCompletionHandler>(sqsSettings.TranscodeCompleteQueueName);
+        var startTasks = new List<Task>
+        {
+            sqsListenerManager.AddQueueListener(sqsSettings.ImageQueueName, EngineMessageType.Ingest),
+            sqsListenerManager.AddQueueListener(sqsSettings.PriorityImageQueueName, EngineMessageType.Ingest),
+            sqsListenerManager.AddQueueListener(sqsSettings.TimebasedQueueName, EngineMessageType.Ingest),
+            sqsListenerManager.AddQueueListener(sqsSettings.TranscodeCompleteQueueName,
+                EngineMessageType.TranscodeComplete)
+        };
+        await Task.WhenAll(startTasks);
+        
         sqsListenerManager.StartListening();
 
         var configuredQueues = sqsListenerManager.GetConfiguredQueues();
         logger.LogInformation("Configured {QueueCount} queues", configuredQueues.Count);
         
         hostApplicationLifetime.ApplicationStopping.Register(OnStopping);
-        
-        return Task.CompletedTask;
     }
 
     public override Task StopAsync(CancellationToken cancellationToken)

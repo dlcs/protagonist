@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+
 namespace DLCS.AWS.SQS;
 
 /// <summary>
@@ -8,7 +10,7 @@ public class QueueMessage
     /// <summary>
     /// The full message body property
     /// </summary>
-    public string Body { get; set; }
+    public JsonObject Body { get; set; }
 
     /// <summary>
     /// Any attributes associated with message
