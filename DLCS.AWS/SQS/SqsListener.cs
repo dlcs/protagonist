@@ -16,12 +16,12 @@ internal interface IQueueListener
     /// Get value checking if listener is currently listening to a queue.
     /// Value will be null if queue has not been started
     /// </summary>
-    public bool? IsListening { get; }
+    bool? IsListening { get; }
     
     /// <summary>
     /// Name of queue being listened to
     /// </summary>
-    public string QueueName { get; }
+    string QueueName { get; }
 
     /// <summary>
     /// Start listening to specified queue.
