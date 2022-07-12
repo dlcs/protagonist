@@ -132,7 +132,7 @@ public class ConverterTests
         asset.Family.Should().Be(DLCS.Model.Assets.AssetFamily.Image);
         asset.Ingesting.Should().Be(true);
         asset.Origin.Should().Be(origin);
-        asset.InitialOrigin.Should().BeNull(); // not patchable
+        asset.InitialOrigin.Should().Be(initialOrigin); // not patchable but still carried on the Asset class.
         asset.NumberReference1.Should().Be(1);
         asset.NumberReference2.Should().Be(2);
         asset.NumberReference3.Should().Be(3);
