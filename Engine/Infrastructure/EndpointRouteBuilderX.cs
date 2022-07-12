@@ -7,6 +7,9 @@ namespace Engine.Infrastructure;
 
 public static class EndpointRouteBuilderX
 {
+    /// <summary>
+    /// Configure healthcheck endpoints
+    /// </summary>
     public static IEndpointRouteBuilder MapConfiguredHealthChecks(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapHealthChecks("/health/detail", new HealthCheckOptions
@@ -24,7 +27,7 @@ public static class EndpointRouteBuilderX
     private static Task WriteJsonResponse(HttpContext context, HealthReport result)
     {
         context.Response.ContentType = "application/json";
-
+        
         var json = new JObject(
             new JProperty("status", result.Status.ToString()),
             new JProperty("results", new JObject(result.Entries.Select(pair =>

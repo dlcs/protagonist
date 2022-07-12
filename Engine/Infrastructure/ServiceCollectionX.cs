@@ -2,6 +2,7 @@ using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Repository;
+using Engine.Infrastructure;
 using Engine.Ingest.Handlers;
 using Engine.Messaging;
 

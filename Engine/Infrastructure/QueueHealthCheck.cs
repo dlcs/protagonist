@@ -1,6 +1,8 @@
 ﻿using Engine.Messaging;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
+namespace Engine.Infrastructure;
+
 /// <summary>
 /// <see cref="IHealthCheck"/> that checks all registered queues are not stopped
 /// </summary>
