@@ -1,6 +1,7 @@
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
+using DLCS.Repository;
 using Engine.Ingest.Handlers;
 using Engine.Messaging;
 
@@ -34,4 +35,18 @@ public static class ServiceCollectionX
             .AddTransient<TranscodeCompletionHandler>()
             .AddSingleton<SqsQueueUtilities>()
             .AddHostedService<SqsListenerService>();
+
+    /// <summary>
+    /// Add HealthChecks for Database and Queues
+    /// </summary>
+    public static IServiceCollection ConfigureHealthChecks(this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services
+            .AddHealthChecks()
+            .AddNpgSql(configuration.GetPostgresSqlConnection())
+            .AddQueueHealthCheck();
+
+        return services;
+    }
 }

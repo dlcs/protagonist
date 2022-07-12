@@ -1,4 +1,4 @@
-﻿using DLCS.Repository;
+﻿using Engine.Infrastructure;
 using Serilog;
 
 public class Startup
@@ -16,11 +16,8 @@ public class Startup
     {
         services
             .AddAws(configuration, webHostEnvironment)
-            .AddQueueMonitoring();
-        
-        services
-            .AddHealthChecks()
-            .AddNpgSql(configuration.GetPostgresSqlConnection());
+            .AddQueueMonitoring()
+            .ConfigureHealthChecks(configuration);
 
         services.AddControllers();
     }
@@ -35,7 +32,10 @@ public class Startup
         app.UseRouting()
             .UseSerilogRequestLogging()
             .UseCors()
-            .UseHealthChecks("/ping")
-            .UseEndpoints(endpoints => endpoints.MapControllers());
+            .UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapConfiguredHealthChecks();
+            });
     }
 }
