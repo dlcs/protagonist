@@ -121,8 +121,7 @@ namespace DLCS.Repository.Assets
             }
             else
             {
-                var exists = await dlcsContext.Images.AnyAsync(a => a.Id == asset.Id, cancellationToken: cancellationToken);
-                //var existing = await dlcsContext.Images.FindAsync(new object[] { asset.Id }, cancellationToken);
+                var exists = await ExecuteScalarAsync<bool>(AssetExistsSql, new { asset.Id });
                 if (!exists)
                 {
                     await dlcsContext.Images.AddAsync(asset, cancellationToken);
@@ -213,5 +212,7 @@ SELECT ""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Rol
 
         private const string ImageLocationSql =
             "SELECT \"Id\", \"S3\", \"Nas\" FROM public.\"ImageLocation\" WHERE \"Id\"=@Id;";
+
+        private const string AssetExistsSql = @"SELECT EXISTS(SELECT 1 from ""Images"" WHERE ""Id""=@Id)";
     }
 }

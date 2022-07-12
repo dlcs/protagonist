@@ -4,7 +4,7 @@ using DLCS.Model.Assets;
 
 namespace DLCS.Model.Messaging
 {
-    public interface IMessageBus
+    public interface IAssetNotificationSender
     {
         /// <summary>
         /// Send a Message to Engine that an asset needs to be ingested.
@@ -27,6 +27,6 @@ namespace DLCS.Model.Messaging
         /// <param name="before"></param>
         /// <param name="after"></param>
         /// <returns></returns>
-        Task SendAssetModifiedNotification(Asset before, Asset after);
+        Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after);
     }
 }

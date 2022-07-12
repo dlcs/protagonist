@@ -152,6 +152,7 @@ public class ImageController : HydraController
     
         // In the special case where we were passed ImageWithFile from the IngestBytes action, 
         // it was a POST - but we should revisit that as the direct image ingest should be a PUT as well I think
+        // See https://github.com/dlcs/protagonist/issues/338
         var method = hydraAsset is ImageWithFile ? "PUT" : Request.Method;
         
         var request = new PutOrPatchImage { Asset = asset, Method = method };
@@ -196,17 +197,7 @@ public class ImageController : HydraController
         var patchedAssets = new List<Asset>();
             
         // Should there be a size limit on how many assets can be patched in a single go?
-        // WARNING
-        // In Deliverator, batch PATCH operations (in fact any patch operation) only updated database rows.
-        // But in protagonist, we use the same Mediatr request for patches and puts,
-        // and this request will call Engine synchronously if the asset requires re-processing.
-        // We could allow 100 PATCHes that updated Database (100 rows), but we shouldn't allow 100 PATCHes
-        // that call Engine; it would take far too long.
-        
-        // For info:
-        // In the Wellcome DDS, BatchPatches are done like this, but Batch reingests (e.g., force reingest)
-        // are sent to the queue for engine to pick up, a full re-process.
-        // See IsAcceptableBulkPatch for a not-entirely-satisfactory protection...
+        // https://github.com/dlcs/protagonist/issues/339
 
         if (images.Members is { Length: > 0 })
         {
@@ -217,14 +208,8 @@ public class ImageController : HydraController
                     null, 400, "Not Supported", null);
             }
             
-            // Is it OK if a patched image has a different space? 
-            // Yes, I think this is OK, it's a Move operation.
-                
             if (images.Members.Any(image => image.ModelId == null))
             {
-                // And this ModelId is NOT the customer/space/id construct that the DB has for a primary key.
-                // It used to be... but we're not going to do that. hydraImage.ToDlcsModel() silently corrects this form.
-                    
                 return HydraProblem(
                     "All assets must have a ModelId", 
                     null, 400, "Missing identifier", null);
@@ -233,8 +218,6 @@ public class ImageController : HydraController
             {
                 try
                 {
-                    // Here a Hydra object is being passed into the MediatR layer.
-                    // Should it get converted to a DLCS Model Asset first?
                     var asset = hydraImage.ToDlcsModel(customerId, spaceId);
                     var request = new PutOrPatchImage { Asset = asset, Method = "PATCH" };
                     var result = await mediator.Send(request);
@@ -244,7 +227,7 @@ public class ImageController : HydraController
                     }
                     else
                     {
-                        logger.LogError($"We did not get an asset back for {asset.Id}");
+                        logger.LogError("We did not get an asset back for {AssetId}", asset.Id);
                     }
                 }
                 catch (APIException apiEx)
@@ -277,7 +260,9 @@ public class ImageController : HydraController
     {
         if (images.Members == null) return false;
         
-        // this should check the same things as AssetPreparer::PrepareAssetForUpsert
+        // This should check the same things as AssetPreparer::PrepareAssetForUpsert
+        // But we don't want to call that at the controller level; we haven't acquired 
+        // any existing assets yet.
         return images.Members.Any(image => 
             image.Origin.HasText() || 
             image.ImageOptimisationPolicy.HasText()

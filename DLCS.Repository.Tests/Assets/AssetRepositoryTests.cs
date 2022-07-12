@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using API.Features.Image.Requests;
 using DLCS.Model.Assets;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Caching;
@@ -26,7 +25,11 @@ namespace DLCS.Repository.Tests.Assets
 
         public AssetRepositoryTests(DlcsDatabaseFixture dbFixture)
         {
-            dbContext = dbFixture.DbContext;
+            // We use a customised dbcontext because we want different tracking behaviour
+            dbContext = new DlcsContext(
+                new DbContextOptionsBuilder<DlcsContext>()
+                    .UseNpgsql(dbFixture.ConnectionString).Options
+            );
             // We want this turned on to match live behaviour
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
             var config = new ConfigurationBuilder()
@@ -34,7 +37,7 @@ namespace DLCS.Repository.Tests.Assets
                     { new KeyValuePair<string, string>("ConnectionString:PostgreSQLConnection", dbFixture.ConnectionString) })
                 .Build();
             sut = new DapperAssetRepository(
-                dbFixture.DbContext, 
+                dbContext, // ignoring dbFixture.DbContext
                 config,
                 new MockCachingService(),
                 Options.Create(new CacheSettings()),

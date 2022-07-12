@@ -14,16 +14,16 @@ using Newtonsoft.Json;
 
 namespace DLCS.Repository.Messaging
 {
-    public class MessageBus : IMessageBus
+    public class AssetNotificationSender : IAssetNotificationSender
     {
-        private readonly ILogger<MessageBus> logger;
+        private readonly ILogger<AssetNotificationSender> logger;
         private DlcsSettings settings;
         private readonly HttpClient httpClient;
         
-        public MessageBus(
+        public AssetNotificationSender(
             HttpClient httpClient,
             IOptions<DlcsSettings> dlcsSettings,
-            ILogger<MessageBus> logger)
+            ILogger<AssetNotificationSender> logger)
         {
             this.httpClient = httpClient;
             this.settings = dlcsSettings.Value;
@@ -115,9 +115,26 @@ namespace DLCS.Repository.Messaging
             json.WriteEndObject();
         }
 
-        public async Task SendAssetModifiedNotification(Asset before, Asset after)
+        public async Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after)
         {
-            logger.LogInformation("Message Bus: Asset Modified: " + after.Id);
+            switch (changeType)
+            {
+                case ChangeType.Create when before != null:
+                    throw new ArgumentException("Asset Creation cannot have a before asset", nameof(before));
+                case ChangeType.Create when after == null:
+                    throw new ArgumentException("Asset Creation must have an after asset", nameof(after));
+                case ChangeType.Update when before == null:
+                    throw new ArgumentException("Asset Update must have a before asset", nameof(before));
+                case ChangeType.Update when after == null:
+                    throw new ArgumentException("Asset Update must have an after asset", nameof(after));
+                case ChangeType.Delete when before == null:
+                    throw new ArgumentException("Asset Delete must have a before asset", nameof(before));
+                case ChangeType.Delete when after != null:
+                    throw new ArgumentException("Asset Delete cannot have an after asset", nameof(after));
+                default:
+                    logger.LogInformation("Message Bus: Asset Modified: " + after.Id);
+                    break;
+            }
         }
     }
 

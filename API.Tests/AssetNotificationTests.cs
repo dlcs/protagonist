@@ -16,22 +16,22 @@ using Xunit;
 
 namespace API.Tests;
 
-public class MessageBusTests
+public class AssetNotificationTests
 {
-    private readonly IMessageBus sut;
+    private readonly IAssetNotificationSender sut;
     private readonly ControllableHttpMessageHandler httpHandler;
 
-    public MessageBusTests()
+    public AssetNotificationTests()
     {
         httpHandler = new ControllableHttpMessageHandler();
         var httpClient = new HttpClient(httpHandler);
         var options = Options.Create(new DlcsSettings { EngineDirectIngestUri = new Uri("http://engine.dlcs/ingest") });
-        var logger = new NullLogger<MessageBus>();
-        sut = new MessageBus(httpClient, options, logger);
+        var logger = new NullLogger<AssetNotificationSender>();
+        sut = new AssetNotificationSender(httpClient, options, logger);
     }
 
     [Fact]
-    public async Task MessageBus_Sends_Legacy_Engine_Body()
+    public async Task AssetNotification_Sends_Legacy_Engine_Body()
     {
         // Arrange
         var asset = new Asset
@@ -41,7 +41,7 @@ public class MessageBusTests
             Space = 1
         };
         
-        // This is the new format, accepted by IMessageBus
+        // This is the new format, accepted by IAssetNotificationSender
         var ingestRequest = new IngestAssetRequest(asset, DateTime.UtcNow);
         HttpRequestMessage message = null;
         httpHandler.RegisterCallback(r => message = r);

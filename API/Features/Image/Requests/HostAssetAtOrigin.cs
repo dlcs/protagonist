@@ -30,16 +30,16 @@ namespace API.Features.Image.Requests
     {
         private readonly IBucketWriter bucketWriter;
         private readonly ILogger<HostAssetAtOriginHandler> logger;
-        private readonly ApiSettings settings;
+        private readonly IStorageKeyGenerator storageKeyGenerator;
 
         public HostAssetAtOriginHandler(
             IBucketWriter bucketWriter,
             ILogger<HostAssetAtOriginHandler> logger,
-            IOptions<ApiSettings> settings)
+            IStorageKeyGenerator storageKeyGenerator)
         {
             this.bucketWriter = bucketWriter;
             this.logger = logger;
-            this.settings = settings.Value;
+            this.storageKeyGenerator = storageKeyGenerator;
         }
         
         public async Task<HostAssetAtOriginResult> Handle(HostAssetAtOrigin request, CancellationToken cancellationToken)
@@ -47,7 +47,7 @@ namespace API.Features.Image.Requests
             var stream = new MemoryStream(request.FileBytes);
             
             // Save to S3
-            var objectInBucket = GetObjectInBucket(request.AssetId);
+            var objectInBucket = storageKeyGenerator.GetAssetAtOriginLocation(request.AssetId);
             var bucketSuccess = await bucketWriter.WriteToBucket(objectInBucket, stream, request.MediaType);
 
             if (!bucketSuccess)
@@ -60,9 +60,5 @@ namespace API.Features.Image.Requests
 
             return new HostAssetAtOriginResult { Origin = objectInBucket.GetHttpUri().ToString() };
         }
-        
-        private RegionalisedObjectInBucket GetObjectInBucket(AssetId assetId)
-            => new RegionalisedObjectInBucket(settings.AWS.S3.OriginBucket,
-                assetId.ToString(), settings.AWS.Region);
     }
 }

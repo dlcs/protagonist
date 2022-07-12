@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -74,12 +75,12 @@ public class AssetTests :
             .WithConnectionString(dbFixture.ConnectionString)
             .WithTestServices(services =>
             {
-                // swap out our MessageBus for a version with a controllable httpClient
+                // swap out our AssetNotificationSender for a version with a controllable httpClient
                 // What would be more elegant is just replacing the HttpClient but how?
-                var messageBusDescriptor = services.FirstOrDefault(
-                    descriptor => descriptor.ServiceType == typeof(IMessageBus));
-                services.Remove(messageBusDescriptor);
-                services.AddScoped<IMessageBus>(GetTestMessageBus);
+                var assetNotificationDescriptor = services.FirstOrDefault(
+                    descriptor => descriptor.ServiceType == typeof(IAssetNotificationSender));
+                services.Remove(assetNotificationDescriptor);
+                services.AddScoped<IAssetNotificationSender>(GetTestNotificationSender);
                 services.AddSingleton<IBucketWriter>(bucketWriter);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
@@ -92,12 +93,12 @@ public class AssetTests :
         dbFixture.CleanUp();
     }
 
-    private IMessageBus GetTestMessageBus(IServiceProvider arg)
+    private IAssetNotificationSender GetTestNotificationSender(IServiceProvider arg)
     {
         var controllableHttpMessageClient = new HttpClient(httpHandler);
         var options = Options.Create(new DlcsSettings { EngineDirectIngestUri = new Uri("http://engine.dlcs/ingest") });
-        var logger = new NullLogger<MessageBus>();
-        return new MessageBus(controllableHttpMessageClient, options, logger);
+        var logger = new NullLogger<AssetNotificationSender>();
+        return new AssetNotificationSender(controllableHttpMessageClient, options, logger);
     }
 
     private async Task AddMultipleAssets(int space, string name)
@@ -161,21 +162,7 @@ public class AssetTests :
         var response = await httpClient.AsCustomer(99).GetAsync(getUrl);
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-    
-    [Fact]
-    public async Task Get_Assets_In_Space_Returns_Assets()
-    {
-        // GET PAGE OF IMAGES
-        // Arrange
-        await dbContext.Spaces.AddTestSpace(99, 2999, "test-space");
-        var id = "99/2999/asset1";
-        await dbContext.Images.AddTestAsset(id, space:2999);
-        await dbContext.SaveChangesAsync();
-        var getUrl = "/customers/99/spaces/2999/images";
-        var response = await httpClient.AsCustomer(99).GetAsync(getUrl);
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-    
+
     [Fact]
     public async Task Get_Assets_In_Space_Returns_Page_of_Assets()
     {
@@ -234,49 +221,55 @@ public class AssetTests :
         }
     }
     
-    [Fact]
-    public async Task Paged_Assets_Support_Ordering()
+    [Theory]
+    [MemberData(nameof(PagedAssetOrdering))]
+    public async Task Paged_Assets_Support_Ordering(int space, string assetPage, string field, string[] expectedOrder)
     {
-        await AddMultipleAssets(3002, nameof(Paged_Assets_Support_Ordering));
-        // arrange
-        // set a pageSize of 10
-        var assetPage = "/customers/99/spaces/3002/images?pageSize=10&orderBy=string1";
+        await AddMultipleAssets(space, nameof(Paged_Assets_Support_Ordering));
         
-        // act
+        // Act
         var response = await httpClient.AsCustomer(99).GetAsync(assetPage);
-        
-        // assert
+
+        // Assert
         var coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
-        coll.Members[0]["string1"].ToString().Should().Be("Asset 0001");
-        coll.Members[1]["string1"].ToString().Should().Be("Asset 0002");
-        
-        assetPage = $"/customers/99/spaces/3002/images?pageSize=10&orderByDescending=string1";
-        response = await httpClient.AsCustomer(99).GetAsync(assetPage);
-        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
-        coll.Members[0]["string1"].ToString().Should().Be("Asset 0035");
-        coll.Members[1]["string1"].ToString().Should().Be("Asset 0034");
-        
-        var nextPage = await httpClient.AsCustomer(99).GetAsync(coll.View.Next);
-        coll = await nextPage.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
-        coll.Members[0]["string1"].ToString().Should().Be("Asset 0025");
-        coll.Members[1]["string1"].ToString().Should().Be("Asset 0024");
-        
-        
-        assetPage = $"/customers/99/spaces/3002/images?pageSize=10&orderByDescending=width";
-        response = await httpClient.AsCustomer(99).GetAsync(assetPage);
-        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
-        coll.Members[0]["width"].Value<int>().Should().Be(2004);
-        coll.Members[1]["width"].Value<int>().Should().Be(2004);
-        
-        
-        assetPage = $"/customers/99/spaces/3002/images?pageSize=10&orderByDescending=number2";
-        response = await httpClient.AsCustomer(99).GetAsync(assetPage);
-        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
-        coll.Members[0]["string1"].ToString().Should().Be("Asset 0001");
-        coll.Members[1]["string1"].ToString().Should().Be("Asset 0002");
-
-    }
-
+        var actual = coll.Members.Select(m => m[field].Value<string>()).Take(expectedOrder.Length);
+        actual.Should().BeEquivalentTo(expectedOrder, opts => opts.WithStrictOrdering());
+    }    
+    
+    public static IEnumerable<object[]> PagedAssetOrdering => new List<object[]>
+    {
+        new object[]
+        {
+            3051,
+            "/customers/99/spaces/3051/images?pageSize=10&orderBy=string1", "string1",
+            new[] { "Asset 0001", "Asset 0002" }
+        },
+        new object[]
+        {
+            3052,
+            "/customers/99/spaces/3052/images?pageSize=10&orderByDescending=string1", "string1",
+            new[] { "Asset 0035", "Asset 0034" }
+        },
+        new object[]
+        {
+            3053,
+            "/customers/99/spaces/3053/images?page=2&pageSize=10&orderByDescending=string1", "string1",
+            new[] { "Asset 0025", "Asset 0024" }
+        },
+        new object[]
+        {
+            3054,
+            "/customers/99/spaces/3054/images?pageSize=10&orderByDescending=width", "width",
+            new[] { "2004", "2004" }
+        },
+        new object[]
+        {
+            3055,
+            "/customers/99/spaces/3055/images?pageSize=10&orderByDescending=number2", "string1",
+            new[] { "Asset 0001", "Asset 0002" }
+        }
+    };
+    
     [Fact]
     public async Task Put_New_Asset_Creates_Asset()
     {
@@ -321,6 +314,34 @@ public class AssetTests :
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    
+    [Fact]
+    public async Task Put_New_Asset_Preserves_InitialOrigin()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Preserves_InitialOrigin));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""initialOrigin"": ""s3://my-bucket/{assetId.Asset}.tiff""
+}}";
+
+        HttpRequestMessage engineMessage = null;
+        httpHandler.RegisterCallbackWithSelector(
+            assetId.ToApiResourcePath(),
+            r => engineMessage = r, 
+            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
+            "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var bodySentByEngine = await engineMessage.Content.ReadAsStringAsync();
+        bodySentByEngine.Should().Contain($@"s3://my-bucket/{assetId.Asset}.tiff");
     }
     
     [Fact]
@@ -650,8 +671,8 @@ public class AssetTests :
         asset.Origin.Should().Be("https://protagonist-test-origin.s3.eu-west-1.amazonaws.com/99/1/Post_ImageBytes_Ingests_New_Image");
 
     }
-    
-    
+
+
 
 
 }

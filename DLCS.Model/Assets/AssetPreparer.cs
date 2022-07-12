@@ -1,9 +1,8 @@
 using System;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
-using DLCS.Model.Assets;
 
-namespace API.Features.Image.Requests;
+namespace DLCS.Model.Assets;
 
 /// <summary>
 /// Conveys whether an attempt to prepare an asset for upsert encountered an invalid state.
@@ -28,19 +27,21 @@ public record AssetPreparationResult
     
 /// <summary>
 /// Prepares an asset for insert or update operations.
-/// Validates that things aren't being modified that shouldn't be,
-/// and that no null fields remain on the asset being upserted.
 /// </summary>
 public static class AssetPreparer
 {
     private static readonly Asset DefaultAsset;
 
     /// <summary>
+    /// Prepares an asset for insert or update operations.
+    /// Validates that things aren't being modified that shouldn't be,
+    /// and that no null fields remain on the asset being upserted.
+    /// </summary>
+    /// <remarks>
     /// This is essentially the logic in 
     /// https://github.com/digirati-co-uk/deliverator/blob/master/DLCS.Application/Behaviour/API/ValidateImageUpsertBehaviour.cs
-    /// 
-    /// DISCUSS: should this be used for PatchImage too? YES
-    /// </summary>
+    /// This method was called ValidateImageUpsert to match deliverator; now renamed
+    /// </remarks>
     /// <param name="existingAsset">If this is an update, the current version of the asset</param>
     /// <param name="updateAsset">The new or updated asset</param>
     /// <param name="allowNonApiUpdates">Permit setting of fields that would not be allowed on API calls</param>
@@ -56,10 +57,8 @@ public static class AssetPreparer
             // to modify an asset marked NotForDelivery.
             return new AssetPreparationResult { ErrorMessage = "Cannot use API to modify a NotForDelivery asset." };
             // However, this DOES allow the *creation* of a NotForDelivery asset.
-            // discuss...
         }
         
-        // This method was called ValidateImageUpsert to match deliverator; now renamed
         bool requiresReingest = (existingAsset == null);
 
         if (allowNonApiUpdates == false)
@@ -75,7 +74,6 @@ public static class AssetPreparer
             }
         }
         
-        // Do we need this now?
         if (existingAsset != null)
         {
             if (updateAsset.Customer == 0)
@@ -106,12 +104,7 @@ public static class AssetPreparer
             
         if (existingAsset != null && allowNonApiUpdates == false)
         {
-            // Prevent the modification of some fields via API.
-            // They can be set by API at create time, but not afterwards.
-            // TODO: Some of these should be modifiable even if Deliverator says no.
-                
-            // Don't allow dimensions to be edited; setting to 0 does not 
-            // TODO: we could also validate combinations here - w,h | w,h,d | d | <none>
+            // https://github.com/dlcs/protagonist/issues/341 for further changes to this validation
             if (updateAsset.Width.HasValue && updateAsset.Width != 0 && updateAsset.Width != existingAsset.Width)
             {
                 return new AssetPreparationResult { ErrorMessage = "Width cannot be edited." };
@@ -152,6 +145,11 @@ public static class AssetPreparer
             if (updateAsset.Family != null && updateAsset.Family != existingAsset.Family)
             {
                 return new AssetPreparationResult { ErrorMessage = "Family cannot be edited." };
+            }
+
+            if (updateAsset.InitialOrigin != null)
+            {
+                return new AssetPreparationResult { ErrorMessage = "Cannot edit the InitialOrigin of an asset." };
             }
         }
 
