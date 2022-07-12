@@ -70,7 +70,7 @@ namespace Thumbs.Tests
                 });
 
             A.CallTo(() => assetRepository.GetAsset(assetId))
-                .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne"});
+                .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = -1});
             A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
                 .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
             
@@ -99,6 +99,59 @@ namespace Thumbs.Tests
             
             // create sizes.json
             const string expected = "{\"o\":[[200,400],[100,200],[50,100]],\"a\":[]}";
+            A.CallTo(() =>
+                    bucketWriter.WriteToBucket(
+                        A<ObjectInBucket>.That.Matches(o =>
+                            o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
+                        "application/json", A<CancellationToken>._))
+                .MustHaveHappened();
+        }
+        
+        [Fact]
+        public async Task EnsureNewLayout_CreatesExpectedResources_AllAuthDueToMaxUnauthorised()
+        {
+            var assetId = new AssetId(2, 1, "the-astronaut");
+            A.CallTo(() =>
+                    bucketReader.GetMatchingKeys(
+                        A<ObjectInBucket>.That.Matches(o => o.Key.StartsWith(assetId.ToString()))))
+                .Returns(new[]
+                {
+                    "2/1/the-astronaut/full/100,/0/default.jpg",
+                    "2/1/the-astronaut/full/100,200/0/default.jpg",
+                    "2/1/the-astronaut/full/50,/0/default.jpg",
+                    "2/1/the-astronaut/full/50,100/0/default.jpg"
+                });
+
+            A.CallTo(() => assetRepository.GetAsset(assetId))
+                .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 0});
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+                .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
+            
+            // Act
+            var response = await sut.EnsureNewLayout(assetId);
+
+            // Assert
+            response.Should().Be(ReorganiseResult.Reorganised);
+            
+            // move jpg per thumbnail size
+            A.CallTo(() =>
+                    bucketWriter.CopyObject(
+                        A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/low.jpg"),
+                        A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/auth/400.jpg")))
+                .MustHaveHappened();
+            A.CallTo(() =>
+                    bucketWriter.CopyObject(
+                        A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/full/100,200/0/default.jpg"),
+                        A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/auth/200.jpg")))
+                .MustHaveHappened();
+            A.CallTo(() =>
+                    bucketWriter.CopyObject(
+                        A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/full/50,100/0/default.jpg"),
+                        A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/auth/100.jpg")))
+                .MustHaveHappened();
+            
+            // create sizes.json
+            const string expected = "{\"o\":[],\"a\":[[200,400],[100,200],[50,100]]}";
             A.CallTo(() =>
                     bucketWriter.WriteToBucket(
                         A<ObjectInBucket>.That.Matches(o =>
@@ -465,7 +518,7 @@ namespace Thumbs.Tests
                 });
 
             A.CallTo(() => assetRepository.GetAsset(assetId))
-                .Returns(new Asset {Width = 1293, Height = 2400, ThumbnailPolicy = "TheBestOne"});
+                .Returns(new Asset {Width = 1293, Height = 2400, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = -1});
             A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
                 .Returns(new ThumbnailPolicy {Sizes = "1024,400"});
             

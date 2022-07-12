@@ -155,7 +155,8 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = $"99/1/{nameof(Get_ManifestForRestrictedImage_ReturnsManifest)}";
-        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", origin: "testorigin");
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 400,
+            origin: "testorigin");
         await dbFixture.DbContext.SaveChangesAsync();
 
         var path = $"iiif-manifest/v2/{id}";
