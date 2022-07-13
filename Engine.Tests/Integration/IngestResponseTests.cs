@@ -45,7 +45,7 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 A<CancellationToken>._)).Returns(ingestResult);
 
         // Act
-        var result = await httpClient.PostAsync("image-asset", GetContent(message));
+        var result = await httpClient.PostAsync("asset-ingest", GetContent(message));
         
         // Assert
         result.StatusCode.Should().Be(expected);

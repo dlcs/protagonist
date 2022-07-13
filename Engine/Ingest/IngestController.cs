@@ -32,7 +32,7 @@ public class IngestController : Controller
     /// Synchronously ingest an asset 
     /// </summary>
     [HttpPost]
-    [Route("image-asset")]
+    [Route("asset-ingest")]
     public async Task<IActionResult> IngestAsset([FromBody] IngestAssetRequest message, 
         CancellationToken cancellationToken)
     {

@@ -2,9 +2,11 @@ using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Model.Assets;
+using DLCS.Model.Customers;
 using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Caching;
+using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
 using Engine.Ingest;
 using Engine.Ingest.Handlers;
@@ -71,6 +73,7 @@ public static class ServiceCollectionX
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
         => services
             .AddScoped<IPolicyRepository, PolicyRepository>()
+            .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>
