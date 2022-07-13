@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using Amazon.S3;
+using Amazon.SQS;
 using LazyCache;
 using LazyCache.Mocks;
 using Microsoft.AspNetCore.Hosting;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Test.Helpers.Integration.Infrastructure;
 
 namespace Test.Helpers.Integration
 {
@@ -118,8 +120,11 @@ namespace Test.Helpers.Integration
         {
             services.Remove(new ServiceDescriptor(typeof(IAmazonS3),
                 a => a.GetService(typeof(IAmazonS3)), ServiceLifetime.Singleton));
-            
             services.AddScoped<IAmazonS3>(p => localStack.AWSS3ClientFactory());
+            
+            services.Remove(new ServiceDescriptor(typeof(IAmazonSQS),
+                a => a.GetService(typeof(IAmazonSQS)), ServiceLifetime.Singleton));
+            services.AddScoped<IAmazonSQS>(p => localStack.AWSSQSClientFactory());
         }
     }
 }

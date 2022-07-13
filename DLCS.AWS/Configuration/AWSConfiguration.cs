@@ -1,6 +1,7 @@
 ﻿using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
+using Amazon.SQS;
 using DLCS.AWS.Settings;
 using DLCS.Core.Guard;
 using Microsoft.AspNetCore.Hosting;
@@ -83,6 +84,36 @@ namespace DLCS.AWS.Configuration
             else
             {
                 services.AddAWSService<IAmazonS3>(lifetime);
+            }
+            
+            return this;
+        }
+        
+        /// <summary>
+        /// Add <see cref="IAmazonSQS"/> to service collection with specified lifetime.
+        /// </summary>
+        /// <param name="lifetime">ServiceLifetime for dependency, </param>
+        /// <returns></returns>
+        public AwsBuilder WithAmazonSQS(ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        {
+            if (useLocalStack)
+            {
+                var serviceDescriptor = ServiceDescriptor.Describe(typeof(IAmazonSQS), _ =>
+                {
+                    var amazonS3Config = new AmazonSQSConfig
+                    {
+                        UseHttp = true,
+                        RegionEndpoint = RegionEndpoint.USEast1,
+                        ServiceURL =
+                            awsSettings.SQS.ServiceUrl.ThrowIfNullOrWhiteSpace(nameof(awsSettings.SQS.ServiceUrl)),
+                    };
+                    return new AmazonSQSClient(new BasicAWSCredentials("foo", "bar"), amazonS3Config);
+                }, lifetime);
+                services.Add(serviceDescriptor);
+            }
+            else
+            {
+                services.AddAWSService<IAmazonSQS>(lifetime);
             }
             
             return this;
