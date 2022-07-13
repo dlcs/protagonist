@@ -26,7 +26,7 @@ public class IngestHandler : IMessageHandler
         IngestResult ingestResult;
         if (IsLegacyMessageType(message))
         {
-            var legacyEvent = DeserializeBody<IncomingIngestEvent>(message);
+            var legacyEvent = DeserializeBody<LegacyIngestEvent>(message);
             if (legacyEvent == null) return false;
             ingestResult = await ingester.Ingest(legacyEvent, cancellationToken);
         }

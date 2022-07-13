@@ -35,7 +35,7 @@ public class IngestHandlerTests
         var success = await sut.HandleMessage(queueMessage, CancellationToken.None);
         
         // Assert
-        A.CallTo(() => assetIngester.Ingest(A<IncomingIngestEvent>._, A<CancellationToken>._)).MustNotHaveHappened();
+        A.CallTo(() => assetIngester.Ingest(A<LegacyIngestEvent>._, A<CancellationToken>._)).MustNotHaveHappened();
         success.Should().BeFalse();
     }
     
@@ -50,13 +50,13 @@ public class IngestHandlerTests
             ["_type"] = "type"
         };
         var queueMessage = new QueueMessage { Body = body };
-        A.CallTo(() => assetIngester.Ingest(A<IncomingIngestEvent>._, A<CancellationToken>._)).Returns(result);
+        A.CallTo(() => assetIngester.Ingest(A<LegacyIngestEvent>._, A<CancellationToken>._)).Returns(result);
         
         // Act
         var success = await sut.HandleMessage(queueMessage, CancellationToken.None);
         
         // Assert
-        A.CallTo(() => assetIngester.Ingest(A<IncomingIngestEvent>._, A<CancellationToken>._)).MustHaveHappened();
+        A.CallTo(() => assetIngester.Ingest(A<LegacyIngestEvent>._, A<CancellationToken>._)).MustHaveHappened();
         success.Should().BeFalse();
     }
     
@@ -71,13 +71,13 @@ public class IngestHandlerTests
             ["_type"] = "type"
         };
         var queueMessage = new QueueMessage { Body = body };
-        A.CallTo(() => assetIngester.Ingest(A<IncomingIngestEvent>._, A<CancellationToken>._)).Returns(result);
+        A.CallTo(() => assetIngester.Ingest(A<LegacyIngestEvent>._, A<CancellationToken>._)).Returns(result);
         
         // Act
         var success = await sut.HandleMessage(queueMessage, CancellationToken.None);
         
         // Assert
-        A.CallTo(() => assetIngester.Ingest(A<IncomingIngestEvent>._, A<CancellationToken>._)).MustHaveHappened();
+        A.CallTo(() => assetIngester.Ingest(A<LegacyIngestEvent>._, A<CancellationToken>._)).MustHaveHappened();
         success.Should().BeTrue();
     }
     

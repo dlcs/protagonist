@@ -4,16 +4,18 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Repository.Caching;
 using LazyCache;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Customers
 {
-    public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyRepository
+    public class CustomerOriginStrategyRepository : ICustomerOriginStrategyRepository
     {
         private const string OriginRegexAppSettings = "S3OriginRegex";
 
@@ -21,18 +23,21 @@ namespace DLCS.Repository.Customers
             { Id = "_default_", Strategy = OriginStrategyType.Default };
         
         private readonly IAppCache appCache;
+        private readonly DlcsContext dbContext;
         private readonly CacheSettings cacheSettings;
         private readonly string s3OriginRegex;
         private readonly ILogger<CustomerOriginStrategyRepository> logger;
 
-        public CustomerOriginStrategyBase(
+        public CustomerOriginStrategyRepository(
             IAppCache appCache,
+            DlcsContext dbContext,
             IConfiguration configuration,
             IOptions<CacheSettings> cacheOptions,
             ILogger<CustomerOriginStrategyRepository> logger
         )
         {
             this.appCache = appCache;
+            this.dbContext = dbContext;
             this.logger = logger;
             cacheSettings = cacheOptions.Value;
 
@@ -45,23 +50,33 @@ namespace DLCS.Repository.Customers
 
         public async Task<CustomerOriginStrategy> GetCustomerOriginStrategy(AssetId assetId, string origin)
         {
-            assetId.ThrowIfNull(nameof(assetId));
-            
             var customerStrategies = await GetCustomerOriginStrategies(assetId.Customer);
             
             var matching = FindMatchingStrategy(origin, customerStrategies) ?? DefaultStrategy;
-            logger.LogTrace("Using strategy: {strategy} ('{strategyId}') for handling asset '{assetId}'",
+            logger.LogTrace("Using strategy: {Strategy} ('{StrategyId}') for handling asset '{AssetId}'",
                 matching.Strategy, matching.Id, assetId);
             
             return matching;
         }
-        
+
+        public async Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Asset asset, bool initialIngestion = false)
+        {
+            var customerStrategies = await GetCustomerOriginStrategies(asset.Customer);
+            var assetOrigin = initialIngestion ? asset.GetIngestOrigin() : asset.Origin;
+            var matching = FindMatchingStrategy(assetOrigin, customerStrategies) ?? DefaultStrategy;
+            
+            logger.LogTrace("Using strategy: {Strategy} ('{StrategyId}') for handling asset '{AssetId}'",
+                matching.Strategy, matching.Id, asset.Id);
+            
+            return matching;
+        }
+
         private async Task<IEnumerable<CustomerOriginStrategy>> GetStrategiesForCustomer(int customer)
         {
             var key = $"OriginStrategy:{customer}";
             return await appCache.GetOrAddAsync(key, async () =>
             {
-                logger.LogInformation("Refreshing CustomerOriginStrategy from database for customer {customer}",
+                logger.LogDebug("Refreshing CustomerOriginStrategy from database for customer {Customer}",
                     customer);
 
                 var origins = await GetCustomerOriginStrategiesFromDb(customer);
@@ -70,7 +85,10 @@ namespace DLCS.Repository.Customers
             }, cacheSettings.GetMemoryCacheOptions());
         }
 
-        protected abstract Task<List<CustomerOriginStrategy>> GetCustomerOriginStrategiesFromDb(int customer);
+        private Task<List<CustomerOriginStrategy>> GetCustomerOriginStrategiesFromDb(int customer)
+            => dbContext.CustomerOriginStrategies.AsNoTracking()
+                .Where(cos => cos.Customer == customer)
+                .ToListAsync();
 
         // NOTE(DG): This CustomerOriginStrategy is for assets uploaded directly via the portal
         private CustomerOriginStrategy GetPortalOriginStrategy(int customer) 

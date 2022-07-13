@@ -1,4 +1,5 @@
-﻿using Engine.Infrastructure;
+﻿using DLCS.Repository.Caching;
+using Engine.Infrastructure;
 using Serilog;
 
 public class Startup
@@ -14,11 +15,17 @@ public class Startup
 
     public void ConfigureServices(IServiceCollection services)
     {
+        var cachingSection = configuration.GetSection("Caching");
+        services
+            .Configure<CacheSettings>(cachingSection);
+        
         services
             .AddAws(configuration, webHostEnvironment)
             .AddQueueMonitoring()
             .AddAssetIngestion()
-            .ConfigureHealthChecks(configuration);
+            .AddDataAccess(configuration)
+            .AddCaching(cachingSection.Get<CacheSettings>())
+            .ConfigureHealthChecks();
 
         services.AddControllers();
     }
@@ -29,7 +36,7 @@ public class Startup
         {
             app.UseDeveloperExceptionPage();
         }
-        
+
         app.UseRouting()
             .UseSerilogRequestLogging()
             .UseCors()

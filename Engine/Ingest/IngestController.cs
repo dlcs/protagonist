@@ -19,7 +19,7 @@ public class IngestController : Controller
     /// </summary>
     [HttpPost]
     [Route("image-ingest")]
-    public async Task<IActionResult> IngestImage([FromBody] IncomingIngestEvent message, 
+    public async Task<IActionResult> IngestImage([FromBody] LegacyIngestEvent message, 
         CancellationToken cancellationToken)
     {
         // TODO - throw if this is a 'T' request

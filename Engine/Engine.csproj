@@ -10,7 +10,8 @@
         <PackageReference Include="Amazon.Extensions.Configuration.SystemsManager" Version="2.1.0" />
         <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
         <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.150" />
-        <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="6.0.2" />
+        <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="6.0.5" />
     </ItemGroup>
 
     <ItemGroup>

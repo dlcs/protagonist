@@ -7,7 +7,7 @@ namespace Engine.Ingest.Models;
 /// Serialized Inversion MessagingEvent passed to the Engine by DLCS API.
 /// </summary>
 /// <remarks>Legacy fields from the Inversion framework.</remarks>
-public class IncomingIngestEvent
+public class LegacyIngestEvent
 {
     private const string AssetDictionaryKey = "image";
         
@@ -41,7 +41,7 @@ public class IncomingIngestEvent
     public string? AssetJson => Params.TryGetValue(AssetDictionaryKey, out var image) ? image : null;
 
     [JsonConstructor]
-    public IncomingIngestEvent(string type, DateTime? created, string message, Dictionary<string, string>? @params)
+    public LegacyIngestEvent(string type, DateTime? created, string message, Dictionary<string, string>? @params)
     {
         Type = type;
         Created = created;

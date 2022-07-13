@@ -60,7 +60,7 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = $"1/2/{ingestResult}";
-        var message = new IncomingIngestEvent(
+        var message = new LegacyIngestEvent(
             assetId, 
             DateTime.UtcNow, 
             "message", 
@@ -70,7 +70,7 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
         });
         
         A.CallTo(() =>
-            assetIngester.Ingest(A<IncomingIngestEvent>.That.Matches(r => r.Type == assetId),
+            assetIngester.Ingest(A<LegacyIngestEvent>.That.Matches(r => r.Type == assetId),
                 A<CancellationToken>._)).Returns(ingestResult);
 
         // Act

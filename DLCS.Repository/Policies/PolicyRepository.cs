@@ -54,8 +54,8 @@ public class PolicyRepository : IPolicyRepository
     {
         try
         {
-            var thumbnailPolicies = await GetImageOptimisationPolicies(cancellationToken);
-            return thumbnailPolicies.SingleOrDefault(p => p.Id == imageOptimisationPolicyId);
+            var imageOptimisationPolicies = await GetImageOptimisationPolicies(cancellationToken);
+            return imageOptimisationPolicies.SingleOrDefault(p => p.Id == imageOptimisationPolicyId);
         }
         catch (Exception e)
         {
@@ -70,8 +70,8 @@ public class PolicyRepository : IPolicyRepository
     {
         try
         {
-            var thumbnailPolicies = await GetStoragePolicies(cancellationToken);
-            return thumbnailPolicies.SingleOrDefault(p => p.Id == storagePolicyId);
+            var storagePolicies = await GetStoragePolicies(cancellationToken);
+            return storagePolicies.SingleOrDefault(p => p.Id == storagePolicyId);
         }
         catch (Exception e)
         {
