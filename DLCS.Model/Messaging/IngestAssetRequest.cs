@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 using DLCS.Model.Assets;
 
 namespace DLCS.Model.Messaging
@@ -19,6 +20,7 @@ namespace DLCS.Model.Messaging
         /// </summary>
         public Asset Asset { get; }
 
+        [JsonConstructor]
         public IngestAssetRequest(Asset asset, DateTime? created)
         {
             Asset = asset;

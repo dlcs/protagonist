@@ -2,6 +2,7 @@ using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Repository;
+using Engine.Ingest;
 using Engine.Ingest.Handlers;
 using Engine.Messaging;
 
@@ -43,6 +44,12 @@ public static class ServiceCollectionX
             .AddTransient<TranscodeCompletionHandler>()
             .AddSingleton<SqsQueueUtilities>()
             .AddHostedService<SqsListenerService>();
+
+    /// <summary>
+    /// Adds all asset ingestion classes and related dependencies. 
+    /// </summary>
+    public static IServiceCollection AddAssetIngestion(this IServiceCollection services)
+        => services.AddScoped<IAssetIngester, AssetIngester>();
 
     /// <summary>
     /// Add HealthChecks for Database and Queues
