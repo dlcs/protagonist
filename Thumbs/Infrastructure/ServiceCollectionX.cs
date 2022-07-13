@@ -2,12 +2,13 @@
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Policies;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serilog;
 using Thumbs.Reorganising;
@@ -24,7 +25,7 @@ namespace Thumbs.Infrastructure
         {
             services
                 .AddSingleton<ThumbnailHandler>()
-                .AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>();
+                .AddSingleton<IPolicyRepository, PolicyRepository>();
 
             if (settings.EnsureNewThumbnailLayout)
             {

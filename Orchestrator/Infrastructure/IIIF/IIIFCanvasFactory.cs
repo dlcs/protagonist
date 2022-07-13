@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.PathElements;
+using DLCS.Model.Policies;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
@@ -30,17 +31,17 @@ namespace Orchestrator.Infrastructure.IIIF;
 public class IIIFCanvasFactory
 {
     private readonly IAssetPathGenerator assetPathGenerator;
-    private readonly IThumbnailPolicyRepository thumbnailPolicyRepository;
+    private readonly IPolicyRepository policyRepository;
     private readonly OrchestratorSettings orchestratorSettings;
     private readonly Dictionary<string, ThumbnailPolicy> thumbnailPolicies = new();
 
     public IIIFCanvasFactory(
         IAssetPathGenerator assetPathGenerator,
         IOptions<OrchestratorSettings> orchestratorSettings,
-        IThumbnailPolicyRepository thumbnailPolicyRepository)
+        IPolicyRepository policyRepository)
     {
         this.assetPathGenerator = assetPathGenerator;
-        this.thumbnailPolicyRepository = thumbnailPolicyRepository;
+        this.policyRepository = policyRepository;
         this.orchestratorSettings = orchestratorSettings.Value;
     }
 
@@ -210,7 +211,7 @@ public class IIIFCanvasFactory
             return thumbnailPolicy;
         }
 
-        var thumbnailPolicyFromDb = await thumbnailPolicyRepository.GetThumbnailPolicy(image.ThumbnailPolicy);
+        var thumbnailPolicyFromDb = await policyRepository.GetThumbnailPolicy(image.ThumbnailPolicy);
         thumbnailPolicies[image.ThumbnailPolicy] = thumbnailPolicyFromDb;
         return thumbnailPolicyFromDb;
     }

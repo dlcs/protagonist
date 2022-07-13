@@ -6,6 +6,7 @@ using DLCS.Core.Settings;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.Policies;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using MediatR;
@@ -51,43 +52,27 @@ namespace API.Features.Image.Requests
         public string? Message { get; set; }
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
     public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatchImageResult>
     {
         private readonly ISpaceRepository spaceRepository;
         private readonly IAssetRepository assetRepository;
         private readonly IStorageRepository storageRepository;
-        private readonly IThumbnailPolicyRepository thumbnailPolicyRepository;
-        private readonly IImageOptimisationPolicyRepository imageOptimisationPolicyRepository;
+        private readonly IPolicyRepository policyRepository;
         private readonly IAssetNotificationSender assetNotificationSender;
         private readonly DlcsSettings settings;
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="spaceRepository"></param>
-        /// <param name="assetRepository"></param>
-        /// <param name="storageRepository"></param>
-        /// <param name="thumbnailPolicyRepository"></param>
-        /// <param name="imageOptimisationPolicyRepository"></param>
-        /// <param name="assetNotificationSender"></param>
-        /// <param name="dlcsSettings"></param>
         public PutOrPatchImageHandler(
             ISpaceRepository spaceRepository,
             IAssetRepository assetRepository,
             IStorageRepository storageRepository,
-            IThumbnailPolicyRepository thumbnailPolicyRepository,
-            IImageOptimisationPolicyRepository imageOptimisationPolicyRepository,
+            IPolicyRepository policyRepository,
             IAssetNotificationSender assetNotificationSender,
             IOptions<DlcsSettings> dlcsSettings)
         {
             this.spaceRepository = spaceRepository;
             this.assetRepository = assetRepository;
             this.storageRepository = storageRepository;
-            this.thumbnailPolicyRepository = thumbnailPolicyRepository;
-            this.imageOptimisationPolicyRepository = imageOptimisationPolicyRepository;
+            this.policyRepository = policyRepository;
             this.assetNotificationSender = assetNotificationSender;
             this.settings = dlcsSettings.Value;
         }
@@ -337,7 +322,7 @@ namespace API.Features.Image.Requests
             ImageOptimisationPolicy? policy = null;
             if (incomingPolicy.HasText())
             {
-                policy = await imageOptimisationPolicyRepository.GetImageOptimisationPolicy(incomingPolicy);
+                policy = await policyRepository.GetImageOptimisationPolicy(incomingPolicy);
             }
 
             if (policy == null)
@@ -345,7 +330,7 @@ namespace API.Features.Image.Requests
                 // The asset doesn't have a valid ImageOptimisationPolicy
                 // This is adapted from Deliverator, but there wasn't a way of 
                 // taking the policy from the incoming PUT. There now is.
-                var imagePolicy = await imageOptimisationPolicyRepository.GetImageOptimisationPolicy(key);
+                var imagePolicy = await policyRepository.GetImageOptimisationPolicy(key);
                 if (imagePolicy != null)
                 {
                     asset.ImageOptimisationPolicy = imagePolicy.Id;
@@ -361,12 +346,12 @@ namespace API.Features.Image.Requests
             ThumbnailPolicy? policy = null;
             if (incomingPolicy.HasText())
             {
-                policy = await thumbnailPolicyRepository.GetThumbnailPolicy(incomingPolicy);
+                policy = await policyRepository.GetThumbnailPolicy(incomingPolicy);
             }
 
             if (policy == null)
             {
-                var thumbnailPolicy = await thumbnailPolicyRepository.GetThumbnailPolicy(key);
+                var thumbnailPolicy = await policyRepository.GetThumbnailPolicy(key);
                 if (thumbnailPolicy != null)
                 {
                     asset.ThumbnailPolicy = thumbnailPolicy.Id;

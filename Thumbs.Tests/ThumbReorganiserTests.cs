@@ -1,11 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using DLCS.AWS.S3;
+﻿using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -19,7 +17,7 @@ namespace Thumbs.Tests
         private readonly IBucketReader bucketReader;
         private readonly IAssetRepository assetRepository;
         private readonly IStorageKeyGenerator storageKeyGenerator;
-        private readonly IThumbnailPolicyRepository thumbPolicyRepository;
+        private readonly IPolicyRepository thumbPolicyRepository;
         private readonly ThumbReorganiser sut;
         private readonly IBucketWriter bucketWriter;
 
@@ -28,7 +26,7 @@ namespace Thumbs.Tests
             bucketReader = A.Fake<IBucketReader>();
             bucketWriter = A.Fake<IBucketWriter>();
             assetRepository = A.Fake<IAssetRepository>();
-            thumbPolicyRepository = A.Fake<IThumbnailPolicyRepository>();
+            thumbPolicyRepository = A.Fake<IPolicyRepository>();
             storageKeyGenerator = new S3StorageKeyGenerator(
                 Options.Create(new AWSSettings { S3 = new S3Settings { ThumbsBucket = "the-bucket" } }));
             sut = new ThumbReorganiser(bucketReader, bucketWriter, new NullLogger<ThumbReorganiser>(), assetRepository,
@@ -71,7 +69,7 @@ namespace Thumbs.Tests
 
             A.CallTo(() => assetRepository.GetAsset(assetId))
                 .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = -1});
-            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
                 .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
             
             // Act
@@ -124,7 +122,7 @@ namespace Thumbs.Tests
 
             A.CallTo(() => assetRepository.GetAsset(assetId))
                 .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 0});
-            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
                 .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
             
             // Act
@@ -176,7 +174,7 @@ namespace Thumbs.Tests
 
             A.CallTo(() => assetRepository.GetAsset(assetId))
                 .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 0, Roles = "admin"});
-            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
                 .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
             
             // Act
@@ -230,7 +228,7 @@ namespace Thumbs.Tests
 
             A.CallTo(() => assetRepository.GetAsset(assetId))
                 .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
-            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
                 .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
             
             // Act
@@ -287,7 +285,7 @@ namespace Thumbs.Tests
 
             A.CallTo(() => assetRepository.GetAsset(assetId))
                 .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
-            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
                 .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
             
             // Act
@@ -345,7 +343,7 @@ namespace Thumbs.Tests
 
             A.CallTo(() => assetRepository.GetAsset(assetId))
                 .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
-            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
                 .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
             
             // Act
@@ -401,7 +399,7 @@ namespace Thumbs.Tests
 
             A.CallTo(() => assetRepository.GetAsset(assetId))
                 .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne"});
-            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
                 .Returns(new ThumbnailPolicy {Sizes = "200,100"});
             
             // Act
@@ -431,7 +429,7 @@ namespace Thumbs.Tests
 
             A.CallTo(() => assetRepository.GetAsset(assetId))
                 .Returns(new Asset {Width = 200, Height = 250, ThumbnailPolicy = "TheBestOne"});
-            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
                 .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
             
             // Once called, add s.json to return list of bucket contents
@@ -465,7 +463,7 @@ namespace Thumbs.Tests
 
             A.CallTo(() => assetRepository.GetAsset(A<AssetId>._))
                 .Returns(new Asset {Width = 200, Height = 250, ThumbnailPolicy = "TheBestOne"});
-            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
                 .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
             
             // Once called, add sizes.json to return list of bucket contents
@@ -519,7 +517,7 @@ namespace Thumbs.Tests
 
             A.CallTo(() => assetRepository.GetAsset(assetId))
                 .Returns(new Asset {Width = 1293, Height = 2400, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = -1});
-            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
                 .Returns(new ThumbnailPolicy {Sizes = "1024,400"});
             
             // Act

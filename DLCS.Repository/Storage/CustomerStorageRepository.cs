@@ -2,53 +2,21 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Model.Policies;
 using DLCS.Model.Storage;
-using DLCS.Repository.Caching;
-using LazyCache;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Storage;
 
 public class CustomerStorageRepository : IStorageRepository
 {
     private readonly DlcsContext dlcsContext;
-    private readonly CacheSettings cacheSettings;
-    private readonly IAppCache appCache;
-    private readonly ILogger<CustomerStorageRepository> logger;
-    private static readonly StoragePolicy NullStoragePolicy = new() { Id = "__nullstoragepolicy__" };
-    
-    public CustomerStorageRepository(
-        DlcsContext dlcsContext,
-        IAppCache appCache,
-        IOptions<CacheSettings> cacheOptions,
-        ILogger<CustomerStorageRepository> logger)
+    private readonly IPolicyRepository policyRepository;
+
+    public CustomerStorageRepository(DlcsContext dlcsContext, IPolicyRepository policyRepository)
     {
         this.dlcsContext = dlcsContext;
-        this.appCache = appCache;
-        this.logger = logger;
-        cacheSettings = cacheOptions.Value;
-    }
-    
-    public async Task<StoragePolicy?> GetStoragePolicy(string id, CancellationToken cancellationToken)
-    {
-        var key = $"storagePolicy:{id}";
-        var storagePolicy = await appCache.GetOrAddAsync(key, async entry =>
-        {
-            var dbPolicy = await dlcsContext.StoragePolicies.FindAsync(new object?[] { id }, cancellationToken);
-            if (dbPolicy == null)
-            {
-                entry.AbsoluteExpirationRelativeToNow =
-                    TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
-                return NullStoragePolicy;
-            }
-
-            return dbPolicy;
-        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short));
-
-        return storagePolicy.Id == NullStoragePolicy.Id ? null : storagePolicy;
+        this.policyRepository = policyRepository;
     }
 
     public async Task<CustomerStorage?> GetCustomerStorage(int customerId, int spaceId, bool createOnDemand, CancellationToken cancellationToken)
@@ -115,7 +83,7 @@ public class CustomerStorageRepository : IStorageRepository
     public async Task<ImageCountStorageMetric> GetImageCounts(int customerId, CancellationToken cancellationToken)
     {
         var space0Record = await GetCustomerStorage(customerId, 0, true, cancellationToken);
-        var policy = await GetStoragePolicy(space0Record.StoragePolicy, cancellationToken);
+        var policy = await policyRepository.GetStoragePolicy(space0Record.StoragePolicy, cancellationToken);
         return new ImageCountStorageMetric
         {
             PolicyId = policy.Id,

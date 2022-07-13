@@ -6,14 +6,6 @@ namespace DLCS.Model.Storage
     public interface IStorageRepository
     {
         /// <summary>
-        /// A named storage policy dictates the maximum number of images and the maximum size on disk they can take up.
-        /// </summary>
-        /// <param name="id">The name of the policy</param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public Task<StoragePolicy?> GetStoragePolicy(string id, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Get an individual CustomerStorage record for a Space.
         /// </summary>
         /// <param name="customerId">The Customer</param>

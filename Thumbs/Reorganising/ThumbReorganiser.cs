@@ -8,6 +8,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using DLCS.Repository.Assets;
 using IIIF;
 using Microsoft.Extensions.Logging;
@@ -24,7 +25,7 @@ namespace Thumbs.Reorganising
         private readonly IBucketWriter bucketWriter;
         private readonly ILogger<ThumbReorganiser> logger;
         private readonly IAssetRepository assetRepository;
-        private readonly IThumbnailPolicyRepository thumbnailPolicyRepository;
+        private readonly IPolicyRepository policyRepository;
         private readonly IStorageKeyGenerator storageKeyGenerator;
         private readonly AsyncKeyedLock asyncLocker = new();
         private static readonly Regex BoundedThumbRegex = new("^[0-9]+.jpg$");
@@ -34,14 +35,14 @@ namespace Thumbs.Reorganising
             IBucketWriter bucketWriter,
             ILogger<ThumbReorganiser> logger,
             IAssetRepository assetRepository,
-            IThumbnailPolicyRepository thumbnailPolicyRepository,
+            IPolicyRepository policyRepository,
             IStorageKeyGenerator storageKeyGenerator)
         {
             this.bucketReader = bucketReader;
             this.bucketWriter = bucketWriter;
             this.logger = logger;
             this.assetRepository = assetRepository;
-            this.thumbnailPolicyRepository = thumbnailPolicyRepository;
+            this.policyRepository = policyRepository;
             this.storageKeyGenerator = storageKeyGenerator;
         }
         
@@ -71,7 +72,7 @@ namespace Thumbs.Reorganising
                 return ReorganiseResult.AssetNotFound;
             }
 
-            var policy = await thumbnailPolicyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
+            var policy = await policyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
 
             var maxAvailableThumb = GetMaxAvailableThumb(asset, policy);
 
