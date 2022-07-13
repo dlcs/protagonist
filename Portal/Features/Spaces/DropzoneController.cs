@@ -4,6 +4,7 @@ using System.IO;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using API.Client;
+using DLCS.AWS.S3;
 using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Http;

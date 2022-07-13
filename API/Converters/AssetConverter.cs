@@ -21,18 +21,14 @@ namespace API.Converters
         /// <param name="urlRoots">The domain name of the API and orchestrator applications</param>
         /// <returns></returns>
         public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots)
-        {
-            // This seems fragile
-            // The database Id/PK is {customer}/{space}/{modelId}
-            // so we need to remove that bit
-            // we can do this in a checking kind of way though:
+        {   
             var prefix = $"{dbAsset.Customer}/{dbAsset.Space}/";
             if (!dbAsset.Id.StartsWith(prefix))
             {
                 throw new APIException($"Asset {dbAsset.Id} does not start with expected prefix {prefix}");
             }
 
-            var modelId = dbAsset.Id.Substring(prefix.Length);
+            var modelId = dbAsset.GetUniqueName();
             
             var image = new Image(urlRoots.BaseUrl, dbAsset.Customer, dbAsset.Space, modelId)
             {
@@ -127,7 +123,6 @@ namespace API.Converters
             
             // This is a silent test for backwards compatibility with Deliverator.
             // DDS sends Patch ModelIDs in full ID form:
-            // TODO: Wrap this in a feature flag
             var testPrefix = $"{hydraImage.CustomerId}/{hydraImage.Space}/";
             if (modelId.StartsWith(testPrefix))
             {
@@ -270,11 +265,11 @@ namespace API.Converters
                 asset.ImageOptimisationPolicy = imageOptimisationPolicy;
             }
             
-            // Not patchable? Does Engine set this?
-            // if (hydraImage.InitialOrigin != null)
-            // {
-            //     asset.InitialOrigin = hydraImage.InitialOrigin;
-            // }
+            // This can only arrive on a new Asset
+            if (hydraImage.InitialOrigin != null)
+            {
+                asset.InitialOrigin = hydraImage.InitialOrigin;
+            }
 
             // We now have an asset that likely has many null fields.
             // It's not safe to insert this into the database as-is, subsequent users will need to

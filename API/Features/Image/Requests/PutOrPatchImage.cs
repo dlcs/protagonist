@@ -14,8 +14,7 @@ using Microsoft.Extensions.Options;
 namespace API.Features.Image.Requests
 {
     /// <summary>
-    /// Unlike Deliverator we will handle PUTs and PATCHes with a single command, with
-    /// slight variation in behaviour.
+    /// Handle PUTs and PATCHes with a single command to ensure same validation happens.
     /// </summary>
     public class PutOrPatchImage : IRequest<PutOrPatchImageResult>
     {
@@ -42,8 +41,7 @@ namespace API.Features.Image.Requests
         public Asset? Asset { get; set; }
         
         /// <summary>
-        /// This leaks HTTP into the Mediatr... If a trip to Engine was involved,
-        /// this will be the eventual status code returned by the synchronous Engine call.
+        /// The appropriate status to return to the API caller.
         /// </summary>
         public HttpStatusCode? StatusCode { get; set; }
         
@@ -63,7 +61,7 @@ namespace API.Features.Image.Requests
         private readonly IStorageRepository storageRepository;
         private readonly IThumbnailPolicyRepository thumbnailPolicyRepository;
         private readonly IImageOptimisationPolicyRepository imageOptimisationPolicyRepository;
-        private readonly IMessageBus messageBus;
+        private readonly IAssetNotificationSender assetNotificationSender;
         private readonly DlcsSettings settings;
 
         /// <summary>
@@ -74,7 +72,7 @@ namespace API.Features.Image.Requests
         /// <param name="storageRepository"></param>
         /// <param name="thumbnailPolicyRepository"></param>
         /// <param name="imageOptimisationPolicyRepository"></param>
-        /// <param name="messageBus"></param>
+        /// <param name="assetNotificationSender"></param>
         /// <param name="dlcsSettings"></param>
         public PutOrPatchImageHandler(
             ISpaceRepository spaceRepository,
@@ -82,7 +80,7 @@ namespace API.Features.Image.Requests
             IStorageRepository storageRepository,
             IThumbnailPolicyRepository thumbnailPolicyRepository,
             IImageOptimisationPolicyRepository imageOptimisationPolicyRepository,
-            IMessageBus messageBus,
+            IAssetNotificationSender assetNotificationSender,
             IOptions<DlcsSettings> dlcsSettings)
         {
             this.spaceRepository = spaceRepository;
@@ -90,7 +88,7 @@ namespace API.Features.Image.Requests
             this.storageRepository = storageRepository;
             this.thumbnailPolicyRepository = thumbnailPolicyRepository;
             this.imageOptimisationPolicyRepository = imageOptimisationPolicyRepository;
-            this.messageBus = messageBus;
+            this.assetNotificationSender = assetNotificationSender;
             this.settings = dlcsSettings.Value;
         }
 
@@ -103,6 +101,7 @@ namespace API.Features.Image.Requests
         public async Task<PutOrPatchImageResult> Handle(PutOrPatchImage request, CancellationToken cancellationToken)
         {
             var asset = request.Asset;
+            var changeType = ChangeType.Update;
             if (asset == null || request.Method == null)
             {
                 return new PutOrPatchImageResult
@@ -132,11 +131,6 @@ namespace API.Features.Image.Requests
             }
             
             // DELIVERATOR: https://github.com/digirati-co-uk/deliverator/blob/master/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L74
-            // We are going to need to have cached versions of all these policies, but just memoryCache for API I think
-            // appCache inside repositories.
-            
-            // Deliverator Logic:
-            // LoadSpaceBehaviour - need the space to exist: allow this to be cached
             var targetSpace = await spaceRepository.GetSpace(asset.Customer, asset.Space, cancellationToken, noCache:false);
             if (targetSpace == null)
             {
@@ -154,6 +148,7 @@ namespace API.Features.Image.Requests
                 existingAsset = await assetRepository.GetAsset(asset.Id, noCache:true);
                 if (existingAsset == null)
                 {
+                    changeType = ChangeType.Create;
                     if (request.Method == "PATCH")
                     {
                         return new PutOrPatchImageResult
@@ -165,8 +160,6 @@ namespace API.Features.Image.Requests
                     // LoadCustomerStorageBehaviour - if a new image, CustomerStorageCalculation
                     // LoadStoragePolicyBehaviour - get the storage policy
                     // EnforceStoragePolicyForNumberOfImagesBehaviour
-                    // This is a temporary simple solution
-                    // will use this policy, somewhere... go back through deliverator.
                     var counts = await storageRepository.GetImageCounts(asset.Customer, cancellationToken);
                     if (counts.CurrentNumberOfStoredImages >= counts.MaximumNumberOfStoredImages)
                     {
@@ -246,17 +239,25 @@ namespace API.Features.Image.Requests
                 };
             }
             
+            // Restore fields that are not persisted but are required
+            if (asset.InitialOrigin.HasText())
+            {
+                assetAfterSave.InitialOrigin = asset.InitialOrigin;
+                // any others?
+            }
+            
+            
             // TODO: This is incomplete, it only deals with images for now
             // needs the equivalent  Conditions.ControlStateNotEquals(name: "image.family", value: "I")
             //                                              ^^^
             if (asset.Family == AssetFamily.Image)
             {
-                await messageBus.SendAssetModifiedNotification(asset, assetAfterSave);
+                await assetNotificationSender.SendAssetModifiedNotification(changeType, existingAsset, assetAfterSave);
                 if (requiresEngineNotification)
                 {
                     var ingestAssetRequest = new IngestAssetRequest(assetAfterSave, DateTime.UtcNow);
                     // await call to engine load-balancer, which processes synchronously (not a queue)
-                    var statusCode = await messageBus.SendImmediateIngestAssetRequest(ingestAssetRequest, false);
+                    var statusCode = await assetNotificationSender.SendImmediateIngestAssetRequest(ingestAssetRequest, false);
                     if (statusCode is HttpStatusCode.Created or HttpStatusCode.OK)
                     {
                         // obtain it again after Engine has processed it

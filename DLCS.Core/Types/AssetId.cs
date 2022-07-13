@@ -27,6 +27,15 @@ namespace DLCS.Core.Types
             return $"/customers/{Customer}/spaces/{Space}/images/{Asset}";
         }
 
+        public bool IsValidUri()
+        {
+            // TODO: verify the assetId is an allowed string
+            // Needs to be no more restrictive than https://github.com/wellcomecollection/docs/pull/30
+            // 1. Deliverator has Image.ReservedIds, but it's { } (empty). So will leave out that check.
+            // 2. Eventually Protagonist will restrict IDs to url-safe paths, but not for now.
+            return true;
+        }
+
         protected virtual bool PrintMembers(StringBuilder builder)
         {
             builder.Append(Customer);

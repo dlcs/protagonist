@@ -90,7 +90,7 @@ namespace API
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
                 .AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>()
                 .AddSingleton<IImageOptimisationPolicyRepository, ImageOptimisationPolicyRepository>()
-                .AddSingleton<IMessageBus, MessageBus>()
+                .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
                 .ConfigureMediatR()
                 .ConfigureSwagger();
 

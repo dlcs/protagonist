@@ -83,7 +83,11 @@ namespace DLCS.Model.Assets
             set => Tags = value.IsNullOrEmpty() ? String.Empty : String.Join(',', value);
         }
         
-        public bool RequiresAuth => !string.IsNullOrWhiteSpace(Roles) && MaxUnauthorised >= 0;
+        /// <summary>
+        /// Indicates whether this asset requires authentication to view. This is required if either Roles are assigned
+        /// OR MaxUnauthorised >= 0
+        /// </summary>
+        public bool RequiresAuth => !string.IsNullOrWhiteSpace(Roles) || MaxUnauthorised >= 0;
         
         // TODO - how to handle this? Split model + entity?
         public string? InitialOrigin { get; set; }

@@ -182,8 +182,10 @@ namespace Orchestrator.Tests.Assets
         }
 
         [Theory]
-        [InlineData("", 10, false)]
-        [InlineData("role", -1, false)]
+        [InlineData("", -1, false)]
+        [InlineData("", 0, true)]
+        [InlineData("", 10, true)]
+        [InlineData("role", -1, true)]
         [InlineData("role", 0, true)]
         [InlineData("role", 10, true)]
         public async Task GetOrchestrationAsset_SetsRequiresAuthCorrectly(string roles, int maxUnauth, bool requiresAuth)

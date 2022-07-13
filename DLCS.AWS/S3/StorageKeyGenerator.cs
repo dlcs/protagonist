@@ -108,5 +108,11 @@ namespace DLCS.AWS.S3
             var key = $"info/{imageServer}/{versionSlug}/{GetStorageKey(assetId)}/info.json";
             return new ObjectInBucket(s3Options.StorageBucket, key);
         }
+
+        public RegionalisedObjectInBucket GetAssetAtOriginLocation(AssetId assetId)
+        {
+            var fullPath = GetStorageKey(assetId);
+            return new RegionalisedObjectInBucket(s3Options.OriginBucket, fullPath, awsSettings.Region);
+        }
     }
 }
