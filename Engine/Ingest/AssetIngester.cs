@@ -77,40 +77,29 @@ public class AssetIngester : IAssetIngester
     public async Task<IngestResult> Ingest(IngestAssetRequest request, CancellationToken cancellationToken = default)
     {
         // get any matching CustomerOriginStrategy 
-        var getCustomerOriginStrategy = customerOriginRepository.GetCustomerOriginStrategy(request.Asset, true);
+        var customerOriginStrategy = await customerOriginRepository.GetCustomerOriginStrategy(request.Asset, true);
             
         // set Thumbnail and ImageOptimisation policies on Asset
-        var setAssetPolicies = HydrateAssetPolicies(request.Asset);
+        await HydrateAssetPolicies(request.Asset);
             
         // get the relevant resolver (Image or Timebased)
         var ingestor = resolver(request.Asset.Family ?? AssetFamily.Image);
 
-        await Task.WhenAll(getCustomerOriginStrategy, setAssetPolicies);
-
-        return await ingestor.Ingest(request, getCustomerOriginStrategy.Result, cancellationToken);
+        return await ingestor.Ingest(request, customerOriginStrategy, cancellationToken);
     }
 
     private async Task HydrateAssetPolicies(Asset asset)
     {
-        var getPolicyRequests = new List<Task>(2);
         if (!string.IsNullOrEmpty(asset.ThumbnailPolicy))
         {
-            var getThumbnail = policyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy)
-                .ContinueWith(
-                    task => asset.WithThumbnailPolicy(task.Result),
-                    TaskContinuationOptions.OnlyOnRanToCompletion);
-            getPolicyRequests.Add(getThumbnail);
+            var thumbnailPolicy = await policyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
+            asset.WithThumbnailPolicy(thumbnailPolicy);
         }
 
         if (!string.IsNullOrEmpty(asset.ImageOptimisationPolicy))
         {
-            var getThumbnail = policyRepository.GetImageOptimisationPolicy(asset.ImageOptimisationPolicy)
-                .ContinueWith(
-                    task => asset.WithImageOptimisationPolicy(task.Result),
-                    TaskContinuationOptions.OnlyOnRanToCompletion);
-            getPolicyRequests.Add(getThumbnail);
+            var optimisationPolicy = await policyRepository.GetImageOptimisationPolicy(asset.ImageOptimisationPolicy);
+            asset.WithImageOptimisationPolicy(optimisationPolicy);
         }
-
-        await Task.WhenAll(getPolicyRequests); 
     }
 }
