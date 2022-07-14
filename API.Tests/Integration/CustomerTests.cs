@@ -191,7 +191,7 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async void Api_Grants_Key_And_Secret()
     {
-        var response = await httpClient.AsAdmin().PostAsync("/customers/99/keys", new StringContent(String.Empty));
+        var response = await httpClient.AsCustomer(99).PostAsync("/customers/99/keys", new StringContent(String.Empty));
         var key = await response.ReadAsHydraResponseAsync<ApiKey>();
         key.Key.Should().NotBeEmpty();
         key.Secret.Should().NotBeEmpty();
@@ -203,13 +203,13 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async void Api_Yields_Keys()
     {
         // arrange
-        var response1 = await httpClient.AsAdmin().PostAsync("/customers/99/keys", new StringContent(String.Empty));
+        var response1 = await httpClient.AsCustomer(99).PostAsync("/customers/99/keys", new StringContent(String.Empty));
         var key1 = await response1.ReadAsHydraResponseAsync<ApiKey>();
-        var response2 = await httpClient.AsAdmin().PostAsync("/customers/99/keys", new StringContent(String.Empty));
+        var response2 = await httpClient.AsCustomer(99).PostAsync("/customers/99/keys", new StringContent(String.Empty));
         var key2 = await response2.ReadAsHydraResponseAsync<ApiKey>();
         
         // act
-        var response = await httpClient.AsAdmin().GetAsync("/customers/99/keys");
+        var response = await httpClient.AsCustomer(99).GetAsync("/customers/99/keys");
         var keys = await response.ReadAsHydraResponseAsync<HydraCollection<ApiKey>>();
         
         // assert
