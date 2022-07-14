@@ -21,8 +21,6 @@ namespace DLCS.Repository.Strategy
         private readonly ICredentialsRepository credentialsRepository;
         private readonly ILogger<BasicHttpAuthOriginStrategy> logger;
         
-        public OriginStrategyType Strategy => OriginStrategyType.BasicHttp;
-        
         public BasicHttpAuthOriginStrategy(
             IHttpClientFactory httpClientFactory,
             ICredentialsRepository credentialsRepository,
@@ -36,7 +34,7 @@ namespace DLCS.Repository.Strategy
         public async Task<OriginResponse?> LoadAssetFromOrigin(AssetId assetId, string origin,
             CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
         {
-            logger.LogDebug("Fetching {asset} from Origin: {url}", assetId, origin);
+            logger.LogDebug("Fetching {Asset} from Origin: {Url}", assetId, origin);
             customerOriginStrategy.ThrowIfNull(nameof(customerOriginStrategy));
 
             try
@@ -47,7 +45,7 @@ namespace DLCS.Repository.Strategy
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error fetching {asset} from Origin: {url}", assetId, origin);
+                logger.LogError(ex, "Error fetching {Asset} from Origin: {Url}", assetId, origin);
                 return OriginResponse.Empty;
             }
         }

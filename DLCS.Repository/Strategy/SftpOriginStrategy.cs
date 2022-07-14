@@ -12,8 +12,6 @@ namespace DLCS.Repository.Strategy
     /// </summary>
     public class SftpOriginStrategy : IOriginStrategy
     {
-        public OriginStrategyType Strategy => OriginStrategyType.SFTP;
-        
         public Task<OriginResponse?> LoadAssetFromOrigin(AssetId assetId, string origin,
             CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
         {

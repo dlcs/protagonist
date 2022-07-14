@@ -16,8 +16,6 @@ namespace DLCS.Repository.Strategy
     {
         private readonly IBucketReader bucketReader;
         private readonly ILogger<S3AmbientOriginStrategy> logger;
-        
-        public OriginStrategyType Strategy => OriginStrategyType.S3Ambient;
 
         public S3AmbientOriginStrategy(IBucketReader bucketReader, ILogger<S3AmbientOriginStrategy> logger)
         {

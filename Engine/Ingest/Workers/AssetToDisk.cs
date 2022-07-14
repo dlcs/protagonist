@@ -14,21 +14,21 @@ namespace Engine.Ingest.Workers;
 /// </summary>
 public class AssetToDisk : IAssetMover
 {
+    private readonly OriginFetcher originFetcher;
     private readonly IStorageRepository storageRepository;
     private readonly FileSaver fileSaver;
     private readonly ILogger<AssetToDisk> logger;
-    private readonly Dictionary<OriginStrategyType, IOriginStrategy> originStrategies;
 
     public AssetToDisk(
-        IEnumerable<IOriginStrategy> originStrategies,
+        OriginFetcher originFetcher,
         IStorageRepository storageRepository,
         FileSaver fileSaver,
         ILogger<AssetToDisk> logger)
     {
+        this.originFetcher = originFetcher;
         this.storageRepository = storageRepository;
         this.fileSaver = fileSaver;
         this.logger = logger;
-        this.originStrategies = originStrategies.ToDictionary(k => k.Strategy, v => v);
     }
     
     /// <summary>
@@ -45,21 +45,13 @@ public class AssetToDisk : IAssetMover
         CancellationToken cancellationToken = default)
     {
         destinationTemplate.ThrowIfNullOrWhiteSpace(nameof(destinationTemplate));
-        
-        if (!originStrategies.TryGetValue(customerOriginStrategy.Strategy, out var strategy))
-        {
-            throw new InvalidOperationException(
-                $"No OriginStrategy implementation found for '{customerOriginStrategy.Strategy}' strategy (id: {customerOriginStrategy.Id})");
-        }
 
-        await using var originResponse =
-            await strategy.LoadAssetFromOrigin(asset.GetAssetId(), asset.GetIngestOrigin(), customerOriginStrategy,
-                cancellationToken);
+        var originResponse =
+            await originFetcher.LoadAssetFromLocation(asset.GetAssetId(), asset.GetIngestOrigin(), cancellationToken);
 
         if (originResponse == null || originResponse.Stream.IsNull())
         {
-            logger.LogWarning("Unable to fetch asset {AssetId} from {Origin} using {Strategy}", asset.Id, asset.Origin,
-                strategy.Strategy);
+            logger.LogWarning("Unable to fetch asset {AssetId} from {Origin}", asset.Id, asset.Origin);
             throw new ApplicationException($"Unable to get asset '{asset.Id}' from origin '{asset.Origin}'");
         }
         
