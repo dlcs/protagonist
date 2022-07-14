@@ -12,8 +12,10 @@ using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.DependencyInjection;
 using Engine.Ingest;
 using Engine.Ingest.Handlers;
+using Engine.Ingest.Image;
 using Engine.Ingest.Workers;
 using Engine.Messaging;
+using Engine.Settings;
 
 namespace Engine.Infrastructure;
 
@@ -57,10 +59,12 @@ public static class ServiceCollectionX
     /// <summary>
     /// Adds all asset ingestion classes and related dependencies. 
     /// </summary>
-    public static IServiceCollection AddAssetIngestion(this IServiceCollection services)
-        => services
+    public static IServiceCollection AddAssetIngestion(this IServiceCollection services, EngineSettings engineSettings)
+    {
+        services
             .AddScoped<IAssetIngester, AssetIngester>()
             .AddTransient<ImageIngesterWorker>()
+            
             .AddTransient<IngestorResolver>(provider => family => family switch
             {
                 AssetFamily.Image => provider.GetRequiredService<ImageIngesterWorker>(),
@@ -78,6 +82,15 @@ public static class ServiceCollectionX
                 _ => throw new NotImplementedException()
             })
             .AddOriginStrategies();
+
+        services.AddHttpClient<IImageProcessor, AppetiserClient>(client =>
+        {
+            client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
+            client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+        });
+
+        return services;
+    }
 
     /// <summary>
     /// Add all dataaccess dependencies, including repositories and DLCS context 

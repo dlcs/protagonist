@@ -1,6 +1,7 @@
 ﻿using DLCS.Core;
 using DLCS.Core.Guard;
 using DLCS.Core.Streams;
+using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Storage;
@@ -78,7 +79,7 @@ public class AssetToDisk : IAssetMover
         var received = await fileSaver.SaveResponseToDisk(asset.GetAssetId(), originResponse, targetPath,
             cancellationToken);
         
-        return new AssetFromOrigin(asset.Id, received, targetPath, originResponse.ContentType);
+        return new AssetFromOrigin(asset.GetAssetId(), received, targetPath, originResponse.ContentType);
     }
     
     // TODO - this may need refined depending on whether it's 'I' or 'T' ingest
@@ -89,7 +90,7 @@ public class AssetToDisk : IAssetMover
         if (string.IsNullOrWhiteSpace(contentType) || IsBinaryContent(contentType))
         {
             var uniqueName = asset.GetUniqueName();
-            var extension = uniqueName[uniqueName.LastIndexOf(".", StringComparison.Ordinal)..];
+            var extension = uniqueName.EverythingAfterLast('.');
 
             var guess = MIMEHelper.GetContentTypeForExtension(extension);
             logger.LogDebug("Guessed content type as {ContentType} for '{AssetName}'", guess, uniqueName);

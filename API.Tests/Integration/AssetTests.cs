@@ -427,7 +427,7 @@ public class AssetTests :
         {
             Id = "test-policy",
             Name = "Test Policy",
-            TechnicalDetails = "1010101"
+            TechnicalDetails = new[] { "1010101" }
         };
         dbContext.ImageOptimisationPolicies.Add(testPolicy);
         await dbContext.SaveChangesAsync();

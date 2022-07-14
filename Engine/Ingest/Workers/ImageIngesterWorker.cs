@@ -74,20 +74,9 @@ public class ImageIngesterWorker : IAssetIngesterWorker
         var imageIngest = engineSettings.ImageIngest;
         var root = imageIngest.GetRoot();
             
-        // source is the main folder for storing
+        // source is the main folder for storing downloaded image
         var assetId = asset.GetAssetId();
         var source = TemplatedFolders.GenerateFolderTemplate(imageIngest.SourceTemplate, assetId, root: root);
-            
-        // dest is the folder where image-processor will copy output
-        var dest = TemplatedFolders.GenerateFolderTemplate(imageIngest.DestinationTemplate, assetId, root: root);
-            
-        // thumb is the folder where generated thumbnails will be output
-        var thumb = TemplatedFolders.GenerateFolderTemplate(imageIngest.ThumbsTemplate, assetId, root: root);
-
-        Directory.CreateDirectory(dest);
-        Directory.CreateDirectory(thumb);
-        Directory.CreateDirectory(source);
-
         return source;
     }
     

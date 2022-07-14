@@ -1,7 +1,7 @@
 ﻿using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -27,7 +27,7 @@ namespace DLCS.AWS.Tests.S3
         }
         
         [Fact]
-        public void GetStorage_ReturnsExpected()
+        public void GetStorageKey_ReturnsExpected()
         {
             // Arrange
             const string expected = "10/20/foo-bar";
@@ -40,7 +40,7 @@ namespace DLCS.AWS.Tests.S3
         }
         
         [Fact]
-        public void GetStorage_AssetId_ReturnsExpected()
+        public void GetStorageKey_AssetId_ReturnsExpected()
         {
             // Arrange
             const string expected = "10/20/foo-bar";
@@ -51,6 +51,22 @@ namespace DLCS.AWS.Tests.S3
             
             // Assert
             actual.Should().Be(expected);
+        }
+        
+        [Fact]
+        public void GetStorageLocation_ReturnsExpected()
+        {
+            // Arrange
+            const string expected = "10/20/foo-bar";
+            var asset = new AssetId(10, 20, "foo-bar");
+
+            // Act
+            var actual = sut.GetStorageLocation(asset);
+            
+            // Assert
+            actual.Key.Should().Be(expected);
+            actual.Bucket.Should().Be("test-storage");
+            actual.Region.Should().Be("eu-west-1");
         }
 
         [Fact]
@@ -186,6 +202,36 @@ namespace DLCS.AWS.Tests.S3
             // Assert
             actual.Key.Should().Be(expected);
             actual.Bucket.Should().Be("test-storage");
+        }
+
+        [Fact]
+        public void EnsureRegionSet_DoesNotChange_IfAlreadySet()
+        {
+            // Arrange
+            const string region = "us-east-2";
+            var regionalisedObject = new RegionalisedObjectInBucket("bucket", "foo", region);
+            
+            // Act
+            sut.EnsureRegionSet(regionalisedObject);
+            
+            // Assert
+            regionalisedObject.Region.Should().Be(region);
+        }
+        
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        public void EnsureRegionSet_SetsToDefault_IfNullOrWhitespace(string region)
+        {
+            // Arrange
+            var regionalisedObject = new RegionalisedObjectInBucket("bucket", "foo", region);
+            
+            // Act
+            sut.EnsureRegionSet(regionalisedObject);
+            
+            // Assert
+            regionalisedObject.Region.Should().Be("eu-west-1");
         }
     }
 }

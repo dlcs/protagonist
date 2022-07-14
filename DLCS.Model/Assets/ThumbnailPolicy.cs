@@ -10,7 +10,7 @@ namespace DLCS.Model.Assets
     [DebuggerDisplay("{Name}: {Sizes}")]
     public class ThumbnailPolicy
     {
-        private List<int> sizeList = null;
+        private List<int>? sizeList = null;
 
         public string Id { get; set; }
         public string Name { get; set; }

@@ -1,4 +1,5 @@
 using DLCS.Core.Guard;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository.Entities;
 using Engine.Ingest.Workers;
@@ -11,6 +12,8 @@ namespace Engine.Ingest;
 public class IngestionContext
 {
     public Asset Asset { get; }
+    
+    public AssetId AssetId { get; }
             
     // TODO - should this be typed?
     public AssetFromOrigin AssetFromOrigin { get; }
@@ -22,6 +25,7 @@ public class IngestionContext
     public IngestionContext(Asset asset, AssetFromOrigin assetFromOrigin)
     {
         Asset = asset;
+        AssetId = asset.GetAssetId();
         AssetFromOrigin = assetFromOrigin;
     }
     

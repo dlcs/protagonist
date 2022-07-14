@@ -114,16 +114,16 @@ namespace DLCS.Model.Assets
 
             return uniqueName;
         }
-        
+
         /// <summary>
         /// Full thumbnail policy object for Asset
         /// </summary>
         public ThumbnailPolicy? FullThumbnailPolicy { get; private set; }
-        
+
         /// <summary>
         /// Full image optimisation policy object for Asset
         /// </summary>
-        public ImageOptimisationPolicy? FullImageOptimisationPolicy { get; private set; }
+        public ImageOptimisationPolicy FullImageOptimisationPolicy { get; private set; } = new();
         
         public Asset WithThumbnailPolicy(ThumbnailPolicy? thumbnailPolicy)
         {

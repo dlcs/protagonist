@@ -134,5 +134,16 @@ namespace DLCS.Core.Strings
         /// <returns>String split, or empty list.</returns>
         public static IEnumerable<string> SplitSeparatedString(this string str, string separator)
             => str?.Trim().Split(separator, StringSplitOptions.RemoveEmptyEntries) ?? Enumerable.Empty<string>();
+
+        /// <summary>
+        /// Get everything after the last instance of value
+        /// </summary>
+        /// <param name="str">String to extract data from</param>
+        /// <param name="value">Character to split by</param>
+        /// <returns>Everything after last index of character</returns>
+        public static string EverythingAfterLast(this string str, char value)
+            => str.Contains(value, StringComparison.Ordinal)
+                ? str[(str.LastIndexOf(value) + 1)..]
+                : string.Empty;
     }
 }

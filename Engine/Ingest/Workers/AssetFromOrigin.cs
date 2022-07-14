@@ -1,3 +1,4 @@
+using DLCS.Core.Types;
 using DLCS.Model.Customers;
 
 namespace Engine.Ingest.Workers;
@@ -10,7 +11,7 @@ public class AssetFromOrigin
     /// <summary>
     /// The DLCS asset id.
     /// </summary>
-    public string AssetId { get; }
+    public AssetId AssetId { get; }
 
     /// <summary>
     /// The size of the asset in bytes.
@@ -32,6 +33,9 @@ public class AssetFromOrigin
     /// </summary>
     public bool FileExceedsAllowance { get; private set; }
 
+    /// <summary>
+    /// The location where the asset has been copied to
+    /// </summary>
     public string Location { get; set; }
 
     /// <summary>
@@ -43,7 +47,7 @@ public class AssetFromOrigin
     {
     }
 
-    public AssetFromOrigin(string assetId, long assetSize, string location, string contentType)
+    public AssetFromOrigin(AssetId assetId, long assetSize, string location, string contentType)
     {
         AssetId = assetId;
         AssetSize = assetSize;

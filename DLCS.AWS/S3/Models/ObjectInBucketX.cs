@@ -1,5 +1,4 @@
-﻿using System;
-using DLCS.Core.Strings;
+﻿using DLCS.Core.Strings;
 
 namespace DLCS.AWS.S3.Models
 {

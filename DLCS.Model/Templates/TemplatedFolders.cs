@@ -60,7 +60,7 @@ namespace DLCS.Model.Templates
                     .Replace(Image, asset.Asset)
                 : replacements;
         }
-
+        
         private static string SplitImageNameToFolders(string name, string separator)
             => name.Length <= 8
                 ? name

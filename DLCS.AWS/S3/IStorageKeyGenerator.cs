@@ -21,6 +21,13 @@ namespace DLCS.AWS.S3
         /// <param name="assetId">Unique identifier for Asset.</param>
         /// <returns>/customer/space/imageKey string.</returns>
         string GetStorageKey(AssetId assetId);
+        
+        /// <summary>
+        /// Get <see cref="ObjectInBucket"/> for storing tile-ready asset
+        /// </summary>
+        /// <param name="assetId">Unique identifier for Asset</param>
+        /// <returns><see cref="ObjectInBucket"/> for tile-ready asset</returns>
+        RegionalisedObjectInBucket GetStorageLocation(AssetId assetId);
 
         /// <summary>
         /// Get <see cref="ObjectInBucket"/> for pre-generated thumbnail
@@ -93,5 +100,11 @@ namespace DLCS.AWS.S3
         /// <param name="assetId">AssetId request is for</param>
         /// <returns><see cref="RegionalisedObjectInBucket"/> for uploaded asset</returns>
         RegionalisedObjectInBucket GetAssetAtOriginLocation(AssetId assetId);
+
+        /// <summary>
+        /// Ensure the <see cref="RegionalisedObjectInBucket"/> object has region property set.
+        /// </summary>
+        /// <param name="objectInBucket">Object to ensure region set on</param>
+        void EnsureRegionSet(RegionalisedObjectInBucket objectInBucket);
     }
 }

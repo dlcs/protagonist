@@ -61,7 +61,13 @@ namespace DLCS.AWS.S3
         /// <returns>/customer/space/imageKey string.</returns>
         public string GetStorageKey(AssetId assetId)
             => GetStorageKey(assetId.Customer, assetId.Space, assetId.Asset);
-        
+
+        public RegionalisedObjectInBucket GetStorageLocation(AssetId assetId)
+        {
+            var key = GetStorageKey(assetId);
+            return new RegionalisedObjectInBucket(s3Options.StorageBucket, key, awsSettings.Region);
+        }
+
         public ObjectInBucket GetThumbnailLocation(AssetId assetId, int longestEdge, bool open = true)
         {
             var accessPrefix = open ? OpenSlug : AuthorisedSlug;
@@ -113,6 +119,13 @@ namespace DLCS.AWS.S3
         {
             var fullPath = GetStorageKey(assetId);
             return new RegionalisedObjectInBucket(s3Options.OriginBucket, fullPath, awsSettings.Region);
+        }
+
+        public void EnsureRegionSet(RegionalisedObjectInBucket objectInBucket)
+        {
+            if (objectInBucket.Region.HasText()) return;
+
+            objectInBucket.Region = awsSettings.Region;
         }
     }
 }

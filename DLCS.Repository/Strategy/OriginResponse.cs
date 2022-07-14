@@ -41,7 +41,7 @@ namespace DLCS.Repository.Strategy
             Stream = stream.ThrowIfNull(nameof(stream));
         }
         
-        public OriginResponse WithContentType(string contentType)
+        public OriginResponse WithContentType(string? contentType)
         {
             if (IsEmpty) throw new InvalidOperationException("Cannot set ContentType for empty response");
             ContentType = contentType;

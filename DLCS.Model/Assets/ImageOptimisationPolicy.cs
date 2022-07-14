@@ -9,6 +9,6 @@ namespace DLCS.Model.Assets
     {
         public string Id { get; set; }
         public string Name { get; set; }
-        public string TechnicalDetails { get; set; }
+        public string[] TechnicalDetails { get; set; }
     }
 }

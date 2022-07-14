@@ -118,5 +118,18 @@ namespace DLCS.Core.Tests.Strings
             // Assert
             actual.Should().BeEquivalentTo(expected);
         }
+        
+        [Theory]
+        [InlineData("myfile.jpg", "jpg")]
+        [InlineData("my.file.jpg", "jpg")]
+        [InlineData("myfile", "")]
+        public void EverythingAfterLast_ReturnsExpected(string str, string expected)
+        {
+            // Act
+            var actual = str.EverythingAfterLast('.');
+            
+            // Assert
+            actual.Should().BeEquivalentTo(expected);
+        }
     }
 }

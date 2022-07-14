@@ -99,7 +99,7 @@ namespace Test.Helpers.Integration
             await DbContext.ThumbnailPolicies.AddAsync(new ThumbnailPolicy
                 { Id = "default", Name = "default", Sizes = "800,400,200" });
             await DbContext.ImageOptimisationPolicies.AddAsync(new ImageOptimisationPolicy
-                { Id = "fast-higher", Name = "Fast higher quality", TechnicalDetails = "kdu_max" });
+                { Id = "fast-higher", Name = "Fast higher quality", TechnicalDetails = new[] { "kdu_max" } });
             await DbContext.AuthServices.AddAsync(new AuthService
             {
                 Customer = customer, Name = "clickthrough", Id = ClickThroughAuthService,
