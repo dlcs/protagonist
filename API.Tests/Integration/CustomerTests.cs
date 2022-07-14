@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -5,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
+using DLCS.Core.Strings;
 using DLCS.HydraModel;
 using DLCS.Repository;
 using FluentAssertions;
@@ -186,5 +188,34 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
+    [Fact]
+    public async void Api_Grants_Key_And_Secret()
+    {
+        var response = await httpClient.AsAdmin().PostAsync("/customers/99/keys", new StringContent(String.Empty));
+        var key = await response.ReadAsHydraResponseAsync<ApiKey>();
+        key.Key.Should().NotBeEmpty();
+        key.Secret.Should().NotBeEmpty();
+    }
+
     
+    
+    [Fact]
+    public async void Api_Yields_Keys()
+    {
+        // arrange
+        var response1 = await httpClient.AsAdmin().PostAsync("/customers/99/keys", new StringContent(String.Empty));
+        var key1 = await response1.ReadAsHydraResponseAsync<ApiKey>();
+        var response2 = await httpClient.AsAdmin().PostAsync("/customers/99/keys", new StringContent(String.Empty));
+        var key2 = await response2.ReadAsHydraResponseAsync<ApiKey>();
+        
+        // act
+        var response = await httpClient.AsAdmin().GetAsync("/customers/99/keys");
+        var keys = await response.ReadAsHydraResponseAsync<HydraCollection<ApiKey>>();
+        
+        // assert
+        keys.Members.Should().Contain(k => k.Key == key1.Key);
+        keys.Members.Should().Contain(k => k.Key == key2.Key);
+        keys.Members.Should().NotContain(k => k.Secret.HasText());
+    }
+
 }
