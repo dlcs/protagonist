@@ -25,7 +25,7 @@ namespace DLCS.Repository.Strategy.Utils
         /// <param name="destination">Location to store binary to, will be deleted if already exists</param>
         /// <param name="cancellationToken">Async cancellationToken</param>
         /// <returns>ContentLength</returns>
-        public async Task<long?> SaveResponseToDisk(AssetId assetId, OriginResponse originResponse, string destination,
+        public async Task<long> SaveResponseToDisk(AssetId assetId, OriginResponse originResponse, string destination,
             CancellationToken cancellationToken = default)
         {
             if (File.Exists(destination))
@@ -44,7 +44,7 @@ namespace DLCS.Repository.Strategy.Utils
                 await using var fileStream = new FileStream(destination, FileMode.OpenOrCreate, FileAccess.Write);
                 var assetStream = originResponse.Stream;
 
-                bool knownFileSize = originResponse.ContentLength.HasValue;
+                var knownFileSize = originResponse.ContentLength.HasValue;
                 long received;
 
                 if (knownFileSize)
@@ -81,9 +81,9 @@ namespace DLCS.Repository.Strategy.Utils
             int size;
             long received = 0;
 
-            while ((size = await assetStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+            while ((size = await assetStream.ReadAsync(buffer, cancellationToken)) > 0)
             {
-                await fileStream.WriteAsync(buffer, 0, size, cancellationToken);
+                await fileStream.WriteAsync(buffer.AsMemory(0, size), cancellationToken);
                 received += size;
                 await fileStream.FlushAsync(cancellationToken);
             }

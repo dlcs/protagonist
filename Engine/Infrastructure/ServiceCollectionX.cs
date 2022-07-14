@@ -8,6 +8,8 @@ using DLCS.Repository;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
+using DLCS.Repository.Strategy;
+using DLCS.Repository.Strategy.DependencyInjection;
 using Engine.Ingest;
 using Engine.Ingest.Handlers;
 using Engine.Ingest.Workers;
@@ -65,7 +67,17 @@ public static class ServiceCollectionX
                 AssetFamily.Timebased => throw new NotImplementedException("Not yet"),
                 AssetFamily.File => throw new NotImplementedException("File shouldn't be here"),
                 _ => throw new KeyNotFoundException("Attempt to resolve ingestor handler for unknown family")
-            });
+            })
+            .AddScoped<AssetToDisk>()
+            //.AddScoped<AssetToS3>()
+            .AddTransient<AssetMoverResolver>(provider => t => t switch
+            {
+                AssetMoveType.Disk => provider.GetRequiredService<AssetToDisk>(),
+                AssetMoveType.ObjectStore => throw new NotImplementedException("Not yet"),
+                // AssetMoveType.ObjectStore => provider.GetService<AssetToS3>(),
+                _ => throw new NotImplementedException()
+            })
+            .AddOriginStrategies();
 
     /// <summary>
     /// Add all dataaccess dependencies, including repositories and DLCS context 

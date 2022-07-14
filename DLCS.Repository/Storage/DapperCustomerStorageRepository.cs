@@ -64,7 +64,12 @@ FROM public.""StoragePolicies""  WHERE ""Id""=@Id;";
 
             return customerStorage;
         }
-        
+
+        public Task<bool> VerifyStoragePolicyBySize(int customer, long proposedNewFileSize, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
         private const string CustomerStorageSqlBase = @"SELECT ""Customer"", ""StoragePolicy"", 
 ""NumberOfStoredImages"", ""TotalSizeOfStoredImages"", ""TotalSizeOfThumbnails"", ""LastCalculated"", ""Space"" 
 FROM public.""CustomerStorage""  WHERE ""Customer""=@Customer;";

@@ -1,5 +1,6 @@
 ﻿using DLCS.Repository.Caching;
 using Engine.Infrastructure;
+using Engine.Settings;
 using Serilog;
 
 public class Startup
@@ -17,6 +18,7 @@ public class Startup
     {
         var cachingSection = configuration.GetSection("Caching");
         services
+            .Configure<EngineSettings>(configuration)
             .Configure<CacheSettings>(cachingSection);
         
         services
