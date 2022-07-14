@@ -5,7 +5,7 @@ using Xunit;
 
 namespace DLCS.Core.Tests.Strings
 {
-    public class StringX
+    public class StringXTests
     {
         [Theory]
         [InlineData("")]
@@ -96,6 +96,27 @@ namespace DLCS.Core.Tests.Strings
 
             // Assert
             result.Should().Be(expected);
+        }
+        
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        public void SplitSeparatedString_ReturnsEmptyList_IfNullOrEmpty(string str)
+            => str.SplitSeparatedString("|").Should().BeEmpty();
+
+        [Fact]
+        public void SplitSeparatedString_SplitsStringCorrectly()
+        {
+            // Arrange
+            const string original = "foo|bar||baz";
+            var expected = new[] {"foo", "bar", "baz"};
+            
+            // Act
+            var actual = original.SplitSeparatedString("|");
+            
+            // Assert
+            actual.Should().BeEquivalentTo(expected);
         }
     }
 }

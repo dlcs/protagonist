@@ -33,6 +33,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Collections" />
       <Folder Include="Strategy" />
     </ItemGroup>
 
