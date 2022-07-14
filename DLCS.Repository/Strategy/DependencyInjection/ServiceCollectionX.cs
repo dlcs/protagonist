@@ -33,10 +33,10 @@ namespace DLCS.Repository.Strategy.DependencyInjection
                 .AddSingleton<FileSaver>()
                 .AddSingleton<OriginStrategyResolver>(provider => strategy => strategy switch
                 {
-                    OriginStrategyType.Default => provider.GetService<DefaultOriginStrategy>(),
-                    OriginStrategyType.BasicHttp => provider.GetService<BasicHttpAuthOriginStrategy>(),
-                    OriginStrategyType.S3Ambient => provider.GetService<S3AmbientOriginStrategy>(),
-                    OriginStrategyType.SFTP => provider.GetService<SftpOriginStrategy>(),
+                    OriginStrategyType.Default => provider.GetRequiredService<DefaultOriginStrategy>(),
+                    OriginStrategyType.BasicHttp => provider.GetRequiredService<BasicHttpAuthOriginStrategy>(),
+                    OriginStrategyType.S3Ambient => provider.GetRequiredService<S3AmbientOriginStrategy>(),
+                    OriginStrategyType.SFTP => provider.GetRequiredService<SftpOriginStrategy>(),
                     _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, null)
                 });
             

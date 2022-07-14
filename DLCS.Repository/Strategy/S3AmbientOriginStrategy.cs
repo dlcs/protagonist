@@ -16,6 +16,8 @@ namespace DLCS.Repository.Strategy
     {
         private readonly IBucketReader bucketReader;
         private readonly ILogger<S3AmbientOriginStrategy> logger;
+        
+        public OriginStrategyType Strategy => OriginStrategyType.S3Ambient;
 
         public S3AmbientOriginStrategy(IBucketReader bucketReader, ILogger<S3AmbientOriginStrategy> logger)
         {
@@ -31,7 +33,7 @@ namespace DLCS.Repository.Strategy
             try
             {
                 var regionalisedBucket = RegionalisedObjectInBucket.Parse(origin);
-                var response = await bucketReader.GetObjectFromBucket(regionalisedBucket);
+                var response = await bucketReader.GetObjectFromBucket(regionalisedBucket, cancellationToken);
                 var originResponse = CreateOriginResponse(response);
                 return originResponse;
             }

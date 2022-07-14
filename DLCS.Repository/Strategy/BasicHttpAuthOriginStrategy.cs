@@ -21,6 +21,8 @@ namespace DLCS.Repository.Strategy
         private readonly ICredentialsRepository credentialsRepository;
         private readonly ILogger<BasicHttpAuthOriginStrategy> logger;
         
+        public OriginStrategyType Strategy => OriginStrategyType.BasicHttp;
+        
         public BasicHttpAuthOriginStrategy(
             IHttpClientFactory httpClientFactory,
             ICredentialsRepository credentialsRepository,
