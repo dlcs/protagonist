@@ -13,6 +13,7 @@ using DLCS.AWS.Settings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
+using DLCS.Model.Storage;
 using FakeItEasy;
 using FizzWare.NBuilder;
 using FluentAssertions;

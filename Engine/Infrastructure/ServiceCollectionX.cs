@@ -2,9 +2,11 @@ using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Thumbs;
 using DLCS.Model.Customers;
 using DLCS.Model.Policies;
 using DLCS.Repository;
+using DLCS.Repository.Assets.Thumbs;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
@@ -64,7 +66,7 @@ public static class ServiceCollectionX
         services
             .AddScoped<IAssetIngester, AssetIngester>()
             .AddTransient<ImageIngesterWorker>()
-            
+            .AddSingleton<IThumbLayoutManager, ThumbLayoutManager>()
             .AddTransient<IngestorResolver>(provider => family => family switch
             {
                 AssetFamily.Image => provider.GetRequiredService<ImageIngesterWorker>(),

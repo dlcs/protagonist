@@ -1,9 +1,5 @@
-﻿using System;
-using System.IO;
-using System.Net;
+﻿using System.Net;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -12,7 +8,6 @@ using DLCS.AWS.S3.Models;
 using DLCS.Core.Exceptions;
 using FakeItEasy;
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 

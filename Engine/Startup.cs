@@ -24,7 +24,7 @@ public class Startup
         services
             .AddAws(configuration, webHostEnvironment)
             .AddQueueMonitoring()
-            .AddAssetIngestion()
+            .AddAssetIngestion(configuration.Get<EngineSettings>())
             .AddDataAccess(configuration)
             .AddCaching(cachingSection.Get<CacheSettings>())
             .ConfigureHealthChecks();

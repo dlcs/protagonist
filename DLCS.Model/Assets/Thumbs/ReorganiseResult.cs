@@ -1,4 +1,4 @@
-﻿namespace Thumbs.Reorganising
+﻿namespace DLCS.Model.Assets.Thumbs
 {
     public enum ReorganiseResult
     {

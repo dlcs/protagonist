@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using DLCS.Core.Streams;
+using Newtonsoft.Json;
 
 namespace DLCS.AWS.S3.Models;
 
@@ -16,7 +17,7 @@ public static class ObjectFromBucketX
         where T : class
     {
         await using var stream = objectFromBucket.Stream;
-        if (stream == null || stream == Stream.Null)
+        if (stream.IsNull())
         {
             return null;
         }

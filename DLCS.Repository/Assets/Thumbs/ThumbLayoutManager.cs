@@ -4,36 +4,37 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Thumbs;
 using DLCS.Model.Policies;
-using DLCS.Repository.Assets;
 using IIIF;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Thumbs.Reorganising
+namespace DLCS.Repository.Assets.Thumbs
 {
-    public class ThumbReorganiser : IThumbReorganiser
+    public class ThumbLayoutManager : IThumbLayoutManager
     {
         private static readonly Regex ExistingThumbsRegex =
             new(@".*\/full\/(\d+,\d+)\/.*", RegexOptions.Compiled);
 
         private readonly IBucketReader bucketReader;
         private readonly IBucketWriter bucketWriter;
-        private readonly ILogger<ThumbReorganiser> logger;
+        private readonly ILogger<ThumbLayoutManager> logger;
         private readonly IAssetRepository assetRepository;
         private readonly IPolicyRepository policyRepository;
         private readonly IStorageKeyGenerator storageKeyGenerator;
         private readonly AsyncKeyedLock asyncLocker = new();
         private static readonly Regex BoundedThumbRegex = new("^[0-9]+.jpg$");
 
-        public ThumbReorganiser(
+        public ThumbLayoutManager(
             IBucketReader bucketReader,
             IBucketWriter bucketWriter,
-            ILogger<ThumbReorganiser> logger,
+            ILogger<ThumbLayoutManager> logger,
             IAssetRepository assetRepository,
             IPolicyRepository policyRepository,
             IStorageKeyGenerator storageKeyGenerator)
@@ -106,6 +107,49 @@ namespace Thumbs.Reorganising
             await CleanupRootConfinedSquareThumbs(rootKey, keysInTargetBucket);
 
             return ReorganiseResult.Reorganised;
+        }
+
+        public async Task CreateNewThumbs(Asset asset, IReadOnlyList<ImageOnDisk> thumbsToProcess)
+        {
+            if (thumbsToProcess.Count == 0) return;
+            var assetId = asset.GetAssetId();
+            
+            using var processLock = await asyncLocker.LockAsync($"create:{assetId}");
+            var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);
+            var maxAvailableThumb = GetMaxAvailableThumb(asset, asset.FullThumbnailPolicy);
+            
+            // this is the largest thumb, regardless of being available or not.
+            var largestThumb = asset.FullThumbnailPolicy.SizeList[0];
+            
+            foreach (var thumbCandidate in thumbsToProcess)
+            {
+                var thumb = new Size(thumbCandidate.Width, thumbCandidate.Height);
+                bool isOpen;
+
+                if (thumb.IsConfinedWithin(maxAvailableThumb))
+                {
+                    thumbnailSizes.AddOpen(thumb);
+                    isOpen = true;
+                }
+                else
+                {
+                    thumbnailSizes.AddAuth(thumb);
+                    isOpen = false;
+                }
+
+                var currentMax = thumb.MaxDimension;
+                if (currentMax == largestThumb)
+                {
+                    // The largest thumb always goes to low.jpg as well as the 'normal' place
+                    var lowKey = storageKeyGenerator.GetLargestThumbnailLocation(assetId);
+                    await bucketWriter.WriteFileToBucket(lowKey, thumbCandidate.Path, MIMEHelper.JPEG);
+                }
+
+                var thumbKey = storageKeyGenerator.GetThumbnailLocation(assetId, thumb.MaxDimension, isOpen);
+                await bucketWriter.WriteFileToBucket(thumbKey, thumbCandidate.Path, MIMEHelper.JPEG);
+            }
+            
+            await CreateSizesJson(assetId, thumbnailSizes);
         }
 
         private bool HasCurrentLayout(AssetId assetId, string[] keysInTargetBucket)

@@ -4,11 +4,12 @@ using DLCS.AWS.Settings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
+using DLCS.Model.Storage;
+using DLCS.Repository.Assets.Thumbs;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Thumbs.Reorganising;
 
 namespace Thumbs.Tests
 {
@@ -18,7 +19,7 @@ namespace Thumbs.Tests
         private readonly IAssetRepository assetRepository;
         private readonly IStorageKeyGenerator storageKeyGenerator;
         private readonly IPolicyRepository thumbPolicyRepository;
-        private readonly ThumbReorganiser sut;
+        private readonly ThumbLayoutManager sut;
         private readonly IBucketWriter bucketWriter;
 
         public ThumbReorganiserTests()
@@ -29,7 +30,7 @@ namespace Thumbs.Tests
             thumbPolicyRepository = A.Fake<IPolicyRepository>();
             storageKeyGenerator = new S3StorageKeyGenerator(
                 Options.Create(new AWSSettings { S3 = new S3Settings { ThumbsBucket = "the-bucket" } }));
-            sut = new ThumbReorganiser(bucketReader, bucketWriter, new NullLogger<ThumbReorganiser>(), assetRepository,
+            sut = new ThumbLayoutManager(bucketReader, bucketWriter, new NullLogger<ThumbLayoutManager>(), assetRepository,
                 thumbPolicyRepository, storageKeyGenerator);
         }
 

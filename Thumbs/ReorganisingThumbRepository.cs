@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Repository.Assets.Thumbs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Thumbs.Reorganising;
 using Thumbs.Settings;
 
 namespace Thumbs
@@ -16,18 +16,18 @@ namespace Thumbs
     {
         private readonly IThumbRepository wrappedThumbRepository;
         private readonly IOptionsMonitor<ThumbsSettings> settings;
-        private readonly IThumbReorganiser thumbReorganiser;
+        private readonly IThumbLayoutManager thumbLayoutManager;
         private readonly ILogger<ReorganisingThumbRepository> logger;
 
         public ReorganisingThumbRepository(
             IThumbRepository wrappedThumbRepository,
             ILogger<ReorganisingThumbRepository> logger, 
-            IThumbReorganiser thumbReorganiser, 
+            IThumbLayoutManager thumbLayoutManager, 
             IOptionsMonitor<ThumbsSettings> settings)
         {
             this.wrappedThumbRepository = wrappedThumbRepository;
             this.logger = logger;
-            this.thumbReorganiser = thumbReorganiser;
+            this.thumbLayoutManager = thumbLayoutManager;
             this.settings = settings;
         }
         
@@ -51,7 +51,7 @@ namespace Thumbs
                 return Task.FromResult(ReorganiseResult.Unknown);
             }
 
-            return thumbReorganiser.EnsureNewLayout(assetId);
+            return thumbLayoutManager.EnsureNewLayout(assetId);
         }
     }
 }

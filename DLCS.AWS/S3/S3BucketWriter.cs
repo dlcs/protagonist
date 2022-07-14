@@ -1,8 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Amazon.S3;
+﻿using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.AWS.S3.Models;
 using Microsoft.Extensions.Logging;
@@ -112,7 +108,7 @@ namespace DLCS.AWS.S3
             };
 
             if (!string.IsNullOrEmpty(contentType)) putRequest.ContentType = contentType;
-
+            
             PutObjectResponse? response = await WriteToBucketInternal(putRequest);
             return response != null;
         }

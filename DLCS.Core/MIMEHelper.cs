@@ -30,6 +30,11 @@ public class MIMEHelper
     /// Alternative MIME type for binary file (application/octet-stream)
     /// </summary>
     public const string ApplicationOctet = "application/octet-stream";
+    
+    /// <summary>
+    /// MIME type for JPEG (image/jpeg)
+    /// </summary>
+    public static string? JPEG = "image/jpeg";
 
     // Forward = contentType:extension
     // Reverse = extension:contentType
@@ -49,7 +54,7 @@ public class MIMEHelper
             { "image/ief", "ief" },
             { JP2, "jp2" },
             { JPX, "jp2" },
-            { "image/jpeg", "jpg" },
+            { JPEG, "jpg" },
             { "image/jpg", "jpg" }, // common typo that is probably worth supporting even though it's invalid
             { "image/pict", "pic" },
             { "image/png", "png" },

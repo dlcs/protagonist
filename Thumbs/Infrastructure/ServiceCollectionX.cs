@@ -4,6 +4,7 @@ using DLCS.AWS.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Assets.Thumbs;
 using DLCS.Repository.Policies;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Hosting;
@@ -11,7 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
-using Thumbs.Reorganising;
 using Thumbs.Settings;
 
 namespace Thumbs.Infrastructure
@@ -38,7 +38,7 @@ namespace Thumbs.Infrastructure
                         ActivatorUtilities.CreateInstance<ReorganisingThumbRepository>(
                             provider,
                             provider.GetService<ThumbRepository>()!))
-                    .AddSingleton<IThumbReorganiser, ThumbReorganiser>();
+                    .AddSingleton<IThumbLayoutManager, ThumbLayoutManager>();
             }
             else
             {

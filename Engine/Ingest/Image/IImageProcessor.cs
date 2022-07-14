@@ -4,6 +4,7 @@ using DLCS.Core;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Thumbs;
 using DLCS.Model.Customers;
 using DLCS.Model.Templates;
 using DLCS.Repository.Entities;
@@ -39,20 +40,20 @@ public class AppetiserClient : IImageProcessor
     private readonly IBucketWriter bucketWriter;
 
     private readonly IStorageKeyGenerator storageKeyGenerator;
-    //private readonly IThumbLayoutManager thumbLayoutManager;
+    private readonly IThumbLayoutManager thumbLayoutManager;
 
     public AppetiserClient(
         HttpClient httpClient,
         IBucketWriter bucketWriter,
         IStorageKeyGenerator storageKeyGenerator,
-        //IThumbLayoutManager thumbLayoutManager,
+        IThumbLayoutManager thumbLayoutManager,
         IOptionsMonitor<EngineSettings> engineOptionsMonitor,
         ILogger<AppetiserClient> logger)
     {
         this.httpClient = httpClient;
         this.bucketWriter = bucketWriter;
         this.storageKeyGenerator = storageKeyGenerator;
-        //this.thumbLayoutManager = thumbLayoutManager;
+        this.thumbLayoutManager = thumbLayoutManager;
         engineSettings = engineOptionsMonitor.CurrentValue;
         this.logger = logger;
     }
@@ -179,7 +180,7 @@ public class AppetiserClient : IImageProcessor
 
         await CreateNewThumbs(context, responseModel);
 
-        ImageStorage imageStorage = null; // GetImageStorage(context, responseModel);
+        ImageStorage imageStorage = GetImageStorage(context, responseModel);
 
         return (imageLocation, imageStorage);
     }
@@ -230,11 +231,9 @@ public class AppetiserClient : IImageProcessor
 
     private async Task CreateNewThumbs(IngestionContext context, AppetiserResponseModel responseModel)
     {
-        var rootObject = storageKeyGenerator.GetThumbnailsRoot(context.AssetId);
-
         SetThumbsOnDiskLocation(context, responseModel);
 
-        //await thumbLayoutManager.CreateNewThumbs(context.Asset, responseModel.Thumbs, rootObject);
+        await thumbLayoutManager.CreateNewThumbs(context.Asset, responseModel.Thumbs.ToList());
     }
 
     private void SetThumbsOnDiskLocation(IngestionContext context, AppetiserResponseModel responseModel)
@@ -247,6 +246,37 @@ public class AppetiserClient : IImageProcessor
             var key = thumb.Path.EverythingAfterLast('/');
             thumb.Path = string.Concat(partialTemplate, key);
         }
+    }
+    
+    private ImageStorage GetImageStorage(IngestionContext context, AppetiserResponseModel responseModel)
+    {
+        var asset = context.Asset;
+
+        long GetFileSize(string path)
+        {
+            try
+            {
+                var fi = new FileInfo(path);
+                return fi.Length;
+            }
+            catch (Exception ex)
+            {
+                logger.LogInformation(ex, "Error getting fileSize for {Path}", path);
+                return 0;
+            }
+        }
+
+        var thumbSizes = responseModel.Thumbs.Sum(t => GetFileSize(t.Path));
+
+        return new ImageStorage
+        {
+            Id = asset.Id,
+            Customer = asset.Customer,
+            Space = asset.Space,
+            LastChecked = DateTime.UtcNow,
+            Size = context.AssetFromOrigin.AssetSize,
+            ThumbnailSize = thumbSizes
+        };
     }
 }
 
@@ -280,11 +310,4 @@ public class AppetiserRequestModel
     public string Optimisation { get; set; }
     public string Operation { get; set; }
     public string Origin { get; set; }
-}
-
-public class ImageOnDisk
-{
-    public string Path { get; set; }
-    public int Height { get; set; }
-    public int Width { get; set; }
 }

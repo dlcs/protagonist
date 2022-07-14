@@ -6,6 +6,7 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Customers;
+using DLCS.Model.Storage;
 using DLCS.Repository.Strategy;
 using FakeItEasy;
 using FluentAssertions;
