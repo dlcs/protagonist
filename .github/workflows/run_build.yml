@@ -66,6 +66,18 @@ jobs:
           context: "."
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+  build-push-engine:
+    runs-on: ubuntu-latest
+    needs: test-dotnet
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/docker-build-and-push
+        with:
+          image-name: "engine"
+          dockerfile: "Dockerfile.Engine"
+          context: "."
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
   build-push-compositehandler:
     runs-on: ubuntu-latest
     needs: test-compositehandler

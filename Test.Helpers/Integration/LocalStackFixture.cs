@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
+using Amazon.SQS;
 using DotNet.Testcontainers.Containers.Builders;
 using DotNet.Testcontainers.Containers.Modules;
 using Xunit;
@@ -16,11 +17,20 @@ namespace Test.Helpers.Integration
     {
         private readonly TestcontainersContainer localStackContainer;
         private const int LocalStackContainerPort = 4566;
+        
+        // S3 Buckets
         public const string OutputBucketName = "protagonist-output";
         public const string ThumbsBucketName = "protagonist-thumbs";
         public const string StorageBucketName = "protagonist-storage";
+        
+        // SQS Queues
+        public const string ImageQueueName = "protagonist-image";
+        public const string PriorityImageQueueName = "protagonist-priority-image";
+        public const string TimebasedQueueName = "protagonist-timebased";
+        public const string TranscodeCompleteQueueName = "protagonist-transcode-complete";
 
         public Func<IAmazonS3> AWSS3ClientFactory { get; private set; }
+        public Func<IAmazonSQS> AWSSQSClientFactory { get; private set; }
 
         public LocalStackFixture()
         {
@@ -30,7 +40,7 @@ namespace Test.Helpers.Integration
                 .WithCleanUp(true)
                 .WithLabel("protagonist_test", "True")
                 .WithEnvironment("DEFAULT_REGION", "eu-west-1")
-                .WithEnvironment("SERVICES", "s3")
+                .WithEnvironment("SERVICES", "s3,sqs")
                 .WithEnvironment("DOCKER_HOST", "unix:///var/run/docker.sock")
                 .WithEnvironment("DEBUG", "1")
                 .WithPortBinding(0, LocalStackContainerPort);
@@ -65,6 +75,15 @@ namespace Test.Helpers.Integration
             };
 
             AWSS3ClientFactory = () => new AmazonS3Client(new BasicAWSCredentials("foo", "bar"), s3Config);
+            
+            var sqsConfig = new AmazonSQSConfig
+            {
+                RegionEndpoint = RegionEndpoint.EUWest1,
+                UseHttp = true,
+                ServiceURL = localStackUrl
+            };
+
+            AWSSQSClientFactory = () => new AmazonSQSClient(new BasicAWSCredentials("foo", "bar"), sqsConfig);
         }
         
         private async Task SeedAwsResources()
@@ -74,6 +93,13 @@ namespace Test.Helpers.Integration
             await amazonS3Client.PutBucketAsync(OutputBucketName);
             await amazonS3Client.PutBucketAsync(ThumbsBucketName);
             await amazonS3Client.PutBucketAsync(StorageBucketName);
+            
+            // And SQS queues
+            var amazonSQSClient = AWSSQSClientFactory();
+            await amazonSQSClient.CreateQueueAsync(ImageQueueName);
+            await amazonSQSClient.CreateQueueAsync(PriorityImageQueueName);
+            await amazonSQSClient.CreateQueueAsync(TimebasedQueueName);
+            await amazonSQSClient.CreateQueueAsync(TranscodeCompleteQueueName);
         }
     }
 }

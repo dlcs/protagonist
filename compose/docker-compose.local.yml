@@ -57,7 +57,7 @@ services:
   #   ports:
   #     - "4566:4566"
   #   environment:
-  #     - SERVICES=s3
+  #     - SERVICES=s3,sqs
   #     - HOSTNAME_EXTERNAL=localstack
   #     - DATA_DIR=/tmp/localstack/data
   #   volumes:
