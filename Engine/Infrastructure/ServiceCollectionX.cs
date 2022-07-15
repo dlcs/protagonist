@@ -1,6 +1,7 @@
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
+using DLCS.Core.FileSystem;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Thumbs;
 using DLCS.Model.Customers;
@@ -15,6 +16,7 @@ using DLCS.Repository.Strategy.DependencyInjection;
 using Engine.Ingest;
 using Engine.Ingest.Handlers;
 using Engine.Ingest.Image;
+using Engine.Ingest.Image.Appetiser;
 using Engine.Ingest.Workers;
 using Engine.Messaging;
 using Engine.Settings;
@@ -74,6 +76,7 @@ public static class ServiceCollectionX
                 AssetFamily.File => throw new NotImplementedException("File shouldn't be here"),
                 _ => throw new KeyNotFoundException("Attempt to resolve ingestor handler for unknown family")
             })
+            .AddSingleton<IFileSystem, FileSystem>()
             .AddScoped<AssetToDisk>()
             //.AddScoped<AssetToS3>()
             .AddTransient<AssetMoverResolver>(provider => t => t switch

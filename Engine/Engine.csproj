@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <PackageReference Include="Amazon.Extensions.Configuration.SystemsManager" Version="2.1.0" />
+        <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.9" />
         <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
         <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.150" />
         <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />

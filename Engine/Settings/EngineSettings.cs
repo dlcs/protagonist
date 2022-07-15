@@ -7,8 +7,7 @@ public class EngineSettings
     /// <summary>
     /// A collection of customer-specific overrides, keyed by customerId.
     /// </summary> 
-    public Dictionary<string, CustomerOverridesSettings> CustomerOverrides { get; set; } =
-        new Dictionary<string, CustomerOverridesSettings>();
+    public Dictionary<string, CustomerOverridesSettings> CustomerOverrides { get; set; } = new();
     
     /// <summary>
     /// Get CustomerSpecificSettings, if found. 

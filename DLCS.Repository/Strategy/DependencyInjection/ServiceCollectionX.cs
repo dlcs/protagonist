@@ -30,7 +30,7 @@ namespace DLCS.Repository.Strategy.DependencyInjection
                 .AddSingleton<BasicHttpAuthOriginStrategy>()
                 .AddSingleton<SftpOriginStrategy>()
                 .AddScoped<OriginFetcher>()
-                .AddSingleton<FileSaver>()
+                .AddSingleton<IFileSaver, FileSaver>()
                 .AddSingleton<OriginStrategyResolver>(provider => strategy => strategy switch
                 {
                     OriginStrategyType.Default => provider.GetRequiredService<DefaultOriginStrategy>(),

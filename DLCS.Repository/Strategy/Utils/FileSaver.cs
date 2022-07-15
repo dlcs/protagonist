@@ -8,7 +8,21 @@ using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Strategy.Utils
 {
-    public class FileSaver
+    public interface IFileSaver
+    {
+        /// <summary>
+        /// Save asset from <see cref="OriginResponse"/> to specified file location.
+        /// </summary>
+        /// <param name="assetId">Id of asset being saved</param>
+        /// <param name="originResponse"><see cref="OriginResponse"/> object containing data stream</param>
+        /// <param name="destination">Location to store binary to, will be deleted if already exists</param>
+        /// <param name="cancellationToken">Async cancellationToken</param>
+        /// <returns>ContentLength</returns>
+        Task<long> SaveResponseToDisk(AssetId assetId, OriginResponse originResponse, string destination,
+            CancellationToken cancellationToken = default);
+    }
+
+    public class FileSaver : IFileSaver
     {
         private readonly ILogger<FileSaver> logger;
 

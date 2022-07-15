@@ -17,13 +17,13 @@ public class AssetToDisk : IAssetMover
 {
     private readonly OriginFetcher originFetcher;
     private readonly IStorageRepository storageRepository;
-    private readonly FileSaver fileSaver;
+    private readonly IFileSaver fileSaver;
     private readonly ILogger<AssetToDisk> logger;
 
     public AssetToDisk(
         OriginFetcher originFetcher,
         IStorageRepository storageRepository,
-        FileSaver fileSaver,
+        IFileSaver fileSaver,
         ILogger<AssetToDisk> logger)
     {
         this.originFetcher = originFetcher;

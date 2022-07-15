@@ -17,17 +17,17 @@ public class AssetToDiskTests
     private readonly AssetToDisk sut;
     private readonly IOriginStrategy customerOriginStrategy;
     private readonly IStorageRepository customerStorageRepository;
+    private readonly IFileSaver fileSaver;
 
     public AssetToDiskTests()
     {
         customerStorageRepository = A.Fake<IStorageRepository>();
+        fileSaver = A.Fake<IFileSaver>();
 
         // For unit-test only s3ambient will be mocked
         customerOriginStrategy = A.Fake<IOriginStrategy>();
         OriginStrategyResolver resolver = _ => customerOriginStrategy;
         
-        var fileSaver = new FileSaver(new NullLogger<FileSaver>());
-
         var originFetched = new OriginFetcher(null, resolver);
 
         sut = new AssetToDisk(originFetched, customerStorageRepository, fileSaver, new NullLogger<AssetToDisk>());
@@ -85,13 +85,13 @@ public class AssetToDiskTests
     }
 
     [Fact]
-    [Trait("Requires", "FileAccess")]
     public async Task CopyAssetFromOrigin_SavesFileToDisk_IfNoContentLength()
     {
         // Arrange
         var destination = Path.Join(".", "2", "1", "godzilla");
         const string origin = "http://test-origin";
         var asset = new Asset { Id = "/2/1/godzilla", Customer = 2, Space = 1, Origin = origin };
+        AssetId assetId = AssetId.FromString(asset.Id);
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient };
 
         var responseStream = "{\"foo\":\"bar\"}".ToMemoryStream();
@@ -99,31 +99,33 @@ public class AssetToDiskTests
         A.CallTo(() =>
                 customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
             .Returns(originResponse);
+        const long fileLength = 224L;
+        A.CallTo(() => fileSaver.SaveResponseToDisk(A<AssetId>._, originResponse, A<string>._, A<CancellationToken>._))
+            .Returns(fileLength);
 
-        Directory.CreateDirectory(Path.Join(".", "2", "1", "godzilla"));
         var expectedOutput = Path.Join(".", "2", "1", "godzilla", "godzilla.file");
 
         // Act
         var response = await sut.CopyAsset(asset, destination, false, cos);
 
         // Assert
-        File.Exists(expectedOutput).Should().BeTrue();
-        File.Delete(expectedOutput);
+        A.CallTo(() => fileSaver.SaveResponseToDisk(A<AssetId>.That.Matches(a => a == assetId),
+            originResponse, A<string>._, A<CancellationToken>._)).MustHaveHappened();
         response.Location.Should().Be(expectedOutput);
         response.ContentType.Should().Be("application/json");
-        response.AssetSize.Should().BeGreaterThan(0);
-        response.AssetId.Should().Be(AssetId.FromString(asset.Id));
+        response.AssetSize.Should().Be(fileLength);
+        response.AssetId.Should().Be(assetId);
         response.CustomerOriginStrategy.Should().Be(cos);
     }
 
     [Fact]
-    [Trait("Requires", "FileAccess")]
     public async Task CopyAssetFromOrigin_SavesFileToDisk_IfContentLength()
     {
         // Arrange
         var destination = Path.Join(".", "2", "1", "godzilla1");
         const string origin = "http://test-origin";
         var asset = new Asset { Id = "/2/1/godzilla1", Customer = 2, Space = 1, Origin = origin };
+        AssetId assetId = AssetId.FromString(asset.Id);
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient };
 
         var responseStream = "{\"foo\":\"bar\"}".ToMemoryStream();
@@ -133,20 +135,22 @@ public class AssetToDiskTests
         A.CallTo(() =>
                 customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
             .Returns(originResponse);
-
-        Directory.CreateDirectory(Path.Join(".", "2", "1", "godzilla1"));
+        const long fileLength = 224L;
+        A.CallTo(() => fileSaver.SaveResponseToDisk(A<AssetId>._, originResponse, A<string>._, A<CancellationToken>._))
+            .Returns(fileLength);
+        
         var expectedOutput = Path.Join(".", "2", "1", "godzilla1", "godzilla1.file");
 
         // Act
         var response = await sut.CopyAsset(asset, destination, false, cos);
 
         // Assert
-        File.Exists(expectedOutput).Should().BeTrue();
-        File.Delete(expectedOutput);
+        A.CallTo(() => fileSaver.SaveResponseToDisk(A<AssetId>.That.Matches(a => a == assetId),
+            originResponse, A<string>._, A<CancellationToken>._)).MustHaveHappened();
         response.Location.Should().Be(expectedOutput);
         response.ContentType.Should().Be("application/json");
-        response.AssetSize.Should().Be(8);
-        response.AssetId.Should().Be(AssetId.FromString(asset.Id));
+        response.AssetSize.Should().Be(fileLength);
+        response.AssetId.Should().Be(assetId);
         response.CustomerOriginStrategy.Should().Be(cos);
     }
 
@@ -154,7 +158,6 @@ public class AssetToDiskTests
     [InlineData("image/jpg", "jpg")]
     [InlineData("application/pdf", "pdf")]
     [InlineData("gibberish", "file")]
-    [Trait("Requires", "FileAccess")]
     public async Task CopyAssetFromOrigin_SetsExtension_BasedOnFileType(string contentType, string extension)
     {
         // Arrange
@@ -171,15 +174,10 @@ public class AssetToDiskTests
                 customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
             .Returns(originResponse);
 
-        Directory.CreateDirectory(Path.Join(".", "2", "1", "godzilla.jp2"));
-        var expectedOutput = Path.Join(".", "2", "1", "godzilla.jp2", $"godzilla.jp2.{extension}");
-
         // Act
         var response = await sut.CopyAsset(asset, destination, false, cos);
 
         // Assert
-        File.Exists(expectedOutput).Should().BeTrue();
-        File.Delete(expectedOutput);
         response.ContentType.Should().Be(contentType);
     }
 
@@ -187,7 +185,6 @@ public class AssetToDiskTests
     [InlineData("")]
     [InlineData("application/octet-stream")]
     [InlineData("binary/octet-stream")]
-    [Trait("Requires", "FileAccess")]
     public async Task CopyAssetFromOrigin_SetsContentType_IfUnknownOrBinary_AssetIdIsJp2(string contentType)
     {
         // Arrange
@@ -204,19 +201,14 @@ public class AssetToDiskTests
                 customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
             .Returns(originResponse);
 
-        Directory.CreateDirectory(Path.Join(".", "2", "1", "godzilla.jp2"));
-        var expectedOutput = Path.Join(".", "2", "1", "godzilla.jp2", "godzilla.jp2.jp2");
-
         // Act
         var response = await sut.CopyAsset(asset, destination, false, cos);
 
         // Assert
-        File.Delete(expectedOutput);
         response.ContentType.Should().Be("image/jp2");
     }
 
     [Theory]
-    [Trait("Requires", "FileAccess")]
     [InlineData(true)]
     [InlineData(false)]
     public async Task CopyAssetFromOrigin_VerifiesFileSize(bool isValid)
@@ -233,9 +225,6 @@ public class AssetToDiskTests
                 customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
             .Returns(originResponse);
 
-        Directory.CreateDirectory(Path.Join(".", "2", "1", "godzilla"));
-        var expectedOutput = Path.Join(".", "2", "1", "godzilla", "godzilla.file");
-
         A.CallTo(() => customerStorageRepository.VerifyStoragePolicyBySize(2, A<long>._, A<CancellationToken>._))
             .Returns(isValid);
 
@@ -243,8 +232,6 @@ public class AssetToDiskTests
         var response = await sut.CopyAsset(asset, destination, true, cos);
 
         // Assert
-        File.Exists(expectedOutput).Should().BeTrue();
-        File.Delete(expectedOutput);
         response.FileExceedsAllowance.Should().Be(!isValid);
     }
 }
