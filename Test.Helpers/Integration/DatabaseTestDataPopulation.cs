@@ -32,7 +32,10 @@ namespace Test.Helpers.Integration
             int num1 = 0,
             int num2 = 0,
             int num3 = 0,
-            bool notForDelivery = false)
+            bool notForDelivery = false,
+            int batch = 0,
+            long duration = 0,
+            bool ingesting = false)
             => assets.AddAsync(new Asset
             {
                 Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
@@ -41,7 +44,7 @@ namespace Test.Helpers.Integration
                 Reference1 = ref1, Reference2 = ref2, Reference3 = ref3,
                 NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
                 NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = "",
-                ImageOptimisationPolicy = "", Batch = 0, Ingesting = false
+                ImageOptimisationPolicy = "", Batch = batch, Ingesting = ingesting, Duration = duration
             });
 
         public static ValueTask<EntityEntry<AuthToken>> AddTestToken(this DbSet<AuthToken> authTokens,
@@ -113,5 +116,21 @@ namespace Test.Helpers.Integration
             Created = DateTime.UtcNow,
             Roles = string.Empty
         });
+        
+        public static ValueTask<EntityEntry<ImageLocation>> AddTestImageLocation(this DbSet<ImageLocation> locations,
+            string id, string s3 = "s3://wherever", string nas = "")
+            => locations.AddAsync(new ImageLocation { Id = id, S3 = s3, Nas = nas });
+        
+        public static ValueTask<EntityEntry<ImageStorage>> AddTestImageStorage(this DbSet<ImageStorage> storage,
+            string id, int space = 1, int customer = 99, long size = 123, long thumbSize = 10)
+            => storage.AddAsync(new ImageStorage
+            {
+                Id = id,
+                Customer = customer,
+                Space = space,
+                Size = size,
+                LastChecked = DateTime.UtcNow.AddDays(-7),
+                ThumbnailSize = thumbSize
+            });
     }
 }

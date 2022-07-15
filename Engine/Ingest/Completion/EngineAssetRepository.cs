@@ -1,3 +1,4 @@
+using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
@@ -29,9 +30,10 @@ public class EngineAssetRepository : IEngineAssetRepository
         this.logger = logger;
     }
 
-    public async Task<bool> UpdateIngestedAsset(Asset asset, ImageLocation? imageLocation, ImageStorage? imageStorage, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateIngestedAsset(Asset asset, ImageLocation? imageLocation, ImageStorage? imageStorage,
+        CancellationToken cancellationToken = default)
     {
-        var hasBatch = (asset.Batch ?? 0) == 0;
+        var hasBatch = (asset.Batch ?? 0) != 0;
 
         try
         {
@@ -40,11 +42,34 @@ public class EngineAssetRepository : IEngineAssetRepository
             {
                 await UpdateBatch(asset, cancellationToken);
             }
-            
+
             UpdateAsset(asset);
 
-            if (imageLocation != null) dlcsContext.ImageLocations.Attach(imageLocation);
-            if (imageStorage != null) dlcsContext.ImageStorages.Attach(imageStorage);
+            if (imageLocation != null)
+            {
+                if (await dlcsContext.ImageLocations.AnyAsync(l => l.Id == asset.Id, cancellationToken))
+                {
+                    dlcsContext.ImageLocations.Attach(imageLocation);
+                    dlcsContext.Entry(imageLocation).State = EntityState.Modified;
+                }
+                else
+                {
+                    dlcsContext.ImageLocations.Add(imageLocation);
+                }
+            }
+
+            if (imageStorage != null)
+            {
+                if (await dlcsContext.ImageStorages.AnyAsync(l => l.Id == asset.Id, cancellationToken))
+                {
+                    dlcsContext.ImageStorages.Attach(imageStorage);
+                    dlcsContext.Entry(imageStorage).State = EntityState.Modified;
+                }
+                else
+                {
+                    dlcsContext.ImageStorages.Add(imageStorage);
+                }
+            }
 
             return hasBatch
                 ? await BatchSave(asset.Batch!.Value, cancellationToken)
@@ -117,7 +142,12 @@ public class EngineAssetRepository : IEngineAssetRepository
         entry.Property(p => p.Error).IsModified = true;
         entry.Property(p => p.Ingesting).IsModified = true;
         entry.Property(p => p.Finished).IsModified = true;
-        
+
+        if (asset.MediaType.HasText())
+        {
+            entry.Property(p => p.MediaType).IsModified = true;
+        }
+
         // We only want to update a limited number of fields so read object + update those only
         /*var existingItem = await dlcsContext.Images.FindAsync(new object[] { asset.Id }, cancellationToken);
         existingItem.Width = asset.Width;
