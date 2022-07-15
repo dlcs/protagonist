@@ -1,7 +1,9 @@
-﻿using DLCS.Model.Assets;
+﻿using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Storage;
 using DLCS.Repository.Strategy;
+using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Repository.Strategy.Utils;
 using Engine.Ingest.Workers;
 using FakeItEasy;
@@ -10,7 +12,6 @@ using Test.Helpers;
 
 namespace Engine.Tests.Ingest.Workers;
 
-[Trait("Requires", "FileAccess")]
 public class AssetToDiskTests
 {
     private readonly AssetToDisk sut;
@@ -23,11 +24,13 @@ public class AssetToDiskTests
 
         // For unit-test only s3ambient will be mocked
         customerOriginStrategy = A.Fake<IOriginStrategy>();
-        A.CallTo(() => customerOriginStrategy.Strategy).Returns(OriginStrategyType.S3Ambient);
-        var originStrategies = new[] { customerOriginStrategy };
+        OriginStrategyResolver resolver = _ => customerOriginStrategy;
+        
         var fileSaver = new FileSaver(new NullLogger<FileSaver>());
 
-        sut = new AssetToDisk(originStrategies, customerStorageRepository, fileSaver, new NullLogger<AssetToDisk>());
+        var originFetched = new OriginFetcher(null, resolver);
+
+        sut = new AssetToDisk(originFetched, customerStorageRepository, fileSaver, new NullLogger<AssetToDisk>());
     }
 
     [Theory]
@@ -109,7 +112,7 @@ public class AssetToDiskTests
         response.Location.Should().Be(expectedOutput);
         response.ContentType.Should().Be("application/json");
         response.AssetSize.Should().BeGreaterThan(0);
-        response.AssetId.Should().Be(asset.Id);
+        response.AssetId.Should().Be(AssetId.FromString(asset.Id));
         response.CustomerOriginStrategy.Should().Be(cos);
     }
 
@@ -143,7 +146,7 @@ public class AssetToDiskTests
         response.Location.Should().Be(expectedOutput);
         response.ContentType.Should().Be("application/json");
         response.AssetSize.Should().Be(8);
-        response.AssetId.Should().Be(asset.Id);
+        response.AssetId.Should().Be(AssetId.FromString(asset.Id));
         response.CustomerOriginStrategy.Should().Be(cos);
     }
 

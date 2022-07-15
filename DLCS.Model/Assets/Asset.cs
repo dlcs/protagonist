@@ -118,11 +118,13 @@ namespace DLCS.Model.Assets
         /// <summary>
         /// Full thumbnail policy object for Asset
         /// </summary>
+        [NotMapped]
         public ThumbnailPolicy? FullThumbnailPolicy { get; private set; }
 
         /// <summary>
         /// Full image optimisation policy object for Asset
         /// </summary>
+        [NotMapped]
         public ImageOptimisationPolicy FullImageOptimisationPolicy { get; private set; } = new();
         
         public Asset WithThumbnailPolicy(ThumbnailPolicy? thumbnailPolicy)

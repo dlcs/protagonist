@@ -1,34 +1,38 @@
-﻿using DLCS.AWS.S3;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Thumbs;
 using DLCS.Model.Policies;
-using DLCS.Model.Storage;
 using DLCS.Repository.Assets.Thumbs;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Xunit;
 
-namespace Thumbs.Tests
+namespace DLCS.Repository.Tests.Assets.Thumbs
 {
-    public class ThumbReorganiserTests
+    public class ThumbLayoutManagerTests
     {
         private readonly IBucketReader bucketReader;
         private readonly IAssetRepository assetRepository;
-        private readonly IStorageKeyGenerator storageKeyGenerator;
         private readonly IPolicyRepository thumbPolicyRepository;
         private readonly ThumbLayoutManager sut;
         private readonly IBucketWriter bucketWriter;
 
-        public ThumbReorganiserTests()
+        public ThumbLayoutManagerTests()
         {
             bucketReader = A.Fake<IBucketReader>();
             bucketWriter = A.Fake<IBucketWriter>();
             assetRepository = A.Fake<IAssetRepository>();
             thumbPolicyRepository = A.Fake<IPolicyRepository>();
-            storageKeyGenerator = new S3StorageKeyGenerator(
+            IStorageKeyGenerator storageKeyGenerator = new S3StorageKeyGenerator(
                 Options.Create(new AWSSettings { S3 = new S3Settings { ThumbsBucket = "the-bucket" } }));
             sut = new ThumbLayoutManager(bucketReader, bucketWriter, new NullLogger<ThumbLayoutManager>(), assetRepository,
                 thumbPolicyRepository, storageKeyGenerator);

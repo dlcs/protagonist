@@ -1,16 +1,12 @@
 ﻿using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Amazon.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using FluentAssertions;
-using LazyCache;
-using LazyCache.Mocks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;

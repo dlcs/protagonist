@@ -18,7 +18,6 @@ namespace DLCS.Model.Assets.Thumbs
         /// </summary>
         /// <param name="asset">Asset thumbnails are for</param>
         /// <param name="thumbsToProcess">List of jpgs on disk that are to be copied to S3</param>
-        /// <param name="rootKey">Root S3 key</param>
         /// <returns></returns>
         Task CreateNewThumbs(Asset asset, IReadOnlyList<ImageOnDisk> thumbsToProcess);
     }

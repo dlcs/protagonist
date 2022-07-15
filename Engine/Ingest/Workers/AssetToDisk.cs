@@ -48,7 +48,8 @@ public class AssetToDisk : IAssetMover
         destinationTemplate.ThrowIfNullOrWhiteSpace(nameof(destinationTemplate));
 
         var originResponse =
-            await originFetcher.LoadAssetFromLocation(asset.GetAssetId(), asset.GetIngestOrigin(), cancellationToken);
+            await originFetcher.LoadAssetFromLocation(asset.GetAssetId(), asset.GetIngestOrigin(),
+                customerOriginStrategy, cancellationToken);
 
         if (originResponse == null || originResponse.Stream.IsNull())
         {

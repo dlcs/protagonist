@@ -37,9 +37,24 @@ namespace DLCS.Repository.Strategy.Utils
             var customerOriginStrategy =
                 await customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, location);
 
+            return await LoadAssetFromLocation(assetId, location, customerOriginStrategy, cancellationToken);
+        }
+        
+        /// <summary>
+        /// Get <see cref="OriginResponse"/> object for provided asset, loading from origin passed origin strategy
+        /// </summary>
+        /// <param name="assetId">Asset to load</param>
+        /// <param name="location">Location to load asset from</param>
+        /// <param name="customerOriginStrategy">OriginStrategy to use</param>
+        /// <param name="cancellationToken">Current cancellation token</param>
+        /// <returns><see cref="OriginResponse"/></returns>
+        public async Task<OriginResponse?> LoadAssetFromLocation(AssetId assetId, string location,
+            CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken)
+        {
             var originStrategy = originStrategyResolver(customerOriginStrategy.Strategy);
 
-            return await originStrategy.LoadAssetFromOrigin(assetId, location, customerOriginStrategy, cancellationToken);
+            return await originStrategy.LoadAssetFromOrigin(assetId, location, customerOriginStrategy,
+                cancellationToken);
         }
     }
 }
