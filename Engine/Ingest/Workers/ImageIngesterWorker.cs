@@ -3,6 +3,8 @@ using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
+using Engine.Ingest.Completion;
+using Engine.Ingest.Image;
 using Engine.Settings;
 using Microsoft.Extensions.Options;
 
@@ -11,17 +13,22 @@ namespace Engine.Ingest.Workers;
 public class ImageIngesterWorker : IAssetIngesterWorker
 {
     private readonly EngineSettings engineSettings;
+    private readonly IImageProcessor imageProcessor;
+    private readonly ImageIngestorCompletion imageCompletion;
     private readonly ILogger<ImageIngesterWorker> logger;
     private readonly IAssetMover assetMover;
 
     public ImageIngesterWorker(
         IOptionsMonitor<EngineSettings> engineOptions,
         AssetMoverResolver assetMoverResolver,
+        IImageProcessor imageProcessor,
+        ImageIngestorCompletion imageCompletion,
         ILogger<ImageIngesterWorker> logger)
-
     {
         assetMover = assetMoverResolver(AssetMoveType.Disk);
         engineSettings = engineOptions.CurrentValue;
+        this.imageProcessor = imageProcessor;
+        this.imageCompletion = imageCompletion;
         this.logger = logger;
     }
 
@@ -31,9 +38,13 @@ public class ImageIngesterWorker : IAssetIngesterWorker
     public async Task<IngestResult> Ingest(IngestAssetRequest ingestAssetRequest,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
+        bool ingestSuccess;
+        string? sourceTemplate = null;
+        var context = new IngestionContext(ingestAssetRequest.Asset);
+        
         try
         {
-            var sourceTemplate = GetSourceTemplate(ingestAssetRequest.Asset);
+            sourceTemplate = GetSourceTemplate(ingestAssetRequest.Asset);
             var stopwatch = Stopwatch.StartNew();
             var assetOnDisk = await assetMover.CopyAsset(
                 ingestAssetRequest.Asset, 
@@ -48,23 +59,29 @@ public class ImageIngesterWorker : IAssetIngesterWorker
             if (assetOnDisk.FileExceedsAllowance)
             {
                 ingestAssetRequest.Asset.Error = "StoragePolicy size limit exceeded";
-                // await imageCompletion.CompleteIngestion(context, false, sourceTemplate);
+                await imageCompletion.CompleteIngestion(context, false, sourceTemplate);
                 return IngestResult.Failed;
             }
-            
-            var context = new IngestionContext(ingestAssetRequest.Asset, assetOnDisk);
-            
-            /*var ingestSuccess = await imageProcessor.ProcessImage(context);
 
-            var completionSuccess = await imageCompletion.CompleteIngestion(context, ingestSuccess, sourceTemplate);
+            context.WithAssetFromOrigin(assetOnDisk);
 
-            return ingestSuccess && completionSuccess ? IngestResult.Success : IngestResult.Failed;*/
-
-            return IngestResult.Unknown;
+            ingestSuccess = await imageProcessor.ProcessImage(context);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error ingesting image {AssetId}", ingestAssetRequest.Asset.Id);
+            ingestSuccess = false;
+        }
+
+        try
+        {
+            var completionSuccess = await imageCompletion.CompleteIngestion(context, ingestSuccess, sourceTemplate);
+            return ingestSuccess && completionSuccess ? IngestResult.Success : IngestResult.Failed;
+        }
+        catch (Exception ex)
+        {
+            // TODO - mark Asset Error here? and call completion
+            logger.LogError(ex, "Error updating completing {AssetId}", ingestAssetRequest.Asset.Id);
             return IngestResult.Failed;
         }
     }

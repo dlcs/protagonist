@@ -85,7 +85,7 @@ public class AppetiserClientTests
         var result = await sut.ProcessImage(context);
 
         // Assert
-        httpHandler.CallsMade.Should().ContainSingle(s => s == "http://image-processor/");
+        httpHandler.CallsMade.Should().ContainSingle(s => s == "http://image-processor/convert");
         result.Should().BeFalse();
         context.Asset.Should().NotBeNull();
     }
@@ -110,7 +110,7 @@ public class AppetiserClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        httpHandler.CallsMade.Should().ContainSingle(s => s == "http://image-processor/");
+        httpHandler.CallsMade.Should().ContainSingle(s => s == "http://image-processor/convert");
         requestModel.Operation.Should().Be("derivatives-only");
     }
 
@@ -130,7 +130,7 @@ public class AppetiserClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        httpHandler.CallsMade.Should().ContainSingle(s => s == "http://image-processor/");
+        httpHandler.CallsMade.Should().ContainSingle(s => s == "http://image-processor/convert");
         requestModel.Operation.Should().Be("ingest");
     }
 

@@ -10,6 +10,21 @@ public class EngineSettings
     public Dictionary<string, CustomerOverridesSettings> CustomerOverrides { get; set; } = new();
     
     /// <summary>
+    /// Base url for calling orchestrator.
+    /// </summary>
+    public Uri OrchestratorBaseUrl { get; set; }
+        
+    /// <summary>
+    /// Timeout, in ms, to wait for calls to orchestrator
+    /// </summary>
+    public int OrchestratorTimeoutMs { get; set; } = 5000;
+
+    /// <summary>
+    /// Default value of whether to orchestrate an image upon ingestion
+    /// </summary>
+    public bool OrchestrateImageAfterIngest { get; set; } = true;
+    
+    /// <summary>
     /// Get CustomerSpecificSettings, if found. 
     /// </summary>
     /// <param name="customerId">CustomerId to get settings for.</param>

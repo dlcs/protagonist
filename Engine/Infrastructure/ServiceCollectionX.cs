@@ -14,6 +14,7 @@ using DLCS.Repository.Policies;
 using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.DependencyInjection;
 using Engine.Ingest;
+using Engine.Ingest.Completion;
 using Engine.Ingest.Handlers;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.Appetiser;
@@ -78,6 +79,8 @@ public static class ServiceCollectionX
             })
             .AddSingleton<IFileSystem, FileSystem>()
             .AddScoped<AssetToDisk>()
+            .AddScoped<IImageIngestorCompletion, ImageIngestorCompletion>()
+            .AddScoped<IEngineAssetRepository, EngineAssetRepository>()
             //.AddScoped<AssetToS3>()
             .AddTransient<AssetMoverResolver>(provider => t => t switch
             {
@@ -92,6 +95,12 @@ public static class ServiceCollectionX
         {
             client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
             client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+        });
+
+        services.AddHttpClient<OrchestratorClient>(client =>
+        {
+            client.BaseAddress = engineSettings.OrchestratorBaseUrl;
+            client.Timeout = TimeSpan.FromMilliseconds(engineSettings.OrchestratorTimeoutMs);
         });
 
         return services;

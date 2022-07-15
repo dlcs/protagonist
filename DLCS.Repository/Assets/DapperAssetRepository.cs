@@ -101,7 +101,7 @@ namespace DLCS.Repository.Assets
         /// <param name="asset">
         /// An Asset that is ready to be inserted/updated in the DB, that
         /// has usually come from an incoming Hydra object.
-        ///It can also have been obtained from the database by another repository class.
+        /// It can also have been obtained from the database by another repository class.
         /// </param>
         /// <param name="cancellationToken"></param>
         public async Task Save(Asset asset, CancellationToken cancellationToken)

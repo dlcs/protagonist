@@ -16,17 +16,29 @@ public class IngestionContext
     public AssetId AssetId { get; }
             
     // TODO - should this be typed?
-    public AssetFromOrigin AssetFromOrigin { get; }
+    public AssetFromOrigin AssetFromOrigin { get; private set; }
         
     public ImageLocation? ImageLocation { get; private set; }
         
     public ImageStorage? ImageStorage { get; private set; }
+    
+    public IngestionContext(Asset asset)
+    {
+        Asset = asset;
+        AssetId = asset.GetAssetId();
+    }
     
     public IngestionContext(Asset asset, AssetFromOrigin assetFromOrigin)
     {
         Asset = asset;
         AssetId = asset.GetAssetId();
         AssetFromOrigin = assetFromOrigin;
+    }
+    
+    public IngestionContext WithAssetFromOrigin(AssetFromOrigin assetFromOrigin)
+    {
+        AssetFromOrigin = assetFromOrigin;
+        return this;
     }
     
     public IngestionContext WithLocation(ImageLocation imageLocation)

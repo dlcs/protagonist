@@ -3,7 +3,7 @@ using Engine.Ingest.Models;
 
 namespace Engine.Tests.Ingest.Models;
 
-public class IngestRequestConverterTests
+public class LegacyIngestEventConverterTests
 {
     [Fact]
     public void ConvertToInternalRequest_Throws_IfIncomingRequestNull()

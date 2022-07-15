@@ -55,14 +55,13 @@ public class AppetiserClient : IImageProcessor
         {
             var derivativesOnly = IsDerivativesOnly(context.AssetFromOrigin);
             var responseModel = await CallImageProcessor(context, derivativesOnly);
-            var (imageLocation, imageStorage) = await ProcessResponse(context, responseModel, derivativesOnly);
-            context.WithLocation(imageLocation).WithStorage(imageStorage);
+            await ProcessResponse(context, responseModel, derivativesOnly);
             return true;
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Error processing image {asset}", context.Asset.Id);
-            context.Asset.Error = e.Message;
+            logger.LogError(e, "Error processing image {Asset}", context.Asset.Id);
+            context.Asset.Error = $"Appetiser Error: {e.Message}";
             return false;
         }
     }
@@ -158,8 +157,8 @@ public class AppetiserClient : IImageProcessor
         return unixPath;
     }
 
-    private async Task<(ImageLocation imageLocation, ImageStorage imageStorage)> ProcessResponse(
-        IngestionContext context, AppetiserResponseModel responseModel, bool derivativesOnly)
+    private async Task ProcessResponse(IngestionContext context, AppetiserResponseModel responseModel, 
+        bool derivativesOnly)
     {
         UpdateImageSize(context.Asset, responseModel);
 
@@ -169,7 +168,7 @@ public class AppetiserClient : IImageProcessor
 
         ImageStorage imageStorage = GetImageStorage(context, responseModel);
 
-        return (imageLocation, imageStorage);
+        context.WithLocation(imageLocation).WithStorage(imageStorage);
     }
 
     private static void UpdateImageSize(Asset asset, AppetiserResponseModel responseModel)
