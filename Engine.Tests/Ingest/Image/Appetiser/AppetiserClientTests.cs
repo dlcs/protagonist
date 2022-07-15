@@ -315,8 +315,8 @@ public class AppetiserClientTests
             .WithImageOptimisationPolicy(new ImageOptimisationPolicy { TechnicalDetails = Array.Empty<string>() })
             .WithThumbnailPolicy(new ThumbnailPolicy());
 
-        var context = new IngestionContext(asset,
-            new AssetFromOrigin(asset.GetAssetId(), 123, "./scratch/here.jpg", contentType));
-        return context;
+        var context = new IngestionContext(asset);
+        return context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "./scratch/here.jpg",
+            contentType));
     }
 }

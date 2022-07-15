@@ -49,7 +49,7 @@ public class ImageIngestorCompletion : IImageIngestorCompletion
     {
         if (!ShouldOrchestrate(context.Asset.Customer)) return;
 
-        await orchestratorClient.TriggerOrchestration(context.Asset);
+        await orchestratorClient.TriggerOrchestration(context.AssetId);
     }
     
     private bool ShouldOrchestrate(int customerId)

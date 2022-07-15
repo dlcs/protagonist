@@ -1,7 +1,6 @@
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Repository.Entities;
 using Engine.Ingest.Workers;
 
 namespace Engine.Ingest;
@@ -27,14 +26,7 @@ public class IngestionContext
         Asset = asset;
         AssetId = asset.GetAssetId();
     }
-    
-    public IngestionContext(Asset asset, AssetFromOrigin assetFromOrigin)
-    {
-        Asset = asset;
-        AssetId = asset.GetAssetId();
-        AssetFromOrigin = assetFromOrigin;
-    }
-    
+
     public IngestionContext WithAssetFromOrigin(AssetFromOrigin assetFromOrigin)
     {
         AssetFromOrigin = assetFromOrigin;
