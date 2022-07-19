@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Features.Assets;
+using API.Tests.Integration.Infrastructure;
 using DLCS.Model.Assets;
+using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Caching;
 using FluentAssertions;
@@ -14,14 +17,14 @@ using Microsoft.Extensions.Options;
 using Test.Helpers.Integration;
 using Xunit;
 
-namespace DLCS.Repository.Tests.Assets
+namespace API.Tests.Features.Assets
 {
     [Trait("Category", "Database")]
-    [Collection(DatabaseCollection.CollectionName)]
+    [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
     public class AssetRepositoryTests
     {
         private readonly DlcsContext dbContext;
-        private readonly IAssetRepository sut;
+        private readonly ApiAssetRepository sut;
 
         public AssetRepositoryTests(DlcsDatabaseFixture dbFixture)
         {
@@ -36,13 +39,14 @@ namespace DLCS.Repository.Tests.Assets
                 .AddInMemoryCollection(new[]
                     { new KeyValuePair<string, string>("ConnectionStrings:PostgreSQLConnection", dbFixture.ConnectionString) })
                 .Build();
-            sut = new DapperAssetRepository(
-                dbContext, // ignoring dbFixture.DbContext
+            var dapperAssetRepository = new DapperAssetRepository(
                 config,
                 new MockCachingService(),
                 Options.Create(new CacheSettings()),
                 new NullLogger<DapperAssetRepository>()
-                );
+            );
+
+            sut = new ApiAssetRepository(dbContext, config, dapperAssetRepository);
 
             dbFixture.CleanUp();
         }

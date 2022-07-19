@@ -40,7 +40,7 @@ namespace Orchestrator.Infrastructure
                 .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
                 .AddSingleton<IAssetRepository, DapperAssetRepository>()
                 .AddSingleton<IThumbRepository, ThumbRepository>()
-                .AddSingleton<IPolicyRepository, PolicyRepository>()
+                .AddScoped<IPolicyRepository, PolicyRepository>()
                 .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
                 .AddSingleton<ICustomHeaderRepository, DapperCustomHeaderRepository>()

@@ -39,7 +39,7 @@ namespace Thumbs.Infrastructure
                     .AddSingleton<IThumbRepository>(provider =>
                         ActivatorUtilities.CreateInstance<ReorganisingThumbRepository>(
                             provider,
-                            provider.GetService<ThumbRepository>()!))
+                            provider.GetRequiredService<ThumbRepository>()))
                     .AddSingleton<IThumbReorganiser, ThumbReorganiser>();
             }
             else

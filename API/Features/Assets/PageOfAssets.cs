@@ -1,6 +1,7 @@
 using System.Collections.Generic;
+using DLCS.Model.Assets;
 
-namespace DLCS.Model.Assets
+namespace API.Features.Image.DataAccess
 {
     public class PageOfAssets
     {
