@@ -18,7 +18,9 @@ There are a number of shared projects and entry point applications that use thes
 
 ### Shared
 
+* DLCS.AWS - classes for interacting with AWS resources.
 * DLCS.Core - general non-domain specific utilities and exceptions.
+* DLCS.HydraModel - [Hydra](https://www.hydra-cg.com/) models for DLCS API.
 * DLCS.Mediatr - shared classes for projects using [Mediatr](https://github.com/jbogard/MediatR).
 * DLCS.Model - DLCS models and repository interfaces.
 * DLCS.Repository - Repository implementations and `DbContext` for database.
@@ -28,10 +30,11 @@ In addition to the above there are a number of `*.Tests` classes for automated t
 
 ### Entry Points
 
-* Thumbs - simplified handling of thumbnail requests.
+* API - HTTP API for interactions (WIP).
+* Engine - asset ingestion/derivative creation (WIP).
 * Orchestrator - reverse proxy that serves user requests (WIP).
 * Portal - administration UI for managing assets (WIP).
-* API - HTTP API for interactions (WIP).
+* Thumbs - simplified handling of thumbnail requests.
 
 ## Technology :robot:
 
@@ -67,9 +70,11 @@ docker-compose -f docker-compose.local.yml up
 
 ### Local Development
 
-Both docker-compose files will spin up a Postgres, [LocalStack](https://github.com/localstack/localstack) container and external resources like image-servers etc. Postgres connection details are specified via `.env` file (see `.env.dist` for example) and this is listening on `5452`. The LocalStack image will contain required resources, see [seed-resources.sh](./compose/localstack/seed-resources.sh) and these will be used by DLCS for S3 access.
+Both docker-compose files will spin up a Postgres, [LocalStack](https://github.com/localstack/localstack) container and external resources like image-servers etc. Postgres connection details are specified via `.env` file (see `.env.dist` for example) and this is listening on `:5452`. The LocalStack image will contain required resources, see [seed-resources.sh](./compose/localstack/seed-resources.sh) and these will be used by DLCS for S3 access.
 
 Using the connection and AWS details from `.env.dist` and `appsettings.Development.Example.json` will work by default. The `seed-resources.sh` file will seed AWS resources and EFMigrations will be run on Orchestrator startup is `"RunMigrations"` appsetting is `true`.
+
+> Note that full stack cannot be run until all elements have been sufficiently implemented.
 
 #### LocalStack 
 
