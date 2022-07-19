@@ -147,19 +147,10 @@ public class EngineAssetRepository : IEngineAssetRepository
         {
             entry.Property(p => p.MediaType).IsModified = true;
         }
-
-        // We only want to update a limited number of fields so read object + update those only
-        /*var existingItem = await dlcsContext.Images.FindAsync(new object[] { asset.Id }, cancellationToken);
-        existingItem.Width = asset.Width;
-        existingItem.Height = asset.Height;
-        existingItem.Duration = asset.Duration;
-        existingItem.Error = asset.Error;
-        existingItem.Ingesting = false;
-        existingItem.Finished = DateTime.UtcNow;*/
     }
 
     private async Task<int> TryFinishBatch(int batchId, CancellationToken cancellationToken) 
         => await dlcsContext.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE \"Batches\" SET \"Finished\"=@Now WHERE \"Id\" = {batchId} and \"Completed\"+\"Errors\"=\"Count\" ",
+            $"UPDATE \"Batches\" SET \"Finished\"=now() WHERE \"Id\" = {batchId} and \"Completed\"+\"Errors\"=\"Count\" ",
             cancellationToken);
 }

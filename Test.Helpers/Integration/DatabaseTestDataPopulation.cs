@@ -132,5 +132,13 @@ namespace Test.Helpers.Integration
                 LastChecked = DateTime.UtcNow.AddDays(-7),
                 ThumbnailSize = thumbSize
             });
+
+        public static ValueTask<EntityEntry<Batch>> AddTestBatch(this DbSet<Batch> batch, int id, int customer = 99,
+            int count = 1, int completed = 0, int errors = 0, DateTime? submitted = null)
+            => batch.AddAsync(new Batch
+            {
+                Id = id, Customer = customer, Submitted = submitted ?? DateTime.UtcNow, Completed = completed,
+                Count = count, Errors = errors
+            });
     }
 }
