@@ -33,10 +33,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Assets" />
-    </ItemGroup>
-
-    <ItemGroup>
       <None Update="Direct_Bytes_Upload.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>

@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Features.Assets;
 using DLCS.Core.Settings;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
@@ -55,7 +56,7 @@ namespace API.Features.Image.Requests
     public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatchImageResult>
     {
         private readonly ISpaceRepository spaceRepository;
-        private readonly IAssetRepository assetRepository;
+        private readonly IApiAssetRepository assetRepository;
         private readonly IStorageRepository storageRepository;
         private readonly IPolicyRepository policyRepository;
         private readonly IAssetNotificationSender assetNotificationSender;
@@ -63,7 +64,7 @@ namespace API.Features.Image.Requests
 
         public PutOrPatchImageHandler(
             ISpaceRepository spaceRepository,
-            IAssetRepository assetRepository,
+            IApiAssetRepository assetRepository,
             IStorageRepository storageRepository,
             IPolicyRepository policyRepository,
             IAssetNotificationSender assetNotificationSender,

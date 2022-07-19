@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Features.Assets;
+using API.Features.Image;
 using DLCS.Model.Assets;
 using DLCS.Web.Auth;
 using MediatR;
@@ -38,12 +40,12 @@ namespace API.Features.Space.Requests
 
     public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, GetSpaceImagesResult>
     {
-        private readonly IAssetRepository assetRepository;
+        private readonly IApiAssetRepository assetRepository;
         private readonly ClaimsPrincipal principal;
         private readonly ILogger logger;
         
         public GetSpaceImagesHandler(
-            IAssetRepository assetRepository, 
+            IApiAssetRepository assetRepository, 
             ClaimsPrincipal principal,
             ILogger<GetAllSpacesHandler> logger)
         {

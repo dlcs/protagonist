@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using API.Auth;
+using API.Features.Assets;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.AWS.Configuration;
@@ -76,8 +77,11 @@ namespace API
                 })
                 .AddLazyCache()
                 .AddDlcsContext(configuration)
-                // Use a DlcsContext, therefore must be scoped:
-                .AddScoped<IAssetRepository, DapperAssetRepository>()
+                .AddSingleton<IAssetRepository, DapperAssetRepository>()
+                .AddScoped<IApiAssetRepository>(provider =>
+                    ActivatorUtilities.CreateInstance<ApiAssetRepository>(
+                        provider,
+                        provider.GetRequiredService<IAssetRepository>()))
                 .AddScoped<ISpaceRepository, SpaceRepository>()
                 .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
                 .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
@@ -85,7 +89,7 @@ namespace API
                 // Do not use a DlcsContext, _may_ be Singleton (but should they)
                 .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
-                .AddSingleton<IPolicyRepository, PolicyRepository>()
+                .AddScoped<IPolicyRepository, PolicyRepository>()
                 .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
                 .ConfigureMediatR()
                 .ConfigureSwagger();

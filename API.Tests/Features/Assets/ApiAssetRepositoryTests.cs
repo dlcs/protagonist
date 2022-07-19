@@ -21,12 +21,12 @@ namespace API.Tests.Features.Assets
 {
     [Trait("Category", "Database")]
     [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
-    public class AssetRepositoryTests
+    public class ApiAssetRepositoryTests
     {
         private readonly DlcsContext dbContext;
         private readonly ApiAssetRepository sut;
 
-        public AssetRepositoryTests(DlcsDatabaseFixture dbFixture)
+        public ApiAssetRepositoryTests(DlcsDatabaseFixture dbFixture)
         {
             // We use a customised dbcontext because we want different tracking behaviour
             dbContext = new DlcsContext(
