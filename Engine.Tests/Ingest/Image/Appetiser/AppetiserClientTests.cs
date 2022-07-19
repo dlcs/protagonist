@@ -5,9 +5,9 @@ using DLCS.AWS.S3.Models;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Assets.Thumbs;
 using DLCS.Model.Customers;
 using Engine.Ingest;
+using Engine.Ingest.Image;
 using Engine.Ingest.Image.Appetiser;
 using Engine.Ingest.Workers;
 using Engine.Settings;
@@ -24,7 +24,7 @@ public class AppetiserClientTests
 {
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly TestBucketWriter bucketWriter;
-    private readonly IThumbLayoutManager thumbLayoutManager;
+    private readonly IThumbCreator thumbnailCreator;
     private readonly EngineSettings engineSettings;
     private readonly AppetiserClient sut;
     private readonly IStorageKeyGenerator storageKeyGenerator;
@@ -46,7 +46,7 @@ public class AppetiserClientTests
                 ThumbsTemplate = $"{{root}}{{customer}}{c}{{space}}{c}{{image}}{c}output{c}thumb{c}"
             }
         };
-        thumbLayoutManager = A.Fake<IThumbLayoutManager>();
+        thumbnailCreator = A.Fake<IThumbCreator>();
         storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
         A.CallTo(() => storageKeyGenerator.GetStorageLocation(A<AssetId>._))
             .ReturnsLazily((AssetId assetId) =>
@@ -56,7 +56,7 @@ public class AppetiserClientTests
 
         var httpClient = new HttpClient(httpHandler);
         httpClient.BaseAddress = new Uri("http://image-processor/");
-        sut = new AppetiserClient(httpClient, bucketWriter, storageKeyGenerator, thumbLayoutManager, fileSystem,
+        sut = new AppetiserClient(httpClient, bucketWriter, storageKeyGenerator, thumbnailCreator, fileSystem,
             optionsMonitor, new NullLogger<AppetiserClient>());
     }
     
@@ -275,7 +275,7 @@ public class AppetiserClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        A.CallTo(() => thumbLayoutManager.CreateNewThumbs(A<Asset>.That.Matches(a => a.Id == context.Asset.Id),
+        A.CallTo(() => thumbnailCreator.CreateNewThumbs(A<Asset>.That.Matches(a => a.Id == context.Asset.Id),
                 A<IReadOnlyList<ImageOnDisk>>.That.Matches(t => t.Single().Path.EndsWith("100.jpg"))
             ))
             .MustHaveHappened();

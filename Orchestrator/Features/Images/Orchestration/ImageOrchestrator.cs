@@ -29,7 +29,7 @@ namespace Orchestrator.Features.Images.Orchestration
         private readonly IAssetTracker assetTracker;
         private readonly IOptions<OrchestratorSettings> orchestratorSettings;
         private readonly S3AmbientOriginStrategy s3OriginStrategy;
-        private readonly FileSaver fileSaver;
+        private readonly IFileSaver fileSaver;
         private readonly IDlcsApiClient dlcsApiClient;
         private readonly ILogger<ImageOrchestrator> logger;
         private readonly AsyncKeyedLock asyncLocker = new();
@@ -37,7 +37,7 @@ namespace Orchestrator.Features.Images.Orchestration
         public ImageOrchestrator(IAssetTracker assetTracker,
             IOptions<OrchestratorSettings> orchestratorSettings,
             S3AmbientOriginStrategy s3OriginStrategy,
-            FileSaver fileSaver,
+            IFileSaver fileSaver,
             IDlcsApiClient dlcsApiClient,
             ILogger<ImageOrchestrator> logger)
         {

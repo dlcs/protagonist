@@ -3,15 +3,16 @@ using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.FileSystem;
 using DLCS.Model.Assets;
-using DLCS.Model.Assets.Thumbs;
+using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Model.Policies;
+using DLCS.Model.Storage;
 using DLCS.Repository;
-using DLCS.Repository.Assets.Thumbs;
+using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
-using DLCS.Repository.Strategy;
+using DLCS.Repository.Storage;
 using DLCS.Repository.Strategy.DependencyInjection;
 using Engine.Ingest;
 using Engine.Ingest.Completion;
@@ -69,7 +70,7 @@ public static class ServiceCollectionX
         services
             .AddScoped<IAssetIngester, AssetIngester>()
             .AddTransient<ImageIngesterWorker>()
-            .AddSingleton<IThumbLayoutManager, ThumbLayoutManager>()
+            .AddSingleton<IThumbCreator, ThumbCreator>()
             .AddTransient<IngestorResolver>(provider => family => family switch
             {
                 AssetFamily.Image => provider.GetRequiredService<ImageIngesterWorker>(),
@@ -113,6 +114,8 @@ public static class ServiceCollectionX
         => services
             .AddScoped<IPolicyRepository, PolicyRepository>()
             .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
+            .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
+            .AddScoped<IStorageRepository, CustomerStorageRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>

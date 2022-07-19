@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
+using Thumbs.Reorganising;
 using Thumbs.Settings;
 
 namespace Thumbs.Infrastructure
@@ -39,7 +40,7 @@ namespace Thumbs.Infrastructure
                         ActivatorUtilities.CreateInstance<ReorganisingThumbRepository>(
                             provider,
                             provider.GetService<ThumbRepository>()!))
-                    .AddSingleton<IThumbLayoutManager, ThumbLayoutManager>();
+                    .AddSingleton<IThumbReorganiser, ThumbReorganiser>();
             }
             else
             {

@@ -14,7 +14,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker
 {
     private readonly EngineSettings engineSettings;
     private readonly IImageProcessor imageProcessor;
-    private readonly ImageIngestorCompletion imageCompletion;
+    private readonly IImageIngestorCompletion imageCompletion;
     private readonly ILogger<ImageIngesterWorker> logger;
     private readonly IAssetMover assetMover;
 
@@ -22,7 +22,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker
         IOptionsMonitor<EngineSettings> engineOptions,
         AssetMoverResolver assetMoverResolver,
         IImageProcessor imageProcessor,
-        ImageIngestorCompletion imageCompletion,
+        IImageIngestorCompletion imageCompletion,
         ILogger<ImageIngesterWorker> logger)
     {
         assetMover = assetMoverResolver(AssetMoveType.Disk);

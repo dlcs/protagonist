@@ -5,10 +5,8 @@ using DLCS.Core.FileSystem;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Assets.Thumbs;
 using DLCS.Model.Customers;
 using DLCS.Model.Templates;
-using DLCS.Repository.Entities;
 using DLCS.Web.Requests;
 using Engine.Ingest.Workers;
 using Engine.Settings;
@@ -26,14 +24,14 @@ public class AppetiserClient : IImageProcessor
     private readonly ILogger<AppetiserClient> logger;
     private readonly IBucketWriter bucketWriter;
     private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly IThumbLayoutManager thumbLayoutManager;
+    private readonly IThumbCreator thumbCreator;
     private readonly IFileSystem fileSystem;
 
     public AppetiserClient(
         HttpClient httpClient,
         IBucketWriter bucketWriter,
         IStorageKeyGenerator storageKeyGenerator,
-        IThumbLayoutManager thumbLayoutManager,
+        IThumbCreator thumbCreator,
         IFileSystem fileSystem,
         IOptionsMonitor<EngineSettings> engineOptionsMonitor,
         ILogger<AppetiserClient> logger)
@@ -41,7 +39,7 @@ public class AppetiserClient : IImageProcessor
         this.httpClient = httpClient;
         this.bucketWriter = bucketWriter;
         this.storageKeyGenerator = storageKeyGenerator;
-        this.thumbLayoutManager = thumbLayoutManager;
+        this.thumbCreator = thumbCreator;
         this.fileSystem = fileSystem;
         engineSettings = engineOptionsMonitor.CurrentValue;
         this.logger = logger;
@@ -219,7 +217,7 @@ public class AppetiserClient : IImageProcessor
     {
         SetThumbsOnDiskLocation(context, responseModel);
 
-        await thumbLayoutManager.CreateNewThumbs(context.Asset, responseModel.Thumbs.ToList());
+        await thumbCreator.CreateNewThumbs(context.Asset, responseModel.Thumbs.ToList());
     }
 
     private void SetThumbsOnDiskLocation(IngestionContext context, AppetiserResponseModel responseModel)

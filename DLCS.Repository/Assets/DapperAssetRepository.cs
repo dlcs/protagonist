@@ -63,7 +63,6 @@ namespace DLCS.Repository.Assets
             return await QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql, new {Id = assetId.ToString()});
         }
 
-
         private void RemoveImageLocationInternal(string assetId)
         {
             var entity = new ImageLocation { Id = assetId };
