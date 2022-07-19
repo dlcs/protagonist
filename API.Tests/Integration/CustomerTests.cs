@@ -218,4 +218,19 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         keys.Members.Should().NotContain(k => k.Secret.HasText());
     }
 
+    [Fact]
+    public async void Customer_Can_Create_PortalUser()
+    {        
+        // arrange
+        const string portalUserJson = @"{
+  ""@type"": ""User"",
+  ""email"": ""my-new-customer""
+}";
+        
+        // act
+        var content = new StringContent(portalUserJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsAdmin().PostAsync("/customers/99/portalUsers", content);
+        
+    }
+
 }

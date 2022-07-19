@@ -5,15 +5,11 @@ using System.Threading.Tasks;
 using API.Client;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
-using DLCS.AWS.Settings;
-using DLCS.Core.Settings;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
-using DLCS.Model.Spaces;
 using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Portal.Features.Images.Requests
 {
@@ -39,7 +35,6 @@ namespace Portal.Features.Images.Requests
     {
         private readonly ClaimsPrincipal claimsPrincipal;
         private readonly IBucketWriter bucketWriter;
-        private readonly AWSSettings awsSettings;
         private readonly IDlcsClient dlcsClient;
         private readonly ILogger<IngestImageFromFileHandler> logger;
         private readonly IStorageKeyGenerator storageKeyGenerator;
@@ -47,14 +42,12 @@ namespace Portal.Features.Images.Requests
         public IngestImageFromFileHandler(
             ClaimsPrincipal claimsPrincipal,
             IBucketWriter bucketWriter,
-            IOptions<AWSSettings> awsSettings,
             IDlcsClient dlcsClient,
             ILogger<IngestImageFromFileHandler> logger,
             IStorageKeyGenerator storageKeyGenerator)
         {
             this.claimsPrincipal = claimsPrincipal;
             this.bucketWriter = bucketWriter;
-            this.awsSettings = awsSettings.Value;
             this.dlcsClient = dlcsClient;
             this.logger = logger;
             this.storageKeyGenerator = storageKeyGenerator;
