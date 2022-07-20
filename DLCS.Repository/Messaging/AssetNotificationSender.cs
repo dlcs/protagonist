@@ -67,15 +67,11 @@ namespace DLCS.Repository.Messaging
             await using StringWriter writer = new StringWriter();
             using (JsonTextWriter writer1 = new JsonTextWriter(writer))
             {
-                //await writer1.WriteStartObjectAsync();
                 ToLegacyMessageJson(writer1, "event::image-ingest", stringParams);
-                //await writer1.WriteEndObjectAsync();
             }
             var content = new ByteArrayContent(Encoding.ASCII.GetBytes(writer.ToString()));
             try
             {
-                // What about credentials?
-                // CredentialCache.DefaultCredentials are used in Deliverator here.
                 var response = await httpClient.PostAsync(settings.EngineDirectIngestUri, content);
                 return response.StatusCode;
             }
@@ -132,7 +128,7 @@ namespace DLCS.Repository.Messaging
                 case ChangeType.Delete when after != null:
                     throw new ArgumentException("Asset Delete cannot have an after asset", nameof(after));
                 default:
-                    logger.LogInformation("Message Bus: Asset Modified: " + after.Id);
+                    logger.LogDebug("Message Bus: Asset Modified: {AssetId}", after.Id);
                     break;
             }
         }
