@@ -68,6 +68,11 @@ public class ImageIngestSettings
     public Uri ImageProcessorUrl { get; set; }
 
     /// <summary>
+    /// How long, in ms, to delay calling Image-Processor after copying file to shared disk 
+    /// </summary>
+    public int ImageProcessorDelayMs { get; set; } = 0;
+
+    /// <summary>
     /// Timeout for requests to image-processor 
     /// </summary>
     public int ImageProcessorTimeoutMs { get; set; } = 300000;

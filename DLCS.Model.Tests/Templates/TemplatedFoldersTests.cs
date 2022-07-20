@@ -126,5 +126,20 @@ namespace DLCS.Model.Tests.Templates
             // Assert
             result.Should().Be(expected);
         }
+        
+        [Fact]
+        public void GenerateTemplateForUnix_ReturnsExpected_ReplaceImage()
+        {
+            // Arrange
+            var asset = new AssetId(10, 20, "foobarbazqux");
+            var template = "{root}\\{customer}\\{space}\\{image-dir}\\{image}.ex";
+            var expected = "rooT/10/20/fo/ob/ar/ba/foobarbazqux/foobarbazqux.ex";
+
+            // Act
+            var result = TemplatedFolders.GenerateTemplateForUnix(template, asset, "rooT");
+
+            // Assert
+            result.Should().Be(expected);
+        }
     }
 }

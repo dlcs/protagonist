@@ -92,6 +92,11 @@ public class AppetiserClient : IImageProcessor
         using var request = new HttpRequestMessage(HttpMethod.Post, "convert");
         request.SetJsonContent(requestModel);
 
+        if (engineSettings.ImageIngest.ImageProcessorDelayMs > 0)
+        {
+            await Task.Delay(engineSettings.ImageIngest.ImageProcessorDelayMs);
+        }
+
         using var response = await httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
@@ -120,8 +125,8 @@ public class AppetiserClient : IImageProcessor
             Source = GetRelativeLocationOnDisk(context),
             ImageId = context.AssetId.Asset,
             JobId = Guid.NewGuid().ToString(),
-            ThumbDir = TemplatedFolders.GenerateTemplate(engineSettings.ImageIngest.ThumbsTemplate,
-                context.AssetId, "/", root: engineSettings.ImageIngest.GetRoot(true)),
+            ThumbDir = TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.ThumbsTemplate,
+                context.AssetId, root: engineSettings.ImageIngest.GetRoot(true)),
             ThumbSizes = asset.FullThumbnailPolicy.SizeList
         };
 
@@ -133,8 +138,8 @@ public class AppetiserClient : IImageProcessor
         // Appetiser/Tizer want unix paths relative to mount share.
         // This logic allows handling when running locally on win/unix and when deployed to unix
         var destFolder = forImageProcessor
-            ? TemplatedFolders.GenerateTemplate(engineSettings.ImageIngest.DestinationTemplate,
-                assetId, "/", root: engineSettings.ImageIngest.GetRoot(true))
+            ? TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.DestinationTemplate,
+                assetId, root: engineSettings.ImageIngest.GetRoot(true))
             : TemplatedFolders.GenerateFolderTemplate(engineSettings.ImageIngest.DestinationTemplate,
                 assetId, root: engineSettings.ImageIngest.GetRoot());
 
@@ -148,8 +153,8 @@ public class AppetiserClient : IImageProcessor
 
         // this is to get it working nice locally as appetiser/tizer root needs to be unix + relative to it
         var imageProcessorRoot = engineSettings.ImageIngest.GetRoot(true);
-        var unixPath = TemplatedFolders.GenerateTemplate(engineSettings.ImageIngest.SourceTemplate, context.AssetId,
-            "/", root: imageProcessorRoot);
+        var unixPath = TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.SourceTemplate, context.AssetId,
+            root: imageProcessorRoot);
 
         unixPath += $"/{context.Asset.GetUniqueName()}.{extension}";
         return unixPath;
@@ -178,17 +183,17 @@ public class AppetiserClient : IImageProcessor
     private async Task<ImageLocation> ProcessOriginImage(IngestionContext context, bool derivativesOnly)
     {
         var asset = context.Asset;
-        var imageLocation = new ImageLocation { Id = asset.Id };
+        var imageLocation = new ImageLocation { Id = asset.Id, Nas = string.Empty};
 
         var originStrategy = context.AssetFromOrigin.CustomerOriginStrategy;
+        var imageIngestSettings = engineSettings.ImageIngest;
 
         if (originStrategy.Optimised && originStrategy.Strategy == OriginStrategyType.S3Ambient)
         {
             // Optimised strategy - we don't want to store as we've not created a new version - just set imageLocation
             var originObject = RegionalisedObjectInBucket.Parse(asset.Origin);
-            storageKeyGenerator.EnsureRegionSet(originObject);
-
-            imageLocation.S3 = originObject.GetS3Uri().ToString();
+            imageLocation.S3 =
+                storageKeyGenerator.GetS3Uri(originObject, imageIngestSettings.IncludeRegionInS3Uri).ToString();
             return imageLocation;
         }
 
@@ -209,7 +214,9 @@ public class AppetiserClient : IImageProcessor
             throw new ApplicationException($"Failed to write jp2 {jp2File} to storage bucket");
         }
 
-        imageLocation.S3 = jp2BucketObject.GetS3Uri().ToString();
+        imageLocation.S3 = storageKeyGenerator
+            .GetS3Uri(jp2BucketObject, imageIngestSettings.IncludeRegionInS3Uri)
+            .ToString();
         return imageLocation;
     }
 
