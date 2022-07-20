@@ -35,7 +35,8 @@ namespace Test.Helpers.Integration
             bool notForDelivery = false,
             int batch = 0,
             long duration = 0,
-            bool ingesting = false)
+            bool ingesting = false,
+            string error = "")
             => assets.AddAsync(new Asset
             {
                 Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
@@ -43,7 +44,7 @@ namespace Test.Helpers.Integration
                 ThumbnailPolicy = "default", MaxUnauthorised = maxUnauthorised,
                 Reference1 = ref1, Reference2 = ref2, Reference3 = ref3,
                 NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
-                NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = "",
+                NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = error,
                 ImageOptimisationPolicy = "", Batch = batch, Ingesting = ingesting, Duration = duration
             });
 

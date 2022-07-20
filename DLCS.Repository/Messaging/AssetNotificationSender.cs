@@ -270,7 +270,7 @@ namespace DLCS.Repository.Messaging
             }
 
             writer.WritePropertyName("family");
-            writer.WriteValue(asset.Family);
+            writer.WriteValue((char)(asset.Family ?? AssetFamily.Image));
 
             writer.WritePropertyName("mediaType");
             writer.WriteValue(asset.MediaType);

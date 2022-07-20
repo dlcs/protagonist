@@ -77,13 +77,7 @@ namespace API.Features.Image.Requests
             this.assetNotificationSender = assetNotificationSender;
             this.settings = dlcsSettings.Value;
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="request"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        
         public async Task<PutOrPatchImageResult> Handle(PutOrPatchImage request, CancellationToken cancellationToken)
         {
             var asset = request.Asset;
@@ -211,7 +205,12 @@ namespace API.Features.Image.Requests
                 }
             }
 
-            // UpdateImageBehaviour - store in DB
+            // If a re-process is required, clear out fields related to processing
+            if (requiresEngineNotification)
+            {
+                ResetFieldsForIngestion(asset);
+            }
+            
             await assetRepository.Save(asset, cancellationToken);
 
             // now obtain the asset again
@@ -278,6 +277,12 @@ namespace API.Features.Image.Requests
                 StatusCode = HttpStatusCode.NotImplemented,
                 Message = "This handler has a limited implementation for now."
             };
+        }
+
+        private static void ResetFieldsForIngestion(Asset asset)
+        {
+            asset.Error = string.Empty;
+            asset.Ingesting = true;
         }
 
         private async Task<bool> SelectThumbnailPolicy(Asset asset)

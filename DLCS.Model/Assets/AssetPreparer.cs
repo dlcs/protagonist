@@ -245,7 +245,7 @@ public static class AssetPreparer
             NumberReference1 = 0,
             NumberReference2 = 0,
             NumberReference3 = 0,
-            MaxUnauthorised = 0,
+            MaxUnauthorised = -1,
             Width = 0,
             Height = 0,
             Duration = 0,
