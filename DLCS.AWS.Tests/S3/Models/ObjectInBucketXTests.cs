@@ -67,6 +67,66 @@ namespace DLCS.AWS.Tests.S3.Models
         }
 
         [Fact]
+        public void GetLegacyS3Uri_NoKey_Correct()
+        {
+            var objectInBucket = new ObjectInBucket("my-bucket");
+
+            var s3Uri = objectInBucket.GetLegacyS3Uri("us-east-1");
+
+            s3Uri.ToString().Should().Be("s3://us-east-1/my-bucket/");
+        }
+        
+        [Fact]
+        public void GetLegacyS3Uri_Key_Correct()
+        {
+            var objectInBucket = new ObjectInBucket("my-bucket", "key/for/item");
+
+            var s3Uri = objectInBucket.GetLegacyS3Uri("us-east-1");
+
+            s3Uri.ToString().Should().Be("s3://us-east-1/my-bucket/key/for/item");
+        }
+        
+        [Fact]
+        public void GetLegacyS3Uri_Regionalised_NoRegion_NoKey_Correct()
+        {
+            var objectInBucket = new RegionalisedObjectInBucket("my-bucket");
+
+            var s3Uri = objectInBucket.GetLegacyS3Uri("us-east-1");
+
+            s3Uri.ToString().Should().Be("s3://us-east-1/my-bucket/");
+        }
+        
+        [Fact]
+        public void GetLegacyS3Uri_Regionalised_NoRegion_Key_Correct()
+        {
+            var objectInBucket = new RegionalisedObjectInBucket("my-bucket", "key/for/item");
+
+            var s3Uri = objectInBucket.GetLegacyS3Uri("us-east-1");
+
+            s3Uri.ToString().Should().Be("s3://us-east-1/my-bucket/key/for/item");
+        }
+        
+        [Fact]
+        public void GetLegacyS3Uri_Regionalised_Region_NoKey_Correct()
+        {
+            var objectInBucket = new RegionalisedObjectInBucket("my-bucket", region: "eu-west-1");
+
+            var s3Uri = objectInBucket.GetLegacyS3Uri("us-east-1");
+
+            s3Uri.ToString().Should().Be("s3://eu-west-1/my-bucket/");
+        }
+        
+        [Fact]
+        public void GetLegacyS3Uri_Regionalised_Region_Key_Correct()
+        {
+            var objectInBucket = new RegionalisedObjectInBucket("my-bucket", "key/for/item", "eu-west-1");
+
+            var s3Uri = objectInBucket.GetLegacyS3Uri("us-east-1");
+
+            s3Uri.ToString().Should().Be("s3://eu-west-1/my-bucket/key/for/item");
+        }
+
+        [Fact]
         public void GetHttpUri_NoKey_Correct()
         {
             var objectInBucket = new ObjectInBucket("my-bucket");

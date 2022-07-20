@@ -23,7 +23,7 @@ public class EngineSettings
     /// Default value of whether to orchestrate an image upon ingestion
     /// </summary>
     public bool OrchestrateImageAfterIngest { get; set; } = true;
-    
+
     /// <summary>
     /// Get CustomerSpecificSettings, if found. 
     /// </summary>
@@ -61,6 +61,11 @@ public class ImageIngestSettings
     /// </summary>
     [Obsolete("Use S3KeyGenerator")]
     public string S3Template { get; set; }
+    
+    /// <summary>
+    /// Whether to use unofficial s3:// format (including region) - required for backwards compat with deliverator
+    /// </summary>
+    public bool IncludeRegionInS3Uri { get; set; } = false;
 
     /// <summary>
     /// URI of downstream image/derivative processor

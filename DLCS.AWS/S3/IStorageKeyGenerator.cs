@@ -106,5 +106,15 @@ namespace DLCS.AWS.S3
         /// </summary>
         /// <param name="objectInBucket">Object to ensure region set on</param>
         void EnsureRegionSet(RegionalisedObjectInBucket objectInBucket);
+
+        /// <summary>
+        /// Get s3:// URI for specified <see cref="RegionalisedObjectInBucket"/> 
+        /// </summary>
+        /// <param name="objectInBucket">Object to get s3 URI for</param>
+        /// <param name="useRegion">
+        /// If true, include the region in URI. This isn't official but required by deliverator
+        /// </param>
+        /// <returns>s3:// uri</returns>
+        Uri GetS3Uri(ObjectInBucket objectInBucket, bool useRegion = false);
     }
 }

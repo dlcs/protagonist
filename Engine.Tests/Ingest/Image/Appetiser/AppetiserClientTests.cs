@@ -184,6 +184,9 @@ public class AppetiserClientTests
         };
 
         const string expected = "s3://appetiser-test/1/2/test";
+        A.CallTo(() => storageKeyGenerator.GetS3Uri(A<ObjectInBucket>._, A<bool>._))
+            .Returns(new Uri(expected));
+        
         var c = Path.DirectorySeparatorChar;
         var filePath = $"{c}scratch{c}1{c}2{c}test{c}output{c}test.jp2";
 
@@ -240,8 +243,10 @@ public class AppetiserClientTests
             Optimised = true,
             Strategy = OriginStrategyType.S3Ambient
         };
-
         const string expected = "s3://dlcs-storage/2/1/foo-bar";
+
+        A.CallTo(() => storageKeyGenerator.GetS3Uri(A<ObjectInBucket>._, A<bool>._))
+            .Returns(new Uri(expected));
 
         // Act
         await sut.ProcessImage(context);

@@ -127,5 +127,10 @@ namespace DLCS.AWS.S3
 
             objectInBucket.Region = awsSettings.Region;
         }
+
+        public Uri GetS3Uri(ObjectInBucket objectInBucket, bool useRegion = false)
+            => useRegion
+                ? objectInBucket.GetLegacyS3Uri(awsSettings.Region)
+                : objectInBucket.GetS3Uri();
     }
 }

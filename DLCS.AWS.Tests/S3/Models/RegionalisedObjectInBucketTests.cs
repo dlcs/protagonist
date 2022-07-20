@@ -7,7 +7,8 @@ namespace DLCS.AWS.Tests.S3.Models
     public class RegionalisedObjectInBucketTests
     {
         [Theory]
-        [InlineData("s3://eu-west-1/dlcs-storage/2/1/foo-bar", true)]
+        [InlineData("s3://eu-west-1/dlcs-storage/2/1/foo-bar", true)]  // this is a non-existent format but it's used by Deliverator 
+        [InlineData("s3://dlcs-storage/2/1/foo-bar", false)]  // this is the correct format
         [InlineData("http://s3-eu-west-1.amazonaws.com/dlcs-storage/2/1/foo-bar", true)]
         [InlineData("https://s3.eu-west-1.amazonaws.com/dlcs-storage/2/1/foo-bar", true)]
         [InlineData("http://dlcs-storage.s3.amazonaws.com/2/1/foo-bar", false)]
