@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Customer.Requests;
 using API.Settings;
+using DLCS.Core.Strings;
+using DLCS.HydraModel;
 using DLCS.Web.Auth;
 using DLCS.Web.Requests;
 using Hydra.Collections;
@@ -34,6 +36,7 @@ namespace API.Features.Customer
             this.mediator = mediator;
         }
         
+        // ################# GET /customers #####################
         /// <summary>
         /// Get all the customers.
         /// Although it returns a paged collection, the page size is always the total number of customers:
@@ -57,6 +60,8 @@ namespace API.Features.Customer
             };
         }
 
+        
+        // ################# POST /customers #####################
         /// <summary>
         /// The /customers/ path is not access controlled, but only an admin may call this.
         /// </summary>
@@ -97,6 +102,7 @@ namespace API.Features.Customer
         }
         
         
+        // ################# GET /customers/id #####################
         /// <summary>
         /// Get a Customer
         /// </summary>
@@ -113,6 +119,49 @@ namespace API.Features.Customer
             }
             return Ok(dbCustomer.ToHydra(getUrlRoots().BaseUrl));
         }
+        
+        
+        // ################# GET /customers/id/keys #####################
+        [HttpGet]
+        [Route("{customerId}/keys")]
+        public async Task<IActionResult> GetApiKeys(int customerId)
+        {
+            var dbCustomer = await mediator.Send(new GetCustomer(customerId));
+            if (dbCustomer == null)
+            {
+                return HydraNotFound();
+            }
+
+            var urlRoots = getUrlRoots();
+            var collection = new HydraCollection<ApiKey>
+            {
+                WithContext = true,
+                Members = dbCustomer.Keys.Select(
+                    key => new ApiKey(urlRoots.BaseUrl, customerId, key, null))
+                    .ToArray(),
+                TotalItems = dbCustomer.Keys.Length,
+                PageSize = dbCustomer.Keys.Length,
+                Id = Request.GetJsonLdId()
+            };
+            return Ok(collection);
+        }
+        
+        
+        // ################# POST /customers/id/keys #####################
+        [HttpPost]
+        [Route("{customerId}/keys")]
+        public async Task<IActionResult> CreateNewApiKey(int customerId)
+        {
+            var result = await mediator.Send(new CreateApiKey(customerId));
+            if (result.Key.HasText() && result.Secret.HasText())
+            {
+                return Ok(new ApiKey(getUrlRoots().BaseUrl, customerId, result.Key, result.Secret));
+            }
+
+            return HydraProblem("Unable to create API key", null, 500, "API Key", null);
+        }
+        
+        
     }
 
 }

@@ -10,23 +10,21 @@ namespace DLCS.HydraModel
         UriTemplate = "/customers/{0}/keys/{1}")]
     public class ApiKey : DlcsResource
     {
-        // [JsonIgnore]
-        // public string ModelId { get; set; }
-        //
-        // [JsonIgnore]
-        // public int CustomerId { get; set; }
-        //
-        // public ApiKey()
-        // {
-        //     
-        // }
-        //
-        // public ApiKey(string modelId, int customerId, string key, string secret)
-        // {
-        //     ModelId = modelId;
-        //     CustomerId = customerId;
-        //
-        // }
+        [JsonIgnore]
+        public int CustomerId { get; set; }
+        
+        public ApiKey()
+        {
+             
+        }
+        
+        public ApiKey(string baseUrl,  int customerId, string key, string? secret)
+        {
+            Init(baseUrl, false, customerId, key);
+            Key = key;
+            Secret = secret;
+            CustomerId = customerId; 
+        }
 
         private string? key;
 
@@ -55,7 +53,9 @@ namespace DLCS.HydraModel
         [RdfProperty(Description = "API Secret (available at creation time only)",
             Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
         [JsonProperty(Order = 12, PropertyName = "secret")]
-        public string Secret { get; set; }
+        public string? Secret { get; set; }
+        
+        public override string Type => "vocab:Key";
     }
 
     public class ApiKeyClass : Class
@@ -99,6 +99,7 @@ namespace DLCS.HydraModel
                 }
             };
         }
+        
 
     }
 }
