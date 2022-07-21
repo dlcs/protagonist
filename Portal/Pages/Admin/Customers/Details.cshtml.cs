@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using API.Client;
+using DLCS.Model.Customers;
 using DLCS.Repository.Entities;
 using Hydra.Collections;
 using MediatR;

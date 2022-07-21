@@ -189,47 +189,20 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async void Api_Grants_Key_And_Secret()
+    public async void Non_Admin_Cant_Create_Customer()
     {
-        var response = await httpClient.AsCustomer(99).PostAsync("/customers/99/keys", new StringContent(String.Empty));
-        var key = await response.ReadAsHydraResponseAsync<ApiKey>();
-        key.Key.Should().NotBeEmpty();
-        key.Secret.Should().NotBeEmpty();
-    }
-
-    
-    
-    [Fact]
-    public async void Api_Yields_Keys()
-    {
-        // arrange
-        var response1 = await httpClient.AsCustomer(99).PostAsync("/customers/99/keys", new StringContent(String.Empty));
-        var key1 = await response1.ReadAsHydraResponseAsync<ApiKey>();
-        var response2 = await httpClient.AsCustomer(99).PostAsync("/customers/99/keys", new StringContent(String.Empty));
-        var key2 = await response2.ReadAsHydraResponseAsync<ApiKey>();
-        
-        // act
-        var response = await httpClient.AsCustomer(99).GetAsync("/customers/99/keys");
-        var keys = await response.ReadAsHydraResponseAsync<HydraCollection<ApiKey>>();
-        
-        // assert
-        keys.Members.Should().Contain(k => k.Key == key1.Key);
-        keys.Members.Should().Contain(k => k.Key == key2.Key);
-        keys.Members.Should().NotContain(k => k.Secret.HasText());
-    }
-
-    [Fact]
-    public async void Customer_Can_Create_PortalUser()
-    {        
-        // arrange
-        const string portalUserJson = @"{
-  ""@type"": ""User"",
-  ""email"": ""my-new-customer""
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""test"",
+  ""displayName"": ""TestUser""
 }";
         
         // act
-        var content = new StringContent(portalUserJson, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsAdmin().PostAsync("/customers/99/portalUsers", content);
+        var content = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PostAsync("/customers", content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         
     }
 

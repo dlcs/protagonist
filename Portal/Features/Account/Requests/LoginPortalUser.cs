@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
 using DLCS.Core.Encryption;
+using DLCS.Model.Customers;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using DLCS.Web.Auth;

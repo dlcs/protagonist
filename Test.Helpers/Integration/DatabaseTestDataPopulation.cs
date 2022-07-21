@@ -4,8 +4,10 @@ using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Assets.NamedQueries;
+using DLCS.Model.Customers;
 using DLCS.Model.Spaces;
 using DLCS.Repository.Auth;
+using DLCS.Repository.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
@@ -99,5 +101,17 @@ namespace Test.Helpers.Integration
         public static ValueTask<EntityEntry<Space>> AddTestSpace(this DbSet<Space> spaces,
             int customer, int id, string name) =>
             spaces.AddAsync(new Space { Customer = customer, Id = id, Name = name });
+
+        public static ValueTask<EntityEntry<User>> AddTestUser(this DbSet<User> users,
+            int customer, string email, string password = "password123") => users.AddAsync(new User
+        {
+            Id = Guid.NewGuid().ToString(),
+            Customer = customer,
+            Email = email,
+            EncryptedPassword = "ENCRYPTED " + password,
+            Enabled = true,
+            Created = DateTime.UtcNow,
+            Roles = string.Empty
+        });
     }
 }
