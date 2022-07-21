@@ -53,8 +53,8 @@ public class ImageIngesterWorker : IAssetIngesterWorker
                 customerOriginStrategy,
                 cancellationToken);
             stopwatch.Stop();
-            logger.LogDebug("Copied image asset {AssetId} in {Elapsed}ms", stopwatch.ElapsedMilliseconds,
-                ingestAssetRequest.Asset.Id);
+            logger.LogDebug("Copied image asset {AssetId} in {Elapsed}ms using {OriginStrategy}", 
+                ingestAssetRequest.Asset.Id, stopwatch.ElapsedMilliseconds, customerOriginStrategy.Strategy);
             
             if (assetOnDisk.FileExceedsAllowance)
             {
@@ -71,6 +71,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker
         {
             logger.LogError(ex, "Error ingesting image {AssetId}", ingestAssetRequest.Asset.Id);
             ingestSuccess = false;
+            context.Asset.Error = ex.Message;
         }
 
         try

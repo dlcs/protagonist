@@ -53,8 +53,10 @@ public class AssetToDisk : IAssetMover
 
         if (originResponse == null || originResponse.Stream.IsNull())
         {
-            logger.LogWarning("Unable to fetch asset {AssetId} from {Origin}", asset.Id, asset.Origin);
-            throw new ApplicationException($"Unable to get asset '{asset.Id}' from origin '{asset.Origin}'");
+            logger.LogWarning("Unable to fetch asset {AssetId} from {Origin}, using {OriginStrategy}", asset.Id,
+                asset.Origin, customerOriginStrategy.Strategy);
+            throw new ApplicationException(
+                $"Unable to get asset '{asset.Id}' from origin '{asset.Origin}' using {customerOriginStrategy.Strategy}");
         }
         
         cancellationToken.ThrowIfCancellationRequested();
@@ -86,15 +88,32 @@ public class AssetToDisk : IAssetMover
     // TODO - this may need refined depending on whether it's 'I' or 'T' ingest
     private void TrySetContentTypeForBinary(OriginResponse originResponse, Asset asset)
     {
+        string? GuessContentType(string source)
+        {
+            var extension = source.EverythingAfterLast('.');
+            var guess = MIMEHelper.GetContentTypeForExtension(extension);
+            return guess;
+        }
+        
         // If the content type is binary, attempt to determine via file extension on name
         var contentType = originResponse.ContentType;
         if (string.IsNullOrWhiteSpace(contentType) || IsBinaryContent(contentType))
         {
             var uniqueName = asset.GetUniqueName();
-            var extension = uniqueName.EverythingAfterLast('.');
+            
+            var guess = GuessContentType(asset.GetIngestOrigin());
+            if (string.IsNullOrEmpty(guess))
+            {
+                guess = GuessContentType(uniqueName);
+                logger.LogDebug("Guessed content type as {ContentType} for '{AssetName}' from uniqueId", guess,
+                    uniqueName);
+            }
+            else
+            {
+                logger.LogDebug("Guessed content type as {ContentType} for '{AssetName}' from origin", guess,
+                    uniqueName);
+            }
 
-            var guess = MIMEHelper.GetContentTypeForExtension(extension);
-            logger.LogDebug("Guessed content type as {ContentType} for '{AssetName}'", guess, uniqueName);
             originResponse.WithContentType(guess);
         }
     }

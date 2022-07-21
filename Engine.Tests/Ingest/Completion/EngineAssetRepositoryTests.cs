@@ -116,6 +116,38 @@ public class EngineAssetRepositoryTests
     }
     
     [Fact]
+    public async Task UpdateIngestedAsset_ModifiedExistingAsset_IgnoresMediaTypeIfDefaultValue()
+    {
+        // Arrange
+        var assetId = $"99/1/{nameof(UpdateIngestedAsset_ModifiedExistingAsset_IgnoresMediaTypeIfDefaultValue)}";
+        var entry = await dbContext.Images.AddTestAsset(assetId, width: 0, height: 0, duration: 0,
+            ingesting: true, ref1: "foo", roles: "secret", mediaType: "application/json");
+        var existingAsset = entry.Entity;
+        await dbContext.SaveChangesAsync();
+
+        var newAsset = new Asset
+        {
+            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000, Duration = 99, Batch = 0,
+            Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1), Error = "broken state", MediaType = "unknown"
+        };
+        
+        // Act
+        var success = await sut.UpdateIngestedAsset(newAsset, null, null);
+        
+        // Assert
+        success.Should().BeTrue();
+        
+        var updatedItem = await dbContext.Images.AsNoTracking().SingleAsync(a => a.Id == assetId);
+        updatedItem.Width.Should().Be(newAsset.Width);
+        updatedItem.Height.Should().Be(newAsset.Height);
+        updatedItem.Duration.Should().Be(newAsset.Duration);
+        updatedItem.Error.Should().Be(newAsset.Error);
+        updatedItem.Ingesting.Should().BeFalse();
+        updatedItem.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        updatedItem.MediaType.Should().Be(existingAsset.MediaType, "MediaType not set on newAsset so not updated");
+    }
+    
+    [Fact]
     public async Task UpdateIngestedAsset_ModifiedExistingAsset_NoBatch_WithLocationAndStorage_NoExistingLocationOrStorage()
     {
         // Arrange

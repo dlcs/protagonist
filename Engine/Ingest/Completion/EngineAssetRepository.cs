@@ -143,7 +143,7 @@ public class EngineAssetRepository : IEngineAssetRepository
         entry.Property(p => p.Ingesting).IsModified = true;
         entry.Property(p => p.Finished).IsModified = true;
 
-        if (asset.MediaType.HasText())
+        if (asset.MediaType.HasText() && asset.MediaType != "unknown")
         {
             entry.Property(p => p.MediaType).IsModified = true;
         }

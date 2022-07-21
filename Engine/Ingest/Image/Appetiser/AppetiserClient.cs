@@ -190,6 +190,7 @@ public class AppetiserClient : IImageProcessor
 
         if (originStrategy.Optimised && originStrategy.Strategy == OriginStrategyType.S3Ambient)
         {
+            logger.LogDebug("Asset {AssetId} is optimised s3Ambient strategy", context.AssetId);
             // Optimised strategy - we don't want to store as we've not created a new version - just set imageLocation
             var originObject = RegionalisedObjectInBucket.Parse(asset.Origin);
             imageLocation.S3 =
@@ -199,8 +200,9 @@ public class AppetiserClient : IImageProcessor
 
         if (originStrategy.Optimised)
         {
-            logger.LogWarning("Asset {AssetId} has originStrategy '{OriginStrategy}', which is optimised but not S3",
-                context.AssetId, originStrategy.Id);
+            logger.LogWarning(
+                "Asset {AssetId} has originStrategy '{OriginStrategy}' ({OriginStrategyId}), which is optimised but not S3",
+                context.AssetId, originStrategy.Strategy, originStrategy.Id);
         }
 
         var jp2BucketObject = storageKeyGenerator.GetStorageLocation(context.AssetId);
