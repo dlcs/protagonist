@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon;
 using Amazon.Runtime;
@@ -96,10 +97,19 @@ namespace Test.Helpers.Integration
             
             // And SQS queues
             var amazonSQSClient = AWSSQSClientFactory();
-            await amazonSQSClient.CreateQueueAsync(ImageQueueName);
-            await amazonSQSClient.CreateQueueAsync(PriorityImageQueueName);
-            await amazonSQSClient.CreateQueueAsync(TimebasedQueueName);
-            await amazonSQSClient.CreateQueueAsync(TranscodeCompleteQueueName);
+            await CreateQueue(amazonSQSClient, ImageQueueName);
+            await CreateQueue(amazonSQSClient, PriorityImageQueueName);
+            await CreateQueue(amazonSQSClient, TimebasedQueueName);
+            await CreateQueue(amazonSQSClient, TranscodeCompleteQueueName);
+        }
+
+        private async Task CreateQueue(IAmazonSQS amazonSQSClient, string queueName)
+        {
+            var response = await amazonSQSClient.CreateQueueAsync(queueName);
+            await amazonSQSClient.SetQueueAttributesAsync(response.QueueUrl, new Dictionary<string, string>
+            {
+                ["VisibilityTimeout"] = "0"
+            });
         }
     }
 }
