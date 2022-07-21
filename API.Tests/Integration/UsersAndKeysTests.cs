@@ -10,6 +10,7 @@ using DLCS.Repository;
 using FluentAssertions;
 using Hydra;
 using Hydra.Collections;
+using Microsoft.EntityFrameworkCore;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using Xunit;
@@ -66,7 +67,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response1 = await httpClient.AsCustomer(99).PostAsync("/customers/99/keys", new StringContent(String.Empty));
         var key1 = await response1.ReadAsHydraResponseAsync<ApiKey>();
 
-        var dbCust = await dbContext.Customers.FindAsync(99);
+        var dbCust = await dbContext.Customers.AsNoTracking().SingleAsync(c => c.Id == 99);
         var startKeys = dbCust.Keys;
         
         // act 
@@ -101,9 +102,9 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.SaveChangesAsync();
         
         // act
-        var response1 = await httpClient.AsAdmin().DeleteAsync($"/customers/99/keys/{key1}");
+        var response1 = await httpClient.AsAdmin().DeleteAsync($"/customers/2/keys/{key1}");
         response1.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var response2 = await httpClient.AsAdmin().DeleteAsync($"/customers/99/keys/{key2}");
+        var response2 = await httpClient.AsAdmin().DeleteAsync($"/customers/2/keys/{key2}");
         
         // assert
         response2.StatusCode.Should().Be(HttpStatusCode.BadRequest);

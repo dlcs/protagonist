@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Customer.Requests;
@@ -161,6 +162,20 @@ namespace API.Features.Customer
             return HydraProblem("Unable to create API key", null, 500, "API Key", null);
         }
         
+        
+        // ################# DELETE /customers/id/keys/key #####################
+        [HttpDelete]
+        [Route("{customerId}/keys/{key}")]
+        public async Task<IActionResult> DeleteKey(int customerId, string key)
+        {
+            var result = await mediator.Send(new DeleteApiKey(customerId, key));
+            if (result.Error.HasText())
+            {
+                return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Bad Request", null);
+            }
+
+            return NoContent();
+        }
         
     }
 
