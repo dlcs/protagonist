@@ -126,7 +126,7 @@ namespace API
 
             services
                 .AddHealthChecks()
-                .AddUrlGroup(apiSettings.DLCS.ApiRoot, "DLCS API");
+                .AddDbContextCheck<DlcsContext>("DLCS-DB");
             
             services.Configure<KestrelServerOptions>(options =>
             {
