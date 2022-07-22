@@ -1,21 +1,19 @@
-﻿using System.Threading.Tasks;
-using Stubbery;
+﻿using Stubbery;
 using Test.Helpers.Integration;
-using Xunit;
 
-namespace Orchestrator.Tests.Integration.Infrastructure
+namespace Engine.Tests.Integration.Infrastructure
 {
     /// <summary>
     /// XUnit fixture that bootstraps postgres db, localstack and ApiStub
     /// </summary>
-    public class OrchestratorFixture : IAsyncLifetime
+    public class EngineFixture : IAsyncLifetime
     {
         public DlcsDatabaseFixture DbFixture { get; }
         public LocalStackFixture LocalStackFixture { get; }
 
         public ApiStub ApiStub { get; }
 
-        public OrchestratorFixture()
+        public EngineFixture()
         {
             ApiStub = new ApiStub();
             DbFixture = new DlcsDatabaseFixture();

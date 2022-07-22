@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Core.Strings;
 using FluentAssertions.Execution;
 
 namespace Test.Helpers.Storage;
@@ -16,10 +17,10 @@ namespace Test.Helpers.Storage;
 public class TestBucketWriter : IBucketWriter
 {
     public Dictionary<string, BucketObject> Operations { get; } = new();
-    private readonly string forBucket;
+    private readonly string? forBucket;
     private readonly List<string> verifiedPaths = new();
     
-    public TestBucketWriter(string bucket)
+    public TestBucketWriter(string? bucket = null)
     {
         forBucket = bucket;
     }
@@ -65,11 +66,14 @@ public class TestBucketWriter : IBucketWriter
     
     public Task CopyWithinBucket(string bucket, string sourceKey, string destKey)
     {
-        if (bucket != forBucket) throw new InvalidOperationException("Operation for different bucket");
-            
+        if (forBucket.HasText())
+        {
+            if (bucket != forBucket) throw new InvalidOperationException("Operation for different bucket");
+        }
+
         if (Operations.TryGetValue(sourceKey, out var op))
         {
-            Operations[destKey] = new BucketObject {Contents = op.Contents, FilePath = op.FilePath};
+            Operations[destKey] = new BucketObject { Contents = op.Contents, FilePath = op.FilePath, Bucket = bucket };
             return Task.FromResult(true);
         }
             
@@ -84,25 +88,28 @@ public class TestBucketWriter : IBucketWriter
     public Task WriteToBucket(ObjectInBucket dest, string content, string contentType,
         CancellationToken cancellationToken = default)
     {
-        if (dest.Bucket != forBucket) throw new InvalidOperationException("Operation for different bucket");
+        if (forBucket.HasText() && dest.Bucket != forBucket)
+            throw new InvalidOperationException("Operation for different bucket");
 
-        Operations[dest.Key] = new BucketObject {Contents = content};
+        Operations[dest.Key] = new BucketObject { Contents = content, Bucket = dest.Bucket };
         return Task.FromResult(true);
     }
 
     public Task<bool> WriteToBucket(ObjectInBucket dest, Stream content, string contentType = null)
     {
-        if (dest.Bucket != forBucket) throw new InvalidOperationException("Operation for different bucket");
+        if (forBucket.HasText() && dest.Bucket != forBucket)
+            throw new InvalidOperationException("Operation for different bucket");
 
-        Operations[dest.Key] = new BucketObject {ContentStream = content};
+        Operations[dest.Key] = new BucketObject { ContentStream = content, Bucket = dest.Bucket };
         return Task.FromResult(true);
     }
 
     public Task<bool> WriteFileToBucket(ObjectInBucket dest, string filePath, string contentType = null)
     {
-        if (dest.Bucket != forBucket) throw new InvalidOperationException("Operation for different bucket");
+        if (forBucket.HasText() && dest.Bucket != forBucket)
+            throw new InvalidOperationException("Operation for different bucket");
 
-        Operations[dest.Key] = new BucketObject {FilePath = filePath};
+        Operations[dest.Key] = new BucketObject { FilePath = filePath, Bucket = dest.Bucket };
         return Task.FromResult(true);
     }
 
@@ -110,7 +117,8 @@ public class TestBucketWriter : IBucketWriter
     {
         foreach (ObjectInBucket o in toDelete)
         {
-            if (o.Bucket != forBucket) throw new InvalidOperationException("Operation for different bucket");
+            if (forBucket.HasText() && o.Bucket != forBucket)
+                throw new InvalidOperationException("Operation for different bucket");
 
             if (Operations.ContainsKey(o.Key))
             {
@@ -126,6 +134,8 @@ public class BucketObject
 {
     public string FilePath { get; set; }
     public string Contents { get; set; }
+    
+    public string Bucket { get; set; }
 
     public Stream ContentStream { get; set; }
 
@@ -150,6 +160,19 @@ public class BucketObject
         if (Contents != contents)
         {
             throw new AssertionFailedException($"FilePath expected {contents} but was {Contents}");
+        }
+
+        return this;
+    }
+    
+    /// <summary>
+    /// Assert object is in expected bucket
+    /// </summary>
+    public BucketObject ForBucket(string bucket)
+    {
+        if (Bucket != bucket)
+        {
+            throw new AssertionFailedException($"bucket expected {bucket} but was {Bucket}");
         }
 
         return this;

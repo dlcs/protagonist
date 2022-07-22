@@ -20,6 +20,7 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly HttpClient httpClient;
     private static readonly IAssetIngester assetIngester = A.Fake<IAssetIngester>();
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
+    
     public IngestResponseTests(ProtagonistAppFactory<Startup> appFactory)
     {
         httpClient = appFactory

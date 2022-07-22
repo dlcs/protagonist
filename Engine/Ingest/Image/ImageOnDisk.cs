@@ -1,4 +1,4 @@
-﻿namespace DLCS.Model.Assets;
+﻿namespace Engine.Ingest.Image;
 
 public class ImageOnDisk
 {
