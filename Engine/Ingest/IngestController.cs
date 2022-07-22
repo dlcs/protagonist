@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Net;
+using System.Text.Json;
 using DLCS.Model.Messaging;
 using Engine.Ingest.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -57,6 +58,7 @@ public class IngestController : Controller
             IngestResult.Failed => StatusCode(500, message),
             IngestResult.Success => Ok(message),
             IngestResult.QueuedForProcessing => Accepted(message),
+            IngestResult.StorageLimitExceeded => StatusCode((int)HttpStatusCode.InsufficientStorage, message),
             IngestResult.Unknown => StatusCode(500, message),
             _ => StatusCode(500, message)
         };

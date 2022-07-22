@@ -60,7 +60,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker
             {
                 ingestAssetRequest.Asset.Error = "StoragePolicy size limit exceeded";
                 await imageCompletion.CompleteIngestion(context, false, sourceTemplate);
-                return IngestResult.Failed;
+                return IngestResult.StorageLimitExceeded;
             }
 
             context.WithAssetFromOrigin(assetOnDisk);

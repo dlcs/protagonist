@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using DLCS.AWS.S3;
@@ -164,6 +165,53 @@ public class IngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var storage = await dbContext.ImageStorages.SingleAsync(a => a.Id == assetId);
         storage.Size.Should().BeGreaterThan(0);
+    }
+    
+    [Fact]
+    public async Task IngestAsset_Error_ExceedAllowance()
+    {
+        // Arrange
+        // Create a new customer to have control over CustomerStorage and make sure it's isolated
+        const int customerId = -10;
+        var assetId = $"{customerId}/1/{nameof(IngestAsset_Error_ExceedAllowance)}";
+
+        // Note - API will have set this up before handing off
+        var origin = $"{apiStub.Address}/image";
+
+        var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin, customer: customerId,
+            width: 0, height: 0, duration: 0);
+        var asset = entity.Entity;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, 1);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customerId, sizeOfStored: 99,
+            storagePolicy: "small");
+        await dbContext.SaveChangesAsync();
+        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+
+        // Act
+        var jsonContent =
+            new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
+        var result = await httpClient.PostAsync("asset-ingest", jsonContent);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.InsufficientStorage);
+
+        // No S3 assets created
+        BucketWriter.ShouldNotHaveKey(assetId);
+        
+        // Database records updated
+        var updatedAsset = await dbContext.Images.SingleAsync(a => a.Id == assetId);
+        updatedAsset.Width.Should().Be(0);
+        updatedAsset.Height.Should().Be(0);
+        updatedAsset.Ingesting.Should().BeFalse();
+        updatedAsset.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        updatedAsset.Error.Should().Be("StoragePolicy size limit exceeded");
+
+        var location = await dbContext.ImageLocations.SingleOrDefaultAsync(a => a.Id == assetId);
+        location.Should().BeNull();
+
+        var storage = await dbContext.ImageStorages.SingleOrDefaultAsync(a => a.Id == assetId);
+        storage.Should().BeNull();
     }
     
     [Fact]

@@ -36,6 +36,7 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData(IngestResult.Failed, HttpStatusCode.InternalServerError)]
     [InlineData(IngestResult.Success, HttpStatusCode.OK)]
     [InlineData(IngestResult.QueuedForProcessing, HttpStatusCode.Accepted)]
+    [InlineData(IngestResult.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
     public async Task IngestAsset_ReturnsExpectedCode_ForIngestResult(IngestResult ingestResult, HttpStatusCode expected)
     {
         // Arrange
@@ -57,6 +58,7 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData(IngestResult.Failed, HttpStatusCode.InternalServerError)]
     [InlineData(IngestResult.Success, HttpStatusCode.OK)]
     [InlineData(IngestResult.QueuedForProcessing, HttpStatusCode.Accepted)]
+    [InlineData(IngestResult.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
     public async Task IngestImage_ReturnsExpectedCode_ForIngestResult_Legacy(IngestResult ingestResult, HttpStatusCode expected)
     {
         // Arrange
@@ -86,6 +88,7 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData(IngestResult.Failed, HttpStatusCode.InternalServerError)]
     [InlineData(IngestResult.Success, HttpStatusCode.OK)]
     [InlineData(IngestResult.QueuedForProcessing, HttpStatusCode.Accepted)]
+    [InlineData(IngestResult.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
     public async Task IngestAsset_ReturnsExpectedCode_ForIngestResult_ByteArray(IngestResult ingestResult,
         HttpStatusCode expected)
     {
@@ -108,6 +111,7 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData(IngestResult.Failed, HttpStatusCode.InternalServerError)]
     [InlineData(IngestResult.Success, HttpStatusCode.OK)]
     [InlineData(IngestResult.QueuedForProcessing, HttpStatusCode.Accepted)]
+    [InlineData(IngestResult.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
     public async Task IngestImage_ReturnsExpectedCode_ForIngestResult_Legacy_ByteArray(IngestResult ingestResult,
         HttpStatusCode expected)
     {

@@ -23,5 +23,10 @@ public enum IngestResult
     /// <summary>
     /// Ingestion operation has successfully been queued for further processing (e.g. by ElasticTranscoder)
     /// </summary>
-    QueuedForProcessing = 3
+    QueuedForProcessing = 3,
+    
+    /// <summary>
+    /// Ingestion operation failed because it would exceed customers storage policy limits
+    /// </summary>
+    StorageLimitExceeded = 4
 }

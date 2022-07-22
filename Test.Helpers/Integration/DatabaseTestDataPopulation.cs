@@ -6,6 +6,7 @@ using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.Spaces;
+using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -105,8 +106,16 @@ namespace Test.Helpers.Integration
                 });
 
         public static ValueTask<EntityEntry<Space>> AddTestSpace(this DbSet<Space> spaces,
-            int customer, int id, string name) =>
-            spaces.AddAsync(new Space { Customer = customer, Id = id, Name = name });
+            int customer, int id, string name = null) =>
+            spaces.AddAsync(new Space { Customer = customer, Id = id, Name = name ?? id.ToString() });
+        
+        public static ValueTask<EntityEntry<Customer>> AddTestCustomer(this DbSet<Customer> customers,
+            int id, string name = null, string displayName = null) =>
+            customers.AddAsync(new Customer
+            {
+                Id = id, Name = name ?? id.ToString(), Keys = Array.Empty<string>(), 
+                DisplayName = displayName ?? id.ToString(), Created = DateTime.UtcNow
+            });
 
         public static ValueTask<EntityEntry<User>> AddTestUser(this DbSet<User> users,
             int customer, string email, string password = "password123") => users.AddAsync(new User
@@ -142,6 +151,20 @@ namespace Test.Helpers.Integration
             {
                 Id = id, Customer = customer, Submitted = submitted ?? DateTime.UtcNow, Completed = completed,
                 Count = count, Errors = errors
+            });
+
+        public static ValueTask<EntityEntry<CustomerStorage>> AddTestCustomerStorage(
+            this DbSet<CustomerStorage> customerStorages, int customer = 99, int space = 0, int numberOfImages = 0,
+            int sizeOfStored = 0, int sizeOfThumbs = 0, string storagePolicy = "default")
+            => customerStorages.AddAsync(new CustomerStorage
+            {
+                Customer = customer,
+                Space = space,
+                LastCalculated = DateTime.UtcNow,
+                StoragePolicy = storagePolicy,
+                NumberOfStoredImages = numberOfImages,
+                TotalSizeOfStoredImages = sizeOfStored,
+                TotalSizeOfThumbnails = sizeOfThumbs
             });
     }
 }
