@@ -11,6 +11,7 @@ using Xunit;
 namespace DLCS.AWS.Tests.SQS;
 
 [Collection(LocalStackCollection.CollectionName)]
+[Trait("Category", "Manual")]
 public class SqsListenerTests : IAsyncLifetime
 {
     private readonly FakeMessageHandler messageHandler;
