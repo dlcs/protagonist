@@ -25,7 +25,8 @@ public class GetPortalUsersHandler : IRequestHandler<GetPortalUsers, IList<User>
 
     public async Task<IList<User>> Handle(GetPortalUsers request, CancellationToken cancellationToken)
     {
-        var users = await dbContext.Users.Where(u => u.Customer == request.CustomerId)
+        var users = await dbContext.Users.AsNoTracking()
+            .Where(u => u.Customer == request.CustomerId)
             .ToListAsync(cancellationToken);
         return users;
     }

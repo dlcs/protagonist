@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Repository;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace API.Features.Customer.Requests;
 
@@ -29,12 +30,15 @@ public class DeletePortalUserResult
 public class DeletePortalUserHandler : IRequestHandler<DeletePortalUser, DeletePortalUserResult>
 {
     private readonly DlcsContext dbContext;
+    private readonly ILogger<DeletePortalUserHandler> logger;
 
 
     public DeletePortalUserHandler(
-        DlcsContext dbContext)
+        DlcsContext dbContext,
+        ILogger<DeletePortalUserHandler> logger)
     {
         this.dbContext = dbContext;
+        this.logger = logger;
     }
 
 
@@ -48,7 +52,8 @@ public class DeletePortalUserHandler : IRequestHandler<DeletePortalUser, DeleteP
 
         if (dbUser.Customer != request.CustomerId)
         {
-            return new DeletePortalUserResult { Error = "User doesn't belong to customer" };
+            logger.LogWarning("Attempt to delete another customer's user.");
+            return new DeletePortalUserResult { Error = "Unable to delete user." };
         }
 
         dbContext.Users.Remove(dbUser);
@@ -58,6 +63,6 @@ public class DeletePortalUserHandler : IRequestHandler<DeletePortalUser, DeleteP
             return new DeletePortalUserResult();
         }
 
-        return new DeletePortalUserResult { Error = "Unable to delete user" };
+        return new DeletePortalUserResult { Error = "Unable to delete user." };
     }
 }

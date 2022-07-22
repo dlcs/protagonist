@@ -74,6 +74,14 @@ namespace DLCS.Core.Strings
         }
         
         
+        /// <summary>
+        /// Validates an email address.
+        /// </summary>
+        /// <remarks>
+        /// Copied from https://docs.microsoft.com/en-us/dotnet/standard/base-types/how-to-verify-that-strings-are-in-valid-email-format
+        /// </remarks>
+        /// <param name="email"></param>
+        /// <returns></returns>
         public static bool IsValidEmail(this string email)
         {
             if (string.IsNullOrWhiteSpace(email))
