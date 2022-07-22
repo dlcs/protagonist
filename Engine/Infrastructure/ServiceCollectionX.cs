@@ -1,9 +1,27 @@
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
+using DLCS.Core.FileSystem;
+using DLCS.Model.Assets;
+using DLCS.Model.Auth;
+using DLCS.Model.Customers;
+using DLCS.Model.Policies;
+using DLCS.Model.Storage;
 using DLCS.Repository;
+using DLCS.Repository.Auth;
+using DLCS.Repository.Caching;
+using DLCS.Repository.Customers;
+using DLCS.Repository.Policies;
+using DLCS.Repository.Storage;
+using DLCS.Repository.Strategy.DependencyInjection;
+using Engine.Ingest;
+using Engine.Ingest.Completion;
 using Engine.Ingest.Handlers;
+using Engine.Ingest.Image;
+using Engine.Ingest.Image.Appetiser;
+using Engine.Ingest.Workers;
 using Engine.Messaging;
+using Engine.Settings;
 
 namespace Engine.Infrastructure;
 
@@ -45,14 +63,81 @@ public static class ServiceCollectionX
             .AddHostedService<SqsListenerService>();
 
     /// <summary>
+    /// Adds all asset ingestion classes and related dependencies. 
+    /// </summary>
+    public static IServiceCollection AddAssetIngestion(this IServiceCollection services, EngineSettings engineSettings)
+    {
+        services
+            .AddScoped<IAssetIngester, AssetIngester>()
+            .AddTransient<ImageIngesterWorker>()
+            .AddSingleton<IThumbCreator, ThumbCreator>()
+            .AddTransient<IngestorResolver>(provider => family => family switch
+            {
+                AssetFamily.Image => provider.GetRequiredService<ImageIngesterWorker>(),
+                AssetFamily.Timebased => throw new NotImplementedException("Not yet"),
+                AssetFamily.File => throw new NotImplementedException("File shouldn't be here"),
+                _ => throw new KeyNotFoundException("Attempt to resolve ingestor handler for unknown family")
+            })
+            .AddSingleton<IFileSystem, FileSystem>()
+            .AddScoped<AssetToDisk>()
+            .AddScoped<IImageIngestorCompletion, ImageIngestorCompletion>()
+            .AddScoped<IEngineAssetRepository, EngineAssetRepository>()
+            //.AddScoped<AssetToS3>()
+            .AddTransient<AssetMoverResolver>(provider => t => t switch
+            {
+                AssetMoveType.Disk => provider.GetRequiredService<AssetToDisk>(),
+                AssetMoveType.ObjectStore => throw new NotImplementedException("Not yet"),
+                // AssetMoveType.ObjectStore => provider.GetService<AssetToS3>(),
+                _ => throw new NotImplementedException()
+            })
+            .AddOriginStrategies();
+
+        services.AddHttpClient<IImageProcessor, AppetiserClient>(client =>
+        {
+            client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
+            client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+        });
+
+        services.AddHttpClient<OrchestratorClient>(client =>
+        {
+            client.BaseAddress = engineSettings.OrchestratorBaseUrl;
+            client.Timeout = TimeSpan.FromMilliseconds(engineSettings.OrchestratorTimeoutMs);
+        });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Add all dataaccess dependencies, including repositories and DLCS context 
+    /// </summary>
+    public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
+        => services
+            .AddScoped<IPolicyRepository, PolicyRepository>()
+            .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
+            .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
+            .AddScoped<IStorageRepository, CustomerStorageRepository>()
+            .AddDlcsContext(configuration);
+
+    /// <summary>
+    /// Add required caching dependencies
+    /// </summary>
+    public static IServiceCollection AddCaching(this IServiceCollection services, CacheSettings cacheSettings)
+        => services
+            .AddMemoryCache(memoryCacheOptions =>
+            {
+                memoryCacheOptions.SizeLimit = cacheSettings.MemoryCacheSizeLimit;
+                memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
+            })
+            .AddLazyCache();
+
+    /// <summary>
     /// Add HealthChecks for Database and Queues
     /// </summary>
-    public static IServiceCollection ConfigureHealthChecks(this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection ConfigureHealthChecks(this IServiceCollection services)
     {
         services
             .AddHealthChecks()
-            .AddNpgSql(configuration.GetPostgresSqlConnection())
+            .AddDbContextCheck<DlcsContext>("DLCS-DB")
             .AddQueueHealthCheck();
 
         return services;

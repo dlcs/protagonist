@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using DLCS.AWS.SQS.Models;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DLCS.AWS.SQS;

@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using IIIF.ImageApi;
 
 namespace DLCS.Model.Assets
 {
+    [DebuggerDisplay("{Name}: {Sizes}")]
     public class ThumbnailPolicy
     {
-        private List<int> sizeList = null;
+        private List<int>? sizeList = null;
 
         public string Id { get; set; }
         public string Name { get; set; }

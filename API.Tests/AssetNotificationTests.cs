@@ -30,22 +30,26 @@ public class AssetNotificationTests
         sut = new AssetNotificationSender(httpClient, options, logger);
     }
 
-    [Fact]
-    public async Task AssetNotification_Sends_Legacy_Engine_Body()
+    [Theory]
+    [InlineData(AssetFamily.File, 'F')]
+    [InlineData(AssetFamily.Image, 'I')]
+    [InlineData(AssetFamily.Timebased, 'T')]
+    public async Task AssetNotification_Sends_Legacy_Engine_Body(AssetFamily family, char expected)
     {
         // Arrange
         var asset = new Asset
         {
             Id = "99/1/ingest-asset",
             Customer = 99,
-            Space = 1
+            Space = 1,
+            Family = family
         };
         
         // This is the new format, accepted by IAssetNotificationSender
         var ingestRequest = new IngestAssetRequest(asset, DateTime.UtcNow);
         HttpRequestMessage message = null;
         httpHandler.RegisterCallback(r => message = r);
-        var engineResponse = httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
+        httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
         
         // Act
         var statusCode = await sut.SendImmediateIngestAssetRequest(ingestRequest, false);
@@ -62,9 +66,7 @@ public class AssetNotificationTests
         jObj["_type"].Value<string>().Should().Be("event");
         jObj["message"].Value<string>().Should().Be("event::image-ingest");
         
-        // This may be a bridge too far:
-        var assetFromMessage = jObj["params"].ToObject<Asset>();
-        assetFromMessage.Should().BeEquivalentTo(asset);
+        // Validate Family enum sent as char, rather than int
+        JObject.Parse(jObj.SelectToken("params.image").Value<string>())["family"].Value<char>().Should().Be(expected);
     }
-    
 }

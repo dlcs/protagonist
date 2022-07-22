@@ -6,12 +6,14 @@ using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Assets.CustomHeaders;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
+using DLCS.Repository.Policies;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -38,7 +40,7 @@ namespace Orchestrator.Infrastructure
                 .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
                 .AddSingleton<IAssetRepository, DapperAssetRepository>()
                 .AddSingleton<IThumbRepository, ThumbRepository>()
-                .AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>()
+                .AddScoped<IPolicyRepository, PolicyRepository>()
                 .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
                 .AddSingleton<ICustomHeaderRepository, DapperCustomHeaderRepository>()

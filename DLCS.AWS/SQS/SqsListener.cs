@@ -2,6 +2,7 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using DLCS.AWS.Settings;
+using DLCS.AWS.SQS.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 

@@ -1,5 +1,4 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using DLCS.Core.Types;
 
 namespace DLCS.Model.Assets
@@ -15,12 +14,5 @@ namespace DLCS.Model.Assets
         public Task<Asset?> GetAsset(AssetId id, bool noCache);
 
         public Task<ImageLocation> GetImageLocation(AssetId assetId);
-        
-        public Task<PageOfAssets?> GetPageOfAssets(
-            int customerId, int spaceId, int page, int pageSize, 
-            string orderBy, bool descending,
-            CancellationToken cancellationToken);
-
-        public Task Save(Asset asset, CancellationToken cancellationToken);
     }
 }

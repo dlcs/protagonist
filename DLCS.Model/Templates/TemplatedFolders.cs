@@ -60,7 +60,26 @@ namespace DLCS.Model.Templates
                     .Replace(Image, asset.Asset)
                 : replacements;
         }
-
+        
+        /// <summary>
+        /// Generate a folder template using provided details, ensuring path separator is for Unix.
+        /// This is required when calling unix-services (e.g. Appetiser/Tizer) from windows machine.
+        /// </summary>
+        /// <param name="template">The basic template, e.g. {root}\{customer}\{space}\{image}</param>
+        /// <param name="root">The root of the template, used as {root} param.</param>
+        /// <param name="asset">Used to populate {customer}, {space} and, optionally, {image} and {image-dir} properties.</param>
+        /// <param name="replaceImage">If true {image} is replaced, else it is left untouched</param>
+        /// <returns>New string with replacements made.</returns>
+        public static string GenerateTemplateForUnix(
+            string template,
+            AssetId asset, 
+            string? root = null, 
+            bool replaceImage = true)
+        {
+            var result = GenerateTemplate(template, asset, "/", root, replaceImage);
+            return result.Replace("\\", "/");
+        }
+        
         private static string SplitImageNameToFolders(string name, string separator)
             => name.Length <= 8
                 ? name

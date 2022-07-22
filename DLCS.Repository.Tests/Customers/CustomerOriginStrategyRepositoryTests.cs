@@ -28,7 +28,7 @@ namespace DLCS.Repository.Tests.Customers
                 .AddInMemoryCollection(new KeyValuePair<string, string>[] { new("S3OriginRegex", "http\\:\\/\\/s3-/.*") })
                 .Build();
             
-            sut = new CustomerOriginStrategyRepository(dbFixture.DbContext, new MockCachingService(), configuration,
+            sut = new CustomerOriginStrategyRepository(new MockCachingService(), dbFixture.DbContext, configuration,
                 Options.Create(new CacheSettings()), new NullLogger<CustomerOriginStrategyRepository>());
             
             dbFixture.CleanUp();

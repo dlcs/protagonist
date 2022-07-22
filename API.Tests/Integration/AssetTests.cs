@@ -296,7 +296,7 @@ public class AssetTests :
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
         var asset = await dbContext.Images.FindAsync(assetId.ToString());
         asset.Id.Should().Be(assetId.ToString());
-
+        asset.MaxUnauthorised.Should().Be(-1);
         asset.ThumbnailPolicy.Should().Be("default");
         asset.ImageOptimisationPolicy.Should().Be("fast-higher");
     }
@@ -315,8 +315,7 @@ public class AssetTests :
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
-    
-    
+
     [Fact]
     public async Task Put_New_Asset_Preserves_InitialOrigin()
     {
@@ -345,6 +344,36 @@ public class AssetTests :
     }
     
     [Fact]
+    public async Task Put_Existing_Asset_ClearsError_AndMarksAsIngesting()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
+        await dbContext.Images.AddTestAsset(assetId.ToString(), error: "Sample Error");
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff""
+}}";
+
+        HttpRequestMessage engineMessage = null;
+        httpHandler.RegisterCallbackWithSelector(
+            assetId.ToApiResourcePath(),
+            r => engineMessage = r, 
+            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
+            "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var assetFromDatabase = await dbContext.Images.SingleOrDefaultAsync(a => a.Id == assetId.ToString());
+        assetFromDatabase.Ingesting.Should().BeTrue();
+        assetFromDatabase.Error.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Patch_Asset_Updates_Asset_Without_Calling_Engine()
     {
         // This is the same as Put_Asset_Updates_Asset, but with a PATCH
@@ -354,8 +383,7 @@ public class AssetTests :
             ref1: "I am string 1", origin:"https://images.org/image2.tiff");
         await dbContext.SaveChangesAsync();
         testAsset.State = EntityState.Detached; // need to untrack before update
-        
-        
+
         HttpRequestMessage engineMessage = null;
         httpHandler.RegisterCallbackWithSelector(
             assetId.ToApiResourcePath(),
@@ -376,7 +404,6 @@ public class AssetTests :
         engineMessage.Should().BeNull(); // engine not called
         var asset = await dbContext.Images.FindAsync(assetId.ToString());
         asset.Reference1.Should().Be("I am edited");
-        
     }
     
     [Fact]
@@ -413,13 +440,12 @@ public class AssetTests :
         var asset = await dbContext.Images.FindAsync(assetId.ToString());
         asset.Reference1.Should().Be("I am edited");
     }
-    
-    
+
     [Fact]
-    public async Task Change_ImageOptimisationPolicy_Not_Allowed()
+    public async Task Patch_Asset_Change_ImageOptimisationPolicy_Not_Allowed()
     {
         // This test is really here ready for when this IS allowed! I think it should be.
-        var assetId = new AssetId(99, 1, nameof(Change_ImageOptimisationPolicy_Not_Allowed));
+        var assetId = new AssetId(99, 1, nameof(Patch_Asset_Change_ImageOptimisationPolicy_Not_Allowed));
         
         var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(),
             ref1: "I am string 1", origin:"https://images.org/image1.tiff");
@@ -427,7 +453,7 @@ public class AssetTests :
         {
             Id = "test-policy",
             Name = "Test Policy",
-            TechnicalDetails = "1010101"
+            TechnicalDetails = new[] { "1010101" }
         };
         dbContext.ImageOptimisationPolicies.Add(testPolicy);
         await dbContext.SaveChangesAsync();
@@ -460,10 +486,7 @@ public class AssetTests :
         // var asset = await dbContext.Images.FindAsync(assetId.ToString());
         // asset.Reference1.Should().Be("I am edited");
     }
-    
 
-    
-    
     [Fact]
     public async Task Patch_Asset_Returns_Notfound_if_Asset_Missing()
     {
@@ -478,8 +501,7 @@ public class AssetTests :
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-    
-    
+
     [Fact]
     public async Task Put_Asset_Returns_InsufficientStorage_if_Policy_Exceeded()
     {
@@ -510,8 +532,7 @@ public class AssetTests :
             NumberOfStoredImages = 2
         });
         await dbContext.SaveChangesAsync();
-     
-        
+
         var assetId = new AssetId(customer, 1, nameof(Put_Asset_Returns_InsufficientStorage_if_Policy_Exceeded));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
@@ -525,8 +546,7 @@ public class AssetTests :
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.InsufficientStorage);
     }
-    
-    
+
     [Fact]
     public async Task Patch_Images_Updates_multiple_images()
     {
@@ -554,8 +574,6 @@ public class AssetTests :
   ]
 }}";
         
-                 
-        
         // act
         var content = new StringContent(hydraCollectionBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PatchAsync("/customers/99/spaces/3003/images", content);
@@ -578,11 +596,8 @@ public class AssetTests :
         var img12 = await dbContext.Images.FindAsync("99/3003/asset-0012");
         img12.Reference1.Should().Be("Asset 12 patched");
         img12.Reference3.Should().Be("Asset 12 string3 added");
-
-
     }
-    
-    
+
     [Fact]
     public async Task Bulk_Patch_Prevents_Engine_Call()
     {
@@ -613,9 +628,6 @@ public class AssetTests :
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
-    
-
-    
     
     [Fact]
     public async Task Post_ImageBytes_Ingests_New_Image()
@@ -671,8 +683,4 @@ public class AssetTests :
         asset.Origin.Should().Be("https://protagonist-test-origin.s3.eu-west-1.amazonaws.com/99/1/Post_ImageBytes_Ingests_New_Image");
 
     }
-
-
-
-
 }

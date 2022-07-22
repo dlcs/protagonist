@@ -1,6 +1,5 @@
 ﻿using DLCS.AWS.Settings;
 using DLCS.AWS.SQS;
-using Engine.Ingest.Handlers;
 using Microsoft.Extensions.Options;
 
 namespace Engine.Messaging;

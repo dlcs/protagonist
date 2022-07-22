@@ -1,7 +1,6 @@
 using System.Security.Claims;
-using Amazon.S3;
 using API.Auth;
-using API.Client;
+using API.Features.Assets;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.AWS.Configuration;
@@ -13,6 +12,7 @@ using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
+using DLCS.Model.Policies;
 using DLCS.Model.Processing;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
@@ -23,6 +23,7 @@ using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
+using DLCS.Repository.Policies;
 using DLCS.Repository.Spaces;
 using DLCS.Repository.Storage;
 using DLCS.Web.Auth;
@@ -31,14 +32,11 @@ using Hydra;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Serilog;
 
 namespace API
@@ -79,8 +77,11 @@ namespace API
                 })
                 .AddLazyCache()
                 .AddDlcsContext(configuration)
-                // Use a DlcsContext, therefore must be scoped:
-                .AddScoped<IAssetRepository, DapperAssetRepository>()
+                .AddSingleton<IAssetRepository, DapperAssetRepository>()
+                .AddScoped<IApiAssetRepository>(provider =>
+                    ActivatorUtilities.CreateInstance<ApiAssetRepository>(
+                        provider,
+                        provider.GetRequiredService<IAssetRepository>()))
                 .AddScoped<ISpaceRepository, SpaceRepository>()
                 .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
                 .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
@@ -88,8 +89,7 @@ namespace API
                 // Do not use a DlcsContext, _may_ be Singleton (but should they)
                 .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
                 .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
-                .AddSingleton<IThumbnailPolicyRepository, ThumbnailPolicyRepository>()
-                .AddSingleton<IImageOptimisationPolicyRepository, ImageOptimisationPolicyRepository>()
+                .AddScoped<IPolicyRepository, PolicyRepository>()
                 .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
                 .ConfigureMediatR()
                 .ConfigureSwagger();
@@ -126,7 +126,7 @@ namespace API
 
             services
                 .AddHealthChecks()
-                .AddUrlGroup(apiSettings.DLCS.ApiRoot, "DLCS API");
+                .AddDbContextCheck<DlcsContext>("DLCS-DB");
             
             services.Configure<KestrelServerOptions>(options =>
             {

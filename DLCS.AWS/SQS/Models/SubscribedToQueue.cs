@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace DLCS.AWS.SQS;
+namespace DLCS.AWS.SQS.Models;
 
 /// <summary>
 /// <summary>

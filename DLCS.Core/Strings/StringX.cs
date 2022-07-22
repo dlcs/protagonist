@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -71,8 +72,7 @@ namespace DLCS.Core.Strings
             }
 
             return sb.ToString();
-        }
-        
+        }        
         
         /// <summary>
         /// Validates an email address.
@@ -125,5 +125,25 @@ namespace DLCS.Core.Strings
                 return false;
             }
         }
+        
+        /// <summary>
+        /// Splits string containing separated values into IEnumerable{T}, using specified separator.
+        /// </summary>
+        /// <param name="str">String to split</param>
+        /// <param name="separator">String to split by.</param>
+        /// <returns>String split, or empty list.</returns>
+        public static IEnumerable<string> SplitSeparatedString(this string str, string separator)
+            => str?.Trim().Split(separator, StringSplitOptions.RemoveEmptyEntries) ?? Enumerable.Empty<string>();
+
+        /// <summary>
+        /// Get everything after the last instance of value
+        /// </summary>
+        /// <param name="str">String to extract data from</param>
+        /// <param name="value">Character to split by</param>
+        /// <returns>Everything after last index of character</returns>
+        public static string EverythingAfterLast(this string str, char value)
+            => str.Contains(value, StringComparison.Ordinal)
+                ? str[(str.LastIndexOf(value) + 1)..]
+                : string.Empty;
     }
 }

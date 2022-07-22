@@ -19,3 +19,9 @@ public class StorageCollection : ICollectionFixture<StorageFixture>
 {
     public const string CollectionName = "Storage Collection";
 }
+
+[CollectionDefinition(CollectionName)]
+public class EngineCollection : ICollectionFixture<EngineFixture>
+{
+    public const string CollectionName = "Engine Collection";
+}

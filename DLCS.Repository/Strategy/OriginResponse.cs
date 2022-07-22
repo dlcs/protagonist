@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
+using DLCS.Core.Streams;
 
 namespace DLCS.Repository.Strategy
 {
@@ -11,7 +12,7 @@ namespace DLCS.Repository.Strategy
     public class OriginResponse : IAsyncDisposable
     {
         /// <summary>
-        /// Get Stream content from origin
+        /// Stream content from origin
         /// </summary>
         public Stream Stream { get; }
         
@@ -33,14 +34,14 @@ namespace DLCS.Repository.Strategy
         /// <summary>
         /// Default EmptyResponse
         /// </summary>
-        public static OriginResponse Empty = new(Stream.Null) { IsEmpty = true };
+        public static readonly OriginResponse Empty = new(Stream.Null) { IsEmpty = true };
 
         public OriginResponse(Stream stream)
         {
             Stream = stream.ThrowIfNull(nameof(stream));
         }
         
-        public OriginResponse WithContentType(string contentType)
+        public OriginResponse WithContentType(string? contentType)
         {
             if (IsEmpty) throw new InvalidOperationException("Cannot set ContentType for empty response");
             ContentType = contentType;
@@ -50,11 +51,11 @@ namespace DLCS.Repository.Strategy
         public OriginResponse WithContentLength(long? contentLength)
         {
             if (IsEmpty) throw new InvalidOperationException("Cannot set ContentLength for empty response");
-            ContentLength = (contentLength ?? 0) > 0 ? contentLength.Value : (long?) null;
+            ContentLength = (contentLength ?? 0) > 0 ? contentLength!.Value : null;
             return this;
         }
 
         public ValueTask DisposeAsync() 
-            => Stream == null ? new ValueTask() : Stream.DisposeAsync();
+            => Stream.IsNull() ? new ValueTask() : Stream.DisposeAsync();
     }
 }

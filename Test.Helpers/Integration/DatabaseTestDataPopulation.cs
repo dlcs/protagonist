@@ -6,6 +6,7 @@ using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.Spaces;
+using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +33,12 @@ namespace Test.Helpers.Integration
             int num1 = 0,
             int num2 = 0,
             int num3 = 0,
-            bool notForDelivery = false)
+            bool notForDelivery = false,
+            int batch = 0,
+            long duration = 0,
+            bool ingesting = false,
+            string error = "",
+            string imageOptimisationPolicy = "")
             => assets.AddAsync(new Asset
             {
                 Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
@@ -40,8 +46,9 @@ namespace Test.Helpers.Integration
                 ThumbnailPolicy = "default", MaxUnauthorised = maxUnauthorised,
                 Reference1 = ref1, Reference2 = ref2, Reference3 = ref3,
                 NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
-                NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = "",
-                ImageOptimisationPolicy = "", Batch = 0, Ingesting = false
+                NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = error,
+                ImageOptimisationPolicy = imageOptimisationPolicy, Batch = batch, Ingesting = ingesting,
+                Duration = duration
             });
 
         public static ValueTask<EntityEntry<AuthToken>> AddTestToken(this DbSet<AuthToken> authTokens,
@@ -99,8 +106,16 @@ namespace Test.Helpers.Integration
                 });
 
         public static ValueTask<EntityEntry<Space>> AddTestSpace(this DbSet<Space> spaces,
-            int customer, int id, string name) =>
-            spaces.AddAsync(new Space { Customer = customer, Id = id, Name = name });
+            int customer, int id, string name = null) =>
+            spaces.AddAsync(new Space { Customer = customer, Id = id, Name = name ?? id.ToString() });
+        
+        public static ValueTask<EntityEntry<Customer>> AddTestCustomer(this DbSet<Customer> customers,
+            int id, string name = null, string displayName = null) =>
+            customers.AddAsync(new Customer
+            {
+                Id = id, Name = name ?? id.ToString(), Keys = Array.Empty<string>(), 
+                DisplayName = displayName ?? id.ToString(), Created = DateTime.UtcNow
+            });
 
         public static ValueTask<EntityEntry<User>> AddTestUser(this DbSet<User> users,
             int customer, string email, string password = "password123") => users.AddAsync(new User
@@ -113,5 +128,43 @@ namespace Test.Helpers.Integration
             Created = DateTime.UtcNow,
             Roles = string.Empty
         });
+        
+        public static ValueTask<EntityEntry<ImageLocation>> AddTestImageLocation(this DbSet<ImageLocation> locations,
+            string id, string s3 = "s3://wherever", string nas = "")
+            => locations.AddAsync(new ImageLocation { Id = id, S3 = s3, Nas = nas });
+        
+        public static ValueTask<EntityEntry<ImageStorage>> AddTestImageStorage(this DbSet<ImageStorage> storage,
+            string id, int space = 1, int customer = 99, long size = 123, long thumbSize = 10)
+            => storage.AddAsync(new ImageStorage
+            {
+                Id = id,
+                Customer = customer,
+                Space = space,
+                Size = size,
+                LastChecked = DateTime.UtcNow.AddDays(-7),
+                ThumbnailSize = thumbSize
+            });
+
+        public static ValueTask<EntityEntry<Batch>> AddTestBatch(this DbSet<Batch> batch, int id, int customer = 99,
+            int count = 1, int completed = 0, int errors = 0, DateTime? submitted = null)
+            => batch.AddAsync(new Batch
+            {
+                Id = id, Customer = customer, Submitted = submitted ?? DateTime.UtcNow, Completed = completed,
+                Count = count, Errors = errors
+            });
+
+        public static ValueTask<EntityEntry<CustomerStorage>> AddTestCustomerStorage(
+            this DbSet<CustomerStorage> customerStorages, int customer = 99, int space = 0, int numberOfImages = 0,
+            int sizeOfStored = 0, int sizeOfThumbs = 0, string storagePolicy = "default")
+            => customerStorages.AddAsync(new CustomerStorage
+            {
+                Customer = customer,
+                Space = space,
+                LastCalculated = DateTime.UtcNow,
+                StoragePolicy = storagePolicy,
+                NumberOfStoredImages = numberOfImages,
+                TotalSizeOfStoredImages = sizeOfStored,
+                TotalSizeOfThumbnails = sizeOfThumbs
+            });
     }
 }

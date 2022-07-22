@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using DLCS.Core.Collections;
+using DLCS.Core.Guard;
 
 namespace DLCS.Model.Assets
 {
@@ -112,6 +113,32 @@ namespace DLCS.Model.Assets
             }
 
             return uniqueName;
+        }
+
+        /// <summary>
+        /// Full thumbnail policy object for Asset
+        /// </summary>
+        [NotMapped]
+        public ThumbnailPolicy? FullThumbnailPolicy { get; private set; }
+
+        /// <summary>
+        /// Full image optimisation policy object for Asset
+        /// </summary>
+        [NotMapped]
+        public ImageOptimisationPolicy FullImageOptimisationPolicy { get; private set; } = new();
+        
+        public Asset WithThumbnailPolicy(ThumbnailPolicy? thumbnailPolicy)
+        {
+            FullThumbnailPolicy = Family == AssetFamily.Image
+                ? thumbnailPolicy.ThrowIfNull(nameof(thumbnailPolicy))
+                : thumbnailPolicy;
+            return this;
+        }
+        
+        public Asset WithImageOptimisationPolicy(ImageOptimisationPolicy imageOptimisationPolicy)
+        {
+            FullImageOptimisationPolicy = imageOptimisationPolicy.ThrowIfNull(nameof(imageOptimisationPolicy));
+            return this;
         }
     }
 }

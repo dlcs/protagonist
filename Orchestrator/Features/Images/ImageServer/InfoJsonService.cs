@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Model.Storage;
 using IIIF;
 using IIIF.ImageApi;
 using IIIF.ImageApi.V2;

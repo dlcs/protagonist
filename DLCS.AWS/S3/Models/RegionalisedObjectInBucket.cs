@@ -2,6 +2,10 @@
 
 namespace DLCS.AWS.S3.Models
 {
+    /// <summary>
+    /// Represents a bucket that may have an explicit region set
+    /// </summary>
+    /// <remarks>See https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-bucket-intro.html</remarks>
     public class RegionalisedObjectInBucket : ObjectInBucket
     {
         public string? Region { get; set; }
@@ -11,8 +15,12 @@ namespace DLCS.AWS.S3.Models
             Region = region;
         }
 
-        // NOTE(DG) Regex's and logic moved from deliverator
-        private static readonly Regex RegexS3Qualified = new(@"s3\:\/\/(.*?)\/(.*?)\/(.*)", RegexOptions.Compiled);
+        // s3:// URI with region included. This is not an official format for S3 but is used + required by Deliverator
+        // Leaving this here until we have retired that version for backwards compat
+        // region is in format eu-west-2, ap-southeast-1, us-east-1
+        private static readonly Regex RegexS3Qualified = new(@"s3\:\/\/(\w{2}-\w+\-\d)\/(.*?)\/(.*)", RegexOptions.Compiled);
+        
+        private static readonly Regex RegexS3 = new(@"s3\:\/\/(.*?)\/(.*)", RegexOptions.Compiled);
         
         // us-east-1 uses period instead of dash
         private static readonly Regex RegexHttp1 = new(@"^http[s]?\:\/\/s3[\-\.](\S+\-\S+\-\d)\.amazonaws\.com\/(.*?)\/(.*)$", RegexOptions.Compiled); 
@@ -29,6 +37,11 @@ namespace DLCS.AWS.S3.Models
         public static RegionalisedObjectInBucket? Parse(string uri)
         {
             if (TryParseBucketInfo(RegexS3Qualified, uri, out var result, qualified: true))
+            {
+                return result;
+            }
+
+            if (TryParseBucketInfo(RegexS3, uri, out result, qualified: false))
             {
                 return result;
             }
@@ -56,6 +69,15 @@ namespace DLCS.AWS.S3.Models
             return null;
         }
 
+        /// <summary>
+        /// Attempt to match string to regex
+        /// </summary>
+        /// <param name="regex">Regex to match</param>
+        /// <param name="s">Input string</param>
+        /// <param name="bucket">Output bucket object</param>
+        /// <param name="qualified">Contains region</param>
+        /// <param name="following">Region at end</param>
+        /// <returns></returns>
         private static bool TryParseBucketInfo(Regex regex, string s, out RegionalisedObjectInBucket? bucket,
             bool qualified = false, bool following = false)
         {

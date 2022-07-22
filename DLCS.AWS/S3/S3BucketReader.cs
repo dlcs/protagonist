@@ -1,8 +1,4 @@
-﻿using System.IO;
-using System.Linq;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.AWS.S3.Models;

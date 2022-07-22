@@ -39,6 +39,16 @@ services:
     env_file:
       - .env
 
+  appetiser:
+    image: digirati/appetiser:latest
+    ports:
+      - "5031:80"
+    volumes:
+      - $HOME\Docker\scratch\engine:/scratch
+      - $HOME\.aws:/root/.aws
+    env_file:
+      - .env
+
   thumbs:
     build:
       context: ../

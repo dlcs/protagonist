@@ -104,7 +104,11 @@ namespace Test.Helpers.Integration
 
                     services.AddSingleton<IAppCache, MockCachingService>();
                 })
-                .UseEnvironment("Testing"); 
+                .UseEnvironment("Testing")
+                .UseDefaultServiceProvider((_, options) =>
+                {
+                    options.ValidateScopes = true;
+                });
         }
 
         protected override void Dispose(bool disposing)
@@ -120,11 +124,11 @@ namespace Test.Helpers.Integration
         {
             services.Remove(new ServiceDescriptor(typeof(IAmazonS3),
                 a => a.GetService(typeof(IAmazonS3)), ServiceLifetime.Singleton));
-            services.AddScoped<IAmazonS3>(p => localStack.AWSS3ClientFactory());
+            services.AddSingleton<IAmazonS3>(p => localStack.AWSS3ClientFactory());
             
             services.Remove(new ServiceDescriptor(typeof(IAmazonSQS),
                 a => a.GetService(typeof(IAmazonSQS)), ServiceLifetime.Singleton));
-            services.AddScoped<IAmazonSQS>(p => localStack.AWSSQSClientFactory());
+            services.AddSingleton<IAmazonSQS>(p => localStack.AWSSQSClientFactory());
         }
     }
 }

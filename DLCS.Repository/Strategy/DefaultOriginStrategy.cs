@@ -15,7 +15,7 @@ namespace DLCS.Repository.Strategy
     {
         private readonly IHttpClientFactory httpClientFactory;
         private readonly ILogger<DefaultOriginStrategy> logger;
-
+        
         public DefaultOriginStrategy(IHttpClientFactory httpClientFactory, ILogger<DefaultOriginStrategy> logger)
         {
             this.httpClientFactory = httpClientFactory;

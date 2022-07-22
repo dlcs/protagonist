@@ -51,13 +51,13 @@ namespace Test.Helpers.Integration
         }
         
         /// <summary>
-        /// Delete any standing data
+        /// Delete any standing data - leaves data set in Seed method
         /// </summary>
         public void CleanUp()
         {
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Spaces\" WHERE \"Customer\" != 99 AND \"Id\" != 1");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
-            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"StoragePolicies\" WHERE \"Id\" != 'default'");
+            DbContext.Database.ExecuteSqlRaw("DELETE FROM \"StoragePolicies\" WHERE \"Id\" not in ('default', 'small')");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" != 'fast-higher'");
             DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
@@ -87,6 +87,12 @@ namespace Test.Helpers.Integration
                 MaximumNumberOfStoredImages = 1000000,
                 MaximumTotalSizeOfStoredImages = 1000000000
             });
+            await DbContext.StoragePolicies.AddAsync(new StoragePolicy
+            {
+                Id = "small",
+                MaximumNumberOfStoredImages = 10,
+                MaximumTotalSizeOfStoredImages = 100
+            });
             await DbContext.EntityCounters.AddAsync(new EntityCounter
             {
                 Type = "space",
@@ -99,7 +105,7 @@ namespace Test.Helpers.Integration
             await DbContext.ThumbnailPolicies.AddAsync(new ThumbnailPolicy
                 { Id = "default", Name = "default", Sizes = "800,400,200" });
             await DbContext.ImageOptimisationPolicies.AddAsync(new ImageOptimisationPolicy
-                { Id = "fast-higher", Name = "Fast higher quality", TechnicalDetails = "kdu_max" });
+                { Id = "fast-higher", Name = "Fast higher quality", TechnicalDetails = new[] { "kdu_max" } });
             await DbContext.AuthServices.AddAsync(new AuthService
             {
                 Customer = customer, Name = "clickthrough", Id = ClickThroughAuthService,

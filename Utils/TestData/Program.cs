@@ -28,9 +28,12 @@ await context.ThumbnailPolicies.AddAsync(new() { Id = "default", Name = "Test Po
 
 Console.WriteLine("Creating image optimisation policies");
 await context.ImageOptimisationPolicies.AddRangeAsync(
-    new() { Id = "audio-max", Name = "Audio - mp3", TechnicalDetails = "System preset: Audio MP3 - 192k(mp3)" }, 
-    new() { Id = "fast-low", Name = "Fast low quality", TechnicalDetails = "kdu_low" }, 
-    new() { Id = "video-max", Name = "Video - mp4", TechnicalDetails = "System preset: Generic 1080p(mp4)" });
+    new()
+    {
+        Id = "audio-max", Name = "Audio - mp3", TechnicalDetails = new[] { "System preset: Audio MP3 - 192k(mp3)" }
+    },
+    new() { Id = "fast-low", Name = "Fast low quality", TechnicalDetails = new[] { "kdu_low" } },
+    new() { Id = "video-max", Name = "Video - mp4", TechnicalDetails = new[] { "System preset: Generic 1080p(mp4)" } });
     
 Console.WriteLine("Creating origin strategies");
 await context.OriginStrategies.AddRangeAsync(

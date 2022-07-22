@@ -1,6 +1,4 @@
-﻿using System;
-using System.IO;
-using DLCS.Core.Guard;
+﻿using DLCS.Core.Guard;
 
 namespace DLCS.AWS.S3.Models
 {

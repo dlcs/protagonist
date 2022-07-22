@@ -386,7 +386,10 @@ namespace DLCS.Repository
 
                 entity.Property(e => e.TechnicalDetails)
                     .IsRequired()
-                    .HasMaxLength(1000);
+                    .HasMaxLength(1000)
+                    .HasConversion(
+                        v => string.Join(",", v),
+                        v => v.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray());;
             });
 
             modelBuilder.Entity<ImageServer>(entity =>

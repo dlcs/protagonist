@@ -26,4 +26,8 @@
       <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Streams" />
+    </ItemGroup>
+
 </Project>
