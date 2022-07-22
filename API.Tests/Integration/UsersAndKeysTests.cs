@@ -125,8 +125,9 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer(99).PostAsync("/customers/99/portalUsers", content);
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var portalUser = await response.ReadAsHydraResponseAsync<PortalUser>();
+        portalUser.Id.Should().Contain("/customers/99/portalUsers/");
         portalUser.Email.Should().Be("user@email.com");
-        portalUser.Password.Should().BeEmpty(); // don't return password!
+        portalUser.Password.Should().BeNullOrEmpty(); // don't return password!
 
     }
 
@@ -144,7 +145,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var users = await response.ReadAsHydraResponseAsync<HydraCollection<PortalUser>>();
         users.Type.Should().Be("Collection");
-        users.Members.Should().HaveCount(3);
+        users.Members.Should().HaveCountGreaterThan(2);
         users.Members.Should().Contain(pu => pu.Email == "user1@cust99.org");
         users.Members.Should().Contain(pu => pu.Email == "user3@cust99.org");
         users.Members.Should().NotContain(pu => pu.Password.HasText());
@@ -166,10 +167,21 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var user = await response.ReadAsHydraResponseAsync<PortalUser>();
-        user.Type.Should().Be("PortalUser");
+        user.Type.Should().Be("vocab:PortalUser");
         user.Id.Should().EndWith($"/customers/99/portalUsers/{userId}");
         user.Email.Should().Be("user100@cust99.org");
-        user.Password.Should().BeEmpty();
+        user.Password.Should().BeNullOrEmpty();
+    }
+    
+    
+    [Fact]
+    public async void Get_PortalUser_By_Id_Returns_404_If_No_User()
+    {
+        // act
+        var response = await httpClient.AsCustomer(99).GetAsync($"/customers/99/portalUsers/not-a-real-id");
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -182,16 +194,16 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         const string portalUserJson = @"{
   ""@type"": ""User"",
-  ""email"": ""user102@email.com""
+  ""email"": ""user102@new-email.com""
 }";
         var content = new StringContent(portalUserJson, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PatchAsync($"/customers/99/portalUsers/{userId}", content);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var user = await response.ReadAsHydraResponseAsync<PortalUser>();
-        user.Type.Should().Be("PortalUser");
+        user.Type.Should().Be("vocab:PortalUser");
         user.Id.Should().EndWith($"/customers/99/portalUsers/{userId}");
-        user.Email.Should().Be("user102@cust99.org");
-        user.Password.Should().BeEmpty();
+        user.Email.Should().Be("user102@new-email.com");
+        user.Password.Should().BeNullOrEmpty();
     }
     
     [Fact]
@@ -221,7 +233,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         var user = await response.ReadAsHydraResponseAsync<PortalUser>();
-        user.Password.Should().BeEmpty();
+        user.Password.Should().BeNullOrEmpty();
         dbUser = await dbContext.Users.FindAsync(dbId);
         dbUser.EncryptedPassword.Should().NotBeEmpty();
         dbUser.EncryptedPassword.Should().NotBe(startPasswordEnc);
@@ -240,7 +252,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var deletedUser = await dbContext.Users.FindAsync(userId);
+        var deletedUser = await dbContext.Users.AsNoTracking().SingleOrDefaultAsync(u => u.Id == userId);
         deletedUser.Should().BeNull();
     }
 
