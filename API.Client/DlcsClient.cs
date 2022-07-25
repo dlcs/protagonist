@@ -21,6 +21,10 @@ namespace API.Client
     /// <summary>
     /// Client for Dlcs API
     /// </summary>
+    /// <remarks>
+    /// When using httpClient paths should _not_ have a leading / as this can cause the last segment of the httpClient
+    /// BaseAddress to be lost. https://stackoverflow.com/questions/23438416/why-is-httpclient-baseaddress-not-working
+    /// </remarks>
     public class DlcsClient : IDlcsClient
     {
         private readonly ILogger<DlcsClient> logger;
@@ -56,7 +60,7 @@ namespace API.Client
             string? orderBy=null, bool descending = false, int? customerId = null)
         {
             customerId ??= currentUser.GetCustomerId();
-            var url = $"/customers/{customerId}/spaces?page={page}&pageSize={pageSize}";
+            var url = $"customers/{customerId}/spaces?page={page}&pageSize={pageSize}";
             if (orderBy != null)
             {
                 if (descending)
@@ -75,7 +79,7 @@ namespace API.Client
 
         public async Task<Space?> GetSpaceDetails(int spaceId)
         {
-            var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}";
+            var url = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}";
             var response = await httpClient.GetAsync(url);
             var space = await response.ReadAsHydraResponseAsync<Space>(jsonSerializerSettings);
             return space;
@@ -89,7 +93,7 @@ namespace API.Client
         public async Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, 
             string? orderBy = null, bool descending = false)
         {
-            var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images?page={page}&pageSize={pageSize}";
+            var url = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images?page={page}&pageSize={pageSize}";
             if (orderBy != null)
             {
                 if (descending)
@@ -108,7 +112,7 @@ namespace API.Client
 
         public async Task<Space?> CreateSpace(Space newSpace)
         {
-            var url = $"/customers/{currentUser.GetCustomerId()}/spaces";
+            var url = $"customers/{currentUser.GetCustomerId()}/spaces";
             var response = await httpClient.PostAsync(url, ApiBody(newSpace));
             var space = await response.ReadAsHydraResponseAsync<Space>(jsonSerializerSettings);
             return space;
@@ -116,7 +120,7 @@ namespace API.Client
 
         public async Task<Space?> PatchSpace(int spaceId, Space space)
         {
-            var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}";
+            var url = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}";
             var response = await httpClient.PatchAsync(url, ApiBody(space));
             var patchedSpace = await response.ReadAsHydraResponseAsync<Space>(jsonSerializerSettings);
             return patchedSpace;
@@ -124,7 +128,7 @@ namespace API.Client
 
         public async Task<IEnumerable<string>?> GetApiKeys()
         {
-            var url = $"/customers/{currentUser.GetCustomerId()}/keys";
+            var url = $"customers/{currentUser.GetCustomerId()}/keys";
             var response = await httpClient.GetAsync(url);
             var apiKeys = await response.ReadAsHydraResponseAsync<HydraCollection<ApiKey>>(jsonSerializerSettings);
             return apiKeys?.Members.Select(m => m.Key);
@@ -132,7 +136,7 @@ namespace API.Client
 
         public async Task<ApiKey> CreateNewApiKey()
         {
-            var url = $"/customers/{currentUser.GetCustomerId()}/keys";
+            var url = $"customers/{currentUser.GetCustomerId()}/keys";
             var response = await httpClient.PostAsync(url, null!);
             var apiKey = await response.ReadAsHydraResponseAsync<ApiKey>(jsonSerializerSettings);
             return apiKey;
@@ -140,7 +144,7 @@ namespace API.Client
 
         public async Task<Image> GetImage(int requestSpaceId, string requestImageId)
         {
-            var url = $"/customers/{currentUser.GetCustomerId()}/spaces/{requestSpaceId}/images/{requestImageId}";
+            var url = $"customers/{currentUser.GetCustomerId()}/spaces/{requestSpaceId}/images/{requestImageId}";
             var response = await httpClient.GetAsync(url);
             var image = await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
             return image;
@@ -148,7 +152,7 @@ namespace API.Client
         
         public async Task<HydraCollection<PortalUser>?> GetPortalUsers()
         {
-            var url = $"/customers/{currentUser.GetCustomerId()}/portalUsers";
+            var url = $"customers/{currentUser.GetCustomerId()}/portalUsers";
             var response = await httpClient.GetAsync(url);
             var portalUsers = await response.ReadAsHydraResponseAsync<HydraCollection<PortalUser>>(jsonSerializerSettings);
             return portalUsers;
@@ -158,7 +162,7 @@ namespace API.Client
         {
             // TODO - a 400 - badRequest is likely an email address that already exists.
             // Handle that with some sort of nicer response code or known error enum.
-            var url = $"/customers/{currentUser.GetCustomerId()}/portalUsers";
+            var url = $"customers/{currentUser.GetCustomerId()}/portalUsers";
             var response = await httpClient.PostAsync(url, ApiBody(portalUser));
             var newUser = await response.ReadAsHydraResponseAsync<PortalUser>(jsonSerializerSettings);
             return newUser;
@@ -166,7 +170,7 @@ namespace API.Client
 
         public async Task<bool> DeletePortalUser(string portalUserId)
         {
-            var url = $"/customers/{currentUser.GetCustomerId()}/portalUsers/{portalUserId}";
+            var url = $"customers/{currentUser.GetCustomerId()}/portalUsers/{portalUserId}";
             try
             {
                 var response = await httpClient.DeleteAsync(url);
@@ -182,7 +186,7 @@ namespace API.Client
         public async Task<Image?> DirectIngestImage(int spaceId, string imageId, Image asset)
         {
             // TODO - error handling
-            var uri = $"/customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}";
+            var uri = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}";
             var response = await httpClient.PutAsync(uri, ApiBody(asset));
             return await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
         }
@@ -190,7 +194,7 @@ namespace API.Client
         public async Task<HydraCollection<Image>> PatchImages(HydraCollection<Image> images, int spaceId)
         {
             int? customerId = currentUser.GetCustomerId();
-            string uri = $"/customers/{customerId}/spaces/{spaceId}/images";
+            string uri = $"customers/{customerId}/spaces/{spaceId}/images";
             // The old API call (e.g., in Wellcome) required incoming images to have the ModelId
             // matching the DB ID, e.g., /2/1/my-image-id
             // But this is not right; the DLCS should construct that DB ID from cust, space, and "modelId"
