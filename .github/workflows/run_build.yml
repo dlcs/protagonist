@@ -111,5 +111,5 @@ jobs:
         with:
           image-name: "composite-handler"
           dockerfile: "Dockerfile.CompositeHandler"
-          context: "./composite_handler"
+          context: "./src/composite_handler"
           github-token: ${{ secrets.GITHUB_TOKEN }}
