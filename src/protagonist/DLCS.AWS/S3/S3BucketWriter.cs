@@ -16,32 +16,6 @@ public class S3BucketWriter : IBucketWriter
         this.logger = logger;
     }
 
-    public async Task CopyWithinBucket(string bucket, string sourceKey, string destKey)
-    {
-        logger.LogDebug("Copying {Source} to {Destination} in {Bucket}", sourceKey, destKey, bucket);
-        try
-        {
-            var request = new CopyObjectRequest
-            {
-                SourceBucket = bucket,
-                SourceKey = sourceKey,
-                DestinationBucket = bucket,
-                DestinationKey = destKey
-            };
-            CopyObjectResponse response = await s3Client.CopyObjectAsync(request);
-        }
-        catch (AmazonS3Exception e)
-        {
-            logger.LogWarning(e, "Error encountered on server. Message:'{Message}' when writing an object",
-                e.Message);
-        }
-        catch (Exception e)
-        {
-            logger.LogWarning(e, "Unknown encountered on server. Message:'{Message}' when writing an object",
-                e.Message);
-        }
-    }
-
     public async Task CopyObject(ObjectInBucket source, ObjectInBucket destination)
     {
         logger.LogDebug("Copying {Source} to {Destination}", source, destination);

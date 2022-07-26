@@ -8,12 +8,6 @@ namespace DLCS.AWS.S3;
 public interface IBucketWriter
 {
     /// <summary>
-    /// Copy key to new key within same bucket.
-    /// </summary>
-    [Obsolete("Use CopyObject instead")]
-    Task CopyWithinBucket(string bucket, string sourceKey, string destKey);
-    
-    /// <summary>
     /// Copy bucket object from source to destination
     /// </summary>
     Task CopyObject(ObjectInBucket source, ObjectInBucket destination);

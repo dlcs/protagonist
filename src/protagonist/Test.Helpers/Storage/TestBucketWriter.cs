@@ -63,22 +63,6 @@ public class TestBucketWriter : IBucketWriter
             throw new AssertionFailedException($"The following paths have not been verified: {string.Join(",", unverified)}");
         }
     }
-    
-    public Task CopyWithinBucket(string bucket, string sourceKey, string destKey)
-    {
-        if (forBucket.HasText())
-        {
-            if (bucket != forBucket) throw new InvalidOperationException("Operation for different bucket");
-        }
-
-        if (Operations.TryGetValue(sourceKey, out var op))
-        {
-            Operations[destKey] = new BucketObject { Contents = op.Contents, FilePath = op.FilePath, Bucket = bucket };
-            return Task.FromResult(true);
-        }
-            
-        return Task.FromResult(false);
-    }
 
     public Task CopyObject(ObjectInBucket source, ObjectInBucket destination)
     {
