@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Core;
 using DLCS.Core.Strings;
 using FluentAssertions.Execution;
 
@@ -69,6 +70,12 @@ public class TestBucketWriter : IBucketWriter
         throw new System.NotImplementedException();
     }
 
+    Task<ResultStatus<long?>> IBucketWriter.CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
+        Func<long, Task<bool>> verifySize, bool destIsPublic, CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task WriteToBucket(ObjectInBucket dest, string content, string contentType,
         CancellationToken cancellationToken = default)
     {
@@ -86,6 +93,12 @@ public class TestBucketWriter : IBucketWriter
 
         Operations[dest.Key] = new BucketObject { ContentStream = content, Bucket = dest.Bucket };
         return Task.FromResult(true);
+    }
+
+    public Task<bool> WriteFileToBucket(ObjectInBucket dest, string filePath, string contentType = null,
+        CancellationToken token = default)
+    {
+        throw new NotImplementedException();
     }
 
     public Task<bool> WriteFileToBucket(ObjectInBucket dest, string filePath, string contentType = null)

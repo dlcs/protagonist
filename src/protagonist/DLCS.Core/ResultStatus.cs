@@ -1,7 +1,6 @@
 ﻿namespace DLCS.Core;
 
 public class ResultStatus<T>
-    where T : class
 {
     /// <summary>
     /// Indicates whether the operation was successful
@@ -39,12 +38,12 @@ public class ResultStatus<T>
     /// </summary>
     /// <param name="value">The value.</param>
     /// <returns></returns>
-    public static ResultStatus<T> Unsuccessful(T value) => new ResultStatus<T>(false, value);
+    public static ResultStatus<T> Unsuccessful(T value) => new(false, value);
 
     /// <summary>
     /// Creates a successful result with specified value
     /// </summary>
     /// <param name="value">The value.</param>
     /// <returns></returns>
-    public static ResultStatus<T> Successful(T value) => new ResultStatus<T>(true, value);
+    public static ResultStatus<T> Successful(T value) => new(true, value);
 }
