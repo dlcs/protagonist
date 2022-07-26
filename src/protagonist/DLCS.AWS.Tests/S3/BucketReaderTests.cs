@@ -11,86 +11,85 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
-namespace DLCS.AWS.Tests.S3
+namespace DLCS.AWS.Tests.S3;
+
+public class BucketReaderTests
 {
-    public class BucketReaderTests
+    private readonly IAmazonS3 s3Client;
+    private readonly S3BucketReader sut;
+    
+    public BucketReaderTests()
     {
-        private readonly IAmazonS3 s3Client;
-        private readonly S3BucketReader sut;
+        s3Client = A.Fake<IAmazonS3>();
+        sut = new S3BucketReader(s3Client, new NullLogger<S3BucketReader>());
+    }
+
+    [Fact]
+    public async Task GetObjectFromBucket_ReturnsFoundObjectAsStream()
+    {
+        // Arrange
+        const string bucket = "MyBucket";
+        const string key = "MyKey";
+        const string bucketResponse = "This is a response from s3";
         
-        public BucketReaderTests()
-        {
-            s3Client = A.Fake<IAmazonS3>();
-            sut = new S3BucketReader(s3Client, new NullLogger<S3BucketReader>());
-        }
+        var responseStream = new MemoryStream(Encoding.Default.GetBytes(bucketResponse));
+        A.CallTo(() =>
+                s3Client.GetObjectAsync(
+                    A<GetObjectRequest>.That.Matches(r => r.BucketName == bucket && r.Key == key),
+                    A<CancellationToken>.Ignored))
+            .Returns(new GetObjectResponse {ResponseStream = responseStream});
 
-        [Fact]
-        public async Task GetObjectFromBucket_ReturnsFoundObjectAsStream()
-        {
-            // Arrange
-            const string bucket = "MyBucket";
-            const string key = "MyKey";
-            const string bucketResponse = "This is a response from s3";
-            
-            var responseStream = new MemoryStream(Encoding.Default.GetBytes(bucketResponse));
-            A.CallTo(() =>
-                    s3Client.GetObjectAsync(
-                        A<GetObjectRequest>.That.Matches(r => r.BucketName == bucket && r.Key == key),
-                        A<CancellationToken>.Ignored))
-                .Returns(new GetObjectResponse {ResponseStream = responseStream});
+        var objectInBucket = new ObjectInBucket(bucket, key);
 
-            var objectInBucket = new ObjectInBucket(bucket, key);
+        // Act
+        var targetStream = (await sut.GetObjectFromBucket(objectInBucket)).Stream;
 
-            // Act
-            var targetStream = (await sut.GetObjectFromBucket(objectInBucket)).Stream;
-
-            // Assert
-            var memoryStream = new MemoryStream();
-            await targetStream.CopyToAsync(memoryStream);
-            
-            var actual = Encoding.Default.GetString(memoryStream.ToArray());
-            actual.Should().Be(bucketResponse);
-        }
+        // Assert
+        var memoryStream = new MemoryStream();
+        await targetStream.CopyToAsync(memoryStream);
         
-        [Fact]
-        public async Task GetObjectFromBucket_ReturnsNullStream_IfKeyNotFound()
-        {
-            // Arrange
-            A.CallTo(() =>
-                    s3Client.GetObjectAsync(
-                        A<GetObjectRequest>.Ignored,
-                        A<CancellationToken>.Ignored))
-                .ThrowsAsync(new AmazonS3Exception("uh-oh", ErrorType.Unknown, "123", "xxx-1", HttpStatusCode.NotFound));
+        var actual = Encoding.Default.GetString(memoryStream.ToArray());
+        actual.Should().Be(bucketResponse);
+    }
+    
+    [Fact]
+    public async Task GetObjectFromBucket_ReturnsNullStream_IfKeyNotFound()
+    {
+        // Arrange
+        A.CallTo(() =>
+                s3Client.GetObjectAsync(
+                    A<GetObjectRequest>.Ignored,
+                    A<CancellationToken>.Ignored))
+            .ThrowsAsync(new AmazonS3Exception("uh-oh", ErrorType.Unknown, "123", "xxx-1", HttpStatusCode.NotFound));
 
-            var objectInBucket = new ObjectInBucket("MyBucket", "MyKey");
+        var objectInBucket = new ObjectInBucket("MyBucket", "MyKey");
 
-            // Act
-            var result = await sut.GetObjectFromBucket(objectInBucket);
+        // Act
+        var result = await sut.GetObjectFromBucket(objectInBucket);
 
-            // Assert
-            result.Stream.Should().BeSameAs(Stream.Null);
-        }
+        // Assert
+        result.Stream.Should().BeSameAs(Stream.Null);
+    }
 
-        [Theory]
-        [InlineData(HttpStatusCode.Redirect)]
-        [InlineData(HttpStatusCode.BadRequest)]
-        [InlineData(HttpStatusCode.InternalServerError)]
-        public void GetObjectFromBucket_ThrowsHttpException_IfS3CopyFails_DueToNon404(HttpStatusCode statusCode)
-        {
-            // Arrange
-            A.CallTo(() =>
-                    s3Client.GetObjectAsync(
-                        A<GetObjectRequest>.Ignored,
-                        A<CancellationToken>.Ignored))
-                .ThrowsAsync(new AmazonS3Exception("uh-oh", ErrorType.Unknown, "123", "xxx-1", statusCode));
+    [Theory]
+    [InlineData(HttpStatusCode.Redirect)]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    public void GetObjectFromBucket_ThrowsHttpException_IfS3CopyFails_DueToNon404(HttpStatusCode statusCode)
+    {
+        // Arrange
+        A.CallTo(() =>
+                s3Client.GetObjectAsync(
+                    A<GetObjectRequest>.Ignored,
+                    A<CancellationToken>.Ignored))
+            .ThrowsAsync(new AmazonS3Exception("uh-oh", ErrorType.Unknown, "123", "xxx-1", statusCode));
 
-            var objectInBucket = new ObjectInBucket("MyBucket", "MyKey");
+        var objectInBucket = new ObjectInBucket("MyBucket", "MyKey");
 
-            // Act
-            Func<Task> action = () => sut.GetObjectFromBucket(objectInBucket);
+        // Act
+        Func<Task> action = () => sut.GetObjectFromBucket(objectInBucket);
 
-            // Assert
-            action.Should().ThrowAsync<HttpException>().Result.Which.StatusCode.Should().Be(statusCode);
-        }
+        // Assert
+        action.Should().ThrowAsync<HttpException>().Result.Which.StatusCode.Should().Be(statusCode);
     }
 }

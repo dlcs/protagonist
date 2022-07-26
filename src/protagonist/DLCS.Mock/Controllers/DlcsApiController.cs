@@ -2,24 +2,23 @@ using DLCS.HydraModel;
 using DLCS.Mock.ApiApp;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DLCS.Mock.Controllers
-{
-    [ApiController]
-    public class DlcsApiController : ControllerBase
-    {
-        private readonly MockModel model;
-        
-        public DlcsApiController(
-            MockModel model)
-        {
-            this.model = model;
-        }
+namespace DLCS.Mock.Controllers;
 
-        [HttpGet]
-        [Route("/")]
-        public EntryPoint Index()
-        {
-            return new EntryPoint(model.BaseUrl);
-        }
+[ApiController]
+public class DlcsApiController : ControllerBase
+{
+    private readonly MockModel model;
+    
+    public DlcsApiController(
+        MockModel model)
+    {
+        this.model = model;
+    }
+
+    [HttpGet]
+    [Route("/")]
+    public EntryPoint Index()
+    {
+        return new EntryPoint(model.BaseUrl);
     }
 }

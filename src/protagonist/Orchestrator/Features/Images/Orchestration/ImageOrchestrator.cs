@@ -13,127 +13,126 @@ using Orchestrator.Assets;
 using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Settings;
 
-namespace Orchestrator.Features.Images.Orchestration
+namespace Orchestrator.Features.Images.Orchestration;
+
+public interface IImageOrchestrator
 {
-    public interface IImageOrchestrator
+    Task OrchestrateImage(OrchestrationImage orchestrationImage,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Class that contains logic for copying images from slow object-storage to fast-disk storage
+/// </summary>
+public class ImageOrchestrator : IImageOrchestrator
+{
+    private readonly IAssetTracker assetTracker;
+    private readonly IOptions<OrchestratorSettings> orchestratorSettings;
+    private readonly S3AmbientOriginStrategy s3OriginStrategy;
+    private readonly IFileSaver fileSaver;
+    private readonly IDlcsApiClient dlcsApiClient;
+    private readonly ILogger<ImageOrchestrator> logger;
+    private readonly AsyncKeyedLock asyncLocker = new();
+
+    public ImageOrchestrator(IAssetTracker assetTracker,
+        IOptions<OrchestratorSettings> orchestratorSettings,
+        S3AmbientOriginStrategy s3OriginStrategy,
+        IFileSaver fileSaver,
+        IDlcsApiClient dlcsApiClient,
+        ILogger<ImageOrchestrator> logger)
     {
-        Task OrchestrateImage(OrchestrationImage orchestrationImage,
-            CancellationToken cancellationToken = default);
+        this.assetTracker = assetTracker;
+        this.orchestratorSettings = orchestratorSettings;
+        this.s3OriginStrategy = s3OriginStrategy;
+        this.fileSaver = fileSaver;
+        this.dlcsApiClient = dlcsApiClient;
+        this.logger = logger;
     }
-
-    /// <summary>
-    /// Class that contains logic for copying images from slow object-storage to fast-disk storage
-    /// </summary>
-    public class ImageOrchestrator : IImageOrchestrator
+    
+    public async Task OrchestrateImage(OrchestrationImage orchestrationImage,
+        CancellationToken cancellationToken = default)
     {
-        private readonly IAssetTracker assetTracker;
-        private readonly IOptions<OrchestratorSettings> orchestratorSettings;
-        private readonly S3AmbientOriginStrategy s3OriginStrategy;
-        private readonly IFileSaver fileSaver;
-        private readonly IDlcsApiClient dlcsApiClient;
-        private readonly ILogger<ImageOrchestrator> logger;
-        private readonly AsyncKeyedLock asyncLocker = new();
-
-        public ImageOrchestrator(IAssetTracker assetTracker,
-            IOptions<OrchestratorSettings> orchestratorSettings,
-            S3AmbientOriginStrategy s3OriginStrategy,
-            IFileSaver fileSaver,
-            IDlcsApiClient dlcsApiClient,
-            ILogger<ImageOrchestrator> logger)
+        var assetId = orchestrationImage.AssetId;
+        if (orchestrationImage.Status == OrchestrationStatus.Orchestrated)
         {
-            this.assetTracker = assetTracker;
-            this.orchestratorSettings = orchestratorSettings;
-            this.s3OriginStrategy = s3OriginStrategy;
-            this.fileSaver = fileSaver;
-            this.dlcsApiClient = dlcsApiClient;
-            this.logger = logger;
+            logger.LogDebug("Asset '{AssetId}' already orchestrated, no-op", assetId);
+            return;
         }
-        
-        public async Task OrchestrateImage(OrchestrationImage orchestrationImage,
-            CancellationToken cancellationToken = default)
+
+        using (var updateLock = await GetLock(assetId, cancellationToken))
         {
-            var assetId = orchestrationImage.AssetId;
-            if (orchestrationImage.Status == OrchestrationStatus.Orchestrated)
+            var (saveSuccess, currentOrchestrationImage) =
+                await assetTracker.TrySetOrchestrationStatus(orchestrationImage, OrchestrationStatus.Orchestrating,
+                    cancellationToken: cancellationToken);
+            
+            if (!saveSuccess && currentOrchestrationImage.Status == OrchestrationStatus.Orchestrated)
             {
-                logger.LogDebug("Asset '{AssetId}' already orchestrated, no-op", assetId);
+                // Previous lock holder has orchestrated image, abort.
+                logger.LogDebug("Asset '{AssetId}' lock attained but image orchestrated",
+                    assetId);
                 return;
             }
-
-            using (var updateLock = await GetLock(assetId, cancellationToken))
+            
+            // TODO - should this be done prior to entering the lock?
+            if (string.IsNullOrEmpty(orchestrationImage.S3Location))
             {
-                var (saveSuccess, currentOrchestrationImage) =
-                    await assetTracker.TrySetOrchestrationStatus(orchestrationImage, OrchestrationStatus.Orchestrating,
-                        cancellationToken: cancellationToken);
+                logger.LogInformation("Asset '{AssetId}' has no s3 location, reingesting", assetId);
                 
-                if (!saveSuccess && currentOrchestrationImage.Status == OrchestrationStatus.Orchestrated)
+                if (!await dlcsApiClient.ReingestAsset(assetId, cancellationToken))
                 {
-                    // Previous lock holder has orchestrated image, abort.
-                    logger.LogDebug("Asset '{AssetId}' lock attained but image orchestrated",
-                        assetId);
-                    return;
-                }
-                
-                // TODO - should this be done prior to entering the lock?
-                if (string.IsNullOrEmpty(orchestrationImage.S3Location))
-                {
-                    logger.LogInformation("Asset '{AssetId}' has no s3 location, reingesting", assetId);
-                    
-                    if (!await dlcsApiClient.ReingestAsset(assetId, cancellationToken))
-                    {
-                        logger.LogWarning("Error reingesting asset '{AssetId}'", assetId);
-                        throw new ApplicationException($"Unable to ingest Asset '{assetId}' from origin");
-                    }
-
-                    orchestrationImage = await assetTracker.RefreshCachedAsset<OrchestrationImage>(assetId);
+                    logger.LogWarning("Error reingesting asset '{AssetId}'", assetId);
+                    throw new ApplicationException($"Unable to ingest Asset '{assetId}' from origin");
                 }
 
-                var targetPath = orchestratorSettings.Value.GetImageLocalPath(assetId);
-                await SaveImageToFastDisk(orchestrationImage, targetPath, cancellationToken);
-
-                // Save status as Orchestrated
-                await assetTracker.TrySetOrchestrationStatus(orchestrationImage, OrchestrationStatus.Orchestrated,
-                    true, cancellationToken);
-            }
-        }
-
-        private async Task SaveImageToFastDisk(OrchestrationImage image, string filePath, CancellationToken cancellationToken)
-        {
-            // Get bytes from S3
-            await using (var originResponse = await s3OriginStrategy.LoadAssetFromOrigin(image.AssetId,
-                image.S3Location, null, cancellationToken))
-            {
-                if (originResponse == null || originResponse.Stream == Stream.Null)
-                {
-                    // TODO correct type of exception? Custom type?
-                    logger.LogWarning("Unable to get asset {Asset} from {Origin}", image.AssetId,
-                        image.S3Location);
-                    throw new ApplicationException($"Unable to get asset '{image.AssetId}' from origin");
-                }
-                
-                // Save bytes to disk
-                await fileSaver.SaveResponseToDisk(image.AssetId, originResponse, filePath, cancellationToken);
-            }
-        }
-        
-        private async Task<AsyncKeyedLock.Releaser> GetLock(AssetId assetId, CancellationToken cancellationToken)
-        {
-            // TODO - change timeout logic to vary on asset size
-            var lockKey = ImageOrchestrationKeys.GetOrchestrationLockKey(assetId);
-            var lockTimeout = TimeSpan.FromMilliseconds(orchestratorSettings.Value.CriticalPathTimeoutMs);
-            var updateLock = await asyncLocker.LockAsync(lockKey, lockTimeout, false, cancellationToken);
-
-            if (!updateLock.HaveLock)
-            {
-                logger.LogWarning("Unable to attain orchestration lock for {AssetId} within {Timeout}ms",
-                    assetId, lockTimeout.TotalMilliseconds);
+                orchestrationImage = await assetTracker.RefreshCachedAsset<OrchestrationImage>(assetId);
             }
 
-            return updateLock;
+            var targetPath = orchestratorSettings.Value.GetImageLocalPath(assetId);
+            await SaveImageToFastDisk(orchestrationImage, targetPath, cancellationToken);
+
+            // Save status as Orchestrated
+            await assetTracker.TrySetOrchestrationStatus(orchestrationImage, OrchestrationStatus.Orchestrated,
+                true, cancellationToken);
         }
     }
 
-    public static class ImageOrchestrationKeys
+    private async Task SaveImageToFastDisk(OrchestrationImage image, string filePath, CancellationToken cancellationToken)
     {
-        public static string GetOrchestrationLockKey(AssetId assetId) => $"orch:{assetId}";
+        // Get bytes from S3
+        await using (var originResponse = await s3OriginStrategy.LoadAssetFromOrigin(image.AssetId,
+            image.S3Location, null, cancellationToken))
+        {
+            if (originResponse == null || originResponse.Stream == Stream.Null)
+            {
+                // TODO correct type of exception? Custom type?
+                logger.LogWarning("Unable to get asset {Asset} from {Origin}", image.AssetId,
+                    image.S3Location);
+                throw new ApplicationException($"Unable to get asset '{image.AssetId}' from origin");
+            }
+            
+            // Save bytes to disk
+            await fileSaver.SaveResponseToDisk(image.AssetId, originResponse, filePath, cancellationToken);
+        }
     }
+    
+    private async Task<AsyncKeyedLock.Releaser> GetLock(AssetId assetId, CancellationToken cancellationToken)
+    {
+        // TODO - change timeout logic to vary on asset size
+        var lockKey = ImageOrchestrationKeys.GetOrchestrationLockKey(assetId);
+        var lockTimeout = TimeSpan.FromMilliseconds(orchestratorSettings.Value.CriticalPathTimeoutMs);
+        var updateLock = await asyncLocker.LockAsync(lockKey, lockTimeout, false, cancellationToken);
+
+        if (!updateLock.HaveLock)
+        {
+            logger.LogWarning("Unable to attain orchestration lock for {AssetId} within {Timeout}ms",
+                assetId, lockTimeout.TotalMilliseconds);
+        }
+
+        return updateLock;
+    }
+}
+
+public static class ImageOrchestrationKeys
+{
+    public static string GetOrchestrationLockKey(AssetId assetId) => $"orch:{assetId}";
 }

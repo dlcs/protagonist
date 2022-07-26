@@ -24,230 +24,229 @@ using Orchestrator.Settings;
 using Test.Helpers.Http;
 using Xunit;
 
-namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF
+namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF;
+
+public class FireballPdfCreatorTests
 {
-    public class FireballPdfCreatorTests
+    private readonly IBucketReader bucketReader;
+    private readonly ControllableHttpMessageHandler httpHandler;
+    private readonly FireballPdfCreator sut;
+    private readonly CustomerPathElement customer = new(99, "Test-Customer");
+    private readonly IBucketWriter bucketWriter;
+
+    public FireballPdfCreatorTests()
     {
-        private readonly IBucketReader bucketReader;
-        private readonly ControllableHttpMessageHandler httpHandler;
-        private readonly FireballPdfCreator sut;
-        private readonly CustomerPathElement customer = new(99, "Test-Customer");
-        private readonly IBucketWriter bucketWriter;
-
-        public FireballPdfCreatorTests()
+        var namedQuerySettings = Options.Create(new NamedQuerySettings
         {
-            var namedQuerySettings = Options.Create(new NamedQuerySettings
+            CustomerOverrides = new Dictionary<string, CustomerOverride>
             {
-                CustomerOverrides = new Dictionary<string, CustomerOverride>
+                ["99"] = new()
                 {
-                    ["99"] = new()
-                    {
-                        PdfRolesWhitelist = new List<string> { "whitelist" }
-                    }
+                    PdfRolesWhitelist = new List<string> { "whitelist" }
                 }
-            });
+            }
+        });
+    
+        bucketReader = A.Fake<IBucketReader>();
+        bucketWriter = A.Fake<IBucketWriter>();
         
-            bucketReader = A.Fake<IBucketReader>();
-            bucketWriter = A.Fake<IBucketWriter>();
-            
-            httpHandler = new ControllableHttpMessageHandler();
-            var httpClient = new HttpClient(httpHandler)
-            {
-                BaseAddress = new Uri("https://fireball")
-            };
-
-            var bucketKeyGenerator =
-                new S3StorageKeyGenerator(Options.Create(new AWSSettings
-                {
-                    S3 = new S3Settings
-                    {
-
-                        OutputBucket = "test-pdf-bucket",
-                        ThumbsBucket = "test-thumbs-bucket"
-                    }
-                }));
-
-            sut = new FireballPdfCreator(bucketReader, bucketWriter, namedQuerySettings,
-                new NullLogger<FireballPdfCreator>(), httpClient, bucketKeyGenerator);
-        }
-
-        [Fact]
-        public async Task CreatePdf_False_IfErrorCreatingControlFile()
+        httpHandler = new ControllableHttpMessageHandler();
+        var httpClient = new HttpClient(httpHandler)
         {
-            // Arrange
-            const string controlFileStorageKey = "controlFileKey";
-            var parsedNamedQuery = new PdfParsedNamedQuery(customer)
-            {
-                StorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
-            };
-            var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
+            BaseAddress = new Uri("https://fireball")
+        };
 
-            A.CallTo(() => bucketWriter
-                    .WriteToBucket(
-                        A<ObjectInBucket>.That.Matches(b => b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
-                        A<string>._, A<string>._, A<CancellationToken>._))
-                .Throws(new Exception());
-            
-            // Act
-            var (success, _) = await sut.PersistProjection(parsedNamedQuery, images);
-            
-            // Assert
-            success.Should().BeFalse();
-            A.CallTo(() => bucketWriter
-                    .WriteToBucket(
-                        A<ObjectInBucket>.That.Matches(b => b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
-                        A<string>._, A<string>._, A<CancellationToken>._))
-                .MustHaveHappened();
-        }
-        
-        [Fact]
-        public async Task CreatePdf_False_IfNon2xxHttpResponse_CallingFireball()
-        {
-            // Arrange
-            var parsedNamedQuery = new PdfParsedNamedQuery(customer)
+        var bucketKeyGenerator =
+            new S3StorageKeyGenerator(Options.Create(new AWSSettings
             {
-                StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
-            };
-            var images = Builder<Asset>
-                .CreateListOfSize(10)
-                .All()
-                .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
-                .Build()
-                .ToList();
-
-            httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadGateway));
-            
-            // Act
-            var (success, _) = await sut.PersistProjection(parsedNamedQuery, images);
-            
-            // Assert
-            success.Should().BeFalse();
-            httpHandler.CallsMade.Should().Contain("https://fireball/pdf");
-        }
-        
-        [Fact]
-        public async Task CreatePdf_False_IfFireballReturnsUnsuccessfulBody()
-        {
-            // Arrange
-            var parsedNamedQuery = new PdfParsedNamedQuery(customer)
-            {
-                StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
-            };
-            var images = Builder<Asset>
-                .CreateListOfSize(10)
-                .All()
-                .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
-                .Build()
-                .ToList();
-
-            var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
-            responseMessage.Content =
-                new StringContent("{\"success\":false,\"size\":0}", Encoding.UTF8, "application/json");
-            httpHandler.SetResponse(responseMessage);
-            
-            // Act
-            var (success, _) = await sut.PersistProjection(parsedNamedQuery, images);
-            
-            // Assert
-            success.Should().BeFalse();
-            httpHandler.CallsMade.Should().Contain("https://fireball/pdf");
-        }
-
-        [Fact]
-        public async Task CreatePdf_UpdatesControlFile()
-        {
-            // Arrange
-            const string controlFileStorageKey = "controlFileKey";
-            var parsedNamedQuery = new PdfParsedNamedQuery(customer)
-            {
-                StorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
-            };
-            var images = Builder<Asset>
-                .CreateListOfSize(10)
-                .All()
-                .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
-                .Build()
-                .ToList();
-
-            var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
-            responseMessage.Content =
-                new StringContent("{\"success\":true,\"size\":100}", Encoding.UTF8, "application/json");
-            httpHandler.SetResponse(responseMessage);
-            
-            // Act
-            var (success, _) = await sut.PersistProjection(parsedNamedQuery, images);
-            
-            // Assert
-            success.Should().BeTrue();
-            httpHandler.CallsMade.Should().Contain("https://fireball/pdf");
-            A.CallTo(() => bucketWriter
-                    .WriteToBucket(
-                        A<ObjectInBucket>.That.Matches(b =>
-                            b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
-                        A<string>._, A<string>._, A<CancellationToken>._))
-                .MustHaveHappened(2, Times.Exactly);
-        }
-        
-        [Fact]
-        public async Task CreatePdf_RedactsNotWhitelistedRoles()
-        {
-            // Arrange
-            var parsedNamedQuery = new PdfParsedNamedQuery(customer)
-            {
-                StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
-            };
-
-            var images = new List<Asset>
-            {
-                new()
+                S3 = new S3Settings
                 {
-                    Roles = "whitelist",
-                    Id = "/99/1/image1.jpg",
-                    MaxUnauthorised = 0
-                },
-                new ()
-                {
-                    Roles = "whitelist,notwhitelist",
-                    Id = "/99/1/image1.jpg",
-                    MaxUnauthorised = 0
-                },
-                new ()
-                {
-                    Roles = "notwhitelist",
-                    Id = "/99/1/image1.jpg",
-                    MaxUnauthorised = 0
-                },
-                new ()
-                {
-                    Roles = String.Empty,
-                    Id = "/99/1/image1.jpg",
-                    MaxUnauthorised = -1
-                },
-                new ()
-                {
-                    Roles = String.Empty,
-                    Id = "/99/1/image1.jpg",
-                    MaxUnauthorised = -1
+
+                    OutputBucket = "test-pdf-bucket",
+                    ThumbsBucket = "test-thumbs-bucket"
                 }
-            };
+            }));
 
-            var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
-            responseMessage.Content =
-                new StringContent("{\"success\":false,\"size\":0}", Encoding.UTF8, "application/json");
-            httpHandler.SetResponse(responseMessage);
-            
-            FireballPlaybook playbook = null;
-            httpHandler.RegisterCallback(message =>
-                playbook = message.Content.ReadFromJsonAsync<FireballPlaybook>().Result);
+        sut = new FireballPdfCreator(bucketReader, bucketWriter, namedQuerySettings,
+            new NullLogger<FireballPdfCreator>(), httpClient, bucketKeyGenerator);
+    }
 
-            var expectedPageTypes = new[] { "pdf", "jpg", "redacted", "redacted", "jpg", "jpg" };
-            
-            // Act
-            await sut.PersistProjection(parsedNamedQuery, images);
-            
-            // Assert
-            playbook.Pages.Select(p => p.Type).Should()
-                .BeEquivalentTo(expectedPageTypes, opts => opts.WithStrictOrdering());
-        }
+    [Fact]
+    public async Task CreatePdf_False_IfErrorCreatingControlFile()
+    {
+        // Arrange
+        const string controlFileStorageKey = "controlFileKey";
+        var parsedNamedQuery = new PdfParsedNamedQuery(customer)
+        {
+            StorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
+        };
+        var images = Builder<Asset>.CreateListOfSize(10).Build().ToList();
+
+        A.CallTo(() => bucketWriter
+                .WriteToBucket(
+                    A<ObjectInBucket>.That.Matches(b => b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
+                    A<string>._, A<string>._, A<CancellationToken>._))
+            .Throws(new Exception());
+        
+        // Act
+        var (success, _) = await sut.PersistProjection(parsedNamedQuery, images);
+        
+        // Assert
+        success.Should().BeFalse();
+        A.CallTo(() => bucketWriter
+                .WriteToBucket(
+                    A<ObjectInBucket>.That.Matches(b => b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
+                    A<string>._, A<string>._, A<CancellationToken>._))
+            .MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task CreatePdf_False_IfNon2xxHttpResponse_CallingFireball()
+    {
+        // Arrange
+        var parsedNamedQuery = new PdfParsedNamedQuery(customer)
+        {
+            StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
+        };
+        var images = Builder<Asset>
+            .CreateListOfSize(10)
+            .All()
+            .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
+            .Build()
+            .ToList();
+
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadGateway));
+        
+        // Act
+        var (success, _) = await sut.PersistProjection(parsedNamedQuery, images);
+        
+        // Assert
+        success.Should().BeFalse();
+        httpHandler.CallsMade.Should().Contain("https://fireball/pdf");
+    }
+    
+    [Fact]
+    public async Task CreatePdf_False_IfFireballReturnsUnsuccessfulBody()
+    {
+        // Arrange
+        var parsedNamedQuery = new PdfParsedNamedQuery(customer)
+        {
+            StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
+        };
+        var images = Builder<Asset>
+            .CreateListOfSize(10)
+            .All()
+            .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
+            .Build()
+            .ToList();
+
+        var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
+        responseMessage.Content =
+            new StringContent("{\"success\":false,\"size\":0}", Encoding.UTF8, "application/json");
+        httpHandler.SetResponse(responseMessage);
+        
+        // Act
+        var (success, _) = await sut.PersistProjection(parsedNamedQuery, images);
+        
+        // Assert
+        success.Should().BeFalse();
+        httpHandler.CallsMade.Should().Contain("https://fireball/pdf");
+    }
+
+    [Fact]
+    public async Task CreatePdf_UpdatesControlFile()
+    {
+        // Arrange
+        const string controlFileStorageKey = "controlFileKey";
+        var parsedNamedQuery = new PdfParsedNamedQuery(customer)
+        {
+            StorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
+        };
+        var images = Builder<Asset>
+            .CreateListOfSize(10)
+            .All()
+            .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
+            .Build()
+            .ToList();
+
+        var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
+        responseMessage.Content =
+            new StringContent("{\"success\":true,\"size\":100}", Encoding.UTF8, "application/json");
+        httpHandler.SetResponse(responseMessage);
+        
+        // Act
+        var (success, _) = await sut.PersistProjection(parsedNamedQuery, images);
+        
+        // Assert
+        success.Should().BeTrue();
+        httpHandler.CallsMade.Should().Contain("https://fireball/pdf");
+        A.CallTo(() => bucketWriter
+                .WriteToBucket(
+                    A<ObjectInBucket>.That.Matches(b =>
+                        b.Key == controlFileStorageKey && b.Bucket == "test-pdf-bucket"),
+                    A<string>._, A<string>._, A<CancellationToken>._))
+            .MustHaveHappened(2, Times.Exactly);
+    }
+    
+    [Fact]
+    public async Task CreatePdf_RedactsNotWhitelistedRoles()
+    {
+        // Arrange
+        var parsedNamedQuery = new PdfParsedNamedQuery(customer)
+        {
+            StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
+        };
+
+        var images = new List<Asset>
+        {
+            new()
+            {
+                Roles = "whitelist",
+                Id = "/99/1/image1.jpg",
+                MaxUnauthorised = 0
+            },
+            new ()
+            {
+                Roles = "whitelist,notwhitelist",
+                Id = "/99/1/image1.jpg",
+                MaxUnauthorised = 0
+            },
+            new ()
+            {
+                Roles = "notwhitelist",
+                Id = "/99/1/image1.jpg",
+                MaxUnauthorised = 0
+            },
+            new ()
+            {
+                Roles = String.Empty,
+                Id = "/99/1/image1.jpg",
+                MaxUnauthorised = -1
+            },
+            new ()
+            {
+                Roles = String.Empty,
+                Id = "/99/1/image1.jpg",
+                MaxUnauthorised = -1
+            }
+        };
+
+        var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
+        responseMessage.Content =
+            new StringContent("{\"success\":false,\"size\":0}", Encoding.UTF8, "application/json");
+        httpHandler.SetResponse(responseMessage);
+        
+        FireballPlaybook playbook = null;
+        httpHandler.RegisterCallback(message =>
+            playbook = message.Content.ReadFromJsonAsync<FireballPlaybook>().Result);
+
+        var expectedPageTypes = new[] { "pdf", "jpg", "redacted", "redacted", "jpg", "jpg" };
+        
+        // Act
+        await sut.PersistProjection(parsedNamedQuery, images);
+        
+        // Assert
+        playbook.Pages.Select(p => p.Type).Should()
+            .BeEquivalentTo(expectedPageTypes, opts => opts.WithStrictOrdering());
     }
 }

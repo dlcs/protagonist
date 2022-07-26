@@ -9,122 +9,121 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Portal.Features.Account.Requests;
 
-namespace Portal.Pages.Account
+namespace Portal.Pages.Account;
+
+public class SignupModel : PageModel
 {
-    public class SignupModel : PageModel
+    private readonly DlcsContext dbContext;
+    private readonly IMediator mediator;
+
+    public SignupModel(
+        DlcsContext dbContext,
+        IMediator mediator)
     {
-        private readonly DlcsContext dbContext;
-        private readonly IMediator mediator;
+        this.dbContext = dbContext;
+        this.mediator = mediator;
+    }
+    
+    [BindProperty]
+    public InputModel? Input { get; set; }
+    
+    public bool ValidLink { get; set; }
+    private SignupFromLinkResult SignupFromLinkResult { get; set; }
+    
+    public class InputModel
+    {
+        [Required(ErrorMessage = "Display name is required.")]
+        public string? DisplayName { get; set; }
+        
+        [RegularExpression(@"^[-a-z]*$", ErrorMessage = "Url component can only have lower-case letters and hyphens, max 30 characters.")]
+        [Required(ErrorMessage = "Url component is required.")]
+        [StringLength(30, MinimumLength = 3)]
+        public string? Slug { get; set; }
+        
+        [Required(ErrorMessage = "A Valid email address is required.")]
+        [EmailAddress]
+        public string? Email { get; set; }
 
-        public SignupModel(
-            DlcsContext dbContext,
-            IMediator mediator)
-        {
-            this.dbContext = dbContext;
-            this.mediator = mediator;
-        }
+        [Display(Name = "Password")]
+        [Required(ErrorMessage = "Password is required.")]
+        [DataType(DataType.Password)]
+        public string? Password { get; set; }
         
-        [BindProperty]
-        public InputModel? Input { get; set; }
+        [Display(Name = "Confirm password")]
+        [Required(ErrorMessage = "Confirmation Password is required.")]
+        [Compare("Password", ErrorMessage = "Password and Confirmation Password must match.")]
+        [DataType(DataType.Password)]
+        public string? ConfirmPassword { get; set; }
         
-        public bool ValidLink { get; set; }
-        private SignupFromLinkResult SignupFromLinkResult { get; set; }
-        
-        public class InputModel
-        {
-            [Required(ErrorMessage = "Display name is required.")]
-            public string? DisplayName { get; set; }
-            
-            [RegularExpression(@"^[-a-z]*$", ErrorMessage = "Url component can only have lower-case letters and hyphens, max 30 characters.")]
-            [Required(ErrorMessage = "Url component is required.")]
-            [StringLength(30, MinimumLength = 3)]
-            public string? Slug { get; set; }
-            
-            [Required(ErrorMessage = "A Valid email address is required.")]
-            [EmailAddress]
-            public string? Email { get; set; }
+    }
+    
+    public async Task<IActionResult> OnGetAsync(string signupCode)
+    {
+        ValidLink = await ValidateSignupCode(signupCode);
+        return Page();
+    }
 
-            [Display(Name = "Password")]
-            [Required(ErrorMessage = "Password is required.")]
-            [DataType(DataType.Password)]
-            public string? Password { get; set; }
-            
-            [Display(Name = "Confirm password")]
-            [Required(ErrorMessage = "Confirmation Password is required.")]
-            [Compare("Password", ErrorMessage = "Password and Confirmation Password must match.")]
-            [DataType(DataType.Password)]
-            public string? ConfirmPassword { get; set; }
-            
-        }
-        
-        public async Task<IActionResult> OnGetAsync(string signupCode)
+    public async Task<IActionResult> OnPostAsync(string signupCode)
+    {
+        ValidLink = await ValidateSignupCode(signupCode);
+        if (!ModelState.IsValid) return Page();
+        if (Input == null) return Page();
+        if (await EmailInUse(Input.Email))
         {
-            ValidLink = await ValidateSignupCode(signupCode);
-            return Page();
+            ModelState.AddModelError("Input.Email", $"The email address {Input.Email} is already in use.");
         }
+        if (await CustomerNameInUse(Input.DisplayName))
+        {
+            ModelState.AddModelError("Input.Email", $"The customer name {Input.DisplayName} is already taken.");
+        }
+        if (await SlugInUse(Input.Slug))
+        {
+            ModelState.AddModelError("Input.Email", $"The url component {Input.Slug} is already taken.");
+        }
+        if (!ModelState.IsValid) return Page();
 
-        public async Task<IActionResult> OnPostAsync(string signupCode)
+        var signupCommand = new SignUpFromLink
         {
-            ValidLink = await ValidateSignupCode(signupCode);
-            if (!ModelState.IsValid) return Page();
-            if (Input == null) return Page();
-            if (await EmailInUse(Input.Email))
+            CustomerDisplayName = Input.DisplayName,
+            CustomerSlugName = Input.Slug,
+            UserEmail = Input.Email,
+            UserPassword = Input.Password,
+            SignUpCode = signupCode
+        };
+        SignupFromLinkResult = await mediator.Send(signupCommand);
+        TempData["signup-attempt-message"] = SignupFromLinkResult.Message;
+        return Page();
+    }
+
+    private async Task<bool> EmailInUse(string inputEmail)
+    {
+        return await dbContext.Users.AnyAsync(user => user.Email == inputEmail);
+    }
+    
+    private async Task<bool> CustomerNameInUse(string inputDisplayName)
+    {
+        return await dbContext.Customers.AnyAsync(customer => customer.DisplayName == inputDisplayName);
+    }
+
+    private async Task<bool> SlugInUse(string inputSlug)
+    {
+        return await dbContext.Customers.AnyAsync(customer => customer.Name == inputSlug);
+    }
+
+
+
+
+    private async Task<bool> ValidateSignupCode(string signupCode)
+    {
+        var signups = await dbContext.SignupLinks.Where(link => link.Id == signupCode).ToListAsync();
+        if (signups.Count == 1)
+        {
+            if (signups[0].CustomerId == null && signups[0].Expires > DateTime.UtcNow)
             {
-                ModelState.AddModelError("Input.Email", $"The email address {Input.Email} is already in use.");
+                return true;
             }
-            if (await CustomerNameInUse(Input.DisplayName))
-            {
-                ModelState.AddModelError("Input.Email", $"The customer name {Input.DisplayName} is already taken.");
-            }
-            if (await SlugInUse(Input.Slug))
-            {
-                ModelState.AddModelError("Input.Email", $"The url component {Input.Slug} is already taken.");
-            }
-            if (!ModelState.IsValid) return Page();
-
-            var signupCommand = new SignUpFromLink
-            {
-                CustomerDisplayName = Input.DisplayName,
-                CustomerSlugName = Input.Slug,
-                UserEmail = Input.Email,
-                UserPassword = Input.Password,
-                SignUpCode = signupCode
-            };
-            SignupFromLinkResult = await mediator.Send(signupCommand);
-            TempData["signup-attempt-message"] = SignupFromLinkResult.Message;
-            return Page();
         }
 
-        private async Task<bool> EmailInUse(string inputEmail)
-        {
-            return await dbContext.Users.AnyAsync(user => user.Email == inputEmail);
-        }
-        
-        private async Task<bool> CustomerNameInUse(string inputDisplayName)
-        {
-            return await dbContext.Customers.AnyAsync(customer => customer.DisplayName == inputDisplayName);
-        }
-
-        private async Task<bool> SlugInUse(string inputSlug)
-        {
-            return await dbContext.Customers.AnyAsync(customer => customer.Name == inputSlug);
-        }
-
-
-
-
-        private async Task<bool> ValidateSignupCode(string signupCode)
-        {
-            var signups = await dbContext.SignupLinks.Where(link => link.Id == signupCode).ToListAsync();
-            if (signups.Count == 1)
-            {
-                if (signups[0].CustomerId == null && signups[0].Expires > DateTime.UtcNow)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
+        return false;
     }
 }

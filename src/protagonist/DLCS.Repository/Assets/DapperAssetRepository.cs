@@ -11,97 +11,97 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 
-namespace DLCS.Repository.Assets
+namespace DLCS.Repository.Assets;
+
+/// <summary>
+/// Implementation of <see cref="IAssetRepository"/> using Dapper for data access.
+/// </summary>
+public class DapperAssetRepository : DapperRepository, IAssetRepository
 {
-    /// <summary>
-    /// Implementation of <see cref="IAssetRepository"/> using Dapper for data access.
-    /// </summary>
-    public class DapperAssetRepository : DapperRepository, IAssetRepository
+    private readonly CacheSettings cacheSettings;
+    private readonly IAppCache appCache;
+    private readonly ILogger<DapperAssetRepository> logger;
+    private static readonly Asset NullAsset = new() { Id = "__nullasset__" };
+
+    public DapperAssetRepository(
+        IConfiguration configuration, 
+        IAppCache appCache,
+        IOptions<CacheSettings> cacheOptions,
+        ILogger<DapperAssetRepository> logger) : base(configuration)
     {
-        private readonly CacheSettings cacheSettings;
-        private readonly IAppCache appCache;
-        private readonly ILogger<DapperAssetRepository> logger;
-        private static readonly Asset NullAsset = new() { Id = "__nullasset__" };
+        this.appCache = appCache;
+        this.logger = logger;
+        cacheSettings = cacheOptions.Value;
+    }
+    
+    public Task<Asset?> GetAsset(string id) => GetAsset(id, false);
 
-        public DapperAssetRepository(
-            IConfiguration configuration, 
-            IAppCache appCache,
-            IOptions<CacheSettings> cacheOptions,
-            ILogger<DapperAssetRepository> logger) : base(configuration)
+    public Task<Asset?> GetAsset(AssetId id) => GetAsset(id, false);
+
+    public async Task<Asset?> GetAsset(string id, bool noCache)
+    {
+        var asset = await GetAssetInternal(id, noCache);
+        return asset.Id == NullAsset.Id ? null : asset;
+    }
+
+    public Task<Asset?> GetAsset(AssetId id, bool noCache)
+        => GetAsset(id.ToString(), noCache);
+
+    public async Task<ImageLocation> GetImageLocation(AssetId assetId) 
+        => await QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql, new {Id = assetId.ToString()});
+
+    private async Task<Asset> GetAssetInternal(string id, bool noCache = false)
+    {
+        var key = $"asset:{id}";
+        if (noCache)
         {
-            this.appCache = appCache;
-            this.logger = logger;
-            cacheSettings = cacheOptions.Value;
+            appCache.Remove(key);
         }
-        
-        public Task<Asset?> GetAsset(string id) => GetAsset(id, false);
-
-        public Task<Asset?> GetAsset(AssetId id) => GetAsset(id, false);
-
-        public async Task<Asset?> GetAsset(string id, bool noCache)
+        return await appCache.GetOrAddAsync(key, async entry =>
         {
-            var asset = await GetAssetInternal(id, noCache);
-            return asset.Id == NullAsset.Id ? null : asset;
-        }
-
-        public Task<Asset?> GetAsset(AssetId id, bool noCache)
-            => GetAsset(id.ToString(), noCache);
-
-        public async Task<ImageLocation> GetImageLocation(AssetId assetId) 
-            => await QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql, new {Id = assetId.ToString()});
-
-        private async Task<Asset> GetAssetInternal(string id, bool noCache = false)
-        {
-            var key = $"asset:{id}";
-            if (noCache)
+            logger.LogDebug("Refreshing assetCache from database {Asset}", id);
+            dynamic? rawAsset = await QuerySingleOrDefaultAsync(AssetSql, new { Id = id });
+            if (rawAsset == null)
             {
-                appCache.Remove(key);
+                entry.AbsoluteExpirationRelativeToNow =
+                    TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+                return NullAsset;
             }
-            return await appCache.GetOrAddAsync(key, async entry =>
-            {
-                logger.LogDebug("Refreshing assetCache from database {Asset}", id);
-                dynamic? rawAsset = await QuerySingleOrDefaultAsync(AssetSql, new { Id = id });
-                if (rawAsset == null)
-                {
-                    entry.AbsoluteExpirationRelativeToNow =
-                        TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
-                    return NullAsset;
-                }
 
-                return new Asset
-                {
-                    Batch = rawAsset.Batch,
-                    Created = rawAsset.Created,
-                    Customer = rawAsset.Customer,
-                    Duration = rawAsset.Duration,
-                    Error = rawAsset.Error,
-                    Family = (AssetFamily)rawAsset.Family.ToString()[0],
-                    Finished = rawAsset.Finished,
-                    Height = rawAsset.Height,
-                    Id = rawAsset.Id,
-                    Ingesting = rawAsset.Ingesting,
-                    Origin = rawAsset.Origin,
-                    Reference1 = rawAsset.Reference1,
-                    Reference2 = rawAsset.Reference2,
-                    Reference3 = rawAsset.Reference3,
-                    Roles = rawAsset.Roles,
-                    Space = rawAsset.Space,
-                    Tags = rawAsset.Tags,
-                    Width = rawAsset.Width,
-                    MaxUnauthorised = rawAsset.MaxUnauthorised,
-                    MediaType = rawAsset.MediaType,
-                    NumberReference1 = rawAsset.NumberReference1,
-                    NumberReference2 = rawAsset.NumberReference2,
-                    NumberReference3 = rawAsset.NumberReference3,
-                    PreservedUri = rawAsset.PreservedUri,
-                    ThumbnailPolicy = rawAsset.ThumbnailPolicy,
-                    ImageOptimisationPolicy = rawAsset.ImageOptimisationPolicy,
-                    NotForDelivery = rawAsset.NotForDelivery
-                };
-            }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short));
-        }
-        
-        private const string AssetSql = @"
+            return new Asset
+            {
+                Batch = rawAsset.Batch,
+                Created = rawAsset.Created,
+                Customer = rawAsset.Customer,
+                Duration = rawAsset.Duration,
+                Error = rawAsset.Error,
+                Family = (AssetFamily)rawAsset.Family.ToString()[0],
+                Finished = rawAsset.Finished,
+                Height = rawAsset.Height,
+                Id = rawAsset.Id,
+                Ingesting = rawAsset.Ingesting,
+                Origin = rawAsset.Origin,
+                Reference1 = rawAsset.Reference1,
+                Reference2 = rawAsset.Reference2,
+                Reference3 = rawAsset.Reference3,
+                Roles = rawAsset.Roles,
+                Space = rawAsset.Space,
+                Tags = rawAsset.Tags,
+                Width = rawAsset.Width,
+                MaxUnauthorised = rawAsset.MaxUnauthorised,
+                MediaType = rawAsset.MediaType,
+                NumberReference1 = rawAsset.NumberReference1,
+                NumberReference2 = rawAsset.NumberReference2,
+                NumberReference3 = rawAsset.NumberReference3,
+                PreservedUri = rawAsset.PreservedUri,
+                ThumbnailPolicy = rawAsset.ThumbnailPolicy,
+                ImageOptimisationPolicy = rawAsset.ImageOptimisationPolicy,
+                NotForDelivery = rawAsset.NotForDelivery
+            };
+        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short));
+    }
+    
+    private const string AssetSql = @"
 SELECT ""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Roles"", 
 ""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", 
 ""NumberReference1"", ""NumberReference2"", ""NumberReference3"", ""Width"", 
@@ -110,7 +110,6 @@ SELECT ""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Rol
   FROM public.""Images""
   WHERE ""Id""=@Id;";
 
-        private const string ImageLocationSql =
-            "SELECT \"Id\", \"S3\", \"Nas\" FROM public.\"ImageLocation\" WHERE \"Id\"=@Id;";
-    }
+    private const string ImageLocationSql =
+        "SELECT \"Id\", \"S3\", \"Nas\" FROM public.\"ImageLocation\" WHERE \"Id\"=@Id;";
 }

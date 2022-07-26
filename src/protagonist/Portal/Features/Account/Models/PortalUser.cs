@@ -1,11 +1,10 @@
-﻿namespace Portal.Features.Account.Models
+﻿namespace Portal.Features.Account.Models;
+
+public class PortalUser
 {
-    public class PortalUser
-    {
-        /// <summary>
-        /// Email address of portal user
-        /// </summary>
-        public string Email { get; set; }
-        public int Customer { get; set; }
-    }
+    /// <summary>
+    /// Email address of portal user
+    /// </summary>
+    public string Email { get; set; }
+    public int Customer { get; set; }
 }

@@ -2,29 +2,28 @@
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 
-namespace Orchestrator.Infrastructure.NamedQueries
-{
-    /// <summary>
-    /// Object containing parsed named query and all assets matching criteria.
-    /// </summary>
-    public class NamedQueryResult<T>
-        where T : ParsedNamedQuery
-    { 
-        public T? ParsedQuery { get; private init; }
-        
-        public IQueryable<Asset> Results { get; private init;  }
+namespace Orchestrator.Infrastructure.NamedQueries;
 
-        public static NamedQueryResult<T> Empty(T? query = null)
-            => new() { ParsedQuery = query, Results = Enumerable.Empty<Asset>().AsQueryable() };
+/// <summary>
+/// Object containing parsed named query and all assets matching criteria.
+/// </summary>
+public class NamedQueryResult<T>
+    where T : ParsedNamedQuery
+{ 
+    public T? ParsedQuery { get; private init; }
+    
+    public IQueryable<Asset> Results { get; private init;  }
 
-        private NamedQueryResult()
-        {
-        }
+    public static NamedQueryResult<T> Empty(T? query = null)
+        => new() { ParsedQuery = query, Results = Enumerable.Empty<Asset>().AsQueryable() };
 
-        public NamedQueryResult(T parsedQuery, IQueryable<Asset> results)
-        {
-            ParsedQuery = parsedQuery;
-            Results = results;
-        }
+    private NamedQueryResult()
+    {
+    }
+
+    public NamedQueryResult(T parsedQuery, IQueryable<Asset> results)
+    {
+        ParsedQuery = parsedQuery;
+        Results = results;
     }
 }

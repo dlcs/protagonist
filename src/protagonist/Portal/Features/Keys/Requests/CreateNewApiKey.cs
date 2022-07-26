@@ -4,29 +4,28 @@ using API.Client;
 using DLCS.HydraModel;
 using MediatR;
 
-namespace Portal.Features.Keys.Requests
+namespace Portal.Features.Keys.Requests;
+
+/// <summary>
+/// Create a new API key for current customer.
+/// </summary>
+public class CreateNewApiKey : IRequest<ApiKey>
 {
-    /// <summary>
-    /// Create a new API key for current customer.
-    /// </summary>
-    public class CreateNewApiKey : IRequest<ApiKey>
+}
+
+public class CreateNewApiKeyHandler : IRequestHandler<CreateNewApiKey, ApiKey>
+{
+    private readonly IDlcsClient dlcsClient;
+    
+
+    public CreateNewApiKeyHandler(IDlcsClient dlcsClient)
     {
+        this.dlcsClient = dlcsClient;
     }
     
-    public class CreateNewApiKeyHandler : IRequestHandler<CreateNewApiKey, ApiKey>
+    public Task<ApiKey> Handle(CreateNewApiKey request, CancellationToken cancellationToken)
     {
-        private readonly IDlcsClient dlcsClient;
-        
-
-        public CreateNewApiKeyHandler(IDlcsClient dlcsClient)
-        {
-            this.dlcsClient = dlcsClient;
-        }
-        
-        public Task<ApiKey> Handle(CreateNewApiKey request, CancellationToken cancellationToken)
-        {
-            var newApiKey = dlcsClient.CreateNewApiKey();
-            return newApiKey;
-        }
+        var newApiKey = dlcsClient.CreateNewApiKey();
+        return newApiKey;
     }
 }

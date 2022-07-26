@@ -1,24 +1,23 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace API.Client
+namespace API.Client;
+
+public class DlcsException : Exception
 {
-    public class DlcsException : Exception
+    public DlcsException()
     {
-        public DlcsException()
-        {
-        }
+    }
 
-        protected DlcsException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+    protected DlcsException(SerializationInfo info, StreamingContext context) : base(info, context)
+    {
+    }
 
-        public DlcsException(string? message) : base(message)
-        {
-        }
+    public DlcsException(string? message) : base(message)
+    {
+    }
 
-        public DlcsException(string? message, Exception? innerException) : base(message, innerException)
-        {
-        }
+    public DlcsException(string? message, Exception? innerException) : base(message, innerException)
+    {
     }
 }

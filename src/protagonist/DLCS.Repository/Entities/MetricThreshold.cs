@@ -1,12 +1,11 @@
 ﻿#nullable disable
 
-namespace DLCS.Repository.Entities
+namespace DLCS.Repository.Entities;
+
+public partial class MetricThreshold
 {
-    public partial class MetricThreshold
-    {
-        public string Name { get; set; }
-        public string Metric { get; set; }
-        public long? Lower { get; set; }
-        public long? Upper { get; set; }
-    }
+    public string Name { get; set; }
+    public string Metric { get; set; }
+    public long? Lower { get; set; }
+    public long? Upper { get; set; }
 }

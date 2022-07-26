@@ -8,40 +8,39 @@ using Portal.Features.Account.Models;
 using Portal.Features.Admin;
 using Portal.Features.Admin.Requests;
 
-namespace Portal.Pages.Admin
+namespace Portal.Pages.Admin;
+
+public class Signups : PageModel
 {
-    public class Signups : PageModel
+    private readonly IMediator mediator;
+
+    [BindProperty]
+    public IEnumerable<SignupModel> SignupLinks { get; set; }
+    
+    public Signups(IMediator mediator)
     {
-        private readonly IMediator mediator;
-
-        [BindProperty]
-        public IEnumerable<SignupModel> SignupLinks { get; set; }
-        
-        public Signups(IMediator mediator)
+        this.mediator = mediator;
+    }
+    
+    public async Task OnGetAsync()
+    {
+        var links = await mediator.Send(new GetAllSignupLinks());
+        foreach (var signup in links)
         {
-            this.mediator = mediator;
-        }
-        
-        public async Task OnGetAsync()
-        {
-            var links = await mediator.Send(new GetAllSignupLinks());
-            foreach (var signup in links)
+            if (signup.CustomerName != null)
             {
-                if (signup.CustomerName != null)
-                {
-                    signup.CssClass = "table-success";
-                }
-                else if (signup.Expires < DateTime.UtcNow)
-                {
-                    signup.CssClass = "table-danger";
-                }
-                else
-                {
-                    signup.CssClass = "copyable";
-                }
+                signup.CssClass = "table-success";
             }
-
-            SignupLinks = links;
+            else if (signup.Expires < DateTime.UtcNow)
+            {
+                signup.CssClass = "table-danger";
+            }
+            else
+            {
+                signup.CssClass = "copyable";
+            }
         }
+
+        SignupLinks = links;
     }
 }

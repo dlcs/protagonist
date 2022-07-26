@@ -1,9 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace DLCS.Model.PathElements
+namespace DLCS.Model.PathElements;
+
+public interface IPathCustomerRepository
 {
-    public interface IPathCustomerRepository
-    {
-        Task<CustomerPathElement> GetCustomer(string customerPart);
-    }
+    Task<CustomerPathElement> GetCustomer(string customerPart);
 }

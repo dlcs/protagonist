@@ -10,55 +10,54 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace API.Features.Image.Requests
+namespace API.Features.Image.Requests;
+
+public class HostAssetAtOrigin : IRequest<HostAssetAtOriginResult>
 {
-    public class HostAssetAtOrigin : IRequest<HostAssetAtOriginResult>
+    public byte[] FileBytes { get; set; }
+    public AssetId AssetId { get; set; }
+    public string MediaType { get; set; }
+}
+
+public class HostAssetAtOriginResult
+{
+    public string? Origin { get; set; }
+    
+    public string? Error { get; set; }
+}
+
+public class HostAssetAtOriginHandler : IRequestHandler<HostAssetAtOrigin, HostAssetAtOriginResult>
+{
+    private readonly IBucketWriter bucketWriter;
+    private readonly ILogger<HostAssetAtOriginHandler> logger;
+    private readonly IStorageKeyGenerator storageKeyGenerator;
+
+    public HostAssetAtOriginHandler(
+        IBucketWriter bucketWriter,
+        ILogger<HostAssetAtOriginHandler> logger,
+        IStorageKeyGenerator storageKeyGenerator)
     {
-        public byte[] FileBytes { get; set; }
-        public AssetId AssetId { get; set; }
-        public string MediaType { get; set; }
+        this.bucketWriter = bucketWriter;
+        this.logger = logger;
+        this.storageKeyGenerator = storageKeyGenerator;
     }
-
-    public class HostAssetAtOriginResult
+    
+    public async Task<HostAssetAtOriginResult> Handle(HostAssetAtOrigin request, CancellationToken cancellationToken)
     {
-        public string? Origin { get; set; }
+        var stream = new MemoryStream(request.FileBytes);
         
-        public string? Error { get; set; }
-    }
+        // Save to S3
+        var objectInBucket = storageKeyGenerator.GetAssetAtOriginLocation(request.AssetId);
+        var bucketSuccess = await bucketWriter.WriteToBucket(objectInBucket, stream, request.MediaType);
 
-    public class HostAssetAtOriginHandler : IRequestHandler<HostAssetAtOrigin, HostAssetAtOriginResult>
-    {
-        private readonly IBucketWriter bucketWriter;
-        private readonly ILogger<HostAssetAtOriginHandler> logger;
-        private readonly IStorageKeyGenerator storageKeyGenerator;
-
-        public HostAssetAtOriginHandler(
-            IBucketWriter bucketWriter,
-            ILogger<HostAssetAtOriginHandler> logger,
-            IStorageKeyGenerator storageKeyGenerator)
+        if (!bucketSuccess)
         {
-            this.bucketWriter = bucketWriter;
-            this.logger = logger;
-            this.storageKeyGenerator = storageKeyGenerator;
+            // Failed, abort
+            var message = $"Failed to upload file to S3, aborting ingest. Key: '{objectInBucket}'";
+            logger.LogError(message);
+            return new HostAssetAtOriginResult { Error = message };
         }
-        
-        public async Task<HostAssetAtOriginResult> Handle(HostAssetAtOrigin request, CancellationToken cancellationToken)
-        {
-            var stream = new MemoryStream(request.FileBytes);
-            
-            // Save to S3
-            var objectInBucket = storageKeyGenerator.GetAssetAtOriginLocation(request.AssetId);
-            var bucketSuccess = await bucketWriter.WriteToBucket(objectInBucket, stream, request.MediaType);
 
-            if (!bucketSuccess)
-            {
-                // Failed, abort
-                var message = $"Failed to upload file to S3, aborting ingest. Key: '{objectInBucket}'";
-                logger.LogError(message);
-                return new HostAssetAtOriginResult { Error = message };
-            }
-
-            return new HostAssetAtOriginResult { Origin = objectInBucket.GetHttpUri().ToString() };
-        }
+        return new HostAssetAtOriginResult { Origin = objectInBucket.GetHttpUri().ToString() };
     }
 }

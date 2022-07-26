@@ -5,27 +5,26 @@ using System.Linq;
 using System.Text;
 using IIIF.ImageApi;
 
-namespace DLCS.Model.Assets
+namespace DLCS.Model.Assets;
+
+[DebuggerDisplay("{Name}: {Sizes}")]
+public class ThumbnailPolicy
 {
-    [DebuggerDisplay("{Name}: {Sizes}")]
-    public class ThumbnailPolicy
+    private List<int>? sizeList = null;
+
+    public string Id { get; set; }
+    public string Name { get; set; }
+    public string Sizes { get; set; }
+
+    public List<int> SizeList
     {
-        private List<int>? sizeList = null;
-
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public string Sizes { get; set; }
-
-        public List<int> SizeList
+        get
         {
-            get
+            if (sizeList == null && !string.IsNullOrEmpty(Sizes))
             {
-                if (sizeList == null && !string.IsNullOrEmpty(Sizes))
-                {
-                    sizeList = Sizes.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
-                }
-                return sizeList;
+                sizeList = Sizes.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
             }
+            return sizeList;
         }
     }
 }

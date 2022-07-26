@@ -39,126 +39,125 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 
-namespace API
+namespace API;
+
+public class Startup
 {
-    public class Startup
+    private readonly IConfiguration configuration;
+    private readonly IWebHostEnvironment webHostEnvironment;
+
+    public Startup(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
     {
-        private readonly IConfiguration configuration;
-        private readonly IWebHostEnvironment webHostEnvironment;
-
-        public Startup(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
-        {
-            this.configuration = configuration;
-            this.webHostEnvironment = webHostEnvironment;
-        }
+        this.configuration = configuration;
+        this.webHostEnvironment = webHostEnvironment;
+    }
+    
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.Configure<ApiSettings>(configuration);
+        services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
+        var cachingSection = configuration.GetSection("Caching");
+        services.Configure<CacheSettings>(cachingSection);
         
-        public void ConfigureServices(IServiceCollection services)
-        {
-            services.Configure<ApiSettings>(configuration);
-            services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
-            var cachingSection = configuration.GetSection("Caching");
-            services.Configure<CacheSettings>(cachingSection);
-            
-            
-            var apiSettings = configuration.Get<ApiSettings>();
-            var cacheSettings = cachingSection.Get<CacheSettings>();
-            
-            services.AddHttpClient();
+        
+        var apiSettings = configuration.Get<ApiSettings>();
+        var cacheSettings = cachingSection.Get<CacheSettings>();
+        
+        services.AddHttpClient();
 
-            services
-                .AddHttpContextAccessor()
-                .AddSingleton<IEncryption, SHA256>()
-                .AddSingleton<DeliveratorApiAuth>()
-                .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
-                .AddMemoryCache(memoryCacheOptions =>
-                {
-                    memoryCacheOptions.SizeLimit = cacheSettings.MemoryCacheSizeLimit;
-                    memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
-                })
-                .AddLazyCache()
-                .AddDlcsContext(configuration)
-                .AddSingleton<IAssetRepository, DapperAssetRepository>()
-                .AddScoped<IApiAssetRepository>(provider =>
-                    ActivatorUtilities.CreateInstance<ApiAssetRepository>(
-                        provider,
-                        provider.GetRequiredService<IAssetRepository>()))
-                .AddScoped<ISpaceRepository, SpaceRepository>()
-                .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
-                .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
-                .AddScoped<IStorageRepository, CustomerStorageRepository>()
-                // Do not use a DlcsContext, _may_ be Singleton (but should they)
-                .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
-                .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
-                .AddScoped<IPolicyRepository, PolicyRepository>()
-                .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
-                .ConfigureMediatR()
-                .ConfigureSwagger();
-
-            services
-                .AddSingleton<IBucketReader, S3BucketReader>()
-                .AddSingleton<IBucketWriter, S3BucketWriter>()
-                .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
-                .SetupAWS(configuration, webHostEnvironment)
-                .WithAmazonS3();
-
-            services.AddDlcsDelegatedBasicAuth(options =>
-                {
-                    options.Realm = "DLCS-API";
-                    options.Salt = apiSettings.Salt;
-                });
-            
-            services.AddCors(options =>
+        services
+            .AddHttpContextAccessor()
+            .AddSingleton<IEncryption, SHA256>()
+            .AddSingleton<DeliveratorApiAuth>()
+            .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
+            .AddMemoryCache(memoryCacheOptions =>
             {
-                options.AddPolicy("CorsPolicy",
-                    builder => builder
-                        .AllowAnyMethod()
-                        .AllowAnyHeader()
-                        .SetIsOriginAllowed(host => true)
-                        .AllowCredentials());
+                memoryCacheOptions.SizeLimit = cacheSettings.MemoryCacheSizeLimit;
+                memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
+            })
+            .AddLazyCache()
+            .AddDlcsContext(configuration)
+            .AddSingleton<IAssetRepository, DapperAssetRepository>()
+            .AddScoped<IApiAssetRepository>(provider =>
+                ActivatorUtilities.CreateInstance<ApiAssetRepository>(
+                    provider,
+                    provider.GetRequiredService<IAssetRepository>()))
+            .AddScoped<ISpaceRepository, SpaceRepository>()
+            .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
+            .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
+            .AddScoped<IStorageRepository, CustomerStorageRepository>()
+            // Do not use a DlcsContext, _may_ be Singleton (but should they)
+            .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
+            .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
+            .AddScoped<IPolicyRepository, PolicyRepository>()
+            .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
+            .ConfigureMediatR()
+            .ConfigureSwagger();
+
+        services
+            .AddSingleton<IBucketReader, S3BucketReader>()
+            .AddSingleton<IBucketWriter, S3BucketWriter>()
+            .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
+            .SetupAWS(configuration, webHostEnvironment)
+            .WithAmazonS3();
+
+        services.AddDlcsDelegatedBasicAuth(options =>
+            {
+                options.Realm = "DLCS-API";
+                options.Salt = apiSettings.Salt;
+            });
+        
+        services.AddCors(options =>
+        {
+            options.AddPolicy("CorsPolicy",
+                builder => builder
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .SetIsOriginAllowed(host => true)
+                    .AllowCredentials());
+        });
+
+        services
+            .AddControllers()
+            .AddNewtonsoftJson(options =>
+            {
+                options.SerializerSettings.ApplyHydraSerializationSettings();
             });
 
-            services
-                .AddControllers()
-                .AddNewtonsoftJson(options =>
-                {
-                    options.SerializerSettings.ApplyHydraSerializationSettings();
-                });
-
-            services
-                .AddHealthChecks()
-                .AddDbContextCheck<DlcsContext>("DLCS-DB");
-            
-            services.Configure<KestrelServerOptions>(options =>
-            {
-                options.Limits.MaxRequestBodySize = 100_000_000; // if don't set default value is: 30 MB
-            });
-        }
-
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
+        services
+            .AddHealthChecks()
+            .AddDbContextCheck<DlcsContext>("DLCS-DB");
+        
+        services.Configure<KestrelServerOptions>(options =>
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
+            options.Limits.MaxRequestBodySize = 100_000_000; // if don't set default value is: 30 MB
+        });
+    }
 
-            var applicationOptions = configuration.Get<ApiSettings>();
-            var pathBase = applicationOptions.PathBase;
-
-            app
-                .HandlePathBase(pathBase, logger)
-                .UseSwaggerWithUI("DLCS API", pathBase, "v2")
-                .UseRouting()
-                .UseSerilogRequestLogging()
-                .UseCors("CorsPolicy")
-                .UseAuthentication()
-                .UseAuthorization()
-                .UseEndpoints(endpoints =>
-                {
-                    endpoints
-                        .MapControllers()
-                        .RequireAuthorization();
-                    endpoints.MapHealthChecks("/ping").AllowAnonymous();
-                });
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
+    {
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
         }
+
+        var applicationOptions = configuration.Get<ApiSettings>();
+        var pathBase = applicationOptions.PathBase;
+
+        app
+            .HandlePathBase(pathBase, logger)
+            .UseSwaggerWithUI("DLCS API", pathBase, "v2")
+            .UseRouting()
+            .UseSerilogRequestLogging()
+            .UseCors("CorsPolicy")
+            .UseAuthentication()
+            .UseAuthorization()
+            .UseEndpoints(endpoints =>
+            {
+                endpoints
+                    .MapControllers()
+                    .RequireAuthorization();
+                endpoints.MapHealthChecks("/ping").AllowAnonymous();
+            });
     }
 }

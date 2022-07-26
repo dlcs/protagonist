@@ -3,111 +3,110 @@ using System.Net;
 using Microsoft.Extensions.Primitives;
 using Orchestrator.Assets;
 
-namespace Orchestrator.Infrastructure.ReverseProxy
+namespace Orchestrator.Infrastructure.ReverseProxy;
+
+/// <summary>
+/// Marker interface for result of proxy processing logic.
+/// </summary>
+public interface IProxyActionResult
 {
     /// <summary>
-    /// Marker interface for result of proxy processing logic.
+    /// A collection of any Headers to set on response object. 
     /// </summary>
-    public interface IProxyActionResult
+    Dictionary<string, StringValues> Headers { get; }
+} 
+
+/// <summary>
+/// Results for actions that is for image orchestration
+/// </summary>
+public class ProxyImageServerResult : ProxyActionResult
+{
+    /// <summary>
+    /// <see cref="OrchestrationImage"/> for current request
+    /// </summary>
+    public OrchestrationImage OrchestrationImage { get; }
+    
+    public ProxyImageServerResult(
+        OrchestrationImage orchestrationImage,
+        bool requiresAuth,
+        ProxyDestination target,
+        string? path = null) : base(target, requiresAuth, path)
     {
-        /// <summary>
-        /// A collection of any Headers to set on response object. 
-        /// </summary>
-        Dictionary<string, StringValues> Headers { get; }
-    } 
+        OrchestrationImage = orchestrationImage;
+    }
+}
+
+/// <summary>
+/// Result for actions that should be proxied to downstream service.
+/// </summary>
+public class ProxyActionResult : IProxyActionResult
+{
+    /// <summary>
+    /// Get downstream system to Proxy to
+    /// </summary>
+    public ProxyDestination Target { get; }
+    
+    /// <summary>
+    /// Get path to proxy to, if rewritten
+    /// </summary>
+    public string? Path { get; }
+    
+    /// <summary>
+    /// Get value indicating whether result has Path
+    /// </summary>
+    public bool HasPath => !string.IsNullOrWhiteSpace(Path);
+    
+    /// <summary>
+    /// Whether this request requires authentication to view
+    /// </summary>
+    public bool RequiresAuth { get; }
 
     /// <summary>
-    /// Results for actions that is for image orchestration
+    /// A collection of any Headers to set on response object. 
     /// </summary>
-    public class ProxyImageServerResult : ProxyActionResult
+    public Dictionary<string, StringValues> Headers { get; } = new();
+    
+    // TODO - differentiate between full + part path?
+    public ProxyActionResult(ProxyDestination target, bool requiresAuth, string? path = null)
     {
-        /// <summary>
-        /// <see cref="OrchestrationImage"/> for current request
-        /// </summary>
-        public OrchestrationImage OrchestrationImage { get; }
-        
-        public ProxyImageServerResult(
-            OrchestrationImage orchestrationImage,
-            bool requiresAuth,
-            ProxyDestination target,
-            string? path = null) : base(target, requiresAuth, path)
-        {
-            OrchestrationImage = orchestrationImage;
-        }
+        Target = target;
+        RequiresAuth = requiresAuth;
+        Path = !string.IsNullOrWhiteSpace(path) && path[0] == '/' ? path[1..] : path;
     }
+}
 
+/// <summary>
+/// Result for proxy actions that should be shortcut to return status code.
+/// </summary>
+public class StatusCodeResult : IProxyActionResult
+{
     /// <summary>
-    /// Result for actions that should be proxied to downstream service.
+    /// StatusCode to return
     /// </summary>
-    public class ProxyActionResult : IProxyActionResult
-    {
-        /// <summary>
-        /// Get downstream system to Proxy to
-        /// </summary>
-        public ProxyDestination Target { get; }
-        
-        /// <summary>
-        /// Get path to proxy to, if rewritten
-        /// </summary>
-        public string? Path { get; }
-        
-        /// <summary>
-        /// Get value indicating whether result has Path
-        /// </summary>
-        public bool HasPath => !string.IsNullOrWhiteSpace(Path);
-        
-        /// <summary>
-        /// Whether this request requires authentication to view
-        /// </summary>
-        public bool RequiresAuth { get; }
-
-        /// <summary>
-        /// A collection of any Headers to set on response object. 
-        /// </summary>
-        public Dictionary<string, StringValues> Headers { get; } = new();
-        
-        // TODO - differentiate between full + part path?
-        public ProxyActionResult(ProxyDestination target, bool requiresAuth, string? path = null)
-        {
-            Target = target;
-            RequiresAuth = requiresAuth;
-            Path = !string.IsNullOrWhiteSpace(path) && path[0] == '/' ? path[1..] : path;
-        }
-    }
-
+    public HttpStatusCode StatusCode { get; }
+    
     /// <summary>
-    /// Result for proxy actions that should be shortcut to return status code.
+    /// A collection of any Headers to set on response object. 
     /// </summary>
-    public class StatusCodeResult : IProxyActionResult
-    {
-        /// <summary>
-        /// StatusCode to return
-        /// </summary>
-        public HttpStatusCode StatusCode { get; }
-        
-        /// <summary>
-        /// A collection of any Headers to set on response object. 
-        /// </summary>
-        public Dictionary<string, StringValues> Headers { get; } = new();
+    public Dictionary<string, StringValues> Headers { get; } = new();
 
-        public StatusCodeResult(HttpStatusCode statusCode)
-        {
-            StatusCode = statusCode;
-        }
+    public StatusCodeResult(HttpStatusCode statusCode)
+    {
+        StatusCode = statusCode;
     }
+}
 
-    public static class ProxyActionResultsX
+public static class ProxyActionResultsX
+{
+    /// <summary>
+    /// Set header to return alongside statusCode
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static IProxyActionResult WithHeader(this IProxyActionResult result, string key, string value)
     {
-        /// <summary>
-        /// Set header to return alongside statusCode
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static IProxyActionResult WithHeader(this IProxyActionResult result, string key, string value)
-        {
-            result.Headers[key] = value;
-            return result;
-        }
+        result.Headers[key] = value;
+        return result;
     }
 }

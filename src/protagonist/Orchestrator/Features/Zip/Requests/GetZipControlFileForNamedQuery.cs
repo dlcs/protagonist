@@ -6,50 +6,49 @@ using Orchestrator.Infrastructure.NamedQueries.Persistence;
 using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Infrastructure.NamedQueries.Requests;
 
-namespace Orchestrator.Features.Zip.Requests
+namespace Orchestrator.Features.Zip.Requests;
+
+/// <summary>
+/// Mediatr request for getting zip control-file for named query
+/// </summary>
+public class GetZipControlFileForNamedQuery : IBaseNamedQueryRequest, IRequest<ControlFile?>
 {
-    /// <summary>
-    /// Mediatr request for getting zip control-file for named query
-    /// </summary>
-    public class GetZipControlFileForNamedQuery : IBaseNamedQueryRequest, IRequest<ControlFile?>
+    public string CustomerPathValue { get; }
+
+    public string NamedQuery { get; }
+
+    public string? NamedQueryArgs { get; }
+
+    public GetZipControlFileForNamedQuery(string customerPathValue, string namedQuery, string? namedQueryArgs)
     {
-        public string CustomerPathValue { get; }
+        CustomerPathValue = customerPathValue;
+        NamedQuery = namedQuery;
+        NamedQueryArgs = namedQueryArgs;
+    }
+}
 
-        public string NamedQuery { get; }
+public class GetZipControlFileForNamedQueryHandler : IRequestHandler<GetZipControlFileForNamedQuery, ControlFile?>
+{
+    private readonly StoredNamedQueryService storedNamedQueryService;
+    private readonly NamedQueryResultGenerator namedQueryResultGenerator;
 
-        public string? NamedQueryArgs { get; }
-
-        public GetZipControlFileForNamedQuery(string customerPathValue, string namedQuery, string? namedQueryArgs)
-        {
-            CustomerPathValue = customerPathValue;
-            NamedQuery = namedQuery;
-            NamedQueryArgs = namedQueryArgs;
-        }
+    public GetZipControlFileForNamedQueryHandler(
+        StoredNamedQueryService storedNamedQueryService,
+        NamedQueryResultGenerator namedQueryResultGenerator)
+    {
+        this.storedNamedQueryService = storedNamedQueryService;
+        this.namedQueryResultGenerator = namedQueryResultGenerator;
     }
     
-    public class GetZipControlFileForNamedQueryHandler : IRequestHandler<GetZipControlFileForNamedQuery, ControlFile?>
+    public async Task<ControlFile?> Handle(GetZipControlFileForNamedQuery request, CancellationToken cancellationToken)
     {
-        private readonly StoredNamedQueryService storedNamedQueryService;
-        private readonly NamedQueryResultGenerator namedQueryResultGenerator;
+        var namedQueryResult = await namedQueryResultGenerator.GetNamedQueryResult<ZipParsedNamedQuery>(request);
 
-        public GetZipControlFileForNamedQueryHandler(
-            StoredNamedQueryService storedNamedQueryService,
-            NamedQueryResultGenerator namedQueryResultGenerator)
-        {
-            this.storedNamedQueryService = storedNamedQueryService;
-            this.namedQueryResultGenerator = namedQueryResultGenerator;
-        }
-        
-        public async Task<ControlFile?> Handle(GetZipControlFileForNamedQuery request, CancellationToken cancellationToken)
-        {
-            var namedQueryResult = await namedQueryResultGenerator.GetNamedQueryResult<ZipParsedNamedQuery>(request);
+        if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
 
-            if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
-
-            var controlFile =
-                await storedNamedQueryService.GetControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey,
-                    cancellationToken);
-            return controlFile;
-        }
+        var controlFile =
+            await storedNamedQueryService.GetControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey,
+                cancellationToken);
+        return controlFile;
     }
 }

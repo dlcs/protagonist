@@ -1,13 +1,12 @@
-namespace Hydra
+namespace Hydra;
+
+/// <summary>
+/// Coerced @id link
+/// </summary>
+public class Link : JsonLdBase
 {
-    /// <summary>
-    /// Coerced @id link
-    /// </summary>
-    public class Link : JsonLdBase
+    public override string Type
     {
-        public override string Type
-        {
-            get { return "@id"; }
-        }
+        get { return "@id"; }
     }
 }

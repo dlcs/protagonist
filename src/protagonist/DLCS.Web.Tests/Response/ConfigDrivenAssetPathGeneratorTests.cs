@@ -9,196 +9,195 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Xunit;
 
-namespace DLCS.Web.Tests.Response
+namespace DLCS.Web.Tests.Response;
+
+public class ConfigDrivenAssetPathGeneratorTests
 {
-    public class ConfigDrivenAssetPathGeneratorTests
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetPathForRequest_Default(string customerPathValue)
     {
-        [Theory]
-        [InlineData("123")]
-        [InlineData("test-customer")]
-        public void GetPathForRequest_Default(string customerPathValue)
+        // Arrange
+        var sut = GetSut("default.com");
+        var request = new BaseAssetRequest
         {
-            // Arrange
-            var sut = GetSut("default.com");
-            var request = new BaseAssetRequest
-            {
-                Customer = new CustomerPathElement(123, "test-customer"),
-                CustomerPathValue = customerPathValue,
-                Space = 10,
-                AssetPath = "path/to/asset",
-                BasePath = "thumbs/123/10",
-                RoutePrefix = "thumbs"
-            };
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "thumbs/123/10",
+            RoutePrefix = "thumbs"
+        };
 
-            var expected = $"/thumbs/{customerPathValue}/10/path/to/asset";
-            
-            // Act
-            var actual = sut.GetPathForRequest(request);
-            
-            // Assert
-            actual.Should().Be(expected);
-        }
+        var expected = $"/thumbs/{customerPathValue}/10/path/to/asset";
         
-        [Theory]
-        [InlineData("123")]
-        [InlineData("test-customer")]
-        public void GetPathForRequest_Override(string customerPathValue)
-        {
-            // Arrange
-            var sut = GetSut("test.example.com");
-            var request = new BaseAssetRequest
-            {
-                Customer = new CustomerPathElement(123, "test-customer"),
-                CustomerPathValue = customerPathValue,
-                Space = 10,
-                AssetPath = "path/to/asset",
-                BasePath = "thumbs/123/10",
-                RoutePrefix = "thumbs"
-            };
-
-            var expected = "/thumbs/path/to/asset";
-            
-            // Act
-            var actual = sut.GetPathForRequest(request);
-            
-            // Assert
-            actual.Should().Be(expected);
-        }
+        // Act
+        var actual = sut.GetPathForRequest(request);
         
-        [Theory]
-        [InlineData("123")]
-        [InlineData("test-customer")]
-        public void GetFullPathForRequest_Default(string customerPathValue)
+        // Assert
+        actual.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetPathForRequest_Override(string customerPathValue)
+    {
+        // Arrange
+        var sut = GetSut("test.example.com");
+        var request = new BaseAssetRequest
         {
-            // Arrange
-            var sut = GetSut("default.com");
-            var request = new BaseAssetRequest
-            {
-                Customer = new CustomerPathElement(123, "test-customer"),
-                CustomerPathValue = customerPathValue,
-                Space = 10,
-                AssetPath = "path/to/asset",
-                BasePath = "thumbs/123/10",
-                RoutePrefix = "thumbs"
-            };
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "thumbs/123/10",
+            RoutePrefix = "thumbs"
+        };
 
-            var expected = $"https://default.com/thumbs/{customerPathValue}/10/path/to/asset";
-            
-            // Act
-            var actual = sut.GetFullPathForRequest(request);
-            
-            // Assert
-            actual.Should().Be(expected);
-        }
+        var expected = "/thumbs/path/to/asset";
         
-        [Theory]
-        [InlineData("123")]
-        [InlineData("test-customer")]
-        public void GetFullPathForRequest_Override(string customerPathValue)
-        {
-            // Arrange
-            var sut = GetSut("test.example.com");
-            var request = new BaseAssetRequest
-            {
-                Customer = new CustomerPathElement(123, "test-customer"),
-                CustomerPathValue = customerPathValue,
-                Space = 10,
-                AssetPath = "path/to/asset",
-                BasePath = "thumbs/123/10",
-                RoutePrefix = "thumbs"
-            };
-
-            var expected = "https://test.example.com/thumbs/path/to/asset";
-            
-            // Act
-            var actual = sut.GetFullPathForRequest(request);
-            
-            // Assert
-            actual.Should().Be(expected);
-        }
+        // Act
+        var actual = sut.GetPathForRequest(request);
         
-        [Theory]
-        [InlineData("123")]
-        [InlineData("test-customer")]
-        public void GetFullPathForRequest_PathGenerator_Default(string customerPathValue)
+        // Assert
+        actual.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetFullPathForRequest_Default(string customerPathValue)
+    {
+        // Arrange
+        var sut = GetSut("default.com");
+        var request = new BaseAssetRequest
         {
-            // Arrange
-            var sut = GetSut("default.com");
-            var request = new BaseAssetRequest
-            {
-                Customer = new CustomerPathElement(123, "test-customer"),
-                CustomerPathValue = customerPathValue,
-                Space = 10,
-                AssetPath = "path/to/asset",
-                BasePath = "thumbs/123/10",
-                RoutePrefix = "thumbs"
-            };
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "thumbs/123/10",
+            RoutePrefix = "thumbs"
+        };
 
-            var expected = $"https://default.com/thumbs/{customerPathValue}/2000/not-asset";
-            
-            // Act
-            var actual = sut.GetFullPathForRequest(request,
-                (assetRequest, template) =>
-                    DlcsPathHelpers.GeneratePathFromTemplate(
-                        template, 
-                        assetRequest.RoutePrefix, 
-                        assetRequest.CustomerPathValue, 
-                        "2000", "not-asset"));
-            
-            // Assert
-            actual.Should().Be(expected);
-        }
+        var expected = $"https://default.com/thumbs/{customerPathValue}/10/path/to/asset";
         
-        [Theory]
-        [InlineData("123")]
-        [InlineData("test-customer")]
-        public void GetFullPathForRequest_PathGenerator_Override(string customerPathValue)
+        // Act
+        var actual = sut.GetFullPathForRequest(request);
+        
+        // Assert
+        actual.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetFullPathForRequest_Override(string customerPathValue)
+    {
+        // Arrange
+        var sut = GetSut("test.example.com");
+        var request = new BaseAssetRequest
         {
-            // Arrange
-            var sut = GetSut("test.example.com");
-            var request = new BaseAssetRequest
-            {
-                Customer = new CustomerPathElement(123, "test-customer"),
-                CustomerPathValue = customerPathValue,
-                Space = 10,
-                AssetPath = "path/to/asset",
-                BasePath = "thumbs/123/10",
-                RoutePrefix = "thumbs"
-            };
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "thumbs/123/10",
+            RoutePrefix = "thumbs"
+        };
 
-            var expected = "https://test.example.com/thumbs/not-asset";
-            
-            // Act
-            var actual = sut.GetFullPathForRequest(request,
-                (assetRequest, template) =>
-                    DlcsPathHelpers.GeneratePathFromTemplate(
-                        template, 
-                        assetRequest.RoutePrefix, 
-                        assetRequest.CustomerPathValue, 
-                        "2000", "not-asset"));
-            
-            // Assert
-            actual.Should().Be(expected);
-        }
-
-        private ConfigDrivenAssetPathGenerator GetSut(string host)
+        var expected = "https://test.example.com/thumbs/path/to/asset";
+        
+        // Act
+        var actual = sut.GetFullPathForRequest(request);
+        
+        // Assert
+        actual.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetFullPathForRequest_PathGenerator_Default(string customerPathValue)
+    {
+        // Arrange
+        var sut = GetSut("default.com");
+        var request = new BaseAssetRequest
         {
-            var context = new DefaultHttpContext();
-            var request = context.Request;
-            var contextAccessor = A.Fake<IHttpContextAccessor>();
-            A.CallTo(() => contextAccessor.HttpContext).Returns(context);
-            request.Host = new HostString(host);
-            request.Scheme = "https";
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "thumbs/123/10",
+            RoutePrefix = "thumbs"
+        };
 
-            var options = Options.Create(new PathTemplateOptions
+        var expected = $"https://default.com/thumbs/{customerPathValue}/2000/not-asset";
+        
+        // Act
+        var actual = sut.GetFullPathForRequest(request,
+            (assetRequest, template) =>
+                DlcsPathHelpers.GeneratePathFromTemplate(
+                    template, 
+                    assetRequest.RoutePrefix, 
+                    assetRequest.CustomerPathValue, 
+                    "2000", "not-asset"));
+        
+        // Assert
+        actual.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetFullPathForRequest_PathGenerator_Override(string customerPathValue)
+    {
+        // Arrange
+        var sut = GetSut("test.example.com");
+        var request = new BaseAssetRequest
+        {
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "thumbs/123/10",
+            RoutePrefix = "thumbs"
+        };
+
+        var expected = "https://test.example.com/thumbs/not-asset";
+        
+        // Act
+        var actual = sut.GetFullPathForRequest(request,
+            (assetRequest, template) =>
+                DlcsPathHelpers.GeneratePathFromTemplate(
+                    template, 
+                    assetRequest.RoutePrefix, 
+                    assetRequest.CustomerPathValue, 
+                    "2000", "not-asset"));
+        
+        // Assert
+        actual.Should().Be(expected);
+    }
+
+    private ConfigDrivenAssetPathGenerator GetSut(string host)
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        var contextAccessor = A.Fake<IHttpContextAccessor>();
+        A.CallTo(() => contextAccessor.HttpContext).Returns(context);
+        request.Host = new HostString(host);
+        request.Scheme = "https";
+
+        var options = Options.Create(new PathTemplateOptions
+        {
+            Overrides = new Dictionary<string, string>
             {
-                Overrides = new Dictionary<string, string>
-                {
-                    ["test.example.com"] = "/{prefix}/{assetPath}"
-                }
-            });
+                ["test.example.com"] = "/{prefix}/{assetPath}"
+            }
+        });
 
-            return new ConfigDrivenAssetPathGenerator(options, contextAccessor);
-        }
+        return new ConfigDrivenAssetPathGenerator(options, contextAccessor);
     }
 }

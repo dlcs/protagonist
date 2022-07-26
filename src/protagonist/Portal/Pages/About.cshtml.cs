@@ -1,12 +1,11 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Portal.Pages
+namespace Portal.Pages;
+
+public class About : PageModel
 {
-    public class About : PageModel
+    public void OnGet()
     {
-        public void OnGet()
-        {
-            
-        }
+        
     }
 }

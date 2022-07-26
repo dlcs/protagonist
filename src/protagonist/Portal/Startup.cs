@@ -25,120 +25,119 @@ using Microsoft.Extensions.Hosting;
 using Portal.Behaviours;
 using Portal.Settings;
 
-namespace Portal
+namespace Portal;
+
+public class Startup
 {
-    public class Startup
+    private readonly IConfiguration configuration;
+    
+    public Startup(IConfiguration configuration)
     {
-        private readonly IConfiguration configuration;
+        this.configuration = configuration;
+    }
+    
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.Configure<PortalSettings>(configuration.GetSection("Portal"));
+        services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
+        services.Configure<AWSSettings>(configuration.GetSection("AWS"));
+        services.Configure<ApiClientSettings>(configuration.GetSection("API"));
+        var dlcsSettings = configuration.GetSection("DLCS").Get<DlcsSettings>();
         
-        public Startup(IConfiguration configuration)
+        services.AddRazorPages(opts =>
         {
-            this.configuration = configuration;
-        }
+            opts.Conventions.AllowAnonymousToFolder("/Account");
+            opts.Conventions.AllowAnonymousToPage("/AccessDenied");
+            opts.Conventions.AllowAnonymousToPage("/Error");
+            opts.Conventions.AllowAnonymousToPage("/Index");
+            opts.Conventions.AllowAnonymousToPage("/Features");
+            opts.Conventions.AllowAnonymousToPage("/About");
+            opts.Conventions.AllowAnonymousToPage("/Pricing");
+            opts.Conventions.AllowAnonymousToPage("/Signup");
+            opts.Conventions.AuthorizeFolder("/Admin", "Administrators");
+        });
+
+        // Add auth to everywhere - with the exception of those configured in AddRazorPages
+        services.AddAuthorization(opts =>
+        {
+            opts.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+            opts.AddPolicy("Administrators",
+                policy => policy.RequireClaim(ClaimTypes.Role, ClaimsPrincipalUtils.Roles.Admin));
+        });
         
-        public void ConfigureServices(IServiceCollection services)
-        {
-            services.Configure<PortalSettings>(configuration.GetSection("Portal"));
-            services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
-            services.Configure<AWSSettings>(configuration.GetSection("AWS"));
-            services.Configure<ApiClientSettings>(configuration.GetSection("API"));
-            var dlcsSettings = configuration.GetSection("DLCS").Get<DlcsSettings>();
-            
-            services.AddRazorPages(opts =>
+        services
+            .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddCookie(opts =>
             {
-                opts.Conventions.AllowAnonymousToFolder("/Account");
-                opts.Conventions.AllowAnonymousToPage("/AccessDenied");
-                opts.Conventions.AllowAnonymousToPage("/Error");
-                opts.Conventions.AllowAnonymousToPage("/Index");
-                opts.Conventions.AllowAnonymousToPage("/Features");
-                opts.Conventions.AllowAnonymousToPage("/About");
-                opts.Conventions.AllowAnonymousToPage("/Pricing");
-                opts.Conventions.AllowAnonymousToPage("/Signup");
-                opts.Conventions.AuthorizeFolder("/Admin", "Administrators");
+                opts.AccessDeniedPath = new PathString("/AccessDenied");
             });
 
-            // Add auth to everywhere - with the exception of those configured in AddRazorPages
-            services.AddAuthorization(opts =>
-            {
-                opts.FallbackPolicy = new AuthorizationPolicyBuilder()
-                    .RequireAuthenticatedUser()
-                    .Build();
-                opts.AddPolicy("Administrators",
-                    policy => policy.RequireClaim(ClaimTypes.Role, ClaimsPrincipalUtils.Roles.Admin));
-            });
-            
-            services
-                .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie(opts =>
-                {
-                    opts.AccessDeniedPath = new PathString("/AccessDenied");
-                });
+        services
+            .AddHttpContextAccessor()
+            .AddSingleton<IEncryption, SHA256>()
+            .AddSingleton<DeliveratorApiAuth>()
+            .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
+            .AddMediatR(typeof(Startup))
+            .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
+            .AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditBehaviour<,>))
+            .AddAWSService<IAmazonS3>()
+            .AddSingleton<IBucketReader, S3BucketReader>()
+            .AddSingleton<IBucketWriter, S3BucketWriter>()
+            .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>();
 
-            services
-                .AddHttpContextAccessor()
-                .AddSingleton<IEncryption, SHA256>()
-                .AddSingleton<DeliveratorApiAuth>()
-                .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
-                .AddMediatR(typeof(Startup))
-                .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
-                .AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditBehaviour<,>))
-                .AddAWSService<IAmazonS3>()
-                .AddSingleton<IBucketReader, S3BucketReader>()
-                .AddSingleton<IBucketWriter, S3BucketWriter>()
-                .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>();
+        services.AddDlcsContext(configuration);
 
-            services.AddDlcsContext(configuration);
+        services.AddHttpClient<IDlcsClient, DlcsClient>(GetHttpClientSettings);
+        services.AddHttpClient<AdminDlcsClient>(GetHttpClientSettings);
 
-            services.AddHttpClient<IDlcsClient, DlcsClient>(GetHttpClientSettings);
-            services.AddHttpClient<AdminDlcsClient>(GetHttpClientSettings);
+        services
+            .AddHealthChecks()
+            .AddUrlGroup(dlcsSettings.ApiRoot, "DLCS API")
+            .AddDbContextCheck<DlcsContext>("DLCS-DB");
+    }
 
-            services
-                .AddHealthChecks()
-                .AddUrlGroup(dlcsSettings.ApiRoot, "DLCS API")
-                .AddDbContextCheck<DlcsContext>("DLCS-DB");
-        }
+    private void GetHttpClientSettings(HttpClient client)
+    {
+        var dlcsSection = configuration.GetSection("DLCS");
+        var dlcsOptions = dlcsSection.Get<DlcsSettings>();
 
-        private void GetHttpClientSettings(HttpClient client)
+        client.BaseAddress = dlcsOptions.ApiRoot;
+        client.DefaultRequestHeaders.Accept
+            .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        client.DefaultRequestHeaders.Add("User-Agent", "DLCS-Portal-Protagonist");
+        client.Timeout = TimeSpan.FromMilliseconds(dlcsOptions.DefaultTimeoutMs);
+    }
+
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        if (env.IsDevelopment())
         {
-            var dlcsSection = configuration.GetSection("DLCS");
-            var dlcsOptions = dlcsSection.Get<DlcsSettings>();
-
-            client.BaseAddress = dlcsOptions.ApiRoot;
-            client.DefaultRequestHeaders.Accept
-                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            client.DefaultRequestHeaders.Add("User-Agent", "DLCS-Portal-Protagonist");
-            client.Timeout = TimeSpan.FromMilliseconds(dlcsOptions.DefaultTimeoutMs);
+            app.UseDeveloperExceptionPage();
         }
-
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        else
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                app.UseExceptionHandler("/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
-            }
-
-            app.UseHttpsRedirection();
-            app.UseStaticFiles();
-
-            app.UseRouting();
-
-            app.UseCookiePolicy(new CookiePolicyOptions {MinimumSameSitePolicy = SameSiteMode.Strict});
-
-            app.UseAuthentication();
-            app.UseAuthorization();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-                endpoints.MapRazorPages();
-                endpoints.MapHealthChecks("/ping").AllowAnonymous();
-            });
+            app.UseExceptionHandler("/Error");
+            // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+            app.UseHsts();
         }
+
+        app.UseHttpsRedirection();
+        app.UseStaticFiles();
+
+        app.UseRouting();
+
+        app.UseCookiePolicy(new CookiePolicyOptions {MinimumSameSitePolicy = SameSiteMode.Strict});
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapControllers();
+            endpoints.MapRazorPages();
+            endpoints.MapHealthChecks("/ping").AllowAnonymous();
+        });
     }
 }

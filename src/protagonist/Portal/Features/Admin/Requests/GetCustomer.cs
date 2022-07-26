@@ -7,37 +7,35 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Portal.Features.Admin.Requests
+namespace Portal.Features.Admin.Requests;
+
+public class GetCustomer : IRequest<Customer>
 {
-    public class GetCustomer : IRequest<Customer>
+    public int CustomerId { get; set; }
+    public GetCustomer(int id)
     {
-        public int CustomerId { get; set; }
-        public GetCustomer(int id)
-        {
-            CustomerId = id;
-        }
+        CustomerId = id;
+    }
+}
+
+public class GetCustomerHandler : IRequestHandler<GetCustomer, Customer>
+{
+    private readonly DlcsContext dbContext;
+    private readonly ClaimsPrincipal principal;
+    private readonly ILogger<GetCustomerHandler> logger;
+
+    public GetCustomerHandler(
+        DlcsContext dbContext, 
+        ClaimsPrincipal principal,
+        ILogger<GetCustomerHandler> logger)
+    {
+        this.dbContext = dbContext;
+        this.principal = principal;
+        this.logger = logger;
     }
 
-    public class GetCustomerHandler : IRequestHandler<GetCustomer, Customer>
+    public async Task<Customer> Handle(GetCustomer request, CancellationToken cancellationToken)
     {
-        private readonly DlcsContext dbContext;
-        private readonly ClaimsPrincipal principal;
-        private readonly ILogger<GetCustomerHandler> logger;
-    
-        public GetCustomerHandler(
-            DlcsContext dbContext, 
-            ClaimsPrincipal principal,
-            ILogger<GetCustomerHandler> logger)
-        {
-            this.dbContext = dbContext;
-            this.principal = principal;
-            this.logger = logger;
-        }
-
-        public async Task<Customer> Handle(GetCustomer request, CancellationToken cancellationToken)
-        {
-            return await dbContext.Customers.AsNoTracking().SingleAsync(c => c.Id == request.CustomerId);
-        }
+        return await dbContext.Customers.AsNoTracking().SingleAsync(c => c.Id == request.CustomerId);
     }
-
 }

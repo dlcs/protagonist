@@ -1,14 +1,13 @@
-﻿namespace DLCS.Web.Requests.AssetDelivery
+﻿namespace DLCS.Web.Requests.AssetDelivery;
+
+/// <summary>
+/// Model for a request made for a DLCS AV asset
+/// </summary>
+public class TimeBasedAssetDeliveryRequest : BaseAssetRequest
 {
     /// <summary>
-    /// Model for a request made for a DLCS AV asset
+    /// Get the ImageRequest equivalent for Timebased media
     /// </summary>
-    public class TimeBasedAssetDeliveryRequest : BaseAssetRequest
-    {
-        /// <summary>
-        /// Get the ImageRequest equivalent for Timebased media
-        /// </summary>
-        /// <remarks>This is not IIIF standard</remarks>
-        public string TimeBasedRequest { get; set; }
-    }
+    /// <remarks>This is not IIIF standard</remarks>
+    public string TimeBasedRequest { get; set; }
 }

@@ -4,47 +4,46 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Orchestrator.Features.Images.Orchestration
+namespace Orchestrator.Features.Images.Orchestration;
+
+/// <summary>
+/// BackgroundService that monitors queue for requests to orchestrate images.
+/// </summary>
+public class OrchestrationQueueMonitor : BackgroundService
 {
-    /// <summary>
-    /// BackgroundService that monitors queue for requests to orchestrate images.
-    /// </summary>
-    public class OrchestrationQueueMonitor : BackgroundService
+    private readonly IOrchestrationQueue orchestrationQueue;
+    private readonly IImageOrchestrator imageOrchestrator;
+    private readonly ILogger<OrchestrationQueueMonitor> logger;
+
+    public OrchestrationQueueMonitor(IOrchestrationQueue orchestrationQueue, IImageOrchestrator imageOrchestrator,
+        ILogger<OrchestrationQueueMonitor> logger)
     {
-        private readonly IOrchestrationQueue orchestrationQueue;
-        private readonly IImageOrchestrator imageOrchestrator;
-        private readonly ILogger<OrchestrationQueueMonitor> logger;
+        this.orchestrationQueue = orchestrationQueue;
+        this.imageOrchestrator = imageOrchestrator;
+        this.logger = logger;
+    }
 
-        public OrchestrationQueueMonitor(IOrchestrationQueue orchestrationQueue, IImageOrchestrator imageOrchestrator,
-            ILogger<OrchestrationQueueMonitor> logger)
-        {
-            this.orchestrationQueue = orchestrationQueue;
-            this.imageOrchestrator = imageOrchestrator;
-            this.logger = logger;
-        }
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        logger.LogInformation("Starting OrchestrationQueueMonitor");
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        await BackgroundProcessor(stoppingToken);
+    }
+    
+    private async Task BackgroundProcessor(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
         {
-            logger.LogInformation("Starting OrchestrationQueueMonitor");
+            var orchestrationImage = await orchestrationQueue.DequeueRequest(stoppingToken);
 
-            await BackgroundProcessor(stoppingToken);
-        }
-        
-        private async Task BackgroundProcessor(CancellationToken stoppingToken)
-        {
-            while (!stoppingToken.IsCancellationRequested)
+            try
             {
-                var orchestrationImage = await orchestrationQueue.DequeueRequest(stoppingToken);
-
-                try
-                {
-                    logger.LogDebug("Orchestrating {AssetId}", orchestrationImage.AssetId);
-                    await imageOrchestrator.OrchestrateImage(orchestrationImage, stoppingToken);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Error occurred orchestrating image {AssetId}", orchestrationImage.AssetId);
-                }
+                logger.LogDebug("Orchestrating {AssetId}", orchestrationImage.AssetId);
+                await imageOrchestrator.OrchestrateImage(orchestrationImage, stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error occurred orchestrating image {AssetId}", orchestrationImage.AssetId);
             }
         }
     }

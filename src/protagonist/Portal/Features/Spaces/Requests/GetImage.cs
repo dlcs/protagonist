@@ -4,26 +4,25 @@ using API.Client;
 using DLCS.HydraModel;
 using MediatR;
 
-namespace Portal.Features.Spaces.Requests
+namespace Portal.Features.Spaces.Requests;
+
+public class GetImage : IRequest<Image>
 {
-    public class GetImage : IRequest<Image>
+    public int SpaceId { get; set; }
+    public string ImageId { get; set; }
+}
+
+public class GetImageHandler : IRequestHandler<GetImage, Image>
+{
+    private readonly IDlcsClient dlcsClient;
+
+    public GetImageHandler(IDlcsClient dlcsClient)
     {
-        public int SpaceId { get; set; }
-        public string ImageId { get; set; }
+        this.dlcsClient = dlcsClient;
     }
     
-    public class GetImageHandler : IRequestHandler<GetImage, Image>
+    public async Task<Image> Handle(GetImage request, CancellationToken cancellationToken)
     {
-        private readonly IDlcsClient dlcsClient;
-
-        public GetImageHandler(IDlcsClient dlcsClient)
-        {
-            this.dlcsClient = dlcsClient;
-        }
-        
-        public async Task<Image> Handle(GetImage request, CancellationToken cancellationToken)
-        {
-            return await dlcsClient.GetImage(request.SpaceId, request.ImageId);
-        }
+        return await dlcsClient.GetImage(request.SpaceId, request.ImageId);
     }
 }

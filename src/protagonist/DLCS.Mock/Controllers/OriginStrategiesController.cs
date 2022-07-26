@@ -5,44 +5,43 @@ using Hydra.Collections;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DLCS.Mock.Controllers
+namespace DLCS.Mock.Controllers;
+
+[ApiController]
+public class OriginStrategiesController : ControllerBase
 {
-    [ApiController]
-    public class OriginStrategiesController : ControllerBase
+    private readonly MockModel model;
+    
+    public OriginStrategiesController(MockModel model)
     {
-        private readonly MockModel model;
-        
-        public OriginStrategiesController(MockModel model)
-        {
-            this.model = model;
-        }
-        
-        [HttpGet]
-        [Route("/originStrategies")]
-        public HydraCollection<OriginStrategy> Index()
-        {
-            var originStrategies = model.OriginStrategies.ToArray();
+        this.model = model;
+    }
+    
+    [HttpGet]
+    [Route("/originStrategies")]
+    public HydraCollection<OriginStrategy> Index()
+    {
+        var originStrategies = model.OriginStrategies.ToArray();
 
-            return new HydraCollection<OriginStrategy>
-            {
-                WithContext = true,
-                Members = originStrategies,
-                TotalItems = originStrategies.Length,
-                Id = Request.GetDisplayUrl()
-            };
-        }
+        return new HydraCollection<OriginStrategy>
+        {
+            WithContext = true,
+            Members = originStrategies,
+            TotalItems = originStrategies.Length,
+            Id = Request.GetDisplayUrl()
+        };
+    }
 
 
-        [HttpGet]
-        [Route("/originStrategies/{id}")]
-        public IActionResult Index(string id)
+    [HttpGet]
+    [Route("/originStrategies/{id}")]
+    public IActionResult Index(string id)
+    {
+        var originStrategy = model.OriginStrategies.SingleOrDefault(os => os.ModelId == id);
+        if (originStrategy != null)
         {
-            var originStrategy = model.OriginStrategies.SingleOrDefault(os => os.ModelId == id);
-            if (originStrategy != null)
-            {
-                return Ok(originStrategy);
-            }
-            return NotFound();
+            return Ok(originStrategy);
         }
+        return NotFound();
     }
 }

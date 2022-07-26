@@ -4,78 +4,77 @@ using DLCS.Web.Auth;
 using FluentAssertions;
 using Xunit;
 
-namespace Portal.Tests
+namespace Portal.Tests;
+
+public class ClaimsPrincipalXTests
 {
-    public class ClaimsPrincipalXTests
+    [Fact]
+    public void GetCustomerId_Null_IfClaimNotFound()
     {
-        [Fact]
-        public void GetCustomerId_Null_IfClaimNotFound()
-        {
-            // Arrange
-            var identity = new ClaimsIdentity(new List<Claim> {new("Name", "Test")}, "Whatever");
-            var principal = new ClaimsPrincipal(new[] {identity});
-            
-            // Act
-            var customerId = principal.GetCustomerId();
-
-            // Assert
-            customerId.Should().BeNull();
-        }
+        // Arrange
+        var identity = new ClaimsIdentity(new List<Claim> {new("Name", "Test")}, "Whatever");
+        var principal = new ClaimsPrincipal(new[] {identity});
         
-        [Fact]
-        public void GetCustomerId_Null_IfClaimNotNumeric()
-        {
-            // Arrange
-            var identity = new ClaimsIdentity(new List<Claim> {new("Customer", "TestCustomer")}, "Whatever");
-            var principal = new ClaimsPrincipal(new[] {identity});
+        // Act
+        var customerId = principal.GetCustomerId();
 
-            // Act
-            var customerId = principal.GetCustomerId();
+        // Assert
+        customerId.Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetCustomerId_Null_IfClaimNotNumeric()
+    {
+        // Arrange
+        var identity = new ClaimsIdentity(new List<Claim> {new("Customer", "TestCustomer")}, "Whatever");
+        var principal = new ClaimsPrincipal(new[] {identity});
 
-            // Assert
-            customerId.Should().BeNull();
-        }
+        // Act
+        var customerId = principal.GetCustomerId();
+
+        // Assert
+        customerId.Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetCustomerId_ReturnsCorrectValue()
+    {
+        // Arrange
+        var identity = new ClaimsIdentity(new List<Claim> {new("Customer", "123")}, "Whatever");
+        var principal = new ClaimsPrincipal(new[] {identity});
+
+        // Act
+        var customerId = principal.GetCustomerId();
+
+        // Assert
+        customerId.Should().Be(123);
+    }
+    
+    [Fact]
+    public void GetApiCredentials_Null_IfClaimNotFound()
+    {
+        // Arrange
+        var identity = new ClaimsIdentity(new List<Claim> {new("Name", "Test")}, "Whatever");
+        var principal = new ClaimsPrincipal(new[] {identity});
         
-        [Fact]
-        public void GetCustomerId_ReturnsCorrectValue()
-        {
-            // Arrange
-            var identity = new ClaimsIdentity(new List<Claim> {new("Customer", "123")}, "Whatever");
-            var principal = new ClaimsPrincipal(new[] {identity});
+        // Act
+        var customerId = principal.GetApiCredentials();
 
-            // Act
-            var customerId = principal.GetCustomerId();
+        // Assert
+        customerId.Should().BeNull();
+    }
 
-            // Assert
-            customerId.Should().Be(123);
-        }
-        
-        [Fact]
-        public void GetApiCredentials_Null_IfClaimNotFound()
-        {
-            // Arrange
-            var identity = new ClaimsIdentity(new List<Claim> {new("Name", "Test")}, "Whatever");
-            var principal = new ClaimsPrincipal(new[] {identity});
-            
-            // Act
-            var customerId = principal.GetApiCredentials();
+    [Fact]
+    public void GetApiCredentials_ReturnsCorrectValue()
+    {
+        // Arrange
+        var identity = new ClaimsIdentity(new List<Claim> {new("ApiCredentials", "ssshhhh")}, "Whatever");
+        var principal = new ClaimsPrincipal(new[] {identity});
 
-            // Assert
-            customerId.Should().BeNull();
-        }
+        // Act
+        var customerId = principal.GetApiCredentials();
 
-        [Fact]
-        public void GetApiCredentials_ReturnsCorrectValue()
-        {
-            // Arrange
-            var identity = new ClaimsIdentity(new List<Claim> {new("ApiCredentials", "ssshhhh")}, "Whatever");
-            var principal = new ClaimsPrincipal(new[] {identity});
-
-            // Act
-            var customerId = principal.GetApiCredentials();
-
-            // Assert
-            customerId.Should().Be("ssshhhh");
-        }
+        // Assert
+        customerId.Should().Be("ssshhhh");
     }
 }

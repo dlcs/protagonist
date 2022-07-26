@@ -1,11 +1,10 @@
 ﻿#nullable disable
 
-namespace DLCS.Model.Assets
+namespace DLCS.Model.Assets;
+
+public partial class ImageLocation
 {
-    public partial class ImageLocation
-    {
-        public string Id { get; set; }
-        public string S3 { get; set; }
-        public string Nas { get; set; }
-    }
+    public string Id { get; set; }
+    public string S3 { get; set; }
+    public string Nas { get; set; }
 }

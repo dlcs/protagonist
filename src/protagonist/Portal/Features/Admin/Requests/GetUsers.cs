@@ -10,39 +10,38 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Portal.Features.Admin.Requests
-{
-    public class GetUsers : IRequest<List<User>>
-    {
-        public GetUsers(int customerId)
-        {
-            CustomerId = customerId;
-        }
+namespace Portal.Features.Admin.Requests;
 
-        public int CustomerId { get; set; }
+public class GetUsers : IRequest<List<User>>
+{
+    public GetUsers(int customerId)
+    {
+        CustomerId = customerId;
     }
 
-    public class GetUsersHandler : IRequestHandler<GetUsers, List<User>>
+    public int CustomerId { get; set; }
+}
+
+public class GetUsersHandler : IRequestHandler<GetUsers, List<User>>
+{
+    private readonly DlcsContext dbContext;
+    private readonly ClaimsPrincipal principal;
+    private readonly ILogger<GetUsersHandler> logger;
+
+    public GetUsersHandler(
+        DlcsContext dbContext,
+        ClaimsPrincipal principal,
+        ILogger<GetUsersHandler> logger)
     {
-        private readonly DlcsContext dbContext;
-        private readonly ClaimsPrincipal principal;
-        private readonly ILogger<GetUsersHandler> logger;
+        this.dbContext = dbContext;
+        this.principal = principal;
+        this.logger = logger;
+    }
 
-        public GetUsersHandler(
-            DlcsContext dbContext,
-            ClaimsPrincipal principal,
-            ILogger<GetUsersHandler> logger)
-        {
-            this.dbContext = dbContext;
-            this.principal = principal;
-            this.logger = logger;
-        }
-
-        public async Task<List<User>> Handle(GetUsers request, CancellationToken cancellationToken)
-        {
-            return await dbContext.Users.AsNoTracking()
-                .Where(u => u.Customer == request.CustomerId)
-                .ToListAsync(cancellationToken: cancellationToken);
-        }
+    public async Task<List<User>> Handle(GetUsers request, CancellationToken cancellationToken)
+    {
+        return await dbContext.Users.AsNoTracking()
+            .Where(u => u.Customer == request.CustomerId)
+            .ToListAsync(cancellationToken: cancellationToken);
     }
 }

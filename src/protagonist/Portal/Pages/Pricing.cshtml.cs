@@ -1,12 +1,11 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Portal
+namespace Portal;
+
+public class Pricing : PageModel
 {
-    public class Pricing : PageModel
+    public void OnGet()
     {
-        public void OnGet()
-        {
-            
-        }
+        
     }
 }

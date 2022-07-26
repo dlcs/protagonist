@@ -5,31 +5,30 @@ using DLCS.Model.Assets;
 using DLCS.Repository;
 using MediatR;
 
-namespace API.Features.Image.Requests
+namespace API.Features.Image.Requests;
+
+public class GetImage : IRequest<Asset?>
 {
-    public class GetImage : IRequest<Asset?>
+    public GetImage(AssetId assetId)
     {
-        public GetImage(AssetId assetId)
-        {
-            AssetId = assetId;
-        }
-        
-        public AssetId AssetId { get; private set; }
+        AssetId = assetId;
     }
     
-    public class GetImageHandler : IRequestHandler<GetImage, DLCS.Model.Assets.Asset?>
-    {
-        private readonly IAssetRepository assetRepository;
+    public AssetId AssetId { get; private set; }
+}
 
-        public GetImageHandler(IAssetRepository assetRepository)
-        {
-            this.assetRepository = assetRepository;
-        }
-        
-        public async Task<Asset?> Handle(GetImage request, CancellationToken cancellationToken)
-        {
-            var image = await assetRepository.GetAsset(request.AssetId);
-            return image;
-        }
+public class GetImageHandler : IRequestHandler<GetImage, DLCS.Model.Assets.Asset?>
+{
+    private readonly IAssetRepository assetRepository;
+
+    public GetImageHandler(IAssetRepository assetRepository)
+    {
+        this.assetRepository = assetRepository;
+    }
+    
+    public async Task<Asset?> Handle(GetImage request, CancellationToken cancellationToken)
+    {
+        var image = await assetRepository.GetAsset(request.AssetId);
+        return image;
     }
 }

@@ -8,31 +8,30 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
 using Portal.Features.Spaces.Requests;
 
-namespace Portal.Pages.Images
+namespace Portal.Pages.Images;
+
+[BindProperties]
+public class Index : PageModel
 {
-    [BindProperties]
-    public class Index : PageModel
+    private readonly IMediator mediator;
+    
+    public DlcsSettings DlcsSettings { get; }
+
+    public Image Image { get; set; }
+    
+    public Index(
+        IMediator mediator,
+        IOptions<DlcsSettings> dlcsSettings,
+        ClaimsPrincipal currentUser)
     {
-        private readonly IMediator mediator;
-        
-        public DlcsSettings DlcsSettings { get; }
+        this.mediator = mediator;
+        DlcsSettings = dlcsSettings.Value;
+    }
 
-        public Image Image { get; set; }
-        
-        public Index(
-            IMediator mediator,
-            IOptions<DlcsSettings> dlcsSettings,
-            ClaimsPrincipal currentUser)
-        {
-            this.mediator = mediator;
-            DlcsSettings = dlcsSettings.Value;
-        }
+    public async Task<IActionResult> OnGetAsync(int space, string image)
+    {
+        Image = await this.mediator.Send(new GetImage {SpaceId = space, ImageId = image});
 
-        public async Task<IActionResult> OnGetAsync(int space, string image)
-        {
-            Image = await this.mediator.Send(new GetImage {SpaceId = space, ImageId = image});
-
-            return Page();
-        }
+        return Page();
     }
 }

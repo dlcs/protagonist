@@ -11,47 +11,46 @@ using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace Portal.Features.Admin.Requests
+namespace Portal.Features.Admin.Requests;
+
+public class CreateSignupLink : IRequest<SignupLink>
 {
-    public class CreateSignupLink : IRequest<SignupLink>
+    public string? Note { get; set; }
+    public DateTime Expires { get; set; }
+}
+
+public class CreateSignupLinkHandler : IRequestHandler<CreateSignupLink, SignupLink>
+{
+    private readonly DlcsContext dbContext;
+    private readonly ClaimsPrincipal principal;
+    private readonly ILogger logger;
+    
+    public CreateSignupLinkHandler(
+        DlcsContext dbContext, 
+        ClaimsPrincipal principal,
+        ILogger<CreateSignupLinkHandler> logger)
     {
-        public string? Note { get; set; }
-        public DateTime Expires { get; set; }
+        this.dbContext = dbContext;
+        this.principal = principal;
+        this.logger = logger;
     }
-
-    public class CreateSignupLinkHandler : IRequestHandler<CreateSignupLink, SignupLink>
+    
+    public async Task<SignupLink> Handle(CreateSignupLink request, CancellationToken cancellationToken)
     {
-        private readonly DlcsContext dbContext;
-        private readonly ClaimsPrincipal principal;
-        private readonly ILogger logger;
-        
-        public CreateSignupLinkHandler(
-            DlcsContext dbContext, 
-            ClaimsPrincipal principal,
-            ILogger<CreateSignupLinkHandler> logger)
+        if (principal.IsAdmin())
         {
-            this.dbContext = dbContext;
-            this.principal = principal;
-            this.logger = logger;
-        }
-        
-        public async Task<SignupLink> Handle(CreateSignupLink request, CancellationToken cancellationToken)
-        {
-            if (principal.IsAdmin())
+            var newLink = new SignupLink
             {
-                var newLink = new SignupLink
-                {
-                    Id = KeyGenerator.GetUniqueKey(24),
-                    Created = DateTime.UtcNow,
-                    Expires = request.Expires,
-                    Note = request.Note
-                };
-                dbContext.SignupLinks.Add(newLink);
-                await dbContext.SaveChangesAsync(cancellationToken);
-                return newLink;
-            }
-
-            throw new InvalidCredentialException("Only admin can create a signup link");
+                Id = KeyGenerator.GetUniqueKey(24),
+                Created = DateTime.UtcNow,
+                Expires = request.Expires,
+                Note = request.Note
+            };
+            dbContext.SignupLinks.Add(newLink);
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return newLink;
         }
+
+        throw new InvalidCredentialException("Only admin can create a signup link");
     }
 }

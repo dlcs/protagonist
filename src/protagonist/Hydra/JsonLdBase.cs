@@ -2,35 +2,34 @@ using System;
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace Hydra
+namespace Hydra;
+
+public abstract class JsonLdBase
 {
-    public abstract class JsonLdBase
+    [JsonProperty(Order = 1, PropertyName = "@context")]
+    public virtual string? Context
     {
-        [JsonProperty(Order = 1, PropertyName = "@context")]
-        public virtual string? Context
-        {
-            get => InternalContext;
-            set => InternalContext = value;
-        }
+        get => InternalContext;
+        set => InternalContext = value;
+    }
 
-        [JsonIgnore]
-        protected string? InternalContext;
+    [JsonIgnore]
+    protected string? InternalContext;
 
-        
-        [JsonProperty(Order = 2, PropertyName = "@id")]
-        public string? Id { get; set; }
+    
+    [JsonProperty(Order = 2, PropertyName = "@id")]
+    public string? Id { get; set; }
 
-        [JsonProperty(Order = 3, PropertyName = "@type")]
-        public virtual string Type { get; set; }
-        
-        public string? GetLastPathElement()
-        {
-            return Id.GetLastPathElement();
-        }
+    [JsonProperty(Order = 3, PropertyName = "@type")]
+    public virtual string Type { get; set; }
+    
+    public string? GetLastPathElement()
+    {
+        return Id.GetLastPathElement();
+    }
 
-        public int? GetLastPathElementAsInt()
-        {
-            return Id.GetLastPathElementAsInt();
-        }
+    public int? GetLastPathElementAsInt()
+    {
+        return Id.GetLastPathElementAsInt();
     }
 }
