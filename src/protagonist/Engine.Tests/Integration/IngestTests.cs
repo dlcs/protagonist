@@ -263,9 +263,9 @@ public class FakeFileSystem : IFileSystem
 
     public void CreateDirectory(string path) => CreatedDirectories.Add(path);
 
-    public void DeleteDirectory(string path, bool rescursive) => DeletedDirectories.Add(path);
+    public void DeleteDirectory(string path, bool recursive, bool swallowError = true) => DeletedDirectories.Add(path);
 
-    public void DeleteFile(string path) => DeletedFiles.Add(path);
+    public void DeleteFile(string path, bool swallowError = true) => DeletedFiles.Add(path);
 
     public bool FileExists(string path) => true;
 }

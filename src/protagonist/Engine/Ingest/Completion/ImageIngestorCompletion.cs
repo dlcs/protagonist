@@ -70,7 +70,7 @@ public class ImageIngestorCompletion : IImageIngestorCompletion
         
         try
         {
-            fileSystem.DeleteDirectory(rootPath, true);
+            fileSystem.DeleteDirectory(rootPath, true, swallowError: false);
         }
         catch (Exception ex)
         {
