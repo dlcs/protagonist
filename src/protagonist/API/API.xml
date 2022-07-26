@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>API</name>
+    </assembly>
+    <members>
+        <member name="T:API.Auth.DlcsDelegatedBasicAuthenticationHandler">
+            <summary>
+            AuthenticationHandler that hands off calls to DLCS for carrying out authentication.
+            </summary>
+            <remarks>This is temporary and will be replaced in the future by an implementation that has auth logic</remarks>
+        </member>
+        <member name="M:API.Auth.ServiceCollectionX.AddDlcsDelegatedBasicAuth(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{API.Auth.BasicAuthenticationOptions})">
+            <summary>
+            Add DlcsDelegatedBasicAuthenticationHandler to services collection.
+            </summary>
+        </member>
+        <member name="T:API.Auth.BasicAuthenticationOptions">
+            <summary>
+            Options for use with BasicAuth handler.
+            </summary>
+        </member>
+        <member name="P:API.Auth.BasicAuthenticationOptions.Realm">
+            <summary>
+            Get or set the Realm for use in auth challenges.
+            </summary>
+        </member>
+        <member name="T:API.Auth.BasicAuthenticationDefaults">
+            <summary>
+            Contains constants for use with basic auth.
+            </summary>
+        </member>
+        <member name="T:API.Features.Image.Commands.IngestImageFromFile">
+            <summary>
+            Request object to ingest image directly from a file.
+            </summary>
+        </member>
+        <member name="T:API.Features.Image.Commands.IngestImageFromFileHandler">
+            <summary>
+            Handler for direct ingesting image by delegating logic to dlcs API.
+            </summary>
+        </member>
+        <member name="M:API.Features.Image.Image.IngestBytes(System.String,System.String,System.String,API.Features.Image.Models.AssetJsonLdWithBytes)">
+             <summary>
+             Ingest specified file bytes to DLCS.
+             "File" property should be base64 encoded image. 
+             </summary>
+             <remarks>
+             Sample request:
+            
+                 PUT: /customers/1/spaces/1/images/my-image
+                 {
+                     "@type":"Image",
+                     "family": "I",
+                     "file": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAM...."
+                 }
+             </remarks>
+        </member>
+        <member name="T:API.Infrastructure.LoggingBehavior`2">
+            <summary>
+            Mediatr Pipeline Behaviour that logs incoming requests
+            </summary>
+        </member>
+        <member name="M:API.Infrastructure.ServiceCollectionX.ConfigureMediatR(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Add MediatR services and pipeline behaviours to service collection.
+            </summary>
+        </member>
+        <member name="M:API.Infrastructure.ServiceCollectionX.ConfigureSwagger(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Add SwaggerGen services to service collection.
+            </summary>
+        </member>
+        <member name="P:API.Settings.ApiSettings.DLCS">
+            <summary>
+            The base URI of DLCS to hand-off requests to.
+            </summary>
+        </member>
+        <member name="P:API.Settings.DlcsSettings.Root">
+            <summary>
+            The base URI of DLCS to hand-off requests to.
+            </summary>
+        </member>
+        <member name="P:API.Settings.DlcsSettings.OriginBucket">
+            <summary>
+            Name of the bucket to act as storage origin for uploaded files.
+            </summary>
+        </member>
+    </members>
+</doc>

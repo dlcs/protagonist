@@ -12,6 +12,9 @@ on:
 jobs:
   test-dotnet:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/protagonist
     env:
       BUILD_CONFIG: "Release"
       SOLUTION: "protagonist.sln"
@@ -51,7 +54,7 @@ jobs:
         with:
           image-name: "orchestrator"
           dockerfile: "Dockerfile.Orchestrator"
-          context: "."
+          context: "./src/protagonist"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   build-push-thumbs:
@@ -63,7 +66,7 @@ jobs:
         with:
           image-name: "thumbs"
           dockerfile: "Dockerfile.Thumbs"
-          context: "."
+          context: "./src/protagonist"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   build-push-engine:
@@ -75,7 +78,7 @@ jobs:
         with:
           image-name: "engine"
           dockerfile: "Dockerfile.Engine"
-          context: "."
+          context: "./src/protagonist"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   build-push-portal:
@@ -87,7 +90,7 @@ jobs:
         with:
           image-name: "portal"
           dockerfile: "Dockerfile.Portal"
-          context: "."
+          context: "./src/protagonist"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   build-push-api:
@@ -99,7 +102,7 @@ jobs:
         with:
           image-name: "api"
           dockerfile: "Dockerfile.API"
-          context: "."
+          context: "./src/protagonist"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   build-push-compositehandler:
