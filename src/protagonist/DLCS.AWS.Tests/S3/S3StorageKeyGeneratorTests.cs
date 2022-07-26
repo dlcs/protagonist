@@ -14,14 +14,15 @@ public class S3StorageKeyGeneratorTests
 
     public S3StorageKeyGeneratorTests()
     {
-        sut = new S3StorageKeyGenerator(Options.Create<AWSSettings>(new AWSSettings
+        sut = new S3StorageKeyGenerator(Options.Create(new AWSSettings
         {
             Region = "eu-west-1",
             S3 = new S3Settings
             {
                 OutputBucket = "test-output",
                 ThumbsBucket = "test-thumbs",
-                StorageBucket = "test-storage"
+                StorageBucket = "test-storage",
+                TimebasedInputBucket = "timebased-in"
             }
         }));
     }
@@ -232,5 +233,31 @@ public class S3StorageKeyGeneratorTests
         
         // Assert
         regionalisedObject.Region.Should().Be("eu-west-1");
+    }
+
+    [Fact]
+    public void GetTimebasedInputLocation_ReturnsExpected_WithRandomPostfix()
+    {
+        // Arrange
+        const string expectedStart = "10/20/foo-bar/";
+        var asset = new AssetId(10, 20, "foo-bar");
+        
+        string GetRandomPostfix(string key) => key.Split('/')[^1];
+        
+        // Act
+        var actual = sut.GetTimebasedInputLocation(asset);
+        var actual2 = sut.GetTimebasedInputLocation(asset);
+
+        var randomBit = GetRandomPostfix(actual.Key);
+        var randomBit2 = GetRandomPostfix(actual2.Key);
+        
+        // Assert
+        actual.Key.Should().StartWith(expectedStart);
+        actual.Bucket.Should().Be("timebased-in");
+        
+        actual2.Key.Should().StartWith(expectedStart);
+        actual2.Bucket.Should().Be("timebased-in");
+
+        randomBit.Should().NotBe(randomBit2);
     }
 }

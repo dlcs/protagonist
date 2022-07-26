@@ -23,6 +23,7 @@ public class LocalStackFixture : IAsyncLifetime
     public const string OutputBucketName = "protagonist-output";
     public const string ThumbsBucketName = "protagonist-thumbs";
     public const string StorageBucketName = "protagonist-storage";
+    public const string TimebasedInputBucketName = "protagonist-timebased-in";
     
     // SQS Queues
     public const string ImageQueueName = "protagonist-image";
@@ -94,6 +95,7 @@ public class LocalStackFixture : IAsyncLifetime
         await amazonS3Client.PutBucketAsync(OutputBucketName);
         await amazonS3Client.PutBucketAsync(ThumbsBucketName);
         await amazonS3Client.PutBucketAsync(StorageBucketName);
+        await amazonS3Client.PutBucketAsync(TimebasedInputBucketName);
         
         // And SQS queues
         var amazonSQSClient = AWSSQSClientFactory();

@@ -17,6 +17,7 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
 {
     private readonly S3Settings s3Options;
     private readonly AWSSettings awsSettings;
+    private static readonly Random Random = new();
 
     public S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions)
     {
@@ -132,4 +133,12 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         => useRegion
             ? objectInBucket.GetLegacyS3Uri(awsSettings.Region)
             : objectInBucket.GetS3Uri();
+
+
+    public ObjectInBucket GetTimebasedInputLocation(AssetId assetId)
+    {
+        var postfix = Random.Next(0, 9999).ToString("D4");
+        var fullPath = GetStorageKey(assetId).ToConcatenated('/', postfix);
+        return new ObjectInBucket(s3Options.TimebasedInputBucket, fullPath);
+    }
 }

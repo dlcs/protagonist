@@ -14,14 +14,14 @@ public interface IStorageKeyGenerator
     /// <param name="assetKey">Unique Id of the asset.</param>
     /// <returns>/customer/space/imageKey string.</returns>
     string GetStorageKey(int customer, int space, string assetKey);
-    
+
     /// <summary>
     /// Get the storage key for specified asset
     /// </summary>
     /// <param name="assetId">Unique identifier for Asset.</param>
     /// <returns>/customer/space/imageKey string.</returns>
     string GetStorageKey(AssetId assetId);
-    
+
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> for storing tile-ready asset
     /// </summary>
@@ -53,7 +53,7 @@ public interface IStorageKeyGenerator
     /// <param name="assetId">Unique identifier for Asset</param>
     /// <returns><see cref="ObjectInBucket"/> for sizes json</returns>
     ObjectInBucket GetThumbsSizesJsonLocation(AssetId assetId);
-    
+
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> for largest pre-generated thumbnail.
     /// i.e. low.jpg
@@ -83,7 +83,7 @@ public interface IStorageKeyGenerator
     /// <param name="assetPath">Requested asset path</param>
     /// <returns><see cref="RegionalisedObjectInBucket"/> for AV file</returns>
     RegionalisedObjectInBucket GetTimebasedAssetLocation(AssetId assetId, string assetPath);
-    
+
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> item for info.json object
     /// </summary>
@@ -116,4 +116,10 @@ public interface IStorageKeyGenerator
     /// </param>
     /// <returns>s3:// uri</returns>
     Uri GetS3Uri(ObjectInBucket objectInBucket, bool useRegion = false);
+
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> item for timebased asset that is to be transcoded
+    /// </summary>
+    /// <returns><see cref="ObjectInBucket"/> for specified key in timebased input bucket</returns>
+    ObjectInBucket GetTimebasedInputLocation(AssetId assetId);
 }
