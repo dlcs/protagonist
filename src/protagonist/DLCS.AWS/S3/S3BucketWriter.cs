@@ -210,11 +210,11 @@ public class S3BucketWriter : IBucketWriter
         }
         catch (AmazonS3Exception e)
         {
-            logger.LogWarning(e, "S3 Error encountered writing large file to bucket. Key: '{S3Key}'", dest);
+            logger.LogWarning(e, "S3 Error encountered writing file to bucket. Key: '{S3Key}'", dest);
         }
         catch (Exception e)
         {
-            logger.LogWarning(e, "Unknown error encountered writing large file to bucket. Key: '{S3Key}'", dest);
+            logger.LogWarning(e, "Unknown error encountered writing file to bucket. Key: '{S3Key}'", dest);
         }
 
         return false;

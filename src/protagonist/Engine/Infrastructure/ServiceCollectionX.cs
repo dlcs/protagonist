@@ -70,12 +70,13 @@ public static class ServiceCollectionX
     {
         services
             .AddScoped<IAssetIngester, AssetIngester>()
-            .AddTransient<ImageIngesterWorker>()
+            .AddScoped<TimebasedIngesterWorker>()
+            .AddScoped<ImageIngesterWorker>()
             .AddSingleton<IThumbCreator, ThumbCreator>()
             .AddTransient<IngestorResolver>(provider => family => family switch
             {
                 AssetFamily.Image => provider.GetRequiredService<ImageIngesterWorker>(),
-                AssetFamily.Timebased => throw new NotImplementedException("Not yet"),
+                AssetFamily.Timebased => provider.GetRequiredService<TimebasedIngesterWorker>(),
                 AssetFamily.File => throw new NotImplementedException("File shouldn't be here"),
                 _ => throw new KeyNotFoundException("Attempt to resolve ingestor handler for unknown family")
             })

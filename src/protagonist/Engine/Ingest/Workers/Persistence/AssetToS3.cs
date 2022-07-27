@@ -117,10 +117,11 @@ public class AssetToS3 : AssetMoverBase
         logger.LogDebug("Copying asset '{AssetId}' directly from bucket to bucket. {Source} - {Dest}", asset.Id,
             asset.GetIngestOrigin(), destination.GetS3Uri());
         var assetId = asset.GetAssetId();
-        var diskDestination = GetDestination(assetId);
+        string? downloadedFile = null;
 
         try
         {
+            var diskDestination = GetDestination(assetId);
             var assetOnDisk = await assetToDisk.CopyAssetToLocalDisk(asset, diskDestination, verifySize,
                 customerOriginStrategy, cancellationToken);
 
@@ -129,9 +130,9 @@ public class AssetToS3 : AssetMoverBase
                 return assetOnDisk;
             }
 
-            var success = await bucketWriter.WriteFileToBucket(destination, diskDestination,
-                assetOnDisk.ContentType,
-                cancellationToken);
+            var success = await bucketWriter.WriteFileToBucket(destination, assetOnDisk.Location,
+                assetOnDisk.ContentType, cancellationToken);
+            downloadedFile = assetOnDisk.Location;
             
             if (!success)
             {
@@ -144,7 +145,10 @@ public class AssetToS3 : AssetMoverBase
         }
         finally
         {
-            fileSystem.DeleteFile(diskDestination);
+            if (!string.IsNullOrEmpty(downloadedFile))
+            {
+                fileSystem.DeleteFile(downloadedFile);
+            }
         }
     }
     
