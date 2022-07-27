@@ -56,7 +56,7 @@ public class S3BucketWriter : IBucketWriter
     /// <param name="token">Cancellation token</param>
     /// <returns>ResultStatus signifying success or failure alongside ContentSize</returns>
     /// <remarks>See https://docs.aws.amazon.com/AmazonS3/latest/dev/CopyingObjctsUsingLLNetMPUapi.html </remarks>
-    public async Task<ResultStatus<long?>> CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
+    public async Task<LargeObjectCopyResult> CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
         Func<long, Task<bool>>? verifySize = null, bool destIsPublic = false, CancellationToken token = default)
     {
         long? objectSize = null;
@@ -75,7 +75,7 @@ public class S3BucketWriter : IBucketWriter
                 {
                     logger.LogInformation("Aborting multipart upload for {Target} as size verification failed",
                         destination);
-                    return ResultStatus<long?>.Unsuccessful(objectSize);
+                    return new LargeObjectCopyResult(LargeObjectStatus.FileTooLarge, objectSize);
                 }
             }
 
@@ -92,7 +92,7 @@ public class S3BucketWriter : IBucketWriter
                     logger.LogInformation("Cancellation requested, aborting multipart upload for {Target}",
                         destination);
                     await s3Client.AbortMultipartUploadAsync(destination.Bucket, destination.Key, uploadId, token);
-                    return ResultStatus<long?>.Unsuccessful(objectSize);
+                    return new LargeObjectCopyResult(LargeObjectStatus.Cancelled, objectSize);
                 }
                 
                 var copyRequest = new CopyPartRequest
@@ -123,7 +123,7 @@ public class S3BucketWriter : IBucketWriter
             completeRequest.AddPartETags(copyResponses);
             await s3Client.CompleteMultipartUploadAsync(completeRequest, token);
             success = true;
-            return ResultStatus<long?>.Successful(objectSize);
+            return new LargeObjectCopyResult(LargeObjectStatus.Success, objectSize);
         }
         catch (OverflowException e)
         {
@@ -157,7 +157,7 @@ public class S3BucketWriter : IBucketWriter
             }
         }
         
-        return ResultStatus<long?>.Unsuccessful(objectSize);
+        return new LargeObjectCopyResult(LargeObjectStatus.Error, objectSize);
     }
 
     public async Task WriteToBucket(ObjectInBucket dest, string content, string contentType,

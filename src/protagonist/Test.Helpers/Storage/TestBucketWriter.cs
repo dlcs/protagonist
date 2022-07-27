@@ -70,7 +70,7 @@ public class TestBucketWriter : IBucketWriter
         throw new System.NotImplementedException();
     }
 
-    Task<ResultStatus<long?>> IBucketWriter.CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
+    Task<LargeObjectCopyResult> IBucketWriter.CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
         Func<long, Task<bool>> verifySize, bool destIsPublic, CancellationToken token)
     {
         throw new NotImplementedException();

@@ -1,5 +1,4 @@
 ﻿using DLCS.AWS.S3.Models;
-using DLCS.Core;
 
 namespace DLCS.AWS.S3;
 
@@ -24,7 +23,7 @@ public interface IBucketWriter
     /// <param name="token">Cancellation token</param>
     /// <returns>ResultStatus signifying success or failure alongside ContentSize</returns>
     /// <remarks>See https://docs.aws.amazon.com/AmazonS3/latest/dev/CopyingObjctsUsingLLNetMPUapi.html </remarks>
-    public Task<ResultStatus<long?>> CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
+    public Task<LargeObjectCopyResult> CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
         Func<long, Task<bool>>? verifySize = null, bool destIsPublic = false, CancellationToken token = default);
 
     /// <summary>
@@ -51,4 +50,42 @@ public interface IBucketWriter
     /// </summary>
     /// <param name="toDelete">List of objects to delete</param>
     Task DeleteFromBucket(params ObjectInBucket[] toDelete);
+}
+
+/// <summary>
+/// Represents the result of a bucket to bucket copy operation
+/// </summary>
+/// <param name="Result"><see cref="LargeObjectStatus"/> object that represents overall result of the copy</param>
+/// <param name="Size">The size of the asset copied</param>
+public record LargeObjectCopyResult(LargeObjectStatus Result, long? Size = null);
+
+/// <summary>
+/// The overall result of a bucket to bucket copy operation
+/// </summary>
+public enum LargeObjectStatus
+{
+    /// <summary>
+    /// Default value
+    /// </summary>
+    Unknown,
+    
+    /// <summary>
+    /// Object was copied successfully
+    /// </summary>
+    Success,
+    
+    /// <summary>
+    /// Copy operation was cancelled - this may result in incomplete multi-part uploads being left in S3  
+    /// </summary>
+    Cancelled,
+    
+    /// <summary>
+    /// Any error occurred during copy
+    /// </summary>
+    Error,
+    
+    /// <summary>
+    /// File exceeded allowed storage limits
+    /// </summary>
+    FileTooLarge
 }
