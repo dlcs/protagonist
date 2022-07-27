@@ -17,16 +17,16 @@ public class ImageIngesterWorker : IAssetIngesterWorker
     private readonly IImageProcessor imageProcessor;
     private readonly IImageIngestorCompletion imageCompletion;
     private readonly ILogger<ImageIngesterWorker> logger;
-    private readonly AssetToDisk assetMover;
+    private readonly IAssetToDisk assetToDisk;
 
     public ImageIngesterWorker(
-        IOptionsMonitor<EngineSettings> engineOptions,
-        AssetToDisk assetMover,
+        IAssetToDisk assetToDisk,
         IImageProcessor imageProcessor,
         IImageIngestorCompletion imageCompletion,
+        IOptionsMonitor<EngineSettings> engineOptions,
         ILogger<ImageIngesterWorker> logger)
     {
-        this.assetMover = assetMover;
+        this.assetToDisk = assetToDisk;
         engineSettings = engineOptions.CurrentValue;
         this.imageProcessor = imageProcessor;
         this.imageCompletion = imageCompletion;
@@ -47,7 +47,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker
         {
             sourceTemplate = GetSourceTemplate(ingestAssetRequest.Asset);
             var stopwatch = Stopwatch.StartNew();
-            var assetOnDisk = await assetMover.CopyAssetToLocalDisk(
+            var assetOnDisk = await assetToDisk.CopyAssetToLocalDisk(
                 ingestAssetRequest.Asset, 
                 sourceTemplate, 
                 !SkipStoragePolicyCheck(ingestAssetRequest.Asset.Customer),

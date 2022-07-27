@@ -80,7 +80,7 @@ public static class ServiceCollectionX
                 _ => throw new KeyNotFoundException("Attempt to resolve ingestor handler for unknown family")
             })
             .AddSingleton<IFileSystem, FileSystem>()
-            .AddScoped<AssetToDisk>()
+            .AddScoped<IAssetToDisk, AssetToDisk>()
             .AddScoped<IImageIngestorCompletion, ImageIngestorCompletion>()
             .AddScoped<IEngineAssetRepository, EngineAssetRepository>()
             .AddScoped<AssetToS3>()

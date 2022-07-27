@@ -16,7 +16,7 @@ namespace Engine.Ingest.Workers.Persistence;
 /// </summary>
 public class AssetToS3 : AssetMoverBase
 {
-    private readonly AssetToDisk diskMover;
+    private readonly IAssetToDisk diskMover;
     private readonly IBucketWriter bucketWriter;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IFileSystem fileSystem;
@@ -24,7 +24,7 @@ public class AssetToS3 : AssetMoverBase
     private readonly ILogger<AssetToS3> logger;
 
     public AssetToS3(
-        AssetToDisk  diskMover,
+        IAssetToDisk diskMover,
         IOptionsMonitor<EngineSettings> engineSettings,
         IStorageRepository storageRepository,
         IBucketWriter bucketWriter, 

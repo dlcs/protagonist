@@ -10,10 +10,26 @@ using DLCS.Repository.Strategy.Utils;
 
 namespace Engine.Ingest.Workers.Persistence;
 
+public interface IAssetToDisk
+{
+    /// <summary>
+    /// Copy asset from Origin to local disk.
+    /// </summary>
+    /// <param name="asset"><see cref="Asset"/> to be copied.</param>
+    /// <param name="destinationTemplate">String representing destinations folder to copy to.</param>
+    /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
+    /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>Current cancellation token</param>
+    /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
+    Task<AssetFromOrigin> CopyAssetToLocalDisk(Asset asset, string destinationTemplate, bool verifySize, 
+        CustomerOriginStrategy customerOriginStrategy,
+        CancellationToken cancellationToken = default);
+}
+
 /// <summary>
 /// Class for copying asset from origin to local disk.
 /// </summary>
-public class AssetToDisk : AssetMoverBase
+public class AssetToDisk : AssetMoverBase, IAssetToDisk
 {
     private readonly OriginFetcher originFetcher;
     private readonly IFileSaver fileSaver;
