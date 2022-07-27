@@ -8,15 +8,14 @@ using DLCS.Model.Storage;
 using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.Utils;
 
-namespace Engine.Ingest.Workers;
+namespace Engine.Ingest.Workers.Persistence;
 
 /// <summary>
 /// Class for copying asset from origin to local disk.
 /// </summary>
-public class AssetToDisk : IAssetMover
+public class AssetToDisk : AssetMoverBase
 {
     private readonly OriginFetcher originFetcher;
-    private readonly IStorageRepository storageRepository;
     private readonly IFileSaver fileSaver;
     private readonly ILogger<AssetToDisk> logger;
 
@@ -24,10 +23,9 @@ public class AssetToDisk : IAssetMover
         OriginFetcher originFetcher,
         IStorageRepository storageRepository,
         IFileSaver fileSaver,
-        ILogger<AssetToDisk> logger)
+        ILogger<AssetToDisk> logger) : base(storageRepository)
     {
         this.originFetcher = originFetcher;
-        this.storageRepository = storageRepository;
         this.fileSaver = fileSaver;
         this.logger = logger;
     }
@@ -41,7 +39,7 @@ public class AssetToDisk : IAssetMover
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>Current cancellation token</param>
     /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    public async Task<AssetFromOrigin> CopyAsset(Asset asset, string destinationTemplate, bool verifySize, 
+    public async Task<AssetFromOrigin> CopyAssetToLocalDisk(Asset asset, string destinationTemplate, bool verifySize, 
         CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
@@ -136,8 +134,7 @@ public class AssetToDisk : IAssetMover
     
     private async Task VerifyFileSize(Asset asset, AssetFromOrigin assetFromOrigin)
     {
-        var customerHasEnoughSize = await storageRepository.VerifyStoragePolicyBySize(asset.Customer,
-            assetFromOrigin.AssetSize);
+        var customerHasEnoughSize = await VerifyFileSize(asset.GetAssetId(), assetFromOrigin.AssetSize);
 
         if (!customerHasEnoughSize)
         {

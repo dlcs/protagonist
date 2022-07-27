@@ -5,6 +5,7 @@ using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
 using Engine.Ingest.Completion;
 using Engine.Ingest.Image;
+using Engine.Ingest.Workers.Persistence;
 using Engine.Settings;
 using Microsoft.Extensions.Options;
 
@@ -16,16 +17,16 @@ public class ImageIngesterWorker : IAssetIngesterWorker
     private readonly IImageProcessor imageProcessor;
     private readonly IImageIngestorCompletion imageCompletion;
     private readonly ILogger<ImageIngesterWorker> logger;
-    private readonly IAssetMover assetMover;
+    private readonly AssetToDisk assetMover;
 
     public ImageIngesterWorker(
         IOptionsMonitor<EngineSettings> engineOptions,
-        AssetMoverResolver assetMoverResolver,
+        AssetToDisk assetMover,
         IImageProcessor imageProcessor,
         IImageIngestorCompletion imageCompletion,
         ILogger<ImageIngesterWorker> logger)
     {
-        assetMover = assetMoverResolver(AssetMoveType.Disk);
+        this.assetMover = assetMover;
         engineSettings = engineOptions.CurrentValue;
         this.imageProcessor = imageProcessor;
         this.imageCompletion = imageCompletion;
@@ -46,7 +47,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker
         {
             sourceTemplate = GetSourceTemplate(ingestAssetRequest.Asset);
             var stopwatch = Stopwatch.StartNew();
-            var assetOnDisk = await assetMover.CopyAsset(
+            var assetOnDisk = await assetMover.CopyAssetToLocalDisk(
                 ingestAssetRequest.Asset, 
                 sourceTemplate, 
                 !SkipStoragePolicyCheck(ingestAssetRequest.Asset.Customer),

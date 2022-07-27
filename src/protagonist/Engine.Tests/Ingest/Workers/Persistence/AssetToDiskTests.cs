@@ -5,12 +5,12 @@ using DLCS.Model.Storage;
 using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Repository.Strategy.Utils;
-using Engine.Ingest.Workers;
+using Engine.Ingest.Workers.Persistence;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers;
 
-namespace Engine.Tests.Ingest.Workers;
+namespace Engine.Tests.Ingest.Workers.Persistence;
 
 public class AssetToDiskTests
 {
@@ -40,7 +40,7 @@ public class AssetToDiskTests
     public void CopyAssetFromOrigin_Throws_IfDestinationFolderNullOrEmpty(string destinationFolder)
     {
         // Act
-        Func<Task> action = () => sut.CopyAsset(new Asset(), destinationFolder, true, new CustomerOriginStrategy());
+        Func<Task> action = () => sut.CopyAssetToLocalDisk(new Asset(), destinationFolder, true, new CustomerOriginStrategy());
 
         // Assert
         action.Should()
@@ -60,7 +60,7 @@ public class AssetToDiskTests
             .Returns<OriginResponse?>(null);
 
         // Act
-        Func<Task> action = () => sut.CopyAsset(asset, "./here", true, cos);
+        Func<Task> action = () => sut.CopyAssetToLocalDisk(asset, "./here", true, cos);
 
         // Assert
         action.Should().ThrowAsync<ApplicationException>();
@@ -78,7 +78,7 @@ public class AssetToDiskTests
             .Returns(new OriginResponse(Stream.Null));
 
         // Act
-        Func<Task> action = () => sut.CopyAsset(asset, "./here", true, cos);
+        Func<Task> action = () => sut.CopyAssetToLocalDisk(asset, "./here", true, cos);
 
         // Assert
         action.Should().ThrowAsync<ApplicationException>();
@@ -106,7 +106,7 @@ public class AssetToDiskTests
         var expectedOutput = Path.Join(".", "2", "1", "godzilla", "godzilla.file");
 
         // Act
-        var response = await sut.CopyAsset(asset, destination, false, cos);
+        var response = await sut.CopyAssetToLocalDisk(asset, destination, false, cos);
 
         // Assert
         A.CallTo(() => fileSaver.SaveResponseToDisk(A<AssetId>.That.Matches(a => a == assetId),
@@ -142,7 +142,7 @@ public class AssetToDiskTests
         var expectedOutput = Path.Join(".", "2", "1", "godzilla1", "godzilla1.file");
 
         // Act
-        var response = await sut.CopyAsset(asset, destination, false, cos);
+        var response = await sut.CopyAssetToLocalDisk(asset, destination, false, cos);
 
         // Assert
         A.CallTo(() => fileSaver.SaveResponseToDisk(A<AssetId>.That.Matches(a => a == assetId),
@@ -175,7 +175,7 @@ public class AssetToDiskTests
             .Returns(originResponse);
 
         // Act
-        var response = await sut.CopyAsset(asset, destination, false, cos);
+        var response = await sut.CopyAssetToLocalDisk(asset, destination, false, cos);
 
         // Assert
         response.ContentType.Should().Be(contentType);
@@ -202,7 +202,7 @@ public class AssetToDiskTests
             .Returns(originResponse);
 
         // Act
-        var response = await sut.CopyAsset(asset, destination, false, cos);
+        var response = await sut.CopyAssetToLocalDisk(asset, destination, false, cos);
 
         // Assert
         response.ContentType.Should().Be("image/jp2");
@@ -229,7 +229,7 @@ public class AssetToDiskTests
             .Returns(isValid);
 
         // Act
-        var response = await sut.CopyAsset(asset, destination, true, cos);
+        var response = await sut.CopyAssetToLocalDisk(asset, destination, true, cos);
 
         // Assert
         response.FileExceedsAllowance.Should().Be(!isValid);

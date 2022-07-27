@@ -34,7 +34,7 @@ public class AssetFromOrigin
     public bool FileExceedsAllowance { get; private set; }
 
     /// <summary>
-    /// The location where the asset has been copied to
+    /// The location where the asset has been copied to. This may be a local disk path or an S3 location
     /// </summary>
     public string Location { get; set; }
 

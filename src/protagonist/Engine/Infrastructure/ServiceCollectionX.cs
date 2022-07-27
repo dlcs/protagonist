@@ -20,6 +20,7 @@ using Engine.Ingest.Handlers;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.Appetiser;
 using Engine.Ingest.Workers;
+using Engine.Ingest.Workers.Persistence;
 using Engine.Messaging;
 using Engine.Settings;
 
@@ -82,14 +83,7 @@ public static class ServiceCollectionX
             .AddScoped<AssetToDisk>()
             .AddScoped<IImageIngestorCompletion, ImageIngestorCompletion>()
             .AddScoped<IEngineAssetRepository, EngineAssetRepository>()
-            //.AddScoped<AssetToS3>()
-            .AddTransient<AssetMoverResolver>(provider => t => t switch
-            {
-                AssetMoveType.Disk => provider.GetRequiredService<AssetToDisk>(),
-                AssetMoveType.ObjectStore => throw new NotImplementedException("Not yet"),
-                // AssetMoveType.ObjectStore => provider.GetService<AssetToS3>(),
-                _ => throw new NotImplementedException()
-            })
+            .AddScoped<AssetToS3>()
             .AddOriginStrategies();
 
         services.AddHttpClient<IImageProcessor, AppetiserClient>(client =>
