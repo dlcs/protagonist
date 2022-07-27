@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
-using DLCS.Core;
 using DLCS.Core.Strings;
 using FluentAssertions.Execution;
 
@@ -67,13 +66,25 @@ public class TestBucketWriter : IBucketWriter
 
     public Task CopyObject(ObjectInBucket source, ObjectInBucket destination)
     {
-        throw new System.NotImplementedException();
+        Operations[destination.Key] = new BucketObject { Bucket = destination.Bucket };
+        return Task.CompletedTask;
     }
 
-    Task<LargeObjectCopyResult> IBucketWriter.CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
-        Func<long, Task<bool>> verifySize, bool destIsPublic, CancellationToken token)
+    public async Task<LargeObjectCopyResult> CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
+        Func<long, Task<bool>> verifySize = null, bool destIsPublic = false, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        Operations[destination.Key] = new BucketObject { Bucket = destination.Bucket };
+
+        const long size = 100;
+        if (verifySize != null)
+        {
+            if (!await verifySize(size))
+            {
+                return new LargeObjectCopyResult(LargeObjectStatus.FileTooLarge, size);        
+            }
+        }
+
+        return new LargeObjectCopyResult(LargeObjectStatus.Success, size);
     }
 
     public Task WriteToBucket(ObjectInBucket dest, string content, string contentType,
@@ -97,11 +108,6 @@ public class TestBucketWriter : IBucketWriter
 
     public Task<bool> WriteFileToBucket(ObjectInBucket dest, string filePath, string contentType = null,
         CancellationToken token = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> WriteFileToBucket(ObjectInBucket dest, string filePath, string contentType = null)
     {
         if (forBucket.HasText() && dest.Bucket != forBucket)
             throw new InvalidOperationException("Operation for different bucket");

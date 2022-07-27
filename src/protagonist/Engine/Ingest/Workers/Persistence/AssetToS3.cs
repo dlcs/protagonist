@@ -16,7 +16,7 @@ namespace Engine.Ingest.Workers.Persistence;
 /// </summary>
 public class AssetToS3 : AssetMoverBase
 {
-    private readonly IAssetToDisk diskMover;
+    private readonly IAssetToDisk assetToDisk;
     private readonly IBucketWriter bucketWriter;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IFileSystem fileSystem;
@@ -24,7 +24,7 @@ public class AssetToS3 : AssetMoverBase
     private readonly ILogger<AssetToS3> logger;
 
     public AssetToS3(
-        IAssetToDisk diskMover,
+        IAssetToDisk assetToDisk,
         IOptionsMonitor<EngineSettings> engineSettings,
         IStorageRepository storageRepository,
         IBucketWriter bucketWriter, 
@@ -32,7 +32,7 @@ public class AssetToS3 : AssetMoverBase
         IFileSystem fileSystem,
         ILogger<AssetToS3> logger) : base(storageRepository)
     {
-        this.diskMover = diskMover;
+        this.assetToDisk = assetToDisk;
         this.engineSettings = engineSettings.CurrentValue;
         this.logger = logger;
         this.bucketWriter = bucketWriter;
@@ -121,7 +121,7 @@ public class AssetToS3 : AssetMoverBase
 
         try
         {
-            var assetOnDisk = await diskMover.CopyAssetToLocalDisk(asset, diskDestination, verifySize,
+            var assetOnDisk = await assetToDisk.CopyAssetToLocalDisk(asset, diskDestination, verifySize,
                 customerOriginStrategy, cancellationToken);
 
             if (assetOnDisk.FileExceedsAllowance)
