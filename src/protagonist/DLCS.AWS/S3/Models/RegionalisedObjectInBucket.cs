@@ -34,7 +34,15 @@ public class RegionalisedObjectInBucket : ObjectInBucket
     // bucket name in path (assumes same region as caller)
     private static readonly Regex RegexHttp4 = new(@"^http[s]?:\/\/s3\.amazonaws\.com\/(.*?)\/(.*)$", RegexOptions.Compiled); 
 
-    public static RegionalisedObjectInBucket? Parse(string uri)
+    /// <summary>
+    /// Parse the provided Uri to a <see cref="RegionalisedObjectInBucket"/>. The uri can be in http:// or s3:// format.
+    /// The result may or may not have a region value. 
+    /// </summary>
+    /// <param name="uri">Uri to parse</param>
+    /// <param name="throwIfUnableToParse"> If true, an exception is raised if the uri cannot be parsed</param>
+    /// <returns>Parsed object, or null of unable to parse</returns>
+    /// <exception cref="FormatException">Thrown if throwIfUnableToParse=true and unable to parse</exception>
+    public static RegionalisedObjectInBucket? Parse(string uri, bool throwIfUnableToParse = false)
     {
         if (TryParseBucketInfo(RegexS3Qualified, uri, out var result, qualified: true))
         {
@@ -66,6 +74,10 @@ public class RegionalisedObjectInBucket : ObjectInBucket
             return result;
         }
 
+        if (throwIfUnableToParse)
+        {
+            throw new FormatException($"Unable to parse {uri} to an ObjectInBucket");
+        }
         return null;
     }
 
@@ -77,7 +89,7 @@ public class RegionalisedObjectInBucket : ObjectInBucket
     /// <param name="bucket">Output bucket object</param>
     /// <param name="qualified">Contains region</param>
     /// <param name="following">Region at end</param>
-    /// <returns></returns>
+    /// <remarks>This is migrated from deliverator</remarks>
     private static bool TryParseBucketInfo(Regex regex, string s, out RegionalisedObjectInBucket? bucket,
         bool qualified = false, bool following = false)
     {

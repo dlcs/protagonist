@@ -44,4 +44,14 @@ public class RegionalisedObjectInBucketTests
         // Assert
         actual.Should().BeNull();
     }
+    
+    [Fact]
+    public void Parse_Throws_IfNoMatches_AndThrowIfUnableToParse()
+    {
+        // Act
+        Action action = () => RegionalisedObjectInBucket.Parse("http://example.org", true);
+
+        // Assert
+        action.Should().ThrowExactly<FormatException>();
+    }
 }

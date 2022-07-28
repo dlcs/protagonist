@@ -7,22 +7,6 @@ namespace DLCS.AWS.S3;
 public interface IStorageKeyGenerator
 {
     /// <summary>
-    /// Get the storage key for specified space/customer/key
-    /// </summary>
-    /// <param name="customer">Customer Id.</param>
-    /// <param name="space">Space id.</param>
-    /// <param name="assetKey">Unique Id of the asset.</param>
-    /// <returns>/customer/space/imageKey string.</returns>
-    string GetStorageKey(int customer, int space, string assetKey);
-
-    /// <summary>
-    /// Get the storage key for specified asset
-    /// </summary>
-    /// <param name="assetId">Unique identifier for Asset.</param>
-    /// <returns>/customer/space/imageKey string.</returns>
-    string GetStorageKey(AssetId assetId);
-
-    /// <summary>
     /// Get <see cref="ObjectInBucket"/> for storing tile-ready asset
     /// </summary>
     /// <param name="assetId">Unique identifier for Asset</param>

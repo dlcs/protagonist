@@ -34,7 +34,7 @@ public class S3StorageKeyGeneratorTests
         const string expected = "10/20/foo-bar";
 
         // Act
-        var actual = sut.GetStorageKey(10, 20, "foo-bar");
+        var actual = S3StorageKeyGenerator.GetStorageKey(10, 20, "foo-bar");
         
         // Assert
         actual.Should().Be(expected);
@@ -48,7 +48,7 @@ public class S3StorageKeyGeneratorTests
         var asset = new AssetId(10, 20, "foo-bar");
 
         // Act
-        var actual = sut.GetStorageKey(asset);
+        var actual = S3StorageKeyGenerator.GetStorageKey(asset);
         
         // Assert
         actual.Should().Be(expected);

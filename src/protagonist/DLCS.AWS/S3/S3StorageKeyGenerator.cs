@@ -52,7 +52,7 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
     /// <param name="space">Space id.</param>
     /// <param name="assetKey">Unique Id of the asset.</param>
     /// <returns>/customer/space/imageKey string.</returns>
-    public string GetStorageKey(int customer, int space, string assetKey)
+    public static string GetStorageKey(int customer, int space, string assetKey)
         => $"{customer}/{space}/{assetKey}";
 
     /// <summary>
@@ -60,7 +60,7 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
     /// </summary>
     /// <param name="assetId">Unique identifier for Asset.</param>
     /// <returns>/customer/space/imageKey string.</returns>
-    public string GetStorageKey(AssetId assetId)
+    public static string GetStorageKey(AssetId assetId)
         => GetStorageKey(assetId.Customer, assetId.Space, assetId.Asset);
 
     public RegionalisedObjectInBucket GetStorageLocation(AssetId assetId)
