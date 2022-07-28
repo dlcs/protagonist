@@ -89,7 +89,7 @@ public static class ServiceCollectionX
             .AddScoped<IImageIngestorCompletion, ImageIngestorCompletion>()
             .AddScoped<IEngineAssetRepository, EngineAssetRepository>()
             .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
-            .AddScoped<AssetToS3>()
+            .AddScoped<IAssetToS3, AssetToS3>()
             .AddOriginStrategies();
 
         services.AddHttpClient<IImageProcessor, AppetiserClient>(client =>

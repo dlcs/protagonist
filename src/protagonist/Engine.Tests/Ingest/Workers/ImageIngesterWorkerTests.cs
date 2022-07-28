@@ -27,7 +27,7 @@ public class ImageIngesterWorkerTests
         {
             ImageIngest = new ImageIngestSettings
             {
-                SourceTemplate = $"{{root}}",
+                SourceTemplate = "{root}",
             }
         };
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
@@ -139,14 +139,12 @@ public class ImageIngesterWorkerTests
         bool completeResult, IngestResult expected)
     {
         // Arrange
-        var target = $".{Path.PathSeparator}{nameof(Ingest_ReturnsCorrectResult_DependingOnIngestAndCompletion)}";
-
         var asset = new Asset { Id = "/2/1/remurdered", Customer = 2, Space = 1 };
 
         A.CallTo(() =>
                 assetToDisk.CopyAssetToLocalDisk(A<Asset>._, A<string>._, true, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
-            .Returns(new AssetFromOrigin(asset.GetAssetId(), 13, target, "application/json"));
+            .Returns(new AssetFromOrigin(asset.GetAssetId(), 13, "target", "application/json"));
 
         A.CallTo(() =>
                 imageIngestorCompletion.CompleteIngestion(A<IngestionContext>._, imageProcessSuccess, A<string>._))

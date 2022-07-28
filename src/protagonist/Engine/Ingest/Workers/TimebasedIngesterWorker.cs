@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
+using Engine.Ingest.Completion;
 using Engine.Ingest.Timebased;
 using Engine.Ingest.Workers.Persistence;
 using Engine.Settings;
@@ -13,22 +14,21 @@ namespace Engine.Ingest.Workers;
 /// </summary>
 public class TimebasedIngesterWorker : IAssetIngesterWorker
 {
-    private readonly AssetToS3 assetToS3;
+    private readonly IAssetToS3 assetToS3;
     private readonly IMediaTranscoder mediaTranscoder;
-    //private readonly ITimebasedIngestorCompletion completion;
+    private readonly ITimebasedIngestorCompletion completion;
     private readonly EngineSettings engineSettings;
     private readonly ILogger<TimebasedIngesterWorker> logger;
-     
-    
+
     public TimebasedIngesterWorker(
-        AssetToS3 assetToS3,
+        IAssetToS3 assetToS3,
         IOptionsMonitor<EngineSettings> engineOptions,
         IMediaTranscoder mediaTranscoder,
-        //ITimebasedIngestorCompletion completion,
+        ITimebasedIngestorCompletion completion,
         ILogger<TimebasedIngesterWorker> logger)
     {
         this.mediaTranscoder = mediaTranscoder;
-        //this.completion = completion;
+        this.completion = completion;
         this.assetToS3 = assetToS3;
         engineSettings = engineOptions.CurrentValue;
         this.logger = logger;
@@ -48,26 +48,38 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
             stopwatch.Stop();
             logger.LogDebug("Copied timebased asset {AssetId} in {Elapsed}ms using {OriginStrategy}", 
                 ingestAssetRequest.Asset.Id, stopwatch.ElapsedMilliseconds, customerOriginStrategy.Strategy);
-
-            // TODO - if (assetOnDisk.FileExceedsAllowance)
+            
             context.WithAssetFromOrigin(assetInBucket);
-            
-            var success = await mediaTranscoder.InitiateTranscodeOperation(context, cancellationToken);
 
-            if (success)
+            if (assetInBucket.FileExceedsAllowance)
             {
-                return IngestResult.QueuedForProcessing;
+                ingestAssetRequest.Asset.Error = "StoragePolicy size limit exceeded";
+                await completion.CompleteAssetInDatabase(ingestAssetRequest.Asset,
+                    cancellationToken: cancellationToken);
+                return IngestResult.StorageLimitExceeded;
             }
-            
-            // TODO - handle failure to queue for transcoding
-            throw new NotImplementedException();
+
+            var success = await mediaTranscoder.InitiateTranscodeOperation(context, cancellationToken);
+            if (success) return IngestResult.QueuedForProcessing;
         }
         catch (Exception ex)
         {
-            // TODO - set context.Asset.Error and save
             logger.LogError(ex, "Error ingesting timebased asset {AssetId}", ingestAssetRequest.Asset.Id);
-            return IngestResult.Failed;
+            context.Asset.Error = ex.Message;
         }
+        
+        try
+        {
+            await completion.CompleteAssetInDatabase(ingestAssetRequest.Asset, cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            // TODO - mark Asset Error here? and call completion
+            logger.LogError(ex, "Error completing {AssetId}", ingestAssetRequest.Asset.Id);
+        }
+        
+        // If we reach here then it's failed, if successful then we would have aborted after initiating transcode
+        return IngestResult.Failed;
     }
     
     private bool SkipStoragePolicyCheck(int customerId)

@@ -11,10 +11,25 @@ using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest.Workers.Persistence;
 
+public interface IAssetToS3
+{
+    /// <summary>
+    /// Copy asset from Origin to S3 bucket.
+    /// Configuration determines if this is a direct S3-S3 copy, or S3-disk-S3.
+    /// </summary>
+    /// <param name="asset"><see cref="Asset"/> to be copied</param>
+    /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
+    /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
+    Task<AssetFromOrigin> CopyAssetToTranscodeInput(Asset asset, bool verifySize,
+        CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default);
+}
+
 /// <summary>
 /// Class for copying asset from origin to S3 bucket.
 /// </summary>
-public class AssetToS3 : AssetMoverBase
+public class AssetToS3 : AssetMoverBase, IAssetToS3
 {
     private readonly IAssetToDisk assetToDisk;
     private readonly IBucketWriter bucketWriter;
