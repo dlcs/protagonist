@@ -1,23 +1,10 @@
 using DLCS.Core.Strings;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
 
 namespace Engine.Ingest.Completion;
-
-public interface IEngineAssetRepository
-{
-    /// <summary>
-    /// Update database with ingested asset.
-    /// </summary>
-    /// <param name="asset">Asset to update</param>
-    /// <param name="imageLocation">ImageLocation, optional as may have exited prior to creation</param>
-    /// <param name="imageStorage">ImageStorage, optional as may have exited prior to creation</param>
-    /// <param name="cancellationToken">Current cancellation token</param>
-    /// <returns>True if successful</returns>
-    Task<bool> UpdateIngestedAsset(Asset asset, ImageLocation? imageLocation, ImageStorage? imageStorage,
-        CancellationToken cancellationToken = default);
-}
 
 public class EngineAssetRepository : IEngineAssetRepository
 {
@@ -82,6 +69,9 @@ public class EngineAssetRepository : IEngineAssetRepository
         }
     }
 
+    public ValueTask<Asset?> GetAsset(AssetId assetId, CancellationToken cancellationToken = default)
+        => dlcsContext.Images.FindAsync(new object[] { assetId.ToString() }, cancellationToken);
+
     private async Task<bool> NonBatchedSave(CancellationToken cancellationToken)
     {
         var updatedRows = await dlcsContext.SaveChangesAsync(cancellationToken);
@@ -133,8 +123,12 @@ public class EngineAssetRepository : IEngineAssetRepository
     {
         asset.Ingesting = false;
         asset.Finished = DateTime.UtcNow;
-        dlcsContext.Images.Attach(asset);
+
+        // If the asset is tracked then no need to attach + set modified properties
+        // Assets will be tracked when finalising a Timebased ingest as the Asset will have been read from context
+        if (dlcsContext.Images.Local.Any(a => a.Id == asset.Id)) return;
         
+        dlcsContext.Images.Attach(asset);
         var entry = dlcsContext.Entry(asset);
         entry.Property(p => p.Width).IsModified = true;
         entry.Property(p => p.Height).IsModified = true;

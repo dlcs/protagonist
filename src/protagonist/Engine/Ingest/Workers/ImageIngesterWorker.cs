@@ -82,8 +82,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker
         }
         catch (Exception ex)
         {
-            // TODO - mark Asset Error here? and call completion
-            logger.LogError(ex, "Error updating completing {AssetId}", ingestAssetRequest.Asset.Id);
+            logger.LogError(ex, "Error completing {AssetId}", ingestAssetRequest.Asset.Id);
             return IngestResult.Failed;
         }
     }
