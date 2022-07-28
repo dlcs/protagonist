@@ -88,6 +88,7 @@ public static class ServiceCollectionX
             .AddScoped<IAssetToDisk, AssetToDisk>()
             .AddScoped<IImageIngestorCompletion, ImageIngestorCompletion>()
             .AddScoped<IEngineAssetRepository, EngineAssetRepository>()
+            .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
             .AddScoped<AssetToS3>()
             .AddOriginStrategies();
 
