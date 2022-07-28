@@ -92,7 +92,7 @@ public class AwsBuilder
     /// <summary>
     /// Add <see cref="IAmazonSQS"/> to service collection with specified lifetime.
     /// </summary>
-    /// <param name="lifetime">ServiceLifetime for dependency, </param>
+    /// <param name="lifetime">ServiceLifetime for dependency</param>
     /// <returns></returns>
     public AwsBuilder WithAmazonSQS(ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
@@ -114,6 +114,24 @@ public class AwsBuilder
         else
         {
             services.AddAWSService<IAmazonSQS>(lifetime);
+        }
+        
+        return this;
+    }
+
+    /// <summary>
+    /// Add <see cref="Amazon.Runtime.IAmazonService"/> to service collection with specified lifetime.
+    /// If using localStack this will be a no-op.
+    /// </summary>
+    /// <param name="lifetime">ServiceLifetime for dependency</param>
+    /// <typeparam name="T">Type of amazon service service to add</typeparam>
+    /// <returns></returns>
+    public AwsBuilder WithAWSService<T>(ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        where T : IAmazonService
+    {
+        if (!useLocalStack)
+        {
+            services.AddAWSService<T>(lifetime);
         }
         
         return this;

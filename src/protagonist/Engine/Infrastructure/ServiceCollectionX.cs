@@ -1,3 +1,4 @@
+using Amazon.ElasticTranscoder;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
@@ -19,6 +20,7 @@ using Engine.Ingest.Completion;
 using Engine.Ingest.Handlers;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.Appetiser;
+using Engine.Ingest.Timebased;
 using Engine.Ingest.Workers;
 using Engine.Ingest.Workers.Persistence;
 using Engine.Messaging;
@@ -40,7 +42,8 @@ public static class ServiceCollectionX
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
-            .WithAmazonSQS();
+            .WithAmazonSQS()
+            .WithAWSService<IAmazonElasticTranscoder>();
 
         return services;
     }
@@ -81,6 +84,7 @@ public static class ServiceCollectionX
                 _ => throw new KeyNotFoundException("Attempt to resolve ingestor handler for unknown family")
             })
             .AddSingleton<IFileSystem, FileSystem>()
+            .AddSingleton<IMediaTranscoder, ElasticTranscoder>()
             .AddScoped<IAssetToDisk, AssetToDisk>()
             .AddScoped<IImageIngestorCompletion, ImageIngestorCompletion>()
             .AddScoped<IEngineAssetRepository, EngineAssetRepository>()

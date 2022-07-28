@@ -115,7 +115,7 @@ public class ImageIngestSettings
 public class TimebasedIngestSettings
 {
     /// <summary>
-    /// The name of the pipeline to use for ingesting files.
+    /// The name of the ElasticTranscoder pipeline to use for transcoding AV files
     /// </summary>
     public string PipelineName { get; set; }
         

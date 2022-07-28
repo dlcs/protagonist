@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
+using Engine.Ingest.Timebased;
 using Engine.Ingest.Workers.Persistence;
 using Engine.Settings;
 using Microsoft.Extensions.Options;
@@ -13,7 +14,7 @@ namespace Engine.Ingest.Workers;
 public class TimebasedIngesterWorker : IAssetIngesterWorker
 {
     private readonly AssetToS3 assetToS3;
-    //private readonly IMediaTranscoder mediaTranscoder;
+    private readonly IMediaTranscoder mediaTranscoder;
     //private readonly ITimebasedIngestorCompletion completion;
     private readonly EngineSettings engineSettings;
     private readonly ILogger<TimebasedIngesterWorker> logger;
@@ -22,11 +23,11 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
     public TimebasedIngesterWorker(
         AssetToS3 assetToS3,
         IOptionsMonitor<EngineSettings> engineOptions,
-        //IMediaTranscoder mediaTranscoder,
+        IMediaTranscoder mediaTranscoder,
         //ITimebasedIngestorCompletion completion,
         ILogger<TimebasedIngesterWorker> logger)
     {
-        //this.mediaTranscoder = mediaTranscoder;
+        this.mediaTranscoder = mediaTranscoder;
         //this.completion = completion;
         this.assetToS3 = assetToS3;
         engineSettings = engineOptions.CurrentValue;
@@ -51,6 +52,14 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
             // TODO - if (assetOnDisk.FileExceedsAllowance)
             context.WithAssetFromOrigin(assetInBucket);
             
+            var success = await mediaTranscoder.InitiateTranscodeOperation(context, cancellationToken);
+
+            if (success)
+            {
+                return IngestResult.QueuedForProcessing;
+            }
+            
+            // TODO - handle failure to queue for transcoding
             throw new NotImplementedException();
         }
         catch (Exception ex)
