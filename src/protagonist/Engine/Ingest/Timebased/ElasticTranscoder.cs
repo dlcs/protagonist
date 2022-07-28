@@ -42,18 +42,32 @@ public class ElasticTranscoder : IMediaTranscoder
         {
             logger.LogWarning("Pipeline Id not found for {PipelineName} to ingest {AssetId}", settings.PipelineName,
                 context.AssetId);
+            context.Asset.Error = "Could not find ElasticTranscoder pipeline";
             return false;
         }
         
         var presets = await GetPresetIdLookup(token);
         var outputs = GetJobOutputs(context, settings, presets);
+
+        if (outputs.Count == 0)
+        {
+            context.Asset.Error = "Unable to generate ElasticTranscoder outputs";
+            return false;
+        }
         
         var request = CreateJobRequest(context, context.AssetFromOrigin.Location, pipelineId, outputs);
         
         var response = await elasticTranscoder.CreateJobAsync(request, token);
         
         var statusCode = (int) response.HttpStatusCode;
-        return statusCode is >= 200 and < 300;
+        var success = statusCode is >= 200 and < 300;
+
+        if (!success)
+        {
+            context.Asset.Error = $"Create ElasticTranscoder job failed with status {statusCode}";
+        }
+
+        return success;
     }
     
     private async Task<string?> GetPipelineId(string pipelineName, CancellationToken token)

@@ -68,6 +68,33 @@ public class ElasticTranscoderTests
         var result = await sut.InitiateTranscodeOperation(context);
 
         // Assert
+        asset.Error.Should().Be("Could not find ElasticTranscoder pipeline");
+        result.Should().BeFalse();
+    }
+    
+    [Fact]
+    public async Task InitiateTranscodeOperation_Fail_IfUnableToMakesCreateJobRequest()
+    {
+        // Arrange
+        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20 };
+        asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
+        {
+            TechnicalDetails = new[] { "Standard WebM(webm)", "auto-preset(mp4)" }
+        });
+        var context = new IngestionContext(asset);
+        context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "s3://loc/ation", "video/mpeg"));
+
+        A.CallTo(() => elasticTranscoder.ListPipelinesAsync(A<ListPipelinesRequest>._, A<CancellationToken>._))
+            .Returns(new ListPipelinesResponse
+            {
+                Pipelines = new List<Pipeline> { new() { Name = "foo-pipeline", Id = "1234567890123-abcdef" } }
+            });
+        
+        // Act
+        var result = await sut.InitiateTranscodeOperation(context);
+
+        // Assert
+        asset.Error.Should().Be("Unable to generate ElasticTranscoder outputs");
         result.Should().BeFalse();
     }
 
@@ -114,13 +141,11 @@ public class ElasticTranscoderTests
         requestMade.Outputs[0].Key.Should().Be("20/10/asset-id/full/full/max/max/0/default.webm");
         requestMade.Outputs[1].Key.Should().Be("20/10/asset-id/full/full/max/max/0/default.mp4");
     }
-
+    
     [Theory]
-    [InlineData(HttpStatusCode.BadGateway, false)]
-    [InlineData(HttpStatusCode.BadRequest, false)]
-    [InlineData(HttpStatusCode.OK, true)]
-    [InlineData(HttpStatusCode.Accepted, true)]
-    public async Task InitiateTranscodeOperation_ReturnsCorrectSuccess(HttpStatusCode statusCode, bool success)
+    [InlineData(HttpStatusCode.BadGateway)]
+    [InlineData(HttpStatusCode.BadRequest)]
+    public async Task InitiateTranscodeOperation_ReturnsFalseSetsError_IfErrorStatusCodeFromET(HttpStatusCode statusCode)
     {
         // Arrange
         var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20 };
@@ -154,6 +179,48 @@ public class ElasticTranscoderTests
         var result = await sut.InitiateTranscodeOperation(context);
 
         // Assert
-        result.Should().Be(success);
+        result.Should().BeFalse();
+        asset.Error.Should().NotBeNullOrEmpty();
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.OK)]
+    [InlineData(HttpStatusCode.Accepted)]
+    public async Task InitiateTranscodeOperation_ReturnsTrue_IfSuccessStatusCodeFromET(HttpStatusCode statusCode)
+    {
+        // Arrange
+        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20 };
+        asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
+        {
+            TechnicalDetails = new[]{ "Standard WebM(webm)", "auto-preset(mp4)" }
+        });
+        var context = new IngestionContext(asset);
+        context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "s3://loc/ation", "video/mpeg"));
+
+        A.CallTo(() => elasticTranscoder.ListPipelinesAsync(A<ListPipelinesRequest>._, A<CancellationToken>._))
+            .Returns(new ListPipelinesResponse
+            {
+                Pipelines = new List<Pipeline> { new() { Name = "foo-pipeline", Id = "1234567890123-abcdef" } }
+            });
+
+        A.CallTo(() => elasticTranscoder.ListPresetsAsync(A<ListPresetsRequest>._, A<CancellationToken>._))
+            .Returns(new ListPresetsResponse
+            {
+                Presets = new List<Preset>
+                {
+                    new() { Name = "my-custom-preset", Id = "1111111111111-aaaaaa" },
+                    new() { Name = "auto-preset", Id = "9999999999999-bbbbbb" }
+                },
+            });
+
+        A.CallTo(() => elasticTranscoder.CreateJobAsync(A<CreateJobRequest>._, A<CancellationToken>._))
+            .Returns(new CreateJobResponse { HttpStatusCode = statusCode });
+
+        // Act
+        var result = await sut.InitiateTranscodeOperation(context);
+
+        // Assert
+        result.Should().BeTrue();
+        asset.Error.Should().BeNullOrEmpty();
     }
 }

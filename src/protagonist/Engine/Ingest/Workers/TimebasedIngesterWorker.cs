@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 namespace Engine.Ingest.Workers;
 
 /// <summary>
-/// <see cref="IAssetIngesterWorker"/> responsible for ingesting timebased assets ('T' family)  
+/// <see cref="IAssetIngesterWorker"/> responsible for ingesting timebased assets ('T' family).
 /// </summary>
 public class TimebasedIngesterWorker : IAssetIngesterWorker
 {
@@ -60,7 +60,11 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
             }
 
             var success = await mediaTranscoder.InitiateTranscodeOperation(context, cancellationToken);
-            if (success) return IngestResult.QueuedForProcessing;
+            if (success)
+            {
+                logger.LogDebug("Timebased asset {AssetId} successfully queued for processing", context.AssetId);
+                return IngestResult.QueuedForProcessing;
+            }
         }
         catch (Exception ex)
         {
@@ -79,6 +83,7 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
         }
         
         // If we reach here then it's failed, if successful then we would have aborted after initiating transcode
+        logger.LogDebug("Failed to ingest timebased asset {AssetId}", context.AssetId);
         return IngestResult.Failed;
     }
     

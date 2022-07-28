@@ -129,7 +129,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
     private async Task<AssetFromOrigin> IndirectCopyBucketToBucket(Asset asset, ObjectInBucket destination, 
         bool verifySize, CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken)
     {
-        logger.LogDebug("Copying asset '{AssetId}' directly from bucket to bucket. {Source} - {Dest}", asset.Id,
+        logger.LogDebug("Copying asset '{AssetId}' indirectly from bucket to bucket. {Source} - {Dest}", asset.Id,
             asset.GetIngestOrigin(), destination.GetS3Uri());
         var assetId = asset.GetAssetId();
         string? downloadedFile = null;
