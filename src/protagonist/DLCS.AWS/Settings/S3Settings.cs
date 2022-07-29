@@ -19,6 +19,11 @@ public class S3Settings
     /// Name of bucket for storing generated output (e.g. NamedQuery results)
     /// </summary>
     public string OutputBucket { get; set; }
+
+    /// <summary>
+    /// Name of bucket for storing timebased assets to be transcoded
+    /// </summary>
+    public string TimebasedInputBucket { get; set; }
     
     /// <summary>
     /// Name of bucket used when the DLCS provides the origin of asset itself, by hosting, rather than

@@ -1,3 +1,4 @@
+using Amazon.ElasticTranscoder;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
@@ -19,7 +20,9 @@ using Engine.Ingest.Completion;
 using Engine.Ingest.Handlers;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.Appetiser;
+using Engine.Ingest.Timebased;
 using Engine.Ingest.Workers;
+using Engine.Ingest.Workers.Persistence;
 using Engine.Messaging;
 using Engine.Settings;
 
@@ -39,7 +42,8 @@ public static class ServiceCollectionX
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
-            .WithAmazonSQS();
+            .WithAmazonSQS()
+            .WithAWSService<IAmazonElasticTranscoder>();
 
         return services;
     }
@@ -69,27 +73,23 @@ public static class ServiceCollectionX
     {
         services
             .AddScoped<IAssetIngester, AssetIngester>()
-            .AddTransient<ImageIngesterWorker>()
+            .AddScoped<TimebasedIngesterWorker>()
+            .AddScoped<ImageIngesterWorker>()
             .AddSingleton<IThumbCreator, ThumbCreator>()
             .AddTransient<IngestorResolver>(provider => family => family switch
             {
                 AssetFamily.Image => provider.GetRequiredService<ImageIngesterWorker>(),
-                AssetFamily.Timebased => throw new NotImplementedException("Not yet"),
+                AssetFamily.Timebased => provider.GetRequiredService<TimebasedIngesterWorker>(),
                 AssetFamily.File => throw new NotImplementedException("File shouldn't be here"),
                 _ => throw new KeyNotFoundException("Attempt to resolve ingestor handler for unknown family")
             })
             .AddSingleton<IFileSystem, FileSystem>()
-            .AddScoped<AssetToDisk>()
+            .AddSingleton<IMediaTranscoder, ElasticTranscoder>()
+            .AddScoped<IAssetToDisk, AssetToDisk>()
             .AddScoped<IImageIngestorCompletion, ImageIngestorCompletion>()
             .AddScoped<IEngineAssetRepository, EngineAssetRepository>()
-            //.AddScoped<AssetToS3>()
-            .AddTransient<AssetMoverResolver>(provider => t => t switch
-            {
-                AssetMoveType.Disk => provider.GetRequiredService<AssetToDisk>(),
-                AssetMoveType.ObjectStore => throw new NotImplementedException("Not yet"),
-                // AssetMoveType.ObjectStore => provider.GetService<AssetToS3>(),
-                _ => throw new NotImplementedException()
-            })
+            .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
+            .AddScoped<IAssetToS3, AssetToS3>()
             .AddOriginStrategies();
 
         services.AddHttpClient<IImageProcessor, AppetiserClient>(client =>

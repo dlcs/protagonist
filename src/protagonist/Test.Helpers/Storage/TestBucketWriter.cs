@@ -63,26 +63,28 @@ public class TestBucketWriter : IBucketWriter
             throw new AssertionFailedException($"The following paths have not been verified: {string.Join(",", unverified)}");
         }
     }
-    
-    public Task CopyWithinBucket(string bucket, string sourceKey, string destKey)
-    {
-        if (forBucket.HasText())
-        {
-            if (bucket != forBucket) throw new InvalidOperationException("Operation for different bucket");
-        }
-
-        if (Operations.TryGetValue(sourceKey, out var op))
-        {
-            Operations[destKey] = new BucketObject { Contents = op.Contents, FilePath = op.FilePath, Bucket = bucket };
-            return Task.FromResult(true);
-        }
-            
-        return Task.FromResult(false);
-    }
 
     public Task CopyObject(ObjectInBucket source, ObjectInBucket destination)
     {
-        throw new System.NotImplementedException();
+        Operations[destination.Key] = new BucketObject { Bucket = destination.Bucket };
+        return Task.CompletedTask;
+    }
+
+    public async Task<LargeObjectCopyResult> CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
+        Func<long, Task<bool>> verifySize = null, bool destIsPublic = false, CancellationToken token = default)
+    {
+        Operations[destination.Key] = new BucketObject { Bucket = destination.Bucket };
+
+        const long size = 100;
+        if (verifySize != null)
+        {
+            if (!await verifySize(size))
+            {
+                return new LargeObjectCopyResult(LargeObjectStatus.FileTooLarge, size);        
+            }
+        }
+
+        return new LargeObjectCopyResult(LargeObjectStatus.Success, size);
     }
 
     public Task WriteToBucket(ObjectInBucket dest, string content, string contentType,
@@ -104,7 +106,8 @@ public class TestBucketWriter : IBucketWriter
         return Task.FromResult(true);
     }
 
-    public Task<bool> WriteFileToBucket(ObjectInBucket dest, string filePath, string contentType = null)
+    public Task<bool> WriteFileToBucket(ObjectInBucket dest, string filePath, string contentType = null,
+        CancellationToken token = default)
     {
         if (forBucket.HasText() && dest.Bucket != forBucket)
             throw new InvalidOperationException("Operation for different bucket");

@@ -1,3 +1,4 @@
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using Engine.Ingest.Completion;
@@ -80,6 +81,39 @@ public class EngineAssetRepositoryTests
         updatedItem.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
         updatedItem.MediaType.Should().Be(existingAsset.MediaType, "MediaType not set on newAsset so not updated");
         updatedItem.Reference1.Should().Be(existingAsset.Reference1, "Reference1 not changed");
+    }
+    
+    [Fact]
+    public async Task UpdateIngestedAsset_UpdatesAlreadyTrackedAsset()
+    {
+        // Arrange
+        var assetId = $"99/1/{nameof(UpdateIngestedAsset_UpdatesAlreadyTrackedAsset)}";
+        await dbContext.Images.AddTestAsset(assetId, width: 0, height: 0, duration: 0,
+            ingesting: true, ref1: "foo", roles: "secret");
+        await dbContext.SaveChangesAsync();
+
+        // Get asset so that it is tracked 
+        var trackedAsset = await sut.GetAsset(AssetId.FromString(assetId));
+        trackedAsset.Width = 999;
+        trackedAsset.Height = 1000;
+        trackedAsset.Duration = 99;
+        trackedAsset.Error = "broken state";
+
+        // Act
+        var success = await sut.UpdateIngestedAsset(trackedAsset, null, null);
+        
+        // Assert
+        trackedAsset.Should().NotBeNull();
+        
+        success.Should().BeTrue();
+        
+        var updatedItem = await dbContext.Images.SingleAsync(a => a.Id == assetId);
+        updatedItem.Width.Should().Be(trackedAsset.Width);
+        updatedItem.Height.Should().Be(trackedAsset.Height);
+        updatedItem.Duration.Should().Be(trackedAsset.Duration);
+        updatedItem.Error.Should().Be(trackedAsset.Error);
+        updatedItem.Ingesting.Should().BeFalse();
+        updatedItem.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
     }
     
     [Fact]

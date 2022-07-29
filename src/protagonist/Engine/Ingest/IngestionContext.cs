@@ -13,8 +13,6 @@ public class IngestionContext
     public Asset Asset { get; }
     
     public AssetId AssetId { get; }
-            
-    // TODO - should this be typed?
     public AssetFromOrigin? AssetFromOrigin { get; private set; }
         
     public ImageLocation? ImageLocation { get; private set; }

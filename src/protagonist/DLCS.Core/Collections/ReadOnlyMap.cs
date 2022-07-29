@@ -7,7 +7,9 @@ namespace DLCS.Core.Collections;
 /// Class that maintains a 2-way mapping of values.
 /// </summary>
 /// <remarks>All keys+values must be unique.</remarks>
-public class ReadOnlyMap<T1, T2>
+public class ReadOnlyMap<T1, T2> 
+    where T1 : notnull
+    where T2 : notnull
 {
     /// <summary>
     /// Create new ReadOnlyMap directly, using mapping function to create reverse lookup.
@@ -28,7 +30,7 @@ public class ReadOnlyMap<T1, T2>
     
     public Indexer<T2, T1> Reverse { get; }
 
-    public class Indexer<T3, T4>
+    public class Indexer<T3, T4> where T3 : notnull
     {
         private readonly Dictionary<T3, T4> dictionary;
         
