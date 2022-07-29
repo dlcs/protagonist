@@ -58,11 +58,11 @@ public static class ServiceCollectionX
             .AddSingleton<QueueHandlerResolver<EngineMessageType>>(provider => messageType => messageType switch
             {
                 EngineMessageType.Ingest => provider.GetRequiredService<IngestHandler>(),
-                EngineMessageType.TranscodeComplete => provider.GetRequiredService<TranscodeCompletionHandler>(),
+                EngineMessageType.TranscodeComplete => provider.GetRequiredService<TranscodeCompleteHandler>(),
                 _ => throw new ArgumentOutOfRangeException(nameof(messageType), messageType, null)
             })
             .AddTransient<IngestHandler>()
-            .AddTransient<TranscodeCompletionHandler>()
+            .AddTransient<TranscodeCompleteHandler>()
             .AddSingleton<SqsQueueUtilities>()
             .AddHostedService<SqsListenerService>();
 
