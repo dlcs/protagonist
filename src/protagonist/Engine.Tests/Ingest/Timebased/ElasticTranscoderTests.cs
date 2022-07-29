@@ -138,8 +138,8 @@ public class ElasticTranscoderTests
         requestMade.PipelineId.Should().Be("1234567890123-abcdef");
         requestMade.UserMetadata["dlcsId"].Should().Be("20/10/asset-id");
         requestMade.Input.Key.Should().Be("ation");
-        requestMade.Outputs[0].Key.Should().Be("20/10/asset-id/full/full/max/max/0/default.webm");
-        requestMade.Outputs[1].Key.Should().Be("20/10/asset-id/full/full/max/max/0/default.mp4");
+        requestMade.Outputs[0].Key.Should().EndWith("20/10/asset-id/full/full/max/max/0/default.webm");
+        requestMade.Outputs[1].Key.Should().EndWith("20/10/asset-id/full/full/max/max/0/default.mp4");
     }
     
     [Theory]
@@ -173,7 +173,7 @@ public class ElasticTranscoderTests
             });
 
         A.CallTo(() => elasticTranscoder.CreateJobAsync(A<CreateJobRequest>._, A<CancellationToken>._))
-            .Returns(new CreateJobResponse { HttpStatusCode = statusCode });
+            .Returns(new CreateJobResponse { HttpStatusCode = statusCode, Job = new Job() });
 
         // Act
         var result = await sut.InitiateTranscodeOperation(context);
@@ -214,7 +214,7 @@ public class ElasticTranscoderTests
             });
 
         A.CallTo(() => elasticTranscoder.CreateJobAsync(A<CreateJobRequest>._, A<CancellationToken>._))
-            .Returns(new CreateJobResponse { HttpStatusCode = statusCode });
+            .Returns(new CreateJobResponse { HttpStatusCode = statusCode, Job = new Job() });
 
         // Act
         var result = await sut.InitiateTranscodeOperation(context);

@@ -65,7 +65,7 @@ public class ElasticTranscoder : IMediaTranscoder
         var statusCode = (int) elasticTranscoderJob.HttpStatusCode;
         var success = statusCode is >= 200 and < 300;
 
-        logger.LogDebug("Created ET job {ETJobId}, got response {StatusCode}", elasticTranscoderJob.Job.Id,
+        logger.LogDebug("Created ET job {ETJobId}, got response {StatusCode}", elasticTranscoderJob.Job?.Id,
             elasticTranscoderJob.HttpStatusCode);
 
         if (!success)
