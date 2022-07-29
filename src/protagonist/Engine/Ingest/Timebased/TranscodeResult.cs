@@ -1,4 +1,6 @@
-﻿namespace Engine.Ingest.Timebased;
+﻿using Engine.Ingest.Handlers;
+
+namespace Engine.Ingest.Timebased;
     
 /// <summary>
 /// Represents the overall result of a transcode operation.
@@ -14,11 +16,28 @@ public class TranscodeResult
     /// The results of transcode operations.
     /// </summary>
     public IList<TranscodeOutput> Outputs { get; }
+    
+    /// <summary>
+    /// PROGRESSING|COMPLETED|WARNING|ERROR
+    /// </summary>
+    public string State { get; }
+    
+    /// <summary>
+    /// Details of any error that may have occurred
+    /// </summary>
+    public string? ErrorCode { get; }
 
-    public TranscodeResult(string? inputKey = null, IList<TranscodeOutput>? outputs = null)
+    /// <summary>
+    /// Check if State is "COMPLETED"
+    /// </summary>
+    public bool IsComplete() => string.Equals(State, "COMPLETED", StringComparison.OrdinalIgnoreCase);
+
+    public TranscodeResult(ElasticTranscoderMessage elasticTranscoderMessage)
     {
-        InputKey = inputKey;
-        Outputs = outputs ?? new List<TranscodeOutput>();
+        Outputs = elasticTranscoderMessage.Outputs;
+        InputKey = elasticTranscoderMessage.Input.Key;
+        State = elasticTranscoderMessage.State;
+        ErrorCode = elasticTranscoderMessage.ErrorCode;
     }
 }
 
@@ -39,6 +58,11 @@ public class TranscodeOutput
     public long? DurationMillis { get; set; }
     public int Width { get; set; }
     public int Height { get; set; }
+    
+    /// <summary>
+    /// Check if Status is "Complete"
+    /// </summary>
+    public bool IsComplete() => string.Equals(Status, "Complete", StringComparison.OrdinalIgnoreCase);
 
     public long GetDuration() => DurationMillis ?? Duration * 1000;
 }

@@ -27,18 +27,18 @@ public class TranscodeCompleteHandler : IMessageHandler
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken)
     {
-        var notification = DeserializeBody(message);
+        var elasticTranscoderMessage = DeserializeBody(message);
 
-        if (notification == null) return false;
+        if (elasticTranscoderMessage == null) return false;
         
-        if (!notification.UserMetadata.TryGetValue(UserMetadataKeys.DlcsId, out var rawAssetId))
+        if (!elasticTranscoderMessage.UserMetadata.TryGetValue(UserMetadataKeys.DlcsId, out var rawAssetId))
         {
-            logger.LogWarning("Unable to find DlcsId in message for ET job {JobId}", notification.JobId);
+            logger.LogWarning("Unable to find DlcsId in message for ET job {JobId}", elasticTranscoderMessage.JobId);
             return false;
         }
 
         var assetId = AssetId.FromString(rawAssetId);
-        var transcodeResult = new TranscodeResult(notification.Input.Key, notification.Outputs);
+        var transcodeResult = new TranscodeResult(elasticTranscoderMessage);
 
         var success =
             await timebasedIngestorCompletion.CompleteSuccessfulIngest(assetId, transcodeResult, cancellationToken);
@@ -66,7 +66,7 @@ public class TranscodeCompleteHandler : IMessageHandler
 /// The body of a notification sent out from ElasticTranscoder.
 /// </summary>
 /// <remarks>See https://docs.aws.amazon.com/elastictranscoder/latest/developerguide/notifications.html</remarks>
-internal class ElasticTranscoderMessage
+public class ElasticTranscoderMessage
 {
     /// <summary>
     /// The State of the job (PROGRESSING|COMPLETED|WARNING|ERROR)
