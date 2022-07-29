@@ -30,6 +30,10 @@ public class TranscodeOutput
     public string Id { get; set; }
     public string PresetId { get; set; }
     public string Key { get; set; }
+    
+    /// <summary>
+    /// Status of output (Progressing|Complete|Warning|Error)
+    /// </summary>
     public string Status { get; set; }
     public long Duration { get; set; }
     public long? DurationMillis { get; set; }
