@@ -61,4 +61,36 @@ public class TranscoderTemplatesTests
         action.Should().Throw<InvalidOperationException>()
             .WithMessage("Unable to determine target location for mediaType 'binary/octet-stream'");
     }
+
+    [Fact]
+    public void GetFinalDestinationKey_Correct_IfAudio()
+    {
+        // Arrange
+        var asset = new AssetId(1, 5, "foo");
+        const string expected = "1/5/foo/full/max/default.mp3";
+        var (template, _) =
+            TranscoderTemplates.ProcessPreset("audio/wav", asset, "my-preset(mp3)", Guid.NewGuid().ToString());
+            
+        // Act
+        var result = TranscoderTemplates.GetFinalDestinationKey(template);
+        
+        // Assert
+        result.Should().Be(expected);
+    }
+    
+    [Fact]
+    public void GetFinalDestinationKey_Correct_IfVideo()
+    {
+        // Arrange
+        var asset = new AssetId(1, 5, "foo");
+        const string expected = "1/5/foo/full/full/max/max/0/default.webm";
+        var (template, _) =
+            TranscoderTemplates.ProcessPreset("video/mpeg", asset, "my-preset(webm)", Guid.NewGuid().ToString());
+            
+        // Act
+        var result = TranscoderTemplates.GetFinalDestinationKey(template);
+        
+        // Assert
+        result.Should().Be(expected);
+    }
 }

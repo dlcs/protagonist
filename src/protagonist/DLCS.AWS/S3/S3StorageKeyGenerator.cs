@@ -109,6 +109,9 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         return new RegionalisedObjectInBucket(s3Options.StorageBucket, fullPath, awsSettings.Region);
     }
 
+    public ObjectInBucket GetTimebasedAssetLocation(string fullAssetPath)
+        => new(s3Options.StorageBucket, fullAssetPath);
+
     public ObjectInBucket GetInfoJsonLocation(AssetId assetId, string imageServer, IIIF.ImageApi.Version imageApiVersion)
     {
         var versionSlug = imageApiVersion == IIIF.ImageApi.Version.V2 ? "v2" : "v3";
@@ -141,4 +144,10 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         var fullPath = GetStorageKey(assetId).ToConcatenated('/', postfix);
         return new ObjectInBucket(s3Options.TimebasedInputBucket, fullPath);
     }
+
+    public ObjectInBucket GetTimebasedInputLocation(string key)
+        => new(s3Options.TimebasedInputBucket, key);
+
+    public ObjectInBucket GetTimebasedOutputLocation(string key)
+        => new(s3Options.TimebasedOutputBucket, key);
 }

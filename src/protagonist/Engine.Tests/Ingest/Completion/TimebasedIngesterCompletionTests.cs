@@ -1,4 +1,5 @@
-﻿using DLCS.Model.Assets;
+﻿using DLCS.AWS.S3;
+using DLCS.Model.Assets;
 using Engine.Ingest.Completion;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -9,11 +10,16 @@ public class TimebasedIngesterCompletionTests
 {
     private readonly TimebasedIngestorCompletion sut;
     private readonly IEngineAssetRepository engineAssetRepository;
-    
+    private readonly IStorageKeyGenerator storageKeyGenerator;
+    private readonly IBucketWriter bucketWriter;
+
     public TimebasedIngesterCompletionTests()
     {
         engineAssetRepository = A.Fake<IEngineAssetRepository>();
-        sut = new TimebasedIngestorCompletion(engineAssetRepository, NullLogger<TimebasedIngestorCompletion>.Instance);
+        storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
+        bucketWriter = A.Fake<IBucketWriter>();
+        sut = new TimebasedIngestorCompletion(engineAssetRepository, storageKeyGenerator, bucketWriter,
+            NullLogger<TimebasedIngestorCompletion>.Instance);
     }
 
     [Fact]

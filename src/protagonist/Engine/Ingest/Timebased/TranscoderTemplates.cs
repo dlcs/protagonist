@@ -36,6 +36,14 @@ public static class TranscoderTemplates
         return (path, presetName);
     }
 
+    /// <summary>
+    /// Extract the final destination S3 storage key from the transcoder output key 
+    /// </summary>
+    /// <param name="outputKey">S3 key where transcoded output is stored</param>
+    /// <returns>Final key</returns>
+    public static string GetFinalDestinationKey(string outputKey) =>
+        outputKey.Substring(outputKey.IndexOf("/", StringComparison.Ordinal) + 1);
+
     private static string GetDestinationTemplate(string mediaType)
     {
         // audio: {customer}/{space}/{image}/full/max/default.{extension} (mediatype like audio/)

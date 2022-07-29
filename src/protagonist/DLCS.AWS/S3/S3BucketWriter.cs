@@ -66,6 +66,7 @@ public class S3BucketWriter : IBucketWriter
 
         try
         {
+            // TODO - handle source metadata object not being found by returning suitable status
             var sourceMetadata = await GetObjectMetadata(source);
             objectSize = sourceMetadata.ContentLength;
 

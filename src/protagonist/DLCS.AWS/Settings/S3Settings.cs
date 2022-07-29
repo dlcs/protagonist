@@ -26,6 +26,11 @@ public class S3Settings
     public string TimebasedInputBucket { get; set; }
     
     /// <summary>
+    /// Name of bucket for storing timebased assets to be transcoded
+    /// </summary>
+    public string TimebasedOutputBucket { get; set; }
+    
+    /// <summary>
     /// Name of bucket used when the DLCS provides the origin of asset itself, by hosting, rather than
     /// relying on a third party bucket or other origin.
     /// DLCS applications like API and Portal will deposit uploaded resources here.
