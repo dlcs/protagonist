@@ -16,8 +16,10 @@ public static class TranscoderTemplates
     /// <param name="mediaType">The media-type/content-type for asset.</param>
     /// <param name="assetId">Id of asset being ingested.</param>
     /// <param name="preset">The preset id from ImageOptimisationPolicy</param>
+    /// <param name="jobId">Unique identifier for job</param>
     /// <returns></returns>
-    public static (string? template, string? presetName) ProcessPreset(string mediaType, AssetId assetId, string preset)
+    public static (string? template, string? presetName) ProcessPreset(string mediaType, AssetId assetId, string preset,
+        string jobId)
     {
         var match = PresetRegex.Match(preset);
 
@@ -26,8 +28,9 @@ public static class TranscoderTemplates
         var presetName = match.Groups[1].Value;
         var presetExtension = match.Groups[2].Value;
         var template = GetDestinationTemplate(mediaType);
-            
+
         var path = template
+            .Replace("{jobId}", jobId)
             .Replace("{asset}", S3StorageKeyGenerator.GetStorageKey(assetId))
             .Replace("{extension}", presetExtension);
         return (path, presetName);
@@ -39,12 +42,12 @@ public static class TranscoderTemplates
         // video: {customer}/{space}/{image}/full/full/max/max/0/default.{extension} (mediatype like video/)
         if (mediaType.StartsWith("audio/"))
         {
-            return "{asset}/full/max/default.{extension}";
+            return "{jobId}/{asset}/full/max/default.{extension}";
         }
             
         if (mediaType.StartsWith("video/"))
         {
-            return "{asset}/full/full/max/max/0/default.{extension}";
+            return "{jobId}/{asset}/full/full/max/max/0/default.{extension}";
         }
 
         throw new InvalidOperationException($"Unable to determine target location for mediaType '{mediaType}'");
