@@ -125,4 +125,10 @@ public interface IStorageKeyGenerator
     /// </summary>
     /// <returns><see cref="ObjectInBucket"/> for specified key in timebased input bucket</returns>
     ObjectInBucket GetTimebasedOutputLocation(string key);
+
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> item for timebased metadata object
+    /// </summary>
+    /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
+    ObjectInBucket GetTimebasedMetadataLocation(AssetId assetId);
 }

@@ -31,6 +31,11 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
     public const string SizesJsonKey = "s.json";
     
     /// <summary>
+    /// Key of the file that contains metadata about asset
+    /// </summary>
+    public const string MetadataKey = "metadata";
+    
+    /// <summary>
     /// Key of the largest pre-generated thumbnail
     /// </summary>
     public const string LargestThumbKey = "low.jpg";
@@ -150,4 +155,10 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
 
     public ObjectInBucket GetTimebasedOutputLocation(string key)
         => new(s3Options.TimebasedOutputBucket, key);
+
+    public ObjectInBucket GetTimebasedMetadataLocation(AssetId assetId)
+    {
+        var key = $"{GetStorageKey(assetId)}/{MetadataKey}";
+        return new ObjectInBucket(s3Options.StorageBucket, key);
+    }
 }

@@ -301,4 +301,18 @@ public class S3StorageKeyGeneratorTests
         result.Bucket.Should().Be("timebased-out");
         result.Key.Should().Be(key);
     }
+
+    [Fact]
+    public void GetTimebasedMetadataLocation_Correct()
+    {
+        // Arrange
+        var asset = new AssetId(10, 20, "foo-bar");
+
+        // Act
+        var actual = sut.GetTimebasedMetadataLocation(asset);
+
+        // Assert
+        actual.Key.Should().Be("10/20/foo-bar/metadata");
+        actual.Bucket.Should().Be("test-storage");
+    }
 }
