@@ -2,7 +2,10 @@ using Amazon.SQS;
 using DLCS.AWS.Settings;
 using DLCS.AWS.SQS;
 using DLCS.AWS.SQS.Models;
+using Engine.Messaging;
+using FakeItEasy;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Test.Helpers.Integration;
@@ -17,12 +20,21 @@ public class SqsListenerTests : IAsyncLifetime
     private readonly FakeMessageHandler messageHandler;
     private readonly IAmazonSQS sqsClient;
     private string? queueUrl;
+    private readonly IServiceScopeFactory scopeFactory;
 
     public SqsListenerTests(LocalStackFixture localStackFixture)
     {
-        this.sqsClient = localStackFixture.AWSSQSClientFactory();
-
+        sqsClient = localStackFixture.AWSSQSClientFactory();
         messageHandler = new FakeMessageHandler();
+        
+        scopeFactory = A.Fake<IServiceScopeFactory>();
+        var scope = A.Fake<IServiceScope>();
+        var serviceProvider = A.Fake<IServiceProvider>();
+        A.CallTo(() => scopeFactory.CreateScope()).Returns(scope);
+        A.CallTo(() => scope.ServiceProvider).Returns(serviceProvider);
+        QueueHandlerResolver<MessageType> handlerResolver = _ => messageHandler;
+        A.CallTo(() => serviceProvider.GetService(typeof(QueueHandlerResolver<MessageType>)))
+            .Returns(handlerResolver);
     }
     
     public async Task InitializeAsync()
@@ -51,11 +63,9 @@ public class SqsListenerTests : IAsyncLifetime
         var subscribedQueue =
             new SubscribedToQueue<MessageType>(LocalStackFixture.ImageQueueName, MessageType.Test, queueUrl);
 
-        QueueHandlerResolver<MessageType> handlerResolver = _ => messageHandler;
-
         var settings = Options.Create(new AWSSettings());
 
-        return new SqsListener<MessageType>(sqsClient, settings, subscribedQueue, handlerResolver,
+        return new SqsListener<MessageType>(sqsClient, scopeFactory, settings, subscribedQueue, 
             new NullLogger<SqsListener<MessageType>>());
     }
 

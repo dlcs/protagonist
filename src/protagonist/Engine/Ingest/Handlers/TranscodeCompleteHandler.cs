@@ -56,7 +56,7 @@ public class TranscodeCompleteHandler : IMessageHandler
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error deserializing ET message {Message}", message.Body);
+            logger.LogError(ex, "Error deserializing transcode complete message {Message}", message.Body);
             return null;
         }
     }

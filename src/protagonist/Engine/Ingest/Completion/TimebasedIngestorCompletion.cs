@@ -38,7 +38,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
 
         var assetIsOpen = !asset.RequiresAuth;
 
-        StringBuilder errors = new StringBuilder();
+        var errors = new StringBuilder();
         if (!transcodeResult.IsComplete())
         {
             errors.AppendLine(
@@ -62,7 +62,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
             dimensionsUpdated = true;
 
             // Move assets from elastic transcoder-output bucket to main bucket
-            copyTasks.Add(CopyTranscodedAssetToStorage(transcodeOutput, assetIsOpen, cancellationToken));
+            copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, assetIsOpen, cancellationToken));
         }
         
         await DeleteInputFile(transcodeResult);
@@ -127,12 +127,13 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         }
         else if (transcodeDuration != asset.Duration)
         {
+            // There may be a very slight difference in outputs
             logger.LogWarning("Asset {Asset} has outputs with different durations: {Duration1}ms and {Duration2}ms",
                 asset.Id, asset.Duration, transcodeDuration);
         }
     }
 
-    private async Task<LargeObjectCopyResult> CopyTranscodedAssetToStorage(TranscodeOutput transcodeOutput,
+    private async Task<LargeObjectCopyResult> CopyTranscodeOutputToStorage(TranscodeOutput transcodeOutput,
         bool assetIsOpen, CancellationToken cancellationToken)
     {
         var source = storageKeyGenerator.GetTimebasedOutputLocation(transcodeOutput.Key);
