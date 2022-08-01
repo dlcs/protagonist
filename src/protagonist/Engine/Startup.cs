@@ -1,4 +1,4 @@
-﻿using DLCS.Repository.Caching;
+﻿using DLCS.Core.Caching;
 using Engine.Infrastructure;
 using Engine.Settings;
 using Serilog;

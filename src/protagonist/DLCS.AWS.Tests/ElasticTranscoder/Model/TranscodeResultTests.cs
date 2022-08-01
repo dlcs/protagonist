@@ -1,8 +1,7 @@
 ﻿using Amazon.ElasticTranscoder.Model;
-using Engine.Ingest.Handlers;
-using Engine.Ingest.Timebased;
+using DLCS.AWS.ElasticTranscoder.Models;
 
-namespace Engine.Tests.Ingest.Timebased;
+namespace DLCS.AWS.Tests.ElasticTranscoder.Model;
 
 public class TranscodeResultTests
 {
@@ -15,7 +14,7 @@ public class TranscodeResultTests
     public void IsComplete_CorrectForState(string state, bool expected)
     {
         // Arrange
-        var elasticTranscodeMessage = new ElasticTranscoderMessage
+        var elasticTranscodeMessage = new TranscodedNotification
         {
             Input = new JobInput(),
             State = state

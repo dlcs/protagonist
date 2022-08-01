@@ -1,6 +1,6 @@
-using Engine.Ingest.Timebased;
+using DLCS.AWS.ElasticTranscoder.Models;
 
-namespace Engine.Tests.Ingest.Timebased;
+namespace DLCS.AWS.Tests.ElasticTranscoder.Model;
 
 public class TranscodeOutputTests
 {

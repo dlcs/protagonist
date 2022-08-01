@@ -2,14 +2,11 @@ using Amazon.SQS;
 using DLCS.AWS.Settings;
 using DLCS.AWS.SQS;
 using DLCS.AWS.SQS.Models;
-using Engine.Messaging;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Test.Helpers.Integration;
-using Xunit;
 
 namespace DLCS.AWS.Tests.SQS;
 

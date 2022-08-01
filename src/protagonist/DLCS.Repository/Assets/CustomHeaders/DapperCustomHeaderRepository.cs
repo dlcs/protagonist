@@ -2,8 +2,8 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using DLCS.Core.Caching;
 using DLCS.Model.Assets.CustomHeaders;
-using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;

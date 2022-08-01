@@ -1,7 +1,9 @@
 using Amazon.ElasticTranscoder;
 using DLCS.AWS.Configuration;
+using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
+using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
@@ -10,7 +12,6 @@ using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Auth;
-using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Storage;
@@ -40,10 +41,11 @@ public static class ServiceCollectionX
             .AddSingleton<IBucketReader, S3BucketReader>()
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
+            .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
             .WithAmazonSQS()
-            .WithAWSService<IAmazonElasticTranscoder>();
+            .WithAmazonElasticTranscoder();
 
         return services;
     }

@@ -1,8 +1,8 @@
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Caching;
 using DLCS.Repository;
 using DLCS.Repository.Auth;
-using DLCS.Repository.Caching;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Configuration;
 using DLCS.Web.Middleware;

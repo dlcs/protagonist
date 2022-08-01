@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace DLCS.Repository.Caching;
+namespace DLCS.Core.Caching;
 
 /// <summary>
 /// Settings related to caching

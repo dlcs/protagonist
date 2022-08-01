@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace DLCS.Repository.Caching;
+namespace DLCS.Core.Caching;
 
 /// <summary>
 /// A collection of extension methods to help working with CacheSettings

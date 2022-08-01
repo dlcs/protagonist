@@ -1,7 +1,7 @@
-﻿namespace Engine.Ingest.Timebased;
+﻿namespace DLCS.AWS.ElasticTranscoder;
 
 /// <summary>
-/// Constant values used for ElasticTranscoder UserMetadata vlues
+/// Constant values used for ElasticTranscoder UserMetadata values
 /// </summary>
 internal static class UserMetadataKeys
 {

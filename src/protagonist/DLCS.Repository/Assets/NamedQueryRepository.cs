@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Caching;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;

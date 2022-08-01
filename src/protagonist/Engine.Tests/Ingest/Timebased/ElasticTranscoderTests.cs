@@ -1,32 +1,26 @@
 ﻿using System.Net;
-using Amazon.ElasticTranscoder;
 using Amazon.ElasticTranscoder.Model;
+using DLCS.AWS.ElasticTranscoder;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Repository.Caching;
 using Engine.Ingest;
 using Engine.Ingest.Timebased;
 using Engine.Ingest.Workers;
 using Engine.Settings;
 using FakeItEasy;
-using LazyCache;
-using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Test.Helpers.Settings;
 
 namespace Engine.Tests.Ingest.Timebased;
 
 public class ElasticTranscoderTests
 {
-    private readonly IAmazonElasticTranscoder elasticTranscoder;
-    private readonly IAppCache cache;
-    private readonly IOptionsMonitor<EngineSettings> engineSettings;
+    private readonly IElasticTranscoderWrapper elasticTranscoderWrapper;
     private readonly ElasticTranscoder sut;
 
     public ElasticTranscoderTests()
     {
-        elasticTranscoder = A.Fake<IAmazonElasticTranscoder>();
-        cache = new MockCachingService();
+        elasticTranscoderWrapper = A.Fake<IElasticTranscoderWrapper>();
         var es = new EngineSettings
         {
             TimebasedIngest = new TimebasedIngestSettings
@@ -38,12 +32,9 @@ public class ElasticTranscoderTests
                 PipelineName = "foo-pipeline"
             }
         };
-        engineSettings = OptionsHelpers.GetOptionsMonitor(es);
+        var engineSettings = OptionsHelpers.GetOptionsMonitor(es);
 
-        var cacheSettings = Options.Create(new CacheSettings());
-
-        sut = new ElasticTranscoder(elasticTranscoder, cache, engineSettings, cacheSettings,
-            NullLogger<ElasticTranscoder>.Instance);
+        sut = new ElasticTranscoder(elasticTranscoderWrapper, engineSettings, NullLogger<ElasticTranscoder>.Instance);
     }
 
     [Fact]
@@ -58,11 +49,8 @@ public class ElasticTranscoderTests
         var context = new IngestionContext(asset);
         context.WithAssetFromOrigin(new AssetFromOrigin());
 
-        A.CallTo(() => elasticTranscoder.ListPipelinesAsync(A<ListPipelinesRequest>._, A<CancellationToken>._))
-            .Returns(new ListPipelinesResponse
-            {
-                Pipelines = new List<Pipeline> { new() { Name = "not-whats-expected" } }
-            });
+        A.CallTo(() => elasticTranscoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
+            .Returns<string?>(null);
 
         // Act
         var result = await sut.InitiateTranscodeOperation(context);
@@ -84,11 +72,8 @@ public class ElasticTranscoderTests
         var context = new IngestionContext(asset);
         context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "s3://loc/ation", "video/mpeg"));
 
-        A.CallTo(() => elasticTranscoder.ListPipelinesAsync(A<ListPipelinesRequest>._, A<CancellationToken>._))
-            .Returns(new ListPipelinesResponse
-            {
-                Pipelines = new List<Pipeline> { new() { Name = "foo-pipeline", Id = "1234567890123-abcdef" } }
-            });
+        A.CallTo(() => elasticTranscoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
+            .Returns("1234567890123-abcdef");
         
         // Act
         var result = await sut.InitiateTranscodeOperation(context);
@@ -110,42 +95,44 @@ public class ElasticTranscoderTests
         var context = new IngestionContext(asset);
         context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "s3://loc/ation", "video/mpeg"));
 
-        A.CallTo(() => elasticTranscoder.ListPipelinesAsync(A<ListPipelinesRequest>._, A<CancellationToken>._))
-            .Returns(new ListPipelinesResponse
-            {
-                Pipelines = new List<Pipeline> { new() { Name = "foo-pipeline", Id = "1234567890123-abcdef" } }
-            });
+        A.CallTo(() => elasticTranscoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
+            .Returns("1234567890123-abcdef");
 
-        A.CallTo(() => elasticTranscoder.ListPresetsAsync(A<ListPresetsRequest>._, A<CancellationToken>._))
-            .Returns(new ListPresetsResponse
+        A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
+            .Returns(new Dictionary<string, string>()
             {
-                Presets = new List<Preset>
-                {
-                    new() { Name = "my-custom-preset", Id = "1111111111111-aaaaaa" },
-                    new() { Name = "auto-preset", Id = "9999999999999-bbbbbb" }
-                },
+                ["my-custom-preset"] = "1111111111111-aaaaaa",
+                ["auto-preset"] = "9999999999999-bbbbbb"
             });
-
-        CreateJobRequest? requestMade = null;
-        A.CallTo(() => elasticTranscoder.CreateJobAsync(A<CreateJobRequest>._, A<CancellationToken>._))
-            .Invokes((CreateJobRequest request, CancellationToken _) => { requestMade = request; })
+        
+        List<CreateJobOutput>? outputs = null;
+        string pipeLineId = string.Empty;
+        string inputKey = string.Empty;
+        A.CallTo(() => elasticTranscoderWrapper.CreateJob(A<AssetId>._, A<string>._, A<string>._,
+                A<List<CreateJobOutput>>._, A<string>._, A<CancellationToken>._))
+            .Invokes((AssetId _, string key, string pipeline, List<CreateJobOutput> outs, string _,
+                CancellationToken _) =>
+            {
+                outputs = outs;
+                pipeLineId = pipeline;
+                inputKey = key;
+            })
             .Returns(new CreateJobResponse { HttpStatusCode = HttpStatusCode.Accepted });
 
         // Act
         await sut.InitiateTranscodeOperation(context);
 
         // Assert
-        requestMade.PipelineId.Should().Be("1234567890123-abcdef");
-        requestMade.UserMetadata["dlcsId"].Should().Be("20/10/asset-id");
-        requestMade.Input.Key.Should().Be("ation");
-        requestMade.Outputs[0].Key.Should().EndWith("20/10/asset-id/full/full/max/max/0/default.webm");
-        requestMade.Outputs[1].Key.Should().EndWith("20/10/asset-id/full/full/max/max/0/default.mp4");
+        pipeLineId.Should().Be("1234567890123-abcdef");
+        inputKey.Should().Be("s3://loc/ation");
+        outputs[0].Key.Should().EndWith("20/10/asset-id/full/full/max/max/0/default.webm");
+        outputs[1].Key.Should().EndWith("20/10/asset-id/full/full/max/max/0/default.mp4");
     }
     
     [Theory]
     [InlineData(HttpStatusCode.BadGateway)]
     [InlineData(HttpStatusCode.BadRequest)]
-    public async Task InitiateTranscodeOperation_ReturnsFalseSetsError_IfErrorStatusCodeFromET(HttpStatusCode statusCode)
+    public async Task InitiateTranscodeOperation_ReturnsFalseAndSetsError_IfErrorStatusCodeFromET(HttpStatusCode statusCode)
     {
         // Arrange
         var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20 };
@@ -156,23 +143,18 @@ public class ElasticTranscoderTests
         var context = new IngestionContext(asset);
         context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "s3://loc/ation", "video/mpeg"));
 
-        A.CallTo(() => elasticTranscoder.ListPipelinesAsync(A<ListPipelinesRequest>._, A<CancellationToken>._))
-            .Returns(new ListPipelinesResponse
+        A.CallTo(() => elasticTranscoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
+            .Returns("1234567890123-abcdef");
+
+        A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
+            .Returns(new Dictionary<string, string>()
             {
-                Pipelines = new List<Pipeline> { new() { Name = "foo-pipeline", Id = "1234567890123-abcdef" } }
+                ["my-custom-preset"] = "1111111111111-aaaaaa",
+                ["auto-preset"] = "9999999999999-bbbbbb"
             });
 
-        A.CallTo(() => elasticTranscoder.ListPresetsAsync(A<ListPresetsRequest>._, A<CancellationToken>._))
-            .Returns(new ListPresetsResponse
-            {
-                Presets = new List<Preset>
-                {
-                    new() { Name = "my-custom-preset", Id = "1111111111111-aaaaaa" },
-                    new() { Name = "auto-preset", Id = "9999999999999-bbbbbb" }
-                },
-            });
-
-        A.CallTo(() => elasticTranscoder.CreateJobAsync(A<CreateJobRequest>._, A<CancellationToken>._))
+        A.CallTo(() => elasticTranscoderWrapper.CreateJob(A<AssetId>._, A<string>._, A<string>._,
+                A<List<CreateJobOutput>>._, A<string>._, A<CancellationToken>._))
             .Returns(new CreateJobResponse { HttpStatusCode = statusCode, Job = new Job() });
 
         // Act
@@ -197,23 +179,18 @@ public class ElasticTranscoderTests
         var context = new IngestionContext(asset);
         context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "s3://loc/ation", "video/mpeg"));
 
-        A.CallTo(() => elasticTranscoder.ListPipelinesAsync(A<ListPipelinesRequest>._, A<CancellationToken>._))
-            .Returns(new ListPipelinesResponse
+        A.CallTo(() => elasticTranscoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
+            .Returns("1234567890123-abcdef");
+
+        A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
+            .Returns(new Dictionary<string, string>()
             {
-                Pipelines = new List<Pipeline> { new() { Name = "foo-pipeline", Id = "1234567890123-abcdef" } }
+                ["my-custom-preset"] = "1111111111111-aaaaaa",
+                ["auto-preset"] = "9999999999999-bbbbbb"
             });
 
-        A.CallTo(() => elasticTranscoder.ListPresetsAsync(A<ListPresetsRequest>._, A<CancellationToken>._))
-            .Returns(new ListPresetsResponse
-            {
-                Presets = new List<Preset>
-                {
-                    new() { Name = "my-custom-preset", Id = "1111111111111-aaaaaa" },
-                    new() { Name = "auto-preset", Id = "9999999999999-bbbbbb" }
-                },
-            });
-
-        A.CallTo(() => elasticTranscoder.CreateJobAsync(A<CreateJobRequest>._, A<CancellationToken>._))
+        A.CallTo(() => elasticTranscoderWrapper.CreateJob(A<AssetId>._, A<string>._, A<string>._,
+                A<List<CreateJobOutput>>._, A<string>._, A<CancellationToken>._))
             .Returns(new CreateJobResponse { HttpStatusCode = statusCode, Job = new Job() });
 
         // Act

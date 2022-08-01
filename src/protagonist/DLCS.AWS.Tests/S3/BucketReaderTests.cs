@@ -7,9 +7,7 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Exceptions;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using Xunit;
 
 namespace DLCS.AWS.Tests.S3;
 

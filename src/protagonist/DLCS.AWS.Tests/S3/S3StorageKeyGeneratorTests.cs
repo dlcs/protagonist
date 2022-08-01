@@ -2,9 +2,7 @@
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.Core.Types;
-using FluentAssertions;
 using Microsoft.Extensions.Options;
-using Xunit;
 
 namespace DLCS.AWS.Tests.S3;
 

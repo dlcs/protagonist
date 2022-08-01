@@ -2,10 +2,10 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Caching;
 using DLCS.Core.Strings;
 using DLCS.Model;
 using DLCS.Model.Spaces;
-using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;

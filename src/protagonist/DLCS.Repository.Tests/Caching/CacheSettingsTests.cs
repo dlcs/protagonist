@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using DLCS.Repository.Caching;
+using DLCS.Core.Caching;
 using FluentAssertions;
 using Xunit;
 

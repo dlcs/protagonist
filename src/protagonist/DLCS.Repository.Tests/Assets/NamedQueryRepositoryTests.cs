@@ -1,9 +1,9 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Caching;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using DLCS.Repository.Assets;
-using DLCS.Repository.Caching;
 using FluentAssertions;
 using LazyCache.Mocks;
 using Microsoft.EntityFrameworkCore;

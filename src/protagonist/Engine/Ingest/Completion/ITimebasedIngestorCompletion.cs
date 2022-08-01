@@ -1,4 +1,6 @@
-﻿using DLCS.Core.Types;
+﻿using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.ElasticTranscoder.Models;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using Engine.Ingest.Timebased;
 

@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Caching;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
-using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;

@@ -2,7 +2,7 @@
 using DLCS.AWS.S3;
 using DLCS.Core.Types;
 
-namespace Engine.Ingest.Timebased;
+namespace DLCS.AWS.ElasticTranscoder;
 
 public static class TranscoderTemplates
 {

@@ -1,7 +1,7 @@
-﻿using DLCS.Core.Types;
-using Engine.Ingest.Timebased;
+﻿using DLCS.AWS.ElasticTranscoder;
+using DLCS.Core.Types;
 
-namespace Engine.Tests.Ingest.Timebased;
+namespace DLCS.AWS.Tests.ElasticTranscoder;
 
 public class TranscoderTemplatesTests
 {

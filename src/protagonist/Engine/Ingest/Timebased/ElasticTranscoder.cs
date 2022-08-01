@@ -1,33 +1,23 @@
-using Amazon.ElasticTranscoder;
 using Amazon.ElasticTranscoder.Model;
-using DLCS.AWS.S3.Models;
+using DLCS.AWS.ElasticTranscoder;
 using DLCS.Core.Guard;
-using DLCS.Repository.Caching;
 using Engine.Settings;
-using LazyCache;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
-using TimeSpan = System.TimeSpan;
 
 namespace Engine.Ingest.Timebased;
 
 public class ElasticTranscoder : IMediaTranscoder
 {
-    private readonly IAmazonElasticTranscoder elasticTranscoder;
-    private readonly IAppCache cache;
     private readonly IOptionsMonitor<EngineSettings> engineSettings;
-    private readonly CacheSettings cacheSettings;
+    private readonly IElasticTranscoderWrapper elasticTranscoderWrapper;
     private readonly ILogger<ElasticTranscoder> logger;
 
-    public ElasticTranscoder(IAmazonElasticTranscoder elasticTranscoder,
-        IAppCache cache,
+    public ElasticTranscoder(
+        IElasticTranscoderWrapper elasticTranscoderWrapper,
         IOptionsMonitor<EngineSettings> engineSettings,
-        IOptions<CacheSettings> cacheOptions,
         ILogger<ElasticTranscoder> logger)
     {
-        this.elasticTranscoder = elasticTranscoder;
-        this.cache = cache;
-        cacheSettings = cacheOptions.Value;
+        this.elasticTranscoderWrapper = elasticTranscoderWrapper;
         this.engineSettings = engineSettings;
         engineSettings.CurrentValue.TimebasedIngest.ThrowIfNull(nameof(engineSettings.CurrentValue.TimebasedIngest));
         this.logger = logger;
@@ -36,7 +26,7 @@ public class ElasticTranscoder : IMediaTranscoder
     public async Task<bool> InitiateTranscodeOperation(IngestionContext context, CancellationToken token = default)
     {
         var settings = engineSettings.CurrentValue.TimebasedIngest!;
-        var pipelineId = await GetPipelineId(settings.PipelineName, token);
+        var pipelineId = await elasticTranscoderWrapper.GetPipelineId(settings.PipelineName, token);
 
         if (string.IsNullOrEmpty(pipelineId))
         {
@@ -46,7 +36,7 @@ public class ElasticTranscoder : IMediaTranscoder
             return false;
         }
         
-        var presets = await GetPresetIdLookup(token);
+        var presets = await elasticTranscoderWrapper.GetPresetIdLookup(token);
 
         // Create a guid to uniquely identify this job - this is added to ET output path to avoid overwriting by
         // separate jobs  
@@ -58,10 +48,9 @@ public class ElasticTranscoder : IMediaTranscoder
             context.Asset.Error = "Unable to generate ElasticTranscoder outputs";
             return false;
         }
-        
-        var request = CreateJobRequest(context, context.AssetFromOrigin.Location, pipelineId, outputs, jobId);
-        
-        var elasticTranscoderJob = await elasticTranscoder.CreateJobAsync(request, token);
+
+        var elasticTranscoderJob = await elasticTranscoderWrapper.CreateJob(context.AssetId,
+            context.AssetFromOrigin.Location, pipelineId, outputs, jobId, token);
         var statusCode = (int) elasticTranscoderJob.HttpStatusCode;
         var success = statusCode is >= 200 and < 300;
 
@@ -74,67 +63,6 @@ public class ElasticTranscoder : IMediaTranscoder
         }
 
         return success;
-    }
-    
-    private async Task<string?> GetPipelineId(string pipelineName, CancellationToken token)
-    {
-        const string nullObject = "__notfound__";
-        const string pipelinesKey = "MediaTranscode:PipelineId";
-
-        var pipelineId = await cache.GetOrAddAsync(pipelinesKey, async entry =>
-        {
-            var response = new ListPipelinesResponse();
-
-            do
-            {
-                var request = new ListPipelinesRequest { PageToken = response.NextPageToken };
-                response = await elasticTranscoder.ListPipelinesAsync(request, token);
-
-                var pipeline = response.Pipelines.FirstOrDefault(p => p.Name == pipelineName);
-                if (pipeline != null)
-                {
-                    return pipeline.Id;
-                }
-                
-            } while (response.NextPageToken != null);
-
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
-            entry.Priority = CacheItemPriority.Low;
-            return nullObject;
-        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.Low));
-
-        return pipelineId == nullObject ? null : pipelineId;
-    }
-    
-    private Task<Dictionary<string, string>> GetPresetIdLookup(CancellationToken token)
-    {
-        const string presetLookupKey = "MediaTranscode:Presets";
-
-        return cache.GetOrAddAsync(presetLookupKey, async entry =>
-        {
-            var presets = new Dictionary<string, string>();
-            var response = new ListPresetsResponse();
-                
-            do
-            {
-                var request = new ListPresetsRequest {PageToken = response.NextPageToken};
-                response = await elasticTranscoder.ListPresetsAsync(request, token);
-
-                foreach (var preset in response.Presets)
-                {
-                    presets.Add(preset.Name, preset.Id);
-                }
-
-            } while (response.NextPageToken != null);
-
-            if (presets.Count == 0)
-            {
-                logger.LogInformation("No ElasticTranscoder presets found");
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
-            }
-
-            return presets;
-        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.Low));
     }
 
     private List<CreateJobOutput> GetJobOutputs(IngestionContext context, string jobId,
@@ -175,32 +103,5 @@ public class ElasticTranscoder : IMediaTranscoder
         }
 
         return outputs;
-    }
-
-    private static CreateJobRequest CreateJobRequest(IngestionContext context, string key, string pipelineId,
-        List<CreateJobOutput> outputs, string jobId)
-    {
-        var objectInBucket = RegionalisedObjectInBucket.Parse(key, true)!;
-
-        return new CreateJobRequest
-        {
-            Input = new JobInput
-            {
-                AspectRatio = "auto",
-                Container = "auto",
-                FrameRate = "auto",
-                Interlaced = "auto",
-                Resolution = "auto",
-                Key = objectInBucket.Key,
-            },
-            PipelineId = pipelineId,
-            UserMetadata = new Dictionary<string, string>
-            {
-                [UserMetadataKeys.DlcsId] = context.AssetId.ToString(),
-                [UserMetadataKeys.StartTime] = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
-                [UserMetadataKeys.JobId] = jobId
-            },
-            Outputs = outputs
-        };
     }
 }

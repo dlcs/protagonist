@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Caching;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
-using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;

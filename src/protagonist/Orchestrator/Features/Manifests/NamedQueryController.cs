@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Repository.Caching;
+using DLCS.Core.Caching;
 using DLCS.Web.IIIF;
 using IIIF.Presentation;
 using MediatR;

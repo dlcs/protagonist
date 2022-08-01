@@ -1,9 +1,9 @@
+using DLCS.Core.Caching;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
-using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
