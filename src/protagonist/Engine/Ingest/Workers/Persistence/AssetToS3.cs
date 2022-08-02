@@ -109,10 +109,10 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
         var copyResult =
             await bucketWriter.CopyLargeObject(source, destination, verifySize: sizeVerifier, token: cancellationToken);
 
-        if (copyResult.Result is LargeObjectStatus.Error or LargeObjectStatus.Cancelled)
+        if (copyResult.Result is not LargeObjectStatus.Success and not LargeObjectStatus.FileTooLarge)
         {
             throw new ApplicationException(
-                $"Failed to copy timebased asset {asset.Id} directly from '{asset.GetIngestOrigin()}' to {destination.GetS3Uri()}");
+                $"Failed to copy timebased asset {asset.Id} directly from '{asset.GetIngestOrigin()}' to {destination.GetS3Uri()}. Result: {copyResult.Result}");
         }
 
         var assetFromOrigin = new AssetFromOrigin(assetId, copyResult.Size ?? 0, destination.GetS3Uri().ToString(),

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
@@ -66,8 +67,15 @@ public class S3BucketWriter : IBucketWriter
 
         try
         {
-            // TODO - handle source metadata object not being found by returning suitable status
-            var sourceMetadata = await GetObjectMetadata(source);
+            var sourceMetadata = await GetObjectMetadata(source, token);
+            if (sourceMetadata == null)
+            {
+                var notFoundResponse = new LargeObjectCopyResult(LargeObjectStatus.SourceNotFound);
+                var destinationMetadata = await GetObjectMetadata(destination, token);
+                notFoundResponse.DestinationExists = destinationMetadata != null;
+                return notFoundResponse;
+            }
+            
             objectSize = sourceMetadata.ContentLength;
 
             if (verifySize != null)
@@ -280,9 +288,17 @@ public class S3BucketWriter : IBucketWriter
         return response.UploadId;
     }
 
-    private Task<GetObjectMetadataResponse> GetObjectMetadata(ObjectInBucket resource)
+    private async Task<GetObjectMetadataResponse?> GetObjectMetadata(ObjectInBucket resource,
+        CancellationToken cancellationToken)
     {
-        var request = resource.AsObjectMetadataRequest();
-        return s3Client.GetObjectMetadataAsync(request);
+        try
+        {
+            var request = resource.AsObjectMetadataRequest();
+            return await s3Client.GetObjectMetadataAsync(request, cancellationToken);
+        }
+        catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
     }
 }

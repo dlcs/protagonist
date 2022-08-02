@@ -78,7 +78,7 @@ public class S3BucketReader : IBucketReader
         catch (AmazonS3Exception e)
         {
             logger.LogWarning(e, "Error getting matching keys {S3ListObjectRequest}; {StatusCode}",
-                listObjectsRequest, e.StatusCode);
+                rootKey, e.StatusCode);
             throw new HttpException(e.StatusCode, $"Error getting S3 objects for {listObjectsRequest}", e);
         }
     }

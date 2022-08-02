@@ -57,7 +57,13 @@ public interface IBucketWriter
 /// </summary>
 /// <param name="Result"><see cref="LargeObjectStatus"/> object that represents overall result of the copy</param>
 /// <param name="Size">The size of the asset copied</param>
-public record LargeObjectCopyResult(LargeObjectStatus Result, long? Size = null);
+public record LargeObjectCopyResult(LargeObjectStatus Result, long? Size = null)
+{
+    /// <summary>
+    /// Value indicating whether the destination key exists - only set in NotFound responses 
+    /// </summary>
+    public bool? DestinationExists { get; set; }
+}
 
 /// <summary>
 /// The overall result of a bucket to bucket copy operation
@@ -87,5 +93,10 @@ public enum LargeObjectStatus
     /// <summary>
     /// File exceeded allowed storage limits
     /// </summary>
-    FileTooLarge
+    FileTooLarge,
+    
+    /// <summary>
+    /// Unable to copy as target file not found
+    /// </summary>
+    SourceNotFound
 }

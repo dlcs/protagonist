@@ -149,8 +149,12 @@ public class AssetToS3Tests
         actual.Should().BeEquivalentTo(expected);
     }
 
-    [Fact]
-    public void CopyAsset_ThrowsIfDirectCopyFails()
+    [Theory]
+    [InlineData(LargeObjectStatus.Cancelled)]
+    [InlineData(LargeObjectStatus.Error)]
+    [InlineData(LargeObjectStatus.Unknown)]
+    [InlineData(LargeObjectStatus.SourceNotFound)]
+    public void CopyAsset_Throws_IfDirectCopyNotSuccess(LargeObjectStatus status)
     {
         // Arrange
         var asset = new Asset
@@ -165,7 +169,7 @@ public class AssetToS3Tests
 
         A.CallTo(() => bucketWriter.CopyLargeObject(A<ObjectInBucket>._, A<ObjectInBucket>._,
                 A<Func<long, Task<bool>>>._, false, A<CancellationToken>._))
-            .Returns(new LargeObjectCopyResult(LargeObjectStatus.Error, 100));
+            .Returns(new LargeObjectCopyResult(status));
 
         var ct = new CancellationToken();
 

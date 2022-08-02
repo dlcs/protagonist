@@ -22,7 +22,7 @@ public class TranscodeResult
     
     /// <summary>
     /// Details of any error that may have occurred
-    /// </summary>
+    /// </summary>  
     public string? ErrorCode { get; }
 
     /// <summary>
@@ -30,6 +30,10 @@ public class TranscodeResult
     /// </summary>
     public bool IsComplete() => string.Equals(State, "COMPLETED", StringComparison.OrdinalIgnoreCase);
 
+    public TranscodeResult()
+    {
+    }
+    
     public TranscodeResult(TranscodedNotification transcodedNotification)
     {
         Outputs = transcodedNotification.Outputs;

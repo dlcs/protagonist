@@ -4,7 +4,6 @@ using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.S3;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using Engine.Ingest.Timebased;
 
 namespace Engine.Ingest.Completion;
 
@@ -41,8 +40,11 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         var assetIsOpen = !asset.RequiresAuth;
 
         var errors = new StringBuilder();
+        var transcodeSuccess = true;
+        
         if (!transcodeResult.IsComplete())
         {
+            transcodeSuccess = false;
             errors.AppendLine(
                 $"Transcode failed with status: {transcodeResult.State}. Error: {transcodeResult.ErrorCode ?? "unknown"}.");
         }
@@ -50,39 +52,58 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         bool dimensionsUpdated = false;
         var transcodeOutputs = transcodeResult.Outputs;
         var copyTasks = new List<Task<LargeObjectCopyResult>>(transcodeOutputs.Count);
-        foreach (var transcodeOutput in transcodeOutputs)
+        if (transcodeSuccess)
         {
-            if (!transcodeOutput.IsComplete())
+            foreach (var transcodeOutput in transcodeOutputs)
             {
-                logger.LogWarning("Received incomplete {Status} for ElasticTranscoder output for {OutputKey}",
-                    transcodeOutput.Status, transcodeOutput.Key);
-                errors.AppendLine($"Transcode output for {transcodeOutput.Key} has status {transcodeOutput.Status}");
-                continue;;
+                if (!transcodeOutput.IsComplete())
+                {
+                    logger.LogWarning("Received incomplete {Status} for ElasticTranscoder output for {OutputKey}",
+                        transcodeOutput.Status, transcodeOutput.Key);
+                    errors.AppendLine(
+                        $"Transcode output for {transcodeOutput.Key} has status {transcodeOutput.Status}");
+                    continue;
+                    ;
+                }
+
+                SetAssetDimensions(asset, dimensionsUpdated, transcodeOutput);
+                dimensionsUpdated = true;
+
+                // Move assets from elastic transcoder-output bucket to main bucket
+                copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, assetIsOpen, cancellationToken));
             }
-            
-            SetAssetDimensions(asset, dimensionsUpdated, transcodeOutput);
-            dimensionsUpdated = true;
-
-            // Move assets from elastic transcoder-output bucket to main bucket
-            copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, assetIsOpen, cancellationToken));
         }
-        
+
         await DeleteInputFile(transcodeResult);
-
-        if (errors.Length > 0)
-        {
-            asset.Error = errors.ToString();
-        }
         
         var copyResults = await Task.WhenAll(copyTasks);
         var size = copyResults.Sum(result => result.Size ?? 0);
 
         var dbUpdateSuccess = await CompleteAssetInDatabase(asset, size, cancellationToken);
         
-        // TODO - handle case where DB saved failed but copy had been successful. 2nd attempt the source files don't
-        // exist so copyResults will be empty. Would need to read bucket metadata to see if copied files exist.
-        // or would the whole thing just pass as successful to remove from retry?
-        return copyResults.All(r => r.Result == LargeObjectStatus.Success) && dbUpdateSuccess;
+        foreach (var cr in copyResults)
+        {
+            if (!transcodeSuccess) break;
+            
+            /*
+             * A copy result is deemed as okay if:
+             *  The result is 'Success', OR
+             *  The source file was 'NotFound' and the Destination already exists. This likely happened due to the
+             *  message being a retry
+             */ 
+            if (cr.Result == LargeObjectStatus.Success) continue;
+            if (cr.Result == LargeObjectStatus.SourceNotFound && cr.DestinationExists == true) continue;
+            
+            errors.AppendLine($"Copying ElasticTranscoder output failed with reason: {cr.Result}");
+            transcodeSuccess = false;
+        }
+        
+        if (errors.Length > 0)
+        {
+            asset.Error = errors.ToString();
+        }
+        
+        return transcodeSuccess && dbUpdateSuccess;
     }
 
     public async Task<bool> CompleteAssetInDatabase(Asset asset, long? assetSize = null,
@@ -146,14 +167,19 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         var copyResult =
             await bucketWriter.CopyLargeObject(source, destination, destIsPublic: assetIsOpen,
                 token: cancellationToken);
-
-        // TODO - handle the object not being found - 
+        
         if (copyResult.Result == LargeObjectStatus.Success)
         {
             // delete output file for ElasticTranscoder
             await bucketWriter.DeleteFromBucket(source);
             logger.LogDebug("Successfully copied transcoder output {OutputKey} to storage {StorageKey}", source,
                 destination);
+        }
+        else if (copyResult.Result == LargeObjectStatus.SourceNotFound)
+        {
+            logger.LogInformation(
+                "Unable to find completed transcoded output {OutputKey}, destination exists: {DestinationExists}",
+                source, copyResult.DestinationExists);
         }
 
         return copyResult;
