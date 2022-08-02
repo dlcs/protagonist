@@ -1,15 +1,16 @@
 using System;
+using System.IO;
 
 namespace DLCS.Core.FileSystem;
 
 public class FileSystem : IFileSystem
 {
-    public void CreateDirectory(string path) => System.IO.Directory.CreateDirectory(path);
+    public void CreateDirectory(string path) => Directory.CreateDirectory(path);
     public void DeleteDirectory(string path, bool recursive, bool swallowError = true)
     {
         try
         {
-            System.IO.Directory.Delete(path, recursive);
+            Directory.Delete(path, recursive);
         }
         catch (Exception)
         {
@@ -21,7 +22,7 @@ public class FileSystem : IFileSystem
     {
         try
         {
-            System.IO.File.Delete(path);
+            File.Delete(path);
         }
         catch (Exception)
         {
@@ -29,5 +30,17 @@ public class FileSystem : IFileSystem
         }
     }
 
-    public bool FileExists(string path) => System.IO.File.Exists(path);
+    public bool FileExists(string path) => File.Exists(path);
+    public long GetFileSize(string path)
+    {
+        try
+        {
+            var fi = new FileInfo(path);
+            return fi.Length;
+        }
+        catch (Exception)
+        {
+            return 0;
+        }
+    }
 }

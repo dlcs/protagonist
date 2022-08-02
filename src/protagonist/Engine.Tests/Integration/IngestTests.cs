@@ -268,6 +268,7 @@ public class FakeFileSystem : IFileSystem
     public void DeleteFile(string path, bool swallowError = true) => DeletedFiles.Add(path);
 
     public bool FileExists(string path) => true;
+    public long GetFileSize(string path) => 10;
 }
 
 public class FakeFileSaver : IFileSaver
