@@ -8,6 +8,7 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Strings;
 using FluentAssertions.Execution;
+using Microsoft.Extensions.Options;
 
 namespace Test.Helpers.Storage;
 
@@ -37,6 +38,40 @@ public class TestBucketWriter : IBucketWriter
         }
 
         throw new AssertionFailedException($"{key} not found");
+    }
+    
+    /// <summary>
+    /// Assert key exists that ends with provided string.
+    /// </summary>
+    public BucketObject ShouldHaveKeyThatEndsWith(string key)
+    {
+        foreach (var (k,v) in Operations)
+        {
+            if (k.EndsWith(key))
+            {
+                verifiedPaths.Add(key);
+                return v;
+            }
+        }
+
+        throw new AssertionFailedException($"No key found that ends with {key}");
+    }
+    
+    /// <summary>
+    /// Assert key exists that starts with provided string.
+    /// </summary>
+    public BucketObject ShouldHaveKeyThatStartsWith(string key)
+    {
+        foreach (var (k,v) in Operations)
+        {
+            if (k.StartsWith(key))
+            {
+                verifiedPaths.Add(key);
+                return v;
+            }
+        }
+
+        throw new AssertionFailedException($"No key found that starts with {key}");
     }
         
     /// <summary>

@@ -79,8 +79,6 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         var copyResults = await Task.WhenAll(copyTasks);
         var size = copyResults.Sum(result => result.Size ?? 0);
 
-        var dbUpdateSuccess = await CompleteAssetInDatabase(asset, size, cancellationToken);
-        
         foreach (var cr in copyResults)
         {
             if (!transcodeSuccess) break;
@@ -102,6 +100,8 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         {
             asset.Error = errors.ToString();
         }
+        
+        var dbUpdateSuccess = await CompleteAssetInDatabase(asset, size, cancellationToken);
         
         return transcodeSuccess && dbUpdateSuccess;
     }

@@ -59,7 +59,8 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"StoragePolicies\" WHERE \"Id\" not in ('default', 'small')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
-        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" != 'fast-higher'");
+        DbContext.Database.ExecuteSqlRaw(
+            "DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" not in ('fast-higher', 'video-max', 'audio-max')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerOriginStrategies\"");
         DbContext.Database.ExecuteSqlRaw($"DELETE FROM \"AuthServices\" WHERE \"Id\" != '{ClickThroughAuthService}'");
@@ -104,8 +105,13 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             { Created = DateTime.UtcNow, Id = 1, Customer = customer, Name = "space-1" });
         await DbContext.ThumbnailPolicies.AddAsync(new ThumbnailPolicy
             { Id = "default", Name = "default", Sizes = "800,400,200" });
-        await DbContext.ImageOptimisationPolicies.AddAsync(new ImageOptimisationPolicy
-            { Id = "fast-higher", Name = "Fast higher quality", TechnicalDetails = new[] { "kdu_max" } });
+        await DbContext.ImageOptimisationPolicies.AddRangeAsync(
+            new ImageOptimisationPolicy
+                { Id = "video-max", Name = "Video", TechnicalDetails = new[] { "System preset: Webm 720p(webm)" } },
+            new ImageOptimisationPolicy
+                { Id = "audio-max", Name = "Audio", TechnicalDetails = new[] { "System preset: Audio MP3 - 128k(mp3)" } },
+            new ImageOptimisationPolicy
+                { Id = "fast-higher", Name = "Fast higher quality", TechnicalDetails = new[] { "kdu_max" } });
         await DbContext.AuthServices.AddAsync(new AuthService
         {
             Customer = customer, Name = "clickthrough", Id = ClickThroughAuthService,

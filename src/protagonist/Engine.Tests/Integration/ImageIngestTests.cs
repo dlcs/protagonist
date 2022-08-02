@@ -24,7 +24,7 @@ namespace Engine.Tests.Integration;
 /// </summary>
 [Trait("Category", "Integration")]
 [Collection(EngineCollection.CollectionName)]
-public class IngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
+public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly HttpClient httpClient;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
@@ -32,7 +32,7 @@ public class IngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private static readonly TestBucketWriter BucketWriter = new();
     private readonly ApiStub apiStub;
 
-    public IngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
+    public ImageIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
     {
         dbContext = engineFixture.DbFixture.DbContext;
         apiStub = engineFixture.ApiStub;

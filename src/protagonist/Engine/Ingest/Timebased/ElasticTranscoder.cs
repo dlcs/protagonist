@@ -65,12 +65,12 @@ public class ElasticTranscoder : IMediaTranscoder
         logger.LogDebug("Created ET job {ETJobId}, got response {StatusCode}", elasticTranscoderJob.Job?.Id,
             elasticTranscoderJob.HttpStatusCode);
 
-        if (statusCode  is not (>= 200 and < 300))
+        if (statusCode is not (>= 200 and < 300))
         {
             context.Asset.Error = $"Create ElasticTranscoder job failed with status {statusCode}";
             return false;
         }
-        
+
         await WriteMetadataObject(context.AssetId, elasticTranscoderJob.Job.Id, token);
         return true;
     }
