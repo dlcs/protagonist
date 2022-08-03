@@ -85,8 +85,7 @@ public class ElasticTranscoder : IMediaTranscoder
 
         foreach (var technicalDetail in technicalDetails)
         {
-            // TODO - this? Or Asset.MediaType
-            var mediaType = context.AssetFromOrigin.ContentType;
+            var mediaType = context.Asset.MediaType;
             var (destinationPath, presetName) =
                 TranscoderTemplates.ProcessPreset(mediaType, assetId, technicalDetail, jobId);
 

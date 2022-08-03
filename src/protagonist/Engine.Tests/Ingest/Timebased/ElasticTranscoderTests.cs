@@ -74,7 +74,7 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_Fail_IfUnableToMakesCreateJobRequest()
     {
         // Arrange
-        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20 };
+        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20, MediaType = "video/mp4"};
         asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
         {
             TechnicalDetails = new[] { "Standard WebM(webm)", "auto-preset(mp4)" }
@@ -97,7 +97,7 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_MakesCreateJobRequest()
     {
         // Arrange
-        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20 };
+        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20, MediaType = "video/mp4" };
         asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
         {
             TechnicalDetails = new[] { "Standard WebM(webm)", "auto-preset(mp4)" }
@@ -146,7 +146,7 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_ReturnsFalseAndSetsError_IfErrorStatusCodeFromET(HttpStatusCode statusCode)
     {
         // Arrange
-        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20 };
+        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20, MediaType = "video/mp4" };
         asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
         {
             TechnicalDetails = new[]{ "Standard WebM(webm)", "auto-preset(mp4)" }
@@ -183,7 +183,7 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_ReturnsTrue_IfSuccessStatusCodeFromET(HttpStatusCode statusCode)
     {
         // Arrange
-        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20 };
+        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20, MediaType = "video/mp4" };
         asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
         {
             TechnicalDetails = new[]{ "Standard WebM(webm)", "auto-preset(mp4)" }
