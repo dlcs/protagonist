@@ -37,7 +37,12 @@ public class IngestHandler : IMessageHandler
             ingestResult = await ingester.Ingest(ingestEvent, cancellationToken);
         }
         
-        return ingestResult is IngestResult.Success or IngestResult.QueuedForProcessing;
+        logger.LogInformation("Message {MessageId} handled with result {IngestResult}", message.MessageId, ingestResult);
+        
+        // TODO - return false so that the message is deleted from the queue in all instances.
+        // This shouldn't be the case and can be revisited at a later date as it will need logic of how Batch.Errors is
+        // calculated
+        return true;
     }
 
     private T? DeserializeBody<T>(QueueMessage message)

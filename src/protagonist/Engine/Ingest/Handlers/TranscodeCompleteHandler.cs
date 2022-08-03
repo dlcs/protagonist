@@ -41,7 +41,13 @@ public class TranscodeCompleteHandler : IMessageHandler
 
         var success =
             await timebasedIngestorCompletion.CompleteSuccessfulIngest(assetId, transcodeResult, cancellationToken);
-        return success;
+        
+        logger.LogInformation("Message {MessageId} handled with result {IngestResult}", message.MessageId, success);
+        
+        // TODO - return false so that the message is deleted from the queue in all instances.
+        // This shouldn't be the case and can be revisited at a later date as it will need logic of how Batch.Errors is
+        // calculated
+        return true;
     }
     
     private TranscodedNotification? DeserializeBody(QueueMessage message)

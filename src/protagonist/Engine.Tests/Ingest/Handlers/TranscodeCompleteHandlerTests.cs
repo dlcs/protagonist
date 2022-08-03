@@ -90,7 +90,7 @@ public class TranscodeCompleteHandlerTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Handle_ReturnsResultOfCompleteIngest(bool success)
+    public async Task Handle_AlwaysReturnsTrue(bool success)
     {
         // Arrange
         const string fileName = "ElasticTranscoderNotification.json";
@@ -110,6 +110,6 @@ public class TranscodeCompleteHandlerTests
         var result = await sut.HandleMessage(queueMessage, cancellationToken);
             
         // Assert
-        result.Should().Be(success);
+        result.Should().BeTrue();
     }
 }
