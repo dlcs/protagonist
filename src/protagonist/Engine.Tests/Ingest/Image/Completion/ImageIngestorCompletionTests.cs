@@ -25,7 +25,7 @@ public class ImageIngestorCompletionTests
     public ImageIngestorCompletionTests()
     {
         httpHandler = new ControllableHttpMessageHandler();
-        engineSettings = new EngineSettings();
+        engineSettings = new EngineSettings { ImageIngest = new ImageIngestSettings() };
         assetRepository = A.Fake<IEngineAssetRepository>();
         fileSystem = A.Fake<IFileSystem>();
 
@@ -87,7 +87,7 @@ public class ImageIngestorCompletionTests
             .WithLocation(imageLocation)
             .WithStorage(imageStorage);
         
-        engineSettings.OrchestrateImageAfterIngest = theDefault;
+        engineSettings.ImageIngest.OrchestrateImageAfterIngest = theDefault;
         engineSettings.CustomerOverrides.Add(asset.Customer.ToString(),
             new CustomerOverridesSettings { OrchestrateImageAfterIngest = theOverride });
         A.CallTo(() => assetRepository.UpdateIngestedAsset(asset, imageLocation, imageStorage, A<CancellationToken>._))
@@ -115,7 +115,7 @@ public class ImageIngestorCompletionTests
             .WithAssetFromOrigin(new AssetFromOrigin(assetId, 0, null, null))
             .WithLocation(imageLocation)
             .WithStorage(imageStorage);
-        engineSettings.OrchestrateImageAfterIngest = theDefault;
+        engineSettings.ImageIngest.OrchestrateImageAfterIngest = theDefault;
         engineSettings.CustomerOverrides.Add(asset.Customer.ToString(),
             new CustomerOverridesSettings { OrchestrateImageAfterIngest = theOverride });
         A.CallTo(() => assetRepository.UpdateIngestedAsset(asset, imageLocation, imageStorage, A<CancellationToken>._))

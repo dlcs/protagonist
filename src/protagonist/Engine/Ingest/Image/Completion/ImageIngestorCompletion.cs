@@ -62,7 +62,7 @@ public class ImageIngestorCompletion : IImageIngestorCompletion
     private bool ShouldOrchestrate(int customerId)
     {
         var customerSpecific = engineSettings.GetCustomerSettings(customerId);
-        return customerSpecific.OrchestrateImageAfterIngest ?? engineSettings.OrchestrateImageAfterIngest;
+        return customerSpecific.OrchestrateImageAfterIngest ?? engineSettings.ImageIngest.OrchestrateImageAfterIngest;
     }
     
     private void CleanupWorkingAssets(string? rootPath)

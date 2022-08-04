@@ -2,13 +2,8 @@ namespace Engine.Settings;
 
 public class CustomerOverridesSettings
 {
-    public static CustomerOverridesSettings Empty = new() {CustomerName = "_default_"};
-        
-    /// <summary>
-    /// Friendly name of customer (keyed by Id in appsettings).
-    /// </summary>
-    public string CustomerName { get; set; }
-        
+    public static readonly CustomerOverridesSettings Empty = new();
+
     /// <summary>
     /// Whether image should immediately be orchestrated after ingestion.
     /// </summary>

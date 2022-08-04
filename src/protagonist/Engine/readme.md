@@ -2,16 +2,16 @@
 
 Engine is responsible for ingesting assets; either synchronously via an API call or by monitoring a queue.
 
-## Overview
+## Ingestion
 
-### API
+### API (Synchronous)
 
 The engine has 2 routes for synchronous processing:
 
 * `/asset-ingest` - Process incoming `IngestAssetRequest` - generating derivatives for asset delivery.
-* `/image-ingest` - As above but takes `LegacyIngestEvent`, which is Deliverator notification model. The `LegacyIngestEvent` is converted to `IngestAssetRequest` and follows exact same process as above.
+* `/image-ingest` - As above but takes `LegacyIngestEvent`, which is Deliverator notification model. The `LegacyIngestEvent` is converted to `IngestAssetRequest` and follows exact same process as above. _The intention is that this endpoint will be removed when Deliverator engine is retired_
 
-### Queue
+### Queue (Asynchronous)
 
 The engine also starts has a `BackgroundService`, `SqsListenerService` for asynchronous processing. 
 
@@ -61,3 +61,42 @@ The process for each is outlined below, the same process is used regardless of w
   * AV output files are moved to correct S3 locations and permissions set.
   * Input file is removed.
   * Asset database record updated with dimensions and marked as complete.
+
+## Configuration
+
+There are a number of appsettings that control the behaviour of the application. These are in strongly typed to `EngineSettings` object and are split by prefix `ImageIngest:` or `TimebasedIngest:`
+
+### `ImageIngest:`
+
+| Key                           | Description                                                                                        | Default |
+|-------------------------------|----------------------------------------------------------------------------------------------------|---------|
+| `DestinationTemplate`         | Path template for where derivatives will be written to                                             |         |
+| `ImageProcessorDelayMs`       | How long, in ms to delay calling image-processor after copying to shared disk.                     | `0`     |
+| `ImageProcessorRoot`          | Root folder for use by Image-Processor sidecar                                                     |         |
+| `ImageProcessorUrl`           | URI of downstream image/derivative processor (e.g. appetiser)                                      |         |
+| `IncludeRegionInS3Uri`        | Whether to add region to s3:// URIs. Unofficial but required for backwards compat with deliverator | `false` |
+| `OrchestratorBaseUrl`         | Base url for calling orchestrator                                                                  |         |
+| `OrchestrateImageAfterIngest` | If true a request is made to Orchestrator to orchestrate image immediately after ingestion         | `true`  |
+| `OrchestratorTimeoutMs`       | Timeout, in ms, to wait for calls to orchestrator                                                  | `5000`  |
+| `ScratchRoot`                 | Root folder for engine, replaces `{root}` in templates                                             |         |
+| `SourceTemplate`              | Path template for where assets downloaded to, for images should be accessible by image-processor   |         |
+| `ThumbsTemplate`              | Path template for where thumbnail derivatives will generated to                                    |         |
+
+### `TimebasedIngestSettings:`
+
+| Key                  | Description                                                                                                   | Default |
+|----------------------|---------------------------------------------------------------------------------------------------------------|---------|
+| `PipelineName`       | The name of the ElasticTranscoder pipeline to use for transcoding AV files                                    |         |
+| `ProcessingFolder`   | The root processing folder where temporary files are placed                                                   |         |
+| `SourceTemplate`     | Template for location to download any assets to disk                                                          |         |
+| `TranscoderMappings` | Dictionary mapping custom transcoder types to preset name (e.g. `"MyCustom Standard MP4": "Custom-mp4-128K"`) |         |
+
+### `CustomerOverrides:`
+
+This is a dictionary, keyed by the Id of the customer. The possible overrides are:
+
+| Key                           | Description                                                                                    | Default |
+|-------------------------------|------------------------------------------------------------------------------------------------|---------|
+| `OrchestrateImageAfterIngest` | Overrides `ImageIngestSettings:OrchestrateImageAfterIngest`                                    |         |
+| `NoStoragePolicyCheck`        | If `true` no storage limits are not verified for customer                                      |         |
+| `FullBucketAccess`            | If `true`, indicates that S3 SDK can be used to copy timebased items directly bucket to bucket |         |

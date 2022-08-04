@@ -44,7 +44,7 @@ services:
     ports:
       - "5031:80"
     volumes:
-      - $HOME\Docker\scratch\engine:/scratch
+      - $HOME\Docker\scratch:/scratch
       - $HOME\.aws:/root/.aws
     env_file:
       - .env

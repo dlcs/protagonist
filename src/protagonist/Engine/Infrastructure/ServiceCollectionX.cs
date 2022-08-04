@@ -89,22 +89,24 @@ public static class ServiceCollectionX
             .AddSingleton<IMediaTranscoder, ElasticTranscoder>()
             .AddScoped<IAssetToDisk, AssetToDisk>()
             .AddScoped<IImageIngestorCompletion, ImageIngestorCompletion>()
-            .AddScoped<IEngineAssetRepository, EngineAssetRepository>()
             .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
             .AddScoped<IAssetToS3, AssetToS3>()
             .AddOriginStrategies();
 
-        services.AddHttpClient<IImageProcessor, AppetiserClient>(client =>
+        if (engineSettings.ImageIngest != null)
         {
-            client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
-            client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
-        });
+            services.AddHttpClient<IImageProcessor, AppetiserClient>(client =>
+            {
+                client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
+                client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+            });
 
-        services.AddHttpClient<OrchestratorClient>(client =>
-        {
-            client.BaseAddress = engineSettings.OrchestratorBaseUrl;
-            client.Timeout = TimeSpan.FromMilliseconds(engineSettings.OrchestratorTimeoutMs);
-        });
+            services.AddHttpClient<OrchestratorClient>(client =>
+            {
+                client.BaseAddress = engineSettings.ImageIngest.OrchestratorBaseUrl;
+                client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.OrchestratorTimeoutMs);
+            });
+        }
 
         return services;
     }
@@ -115,6 +117,7 @@ public static class ServiceCollectionX
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
         => services
             .AddScoped<IPolicyRepository, PolicyRepository>()
+            .AddScoped<IEngineAssetRepository, EngineAssetRepository>()
             .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
             .AddScoped<IStorageRepository, CustomerStorageRepository>()
