@@ -31,6 +31,11 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
     public const string SizesJsonKey = "s.json";
     
     /// <summary>
+    /// Key of the file that contains metadata about asset
+    /// </summary>
+    public const string MetadataKey = "metadata";
+    
+    /// <summary>
     /// Key of the largest pre-generated thumbnail
     /// </summary>
     public const string LargestThumbKey = "low.jpg";
@@ -109,6 +114,9 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         return new RegionalisedObjectInBucket(s3Options.StorageBucket, fullPath, awsSettings.Region);
     }
 
+    public ObjectInBucket GetTimebasedAssetLocation(string fullAssetPath)
+        => new(s3Options.StorageBucket, fullAssetPath);
+
     public ObjectInBucket GetInfoJsonLocation(AssetId assetId, string imageServer, IIIF.ImageApi.Version imageApiVersion)
     {
         var versionSlug = imageApiVersion == IIIF.ImageApi.Version.V2 ? "v2" : "v3";
@@ -140,5 +148,17 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         var postfix = Random.Next(0, 9999).ToString("D4");
         var fullPath = GetStorageKey(assetId).ToConcatenated('/', postfix);
         return new ObjectInBucket(s3Options.TimebasedInputBucket, fullPath);
+    }
+
+    public ObjectInBucket GetTimebasedInputLocation(string key)
+        => new(s3Options.TimebasedInputBucket, key);
+
+    public ObjectInBucket GetTimebasedOutputLocation(string key)
+        => new(s3Options.TimebasedOutputBucket, key);
+
+    public ObjectInBucket GetTimebasedMetadataLocation(AssetId assetId)
+    {
+        var key = $"{GetStorageKey(assetId)}/{MetadataKey}";
+        return new ObjectInBucket(s3Options.StorageBucket, key);
     }
 }

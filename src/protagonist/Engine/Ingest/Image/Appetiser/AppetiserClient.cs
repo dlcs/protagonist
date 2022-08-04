@@ -8,7 +8,7 @@ using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Templates;
 using DLCS.Web.Requests;
-using Engine.Ingest.Workers;
+using Engine.Ingest.Persistence;
 using Engine.Settings;
 using Microsoft.Extensions.Options;
 
@@ -245,21 +245,8 @@ public class AppetiserClient : IImageProcessor
     {
         var asset = context.Asset;
 
-        long GetFileSize(string path)
-        {
-            try
-            {
-                var fi = new FileInfo(path);
-                return fi.Length;
-            }
-            catch (Exception ex)
-            {
-                logger.LogInformation(ex, "Error getting fileSize for {Path}", path);
-                return 0;
-            }
-        }
-
-        var thumbSizes = responseModel.Thumbs.Sum(t => GetFileSize(t.Path));
+        var jp2Size = fileSystem.GetFileSize(GetJP2File(context.AssetId, false));
+        var thumbSizes = responseModel.Thumbs.Sum(t => fileSystem.GetFileSize(t.Path));
 
         return new ImageStorage
         {
@@ -267,7 +254,7 @@ public class AppetiserClient : IImageProcessor
             Customer = asset.Customer,
             Space = asset.Space,
             LastChecked = DateTime.UtcNow,
-            Size = context.AssetFromOrigin.AssetSize,
+            Size = jp2Size,
             ThumbnailSize = thumbSizes
         };
     }

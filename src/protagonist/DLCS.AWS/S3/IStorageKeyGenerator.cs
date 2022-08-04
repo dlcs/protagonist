@@ -67,6 +67,13 @@ public interface IStorageKeyGenerator
     /// <param name="assetPath">Requested asset path</param>
     /// <returns><see cref="RegionalisedObjectInBucket"/> for AV file</returns>
     RegionalisedObjectInBucket GetTimebasedAssetLocation(AssetId assetId, string assetPath);
+    
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> for requested AV file 
+    /// </summary>
+    /// <param name="fullAssetPath">Full asset path, including AssetId</param>
+    /// <returns><see cref="RegionalisedObjectInBucket"/> for AV file</returns>
+    ObjectInBucket GetTimebasedAssetLocation(string fullAssetPath);
 
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> item for info.json object
@@ -106,4 +113,22 @@ public interface IStorageKeyGenerator
     /// </summary>
     /// <returns><see cref="ObjectInBucket"/> for specified key in timebased input bucket</returns>
     ObjectInBucket GetTimebasedInputLocation(AssetId assetId);
+    
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> item for timebased asset that has to been transcoded
+    /// </summary>
+    /// <returns><see cref="ObjectInBucket"/> for specified key in timebased input bucket</returns>
+    ObjectInBucket GetTimebasedInputLocation(string key);
+    
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> item for timebased asset that has to been transcoded
+    /// </summary>
+    /// <returns><see cref="ObjectInBucket"/> for specified key in timebased input bucket</returns>
+    ObjectInBucket GetTimebasedOutputLocation(string key);
+
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> item for timebased metadata object
+    /// </summary>
+    /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
+    ObjectInBucket GetTimebasedMetadataLocation(AssetId assetId);
 }

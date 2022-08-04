@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Repository.Caching;
 using LazyCache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;

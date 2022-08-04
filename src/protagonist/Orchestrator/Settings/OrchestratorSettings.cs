@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using DLCS.Repository.Caching;
+using DLCS.Core.Caching;
 
 namespace Orchestrator.Settings;
 

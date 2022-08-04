@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Repository.Caching;
+using DLCS.Core.Caching;
 using IIIF.Serialisation;
 using MediatR;
 using Microsoft.AspNetCore.Http;

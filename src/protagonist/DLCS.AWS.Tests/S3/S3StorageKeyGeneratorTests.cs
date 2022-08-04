@@ -2,9 +2,7 @@
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.Core.Types;
-using FluentAssertions;
 using Microsoft.Extensions.Options;
-using Xunit;
 
 namespace DLCS.AWS.Tests.S3;
 
@@ -22,7 +20,8 @@ public class S3StorageKeyGeneratorTests
                 OutputBucket = "test-output",
                 ThumbsBucket = "test-thumbs",
                 StorageBucket = "test-storage",
-                TimebasedInputBucket = "timebased-in"
+                TimebasedInputBucket = "timebased-in",
+                TimebasedOutputBucket = "timebased-out"
             }
         }));
     }
@@ -186,6 +185,20 @@ public class S3StorageKeyGeneratorTests
         actual.Bucket.Should().Be("test-storage");
         actual.Region.Should().Be("eu-west-1");
     }
+    
+    [Fact]
+    public void GetTimebasedAssetLocation_WithKey_Correct()
+    {
+        // Arrange
+        const string key = "1/2/hello/file.mp4";
+        
+        // Act
+        var result = sut.GetTimebasedAssetLocation(key);
+        
+        // Assert
+        result.Bucket.Should().Be("test-storage");
+        result.Key.Should().Be(key);
+    }
 
     [Theory]
     [InlineData("Cantaloupe", IIIF.ImageApi.Version.V2, "info/Cantaloupe/v2/10/20/foo-bar/info.json")]
@@ -259,5 +272,47 @@ public class S3StorageKeyGeneratorTests
         actual2.Bucket.Should().Be("timebased-in");
 
         randomBit.Should().NotBe(randomBit2);
+    }
+
+    [Fact]
+    public void GetTimebasedInputLocation_WithKey_Correct()
+    {
+        // Arrange
+        const string key = "1/2/hello/file.mp4";
+        
+        // Act
+        var result = sut.GetTimebasedInputLocation(key);
+        
+        // Assert
+        result.Bucket.Should().Be("timebased-in");
+        result.Key.Should().Be(key);
+    }
+    
+    [Fact]
+    public void GetTimebasedOutputLocation_WithKey_Correct()
+    {
+        // Arrange
+        const string key = "1/2/hello/file.mp4";
+        
+        // Act
+        var result = sut.GetTimebasedOutputLocation(key);
+        
+        // Assert
+        result.Bucket.Should().Be("timebased-out");
+        result.Key.Should().Be(key);
+    }
+
+    [Fact]
+    public void GetTimebasedMetadataLocation_Correct()
+    {
+        // Arrange
+        var asset = new AssetId(10, 20, "foo-bar");
+
+        // Act
+        var actual = sut.GetTimebasedMetadataLocation(asset);
+
+        // Assert
+        actual.Key.Should().Be("10/20/foo-bar/metadata");
+        actual.Bucket.Should().Be("test-storage");
     }
 }

@@ -9,7 +9,7 @@ using DLCS.Model.Customers;
 using Engine.Ingest;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.Appetiser;
-using Engine.Ingest.Workers;
+using Engine.Ingest.Persistence;
 using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -32,7 +32,6 @@ public class AppetiserClientTests
 
     public AppetiserClientTests()
     {
-        var c = Path.DirectorySeparatorChar;
         httpHandler = new ControllableHttpMessageHandler();
         fileSystem = A.Fake<IFileSystem>();
         bucketWriter = new TestBucketWriter("appetiser-test");
@@ -40,10 +39,10 @@ public class AppetiserClientTests
         {
             ImageIngest = new ImageIngestSettings
             {
-                ScratchRoot = $"{c}scratch{c}",
-                DestinationTemplate = $"{{root}}{{customer}}{c}{{space}}{c}{{image}}{c}output{c}",
-                SourceTemplate = $"{{root}}{{customer}}{c}{{space}}{c}{{image}}{c}",
-                ThumbsTemplate = $"{{root}}{{customer}}{c}{{space}}{c}{{image}}{c}output{c}thumb{c}"
+                ScratchRoot = "scratch/",
+                DestinationTemplate = "dest/",
+                SourceTemplate = "source/",
+                ThumbsTemplate = "thumb/"
             }
         };
         thumbnailCreator = A.Fake<IThumbCreator>();
@@ -187,14 +186,11 @@ public class AppetiserClientTests
         A.CallTo(() => storageKeyGenerator.GetS3Uri(A<ObjectInBucket>._, A<bool>._))
             .Returns(new Uri(expected));
         
-        var c = Path.DirectorySeparatorChar;
-        var filePath = $"{c}scratch{c}1{c}2{c}test{c}output{c}test.jp2";
-
         // Act
         await sut.ProcessImage(context);
 
         // Assert
-        bucketWriter.ShouldHaveKey("1/2/test").WithFilePath(filePath);
+        bucketWriter.ShouldHaveKey("1/2/test").WithFilePath("dest/test.jp2");
         context.ImageLocation.S3.Should().Be(expected);
     }
 
@@ -299,6 +295,8 @@ public class AppetiserClientTests
 
         var context = GetIngestionContext();
         context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = false };
+
+        A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(123L);
 
         // Act
         await sut.ProcessImage(context);

@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Engine.Infrastructure;
 
 public static class EndpointRouteBuilderX
 {
+    private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
+
     /// <summary>
     /// Configure healthcheck endpoints
     /// </summary>
@@ -28,14 +30,36 @@ public static class EndpointRouteBuilderX
     {
         context.Response.ContentType = "application/json";
         
-        var json = new JObject(
-            new JProperty("status", result.Status.ToString()),
-            new JProperty("results", new JObject(result.Entries.Select(pair =>
-                new JProperty(pair.Key, new JObject(
-                    new JProperty("status", pair.Value.Status.ToString()),
-                    new JProperty("data",
-                        new JObject(pair.Value.Data.Select(d => new JProperty(d.Key, d.Value))))))))));
+        /* Outputs object in format:
+         {
+            "status": "Healthy|Unhealthy",
+            "results": {
+                "DLCS-DB": {
+                    "status": "Healthy|Unhealthy",
+                    "data": {}
+                },
+                "Registered Queues": {
+                    "status": "Healthy|Degraded|Unhealthy",
+                    "data": {
+                        "queue-1": "Listening|Not started|Stopped",
+                        "queue-2": "Listening|Not started|Stopped",
+                    }
+                }
+            }
+        } */
 
-        return context.Response.WriteAsync(json.ToString(Formatting.Indented));
+        var jsonObject = new JsonObject
+        {
+            ["status"] = result.Status.ToString(),
+            ["results"] = new JsonObject(result.Entries.Select(kvp => KeyValuePair.Create<string, JsonNode>(kvp.Key,
+                new JsonObject
+                {
+                    ["status"] = kvp.Value.Status.ToString(),
+                    ["data"] = new JsonObject(kvp.Value.Data.Select(d =>
+                        KeyValuePair.Create<string, JsonNode>(d.Key, d.Value.ToString())))
+                })))
+        };
+
+        return context.Response.WriteAsync(jsonObject.ToJsonString(JsonSerializerOptions));
     }
 }

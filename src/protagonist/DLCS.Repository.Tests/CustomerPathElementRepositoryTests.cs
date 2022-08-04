@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DLCS.Core.Caching;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
-using DLCS.Repository.Caching;
 using FakeItEasy;
 using FluentAssertions;
 using LazyCache;

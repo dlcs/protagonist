@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Repository.Caching;
 using FakeItEasy;
 using FluentAssertions;
 using LazyCache.Mocks;

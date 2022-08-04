@@ -2,7 +2,6 @@
 using DLCS.AWS.SQS;
 using DLCS.Model.Messaging;
 using Engine.Ingest;
-using Engine.Ingest.Handlers;
 using Engine.Ingest.Models;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -42,7 +41,7 @@ public class IngestHandlerTests
     [Theory]
     [InlineData(IngestResult.Failed)]
     [InlineData(IngestResult.Unknown)]
-    public async Task HandleMessage_ReturnsFalse_IfFailedOrUnknown_LegacyMessage(IngestResult result)
+    public async Task HandleMessage_ReturnsTrue_IfFailedOrUnknown_LegacyMessage(IngestResult result)
     {
         // Arrange
         var body = new JsonObject
@@ -57,13 +56,13 @@ public class IngestHandlerTests
         
         // Assert
         A.CallTo(() => assetIngester.Ingest(A<LegacyIngestEvent>._, A<CancellationToken>._)).MustHaveHappened();
-        success.Should().BeFalse();
+        success.Should().BeTrue();
     }
     
     [Theory]
     [InlineData(IngestResult.Success)]
     [InlineData(IngestResult.QueuedForProcessing)]
-    public async Task HandleMessage_ReturnsFalse_IfSuccessOrQueued_LegacyMessage(IngestResult result)
+    public async Task HandleMessage_ReturnsTrue_IfSuccessOrQueued_LegacyMessage(IngestResult result)
     {
         // Arrange
         var body = new JsonObject
@@ -102,7 +101,7 @@ public class IngestHandlerTests
     [Theory]
     [InlineData(IngestResult.Failed)]
     [InlineData(IngestResult.Unknown)]
-    public async Task HandleMessage_ReturnsFalse_IfFailedOrUnknown(IngestResult result)
+    public async Task HandleMessage_ReturnsTrue_IfFailedOrUnknown(IngestResult result)
     {
         // Arrange
         var body = new JsonObject
@@ -117,7 +116,7 @@ public class IngestHandlerTests
         
         // Assert
         A.CallTo(() => assetIngester.Ingest(A<IngestAssetRequest>._, A<CancellationToken>._)).MustHaveHappened();
-        success.Should().BeFalse();
+        success.Should().BeTrue();
     }
     
     [Theory]

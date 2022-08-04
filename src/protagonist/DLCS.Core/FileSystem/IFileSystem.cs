@@ -10,4 +10,5 @@ public interface IFileSystem
     void DeleteDirectory(string path, bool recursive, bool swallowError = true);
     void DeleteFile(string path, bool swallowError = true);
     bool FileExists(string path);
+    long GetFileSize(string path);
 }

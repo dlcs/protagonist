@@ -1,4 +1,5 @@
 ﻿using Amazon;
+using Amazon.ElasticTranscoder;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.SQS;
@@ -61,8 +62,8 @@ public class AwsBuilder
     /// <summary>
     /// Add <see cref="IAmazonS3"/> to service collection with specified lifetime.
     /// </summary>
-    /// <param name="lifetime">ServiceLifetime for dependency, </param>
-    /// <returns></returns>
+    /// <param name="lifetime">ServiceLifetime for dependency</param>
+    /// <returns>Current <see cref="AwsBuilder"/> instance</returns>
     public AwsBuilder WithAmazonS3(ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
         if (useLocalStack)
@@ -120,20 +121,18 @@ public class AwsBuilder
     }
 
     /// <summary>
-    /// Add <see cref="Amazon.Runtime.IAmazonService"/> to service collection with specified lifetime.
-    /// If using localStack this will be a no-op.
+    /// Add <see cref="IAmazonElasticTranscoder"/> to service collection with specified lifetime.
+    /// If using localStack this will be a no-op as ET is not available in localStack
     /// </summary>
     /// <param name="lifetime">ServiceLifetime for dependency</param>
-    /// <typeparam name="T">Type of amazon service service to add</typeparam>
-    /// <returns></returns>
-    public AwsBuilder WithAWSService<T>(ServiceLifetime lifetime = ServiceLifetime.Singleton)
-        where T : IAmazonService
+    /// <returns>Current <see cref="AwsBuilder"/> instance</returns>
+    public AwsBuilder WithAmazonElasticTranscoder(ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
         if (!useLocalStack)
         {
-            services.AddAWSService<T>(lifetime);
+            services.AddAWSService<IAmazonElasticTranscoder>(lifetime);
         }
-        
+
         return this;
     }
 }

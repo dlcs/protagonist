@@ -1,7 +1,8 @@
-using Amazon.ElasticTranscoder;
 using DLCS.AWS.Configuration;
+using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
+using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
@@ -10,19 +11,19 @@ using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Auth;
-using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Storage;
 using DLCS.Repository.Strategy.DependencyInjection;
+using Engine.Data;
 using Engine.Ingest;
-using Engine.Ingest.Completion;
-using Engine.Ingest.Handlers;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.Appetiser;
+using Engine.Ingest.Image.Completion;
+using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased;
-using Engine.Ingest.Workers;
-using Engine.Ingest.Workers.Persistence;
+using Engine.Ingest.Timebased.Completion;
+using Engine.Ingest.Timebased.Transcode;
 using Engine.Messaging;
 using Engine.Settings;
 
@@ -40,10 +41,11 @@ public static class ServiceCollectionX
             .AddSingleton<IBucketReader, S3BucketReader>()
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
+            .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
             .WithAmazonSQS()
-            .WithAWSService<IAmazonElasticTranscoder>();
+            .WithAmazonElasticTranscoder();
 
         return services;
     }
@@ -55,14 +57,14 @@ public static class ServiceCollectionX
         => services
             .AddSingleton<SqsListenerManager>()
             .AddTransient(typeof(SqsListener<>))
-            .AddSingleton<QueueHandlerResolver<EngineMessageType>>(provider => messageType => messageType switch
+            .AddScoped<QueueHandlerResolver<EngineMessageType>>(provider => messageType => messageType switch
             {
                 EngineMessageType.Ingest => provider.GetRequiredService<IngestHandler>(),
-                EngineMessageType.TranscodeComplete => provider.GetRequiredService<TranscodeCompletionHandler>(),
+                EngineMessageType.TranscodeComplete => provider.GetRequiredService<TranscodeCompleteHandler>(),
                 _ => throw new ArgumentOutOfRangeException(nameof(messageType), messageType, null)
             })
-            .AddTransient<IngestHandler>()
-            .AddTransient<TranscodeCompletionHandler>()
+            .AddScoped<IngestHandler>()
+            .AddScoped<TranscodeCompleteHandler>()
             .AddSingleton<SqsQueueUtilities>()
             .AddHostedService<SqsListenerService>();
 
@@ -87,22 +89,24 @@ public static class ServiceCollectionX
             .AddSingleton<IMediaTranscoder, ElasticTranscoder>()
             .AddScoped<IAssetToDisk, AssetToDisk>()
             .AddScoped<IImageIngestorCompletion, ImageIngestorCompletion>()
-            .AddScoped<IEngineAssetRepository, EngineAssetRepository>()
             .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
             .AddScoped<IAssetToS3, AssetToS3>()
             .AddOriginStrategies();
 
-        services.AddHttpClient<IImageProcessor, AppetiserClient>(client =>
+        if (engineSettings.ImageIngest != null)
         {
-            client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
-            client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
-        });
+            services.AddHttpClient<IImageProcessor, AppetiserClient>(client =>
+            {
+                client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
+                client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+            });
 
-        services.AddHttpClient<OrchestratorClient>(client =>
-        {
-            client.BaseAddress = engineSettings.OrchestratorBaseUrl;
-            client.Timeout = TimeSpan.FromMilliseconds(engineSettings.OrchestratorTimeoutMs);
-        });
+            services.AddHttpClient<OrchestratorClient>(client =>
+            {
+                client.BaseAddress = engineSettings.ImageIngest.OrchestratorBaseUrl;
+                client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.OrchestratorTimeoutMs);
+            });
+        }
 
         return services;
     }
@@ -113,6 +117,7 @@ public static class ServiceCollectionX
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
         => services
             .AddScoped<IPolicyRepository, PolicyRepository>()
+            .AddScoped<IEngineAssetRepository, EngineAssetRepository>()
             .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
             .AddScoped<IStorageRepository, CustomerStorageRepository>()

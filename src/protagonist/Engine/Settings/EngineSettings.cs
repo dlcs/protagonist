@@ -2,7 +2,7 @@
 
 public class EngineSettings
 {
-    public ImageIngestSettings ImageIngest { get; set; }
+    public ImageIngestSettings? ImageIngest { get; set; }
 
     public TimebasedIngestSettings? TimebasedIngest { get; set; }
 
@@ -10,21 +10,6 @@ public class EngineSettings
     /// A collection of customer-specific overrides, keyed by customerId.
     /// </summary> 
     public Dictionary<string, CustomerOverridesSettings> CustomerOverrides { get; set; } = new();
-    
-    /// <summary>
-    /// Base url for calling orchestrator.
-    /// </summary>
-    public Uri OrchestratorBaseUrl { get; set; }
-        
-    /// <summary>
-    /// Timeout, in ms, to wait for calls to orchestrator
-    /// </summary>
-    public int OrchestratorTimeoutMs { get; set; } = 5000;
-
-    /// <summary>
-    /// Default value of whether to orchestrate an image upon ingestion
-    /// </summary>
-    public bool OrchestrateImageAfterIngest { get; set; } = true;
 
     /// <summary>
     /// Get CustomerSpecificSettings, if found. 
@@ -59,12 +44,6 @@ public class ImageIngestSettings
     public string ThumbsTemplate { get; set; }
 
     /// <summary>
-    /// S3 template for where derivatives will be copied to
-    /// </summary>
-    [Obsolete("Use S3KeyGenerator")]
-    public string S3Template { get; set; }
-    
-    /// <summary>
     /// Whether to use unofficial s3:// format (including region) - required for backwards compat with deliverator
     /// </summary>
     public bool IncludeRegionInS3Uri { get; set; } = false;
@@ -93,6 +72,21 @@ public class ImageIngestSettings
     /// Root folder for use by Image-Processor sidecar
     /// </summary>
     public string ImageProcessorRoot { get; set; }
+    
+    /// <summary>
+    /// Base url for calling orchestrator.
+    /// </summary>
+    public Uri OrchestratorBaseUrl { get; set; }
+        
+    /// <summary>
+    /// Timeout, in ms, to wait for calls to orchestrator
+    /// </summary>
+    public int OrchestratorTimeoutMs { get; set; } = 5000;
+
+    /// <summary>
+    /// Default value of whether to orchestrate an image upon ingestion
+    /// </summary>
+    public bool OrchestrateImageAfterIngest { get; set; } = true;
 
     /// <summary>
     /// Get the root folder, if forImageProcessor will ensure that it is compatible with needs of image-processor

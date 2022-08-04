@@ -3,6 +3,7 @@ using Amazon.SQS;
 using Amazon.SQS.Model;
 using DLCS.AWS.Settings;
 using DLCS.AWS.SQS.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -38,21 +39,21 @@ public class SqsListener<TMessageType> : IQueueListener
     private readonly IAmazonSQS client;
     private readonly SubscribedToQueue<TMessageType> subscribedToQueue;
     private readonly AWSSettings options;
-    private readonly QueueHandlerResolver<TMessageType> handlerResolver;
+    private readonly IServiceScopeFactory serviceScopeFactory;
     private readonly ILogger<SqsListener<TMessageType>> logger;
     
     public SqsListener(
         IAmazonSQS client,
+        IServiceScopeFactory serviceScopeFactory,
         IOptions<AWSSettings> options,
         SubscribedToQueue<TMessageType> subscribedToQueue,
-        QueueHandlerResolver<TMessageType> handlerResolver,
         ILogger<SqsListener<TMessageType>> logger)
     {
         this.client = client;
         this.subscribedToQueue = subscribedToQueue;
         this.options = options.Value;
-        this.handlerResolver = handlerResolver;
         this.logger = logger;
+        this.serviceScopeFactory = serviceScopeFactory;
     }
     
     /// <summary>
@@ -160,6 +161,9 @@ public class SqsListener<TMessageType> : IQueueListener
             };
 
             // create a new scope to avoid issues with Scoped dependencies
+            using var listenerScope = serviceScopeFactory.CreateScope();
+            var handlerResolver =
+                listenerScope.ServiceProvider.GetRequiredService<QueueHandlerResolver<TMessageType>>();
             var handler = handlerResolver(subscribedToQueue.MessageType);
             var processed = await handler.HandleMessage(queueMessage, cancellationToken);
             return processed;

@@ -1,7 +1,7 @@
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using Engine.Ingest.Workers;
+using Engine.Ingest.Persistence;
 
 namespace Engine.Ingest;
 

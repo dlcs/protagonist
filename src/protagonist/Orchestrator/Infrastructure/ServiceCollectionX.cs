@@ -1,5 +1,6 @@
 ﻿using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
+using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
@@ -11,7 +12,6 @@ using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Assets.CustomHeaders;
 using DLCS.Repository.Auth;
-using DLCS.Repository.Caching;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
 using DLCS.Web.Auth;

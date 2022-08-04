@@ -2,10 +2,9 @@
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using Engine.Ingest;
-using Engine.Ingest.Completion;
 using Engine.Ingest.Image;
-using Engine.Ingest.Workers;
-using Engine.Ingest.Workers.Persistence;
+using Engine.Ingest.Image.Completion;
+using Engine.Ingest.Persistence;
 using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
