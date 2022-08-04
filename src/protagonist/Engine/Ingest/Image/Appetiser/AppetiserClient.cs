@@ -8,7 +8,7 @@ using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Templates;
 using DLCS.Web.Requests;
-using Engine.Ingest.Workers;
+using Engine.Ingest.Persistence;
 using Engine.Settings;
 using Microsoft.Extensions.Options;
 

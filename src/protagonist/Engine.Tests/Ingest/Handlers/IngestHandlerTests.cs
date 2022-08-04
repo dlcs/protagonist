@@ -2,7 +2,6 @@
 using DLCS.AWS.SQS;
 using DLCS.Model.Messaging;
 using Engine.Ingest;
-using Engine.Ingest.Handlers;
 using Engine.Ingest.Models;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;

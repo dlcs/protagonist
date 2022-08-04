@@ -1,4 +1,3 @@
-using Amazon.ElasticTranscoder;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
@@ -16,14 +15,15 @@ using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Storage;
 using DLCS.Repository.Strategy.DependencyInjection;
+using Engine.Data;
 using Engine.Ingest;
-using Engine.Ingest.Completion;
-using Engine.Ingest.Handlers;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.Appetiser;
+using Engine.Ingest.Image.Completion;
+using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased;
-using Engine.Ingest.Workers;
-using Engine.Ingest.Workers.Persistence;
+using Engine.Ingest.Timebased.Completion;
+using Engine.Ingest.Timebased.Transcode;
 using Engine.Messaging;
 using Engine.Settings;
 

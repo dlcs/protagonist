@@ -9,7 +9,7 @@ using DLCS.Model.Customers;
 using Engine.Ingest;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.Appetiser;
-using Engine.Ingest.Workers;
+using Engine.Ingest.Persistence;
 using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;

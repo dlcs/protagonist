@@ -3,7 +3,6 @@ using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using DLCS.Model.Policies;
 using Engine.Ingest.Models;
-using Engine.Ingest.Workers;
 
 namespace Engine.Ingest;
 

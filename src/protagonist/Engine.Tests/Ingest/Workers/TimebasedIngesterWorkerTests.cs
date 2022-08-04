@@ -2,10 +2,10 @@
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using Engine.Ingest;
-using Engine.Ingest.Completion;
+using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased;
-using Engine.Ingest.Workers;
-using Engine.Ingest.Workers.Persistence;
+using Engine.Ingest.Timebased.Completion;
+using Engine.Ingest.Timebased.Transcode;
 using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
