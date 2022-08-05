@@ -122,6 +122,7 @@ public class DownstreamDestinationSelector
             ProxyDestination.Orchestrator => "deliverator",
             ProxyDestination.Thumbs => "thumbs",
             ProxyDestination.ResizeThumbs => "thumbresize",
+            ProxyDestination.SpecialServer => "specialserver",
             ProxyDestination.ImageServer => GetImageServerCluster(),
             _ => throw new ArgumentOutOfRangeException(nameof(destination), destination, null)
         };

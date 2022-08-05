@@ -1,5 +1,6 @@
 ﻿using DLCS.Core.Types;
 using DLCS.Model.Templates;
+using Orchestrator.Assets;
 
 namespace Orchestrator.Settings;
 
@@ -34,6 +35,27 @@ public static class OrchestratorSettingsX
         => settings.ImageServerConfig.VersionPathTemplates.TryGetValue(targetVersion, out var pathTemplate)
             ? GetImageServerFilePathInternal(assetId, settings.ImageServerConfig, pathTemplate)
             : null;
+
+    /// <summary>
+    /// Get the full redirect path for SpecialServer for specified ImageApi version. Includes parsed S3 location where
+    /// image-server can access asset file
+    /// </summary>
+    /// <returns>Path for image-server if image-server can handle requested version, else null</returns>
+    public static string? GetSpecialServerPath(this OrchestratorSettings settings, string s3Location,
+        IIIF.ImageApi.Version targetVersion)
+    {
+        if (!settings.ImageServerPathConfig.TryGetValue(ImageServer.Cantaloupe, out var imageServerConfig))
+        {
+            return null;
+        }
+
+        if (!imageServerConfig.VersionPathTemplates.TryGetValue(targetVersion, out var pathTemplate))
+        {
+            return null;
+        }
+
+        return $"{pathTemplate}{s3Location.Replace("/", imageServerConfig.Separator)}";
+    }
 
     private static string GetImageServerFilePathInternal(AssetId assetId, ImageServerConfig imageServerConfig,
         string versionTemplate)

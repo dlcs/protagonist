@@ -26,9 +26,14 @@ public enum ProxyDestination
     ResizeThumbs,
     
     /// <summary>
-    /// Image-server, cluster targeted destination is determined by ImageServer value
+    /// Image-server, cluster target destination is determined by ImageServer value
     /// </summary>
     ImageServer,
+    
+    /// <summary>
+    /// Specially configured image-server to handle full + large image requests without the need to orchestrate
+    /// </summary>
+    SpecialServer,
     
     /// <summary>
     /// Proxy response from S3
