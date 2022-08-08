@@ -6,13 +6,13 @@ volumes:
   dlcs_localstack_tmp: {}
 
 services:
-  iip:
-    image: ghcr.io/dlcs/iipsrv-openjpeg:2.4.0
-    ports:
-      - "5025:8080"
-    volumes:
-      - $HOME\Docker\scratch:/nas
-    entrypoint: /operations.sh
+  # iip:
+  #   image: ghcr.io/dlcs/iipsrv-openjpeg:2.4.0
+  #   ports:
+  #     - "5025:8080"
+  #   volumes:
+  #     - $HOME\Docker\scratch:/nas
+  #   entrypoint: /operations.sh
 
   cantaloupe:
     image: ghcr.io/dlcs/cantaloupe:5.0.5
@@ -25,6 +25,22 @@ services:
       - PROCESSOR_MANUALSELECTIONSTRATEGY_JP2=GrokProcessor
     volumes:
       - $HOME\Docker\scratch:/home/cantaloupe/images/
+
+  special-server:
+    image: ghcr.io/dlcs/cantaloupe:5.0.5
+    ports:
+      - "5126:8182"
+    environment:
+      - ENDPOINT_ADMIN_ENABLED=true
+      - ENDPOINT_ADMIN_SECRET=admin
+      - DELEGATE_SCRIPT_ENABLED=true
+      - SOURCE_STATIC=S3Source
+      - DELEGATE_SCRIPT_PATHNAME=/cantaloupe/delegates.rb
+      - S3SOURCE_LOOKUP_STRATEGY=ScriptLookupStrategy
+      - AWS_ACCESS_KEY_ID=${SS_AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${SS_AWS_SECRET_ACCESS_KEY}
+    env_file:
+      - .env
 
   fireball:
     image: fractos/fireball:1304a21459c2b6157abc46d3808512b578bd78b5
