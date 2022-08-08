@@ -71,35 +71,32 @@ public class ImageRequestHandler
             return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
         }
         
-        // If "HEAD" then add CORS - is this required here?
         var orchestrationAsset = await assetRequestProcessor.GetAsset(assetRequest);
         if (orchestrationAsset is not OrchestrationImage orchestrationImage)
         {
-            logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
+            logger.LogDebug("Request for {Path}: asset not found", httpContext.Request.Path);
             return new StatusCodeResult(HttpStatusCode.NotFound);
         }
+        
+        var proxyActionResult = await HandleRequestInternal(httpContext, orchestrationImage, assetRequest);
+        if (proxyActionResult is StatusCodeResult) return proxyActionResult;
 
+        await SetCustomHeaders(orchestrationImage, proxyActionResult);
+        return proxyActionResult;
+    }
+
+    private async Task<IProxyActionResult> HandleRequestInternal(HttpContext httpContext,
+        OrchestrationImage orchestrationImage, ImageAssetDeliveryRequest assetRequest)
+    {
         if (orchestrationImage.RequiresAuth)
-        { 
+        {
             if (await IsRequestUnauthorised(assetRequest, orchestrationImage))
             {
                 return new StatusCodeResult(HttpStatusCode.Unauthorized);
             }
         }
-        
-        /*
-        Is known thumb size
-        Is full and smaller than biggest thumb size
-        is full and bigger than biggest thumb size
-        anything else
 
-        1 - proxy thumb
-        2 - resample next thumb size up
-        3 - off to S3-cantaloupe
-        4 - off to filesystem cantaloupe (including orchestration if required)
-        for 2 and 3 - if the asked-for thumb is not on S3 but is in the thumbnail policy list, save it to S3 on the way out
-        ... and use the No 3 S3 cantaloupe, not the orchestrating path
-         */
+        // /full/ request but not /full/max/ - can it be handled by thumbnail service?
         if (RegionFullNotMax(assetRequest))
         {
             var canHandleByThumbResponse = CanRequestBeHandledByThumb(assetRequest, orchestrationImage);
@@ -107,7 +104,7 @@ public class ImageRequestHandler
             {
                 logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs. IsResize: {IsResize}",
                     httpContext.Request.Path, canHandleByThumbResponse.IsResize);
-                
+
                 var pathReplacement = canHandleByThumbResponse.IsResize
                     ? orchestratorSettings.Value.Proxy.ThumbResizePath
                     : orchestratorSettings.Value.Proxy.ThumbsPath;
@@ -117,14 +114,29 @@ public class ImageRequestHandler
                 var proxyResult = new ProxyActionResult(proxyDestination,
                     orchestrationImage.RequiresAuth,
                     httpContext.Request.Path.ToString().Replace("iiif-img", pathReplacement));
-                await SetCustomHeaders(orchestrationImage, proxyResult);
                 return proxyResult;
             }
         }
 
-        return await GenerateImageResult(orchestrationImage, assetRequest);
+        // /full/ that cannot be handled by thumbs (e.g. format, size, rotation, quality), handle with special-server
+        if (assetRequest.IIIFImageRequest.Region.Full)
+        {
+            if (orchestrationImage.S3Location.IsNullOrEmpty())
+            {
+                // Rare occurence - fall through to image server which will handle reingest request
+                logger.LogInformation("{AssetId} candidate for SpecialServer handling but s3Location empty",
+                    orchestrationImage.AssetId);
+            }
+            else
+            {
+                return GenerateImageServerProxyResult(orchestrationImage, assetRequest, specialServer: true);
+            }
+        }
+
+        // Fallback to image-server, with orchestration if required
+        return GenerateImageServerProxyResult(orchestrationImage, assetRequest, specialServer: false);
     }
-    
+
     private static bool RegionFullNotMax(ImageAssetDeliveryRequest assetRequest) 
         => assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max;
 
@@ -206,44 +218,50 @@ public class ImageRequestHandler
         return (false, false);
     }
 
-    private async Task<IProxyActionResult> GenerateImageResult(OrchestrationImage orchestrationImage,
-        ImageAssetDeliveryRequest requestModel)
+    private IProxyActionResult GenerateImageServerProxyResult(OrchestrationImage orchestrationImage,
+        ImageAssetDeliveryRequest requestModel, bool specialServer)
     {
-        string? targetPath = GetImageServerPath(orchestrationImage, requestModel);
-        if (string.IsNullOrEmpty(targetPath))
+        var imageApiVersion = GetImageApiVersion(requestModel);
+        if (imageApiVersion == null)
         {
-            logger.LogDebug("Unable to fulfil image request: {Path}. ImageServer path found",
+            logger.LogDebug("Unable to fulfil image request: {Path}. Could not parse ImageVersion",
                 requestModel.NormalisedFullPath);
             return new StatusCodeResult(HttpStatusCode.BadRequest);
         }
-
-        var imageServerPath = $"{targetPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
-        var proxyImageServerResult = new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth,
-            ProxyDestination.ImageServer, imageServerPath);
-        await SetCustomHeaders(orchestrationImage, proxyImageServerResult);
-        return proxyImageServerResult;
-    }
-
-    private string? GetImageServerPath(OrchestrationImage orchestrationImage, ImageAssetDeliveryRequest requestModel)
-    {
+        
+        // get the redirect path - S3:// path for special-server or /path/on/disk for image-server
         var settings = orchestratorSettings.Value;
-        if (requestModel.VersionPathValue.HasText())
-        {
-            var imageApiVersion = requestModel.VersionPathValue.ParseToIIIFImageApiVersion();
-            if (!imageApiVersion.HasValue) return null;
+        var redirectPath = specialServer
+            ? settings.GetSpecialServerPath(orchestrationImage.S3Location, imageApiVersion.Value)
+            : settings.GetImageServerPath(orchestrationImage.AssetId, imageApiVersion.Value);
 
-            return settings.GetImageServerPath(orchestrationImage.AssetId, imageApiVersion.Value);
-        }
-        else
+        if (string.IsNullOrEmpty(redirectPath))
         {
-            return settings.GetImageServerPath(orchestrationImage.AssetId, settings.DefaultIIIFImageVersion);
+            logger.LogDebug("Unable to fulfil image request: {Path}. Could not generate ImageServer path",
+                requestModel.NormalisedFullPath);
+            return new StatusCodeResult(HttpStatusCode.BadRequest);
         }
+        
+        IProxyActionResult proxyActionResult = specialServer
+            ? new ProxyActionResult(ProxyDestination.SpecialServer, orchestrationImage.RequiresAuth, redirectPath)
+            : new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth, redirectPath);
+        return proxyActionResult;
     }
 
-    private async Task SetCustomHeaders(OrchestrationImage orchestrationImage, 
-        ProxyActionResult proxyImageServerResult)
+    /// <summary>
+    /// Get the ImageApi version to serve. This will return either:
+    /// - The version requested in the path
+    /// - Null if a specific version requested in path but it cannot be handled
+    /// - Default version from appconfig
+    /// </summary>
+    private IIIF.ImageApi.Version? GetImageApiVersion(ImageAssetDeliveryRequest requestModel) 
+        => requestModel.VersionPathValue.HasText()
+            ? requestModel.VersionPathValue.ParseToIIIFImageApiVersion()
+            : orchestratorSettings.Value.DefaultIIIFImageVersion;
+
+    private async Task SetCustomHeaders(OrchestrationImage orchestrationImage,
+        IProxyActionResult proxyImageServerResult)
     {
-        // order of precedence (low -> high), same header will be overwritten if present
         var customerHeaders = (await customHeaderRepository.GetForCustomer(orchestrationImage.AssetId.Customer))
             .ToList();
 

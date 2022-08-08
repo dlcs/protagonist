@@ -23,7 +23,7 @@ public class CustomHeaderProcessorTests
         List<CustomHeader> customerCustomHeaders = null;
         var orchestrationImage = new OrchestrationImage();
         var proxyImageServerResult =
-            new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
+            new ProxyImageServerResult(orchestrationImage, false);
         
         // Act
         CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
@@ -40,7 +40,7 @@ public class CustomHeaderProcessorTests
         List<CustomHeader> customerCustomHeaders = new();
         var orchestrationImage = new OrchestrationImage();
         var proxyImageServerResult =
-            new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
+            new ProxyImageServerResult(orchestrationImage, false);
         
         // Act
         CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
@@ -61,7 +61,7 @@ public class CustomHeaderProcessorTests
 
         var orchestrationImage = GetOrchestrationImage(true);
         var proxyImageServerResult =
-            new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
+            new ProxyImageServerResult(orchestrationImage, false);
         
         // Act
         CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
@@ -83,7 +83,7 @@ public class CustomHeaderProcessorTests
 
         var orchestrationImage = GetOrchestrationImage(true);
         var proxyImageServerResult =
-            new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
+            new ProxyImageServerResult(orchestrationImage, false);
         
         // Act
         CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
@@ -106,7 +106,7 @@ public class CustomHeaderProcessorTests
 
         var orchestrationImage = GetOrchestrationImage(true);
         var proxyImageServerResult =
-            new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
+            new ProxyImageServerResult(orchestrationImage, false);
         
         // Act
         CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
@@ -130,7 +130,7 @@ public class CustomHeaderProcessorTests
 
         var orchestrationImage = GetOrchestrationImage(true);
         var proxyImageServerResult =
-            new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
+            new ProxyImageServerResult(orchestrationImage, false);
         
         // Act
         CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
@@ -153,7 +153,7 @@ public class CustomHeaderProcessorTests
 
         var orchestrationImage = GetOrchestrationImage(false);
         var proxyImageServerResult =
-            new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
+            new ProxyImageServerResult(orchestrationImage, false);
         
         // Act
         CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,
@@ -177,7 +177,7 @@ public class CustomHeaderProcessorTests
 
         var orchestrationImage = GetOrchestrationImage(false);
         var proxyImageServerResult =
-            new ProxyImageServerResult(orchestrationImage, false, ProxyDestination.Orchestrator);
+            new ProxyImageServerResult(orchestrationImage, false);
         
         // Act
         CustomHeaderProcessor.SetProxyImageHeaders(customerCustomHeaders, orchestrationImage,

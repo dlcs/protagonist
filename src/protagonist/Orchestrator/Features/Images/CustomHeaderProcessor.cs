@@ -8,14 +8,14 @@ using Orchestrator.Infrastructure.ReverseProxy;
 namespace Orchestrator.Features.Images;
 
 /// <summary>
-/// Processes <see cref="CustomHeader"/> and sets any headers in <see cref="ProxyImageServerResult"/>
+/// Processes <see cref="CustomHeader"/> and sets any headers in <see cref="IProxyActionResult"/>
 /// </summary>
 public static class CustomHeaderProcessor
 {
     public static void SetProxyImageHeaders(
         List<CustomHeader> customerCustomHeaders,
         OrchestrationImage orchestrationImage,
-        ProxyActionResult proxyImageServerResult)
+        IProxyActionResult proxyImageServerResult)
     {
         // order of precedence (low -> high), same header will be overwritten if present
         // no space or role

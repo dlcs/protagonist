@@ -31,7 +31,7 @@ public enum ProxyDestination
     ImageServer,
     
     /// <summary>
-    /// Specially configured image-server to handle full + large image requests without the need to orchestrate
+    /// Specially configured image-server to handle /full/ image requests without the need to orchestrate
     /// </summary>
     SpecialServer,
     

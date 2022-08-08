@@ -53,7 +53,7 @@ public class PathRewriteTransformer : HttpTransformer
     private void EnsureCacheHeaders(HttpContext httpContext)
     {
         const string cacheControlHeader = "Cache-Control";
-        if (proxyAction.Target != ProxyDestination.ImageServer) return;
+        if (proxyAction.Target is not ProxyDestination.ImageServer and not ProxyDestination.SpecialServer) return;
         var cacheControl = proxyAction.RequiresAuth
             ? "private, max-age=600"
             : "public, s-maxage=2419200, max-age=2419200";
