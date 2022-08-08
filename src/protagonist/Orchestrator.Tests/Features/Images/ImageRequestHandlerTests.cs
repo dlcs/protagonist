@@ -352,12 +352,14 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
                 { AssetId = assetId, OpenThumbs = openSizes, S3Location = "s3://storage/2/2/test-image" });
 
+        var expected = $"cantaloupe-3s3:%2F%2Fstorage%2F2%2F2%2Ftest-image/{string.Join("/", path.Split("/")[5..])}";
+
         // Act
         var result = await sut.HandleRequest(context) as ProxyActionResult;
             
         // Assert
         result.Target.Should().Be(ProxyDestination.SpecialServer);
-        result.Path.Should().Be("cantaloupe-3s3:%2F%2Fstorage%2F2%2F2%2Ftest-image");
+        result.Path.Should().Be(expected);
     }
         
     [Theory]
@@ -388,13 +390,15 @@ public class ImageRequestHandlerTests
         A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
             .Returns(new OrchestrationImage
                 { AssetId = assetId, OpenThumbs = openSizes, S3Location = "s3://storage/2/2/test-image" });
+        
+        var expected = $"cantaloupe-3/path/{string.Join("/", path.Split("/")[5..])}";
 
         // Act
         var result = await sut.HandleRequest(context) as ProxyImageServerResult;
             
         // Assert
         result.Target.Should().Be(ProxyDestination.ImageServer);
-        result.HasPath.Should().BeTrue();
+        result.Path.Should().Be(expected);
     }
 
     [Theory]

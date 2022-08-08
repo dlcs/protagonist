@@ -242,9 +242,10 @@ public class ImageRequestHandler
             return new StatusCodeResult(HttpStatusCode.BadRequest);
         }
         
+        var imageServerPath = $"{redirectPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
         IProxyActionResult proxyActionResult = specialServer
-            ? new ProxyActionResult(ProxyDestination.SpecialServer, orchestrationImage.RequiresAuth, redirectPath)
-            : new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth, redirectPath);
+            ? new ProxyActionResult(ProxyDestination.SpecialServer, orchestrationImage.RequiresAuth, imageServerPath)
+            : new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth, imageServerPath);
         return proxyActionResult;
     }
 
