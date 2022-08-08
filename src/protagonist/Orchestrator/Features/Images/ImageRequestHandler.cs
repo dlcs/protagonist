@@ -81,7 +81,15 @@ public class ImageRequestHandler
         var proxyActionResult = await HandleRequestInternal(httpContext, orchestrationImage, assetRequest);
         if (proxyActionResult is StatusCodeResult) return proxyActionResult;
 
-        await SetCustomHeaders(orchestrationImage, proxyActionResult);
+        if (proxyActionResult is not ProxyActionResult result)
+        {
+            logger.LogError(
+                "Proxy action result for {Path} isn't a StatusCodeResult or ProxyActionResult. It is: {ResultType}",
+                httpContext.Request.Path, proxyActionResult.GetType());
+            return new StatusCodeResult(HttpStatusCode.InternalServerError);
+        }
+
+        await SetCustomHeaders(orchestrationImage, result);
         return proxyActionResult;
     }
 
@@ -261,12 +269,17 @@ public class ImageRequestHandler
             : orchestratorSettings.Value.DefaultIIIFImageVersion;
 
     private async Task SetCustomHeaders(OrchestrationImage orchestrationImage,
-        IProxyActionResult proxyImageServerResult)
+        ProxyActionResult proxyActionResult)
     {
         var customerHeaders = (await customHeaderRepository.GetForCustomer(orchestrationImage.AssetId.Customer))
             .ToList();
 
-        CustomHeaderProcessor.SetProxyImageHeaders(customerHeaders, orchestrationImage, proxyImageServerResult);
+        CustomHeaderProcessor.SetProxyImageHeaders(customerHeaders, orchestrationImage, proxyActionResult);
+
+        if (orchestratorSettings.Value.Proxy.AddProxyDebugHeaders)
+        {
+            proxyActionResult.WithHeader("x-proxy-destination", proxyActionResult.Target.ToString());
+        }
     }
 }
 
