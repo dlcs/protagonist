@@ -53,7 +53,7 @@ public class YarpImageServerClient : IImageServerClient
             
         try
         {
-            // TODO - return something more descriptive here?
+            logger.LogDebug("Getting info.json for {AssetId} from image-server", orchestrationImage.AssetId);
             await using var infoJson = await httpClient.GetStreamAsync(imageServerPath, cancellationToken);
             return infoJson.FromJsonStream<TImageService>();
         }
