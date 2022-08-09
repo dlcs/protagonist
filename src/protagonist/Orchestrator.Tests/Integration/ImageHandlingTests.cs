@@ -466,7 +466,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var responseStream = await response.Content.ReadAsStreamAsync();
         var infoJson = responseStream.FromJsonStream<ImageService3>();
 
-        infoJson.Id.Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_NoRole_Correct");
+        infoJson.Id.Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_NoRole_HasNoService");
         infoJson.Service.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         response.Headers.CacheControl.Public.Should().BeFalse();
