@@ -29,8 +29,7 @@ public class ProxyImageServerResult : ProxyActionResult
     public ProxyImageServerResult(
         OrchestrationImage orchestrationImage,
         bool requiresAuth,
-        ProxyDestination target,
-        string? path = null) : base(target, requiresAuth, path)
+        string? path = null) : base(ProxyDestination.ImageServer, requiresAuth, path)
     {
         OrchestrationImage = orchestrationImage;
     }

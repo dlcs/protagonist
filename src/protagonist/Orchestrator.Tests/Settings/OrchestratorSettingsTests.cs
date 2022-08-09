@@ -86,4 +86,16 @@ public class OrchestratorSettingsTests
         // Assert
         actual.Should().BeNull();
     }
+    
+    [Theory]
+    [InlineData(Version.V3, "/iiif/3/s3:%2F%2Fbucket%2Fitem%2Fkey")]
+    [InlineData(Version.V2, "/iiif/2/s3:%2F%2Fbucket%2Fitem%2Fkey")]
+    public void GetSpecialServerPath_Versioned_Correct(Version version, string expected)
+    {
+        // Act
+        var actual = imageServerSettings.GetSpecialServerPath("s3://bucket/item/key", version);
+
+        // Assert
+        actual.Should().Be(expected);
+    }
 }

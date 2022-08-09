@@ -118,6 +118,11 @@ public class ProxySettings
     /// A collection of resize config for serving resized thumbs rather than handling requests via image-server
     /// </summary>
     public Dictionary<string, ThumbUpscaleConfig> ThumbUpscaleConfig { get; set; } = new();
+
+    /// <summary>
+    /// If true details of proxied location are added as x-proxy-* headers. Intended for debug use only.
+    /// </summary>
+    public bool AddProxyDebugHeaders { get; set; } = false;
 }
 
 /// <summary>

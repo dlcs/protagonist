@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
+using DLCS.Core.Streams;
 using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Repository.Strategy;
@@ -102,7 +103,7 @@ public class ImageOrchestrator : IImageOrchestrator
         await using (var originResponse = await s3OriginStrategy.LoadAssetFromOrigin(image.AssetId,
             image.S3Location, null, cancellationToken))
         {
-            if (originResponse == null || originResponse.Stream == Stream.Null)
+            if (originResponse == null || originResponse.Stream.IsNull())
             {
                 // TODO correct type of exception? Custom type?
                 logger.LogWarning("Unable to get asset {Asset} from {Origin}", image.AssetId,

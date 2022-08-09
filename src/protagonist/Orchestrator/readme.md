@@ -22,7 +22,10 @@ Handle image asset requests. Will:
 * Validate access for restricted assets.
 * Proxy `thumbs` for known thumbnail sizes.
 * Proxy `thumbsresize` for requests that can be served by resizing thumbs.
-* Ensure asset copied to fast disk and proxy to appropriate `image-server` for other sizes and tile requests. Image requests will have "CustomHeader" headers appended as required.
+* Proxy `specialserver` for `/full/` requests that cannot be handled by thumbs (e.g. due to size, quality, format, rotation).
+* Ensure asset copied to fast disk and proxy to appropriate `image-server` for other sizes and tile requests. 
+
+All image requests will have "CustomHeader" headers appended as required.
 
 Decision logic in `ImageRequestHandler` and routing logic in `ImageRouteHandler`. 
 
@@ -43,6 +46,7 @@ Decision logic in `TimeBasedRequestHandler` and routing logic in `TimeBasedRoute
 The following YARP Clusters are used:
 
 * cantaloupe - Cantaloupe image-server.
+* specialserver - Cantaloupe image-server configured to understand `s3://` URL from ImageLocation table and read directly from bucket, without needing to orchestrate.
 * iip - IIP image-server
 * thumbs - Protagonist thumbs service.
 * thumbsresize - Protagonist thumbs service, configured to resize thumbs on the fly.
