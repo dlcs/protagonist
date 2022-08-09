@@ -35,16 +35,20 @@ public class PortalUsersController : HydraController
     }
     
     
-        
-    // ################# GET /customers/id/portalUsers #####################
+    /// <summary>
+    /// GET /customers/{customerId}/portalUsers
+    /// 
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <returns>HydraCollection of PortalUser</returns>
     [HttpGet]
     [Route("{customerId}/portalUsers")]
-    public async Task<HydraCollection<PortalUser>> GetUsers(int customerId)
+    public async Task<HydraCollection<PortalUser>> GetPortalUsers(int customerId)
     {
         var users = await mediator.Send(new GetPortalUsers { CustomerId = customerId });
             
-        var baseUrl = getUrlRoots().BaseUrl;
-        var collection = new HydraCollection<DLCS.HydraModel.PortalUser>
+        var baseUrl = GetUrlRoots().BaseUrl;
+        var collection = new HydraCollection<PortalUser>
         {
             WithContext = true,
             Members = users.Select(s => s.ToHydra(baseUrl)).ToArray(),
@@ -55,26 +59,39 @@ public class PortalUsersController : HydraController
         return collection;
     }
         
-    // ################# GET /customers/id/portalUsers/id #####################
+    
+    /// <summary>
+    /// GET /customers/{customerId}/portalUsers/{userId}
+    /// 
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="userId"></param>
+    /// <returns></returns>
     [HttpGet]
     [Route("{customerId}/portalUsers/{userId}")]
-    public async Task<IActionResult> GetUser(int customerId, string userId)
+    public async Task<IActionResult> GetPortalUser(int customerId, string userId)
     {
         var users = await mediator.Send(new GetPortalUsers { CustomerId = customerId });
         var user = users.SingleOrDefault(u => u.Id == userId);
         if (user != null)
         {
-            return Ok(user.ToHydra(getUrlRoots().BaseUrl));
+            return Ok(user.ToHydra(GetUrlRoots().BaseUrl));
         }
 
         return HydraNotFound();
     }
         
         
-    // ################# POST /customers/id/portalUsers #####################
+    /// <summary>
+    /// POST /customers/{customerId}/portalUsers
+    /// 
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="portalUser"></param>
+    /// <returns></returns>
     [HttpPost]
     [Route("{customerId}/portalUsers")]
-    public async Task<IActionResult> CreateUser(int customerId, [FromBody] PortalUser portalUser)
+    public async Task<IActionResult> CreatePortalUser(int customerId, [FromBody] PortalUser portalUser)
     {
         var request = new CreatePortalUser
         {
@@ -88,18 +105,29 @@ public class PortalUsersController : HydraController
         var result = await mediator.Send(request);
         if (result.Error.HasText() || result.PortalUser == null)
         {
-            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Cannot create user", null);
+            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Cannot create user");
         }
             
-        var hydraPortalUser = result.PortalUser.ToHydra(getUrlRoots().BaseUrl);
-        return Created(hydraPortalUser.Id, hydraPortalUser);
+        var hydraPortalUser = result.PortalUser.ToHydra(GetUrlRoots().BaseUrl);
+        if (hydraPortalUser.Id.HasText())
+        {
+            return Created(hydraPortalUser.Id, hydraPortalUser);
+        }
+        return HydraProblem("No id on returned portal user", null, 500, "Cannot create user");
     }
         
         
-    // ################# PATCH /customers/id/portalUsers/id #####################
+    /// <summary>
+    /// PATCH /customers/{customerId}/portalUsers/{userId}
+    /// 
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="userId"></param>
+    /// <param name="portalUser"></param>
+    /// <returns></returns>
     [HttpPatch]
     [Route("{customerId}/portalUsers/{userId}")]
-    public async Task<IActionResult> PatchUser(int customerId, string userId, [FromBody] PortalUser portalUser)
+    public async Task<IActionResult> PatchPortalUser(int customerId, string userId, [FromBody] PortalUser portalUser)
     {
         // NB Deliverator doesn't support toggling Enabled here so we won't for now.
             
@@ -116,23 +144,29 @@ public class PortalUsersController : HydraController
         var result = await mediator.Send(request);
         if (result.Error.HasText() || result.PortalUser == null)
         {
-            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Cannot Patch user", null);
+            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Cannot PatchSpace user");
         }
             
-        var hydraPortalUser = result.PortalUser.ToHydra(getUrlRoots().BaseUrl);
+        var hydraPortalUser = result.PortalUser.ToHydra(GetUrlRoots().BaseUrl);
         return Ok(hydraPortalUser);
     }
         
         
-    // ################# DELETE /customers/id/portalUsers/id #####################
+    /// <summary>
+    /// DELETE /customers/{customerId}/portalUsers/{userId}
+    /// 
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="userId"></param>
+    /// <returns></returns>
     [HttpDelete]
     [Route("{customerId}/portalUsers/{userId}")]
-    public async Task<IActionResult> DeleteUser(int customerId, string userId)
+    public async Task<IActionResult> DeletePortalUser(int customerId, string userId)
     {
         var result = await mediator.Send(new DeletePortalUser(customerId, userId));
         if (result.Error.HasText())
         {
-            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Bad Request", null);
+            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Bad Request");
         }
 
         return NoContent();

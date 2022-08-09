@@ -17,7 +17,7 @@ namespace API.Features.Customer.Requests;
 public class CreatePortalUser : IRequest<CreatePortalUserResult>
 {
     public User PortalUser { get; set; }
-    public string Password { get; set; }
+    public string? Password { get; set; }
     
 }
 

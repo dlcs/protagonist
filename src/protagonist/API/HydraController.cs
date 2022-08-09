@@ -14,14 +14,22 @@ namespace API;
 /// </summary>
 public abstract class HydraController : Controller
 {
-    protected ApiSettings Settings;
+    /// <summary>
+    /// API Settings available to derived controller classes
+    /// </summary>
+    protected readonly ApiSettings Settings;
     
+    /// <inheritdoc />
     protected HydraController(ApiSettings settings)
     {
         Settings = settings;
     }
 
-    protected UrlRoots getUrlRoots()
+    /// <summary>
+    /// Used by derived controllers to construct correct fully qualified URLs in returned Hydra objects.
+    /// </summary>
+    /// <returns></returns>
+    protected UrlRoots GetUrlRoots()
     {
         return new UrlRoots
         {
@@ -66,7 +74,7 @@ public abstract class HydraController : Controller
     /// <param name="type">The value for <see cref="Error.Type" />.</param>
     /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
     [NonAction]
-    public virtual ObjectResult HydraProblem(
+    protected virtual ObjectResult HydraProblem(
         IEnumerable<string>? errorMessages = null,
         string? instance = null,
         int? statusCode = null,
@@ -93,7 +101,7 @@ public abstract class HydraController : Controller
     /// <param name="type">The value for <see cref="Error.Type" />.</param>
     /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
     [NonAction]
-    public virtual ObjectResult HydraProblem(
+    protected virtual ObjectResult HydraProblem(
         string? detail = null,
         string? instance = null,
         int? statusCode = null,
@@ -125,9 +133,9 @@ public abstract class HydraController : Controller
     /// <param name="otherException"></param>
     /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
     [NonAction]
-    public virtual ObjectResult HydraProblem(Exception otherException)
+    protected virtual ObjectResult HydraProblem(Exception otherException)
     {
-        return HydraProblem(otherException.Message, null, 500, null, null);
+        return HydraProblem(otherException.Message, null, 500);
     }
 
     /// <summary> 
@@ -136,7 +144,7 @@ public abstract class HydraController : Controller
     /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
     public virtual ObjectResult HydraNotFound(string? detail = null)
     {
-        return HydraProblem(detail, null, 404, "Not Found", null);
+        return HydraProblem(detail, null, 404, "Not Found");
     }
 }
 
