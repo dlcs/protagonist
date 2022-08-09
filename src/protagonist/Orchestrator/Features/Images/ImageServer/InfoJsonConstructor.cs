@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Collections;
 using IIIF;
 using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
@@ -57,11 +58,13 @@ public class InfoJsonConstructor
         // Placeholder, will be rewritten on way out
         imageService.Id = $"v2/{orchestrationImage.AssetId}";
 
-        if (orchestrationImage.RequiresAuth)
+        if (orchestrationImage.RequiresAuth && !orchestrationImage.Roles.IsNullOrEmpty())
         {
-            imageService.Service ??= new List<IService>(1);
             var authCookieServiceForAsset =
                 await iiifAuthBuilder.GetAuthCookieServiceForAsset(orchestrationImage, cancellationToken);
+            if (authCookieServiceForAsset == null) return;
+            
+            imageService.Service ??= new List<IService>(1);
             imageService.Service.Add(authCookieServiceForAsset);
         }
     }
@@ -74,11 +77,13 @@ public class InfoJsonConstructor
         // Placeholder, will be rewritten on way out
         imageService.Id = $"v3/{orchestrationImage.AssetId}";
 
-        if (orchestrationImage.RequiresAuth)
+        if (orchestrationImage.RequiresAuth && !orchestrationImage.Roles.IsNullOrEmpty())
         {
-            imageService.Service ??= new List<IService>(1);
             var authCookieServiceForAsset =
                 await iiifAuthBuilder.GetAuthCookieServiceForAsset(orchestrationImage, cancellationToken);
+            if (authCookieServiceForAsset == null) return;
+            
+            imageService.Service ??= new List<IService>(1);
             imageService.Service.Add(authCookieServiceForAsset);
         }
     }

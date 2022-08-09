@@ -15,6 +15,7 @@ using FluentAssertions;
 using IIIF;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
+using IIIF.Serialisation;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
@@ -329,6 +330,9 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task GetInfoJson_DoesNotOrchestratesImage_IfServedFromImageServer()
     {
+        // NOTE: This is testing that the infojson handler orchestrates - the image will have been orchestrated to allow
+        // the imageserver to serve but this isn't caught in these tests 
+        
         // Arrange
         var id = $"99/1/{nameof(GetInfoJson_DoesNotOrchestratesImage_IfServedFromImageServer)}";
         await dbFixture.DbContext.Images.AddTestAsset(id);
@@ -429,12 +433,41 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
 
         // Assert
-        // TODO - improve these tests when we have IIIF models
-        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["id"].ToString().Should()
-            .Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_Correct");
-        jsonResponse.SelectToken("service.[0].@id").Value<string>().Should()
-            .Be("https://localhost/auth/99/test-service");
+        var responseStream = await response.Content.ReadAsStreamAsync();
+        var infoJson = responseStream.FromJsonStream<ImageService3>();
+
+        infoJson.Id.Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_Correct");
+        infoJson.Service.Single().Id.Should().Be("https://localhost/auth/99/test-service");
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.CacheControl.Public.Should().BeFalse();
+        response.Headers.CacheControl.Private.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+    }
+    
+    [Fact]
+    public async Task GetInfoJson_RestrictedImage_NoRole_HasNoService()
+    {
+        // Arrange
+        var id = $"99/1/{nameof(GetInfoJson_RestrictedImage_NoRole_HasNoService)}";
+        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 500);
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": [[400,400],[200,200]]}"
+        });
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
+
+        // Assert
+        var responseStream = await response.Content.ReadAsStreamAsync();
+        var infoJson = responseStream.FromJsonStream<ImageService3>();
+
+        infoJson.Id.Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_NoRole_Correct");
+        infoJson.Service.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         response.Headers.CacheControl.Public.Should().BeFalse();
         response.Headers.CacheControl.Private.Should().BeTrue();

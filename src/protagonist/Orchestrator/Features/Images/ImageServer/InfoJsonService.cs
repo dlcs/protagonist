@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Core.Streams;
 using DLCS.Model.Storage;
 using IIIF;
 using IIIF.ImageApi;
@@ -50,7 +51,7 @@ public class InfoJsonService
         var infoJsonKey = GetInfoJsonKey(orchestrationImage, version);
         await using var infoJson = await GetStoredInfoJson(infoJsonKey, cancellationToken);
 
-        if (infoJson != null && infoJson != Stream.Null)
+        if (!infoJson.IsNull())
         {
             // If info.json found in S3, return it
             JsonLdBase deserialisedInfoJson = version == Version.V2
