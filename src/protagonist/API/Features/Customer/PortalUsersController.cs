@@ -144,7 +144,7 @@ public class PortalUsersController : HydraController
         var result = await mediator.Send(request);
         if (result.Error.HasText() || result.PortalUser == null)
         {
-            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Cannot PatchSpace user");
+            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Cannot Patch user");
         }
             
         var hydraPortalUser = result.PortalUser.ToHydra(GetUrlRoots().BaseUrl);

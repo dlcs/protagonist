@@ -50,12 +50,12 @@ public class ImageController : HydraController
     /// <summary>
     /// GET /customers/{customerId}/spaces/{spaceId}/images/{imageId}
     /// 
-    /// A single Hydra GetImage.
+    /// A single Hydra Image.
     /// </summary>
     /// <param name="customerId">(from resource path)</param>
     /// <param name="spaceId">(from resource path)</param>
     /// <param name="imageId">(from resource path)</param>
-    /// <returns>A Hydra JSON-LD GetImage object representing the Asset.</returns>
+    /// <returns>A Hydra JSON-LD Image object representing the Asset.</returns>
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(DLCS.HydraModel.Image))]
     [ProducesResponseType(404, Type = typeof(Error))]
@@ -83,7 +83,7 @@ public class ImageController : HydraController
     /// <param name="pageSize"></param>
     /// <param name="orderBy"></param>
     /// <param name="orderByDescending"></param>
-    /// <returns>A Hydra Collection of GetImage objects as JSON-LD</returns>
+    /// <returns>A Hydra Collection of Image objects as JSON-LD</returns>
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
     [ProducesResponseType(404, Type = typeof(Error))]
@@ -127,8 +127,8 @@ public class ImageController : HydraController
     /// <param name="customerId">(from resource path)</param>
     /// <param name="spaceId">(from resource path)</param>
     /// <param name="imageId">(from resource path)</param>
-    /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (GetImage class)</param>
-    /// <returns>The created or updated Hydra GetImage object for the Asset</returns>
+    /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
+    /// <returns>The created or updated Hydra Image object for the Asset</returns>
     [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))] // for PatchSpace
     [ProducesResponseType((int)HttpStatusCode.Created, Type = typeof(DLCS.HydraModel.Image))] // for PUT when created
     [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
@@ -194,8 +194,8 @@ public class ImageController : HydraController
     /// </summary>
     /// <param name="customerId">(from resource path)</param>
     /// <param name="spaceId">(from resource path)</param>
-    /// <param name="images">The JSON-LD request body, a HydraCollection of Hydra GetImage objects.</param>
-    /// <returns>A HydraCollection of the updated Assets, as Hydra GetImage objects.</returns>
+    /// <param name="images">The JSON-LD request body, a HydraCollection of Hydra Image objects.</param>
+    /// <returns>A HydraCollection of the updated Assets, as Hydra Image objects.</returns>
     [HttpPatch]
     [ProducesResponseType(200, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
     [ProducesResponseType(400, Type = typeof(Error))]
@@ -293,7 +293,7 @@ public class ImageController : HydraController
     ///
     ///     POST: /customers/1/spaces/1/images/my-image
     ///     {
-    ///         "@type":"GetImage",
+    ///         "@type":"Image",
     ///         "family": "I",
     ///         "file": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAM...."
     ///     }
