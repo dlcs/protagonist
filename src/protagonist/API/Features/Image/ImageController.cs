@@ -115,8 +115,66 @@ public class ImageController : HydraController
         PartialCollectionView.AddPaging(collection, page.Value, pageSize.Value, orderByField, descending);
         return Ok(collection);
     }
-    
-    
+
+
+    /// <summary>
+    /// PUT /customers/{customerId}/spaces/{spaceId}/images/{imageId}
+    /// 
+    /// PUT an asset to its ID location
+    /// </summary>
+    /// <param name="customerId">(from resource path)</param>
+    /// <param name="spaceId">(from resource path)</param>
+    /// <param name="imageId">(from resource path)</param>
+    /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
+    /// <returns>The created or updated Hydra Image object for the Asset</returns>
+    [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))]
+    [ProducesResponseType((int)HttpStatusCode.Created, Type = typeof(DLCS.HydraModel.Image))]
+    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(ProblemDetails))]
+    [HttpPut]
+    [Route("{imageId}")]
+    public async Task<IActionResult> PutImage(
+        [FromRoute] int customerId,
+        [FromRoute] int spaceId,
+        [FromRoute] string imageId,
+        [FromBody] DLCS.HydraModel.Image hydraAsset)
+    {
+        return await PutOrPatchImage(customerId, spaceId, imageId, hydraAsset);
+    }
+
+    /// <summary>
+    /// PATCH /customers/{customerId}/spaces/{spaceId}/images/{imageId}
+    /// 
+    /// PATCH asset at that location.
+    /// </summary>
+    /// <param name="customerId">(from resource path)</param>
+    /// <param name="spaceId">(from resource path)</param>
+    /// <param name="imageId">(from resource path)</param>
+    /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
+    /// <returns>The created or updated Hydra Image object for the Asset</returns>
+    [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))] // for PATCH
+    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(ProblemDetails))]
+    [HttpPatch]
+    [Route("{imageId}")]
+    public async Task<IActionResult> PatchImage(
+        [FromRoute] int customerId,
+        [FromRoute] int spaceId,
+        [FromRoute] string imageId,
+        [FromBody] DLCS.HydraModel.Image hydraAsset)
+    {
+        return await PutOrPatchImage(customerId, spaceId, imageId, hydraAsset);
+    }
+
+
     /// <summary>
     /// PUT   /customers/{customerId}/spaces/{spaceId}/images/{imageId}
     /// PATCH /customers/{customerId}/spaces/{spaceId}/images/{imageId}
@@ -129,18 +187,7 @@ public class ImageController : HydraController
     /// <param name="imageId">(from resource path)</param>
     /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
     /// <returns>The created or updated Hydra Image object for the Asset</returns>
-    [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))] // for PATCH
-    [ProducesResponseType((int)HttpStatusCode.Created, Type = typeof(DLCS.HydraModel.Image))] // for PUT when created
-    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(ProblemDetails))]
-    [HttpPut]
-    [HttpPatch]
-    [Route("{imageId}")]
-    public async Task<IActionResult> PutOrPatchImage(
+    private async Task<IActionResult> PutOrPatchImage(
         [FromRoute] int customerId,
         [FromRoute] int spaceId,
         [FromRoute] string imageId,
