@@ -129,7 +129,7 @@ public class ImageController : HydraController
     /// <param name="imageId">(from resource path)</param>
     /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
     /// <returns>The created or updated Hydra Image object for the Asset</returns>
-    [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))] // for PatchSpace
+    [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))] // for PATCH
     [ProducesResponseType((int)HttpStatusCode.Created, Type = typeof(DLCS.HydraModel.Image))] // for PUT when created
     [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
     [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(ProblemDetails))]
