@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -38,11 +39,12 @@ public class AssetDeliveryPathParser : IAssetDeliveryPathParser
         where T : BaseAssetRequest, new()
     {
         var assetRequest = new T();
-        await ParseBaseAssetRequest(path, assetRequest);
+        var escapedPath = WebUtility.UrlDecode(path);
+        await ParseBaseAssetRequest(escapedPath, assetRequest);
 
         if (assetRequest is ImageAssetDeliveryRequest imageAssetRequest)
         {
-            imageAssetRequest.IIIFImageRequest = ImageRequest.Parse(path, assetRequest.BasePath);
+            imageAssetRequest.IIIFImageRequest = ImageRequest.Parse(escapedPath, assetRequest.BasePath);
         }
         else if (assetRequest is TimeBasedAssetDeliveryRequest timebasedAssetRequest)
         {
@@ -57,7 +59,7 @@ public class AssetDeliveryPathParser : IAssetDeliveryPathParser
         const int routeIndex = 0;
         const int defaultCustomerIndex = 1;
         const int defaultSpacesIndex = 2;
-        
+
         string[] parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
         
         // The first slug after prefix is generally customer but it might be version number
