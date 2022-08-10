@@ -23,7 +23,7 @@ public class PatchSpace : IRequest<PatchSpaceResult>
 
 public class PatchSpaceResult
 {
-    public DLCS.Model.Spaces.Space Space;
+    public DLCS.Model.Spaces.Space? Space;
     public List<string> ErrorMessages = new List<string>();
     public bool Conflict { get; set; }
 }

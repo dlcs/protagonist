@@ -32,8 +32,13 @@ public class ApiKeysController : HydraController
         this.mediator = mediator;
     }
     
-    
-    // ################# GET /customers/id/keys #####################
+    /// <summary>
+    /// GET /customers/id/keys
+    ///
+    /// List of all the API Keys available for this customer
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <returns>HydraCollection of ApiKey objects</returns>
     [HttpGet]
     [Route("{customerId}/keys")]
     public async Task<IActionResult> GetApiKeys(int customerId)
@@ -44,7 +49,7 @@ public class ApiKeysController : HydraController
             return HydraNotFound();
         }
 
-        var urlRoots = getUrlRoots();
+        var urlRoots = GetUrlRoots();
         var collection = new HydraCollection<ApiKey>
         {
             WithContext = true,
@@ -59,30 +64,43 @@ public class ApiKeysController : HydraController
     }
         
         
-    // ################# POST /customers/id/keys #####################
+    /// <summary>
+    /// POST /customers/id/keys
+    ///
+    /// Client can obtain a new key by posting an empty payload
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <returns>newly created ApiKey</returns>
     [HttpPost]
     [Route("{customerId}/keys")]
-    public async Task<IActionResult> CreateNewApiKey(int customerId)
+    public async Task<IActionResult> CreateApiKey(int customerId)
     {
         var result = await mediator.Send(new CreateApiKey(customerId));
         if (result.Key.HasText() && result.Secret.HasText())
         {
-            return Ok(new ApiKey(getUrlRoots().BaseUrl, customerId, result.Key, result.Secret));
+            return Ok(new ApiKey(GetUrlRoots().BaseUrl, customerId, result.Key, result.Secret));
         }
 
-        return HydraProblem("Unable to create API key", null, 500, "API Key", null);
+        return HydraProblem("Unable to create API key", null, 500, "API Key");
     }
         
         
-    // ################# DELETE /customers/id/keys/key #####################
+    /// <summary>
+    /// DELETE /customers/id/keys/key
+    ///
+    /// Remove a key so that it can no longer be used.
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="key"></param>
+    /// <returns>No content</returns>
     [HttpDelete]
     [Route("{customerId}/keys/{key}")]
-    public async Task<IActionResult> DeleteKey(int customerId, string key)
+    public async Task<IActionResult> DeleteApiKey(int customerId, string key)
     {
         var result = await mediator.Send(new DeleteApiKey(customerId, key));
         if (result.Error.HasText())
         {
-            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Bad Request", null);
+            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Bad Request");
         }
 
         return NoContent();

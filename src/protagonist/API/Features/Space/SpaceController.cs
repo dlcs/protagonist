@@ -15,6 +15,9 @@ using Microsoft.Extensions.Options;
 
 namespace API.Features.Space;
 
+/// <summary>
+/// DLCS REST API Operations for Spaces.
+/// </summary>
 [Route("/customers/{customerId}/spaces")]
 [ApiController]
 public class SpaceController : HydraController
@@ -22,6 +25,7 @@ public class SpaceController : HydraController
     private readonly IMediator mediator;
     private readonly ILogger<SpaceController> logger;
 
+    /// <inheritdoc />
     public SpaceController(
         IMediator mediator,
         IOptions<ApiSettings> options,
@@ -32,15 +36,25 @@ public class SpaceController : HydraController
     }
     
     
+    /// <summary>
+    /// GET /customers/{customerId}/spaces
+    /// 
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="page"></param>
+    /// <param name="pageSize"></param>
+    /// <param name="orderBy"></param>
+    /// <param name="orderByDescending"></param>
+    /// <returns>HydraCollection of Space</returns>
     [HttpGet]
-    public async Task<HydraCollection<DLCS.HydraModel.Space>> Index(
+    public async Task<HydraCollection<DLCS.HydraModel.Space>> GetSpaces(
         int customerId, int? page = 1, int? pageSize = -1, 
         string? orderBy = null, string? orderByDescending = null)
     {
-        if (pageSize < 0) pageSize = Settings.PageSize;
-        if (page < 0) page = 1;
+        if (pageSize is null or < 0) pageSize = Settings.PageSize;
+        if (page is null or < 0) page = 1;
         var orderByField = GetOrderBy(orderBy, orderByDescending, out var descending);
-        var baseUrl = getUrlRoots().BaseUrl;
+        var baseUrl = GetUrlRoots().BaseUrl;
         var pageOfSpaces = await mediator.Send(new GetPageOfSpaces(
             page.Value, pageSize.Value, customerId, orderByField, descending));
         
@@ -58,6 +72,8 @@ public class SpaceController : HydraController
 
 
     /// <summary>
+    /// POST /customers/{customerId}/spaces
+    /// 
     /// Create a new space within this customer.
     /// DLCS assigns identity.
     /// </summary>
@@ -65,17 +81,17 @@ public class SpaceController : HydraController
     /// <param name="space"></param>
     /// <returns></returns>
     [HttpPost]
-    public async Task<IActionResult> Index(
+    public async Task<IActionResult> CreateSpace(
         [FromRoute] int customerId, [FromBody] DLCS.HydraModel.Space space)
     {
         logger.LogInformation("API will create a space");
         if (string.IsNullOrWhiteSpace(space.Name))
         {
-            return HydraProblem("A space must have a name.", null, 400, "Invalid Space", null);
+            return HydraProblem("A space must have a name.", null, 400, "Invalid Space");
         }
         if (customerId <= 0)
         {
-            return HydraProblem("Space must be created for an existing Customer.", null, 400, "Invalid Space", null);
+            return HydraProblem("Space must be created for an existing Customer.", null, 400, "Invalid Space");
         }
         
         var command = new CreateSpace(customerId, space.Name)
@@ -88,35 +104,56 @@ public class SpaceController : HydraController
         try
         {
             var newDbSpace = await mediator.Send(command);
-            var newApiSpace = newDbSpace.ToHydra(getUrlRoots().BaseUrl);
-            return Created(newApiSpace.Id, newApiSpace);
+            var newApiSpace = newDbSpace.ToHydra(GetUrlRoots().BaseUrl);
+            if (newApiSpace.Id.HasText())
+            {
+                return Created(newApiSpace.Id, newApiSpace);
+            }
+            return HydraProblem("New space not assigned an ID", 
+                null, 500, "Bad Request");
+            
         }
         catch (BadRequestException badRequestException)
         {
-            // Are exceptions the way this info should be passed back to the controller?
             return HydraProblem(badRequestException.Message, 
-                null, badRequestException.StatusCode, "Bad Request", null);
+                null, badRequestException.StatusCode, "Bad Request");
         }
     }
     
+    /// <summary>
+    /// GET /customers/{customerId}/spaces/{spaceId}
+    /// 
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="spaceId"></param>
+    /// <returns></returns>
     [HttpGet]
     [Route("{spaceId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.Space))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Index(int customerId, int spaceId)
+    public async Task<IActionResult> GetSpace(int customerId, int spaceId)
     {
         var dbSpace = await mediator.Send(new GetSpace(customerId, spaceId));
         if (dbSpace != null)
         {
-            return Ok(dbSpace.ToHydra(getUrlRoots().BaseUrl));
+            return Ok(dbSpace.ToHydra(GetUrlRoots().BaseUrl));
         }
 
         return NotFound();
     }
     
+    
+    /// <summary>
+    /// PATCH /customers/{customerId}/spaces/{spaceId}
+    /// 
+    /// </summary>
+    /// <param name="customerId"></param>
+    /// <param name="spaceId"></param>
+    /// <param name="space"></param>
+    /// <returns></returns>
     [HttpPatch]
     [Route("{spaceId}")]
-    public async Task<IActionResult> Patch(
+    public async Task<IActionResult> PatchSpace(
         int customerId, int spaceId, [FromBody] DLCS.HydraModel.Space space)
     {
         var patchSpace = new PatchSpace
@@ -132,14 +169,14 @@ public class SpaceController : HydraController
         var result = await mediator.Send(patchSpace);
         if (!result.ErrorMessages.Any() && result.Space != null)
         {
-            return Ok(result.Space.ToHydra(getUrlRoots().BaseUrl));
+            return Ok(result.Space.ToHydra(GetUrlRoots().BaseUrl));
         }
         
         if (result.Conflict)
         {
-            return HydraProblem(result.ErrorMessages, null, 409, "Space name taken", null);
+            return HydraProblem(result.ErrorMessages, null, 409, "Space name taken");
         }
-        return HydraProblem(result.ErrorMessages, null, 500, "Cannot patch space", null);
+        return HydraProblem(result.ErrorMessages, null, 500, "Cannot patch space");
     }
     
     

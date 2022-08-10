@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Customer.Requests;
 using API.Settings;
+using DLCS.Core.Strings;
 using DLCS.Web.Auth;
 using DLCS.Web.Requests;
 using Hydra.Collections;
@@ -34,18 +35,20 @@ public class CustomerController : HydraController
         this.mediator = mediator;
     }
         
-    // ################# GET /customers #####################
+    
     /// <summary>
+    /// GET /customers
+    /// 
     /// Get all the customers.
     /// Although it returns a paged collection, the page size is always the total number of customers:
     /// clients don't need to page this collection, it contains all customers.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>HydraCollection of JObject (simplified customer)</returns>
     [AllowAnonymous]
     [HttpGet]
-    public async Task<HydraCollection<JObject>> Index()
+    public async Task<HydraCollection<JObject>> GetCustomers()
     {
-        var baseUrl = getUrlRoots().BaseUrl;
+        var baseUrl = GetUrlRoots().BaseUrl;
         var dbCustomers = await mediator.Send(new GetAllCustomers());
             
         return new HydraCollection<JObject>
@@ -59,14 +62,15 @@ public class CustomerController : HydraController
     }
 
         
-    // ################# POST /customers #####################
     /// <summary>
+    /// POST /customers
+    /// 
     /// The /customers/ path is not access controlled, but only an admin may call this.
     /// </summary>
     /// <param name="newCustomer"></param>
     /// <returns></returns>
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] DLCS.HydraModel.Customer newCustomer)
+    public async Task<IActionResult> CreateCustomer([FromBody] DLCS.HydraModel.Customer newCustomer)
     {
         if (!User.IsAdmin())
         {
@@ -76,7 +80,7 @@ public class CustomerController : HydraController
         var basicErrors = HydraCustomerValidator.GetNewHydraCustomerErrors(newCustomer);
         if (basicErrors.Any())
         {
-            return HydraProblem(basicErrors, null, 400, "Invalid Customer", null);
+            return HydraProblem(basicErrors, null, 400, "Invalid Customer");
         }
 
         var command = new CreateCustomer(newCustomer.Name!, newCustomer.DisplayName!);
@@ -87,10 +91,14 @@ public class CustomerController : HydraController
             if (result.Customer == null || result.ErrorMessages.Any())
             {
                 int statusCode = result.Conflict ? 409 : 500;
-                return HydraProblem(result.ErrorMessages, null, statusCode, "Could not create Customer", null);
+                return HydraProblem(result.ErrorMessages, null, statusCode, "Could not create Customer");
             }
-            var newApiCustomer = result.Customer.ToHydra(getUrlRoots().BaseUrl);
-            return Created(newApiCustomer.Id, newApiCustomer);
+            var newApiCustomer = result.Customer.ToHydra(GetUrlRoots().BaseUrl);
+            if (newApiCustomer.Id.HasText())
+            {
+                return Created(newApiCustomer.Id, newApiCustomer);
+            }
+            return HydraProblem("No ID assigned for new customer", null, 500, "Could not create Customer");
         }
         catch (Exception ex)
         {
@@ -100,21 +108,22 @@ public class CustomerController : HydraController
     }
         
         
-    // ################# GET /customers/id #####################
     /// <summary>
+    /// GET /customers/id
+    /// 
     /// Get a Customer
     /// </summary>
     /// <param name="customerId"></param>
     /// <returns></returns>
     [HttpGet]
     [Route("{customerId}")]
-    public async Task<IActionResult> Index(int customerId)
+    public async Task<IActionResult> GetCustomer(int customerId)
     {
         var dbCustomer = await mediator.Send(new GetCustomer(customerId));
         if (dbCustomer == null)
         {
             return HydraNotFound();
         }
-        return Ok(dbCustomer.ToHydra(getUrlRoots().BaseUrl));
+        return Ok(dbCustomer.ToHydra(GetUrlRoots().BaseUrl));
     }
 }
