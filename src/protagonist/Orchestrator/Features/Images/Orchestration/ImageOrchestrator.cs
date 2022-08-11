@@ -1,8 +1,6 @@
 ﻿using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using API.Client;
 using DLCS.Core.Streams;
 using DLCS.Core.Threading;
 using DLCS.Core.Types;
@@ -33,13 +31,14 @@ public class ImageOrchestrator : IImageOrchestrator
     private readonly IFileSaver fileSaver;
     private readonly IDlcsApiClient dlcsApiClient;
     private readonly ILogger<ImageOrchestrator> logger;
-    private readonly AsyncKeyedLock asyncLocker = new();
+    private readonly IKeyedLock asyncLocker;
 
     public ImageOrchestrator(IAssetTracker assetTracker,
         IOptions<OrchestratorSettings> orchestratorSettings,
         S3AmbientOriginStrategy s3OriginStrategy,
         IFileSaver fileSaver,
         IDlcsApiClient dlcsApiClient,
+        IKeyedLock asyncLocker,
         ILogger<ImageOrchestrator> logger)
     {
         this.assetTracker = assetTracker;
@@ -47,6 +46,7 @@ public class ImageOrchestrator : IImageOrchestrator
         this.s3OriginStrategy = s3OriginStrategy;
         this.fileSaver = fileSaver;
         this.dlcsApiClient = dlcsApiClient;
+        this.asyncLocker = asyncLocker;
         this.logger = logger;
     }
     
@@ -123,7 +123,7 @@ public class ImageOrchestrator : IImageOrchestrator
         var lockTimeout = TimeSpan.FromMilliseconds(orchestratorSettings.Value.CriticalPathTimeoutMs);
         var updateLock = await asyncLocker.LockAsync(lockKey, lockTimeout, false, cancellationToken);
 
-        if (!updateLock.HaveLock)
+        if (!updateLock.ExclusiveLock)
         {
             logger.LogWarning("Unable to attain orchestration lock for {AssetId} within {Timeout}ms",
                 assetId, lockTimeout.TotalMilliseconds);

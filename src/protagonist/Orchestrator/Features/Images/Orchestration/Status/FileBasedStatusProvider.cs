@@ -17,13 +17,14 @@ namespace Orchestrator.Features.Images.Orchestration.Status;
 public class FileBasedStatusProvider : IImageOrchestrationStatusProvider
 {
     private readonly IOptions<OrchestratorSettings> orchestratorSettings;
-    private readonly AsyncKeyedLock asyncLocker = new();
+    private readonly IKeyedLock asyncLocker;
     
     public FileBasedStatusProvider(
-        IOptions<OrchestratorSettings> orchestratorSettings
-    )
+        IOptions<OrchestratorSettings> orchestratorSettings,
+        IKeyedLock asyncLocker)
     {
         this.orchestratorSettings = orchestratorSettings;
+        this.asyncLocker = asyncLocker;
     }
     
     public async Task<OrchestrationStatus> GetOrchestrationStatus(AssetId assetId,
@@ -59,6 +60,6 @@ public class FileBasedStatusProvider : IImageOrchestrationStatusProvider
         var lockKey = ImageOrchestrationKeys.GetOrchestrationLockKey(assetId);
         
         using var updateLock = await asyncLocker.LockAsync(lockKey, TimeSpan.Zero, false, cancellationToken);
-        return !updateLock.HaveLock;
+        return !updateLock.ExclusiveLock;
     }
 }

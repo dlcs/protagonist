@@ -2,6 +2,7 @@
 using DLCS.AWS.S3;
 using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
+using DLCS.Core.Threading;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Auth;
@@ -106,6 +107,7 @@ public static class ServiceCollectionX
             .AddSingleton<IAssetTracker, MemoryAssetTracker>()
             .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
             .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
+            .AddSingleton<IKeyedLock, OrchestrationLock>()
             .AddSingleton<IOrchestrationQueue>(_ =>
                 new BoundedChannelOrchestrationQueue(settings.OrchestrateOnInfoJsonMaxCapacity));
 

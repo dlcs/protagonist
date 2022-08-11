@@ -32,7 +32,7 @@ public class AsyncKeyedLockTests
                 {
                     await Task.Delay(400);
                     calls.Add("Quick attain, run slow");
-                    theLock.HaveLock.Should().BeTrue();
+                    theLock.ExclusiveLock.Should().BeTrue();
                     task1Complete = true;
                 }
             }),
@@ -43,7 +43,7 @@ public class AsyncKeyedLockTests
                 using (var theLock = await new AsyncKeyedLock().LockAsync(key))
                 {
                     calls.Add("Slow attain, run quick");
-                    theLock.HaveLock.Should().BeTrue();
+                    theLock.ExclusiveLock.Should().BeTrue();
                     task1Complete.Should().BeTrue();
                 }
             }));
@@ -68,7 +68,7 @@ public class AsyncKeyedLockTests
                 {
                     await Task.Delay(400);
                     calls.Add("Quick attain, run slow");
-                    theLock.HaveLock.Should().BeTrue();
+                    theLock.ExclusiveLock.Should().BeTrue();
                     task1Complete = true;
                 }
             }),
@@ -79,7 +79,7 @@ public class AsyncKeyedLockTests
                 using (var theLock = await sut.LockAsync(key))
                 {
                     calls.Add("Slow attain, run quick");
-                    theLock.HaveLock.Should().BeTrue();
+                    theLock.ExclusiveLock.Should().BeTrue();
                     task1Complete.Should().BeTrue();
                 }
             }));
@@ -104,7 +104,7 @@ public class AsyncKeyedLockTests
                 {
                     await Task.Delay(400);
                     calls.Add("Quick attain, run slow");
-                    theLock.HaveLock.Should().BeTrue();
+                    theLock.ExclusiveLock.Should().BeTrue();
                     task1Complete = true;
                 }
             }),
@@ -115,7 +115,7 @@ public class AsyncKeyedLockTests
                 using (var theLock = await sut.LockAsync($"not{key}"))
                 {
                     calls.Add("Slow attain, run quick");
-                    theLock.HaveLock.Should().BeTrue();
+                    theLock.ExclusiveLock.Should().BeTrue();
                     task1Complete.Should().BeFalse();
                 }
             }));
@@ -140,7 +140,7 @@ public class AsyncKeyedLockTests
                 using (var theLock = await sut.LockAsync(key))
                 {
                     await Task.Delay(400);
-                    theLock.HaveLock.Should().BeTrue();
+                    theLock.ExclusiveLock.Should().BeTrue();
                     calls.Add("Quick attain, run slow");
                     task1Complete = true;
                 }
@@ -152,7 +152,7 @@ public class AsyncKeyedLockTests
                 using (var theLock = await sut.LockAsync(key, TimeSpan.FromMilliseconds(100)))
                 {
                     calls.Add("Slow attain, run quick");
-                    theLock.HaveLock.Should().BeFalse();
+                    theLock.ExclusiveLock.Should().BeFalse();
                     task1Complete.Should().BeFalse();
                 }
             }),
@@ -163,7 +163,7 @@ public class AsyncKeyedLockTests
                 using (var theLock = await sut.LockAsync(key))
                 {
                     calls.Add("Verify timeout lock doesn't affect normal process");
-                    theLock.HaveLock.Should().BeTrue();
+                    theLock.ExclusiveLock.Should().BeTrue();
                     task2Complete.Should().BeFalse();
                 }
             }));
@@ -182,11 +182,11 @@ public class AsyncKeyedLockTests
         using (var firstLock = await sut.LockAsync("first"))
         {
             calls.Add("Attained first");
-            firstLock.HaveLock.Should().BeTrue();
+            firstLock.ExclusiveLock.Should().BeTrue();
             using (var secondLock = await sut.LockAsync("second"))
             {
                 calls.Add("Attained second");
-                secondLock.HaveLock.Should().BeTrue();
+                secondLock.ExclusiveLock.Should().BeTrue();
             }
             calls.Add("Released second");
         }
