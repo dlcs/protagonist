@@ -96,17 +96,12 @@ public class ImageController : HydraController
     {
         if (pageSize is null or < 0) pageSize = Settings.PageSize;
         if (page is null or < 0) page = 1;
-        AssetFilter? assetFilter = null;
-        if (q.HasText())
-        {
-            assetFilter = Request.GetAssetFilterFromQParam(q);
-            if (assetFilter == null)
-            {
-                return HydraProblem("Could not parse query", null, 400);
-            }
-        }
-        // Now augment this assetFilter, or create one if we don't have one yet
+        var assetFilter = Request.GetAssetFilterFromQParam(q);
         assetFilter = Request.UpdateAssetFilterFromQueryStringParams(assetFilter);
+        if (q.HasText() && assetFilter == null)
+        {
+            return HydraProblem("Could not parse query", null, 400);
+        }
         var orderByField = GetOrderBy(orderBy, orderByDescending, out var descending);
         var imagesRequest = new GetSpaceImages(descending, page.Value, pageSize.Value, 
             spaceId, customerId, orderByField, assetFilter);
