@@ -684,16 +684,21 @@ public class AssetTests :
 
     }
 
-    [Fact]
-    public async void Paged_Assets_Can_Be_Queried()
+    [Theory]
+    [InlineData("/customers/99/spaces/381/images?pageSize=50&q={\"string3\": \"16-20\"}", 5)]
+    [InlineData("/customers/99/spaces/382/images?pageSize=50&q={\"string2\": \"1-10\"}", 10)]
+    [InlineData("/customers/99/spaces/383/images?pageSize=50&q={\"number3\": 2}", 7)]
+    [InlineData("/customers/99/spaces/384/images?pageSize=50&q={\"number3\": 2, \"string2\": \"1-10\"}", 3)]
+    [InlineData("/customers/99/spaces/385/images?pageSize=50&q={\"number3\": 2}&string2=1-10", 3)]
+    public async void Paged_Assets_Can_Be_Queried(string url, int count)
     {
-        // arrange
-        await dbContext.Spaces.AddTestSpace(99, 377, "query-tests");
+        int space = Convert.ToInt32(url.Split('/')[4]);
+        await dbContext.Spaces.AddTestSpace(99, space, $"query-tests-{space}");
         for (int i = 1; i <= 20; i++)
         {
             var padded = i.ToString().PadLeft(4, '0');
-            await dbContext.Images.AddTestAsset($"99/377/asset-{padded}",
-                customer: 99, space: 377,
+            await dbContext.Images.AddTestAsset($"99/{space}/asset-{padded}",
+                customer: 99, space: space,
                 num1: i, num2: i % 2, num3: i % 3,
                 ref1: $"Asset {padded}",
                 ref2: i < 11 ? "1-10" : "11-20",
@@ -702,48 +707,10 @@ public class AssetTests :
         await dbContext.SaveChangesAsync();
         
         // Act
-        var assetPage = "/customers/99/spaces/377/images?pageSize=50&q={\"string3\": \"16-20\"}";
-        var response = await httpClient.AsCustomer(99).GetAsync(assetPage);
+        var response = await httpClient.AsCustomer(99).GetAsync(url);
 
         // Assert
         var coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
-        coll.Members.Length.Should().Be(5);
-        
-        
-        // Act
-        assetPage = "/customers/99/spaces/377/images?pageSize=50&q={\"string2\": \"1-10\"}";
-        response = await httpClient.AsCustomer(99).GetAsync(assetPage);
-
-        // Assert
-        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
-        coll.Members.Length.Should().Be(10);
-        
-        
-        // Act
-        assetPage = "/customers/99/spaces/377/images?pageSize=50&q={\"number3\": 2}";
-        response = await httpClient.AsCustomer(99).GetAsync(assetPage);
-
-        // Assert
-        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
-        coll.Members.Length.Should().Be(7);
-        
-        
-        // Act
-        assetPage = "/customers/99/spaces/377/images?pageSize=50&q={\"number3\": 2, \"string2\": \"1-10\"}";
-        response = await httpClient.AsCustomer(99).GetAsync(assetPage);
-
-        // Assert
-        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
-        coll.Members.Length.Should().Be(3);
-        
-        
-        // Act
-        assetPage = "/customers/99/spaces/377/images?pageSize=50&q={\"number3\": 2}&string2=1-10";
-        response = await httpClient.AsCustomer(99).GetAsync(assetPage);
-
-        // Assert
-        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
-        coll.Members.Length.Should().Be(3);
-
+        coll.Members.Length.Should().Be(count);
     }
 }
