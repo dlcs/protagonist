@@ -15,14 +15,17 @@ public interface IAssetTracker
     /// <param name="assetId">Id of asset to get data for.</param>
     /// <returns>Orchestration asset details</returns>
     Task<OrchestrationAsset?> GetOrchestrationAsset(AssetId assetId);
-
+    
     /// <summary>
     /// Get typed <see cref="OrchestrationAsset"/> for specified AssetId.
     /// </summary>
     /// <param name="assetId">Id of asset to get data for.</param>
+    /// <param name="requireOrchestrationStatus">
+    /// If true the OrchestrationStatus property will be set on return object, if supported
+    /// </param>
     /// <typeparam name="T">Type of <see cref="OrchestrationAsset"/> to return</typeparam>
     /// <returns>Orchestration asset details</returns>
-    Task<T?> GetOrchestrationAsset<T>(AssetId assetId)
+    Task<T?> GetOrchestrationAsset<T>(AssetId assetId, bool requireOrchestrationStatus = false)
         where T : OrchestrationAsset;
 
     /// <summary>
@@ -42,9 +45,12 @@ public interface IAssetTracker
     /// Refresh the cached OrchestrationAsset
     /// </summary>
     /// <param name="assetId">Id of asset to get data for.</param>
+    /// <param name="requireOrchestrationStatus">
+    /// If true the OrchestrationStatus property will be set on return object, if supported
+    /// </param>
     /// <typeparam name="T">Type of <see cref="OrchestrationAsset"/> to return</typeparam>
     /// <returns>Updated OrchestrationAsset</returns>
-    Task<T?> RefreshCachedAsset<T>(AssetId assetId)
+    Task<T?> RefreshCachedAsset<T>(AssetId assetId, bool requireOrchestrationStatus = false)
         where T : OrchestrationAsset;
 }
 

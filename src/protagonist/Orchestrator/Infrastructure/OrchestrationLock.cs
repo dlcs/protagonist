@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Threading;
+using DLCS.Core.Types;
 
 namespace Orchestrator.Infrastructure;
 
@@ -9,17 +10,19 @@ namespace Orchestrator.Infrastructure;
 /// Thin wrapper around <see cref="AsyncKeyedLock"/>, registered as a singleton and allows internal lock to be shared
 /// for orchestration purposes
 /// </summary>
-public class OrchestrationLock : IKeyedLock
+public class OrchestrationLock
 {
     private readonly AsyncKeyedLock asyncLocker = new();
 
-    public ILock Lock(object key, CancellationToken cancellationToken = default)
-        => asyncLocker.Lock(key, cancellationToken);
+    private static string GetLockKey(AssetId assetId) => $"orch:{assetId}";
 
-    public Task<ILock> LockAsync(object key, CancellationToken cancellationToken = default)
-        => asyncLocker.LockAsync(key, cancellationToken);
+    public ILock Lock(AssetId assetId, CancellationToken cancellationToken = default)
+        => asyncLocker.Lock(GetLockKey(assetId), cancellationToken);
 
-    public Task<ILock> LockAsync(object key, TimeSpan timeout, bool throwIfNoLock = false,
+    public Task<ILock> LockAsync(AssetId assetId, CancellationToken cancellationToken = default)
+        => asyncLocker.LockAsync(GetLockKey(assetId), cancellationToken);
+
+    public Task<ILock> LockAsync(AssetId assetId, TimeSpan timeout, bool throwIfNoLock = false,
         CancellationToken cancellationToken = default)
-        => asyncLocker.LockAsync(key, timeout, throwIfNoLock, cancellationToken);
+        => asyncLocker.LockAsync(GetLockKey(assetId), timeout, throwIfNoLock, cancellationToken);
 }

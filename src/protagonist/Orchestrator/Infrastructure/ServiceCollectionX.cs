@@ -107,7 +107,7 @@ public static class ServiceCollectionX
             .AddSingleton<IAssetTracker, MemoryAssetTracker>()
             .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
             .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
-            .AddSingleton<IKeyedLock, OrchestrationLock>()
+            .AddSingleton<OrchestrationLock>()
             .AddSingleton<IOrchestrationQueue>(_ =>
                 new BoundedChannelOrchestrationQueue(settings.OrchestrateOnInfoJsonMaxCapacity));
 

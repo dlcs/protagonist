@@ -14,7 +14,7 @@ using Orchestrator.Features.Images.Orchestration.Status;
 namespace Orchestrator.Assets;
 
 /// <summary>
-/// <see cref="IAssetTracker"/> implementation using in-memory tracking
+/// <see cref="IAssetTracker"/> implementation using in-memory cache
 /// </summary>
 public class MemoryAssetTracker : IAssetTracker
 {
@@ -47,13 +47,14 @@ public class MemoryAssetTracker : IAssetTracker
 
     public async Task<OrchestrationAsset?> GetOrchestrationAsset(AssetId assetId)
     {
-        var trackedAsset = await GetOrchestrationAssetInternal(assetId);
+        var trackedAsset = await GetOrchestrationAssetInternal(assetId, false);
         return IsNullAsset(trackedAsset) ? null : trackedAsset;
     }
 
-    public async Task<T?> GetOrchestrationAsset<T>(AssetId assetId) where T : OrchestrationAsset
+    public async Task<T?> GetOrchestrationAsset<T>(AssetId assetId, bool requireOrchestrationStatus = false)
+        where T : OrchestrationAsset
     {
-        var trackedAsset = await GetOrchestrationAssetInternal(assetId);
+        var trackedAsset = await GetOrchestrationAssetInternal(assetId, requireOrchestrationStatus);
         if (IsNullAsset(trackedAsset)) return null;
 
         if (trackedAsset is T typedAsset) return typedAsset;
@@ -68,8 +69,6 @@ public class MemoryAssetTracker : IAssetTracker
         CancellationToken cancellationToken = default)
     {
         // NOTE - there is no locking here as this is called from lock in Orchestrator
-        var cacheKey = GetCacheKey(orchestrationImage.AssetId);
-
         var current = await GetOrchestrationAsset<OrchestrationImage>(orchestrationImage.AssetId);
         current.ThrowIfNull(nameof(current));
 
@@ -85,58 +84,90 @@ public class MemoryAssetTracker : IAssetTracker
         current.Status = status;
         current.Version += 1;
 
-        appCache.Add(cacheKey, current, cacheSettings.GetMemoryCacheOptions());
+        AddToCache(current);
 
         return (true, current);
     }
 
-    public async Task<T?> RefreshCachedAsset<T>(AssetId assetId)
+    public async Task<T?> RefreshCachedAsset<T>(AssetId assetId, bool requireOrchestrationStatus = false)
         where T : OrchestrationAsset
     {
-        // NOTE - there is no locking here as this is called from lock in Orchestrator
+        // NOTE - there is no locking here as this is called from lock when orchestrating
         var cacheKey = GetCacheKey(assetId);
 
-        var newOrchestrationAsset = await GetOrchestrationAssetFromSource(assetId);
+        var newOrchestrationAsset = await GetOrchestrationAssetFromSource(assetId, requireOrchestrationStatus);
 
         var current = await appCache.GetAsync<OrchestrationAsset>(cacheKey);
         newOrchestrationAsset.Version = IsNullAsset(current) ? 0 : current.Version + 1;
-        appCache.Add(cacheKey, current, cacheSettings.GetMemoryCacheOptions());
+        AddToCache(newOrchestrationAsset);
 
         return newOrchestrationAsset as T;
     }
 
-    private async Task<OrchestrationAsset> GetOrchestrationAssetInternal(AssetId assetId)
+    private async Task<OrchestrationAsset> GetOrchestrationAssetInternal(AssetId assetId, bool requireOrchestrationStatus)
     {
         var key = GetCacheKey(assetId);
-        return await appCache.GetOrAddAsync(key, async entry =>
+        var cachedAsset = await appCache.GetOrAddAsync(key, async entry =>
         {
             logger.LogTrace("Refreshing cache for {AssetId}", assetId);
-            var orchestrationAsset = await GetOrchestrationAssetFromSource(assetId);
+            var orchestrationAsset = await GetOrchestrationAssetFromSource(assetId, requireOrchestrationStatus);
             if (orchestrationAsset != null)
             {
                 return orchestrationAsset;
             }
 
             logger.LogDebug("Asset {AssetId} not found, caching null object", assetId);
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings .GetTtl(CacheDuration.Short));
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
             return NullOrchestrationAsset;
         }, cacheSettings.GetMemoryCacheOptions());
+
+        if (!requireOrchestrationStatus) return cachedAsset;
+        
+        var statusUpdated = await EnsureOrchestrationStatus(cachedAsset);
+        if (statusUpdated)
+        {
+            AddToCache(cachedAsset);
+        }
+
+        return cachedAsset;
+    }
+    
+    private void AddToCache(OrchestrationAsset orchestrationAsset)
+    {
+        var cacheKey = GetCacheKey(orchestrationAsset.AssetId);
+        appCache.Add(cacheKey, orchestrationAsset, cacheSettings.GetMemoryCacheOptions());
     }
 
-    private async Task<OrchestrationAsset?> GetOrchestrationAssetFromSource(AssetId assetId)
+    private async Task<OrchestrationAsset?> GetOrchestrationAssetFromSource(AssetId assetId, 
+        bool requireOrchestrationStatus)
     {
         var asset = await assetRepository.GetAsset(assetId);
-        return asset == null || asset.NotForDelivery
-            ? null
-            : await ConvertAssetToTrackedAsset(assetId, asset);
+        if (asset == null || asset.NotForDelivery) return null;
+        
+        var orchestrationAsset = await ConvertAssetToTrackedAsset(assetId, asset, requireOrchestrationStatus);
+        return orchestrationAsset;
+    }
+
+    // Most requests don't care about the OrchestrationStatus - it's only required when proxying to image-server.
+    private async ValueTask<bool> EnsureOrchestrationStatus(OrchestrationAsset orchestrationAsset)
+    {
+        if (orchestrationAsset is OrchestrationImage { Status: OrchestrationStatus.Unknown } orchestrationImage)
+        {
+            logger.LogDebug("Setting orchestration status for {AssetId}", orchestrationAsset.AssetId);
+            orchestrationImage.Status = await statusProvider.GetOrchestrationStatus(orchestrationImage.AssetId);
+            return true;
+        }
+
+        return false;
     }
 
     private static string GetCacheKey(AssetId assetId) => $"Track:{assetId}";
 
-    private bool IsNullAsset(OrchestrationAsset orchestrationAsset)
-        => orchestrationAsset.AssetId == NullOrchestrationAsset.AssetId;
+    private bool IsNullAsset(OrchestrationAsset? orchestrationAsset)
+        => orchestrationAsset == null || orchestrationAsset.AssetId == NullOrchestrationAsset.AssetId;
 
-    private async Task<OrchestrationAsset> ConvertAssetToTrackedAsset(AssetId assetId, Asset asset)
+    private async Task<OrchestrationAsset> ConvertAssetToTrackedAsset(AssetId assetId, Asset asset,
+        bool requireOrchestrationStatus)
     {
         T SetDefaults<T>(T orchestrationAsset)
             where T : OrchestrationAsset
@@ -152,10 +183,12 @@ public class MemoryAssetTracker : IAssetTracker
             case AssetFamily.Image:
                 var getImageLocation = assetRepository.GetImageLocation(assetId);
                 var getOpenThumbs = thumbRepository.GetOpenSizes(assetId);
-                var getOrchestrationStatus = statusProvider.GetOrchestrationStatus(assetId);
+                var getStatus = requireOrchestrationStatus
+                    ? statusProvider.GetOrchestrationStatus(assetId)
+                    : Task.FromResult(OrchestrationStatus.Unknown);
 
-                await Task.WhenAll(getImageLocation, getOpenThumbs, getOrchestrationStatus);
-                
+                await Task.WhenAll(getImageLocation, getOpenThumbs, getStatus);
+
                 return SetDefaults(new OrchestrationImage
                 {
                     S3Location = getImageLocation.Result?.S3, // TODO - error handling
@@ -163,7 +196,7 @@ public class MemoryAssetTracker : IAssetTracker
                     Height = asset.Height ?? 0,
                     MaxUnauthorised = asset.MaxUnauthorised ?? 0,
                     OpenThumbs = getOpenThumbs.Result, // TODO - reorganise thumb layout + create missing eventually
-                    Status = getOrchestrationStatus.Result
+                    Status = getStatus.Result
                 });
             case AssetFamily.File:
                 return SetDefaults(new OrchestrationFile { Origin = asset.Origin, });

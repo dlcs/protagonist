@@ -2,10 +2,10 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Infrastructure;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images.Orchestration.Status;
@@ -17,14 +17,14 @@ namespace Orchestrator.Features.Images.Orchestration.Status;
 public class FileBasedStatusProvider : IImageOrchestrationStatusProvider
 {
     private readonly IOptions<OrchestratorSettings> orchestratorSettings;
-    private readonly IKeyedLock asyncLocker;
+    private readonly OrchestrationLock orchestrationLocker;
     
     public FileBasedStatusProvider(
         IOptions<OrchestratorSettings> orchestratorSettings,
-        IKeyedLock asyncLocker)
+        OrchestrationLock orchestrationLocker)
     {
         this.orchestratorSettings = orchestratorSettings;
-        this.asyncLocker = asyncLocker;
+        this.orchestrationLocker = orchestrationLocker;
     }
     
     public async Task<OrchestrationStatus> GetOrchestrationStatus(AssetId assetId,
@@ -57,9 +57,7 @@ public class FileBasedStatusProvider : IImageOrchestrationStatusProvider
     private async Task<bool> IsOrchestrating(AssetId assetId, CancellationToken cancellationToken = default)
     {
         // How to tell if Orchestrating? Use Asynclocker here?
-        var lockKey = ImageOrchestrationKeys.GetOrchestrationLockKey(assetId);
-        
-        using var updateLock = await asyncLocker.LockAsync(lockKey, TimeSpan.Zero, false, cancellationToken);
+        using var updateLock = await orchestrationLocker.LockAsync(assetId, TimeSpan.Zero, false, cancellationToken);
         return !updateLock.ExclusiveLock;
     }
 }

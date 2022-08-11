@@ -63,8 +63,8 @@ public class AssetRequestProcessor
 
     public async Task<OrchestrationAsset?> GetAsset(BaseAssetRequest assetRequest)
     {
-        var imageId = assetRequest.GetAssetId();
-        var asset = await assetTracker.GetOrchestrationAsset(imageId);
+        var assetId = assetRequest.GetAssetId();
+        var asset = await assetTracker.GetOrchestrationAsset(assetId);
         return asset;
     }
 }

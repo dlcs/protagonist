@@ -51,7 +51,6 @@ public class TimeBasedRequestHandler
             return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
         }
 
-        // If "HEAD" then add CORS - is this required here?
         var orchestrationAsset = await assetRequestProcessor.GetAsset(assetRequest);
         if (orchestrationAsset == null)
         {
