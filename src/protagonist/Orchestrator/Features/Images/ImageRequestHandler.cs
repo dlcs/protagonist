@@ -239,18 +239,18 @@ public class ImageRequestHandler
         
         // get the redirect path - S3:// path for special-server or /path/on/disk for image-server
         var settings = orchestratorSettings.Value;
-        var redirectPath = specialServer
+        var downstreamPath = specialServer
             ? settings.GetSpecialServerPath(orchestrationImage.S3Location, imageApiVersion.Value)
             : settings.GetImageServerPath(orchestrationImage.AssetId, imageApiVersion.Value);
 
-        if (string.IsNullOrEmpty(redirectPath))
+        if (string.IsNullOrEmpty(downstreamPath))
         {
             logger.LogDebug("Unable to fulfil image request: {Path}. Could not generate ImageServer path",
                 requestModel.NormalisedFullPath);
             return new StatusCodeResult(HttpStatusCode.BadRequest);
         }
         
-        var imageServerPath = $"{redirectPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
+        var imageServerPath = $"{downstreamPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
         IProxyActionResult proxyActionResult = specialServer
             ? new ProxyActionResult(ProxyDestination.SpecialServer, orchestrationImage.RequiresAuth, imageServerPath)
             : new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth, imageServerPath);
