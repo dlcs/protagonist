@@ -23,8 +23,8 @@ public class ImageController : IIIFAssetControllerBase
     public ImageController(
         IMediator mediator, 
         IOptions<CacheSettings> cacheSettings,
-        IOptions<OrchestratorSettings> orchestratorSettings,
-        ILogger<ImageController> logger) : base(mediator, cacheSettings, logger)
+        ILogger<ImageController> logger,
+        IOptions<OrchestratorSettings> orchestratorSettings) : base(mediator, cacheSettings, logger)
     {
         this.orchestratorSettings = orchestratorSettings.Value;
     }
@@ -58,7 +58,7 @@ public class ImageController : IIIFAssetControllerBase
                 space = Request.RouteValues["space"],
                 image = Request.RouteValues["image"]
             })!;
-            return SeeAlsoResult(routeUrl);
+            return this.SeeAlsoResult(routeUrl);
         }
         
         return RedirectToInfoJson();
@@ -117,13 +117,7 @@ public class ImageController : IIIFAssetControllerBase
     private StatusCodeResult RedirectToInfoJson()
     {
         var location = HttpContext.Request.Path.Add("/info.json");
-        return SeeAlsoResult(location);
-    }
-
-    private StatusCodeResult SeeAlsoResult(string location)
-    {
-        Response.Headers["Location"] = location;
-        return new StatusCodeResult(303);
+        return this.SeeAlsoResult(location);
     }
 
     private Task<IActionResult> RenderInfoJson(Version imageApiVersion, bool noOrchestrate,

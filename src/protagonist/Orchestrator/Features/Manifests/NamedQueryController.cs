@@ -22,8 +22,8 @@ public class NamedQueryController : IIIFAssetControllerBase
     public NamedQueryController(
         IMediator mediator, 
         IOptions<CacheSettings> cacheSettings,
-        IOptions<OrchestratorSettings> orchestratorSettings,
-        ILogger<NamedQueryController> logger
+        ILogger<NamedQueryController> logger,
+        IOptions<OrchestratorSettings> orchestratorSettings
     ) : base(mediator, cacheSettings, logger)
     {
         this.orchestratorSettings = orchestratorSettings.Value;

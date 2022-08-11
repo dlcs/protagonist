@@ -22,9 +22,8 @@ public class ManifestController : IIIFAssetControllerBase
     public ManifestController(
         IMediator mediator, 
         IOptions<CacheSettings> cacheSettings,
-        IOptions<OrchestratorSettings> orchestratorSettings,
-        ILogger<ManifestController> logger
-        ) : base(mediator, cacheSettings, logger)
+        ILogger<ManifestController> logger,
+        IOptions<OrchestratorSettings> orchestratorSettings) : base(mediator, cacheSettings, logger)
     {
         this.orchestratorSettings = orchestratorSettings.Value;
     }
