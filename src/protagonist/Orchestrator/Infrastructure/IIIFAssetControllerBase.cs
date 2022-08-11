@@ -23,19 +23,15 @@ namespace Orchestrator.Infrastructure;
 /// </summary>
 public abstract class IIIFAssetControllerBase : Controller
 {
-    protected readonly IMediator mediator;
-    protected readonly ILogger<IIIFAssetControllerBase> logger;
-    protected readonly CacheSettings cacheSettings;
+    protected readonly IMediator Mediator;
+    protected readonly ILogger Logger;
+    protected readonly CacheSettings CacheSettings;
 
-    protected IIIFAssetControllerBase(
-        IMediator mediator,
-        IOptions<CacheSettings> cacheSettings,
-        ILogger<IIIFAssetControllerBase> logger
-    )
+    protected IIIFAssetControllerBase(IMediator mediator, IOptions<CacheSettings> cacheSettings, ILogger logger)
     {
-        this.mediator = mediator;
-        this.logger = logger;
-        this.cacheSettings = cacheSettings.Value;
+        Mediator = mediator;
+        Logger = logger;
+        CacheSettings = cacheSettings.Value;
     }
 
     /// <summary>
@@ -54,11 +50,11 @@ public abstract class IIIFAssetControllerBase : Controller
         CancellationToken cancellationToken = default)
         where T : IRequest<DescriptionResourceResponse>
     {
-        try
+        return await this.HandleAssetRequest(async () =>
         {
             var request = generateRequest();
-            var descriptionResource = await mediator.Send(request, cancellationToken);
-            
+            var descriptionResource = await Mediator.Send(request, cancellationToken);
+
             if (descriptionResource.IsBadRequest) return BadRequest();
             if (!descriptionResource.HasResource) return NotFound();
 
@@ -70,30 +66,12 @@ public abstract class IIIFAssetControllerBase : Controller
             SetCacheControl(descriptionResource.RequiresAuth);
             HttpContext.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding", "Accept" };
             return Content(descriptionResource.DescriptionResource.AsJson(), contentType);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            // TODO - this error handling duplicates same in RequestHandlerBase
-            logger.LogError(ex, "Could not find Customer/Space from '{Path}'", HttpContext.Request.Path);
-            return NotFound();
-        }
-        catch (FormatException ex)
-        {
-            logger.LogError(ex, "Error parsing path '{Path}'", HttpContext.Request.Path);
-            return BadRequest();
-        }
+        }, Logger);
     }
 
     private void SetCacheControl(bool requiresAuth)
     {
-        var maxAge = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Default, CacheSource.Http));
-        HttpContext.Response.GetTypedHeaders().CacheControl =
-            new CacheControlHeaderValue
-            {
-                Public = !requiresAuth,
-                Private = requiresAuth,
-                MaxAge = maxAge,
-                SharedMaxAge = requiresAuth ? null : maxAge
-            };
+        var maxAge = TimeSpan.FromSeconds(CacheSettings.GetTtl(CacheDuration.Default, CacheSource.Http));
+        this.SetCacheControl(requiresAuth, maxAge);
     }
 }

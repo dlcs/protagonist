@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Features.Files.Requests;
+using Orchestrator.Infrastructure;
 
 namespace Orchestrator.Features.Files;
 
@@ -28,7 +27,7 @@ public class FileController : Controller
     [Route("{fileId}")]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
-        try
+        return await this.HandleAssetRequest(async () =>
         {
             var response = await mediator.Send(new GetFile(HttpContext.Request.Path), cancellationToken);
 
@@ -38,17 +37,6 @@ public class FileController : Controller
             }
 
             return File(response.Stream, response.ContentType ?? "application/octet-stream");
-        }
-        catch (KeyNotFoundException ex)
-        {
-            // TODO - this error handling duplicates same in RequestHandlerBase
-            logger.LogError(ex, "Could not find Customer/Space from '{Path}'", HttpContext.Request.Path);
-            return NotFound();
-        }
-        catch (FormatException ex)
-        {
-            logger.LogError(ex, "Error parsing path '{Path}'", HttpContext.Request.Path);
-            return BadRequest();
-        }
+        }, logger);
     }
 }
