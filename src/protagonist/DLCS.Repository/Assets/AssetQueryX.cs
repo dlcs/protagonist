@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Linq.Expressions;
+using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 
 namespace DLCS.Repository.Assets;
@@ -63,4 +64,48 @@ public static class AssetQueryX
 
         return Expression.Lambda(body, param);
     }
+
+    public static IQueryable<Asset> ApplyAssetFilter(this IQueryable<Asset> queryable, 
+        AssetFilter? assetFilter, bool filterOnSpace = false)
+    {
+        if (assetFilter == null)
+        {
+            return queryable;
+        }
+
+        var filtered = queryable;
+        // is HasText right here? Would we want to select string1 = ""?
+        if (assetFilter.Reference1.HasText())
+        {
+            filtered = filtered.Where(a => a.Reference1 == assetFilter.Reference1);
+        }
+        if (assetFilter.Reference2.HasText())
+        {
+            filtered = filtered.Where(a => a.Reference2 == assetFilter.Reference2);
+        }
+        if (assetFilter.Reference3.HasText())
+        {
+            filtered = filtered.Where(a => a.Reference3 == assetFilter.Reference3);
+        }
+        if (assetFilter.NumberReference1 != null)
+        {
+            filtered = filtered.Where(a => a.NumberReference1 == assetFilter.NumberReference1);
+        }
+        if (assetFilter.NumberReference2 != null)
+        {
+            filtered = filtered.Where(a => a.NumberReference2 == assetFilter.NumberReference2);
+        }
+        if (assetFilter.NumberReference3 != null)
+        {
+            filtered = filtered.Where(a => a.NumberReference3 == assetFilter.NumberReference3);
+        }
+
+        if (filterOnSpace && assetFilter.Space is > 0)
+        {
+            filtered = filtered.Where(a => a.Space == assetFilter.Space.Value);
+        }
+
+        return filtered;
+    }
+    
 }

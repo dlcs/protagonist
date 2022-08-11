@@ -39,7 +39,7 @@ public class ApiAssetRepository : DapperRepository, IApiAssetRepository
     public Task<ImageLocation> GetImageLocation(AssetId assetId) => assetRepository.GetImageLocation(assetId);
 
     public async Task<PageOfAssets?> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize,
-        string orderBy, bool descending, CancellationToken cancellationToken)
+        string orderBy, bool descending, AssetFilter? assetFilter, CancellationToken cancellationToken)
     {
         var space = await dlcsContext.Spaces.SingleOrDefaultAsync(
             s => s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
@@ -55,6 +55,7 @@ public class ApiAssetRepository : DapperRepository, IApiAssetRepository
                 a => a.Customer == customerId && a.Space == spaceId, cancellationToken: cancellationToken),
             Assets = await dlcsContext.Images.AsNoTracking()
                 .Where(a => a.Customer == customerId && a.Space == spaceId)
+                .ApplyAssetFilter(assetFilter, false)
                 .AsOrderedAssetQuery(orderBy, descending)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)

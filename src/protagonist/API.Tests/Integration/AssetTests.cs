@@ -683,4 +683,34 @@ public class AssetTests :
         asset.Origin.Should().Be("https://protagonist-test-origin.s3.eu-west-1.amazonaws.com/99/1/Post_ImageBytes_Ingests_New_Image");
 
     }
+
+    [Theory]
+    [InlineData("/customers/99/spaces/381/images?pageSize=50&q={\"string3\": \"16-20\"}", 5)]
+    [InlineData("/customers/99/spaces/382/images?pageSize=50&q={\"string2\": \"1-10\"}", 10)]
+    [InlineData("/customers/99/spaces/383/images?pageSize=50&q={\"number3\": 2}", 7)]
+    [InlineData("/customers/99/spaces/384/images?pageSize=50&q={\"number3\": 2, \"string2\": \"1-10\"}", 3)]
+    [InlineData("/customers/99/spaces/385/images?pageSize=50&q={\"number3\": 2}&string2=1-10", 3)]
+    public async void Paged_Assets_Can_Be_Queried(string url, int count)
+    {
+        int space = Convert.ToInt32(url.Split('/')[4]);
+        await dbContext.Spaces.AddTestSpace(99, space, $"query-tests-{space}");
+        for (int i = 1; i <= 20; i++)
+        {
+            var padded = i.ToString().PadLeft(4, '0');
+            await dbContext.Images.AddTestAsset($"99/{space}/asset-{padded}",
+                customer: 99, space: space,
+                num1: i, num2: i % 2, num3: i % 3,
+                ref1: $"Asset {padded}",
+                ref2: i < 11 ? "1-10" : "11-20",
+                ref3: i < 16 ? "1-15" : "16-20");
+        }
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer(99).GetAsync(url);
+
+        // Assert
+        var coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members.Length.Should().Be(count);
+    }
 }

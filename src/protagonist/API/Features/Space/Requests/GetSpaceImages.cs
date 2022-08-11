@@ -13,7 +13,8 @@ namespace API.Features.Space.Requests;
 
 public class GetSpaceImages : IRequest<GetSpaceImagesResult>
 {
-    public GetSpaceImages(bool descending, int page, int pageSize, int spaceId, int? customerId = null, string? orderBy = null)
+    public GetSpaceImages(bool descending, int page, int pageSize, int spaceId, int? customerId = null,
+        string? orderBy = null, AssetFilter? assetFilter = null)
     {
         Page = page;
         PageSize = pageSize;
@@ -21,14 +22,17 @@ public class GetSpaceImages : IRequest<GetSpaceImagesResult>
         SpaceId = spaceId;
         OrderBy = orderBy;
         Descending = descending;
+        AssetFilter = assetFilter;
     }
     
     public int SpaceId { get; set; }
     public int? CustomerId { get; }
     public int Page { get; }
     public int PageSize { get; }
-    public string OrderBy { get; }
+    public string? OrderBy { get; }
     public bool Descending { get; }
+    
+    public AssetFilter? AssetFilter { get; }
 }
 
 public class GetSpaceImagesResult
@@ -66,6 +70,7 @@ public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, GetSpaceIma
             customerId.Value, request.SpaceId,
             request.Page, request.PageSize,
             request.OrderBy, request.Descending,
+            request.AssetFilter,
             cancellationToken);
 
         if (pageOfAssets == null)
