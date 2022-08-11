@@ -683,4 +683,67 @@ public class AssetTests :
         asset.Origin.Should().Be("https://protagonist-test-origin.s3.eu-west-1.amazonaws.com/99/1/Post_ImageBytes_Ingests_New_Image");
 
     }
+
+    [Fact]
+    public async void Paged_Assets_Can_Be_Queried()
+    {
+        // arrange
+        await dbContext.Spaces.AddTestSpace(99, 377, "query-tests");
+        for (int i = 1; i <= 20; i++)
+        {
+            var padded = i.ToString().PadLeft(4, '0');
+            await dbContext.Images.AddTestAsset($"99/377/asset-{padded}",
+                customer: 99, space: 377,
+                num1: i, num2: i % 2, num3: i % 3,
+                ref1: $"Asset {padded}",
+                ref2: i < 11 ? "1-10" : "11-20",
+                ref3: i < 16 ? "1-15" : "16-20");
+        }
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var assetPage = "/customers/99/spaces/377/images?pageSize=50&q={\"string3\": \"16-20\"}";
+        var response = await httpClient.AsCustomer(99).GetAsync(assetPage);
+
+        // Assert
+        var coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members.Length.Should().Be(5);
+        
+        
+        // Act
+        assetPage = "/customers/99/spaces/377/images?pageSize=50&q={\"string2\": \"1-10\"}";
+        response = await httpClient.AsCustomer(99).GetAsync(assetPage);
+
+        // Assert
+        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members.Length.Should().Be(10);
+        
+        
+        // Act
+        assetPage = "/customers/99/spaces/377/images?pageSize=50&q={\"number3\": 2}";
+        response = await httpClient.AsCustomer(99).GetAsync(assetPage);
+
+        // Assert
+        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members.Length.Should().Be(7);
+        
+        
+        // Act
+        assetPage = "/customers/99/spaces/377/images?pageSize=50&q={\"number3\": 2, \"string2\": \"1-10\"}";
+        response = await httpClient.AsCustomer(99).GetAsync(assetPage);
+
+        // Assert
+        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members.Length.Should().Be(3);
+        
+        
+        // Act
+        assetPage = "/customers/99/spaces/377/images?pageSize=50&q={\"number3\": 2}&string2=1-10";
+        response = await httpClient.AsCustomer(99).GetAsync(assetPage);
+
+        // Assert
+        coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        coll.Members.Length.Should().Be(3);
+
+    }
 }

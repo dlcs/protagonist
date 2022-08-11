@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using DLCS.Core.Collections;
 using Microsoft.AspNetCore.Http;
 
 namespace DLCS.Web.Requests;
@@ -69,5 +70,28 @@ public static class HttpRequestX
     public static string GetJsonLdId(this HttpRequest request)
     {
         return GetDisplayUrl(request, request.Path);
+    }
+    
+    public static string? GetFirstQueryParamValue(this HttpRequest request, string paramName)
+    {
+        if (request.Query.ContainsKey(paramName))
+        {
+            var values = request.Query[paramName].ToArray();
+            if (values.Length > 0) return values[0];
+        }
+
+        return null;
+    }
+
+    public static int? GetFirstQueryParamValueAsInt(this HttpRequest request, string paramName)
+    {
+        var value = GetFirstQueryParamValue(request, paramName);
+        if (value.IsNullOrEmpty()) return null;
+        if (int.TryParse(value, out var num))
+        {
+            return num;
+        }
+
+        return null;
     }
 }

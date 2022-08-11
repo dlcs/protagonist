@@ -70,8 +70,8 @@ public class ImageController : HydraController
         }
         return Ok(dbImage.ToHydra(GetUrlRoots()));
     }
-    
-      
+
+
     /// <summary>
     /// GET /customers/{customerId}/spaces/{spaceId}/images
     /// 
@@ -83,6 +83,7 @@ public class ImageController : HydraController
     /// <param name="pageSize"></param>
     /// <param name="orderBy"></param>
     /// <param name="orderByDescending"></param>
+    /// <param name="q">A serialised JSON <see cref="ImageQuery"/> object</param>
     /// <returns>A Hydra Collection of Image objects as JSON-LD</returns>
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
@@ -90,12 +91,25 @@ public class ImageController : HydraController
     public async Task<IActionResult> GetImages(
         int customerId, int spaceId,
         int? page = 1, int? pageSize = -1,
-        string? orderBy = null, string? orderByDescending = null)
+        string? orderBy = null, string? orderByDescending = null,
+        string? q = null)
     {
         if (pageSize is null or < 0) pageSize = Settings.PageSize;
         if (page is null or < 0) page = 1;
+        AssetFilter? assetFilter = null;
+        if (q.HasText())
+        {
+            assetFilter = Request.GetAssetFilterFromQParam(q);
+            if (assetFilter == null)
+            {
+                return HydraProblem("Could not parse query", null, 400);
+            }
+        }
+        // Now augment this assetFilter, or create one if we don't have one yet
+        assetFilter = Request.UpdateAssetFilterFromQueryStringParams(assetFilter);
         var orderByField = GetOrderBy(orderBy, orderByDescending, out var descending);
-        var imagesRequest = new GetSpaceImages(descending, page.Value, pageSize.Value, spaceId, customerId, orderByField);
+        var imagesRequest = new GetSpaceImages(descending, page.Value, pageSize.Value, 
+            spaceId, customerId, orderByField, assetFilter);
         var spaceImagesResult = await mediator.Send(imagesRequest);
         if (!spaceImagesResult.SpaceExistsForCustomer || spaceImagesResult.PageOfAssets == null)
         {
