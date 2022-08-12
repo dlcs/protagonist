@@ -123,7 +123,7 @@ public class MemoryAssetTracker : IAssetTracker
 
         if (!requireOrchestrationStatus) return cachedAsset;
         
-        var statusUpdated = await EnsureOrchestrationStatus(cachedAsset);
+        var statusUpdated = EnsureOrchestrationStatus(cachedAsset);
         if (statusUpdated)
         {
             AddToCache(cachedAsset);
@@ -149,12 +149,12 @@ public class MemoryAssetTracker : IAssetTracker
     }
 
     // Most requests don't care about the OrchestrationStatus - it's only required when proxying to image-server.
-    private async ValueTask<bool> EnsureOrchestrationStatus(OrchestrationAsset orchestrationAsset)
+    private bool EnsureOrchestrationStatus(OrchestrationAsset orchestrationAsset)
     {
         if (orchestrationAsset is OrchestrationImage { Status: OrchestrationStatus.Unknown } orchestrationImage)
         {
             logger.LogDebug("Setting orchestration status for {AssetId}", orchestrationAsset.AssetId);
-            orchestrationImage.Status = await statusProvider.GetOrchestrationStatus(orchestrationImage.AssetId);
+            orchestrationImage.Status = statusProvider.GetOrchestrationStatus(orchestrationImage.AssetId);
             return true;
         }
 
@@ -183,11 +183,12 @@ public class MemoryAssetTracker : IAssetTracker
             case AssetFamily.Image:
                 var getImageLocation = assetRepository.GetImageLocation(assetId);
                 var getOpenThumbs = thumbRepository.GetOpenSizes(assetId);
-                var getStatus = requireOrchestrationStatus
-                    ? statusProvider.GetOrchestrationStatus(assetId)
-                    : Task.FromResult(OrchestrationStatus.Unknown);
 
-                await Task.WhenAll(getImageLocation, getOpenThumbs, getStatus);
+                await Task.WhenAll(getImageLocation, getOpenThumbs);
+
+                var orchestrationStatus = requireOrchestrationStatus
+                    ? statusProvider.GetOrchestrationStatus(assetId)
+                    : OrchestrationStatus.Unknown;
 
                 return SetDefaults(new OrchestrationImage
                 {
@@ -196,7 +197,7 @@ public class MemoryAssetTracker : IAssetTracker
                     Height = asset.Height ?? 0,
                     MaxUnauthorised = asset.MaxUnauthorised ?? 0,
                     OpenThumbs = getOpenThumbs.Result, // TODO - reorganise thumb layout + create missing eventually
-                    Status = getStatus.Result
+                    Status = orchestrationStatus
                 });
             case AssetFamily.File:
                 return SetDefaults(new OrchestrationFile { Origin = asset.Origin, });

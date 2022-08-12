@@ -292,9 +292,9 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
 
         // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_OpenImage_Correct");
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
     }

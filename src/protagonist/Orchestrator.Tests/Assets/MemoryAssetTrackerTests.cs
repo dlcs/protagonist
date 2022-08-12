@@ -173,7 +173,7 @@ public class MemoryAssetTrackerTests
         result.MaxUnauthorised.Should().Be(-1);
         result.OpenThumbs.Should().BeEquivalentTo(sizes);
         result.Status.Should().Be(OrchestrationStatus.Unknown);
-        A.CallTo(() => imageOrchestrationStatusProvider.GetOrchestrationStatus(assetId, A<CancellationToken>._))
+        A.CallTo(() => imageOrchestrationStatusProvider.GetOrchestrationStatus(assetId))
             .MustNotHaveHappened();
     }
     
@@ -188,7 +188,7 @@ public class MemoryAssetTrackerTests
             Family = AssetFamily.Image, Height = 10, Width = 50, MaxUnauthorised = -1
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
-        A.CallTo(() => imageOrchestrationStatusProvider.GetOrchestrationStatus(assetId, A<CancellationToken>._))
+        A.CallTo(() => imageOrchestrationStatusProvider.GetOrchestrationStatus(assetId))
             .Returns(OrchestrationStatus.Orchestrating);
 
         // Act
@@ -266,8 +266,7 @@ public class MemoryAssetTrackerTests
         result.MaxUnauthorised.Should().Be(-1);
         result.OpenThumbs.Should().BeEquivalentTo(sizes);
         result.Status.Should().Be(OrchestrationStatus.Unknown);
-        A.CallTo(() => imageOrchestrationStatusProvider.GetOrchestrationStatus(assetId, A<CancellationToken>._))
-            .MustNotHaveHappened();
+        A.CallTo(() => imageOrchestrationStatusProvider.GetOrchestrationStatus(assetId)).MustNotHaveHappened();
     }
     
     [Fact]
@@ -296,8 +295,7 @@ public class MemoryAssetTrackerTests
         result.MaxUnauthorised.Should().Be(-1);
         result.OpenThumbs.Should().BeEquivalentTo(sizes);
         result.Status.Should().Be(OrchestrationStatus.Unknown);
-        A.CallTo(() => imageOrchestrationStatusProvider.GetOrchestrationStatus(assetId, A<CancellationToken>._))
-            .MustNotHaveHappened();
+        A.CallTo(() => imageOrchestrationStatusProvider.GetOrchestrationStatus(assetId)).MustNotHaveHappened();
     }
     
     [Fact]
@@ -311,7 +309,7 @@ public class MemoryAssetTrackerTests
             Family = AssetFamily.Image, Height = 10, Width = 50, MaxUnauthorised = -1
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
-        A.CallTo(() => imageOrchestrationStatusProvider.GetOrchestrationStatus(assetId, A<CancellationToken>._))
+        A.CallTo(() => imageOrchestrationStatusProvider.GetOrchestrationStatus(assetId))
             .Returns(OrchestrationStatus.Orchestrating);
         var cache = new DictionaryCache();
         cache.Add("Track:1/1/go!",

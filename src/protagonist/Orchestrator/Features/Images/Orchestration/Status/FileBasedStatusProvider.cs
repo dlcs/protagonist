@@ -1,11 +1,8 @@
 ﻿using System;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using DLCS.Core.Types;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Orchestrator.Infrastructure;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images.Orchestration.Status;
@@ -17,28 +14,14 @@ namespace Orchestrator.Features.Images.Orchestration.Status;
 public class FileBasedStatusProvider : IImageOrchestrationStatusProvider
 {
     private readonly IOptions<OrchestratorSettings> orchestratorSettings;
-    private readonly OrchestrationLock orchestrationLocker;
-    
-    public FileBasedStatusProvider(
-        IOptions<OrchestratorSettings> orchestratorSettings,
-        OrchestrationLock orchestrationLocker)
+
+    public FileBasedStatusProvider(IOptions<OrchestratorSettings> orchestratorSettings)
     {
         this.orchestratorSettings = orchestratorSettings;
-        this.orchestrationLocker = orchestrationLocker;
     }
-    
-    public async Task<OrchestrationStatus> GetOrchestrationStatus(AssetId assetId,
-        CancellationToken cancellationToken = default)
-    {
-        if (DoesFileForAssetExist(assetId))
-        {
-            return OrchestrationStatus.Orchestrated;
-        }
 
-        return await IsOrchestrating(assetId, cancellationToken)
-            ? OrchestrationStatus.Orchestrating
-            : OrchestrationStatus.NotOrchestrated;
-    }
+    public OrchestrationStatus GetOrchestrationStatus(AssetId assetId)
+        => DoesFileForAssetExist(assetId) ? OrchestrationStatus.Orchestrated : OrchestrationStatus.NotOrchestrated;
 
     private bool DoesFileForAssetExist(AssetId assetId)
     {
@@ -53,11 +36,4 @@ public class FileBasedStatusProvider : IImageOrchestrationStatusProvider
     }
 
     private string GetLocalPath(AssetId assetId) => orchestratorSettings.Value.GetImageLocalPath(assetId);
-
-    private async Task<bool> IsOrchestrating(AssetId assetId, CancellationToken cancellationToken = default)
-    {
-        // How to tell if Orchestrating? Use Asynclocker here?
-        using var updateLock = await orchestrationLocker.LockAsync(assetId, TimeSpan.Zero, false, cancellationToken);
-        return !updateLock.ExclusiveLock;
-    }
 }

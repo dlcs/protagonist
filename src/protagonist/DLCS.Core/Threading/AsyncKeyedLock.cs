@@ -63,7 +63,7 @@ public sealed class AsyncKeyedLock : IKeyedLock
 
     private SemaphoreSlim GetOrCreate(object key)
     {
-        RefCounted<SemaphoreSlim> item;
+        RefCounted<SemaphoreSlim>? item;
         lock (SemaphoreSlims)
         {
             if (SemaphoreSlims.TryGetValue(key, out item))

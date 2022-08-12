@@ -10,7 +10,6 @@ using DLCS.Repository.Strategy.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Settings;
 
@@ -32,14 +31,13 @@ public class ImageOrchestrator : IImageOrchestrator
     private readonly IFileSaver fileSaver;
     private readonly IDlcsApiClient dlcsApiClient;
     private readonly ILogger<ImageOrchestrator> logger;
-    private readonly OrchestrationLock orchestrationLocker;
+    private readonly AsyncKeyedLock orchestrationLocker = new();
 
     public ImageOrchestrator(IAssetTracker assetTracker,
         IOptions<OrchestratorSettings> orchestratorSettings,
         S3AmbientOriginStrategy s3OriginStrategy,
         IFileSaver fileSaver,
         IDlcsApiClient dlcsApiClient,
-        OrchestrationLock orchestrationLocker,
         ILogger<ImageOrchestrator> logger)
     {
         this.assetTracker = assetTracker;
@@ -47,7 +45,6 @@ public class ImageOrchestrator : IImageOrchestrator
         this.s3OriginStrategy = s3OriginStrategy;
         this.fileSaver = fileSaver;
         this.dlcsApiClient = dlcsApiClient;
-        this.orchestrationLocker = orchestrationLocker;
         this.logger = logger;
     }
     
