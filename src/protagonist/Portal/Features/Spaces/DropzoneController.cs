@@ -118,7 +118,8 @@ public class DropzoneController : Controller
         {
             return Json(new { message = "completed: " + fileNameForSaving });
         }
-        return Json(new { error = errorMessage, message = "error: " + fileNameForSaving + ", " + errorMessage });
+
+        return Problem(errorMessage, null, 500, "Unable to upload image");
     }
 
     private static string GetTargetFilePath(int customer, int space, string fileNameForSaving)
