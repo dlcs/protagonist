@@ -2,6 +2,7 @@
 using DLCS.AWS.S3;
 using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
+using DLCS.Core.FileSystem;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Auth;
@@ -21,8 +22,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images.ImageServer;
 using Orchestrator.Features.Images.Orchestration;
-using Orchestrator.Features.Images.Orchestration.Status;
-using Orchestrator.Features.Images.Requests;
 using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
@@ -105,9 +104,10 @@ public static class ServiceCollectionX
         var serviceCollection = services
             .AddSingleton<IAssetTracker, MemoryAssetTracker>()
             .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
-            .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
-            .AddSingleton<IOrchestrationQueue>(_ =>
-                new BoundedChannelOrchestrationQueue(settings.OrchestrateOnInfoJsonMaxCapacity));
+            .AddSingleton<IFileSystem, FileSystem>()
+            .AddSingleton<IOrchestrationQueue>(sp =>
+                ActivatorUtilities.CreateInstance<BoundedChannelOrchestrationQueue>(sp,
+                    settings.OrchestrateOnInfoJsonMaxCapacity));
 
         if (settings.OrchestrateOnInfoJson)
             serviceCollection.AddHostedService<OrchestrationQueueMonitor>();

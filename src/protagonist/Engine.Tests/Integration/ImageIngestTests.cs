@@ -269,6 +269,10 @@ public class FakeFileSystem : IFileSystem
 
     public bool FileExists(string path) => true;
     public long GetFileSize(string path) => 10;
+    public void SetLastWriteTimeUtc(string path, DateTime dateTime)
+    {
+        // no-op
+    }
 }
 
 public class FakeFileSaver : IFileSaver

@@ -78,7 +78,7 @@ public static class ImageRouteHandlers
 
         if (proxyActionResult is ProxyImageServerResult proxyImageServer)
         {
-            await EnsureImageOrchestrated(httpContext, proxyImageServer, imageOrchestrator);
+            await imageOrchestrator.OrchestrateImage(proxyImageServer.OrchestrationImage, httpContext.RequestAborted);
         }
 
         var proxyAction = proxyActionResult as ProxyActionResult; 
@@ -92,19 +92,6 @@ public static class ImageRouteHandlers
         {
             httpContext.Response.Headers.Add(header);
         }
-    }
-
-    private static async Task EnsureImageOrchestrated(HttpContext httpContext,
-        ProxyImageServerResult proxyImageServer, IImageOrchestrator imageOrchestrator)
-    {
-        if (proxyImageServer.OrchestrationImage.Status == OrchestrationStatus.Orchestrated)
-        {
-            // TODO - how do we handle an image having been scavenged?
-            return;
-        }
-     
-        // Orchestrate image
-        await imageOrchestrator.OrchestrateImage(proxyImageServer.OrchestrationImage, httpContext.RequestAborted);
     }
 
     private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,

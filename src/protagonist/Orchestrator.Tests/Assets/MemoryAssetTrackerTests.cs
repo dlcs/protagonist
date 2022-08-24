@@ -10,7 +10,6 @@ using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Orchestrator.Features.Images.Orchestration.Status;
 using Xunit;
 
 namespace Orchestrator.Tests.Assets;
@@ -20,17 +19,14 @@ public class MemoryAssetTrackerTests
     private readonly IAssetRepository assetRepository;
     private readonly IThumbRepository thumbRepository;
     private readonly MemoryAssetTracker sut;
-    private readonly IImageOrchestrationStatusProvider imageOrchestrationStatusProvider;
 
     public MemoryAssetTrackerTests()
     {
         assetRepository = A.Fake<IAssetRepository>();
         thumbRepository = A.Fake<IThumbRepository>();
-        imageOrchestrationStatusProvider = A.Fake<IImageOrchestrationStatusProvider>();
 
         sut = new MemoryAssetTracker(assetRepository, new MockCachingService(), thumbRepository,
-            imageOrchestrationStatusProvider, Options.Create(new CacheSettings()),
-            new NullLogger<MemoryAssetTracker>());
+            Options.Create(new CacheSettings()), new NullLogger<MemoryAssetTracker>());
     }
 
     [Fact]
