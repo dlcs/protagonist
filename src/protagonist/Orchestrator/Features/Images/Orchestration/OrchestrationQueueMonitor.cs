@@ -39,7 +39,7 @@ public class OrchestrationQueueMonitor : BackgroundService
             try
             {
                 logger.LogTrace("Processing queued orchestration request for {AssetId}", orchestrationImage.AssetId);
-                await imageOrchestrator.OrchestrateImage(orchestrationImage, stoppingToken);
+                await imageOrchestrator.EnsureImageOrchestrated(orchestrationImage, stoppingToken);
             }
             catch (Exception ex)
             {

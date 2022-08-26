@@ -39,7 +39,7 @@ public class BasicHttpAuthOriginStrategy : IOriginStrategy
 
         try
         {
-            var response = await GetHttpResponse(customerOriginStrategy, cancellationToken, origin);
+            var response = await GetHttpResponse(customerOriginStrategy, origin, cancellationToken);
             var originResponse = await CreateOriginResponse(response);
             return originResponse;
         }
@@ -50,8 +50,8 @@ public class BasicHttpAuthOriginStrategy : IOriginStrategy
         }
     }
 
-    private async Task<HttpResponseMessage> GetHttpResponse(CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken,
-        string assetOrigin)
+    private async Task<HttpResponseMessage> GetHttpResponse(CustomerOriginStrategy customerOriginStrategy,
+        string assetOrigin, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, assetOrigin);
         request.Headers.Authorization = await SetBasicAuthHeader(customerOriginStrategy);
@@ -71,8 +71,9 @@ public class BasicHttpAuthOriginStrategy : IOriginStrategy
             throw new ApplicationException(
                 $"Could not find credentials for customerOriginStrategy {customerOriginStrategy.Id}");
         }
-        
-        var creds = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{basicCredentials.User}:{basicCredentials.Password}"));
+
+        var creds = Convert.ToBase64String(
+            Encoding.ASCII.GetBytes($"{basicCredentials.User}:{basicCredentials.Password}"));
         return AuthenticationHeaderValue.Parse($"Basic {creds}");
     }
 

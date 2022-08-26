@@ -49,7 +49,7 @@ public class YarpImageServerClient : IImageServerClient
         if (string.IsNullOrEmpty(imageServerPath)) return null;
         
         // Orchestrate the image to verify that image-server will be able to generate an info.json 
-        await orchestrator.OrchestrateImage(orchestrationImage, cancellationToken);
+        await orchestrator.EnsureImageOrchestrated(orchestrationImage, cancellationToken);
             
         try
         {

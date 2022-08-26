@@ -1065,7 +1065,7 @@ public class FakeImageOrchestrator : IImageOrchestrator
 {
     public static List<AssetId> OrchestratedImages { get; } = new();
 
-    public Task OrchestrateImage(OrchestrationImage orchestrationImage,
+    public Task EnsureImageOrchestrated(OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken = default)
     {
         OrchestratedImages.Add(orchestrationImage.AssetId);

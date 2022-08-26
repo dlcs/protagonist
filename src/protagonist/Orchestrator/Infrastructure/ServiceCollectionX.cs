@@ -15,6 +15,7 @@ using DLCS.Repository.Assets.CustomHeaders;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
+using DLCS.Repository.Strategy;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -96,14 +97,16 @@ public static class ServiceCollectionX
     }
 
     /// <summary>
-    /// Add required caching dependencies
+    /// Add required orchestrator dependencies
     /// </summary>
     public static IServiceCollection AddOrchestration(this IServiceCollection services,
         OrchestratorSettings settings)
     {
         var serviceCollection = services
             .AddSingleton<IAssetTracker, MemoryAssetTracker>()
-            .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
+            .AddSingleton<IImageOrchestrator>(sp =>
+                ActivatorUtilities.CreateInstance<ImageOrchestrator>(sp,
+                    sp.GetRequiredService<S3AmbientOriginStrategy>()))
             .AddSingleton<IFileSystem, FileSystem>()
             .AddSingleton<IOrchestrationQueue>(sp =>
                 ActivatorUtilities.CreateInstance<BoundedChannelOrchestrationQueue>(sp,

@@ -19,7 +19,7 @@ namespace Orchestrator.Features.Images.Orchestration;
 
 public interface IImageOrchestrator
 {
-    Task OrchestrateImage(OrchestrationImage orchestrationImage,
+    Task EnsureImageOrchestrated(OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken = default);
 }
 
@@ -30,7 +30,7 @@ public class ImageOrchestrator : IImageOrchestrator
 {
     private readonly IAssetTracker assetTracker;
     private readonly IOptionsMonitor<OrchestratorSettings> orchestratorSettings;
-    private readonly S3AmbientOriginStrategy s3OriginStrategy;
+    private readonly IOriginStrategy originStrategy;
     private readonly IAppCache appCache;
     private readonly IFileSaver fileSaver;
     private readonly IFileSystem fileSystem;
@@ -39,7 +39,7 @@ public class ImageOrchestrator : IImageOrchestrator
 
     public ImageOrchestrator(IAssetTracker assetTracker,
         IOptionsMonitor<OrchestratorSettings> orchestratorSettings,
-        S3AmbientOriginStrategy s3OriginStrategy,
+        IOriginStrategy originStrategy,
         IAppCache appCache,
         IFileSaver fileSaver,
         IFileSystem fileSystem,
@@ -48,7 +48,7 @@ public class ImageOrchestrator : IImageOrchestrator
     {
         this.assetTracker = assetTracker;
         this.orchestratorSettings = orchestratorSettings;
-        this.s3OriginStrategy = s3OriginStrategy;
+        this.originStrategy = originStrategy;
         this.appCache = appCache;
         this.fileSaver = fileSaver;
         this.fileSystem = fileSystem;
@@ -56,21 +56,21 @@ public class ImageOrchestrator : IImageOrchestrator
         this.logger = logger;
     }
     
-    public async Task OrchestrateImage(OrchestrationImage orchestrationImage,
+    public async Task EnsureImageOrchestrated(OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken = default)
     {
         var assetId = orchestrationImage.AssetId;
 
         await appCache.GetOrAddAsync(CacheKeys.GetOrchestrationCacheKey(assetId), async _ =>
         {
-            await OrchestrateImage(orchestrationImage, cancellationToken, assetId);
+            await OrchestrateImageInternal(orchestrationImage, assetId, cancellationToken);
             // TODO - catch exceptions and cache a short lived value??
             return true;
         }, orchestratorSettings.CurrentValue.Caching.GetMemoryCacheOptions(priority: CacheItemPriority.High));
     }
 
-    private async Task OrchestrateImage(OrchestrationImage? orchestrationImage, CancellationToken cancellationToken,
-        AssetId assetId)
+    private async Task OrchestrateImageInternal(OrchestrationImage? orchestrationImage, AssetId assetId, 
+        CancellationToken cancellationToken)
     {
         logger.LogDebug("Populating orchestration cache for '{AssetId}'", assetId);
 
@@ -83,7 +83,7 @@ public class ImageOrchestrator : IImageOrchestrator
 
         if (string.IsNullOrEmpty(orchestrationImage?.S3Location))
         {
-            orchestrationImage = await ReingestImage(cancellationToken, assetId);
+            orchestrationImage = await ReingestImage(assetId, cancellationToken);
         }
         
         await SaveImageToFastDisk(orchestrationImage, targetPath, cancellationToken);
@@ -100,7 +100,7 @@ public class ImageOrchestrator : IImageOrchestrator
         return false;
     }
 
-    private async Task<OrchestrationImage> ReingestImage(CancellationToken cancellationToken, AssetId assetId)
+    private async Task<OrchestrationImage> ReingestImage(AssetId assetId, CancellationToken cancellationToken)
     {
         logger.LogInformation("Asset '{AssetId}' has no s3 location, reingesting", assetId);
 
@@ -122,18 +122,19 @@ public class ImageOrchestrator : IImageOrchestrator
         return orchestrationImage;
     }
 
-    private async Task SaveImageToFastDisk(OrchestrationImage image, string filePath, CancellationToken cancellationToken)
+    private async Task SaveImageToFastDisk(OrchestrationImage image, string filePath,
+        CancellationToken cancellationToken)
     {
-        // Get bytes from S3
+        // Get bytes from origin (S3)
         await using var originResponse =
-            await s3OriginStrategy.LoadAssetFromOrigin(image.AssetId, image.S3Location, null, cancellationToken);
+            await originStrategy.LoadAssetFromOrigin(image.AssetId, image.S3Location, null, cancellationToken);
         if (originResponse == null || originResponse.Stream.IsNull())
         {
             // TODO correct type of exception? Custom type?
             logger.LogWarning("Unable to get asset {Asset} from {Origin}", image.AssetId, image.S3Location);
             throw new ApplicationException($"Unable to get asset '{image.AssetId}' from origin");
         }
-            
+
         // Save bytes to disk
         await fileSaver.SaveResponseToDisk(image.AssetId, originResponse, filePath, cancellationToken);
     }

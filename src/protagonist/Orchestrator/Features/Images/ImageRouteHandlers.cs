@@ -78,7 +78,7 @@ public static class ImageRouteHandlers
 
         if (proxyActionResult is ProxyImageServerResult proxyImageServer)
         {
-            await imageOrchestrator.OrchestrateImage(proxyImageServer.OrchestrationImage, httpContext.RequestAborted);
+            await imageOrchestrator.EnsureImageOrchestrated(proxyImageServer.OrchestrationImage, httpContext.RequestAborted);
         }
 
         var proxyAction = proxyActionResult as ProxyActionResult; 
