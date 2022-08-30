@@ -111,7 +111,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
         }
         
         // DELIVERATOR: https://github.com/digirati-co-uk/deliverator/blob/master/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L74
-        var targetSpace = await spaceRepository.GetSpace(asset.Customer, asset.Space, cancellationToken, noCache:false);
+        var targetSpace = await spaceRepository.GetSpace(asset.Customer, asset.Space, false, cancellationToken);
         if (targetSpace == null)
         {
             return new PutOrPatchImageResult

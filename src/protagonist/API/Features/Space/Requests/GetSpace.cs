@@ -29,7 +29,7 @@ public class GetSpaceHandler : IRequestHandler<GetSpace, DLCS.Model.Spaces.Space
     public async Task<DLCS.Model.Spaces.Space?> Handle(GetSpace request, CancellationToken cancellationToken)
     {
         var space = await spaceRepository.GetSpace(
-            request.CustomerId, request.SpaceId, cancellationToken, noCache:true);
+            request.CustomerId, request.SpaceId, noCache: true, cancellationToken: cancellationToken);
         return space;
     }
 }

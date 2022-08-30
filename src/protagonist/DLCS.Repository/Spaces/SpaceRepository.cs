@@ -48,10 +48,10 @@ public class SpaceRepository : ISpaceRepository
 
     public Task<Space?> GetSpace(int customerId, int spaceId, CancellationToken cancellationToken)
     {
-        return GetSpace(customerId, spaceId, cancellationToken, false);
+        return GetSpace(customerId, spaceId, false, cancellationToken);
     }
     
-    public async Task<Space?> GetSpace(int customerId, int spaceId, CancellationToken cancellationToken, bool noCache)
+    public async Task<Space?> GetSpace(int customerId, int spaceId, bool noCache, CancellationToken cancellationToken)
     {
         var space = await GetSpaceInternal(customerId, spaceId, cancellationToken, null, true, noCache);
         return space;
