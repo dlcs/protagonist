@@ -23,7 +23,7 @@ using Microsoft.Extensions.Options;
 namespace API.Features.Image;
 
 /// <summary>
-/// 
+/// Controller for handling requests for image (aka Asset) resources
 /// </summary>
 [Route("/customers/{customerId}/spaces/{spaceId}/images")]
 [ApiController]
@@ -32,12 +32,7 @@ public class ImageController : HydraController
     private readonly IMediator mediator;
     private readonly ILogger<ImageController> logger;
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="mediator"></param>
-    /// <param name="options"></param>
-    /// <param name="logger"></param>
+    /// <inheritdoc />
     public ImageController(
         IMediator mediator,
         IOptions<ApiSettings> options,
@@ -70,7 +65,6 @@ public class ImageController : HydraController
         }
         return Ok(dbImage.ToHydra(GetUrlRoots()));
     }
-
 
     /// <summary>
     /// GET /customers/{customerId}/spaces/{spaceId}/images
@@ -152,7 +146,7 @@ public class ImageController : HydraController
         [FromRoute] string imageId,
         [FromBody] DLCS.HydraModel.Image hydraAsset)
     {
-        return await PutOrPatchImage(customerId, spaceId, imageId, hydraAsset);
+        return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset);
     }
 
     /// <summary>
@@ -165,7 +159,7 @@ public class ImageController : HydraController
     /// <param name="imageId">(from resource path)</param>
     /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
     /// <returns>The created or updated Hydra Image object for the Asset</returns>
-    [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))] // for PATCH
+    [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))]
     [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
     [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(ProblemDetails))]
     [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(ProblemDetails))]
@@ -180,39 +174,21 @@ public class ImageController : HydraController
         [FromRoute] string imageId,
         [FromBody] DLCS.HydraModel.Image hydraAsset)
     {
-        return await PutOrPatchImage(customerId, spaceId, imageId, hydraAsset);
+        return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset);
     }
 
-
-    /// <summary>
-    /// PUT   /customers/{customerId}/spaces/{spaceId}/images/{imageId}
-    /// PATCH /customers/{customerId}/spaces/{spaceId}/images/{imageId}
-    /// 
-    /// PUT an asset to its ID location or PATCH asset at that location.
-    /// (Unlike Deliverator, the same method handles a PATCH.)
-    /// </summary>
-    /// <param name="customerId">(from resource path)</param>
-    /// <param name="spaceId">(from resource path)</param>
-    /// <param name="imageId">(from resource path)</param>
-    /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
-    /// <returns>The created or updated Hydra Image object for the Asset</returns>
-    private async Task<IActionResult> PutOrPatchImage(
-        [FromRoute] int customerId,
-        [FromRoute] int spaceId,
-        [FromRoute] string imageId,
-        [FromBody] DLCS.HydraModel.Image hydraAsset)
+    private async Task<IActionResult> PutOrPatchAsset(int customerId, int spaceId, string imageId,
+        DLCS.HydraModel.Image hydraAsset)
     {
-        // DELIVERATOR: https://github.com/digirati-co-uk/deliverator/blob/master/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L74
-            
         var assetId = new AssetId(customerId, spaceId, imageId);
         var asset = hydraAsset.ToDlcsModel(customerId, spaceId, imageId);
         asset.Id = assetId.ToString();
-    
+
         // In the special case where we were passed ImageWithFile from the PostImageWithFileBytes action, 
         // it was a POST - but we should revisit that as the direct image ingest should be a PUT as well I think
         // See https://github.com/dlcs/protagonist/issues/338
         var method = hydraAsset is ImageWithFile ? "PUT" : Request.Method;
-        
+
         var request = new PutOrPatchImage { Asset = asset, Method = method };
         var result = await mediator.Send(request);
         if (result.Asset != null && result.StatusCode is HttpStatusCode.OK or HttpStatusCode.Created)
@@ -230,17 +206,14 @@ public class ImageController : HydraController
             }
             else
             {
-                return Problem("No ID in returned Image", asset.Id, 
+                return Problem("No ID in returned Image", asset.Id,
                     (int?)result.StatusCode, "PUT or PATCH of Asset failed");
             }
         }
-            
-        return Problem(result.Message, asset.Id, 
+
+        return Problem(result.Message, asset.Id,
             (int?)result.StatusCode, "PUT or PATCH of Asset failed");
     }
-        
-    
-
 
     /// <summary>
     /// PATCH /customers/{customerId}/spaces/{spaceId}/images
@@ -336,7 +309,6 @@ public class ImageController : HydraController
             );
     }
 
-
     // ############################# POST BYTES OF IMAGE #############################
     /// <summary>
     /// POST /customers/{customerId}/spaces/{spaceId}/images/{imageId}
@@ -390,7 +362,6 @@ public class ImageController : HydraController
         asset.Origin = result.Origin;
         asset.File = null;
 
-        return await PutOrPatchImage(customerId, spaceId, imageId, asset);
-
+        return await PutOrPatchAsset(customerId, spaceId, imageId, asset);
     }
 }
