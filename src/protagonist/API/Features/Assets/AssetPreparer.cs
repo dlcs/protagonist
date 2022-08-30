@@ -1,8 +1,9 @@
 using System;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
+using DLCS.Model.Assets;
 
-namespace DLCS.Model.Assets;
+namespace API.Features.Assets;
 
 /// <summary>
 /// Conveys whether an attempt to prepare an asset for upsert encountered an invalid state.
@@ -51,7 +52,7 @@ public static class AssetPreparer
         Asset updateAsset,
         bool allowNonApiUpdates)
     {
-        if (existingAsset != null && existingAsset.NotForDelivery)
+        if (existingAsset is { NotForDelivery: true })
         {
             // We can relax this later but for now, you cannot use the API
             // to modify an asset marked NotForDelivery.
@@ -59,7 +60,7 @@ public static class AssetPreparer
             // However, this DOES allow the *creation* of a NotForDelivery asset.
         }
         
-        bool requiresReingest = (existingAsset == null);
+        bool requiresReingest = existingAsset == null;
 
         if (allowNonApiUpdates == false)
         {
@@ -68,6 +69,7 @@ public static class AssetPreparer
             {
                 return new AssetPreparationResult { ErrorMessage = "Cannot set Finished timestamp via API." };
             }
+            
             if (updateAsset.Error != null)
             {
                 return new AssetPreparationResult { ErrorMessage = "Cannot set Error state via API." };
@@ -80,6 +82,7 @@ public static class AssetPreparer
             {
                 updateAsset.Customer = existingAsset.Customer;
             }
+            
             if (updateAsset.Space == 0)
             {
                 updateAsset.Space = existingAsset.Space;
@@ -98,10 +101,6 @@ public static class AssetPreparer
             }
         }
             
-        // TODO:
-        // 1. Deliverator has Image.ReservedIds, but it's { } (empty). So will leave out that check.
-        // 2. Eventually Protagonist will restrict IDs to url-safe paths, but not for now.
-            
         if (existingAsset != null && allowNonApiUpdates == false)
         {
             // https://github.com/dlcs/protagonist/issues/341 for further changes to this validation
@@ -109,10 +108,12 @@ public static class AssetPreparer
             {
                 return new AssetPreparationResult { ErrorMessage = "Width cannot be edited." };
             }
+            
             if (updateAsset.Height.HasValue && updateAsset.Height != 0 && updateAsset.Height != existingAsset.Height)
             {
                 return new AssetPreparationResult { ErrorMessage = "Height cannot be edited." };
             }
+            
             if (updateAsset.Duration.HasValue && updateAsset.Duration != 0 && updateAsset.Duration != existingAsset.Duration)
             {
                 return new AssetPreparationResult { ErrorMessage = "Duration cannot be edited." };
@@ -122,10 +123,12 @@ public static class AssetPreparer
             {
                 return new AssetPreparationResult { ErrorMessage = "PreservedUri cannot be edited." };
             }
+            
             if (updateAsset.Error != null && updateAsset.Error != existingAsset.Error)
             {
                 return new AssetPreparationResult { ErrorMessage = "Error cannot be edited." };
             }
+            
             if (updateAsset.Batch.HasValue && updateAsset.Batch != 0 && updateAsset.Batch != existingAsset.Batch)
             {
                 return new AssetPreparationResult { ErrorMessage = "Batch cannot be edited." };
@@ -136,6 +139,7 @@ public static class AssetPreparer
                 // I think it should be editable though, and doing so should trigger a re-ingest.
                 return new AssetPreparationResult { ErrorMessage = "ImageOptimisationPolicy cannot be edited." };
             }
+            
             if (updateAsset.ThumbnailPolicy != null && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
             {
                 // And this one DEFINITELY should be editable!
@@ -223,7 +227,6 @@ public static class AssetPreparer
         upsertAsset.Ingesting ??= templateAsset.Ingesting;
         upsertAsset.Family ??= templateAsset.Family;
     }
-
 
     static AssetPreparer()
     {
