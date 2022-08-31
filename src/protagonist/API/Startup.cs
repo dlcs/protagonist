@@ -83,6 +83,7 @@ public class Startup
                     provider,
                     provider.GetRequiredService<IAssetRepository>()))
             .AddScoped<ISpaceRepository, SpaceRepository>()
+            .AddScoped<IBatchRepository, BatchRepository>()
             .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
             .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
             .AddScoped<IStorageRepository, CustomerStorageRepository>()

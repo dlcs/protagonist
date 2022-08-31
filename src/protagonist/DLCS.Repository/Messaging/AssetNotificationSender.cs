@@ -17,7 +17,7 @@ namespace DLCS.Repository.Messaging;
 public class AssetNotificationSender : IAssetNotificationSender
 {
     private readonly ILogger<AssetNotificationSender> logger;
-    private DlcsSettings settings;
+    private readonly DlcsSettings settings;
     private readonly HttpClient httpClient;
     
     public AssetNotificationSender(
@@ -30,10 +30,6 @@ public class AssetNotificationSender : IAssetNotificationSender
         this.logger = logger;
     }
     
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="ingestAssetRequest"></param>
     public async Task SendIngestAssetRequest(IngestAssetRequest ingestAssetRequest)
     {
         logger.LogInformation("Message Bus: " + ingestAssetRequest);
@@ -58,6 +54,7 @@ public class AssetNotificationSender : IAssetNotificationSender
             ["space"] = ingestAssetRequest.Asset.Space.ToString(),
             ["image"] = LegacyJsonMessageHelpers.AsJsonStringForMessaging(ingestAssetRequest.Asset)
         };
+        
         // we'll never set initialorigin in our limited first port of this
         if (derivativesOnly)
         {
@@ -70,6 +67,7 @@ public class AssetNotificationSender : IAssetNotificationSender
             ToLegacyMessageJson(writer1, "event::image-ingest", stringParams);
         }
         var content = new ByteArrayContent(Encoding.ASCII.GetBytes(writer.ToString()));
+        
         try
         {
             var response = await httpClient.PostAsync(settings.EngineDirectIngestUri, content);
@@ -85,11 +83,17 @@ public class AssetNotificationSender : IAssetNotificationSender
                 }
             }
         }
+        catch (HttpRequestException httpEx)
+        {
+            if (httpEx.StatusCode.HasValue)
+            {
+                return httpEx.StatusCode.Value;
+            }
+        }
 
         return HttpStatusCode.InternalServerError;
     }
-    
-    
+
     private void ToLegacyMessageJson(JsonWriter json, string message, Dictionary<string, string> stringParams)
     {
         // This replicates the payload created by the Inversion MessagingEvent class.
@@ -111,7 +115,7 @@ public class AssetNotificationSender : IAssetNotificationSender
         json.WriteEndObject();
     }
 
-    public async Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after)
+    public Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after)
     {
         switch (changeType)
         {
@@ -131,12 +135,13 @@ public class AssetNotificationSender : IAssetNotificationSender
                 logger.LogDebug("Message Bus: Asset Modified: {AssetId}", after.Id);
                 break;
         }
+        
+        return Task.CompletedTask;;
     }
 }
 
-
 /// <summary> 
-///  This is for temporary compatibility with legacy Engine, we need to send this request body to engine in
+/// This is for temporary compatibility with legacy Engine, we need to send this request body to engine in
 /// the format legacy engine expects. This signal doesn't have to look like this though in new Protagonist.
 /// </summary>
 static class LegacyJsonMessageHelpers

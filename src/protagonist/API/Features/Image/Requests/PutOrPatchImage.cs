@@ -3,6 +3,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Features.Assets;
+using DLCS.Core.Collections;
 using DLCS.Core.Settings;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
@@ -26,7 +27,7 @@ public class PutOrPatchImage : IRequest<PutOrPatchImageResult>
     public Asset? Asset { get; set; }
 
     /// <summary>
-    /// PUT or POST
+    /// PUT or PATCH
     /// (While this leaks HTTP into the Mediatr it's clearer than using Create or Update) 
     /// </summary>
     public string? Method { get; set; }
@@ -59,6 +60,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
     private readonly IApiAssetRepository assetRepository;
     private readonly IStorageRepository storageRepository;
     private readonly IPolicyRepository policyRepository;
+    private readonly IBatchRepository batchRepository;
     private readonly IAssetNotificationSender assetNotificationSender;
     private readonly DlcsSettings settings;
 
@@ -67,6 +69,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
         IApiAssetRepository assetRepository,
         IStorageRepository storageRepository,
         IPolicyRepository policyRepository,
+        IBatchRepository batchRepository,
         IAssetNotificationSender assetNotificationSender,
         IOptions<DlcsSettings> dlcsSettings)
     {
@@ -74,6 +77,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
         this.assetRepository = assetRepository;
         this.storageRepository = storageRepository;
         this.policyRepository = policyRepository;
+        this.batchRepository = batchRepository;
         this.assetNotificationSender = assetNotificationSender;
         this.settings = dlcsSettings.Value;
     }
@@ -100,19 +104,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
             };
         }
         
-        // TEMPORARY happy path just for images
-        if (asset.Family > 0 && asset.Family != AssetFamily.Image)
-        {
-            return new PutOrPatchImageResult
-            {
-                StatusCode = HttpStatusCode.BadRequest,
-                Message = "Just images for the moment!!!"
-            };
-        }
-        
-        // DELIVERATOR: https://github.com/digirati-co-uk/deliverator/blob/master/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L74
-        var targetSpace = await spaceRepository.GetSpace(asset.Customer, asset.Space, false, cancellationToken);
-        if (targetSpace == null)
+        if (!await DoesTargetSpaceExist(asset, cancellationToken))
         {
             return new PutOrPatchImageResult
             {
@@ -121,11 +113,11 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
             };
         }
         
-        // LoadImageBehaviour - see if already exists
+        // Check if image already exists
         Asset? existingAsset;
         try
         {
-            existingAsset = await assetRepository.GetAsset(asset.Id, noCache:true);
+            existingAsset = await assetRepository.GetAsset(asset.Id, noCache: true);
             if (existingAsset == null)
             {
                 changeType = ChangeType.Create;
@@ -160,31 +152,20 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
             };
         }
 
-        // TEMPORARY! Prevent PUT upserts of non-images for now, too.
-        if (existingAsset != null && existingAsset.Family != AssetFamily.Image)
-        {
-            return new PutOrPatchImageResult
-            {
-                StatusCode = HttpStatusCode.BadRequest,
-                Message = "Just images for the moment!!!"
-            };
-        }
+        var assetPreparationResult = AssetPreparer.PrepareAssetForUpsert(existingAsset, asset, allowNonApiUpdates: false);
         
-        var validationResult = AssetPreparer.PrepareAssetForUpsert(
-            existingAsset, asset, allowNonApiUpdates:false);
-        
-        if (!validationResult.Success)
+        if (!assetPreparationResult.Success)
         {
             // ValidateImageUpsertBehaviour (though has been modified quite a bit)
             return new PutOrPatchImageResult
             {
                 StatusCode = HttpStatusCode.BadRequest,
-                Message = validationResult.ErrorMessage
+                Message = assetPreparationResult.ErrorMessage
             };
         }
 
         // we treat a PUT as a re-process instruction regardless
-        var requiresEngineNotification = validationResult.RequiresReingest || request.Method == "PUT";
+        var requiresEngineNotification = assetPreparationResult.RequiresReingest || request.Method == "PUT";
 
         // Deliverator only does this for new assets, but it should verify PATCH assets too.
         if (existingAsset == null)
@@ -211,6 +192,12 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
             ResetFieldsForIngestion(asset);
         }
         
+        if (asset.Family == AssetFamily.Timebased)
+        {
+            // Timebased asset - create a Batch record in DB and populate Batch property in Asset
+            await batchRepository.CreateBatch(asset.Customer, asset.AsList(), cancellationToken);
+        }
+
         await assetRepository.Save(asset, cancellationToken);
 
         // now obtain the asset again
@@ -220,7 +207,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
             return new PutOrPatchImageResult
             {
                 StatusCode = HttpStatusCode.InternalServerError,
-                Message = validationResult.ErrorMessage
+                Message = "Error reloading asset after save"
             };
         }
         
@@ -231,16 +218,13 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
             // any others?
         }
         
-        
-        // TODO: This is incomplete, it only deals with images for now
-        // needs the equivalent  Conditions.ControlStateNotEquals(name: "image.family", value: "I")
-        //                                              ^^^
+        var ingestAssetRequest = new IngestAssetRequest(assetAfterSave, DateTime.UtcNow);
+
         if (asset.Family == AssetFamily.Image)
         {
             await assetNotificationSender.SendAssetModifiedNotification(changeType, existingAsset, assetAfterSave);
             if (requiresEngineNotification)
             {
-                var ingestAssetRequest = new IngestAssetRequest(assetAfterSave, DateTime.UtcNow);
                 // await call to engine load-balancer, which processes synchronously (not a queue)
                 var statusCode = await assetNotificationSender.SendImmediateIngestAssetRequest(ingestAssetRequest, false);
                 if (statusCode is HttpStatusCode.Created or HttpStatusCode.OK)
@@ -268,15 +252,29 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
                 StatusCode = existingAsset == null ? HttpStatusCode.Created : HttpStatusCode.OK
             };
         }
-        // 
+        else if (asset.Family == AssetFamily.Timebased)
+        {
+            // Queue record for ingestion
+            await assetNotificationSender.SendIngestAssetRequest(ingestAssetRequest);
+            
+            // Return a 201 / queue created response
+        }
+        
         // LoadImageBehaviour (reload)
         // return 200 or 201 or 500
         // else
+        // TODO - this should go once we have F and T handled
         return new PutOrPatchImageResult
         {
             StatusCode = HttpStatusCode.NotImplemented,
             Message = "This handler has a limited implementation for now."
         };
+    }
+
+    private async Task<bool> DoesTargetSpaceExist(Asset asset, CancellationToken cancellationToken)
+    {
+        var targetSpace = await spaceRepository.GetSpace(asset.Customer, asset.Space, false, cancellationToken);
+        return targetSpace != null;
     }
 
     private static void ResetFieldsForIngestion(Asset asset)
