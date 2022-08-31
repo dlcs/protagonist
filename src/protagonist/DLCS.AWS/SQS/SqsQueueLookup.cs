@@ -13,7 +13,7 @@ public class SqsQueueLookup : IQueueLookup
         sqsOptions = awsOptions.Value.SQS;
     }
     
-    public string? GetQueueNameForFamily(AssetFamily family, bool priority = false) 
+    public string GetQueueNameForFamily(AssetFamily family, bool priority = false) 
         => family switch
         {
             AssetFamily.Image => priority ? sqsOptions.PriorityImageQueueName : sqsOptions.ImageQueueName,
