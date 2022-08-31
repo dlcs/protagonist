@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
 
-#nullable disable
+namespace DLCS.Model.Assets;
 
-namespace DLCS.Repository.Entities;
-
-public partial class Batch
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
+public class Batch
 {
     public int Id { get; set; }
     public int Customer { get; set; }
@@ -14,4 +14,6 @@ public partial class Batch
     public int Errors { get; set; }
     public DateTime? Finished { get; set; }
     public bool Superseded { get; set; }
+    
+    private string DebuggerDisplay => $"{Id}, Cust:{Customer}, {Count} item(s)";
 }
