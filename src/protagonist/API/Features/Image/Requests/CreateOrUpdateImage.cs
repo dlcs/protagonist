@@ -19,7 +19,7 @@ namespace API.Features.Image.Requests;
 /// <summary>
 /// Handle PUTs and PATCHes with a single command to ensure same validation happens.
 /// </summary>
-public class PutOrPatchImage : IRequest<PutOrPatchImageResult>
+public class CreateOrUpdateImage : IRequest<CreateOrUpdateImageResult>
 {
     /// <summary>
     /// The Asset to be updated or inserted; may contain null fields indicating no change
@@ -36,7 +36,7 @@ public class PutOrPatchImage : IRequest<PutOrPatchImageResult>
 /// <summary>
 /// The outcome of an update or insert operation
 /// </summary>
-public class PutOrPatchImageResult
+public class CreateOrUpdateImageResult
 {
     /// <summary>
     /// The asset, which may have been processed by Engine during this operation
@@ -54,7 +54,7 @@ public class PutOrPatchImageResult
     public string? Message { get; set; }
 }
 
-public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatchImageResult>
+public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, CreateOrUpdateImageResult>
 {
     private readonly ISpaceRepository spaceRepository;
     private readonly IApiAssetRepository assetRepository;
@@ -64,7 +64,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
     private readonly IAssetNotificationSender assetNotificationSender;
     private readonly DlcsSettings settings;
 
-    public PutOrPatchImageHandler(
+    public CreateOrUpdateImageHandler(
         ISpaceRepository spaceRepository,
         IApiAssetRepository assetRepository,
         IStorageRepository storageRepository,
@@ -82,13 +82,13 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
         this.settings = dlcsSettings.Value;
     }
     
-    public async Task<PutOrPatchImageResult> Handle(PutOrPatchImage request, CancellationToken cancellationToken)
+    public async Task<CreateOrUpdateImageResult> Handle(CreateOrUpdateImage request, CancellationToken cancellationToken)
     {
         var asset = request.Asset;
         var changeType = ChangeType.Update;
         if (asset == null || request.Method == null)
         {
-            return new PutOrPatchImageResult
+            return new CreateOrUpdateImageResult
             {
                 StatusCode = HttpStatusCode.BadRequest,
                 Message = "Invalid Request"
@@ -97,7 +97,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
         
         if (request.Method is not ("PUT" or "PATCH"))
         {
-            return new PutOrPatchImageResult
+            return new CreateOrUpdateImageResult
             {
                 StatusCode = HttpStatusCode.MethodNotAllowed,
                 Message = "Method must be PUT or PATCH"
@@ -106,7 +106,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
         
         if (!await DoesTargetSpaceExist(asset, cancellationToken))
         {
-            return new PutOrPatchImageResult
+            return new CreateOrUpdateImageResult
             {
                 StatusCode = HttpStatusCode.BadRequest,
                 Message = $"Target space for asset does not exist: {asset.Customer}/{asset.Space}"
@@ -123,7 +123,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
                 changeType = ChangeType.Create;
                 if (request.Method == "PATCH")
                 {
-                    return new PutOrPatchImageResult
+                    return new CreateOrUpdateImageResult
                     {
                         StatusCode = HttpStatusCode.NotFound,
                         Message = "Attempted to PATCH an Asset that could not be found."
@@ -135,7 +135,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
                 var counts = await storageRepository.GetImageCounts(asset.Customer, cancellationToken);
                 if (counts.CurrentNumberOfStoredImages >= counts.MaximumNumberOfStoredImages)
                 {
-                    return new PutOrPatchImageResult
+                    return new CreateOrUpdateImageResult
                     {
                         StatusCode = HttpStatusCode.InsufficientStorage,
                         Message = $"This operation will fall outside of your storage policy for number of images: maximum is {counts.MaximumNumberOfStoredImages}"
@@ -145,7 +145,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
         }
         catch (Exception e)
         {
-            return new PutOrPatchImageResult
+            return new CreateOrUpdateImageResult
             {
                 StatusCode = HttpStatusCode.InternalServerError,
                 Message = e.Message
@@ -157,7 +157,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
         if (!assetPreparationResult.Success)
         {
             // ValidateImageUpsertBehaviour (though has been modified quite a bit)
-            return new PutOrPatchImageResult
+            return new CreateOrUpdateImageResult
             {
                 StatusCode = HttpStatusCode.BadRequest,
                 Message = assetPreparationResult.ErrorMessage
@@ -204,7 +204,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
         var assetAfterSave = await assetRepository.GetAsset(asset.Id, noCache: true);
         if (assetAfterSave == null)
         {
-            return new PutOrPatchImageResult
+            return new CreateOrUpdateImageResult
             {
                 StatusCode = HttpStatusCode.InternalServerError,
                 Message = "Error reloading asset after save"
@@ -231,14 +231,14 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
                 {
                     // obtain it again after Engine has processed it
                     var assetAfterEngine = await assetRepository.GetAsset(asset.Id, noCache:true);
-                    return new PutOrPatchImageResult
+                    return new CreateOrUpdateImageResult
                     {
                         Asset = assetAfterEngine,
                         StatusCode = existingAsset == null ? HttpStatusCode.Created : HttpStatusCode.OK
                     };
                 }
 
-                return new PutOrPatchImageResult
+                return new CreateOrUpdateImageResult
                 {
                     Asset = assetAfterSave,
                     Message = "Engine was not able to process this asset",
@@ -246,7 +246,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
                 };
             }
 
-            return new PutOrPatchImageResult
+            return new CreateOrUpdateImageResult
             {
                 Asset = assetAfterSave,
                 StatusCode = existingAsset == null ? HttpStatusCode.Created : HttpStatusCode.OK
@@ -264,7 +264,7 @@ public class PutOrPatchImageHandler : IRequestHandler<PutOrPatchImage, PutOrPatc
         // return 200 or 201 or 500
         // else
         // TODO - this should go once we have F and T handled
-        return new PutOrPatchImageResult
+        return new CreateOrUpdateImageResult
         {
             StatusCode = HttpStatusCode.NotImplemented,
             Message = "This handler has a limited implementation for now."
