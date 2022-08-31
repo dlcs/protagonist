@@ -35,6 +35,11 @@ public class DlcsSettings
     /// </summary>
     public string SpaceManifestQuery { get; set; }
     
+    /// <summary>
+    /// If true, the legacy/Deliverator message format is used for requests to Engine
+    /// </summary>
+    public bool UseLegacyEngineMessage { get; set; }
+    
     public Uri EngineDirectIngestUri { get; set; }
     
     public SettingsIngestDefaults IngestDefaults { get; set; }

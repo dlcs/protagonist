@@ -34,43 +34,22 @@ using Xunit;
 
 namespace API.Tests.Integration;
 
-public class FakeBucketWriterProvider
-{
-    // This also needs to be provided as a class fixture, to ensure
-    // the same instance is used when calling Engine.
-    public FakeBucketWriterProvider()
-    {
-        BucketWriter = A.Fake<IBucketWriter>();
-    }
-    public IBucketWriter BucketWriter { get; }
-}
-
 [Trait("Category", "Integration")]
 [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
 public class AssetTests : 
-    IClassFixture<ProtagonistAppFactory<Startup>>, 
-    IClassFixture<ControllableHttpMessageHandler>, 
-    IClassFixture<FakeBucketWriterProvider>
+    IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
-    private readonly ControllableHttpMessageHandler httpHandler;
-    private readonly IBucketWriter bucketWriter;
+    private static readonly ControllableHttpMessageHandler HttpHandler = new();
+    private static readonly IBucketWriter BucketWriter = A.Fake<IBucketWriter>();
     
     public AssetTests(
         DlcsDatabaseFixture dbFixture, 
-        ProtagonistAppFactory<Startup> factory,
-        ControllableHttpMessageHandler httpHandler,
-        FakeBucketWriterProvider fakeBucketWriterProvider)
+        ProtagonistAppFactory<Startup> factory)
     {
         dbContext = dbFixture.DbContext;
-        
-        // If the same instance of these two is to be used when calling Engine as is used in the [Fact],
-        // they need to be single instances shared across tests. (?)
-        
-        this.httpHandler = httpHandler;
-        bucketWriter = fakeBucketWriterProvider.BucketWriter;
-        
+
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithTestServices(services =>
@@ -81,7 +60,7 @@ public class AssetTests :
                     descriptor => descriptor.ServiceType == typeof(IAssetNotificationSender));
                 services.Remove(assetNotificationDescriptor);
                 services.AddScoped<IAssetNotificationSender>(GetTestNotificationSender);
-                services.AddSingleton<IBucketWriter>(bucketWriter);
+                services.AddSingleton<IBucketWriter>(BucketWriter);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                         "API-Test", _ => { });
@@ -95,13 +74,15 @@ public class AssetTests :
 
     private IAssetNotificationSender GetTestNotificationSender(IServiceProvider arg)
     {
-        var controllableHttpMessageClient = new HttpClient(httpHandler);
+        var controllableHttpMessageClient = new HttpClient(HttpHandler);
         var factory = A.Fake<IHttpClientFactory>();
         A.CallTo(() => factory.CreateClient(A<string>._)).Returns(controllableHttpMessageClient);
         
         var options = Options.Create(new DlcsSettings { EngineDirectIngestUri = new Uri("http://engine.dlcs/ingest") });
         var logger = new NullLogger<AssetNotificationSender>();
-        return new AssetNotificationSender(factory, options, logger);
+        
+        // TODO - timebased tests; verify item queued
+        return new AssetNotificationSender(factory, null, null, options, logger);
     }
 
     private async Task AddMultipleAssets(int space, string name)
@@ -283,7 +264,7 @@ public class AssetTests :
 }}";
         
         HttpRequestMessage engineMessage = null;
-        httpHandler.RegisterCallbackWithSelector(
+        HttpHandler.RegisterCallbackWithSelector(
             assetId.ToApiResourcePath(),
             r => engineMessage = r, 
             message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
@@ -330,7 +311,7 @@ public class AssetTests :
 }}";
 
         HttpRequestMessage engineMessage = null;
-        httpHandler.RegisterCallbackWithSelector(
+        HttpHandler.RegisterCallbackWithSelector(
             assetId.ToApiResourcePath(),
             r => engineMessage = r, 
             message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
@@ -359,7 +340,7 @@ public class AssetTests :
 }}";
 
         HttpRequestMessage engineMessage = null;
-        httpHandler.RegisterCallbackWithSelector(
+        HttpHandler.RegisterCallbackWithSelector(
             assetId.ToApiResourcePath(),
             r => engineMessage = r, 
             message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
@@ -388,7 +369,7 @@ public class AssetTests :
         testAsset.State = EntityState.Detached; // need to untrack before update
 
         HttpRequestMessage engineMessage = null;
-        httpHandler.RegisterCallbackWithSelector(
+        HttpHandler.RegisterCallbackWithSelector(
             assetId.ToApiResourcePath(),
             r => engineMessage = r, 
             message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
@@ -427,7 +408,7 @@ public class AssetTests :
 }}";
         
         HttpRequestMessage engineMessage = null;
-        httpHandler.RegisterCallbackWithSelector(
+        HttpHandler.RegisterCallbackWithSelector(
             assetId.ToApiResourcePath(),
             r => engineMessage = r, 
             message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
@@ -469,7 +450,7 @@ public class AssetTests :
 }}";
         
         HttpRequestMessage engineMessage = null;
-        httpHandler.RegisterCallbackWithSelector(
+        HttpHandler.RegisterCallbackWithSelector(
             assetId.ToApiResourcePath(),
             r => engineMessage = r, 
             message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
@@ -644,7 +625,7 @@ public class AssetTests :
         
         // BucketWriter returns success if it writes that stream
         A.CallTo(() =>
-                bucketWriter.WriteToBucket(
+                BucketWriter.WriteToBucket(
                     A<ObjectInBucket>.That.Matches(o =>
                         o.Bucket == "protagonist-test-origin" && 
                         o.Key == assetId.ToString()), 
@@ -654,7 +635,7 @@ public class AssetTests :
         
         // make a callback for engine
         HttpRequestMessage engineMessage = null;
-        httpHandler.RegisterCallbackWithSelector(
+        HttpHandler.RegisterCallbackWithSelector(
             assetId.ToApiResourcePath(),
             r => engineMessage = r, 
             message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
@@ -667,7 +648,7 @@ public class AssetTests :
         // assert
         // The image was saved to S3:
         A.CallTo(() =>
-                bucketWriter.WriteToBucket(
+                BucketWriter.WriteToBucket(
                     A<ObjectInBucket>.That.Matches(o =>
                         o.Bucket == "protagonist-test-origin" && 
                         o.Key == assetId.ToString()), 

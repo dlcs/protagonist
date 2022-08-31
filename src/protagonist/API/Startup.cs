@@ -5,6 +5,7 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
+using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
 using DLCS.Core.Settings;
@@ -58,8 +59,7 @@ public class Startup
         services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
         var cachingSection = configuration.GetSection("Caching");
         services.Configure<CacheSettings>(cachingSection);
-        
-        
+
         var apiSettings = configuration.Get<ApiSettings>();
         var cacheSettings = cachingSection.Get<CacheSettings>();
         
@@ -99,8 +99,11 @@ public class Startup
             .AddSingleton<IBucketReader, S3BucketReader>()
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
+            .AddSingleton<IQueueLookup, SqsQueueLookup>()
+            .AddSingleton<IQueueSender, SqsQueueSender>()
             .SetupAWS(configuration, webHostEnvironment)
-            .WithAmazonS3();
+            .WithAmazonS3()
+            .WithAmazonSQS();
 
         services.AddDlcsBasicAuth(options =>
             {
