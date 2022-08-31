@@ -42,12 +42,6 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
     ///
     /// Downstream controllers may still reject calls for other reasons.
     /// </summary>
-    /// <param name="options"></param>
-    /// <param name="logger"></param>
-    /// <param name="encoder"></param>
-    /// <param name="clock"></param>
-    /// <param name="customerRepository"></param>
-    /// <param name="deliveratorApiAuth"></param>
     public DlcsBasicAuthenticationHandler(
         IOptionsMonitor<BasicAuthenticationOptions> options,
         ILoggerFactory logger,
@@ -122,7 +116,7 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
                 {
                     return AuthenticateResult.Fail("Only admin user may access this customer's resource.");
                 }
-                Logger.LogInformation("Admin key accessing a customer's resource");
+                Logger.LogDebug("Admin key accessing a customer's resource");
             }
         }
         else
@@ -133,13 +127,13 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
             {
                 return AuthenticateResult.Fail("Only admin user may access this shared resource");
             }
-            Logger.LogInformation("Admin key accessing a shared resource");
+            Logger.LogDebug("Admin key accessing a shared resource");
         }
         
         // At this point our *authentication* has passed.
         // Downstream handlers may still refuse to *authorise* the request for other reasons
         // (it can still end up a 401)
-        Logger.LogInformation("Authentication passed");
+        Logger.LogTrace("Authentication passed");
 
         var claims = new List<Claim>
         {

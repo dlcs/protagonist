@@ -101,7 +101,7 @@ public class Startup
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3();
 
-        services.AddDlcsDelegatedBasicAuth(options =>
+        services.AddDlcsBasicAuth(options =>
             {
                 options.Realm = "DLCS-API";
                 options.Salt = apiSettings.Salt;
