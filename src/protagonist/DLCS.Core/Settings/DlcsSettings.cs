@@ -37,10 +37,6 @@ public class DlcsSettings
     
     public Uri EngineDirectIngestUri { get; set; }
     
-    
-    /// <summary>
-    /// 
-    /// </summary>
     public SettingsIngestDefaults IngestDefaults { get; set; }
 }
 

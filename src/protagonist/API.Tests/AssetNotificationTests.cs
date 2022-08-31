@@ -6,6 +6,7 @@ using DLCS.Core.Settings;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository.Messaging;
+using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -25,9 +26,13 @@ public class AssetNotificationTests
     {
         httpHandler = new ControllableHttpMessageHandler();
         var httpClient = new HttpClient(httpHandler);
+        
+        var factory = A.Fake<IHttpClientFactory>();
+        A.CallTo(() => factory.CreateClient(A<string>._)).Returns(httpClient);
+        
         var options = Options.Create(new DlcsSettings { EngineDirectIngestUri = new Uri("http://engine.dlcs/ingest") });
         var logger = new NullLogger<AssetNotificationSender>();
-        sut = new AssetNotificationSender(httpClient, options, logger);
+        sut = new AssetNotificationSender(factory, options, logger);
     }
 
     [Theory]

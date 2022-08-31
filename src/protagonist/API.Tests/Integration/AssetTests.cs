@@ -96,9 +96,12 @@ public class AssetTests :
     private IAssetNotificationSender GetTestNotificationSender(IServiceProvider arg)
     {
         var controllableHttpMessageClient = new HttpClient(httpHandler);
+        var factory = A.Fake<IHttpClientFactory>();
+        A.CallTo(() => factory.CreateClient(A<string>._)).Returns(controllableHttpMessageClient);
+        
         var options = Options.Create(new DlcsSettings { EngineDirectIngestUri = new Uri("http://engine.dlcs/ingest") });
         var logger = new NullLogger<AssetNotificationSender>();
-        return new AssetNotificationSender(controllableHttpMessageClient, options, logger);
+        return new AssetNotificationSender(factory, options, logger);
     }
 
     private async Task AddMultipleAssets(int space, string name)
