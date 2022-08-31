@@ -167,7 +167,7 @@ public static class AssetPreparer
             {
                 // requiresReingest = true; NO, because we'll re-create thumbs on demand - "backfill"
                 // However, we can treat a PUT as always triggering reingest, whereas a PATCH does not,
-                // even if they are otherwise equivalent - see PutOrPatchImage
+                // even if they are otherwise equivalent - see CreateOrUpdateImage
             }
             if (updateAsset.ImageOptimisationPolicy.HasText() && updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
             {
