@@ -18,14 +18,14 @@ public class AssetNotificationSender : IAssetNotificationSender
 {
     private readonly ILogger<AssetNotificationSender> logger;
     private readonly DlcsSettings settings;
-    private readonly HttpClient httpClient;
+    private readonly IHttpClientFactory httpClientFactory;
     
     public AssetNotificationSender(
-        HttpClient httpClient,
+        IHttpClientFactory httpClientFactory,
         IOptions<DlcsSettings> dlcsSettings,
         ILogger<AssetNotificationSender> logger)
     {
-        this.httpClient = httpClient;
+        this.httpClientFactory = httpClientFactory;
         this.settings = dlcsSettings.Value;
         this.logger = logger;
     }
@@ -70,6 +70,7 @@ public class AssetNotificationSender : IAssetNotificationSender
         
         try
         {
+            using var httpClient = httpClientFactory.CreateClient("engine");
             var response = await httpClient.PostAsync(settings.EngineDirectIngestUri, content);
             return response.StatusCode;
         }
