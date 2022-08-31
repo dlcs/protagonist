@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 
@@ -25,6 +26,18 @@ public static class DatabaseConnectionManager
     public static async Task<NpgsqlConnection> GetOpenNpgSqlConnection(IConfiguration configuration)
     {
         var connection = new NpgsqlConnection(configuration.GetPostgresSqlConnection());
+        await connection.OpenAsync();
+        return connection;
+    }
+    
+    /// <summary>
+    /// Get open connection to Postgres db.
+    /// </summary>
+    /// <param name="dlcsContext">Current <see cref="DlcsContext"/> object.</param>
+    /// <returns>Open <see cref="NpgsqlConnection"/> connection.</returns>
+    public static async Task<NpgsqlConnection> GetOpenNpgSqlConnection(this DlcsContext dlcsContext)
+    {
+        var connection = new NpgsqlConnection(dlcsContext.Database.GetConnectionString());
         await connection.OpenAsync();
         return connection;
     }
