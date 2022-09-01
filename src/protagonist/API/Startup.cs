@@ -99,6 +99,7 @@ public class Startup
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .AddSingleton<IQueueLookup, SqsQueueLookup>()
             .AddSingleton<IQueueSender, SqsQueueSender>()
+            .AddSingleton<SqsQueueUtilities>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
             .WithAmazonSQS();

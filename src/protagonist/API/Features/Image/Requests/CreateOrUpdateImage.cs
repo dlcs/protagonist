@@ -113,7 +113,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
             };
         }
         
-        // Check if image already exists
+        // Check if Asset already exists
         Asset? existingAsset;
         try
         {

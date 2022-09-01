@@ -13,6 +13,9 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Messaging;
 
+/// <summary>
+/// A thin wrapper to manage interactions with the Engine - direct and indirect 
+/// </summary>
 public class EngineClient : IEngineClient
 {
     private readonly IQueueLookup queueLookup;
@@ -84,6 +87,10 @@ public class EngineClient : IEngineClient
         if (!success)
         {
             logger.LogInformation("Error queueing ingest request {IngestRequest}", ingestAssetRequest);
+        }
+        else
+        {
+            logger.LogDebug("Successfully enqueued ingest request {IngestRequest}", ingestAssetRequest);
         }
 
         return success;
