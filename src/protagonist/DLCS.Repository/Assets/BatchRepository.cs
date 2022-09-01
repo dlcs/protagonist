@@ -44,8 +44,8 @@ public class BatchRepository : DapperRepository, IBatchRepository
     }
     
     private const string CreateBatchSql = @"
-INSERT INTO ""Batches"" (""Customer"", ""Submitted"", ""Count"", ""Completed"", ""Errors"")
-VALUES (@Customer, now() at time zone 'utc', @Count, 0, 0)
+INSERT INTO ""Batches"" (""Customer"", ""Submitted"", ""Count"", ""Completed"", ""Errors"", ""Superseded"")
+VALUES (@Customer, now() at time zone 'utc', @Count, 0, 0, false)
 RETURNING ""Id"";
 ";
 }
