@@ -249,6 +249,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
                         cancellationToken);
                 var success = statusCode is HttpStatusCode.Created or HttpStatusCode.OK;
 
+                // NOTE(DG) - do we want to pass the downstream status regardless?
                 return await GenerateFinalResult(success, "Engine was not able to process this asset", statusCode);
             }
 
