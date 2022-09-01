@@ -66,9 +66,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task Put_New_Asset_Creates_Asset()
+    public async Task Put_NewImageAsset_Creates_Asset()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Creates_Asset));
+        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_Creates_Asset));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff""
@@ -92,7 +92,148 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ThumbnailPolicy.Should().Be("default");
         asset.ImageOptimisationPolicy.Should().Be("fast-higher");
     }
+
+    [Fact]
+    public async Task Put_NewImageAsset_ReturnsEngineStatusCode_IfEngineRequestFails()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_ReturnsEngineStatusCode_IfEngineRequestFails));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff""
+}}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.TooManyRequests);  // Random status to verify it filters down
+        
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        
+        // Act
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        response.Headers.Location.Should().BeNull();
+        var asset = await dbContext.Images.FindAsync(assetId.ToString());
+        asset.Id.Should().Be(assetId.ToString());
+    }
     
+    [Fact(Skip = "Is this an expected behaviour?")]
+    public async Task Put_SetsError_IfEngineRequestFails()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_SetsError_IfEngineRequestFails));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+}}";
+
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.InternalServerError);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+
+        var assetFromDatabase = await dbContext.Images.SingleOrDefaultAsync(a => a.Id == assetId.ToString());
+        assetFromDatabase.Ingesting.Should().BeFalse();
+        assetFromDatabase.Error.Should().NotBeEmpty();
+    }
+    
+    [Fact]
+    public async Task Put_NewAudioAsset_Creates_Asset()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_NewAudioAsset_Creates_Asset));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.mp4"",
+  ""family"": ""T"",
+  ""mediaType"": ""audio/mp4""
+}}";
+        A.CallTo(() =>
+                EngineClient.AsynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()),
+                    A<CancellationToken>._))
+            .Returns(true);
+        
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+
+        // act
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = await dbContext.Images.FindAsync(assetId.ToString());
+        asset.Id.Should().Be(assetId.ToString());
+        asset.MaxUnauthorised.Should().Be(-1);
+        asset.ThumbnailPolicy.Should().BeEmpty();
+        asset.ImageOptimisationPolicy.Should().Be("audio-max");
+    }
+    
+    [Fact]
+    public async Task Put_NewVideoAsset_Creates_Asset()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_NewVideoAsset_Creates_Asset));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.mp4"",
+  ""family"": ""T"",
+  ""mediaType"": ""video/mp4""
+}}";
+        A.CallTo(() =>
+                EngineClient.AsynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()),
+                    A<CancellationToken>._))
+            .Returns(true);
+        
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+
+        // act
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = await dbContext.Images.FindAsync(assetId.ToString());
+        asset.Id.Should().Be(assetId.ToString());
+        asset.MaxUnauthorised.Should().Be(-1);
+        asset.ThumbnailPolicy.Should().BeEmpty();
+        asset.ImageOptimisationPolicy.Should().Be("video-max");
+    }
+
+    [Fact]
+    public async Task Put_NewTimebasedAsset_Returns500_IfEnqueueFails()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_NewTimebasedAsset_Returns500_IfEnqueueFails));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.mp4"",
+  ""family"": ""T"",
+  ""mediaType"": ""video/mp4""
+}}";
+        A.CallTo(() =>
+                EngineClient.AsynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()),
+                    A<CancellationToken>._))
+            .Returns(false);
+        
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        
+        // Act
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        response.Headers.Location.Should().BeNull();
+        var asset = await dbContext.Images.FindAsync(assetId.ToString());
+        asset.Id.Should().Be(assetId.ToString());
+    }
+
     [Fact]
     public async Task Put_New_Asset_Requires_Origin()
     {
@@ -139,34 +280,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 A<CancellationToken>._))
             .MustHaveHappened();
     }
-    
-    [Fact(Skip = "To be implemented")]
-    public async Task Put_SetsError_IfEngineRequestFails()
-    {
-        var assetId = new AssetId(99, 1, nameof(Put_SetsError_IfEngineRequestFails));
-        var hydraImageBody = $@"{{
-  ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-}}";
 
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
-                    A<CancellationToken>._))
-            .Returns(HttpStatusCode.InternalServerError);
-        
-        // act
-        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
-        
-        // assert
-        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
-
-        var assetFromDatabase = await dbContext.Images.SingleOrDefaultAsync(a => a.Id == assetId.ToString());
-        assetFromDatabase.Ingesting.Should().BeFalse();
-        assetFromDatabase.Error.Should().NotBeEmpty();
-    }
-    
     [Fact]
     public async Task Put_Existing_Asset_ClearsError_AndMarksAsIngesting()
     {
@@ -242,11 +356,10 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Theory]
-    [InlineData(DLCS.Model.Assets.AssetFamily.Image)]
-    [InlineData(DLCS.Model.Assets.AssetFamily.Timebased)] 
-    public async Task Patch_Asset_Updates_Asset_Without_Calling_Engine(DLCS.Model.Assets.AssetFamily family)
+    [InlineData(AssetFamily.Image)]
+    [InlineData(AssetFamily.Timebased)] 
+    public async Task Patch_Asset_Updates_Asset_Without_Calling_Engine(AssetFamily family)
     {
-        // This is the same as Put_Asset_Updates_Asset, but with a PATCH
         var assetId = new AssetId(99, 1, $"{nameof(Patch_Asset_Updates_Asset_Without_Calling_Engine)}{family}");
 
         var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(), family: family,
@@ -276,9 +389,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Patch_ImageAsset_Updates_Asset_And_Calls_Engine_if_Reingest_Required()
+    public async Task Patch_ImageAsset_Updates_Asset_And_Calls_Engine_If_Reingest_Required()
     {
-        var assetId = new AssetId(99, 1, nameof(Patch_ImageAsset_Updates_Asset_And_Calls_Engine_if_Reingest_Required));
+        var assetId = new AssetId(99, 1, nameof(Patch_ImageAsset_Updates_Asset_And_Calls_Engine_If_Reingest_Required));
 
         var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(),
             ref1: "I am string 1", origin: $"https://example.org/{assetId.Asset}.tiff");
@@ -314,10 +427,10 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Patch_TimebasedAsset_Updates_Asset_And_Calls_Engine_if_Reingest_Required()
+    public async Task Patch_TimebasedAsset_Updates_Asset_AndEnqueuesMessage_IfReingestRequired()
     {
         var assetId = new AssetId(99, 1,
-            nameof(Patch_TimebasedAsset_Updates_Asset_And_Calls_Engine_if_Reingest_Required));
+            nameof(Patch_TimebasedAsset_Updates_Asset_AndEnqueuesMessage_IfReingestRequired));
 
         var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(), family: AssetFamily.Timebased,
             ref1: "I am string 1", origin: $"https://example.org/{assetId.Asset}.mp4", mediaType: "video/mp4");
