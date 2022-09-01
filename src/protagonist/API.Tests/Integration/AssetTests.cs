@@ -56,9 +56,6 @@ public class AssetTests :
             {
                 // swap out our AssetNotificationSender for a version with a controllable httpClient
                 // What would be more elegant is just replacing the HttpClient but how?
-                var assetNotificationDescriptor = services.FirstOrDefault(
-                    descriptor => descriptor.ServiceType == typeof(IAssetNotificationSender));
-                services.Remove(assetNotificationDescriptor);
                 services.AddScoped<IAssetNotificationSender>(GetTestNotificationSender);
                 services.AddSingleton<IBucketWriter>(BucketWriter);
                 services.AddAuthentication("API-Test")
@@ -77,12 +74,10 @@ public class AssetTests :
         var controllableHttpMessageClient = new HttpClient(HttpHandler);
         var factory = A.Fake<IHttpClientFactory>();
         A.CallTo(() => factory.CreateClient(A<string>._)).Returns(controllableHttpMessageClient);
-        
-        var options = Options.Create(new DlcsSettings { EngineDirectIngestUri = new Uri("http://engine.dlcs/ingest") });
-        var logger = new NullLogger<AssetNotificationSender>();
-        
+
         // TODO - timebased tests; verify item queued
-        return new AssetNotificationSender(factory, null, null, options, logger);
+        var sender = ActivatorUtilities.CreateInstance<AssetNotificationSender>(arg, factory);
+        return sender;
     }
 
     private async Task AddMultipleAssets(int space, string name)

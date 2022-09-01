@@ -63,13 +63,11 @@ public class Startup
         var apiSettings = configuration.Get<ApiSettings>();
         var cacheSettings = cachingSection.Get<CacheSettings>();
         
-        services.AddHttpClient();
-
         services
             .AddHttpContextAccessor()
             .AddSingleton<IEncryption, SHA256>()
             .AddSingleton<DeliveratorApiAuth>()
-            .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
+            .AddTransient<ClaimsPrincipal>(s => s.GetRequiredService<IHttpContextAccessor>().HttpContext.User)
             .AddMemoryCache(memoryCacheOptions =>
             {
                 memoryCacheOptions.SizeLimit = cacheSettings.MemoryCacheSizeLimit;
@@ -104,6 +102,8 @@ public class Startup
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
             .WithAmazonSQS();
+
+        services.AddHttpClient<IEngineClient, EngineClient>();
 
         services.AddDlcsBasicAuth(options =>
             {

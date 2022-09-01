@@ -17,22 +17,19 @@ using Newtonsoft.Json.Linq;
 using Test.Helpers.Http;
 using Xunit;
 
-namespace API.Tests;
+namespace DLCS.Repository.Tests.Messaging;
 
-public class AssetNotificationTests
+public class EngineClientTests
 {
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly IQueueLookup queueLookup;
     private readonly IQueueSender queueSender;
-    private readonly IHttpClientFactory httpClientFactory;
+    private readonly HttpClient httpClient;
 
-    public AssetNotificationTests()
+    public EngineClientTests()
     {
         httpHandler = new ControllableHttpMessageHandler();
-        var httpClient = new HttpClient(httpHandler);
-        
-        httpClientFactory = A.Fake<IHttpClientFactory>();
-        A.CallTo(() => httpClientFactory.CreateClient(A<string>._)).Returns(httpClient);
+        httpClient = new HttpClient(httpHandler);
 
         queueLookup = A.Fake<IQueueLookup>();
         queueSender = A.Fake<IQueueSender>();
@@ -42,7 +39,7 @@ public class AssetNotificationTests
     [InlineData(AssetFamily.File, 'F')]
     [InlineData(AssetFamily.Image, 'I')]
     [InlineData(AssetFamily.Timebased, 'T')]
-    public async Task SendImmediateIngestAssetRequest_Sends_Legacy_Engine_Body_IfUseLegacyEngineMessageTrue(
+    public async Task SynchronousIngest_CallsEngineWithLegacyModel_IfUseLegacyEngineMessageTrue(
         AssetFamily family, char expected)
     {
         // Arrange
@@ -62,7 +59,7 @@ public class AssetNotificationTests
         var sut = GetSut(true);
         
         // Act
-        var statusCode = await sut.SendImmediateIngestAssetRequest(ingestRequest, false);
+        var statusCode = await sut.SynchronousIngest(ingestRequest, false);
         
         // Assert
         statusCode.Should().Be(HttpStatusCode.OK);
@@ -79,7 +76,7 @@ public class AssetNotificationTests
     }
     
     [Fact]
-    public async Task SendImmediateIngestAssetRequest_CallsEngineWithCurrentModel_IfUseLegacyEngineMessageFalse()
+    public async Task SynchronousIngest_CallsEngineWithCurrentModel_IfUseLegacyEngineMessageFalse()
     {
         // Arrange
         var asset = new Asset
@@ -101,7 +98,7 @@ public class AssetNotificationTests
         var sut = GetSut(false);
         
         // Act
-        var statusCode = await sut.SendImmediateIngestAssetRequest(ingestRequest, false);
+        var statusCode = await sut.SynchronousIngest(ingestRequest, false);
         
         // Assert
         statusCode.Should().Be(HttpStatusCode.OK);
@@ -115,7 +112,7 @@ public class AssetNotificationTests
     }
     
     [Fact]
-    public async Task SendIngestAssetRequest_QueuesMessageWithLegacyModel_IfUseLegacyEngineMessageTrue()
+    public async Task AsynchronousIngest_QueuesMessageWithLegacyModel_IfUseLegacyEngineMessageTrue()
     {
         // Arrange
         var asset = new Asset
@@ -136,7 +133,7 @@ public class AssetNotificationTests
             .Returns(true);
         
         // Act
-        await sut.SendIngestAssetRequest(ingestRequest);
+        await sut.AsynchronousIngest(ingestRequest);
         
         // Assert
         var jObj = JObject.Parse(jsonString);
@@ -145,7 +142,7 @@ public class AssetNotificationTests
     }
     
     [Fact]
-    public async Task SendIngestAssetRequest_QueuesMessageWithCurrentModel_IfUseLegacyEngineMessageFalse()
+    public async Task AsynchronousIngest_QueuesMessageWithCurrentModel_IfUseLegacyEngineMessageFalse()
     {
         // Arrange
         var asset = new Asset
@@ -169,7 +166,7 @@ public class AssetNotificationTests
             .Returns(true);
 
         // Act
-        await sut.SendIngestAssetRequest(ingestRequest);
+        await sut.AsynchronousIngest(ingestRequest);
         
         // Assert
         var body = JsonSerializer.Deserialize<IngestAssetRequest>(jsonString,
@@ -177,15 +174,14 @@ public class AssetNotificationTests
         body.Should().BeEquivalentTo(ingestRequest);
     }
 
-    private AssetNotificationSender GetSut(bool useLegacyMessageFormat)
+    private EngineClient GetSut(bool useLegacyMessageFormat)
     {
         var options = Options.Create(new DlcsSettings
         {
             EngineDirectIngestUri = new Uri("http://engine.dlcs/ingest"),
             UseLegacyEngineMessage = useLegacyMessageFormat
         });
-        
-        return new AssetNotificationSender(httpClientFactory, queueLookup, queueSender, options,
-            new NullLogger<AssetNotificationSender>());
+
+        return new EngineClient(queueLookup, queueSender, httpClient, options, new NullLogger<EngineClient>());
     }
 }
