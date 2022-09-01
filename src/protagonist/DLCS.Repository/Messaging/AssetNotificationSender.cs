@@ -31,7 +31,7 @@ public class AssetNotificationSender : IAssetNotificationSender
     public async Task<HttpStatusCode> SendImmediateIngestAssetRequest(Asset assetToIngest, bool derivativesOnly, CancellationToken cancellationToken = default)
     {
         var ingestAssetRequest = new IngestAssetRequest(assetToIngest, DateTime.UtcNow);
-        var statusCode = await engineClient.SynchronousIngest(ingestAssetRequest, derivativesOnly);
+        var statusCode = await engineClient.SynchronousIngest(ingestAssetRequest, derivativesOnly, cancellationToken);
         return statusCode;
     }
 

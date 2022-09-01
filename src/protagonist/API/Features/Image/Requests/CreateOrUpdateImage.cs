@@ -129,9 +129,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
                         Message = "Attempted to PATCH an Asset that could not be found."
                     };
                 }
-                // LoadCustomerStorageBehaviour - if a new image, CustomerStorageCalculation
-                // LoadStoragePolicyBehaviour - get the storage policy
-                // EnforceStoragePolicyForNumberOfImagesBehaviour
+
                 var counts = await storageRepository.GetImageCounts(asset.Customer, cancellationToken);
                 if (counts.CurrentNumberOfStoredImages >= counts.MaximumNumberOfStoredImages)
                 {
@@ -181,7 +179,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
             if (thumbnailPolicyChanged)
             {
                 // We won't alter the value of requiresEngineNotification
-                // thumbs will be backfilled.
+                // TODO thumbs will be backfilled.
                 // This could be a config setting.
             }
         }
@@ -190,12 +188,12 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         if (requiresEngineNotification)
         {
             ResetFieldsForIngestion(asset);
-        }
-        
-        if (asset.Family == AssetFamily.Timebased)
-        {
-            // Timebased asset - create a Batch record in DB and populate Batch property in Asset
-            await batchRepository.CreateBatch(asset.Customer, asset.AsList(), cancellationToken);
+            
+            if (asset.Family == AssetFamily.Timebased)
+            {
+                // Timebased asset - create a Batch record in DB and populate Batch property in Asset
+                await batchRepository.CreateBatch(asset.Customer, asset.AsList(), cancellationToken);
+            }
         }
 
         await assetRepository.Save(asset, cancellationToken);
@@ -215,35 +213,43 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         if (asset.InitialOrigin.HasText())
         {
             assetAfterSave.InitialOrigin = asset.InitialOrigin;
-            // any others?
         }
-        
+
+        async Task<CreateOrUpdateImageResult> GenerateFinalResult(bool success, string errorMessage,
+            HttpStatusCode errorCode)
+        {
+            if (success)
+            {
+                // obtain it again after Engine has processed it
+                var assetAfterEngine = await assetRepository.GetAsset(asset!.Id, noCache: true);
+                return new CreateOrUpdateImageResult
+                {
+                    Asset = assetAfterEngine,
+                    StatusCode = existingAsset == null ? HttpStatusCode.Created : HttpStatusCode.OK
+                };
+            }
+
+            return new CreateOrUpdateImageResult
+            {
+                Asset = assetAfterSave,
+                Message = errorMessage,
+                StatusCode = errorCode
+            };
+        }
+
+        await assetNotificationSender.SendAssetModifiedNotification(changeType, existingAsset, assetAfterSave);
+
         if (asset.Family == AssetFamily.Image)
         {
-            await assetNotificationSender.SendAssetModifiedNotification(changeType, existingAsset, assetAfterSave);
             if (requiresEngineNotification)
             {
                 // await call to engine load-balancer, which processes synchronously (not a queue)
                 var statusCode =
                     await assetNotificationSender.SendImmediateIngestAssetRequest(assetAfterSave, false,
                         cancellationToken);
-                if (statusCode is HttpStatusCode.Created or HttpStatusCode.OK)
-                {
-                    // obtain it again after Engine has processed it
-                    var assetAfterEngine = await assetRepository.GetAsset(asset.Id, noCache:true);
-                    return new CreateOrUpdateImageResult
-                    {
-                        Asset = assetAfterEngine,
-                        StatusCode = existingAsset == null ? HttpStatusCode.Created : HttpStatusCode.OK
-                    };
-                }
+                var success = statusCode is HttpStatusCode.Created or HttpStatusCode.OK;
 
-                return new CreateOrUpdateImageResult
-                {
-                    Asset = assetAfterSave,
-                    Message = "Engine was not able to process this asset",
-                    StatusCode = statusCode
-                };
+                return await GenerateFinalResult(success, "Engine was not able to process this asset", statusCode);
             }
 
             return new CreateOrUpdateImageResult
@@ -254,13 +260,22 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         }
         else if (asset.Family == AssetFamily.Timebased)
         {
-            // Queue record for ingestion
-            await assetNotificationSender.SendIngestAssetRequest(assetAfterSave, cancellationToken);
+            if (requiresEngineNotification)
+            {
+                // Queue record for ingestion
+                var success = await assetNotificationSender.SendIngestAssetRequest(assetAfterSave, cancellationToken);
+
+                return await GenerateFinalResult(success, "Unable to queue for processing",
+                    HttpStatusCode.InternalServerError);
+            }
             
-            // Return a 201 / queue created response
+            return new CreateOrUpdateImageResult
+            {
+                Asset = assetAfterSave,
+                StatusCode = existingAsset == null ? HttpStatusCode.Created : HttpStatusCode.OK
+            };
         }
-        
-        // LoadImageBehaviour (reload)
+
         // return 200 or 201 or 500
         // else
         // TODO - this should go once we have F and T handled
