@@ -5,12 +5,12 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
-using DLCS.Core.Settings;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Messaging;
@@ -23,11 +23,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Test.Helpers.Http;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using Xunit;
@@ -36,13 +33,12 @@ namespace API.Tests.Integration;
 
 [Trait("Category", "Integration")]
 [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
-public class AssetTests : 
-    IClassFixture<ProtagonistAppFactory<Startup>>
+public class AssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
-    private static readonly ControllableHttpMessageHandler HttpHandler = new();
     private static readonly IBucketWriter BucketWriter = A.Fake<IBucketWriter>();
+    private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
     
     public AssetTests(
         DlcsDatabaseFixture dbFixture, 
@@ -56,7 +52,7 @@ public class AssetTests :
             {
                 // swap out our AssetNotificationSender for a version with a controllable httpClient
                 // What would be more elegant is just replacing the HttpClient but how?
-                services.AddScoped<IAssetNotificationSender>(GetTestNotificationSender);
+                services.AddScoped<IEngineClient>(sp => EngineClient);
                 services.AddSingleton<IBucketWriter>(BucketWriter);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
@@ -67,35 +63,6 @@ public class AssetTests :
                 AllowAutoRedirect = false
             });
         dbFixture.CleanUp();
-    }
-
-    private IAssetNotificationSender GetTestNotificationSender(IServiceProvider arg)
-    {
-        var controllableHttpMessageClient = new HttpClient(HttpHandler);
-        var factory = A.Fake<IHttpClientFactory>();
-        A.CallTo(() => factory.CreateClient(A<string>._)).Returns(controllableHttpMessageClient);
-
-        // TODO - timebased tests; verify item queued
-        var sender = ActivatorUtilities.CreateInstance<AssetNotificationSender>(arg, factory);
-        return sender;
-    }
-
-    private async Task AddMultipleAssets(int space, string name)
-    {
-        await dbContext.Spaces.AddTestSpace(99, space, name);
-        for (int i = 1; i <= 35; i++)
-        {
-            var padded = i.ToString().PadLeft(4, '0');
-            await dbContext.Images.AddTestAsset($"99/{space}/asset-{padded}",
-                customer: 99, space: space,
-                width: 2000 + i % 5,
-                height: 3000 + i % 6,
-                num1: i, num2: 100 - i,
-                ref1: $"Asset {padded}",
-                ref2: $"String2 {100 - i}");
-        }
-
-        await dbContext.SaveChangesAsync();
     }
 
     [Fact]
@@ -257,13 +224,11 @@ public class AssetTests :
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff""
 }}";
-        
-        HttpRequestMessage engineMessage = null;
-        HttpHandler.RegisterCallbackWithSelector(
-            assetId.ToApiResourcePath(),
-            r => engineMessage = r, 
-            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
-            "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -271,7 +236,6 @@ public class AssetTests :
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        engineMessage.Should().NotBeNull();
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
         var asset = await dbContext.Images.FindAsync(assetId.ToString());
         asset.Id.Should().Be(assetId.ToString());
@@ -299,18 +263,18 @@ public class AssetTests :
     public async Task Put_New_Asset_Preserves_InitialOrigin()
     {
         var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Preserves_InitialOrigin));
+        var initialOrigin = "s3://my-bucket/{assetId.Asset}.tiff";
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-  ""initialOrigin"": ""s3://my-bucket/{assetId.Asset}.tiff""
+  ""initialOrigin"": ""{initialOrigin}""
 }}";
 
-        HttpRequestMessage engineMessage = null;
-        HttpHandler.RegisterCallbackWithSelector(
-            assetId.ToApiResourcePath(),
-            r => engineMessage = r, 
-            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
-            "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -318,8 +282,13 @@ public class AssetTests :
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var bodySentByEngine = await engineMessage.Content.ReadAsStringAsync();
-        bodySentByEngine.Should().Contain($@"s3://my-bucket/{assetId.Asset}.tiff");
+
+        A.CallTo(() =>
+            EngineClient.SynchronousIngest(
+                A<IngestAssetRequest>.That.Matches(r =>
+                    r.Asset.Id == assetId.ToString() && r.Asset.InitialOrigin == initialOrigin), false,
+                A<CancellationToken>._))
+            .MustHaveHappened();
     }
     
     [Fact]
@@ -333,13 +302,12 @@ public class AssetTests :
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff""
 }}";
-
-        HttpRequestMessage engineMessage = null;
-        HttpHandler.RegisterCallbackWithSelector(
-            assetId.ToApiResourcePath(),
-            r => engineMessage = r, 
-            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
-            "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -363,13 +331,6 @@ public class AssetTests :
         await dbContext.SaveChangesAsync();
         testAsset.State = EntityState.Detached; // need to untrack before update
 
-        HttpRequestMessage engineMessage = null;
-        HttpHandler.RegisterCallbackWithSelector(
-            assetId.ToApiResourcePath(),
-            r => engineMessage = r, 
-            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
-            "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
-        
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""string1"": ""I am edited""
@@ -380,7 +341,13 @@ public class AssetTests :
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        engineMessage.Should().BeNull(); // engine not called
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
+        
         var asset = await dbContext.Images.FindAsync(assetId.ToString());
         asset.Reference1.Should().Be("I am edited");
     }
@@ -402,20 +369,23 @@ public class AssetTests :
   ""string1"": ""I am edited""
 }}";
         
-        HttpRequestMessage engineMessage = null;
-        HttpHandler.RegisterCallbackWithSelector(
-            assetId.ToApiResourcePath(),
-            r => engineMessage = r, 
-            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
-            "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
-        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        engineMessage.Should().NotBeNull(); // engine was called
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .MustHaveHappened();
         var asset = await dbContext.Images.FindAsync(assetId.ToString());
         asset.Reference1.Should().Be("I am edited");
     }
@@ -443,21 +413,19 @@ public class AssetTests :
   ""imageOptimisationPolicy"": ""http://localhost/imageOptimisationPolicies/test-policy"",
   ""string1"": ""I am edited""
 }}";
-        
-        HttpRequestMessage engineMessage = null;
-        HttpHandler.RegisterCallbackWithSelector(
-            assetId.ToApiResourcePath(),
-            r => engineMessage = r, 
-            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
-            "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
-        
+
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
         
         // assert CURRENT DELIVERATOR
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        engineMessage.Should().BeNull();
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
         
         // assert THIS IS WHAT IT SHOULD BE!
         // response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -629,12 +597,11 @@ public class AssetTests :
             .Returns(true);
         
         // make a callback for engine
-        HttpRequestMessage engineMessage = null;
-        HttpHandler.RegisterCallbackWithSelector(
-            assetId.ToApiResourcePath(),
-            r => engineMessage = r, 
-            message => message.Content.ReadAsStringAsync().Result.Contains(assetId.Asset),
-            "{ \"engine\": \"was-called\" }", HttpStatusCode.OK);
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
         
         // act
         var content = new StringContent(hydraBody, Encoding.UTF8, "application/json");
@@ -645,14 +612,18 @@ public class AssetTests :
         A.CallTo(() =>
                 BucketWriter.WriteToBucket(
                     A<ObjectInBucket>.That.Matches(o =>
-                        o.Bucket == "protagonist-test-origin" && 
-                        o.Key == assetId.ToString()), 
+                        o.Bucket == "protagonist-test-origin" &&
+                        o.Key == assetId.ToString()),
                     A<MemoryStream>.That.Matches(s => s.Length == stream.Length),
                     hydraJson.MediaType))
             .MustHaveHappened();
         
         // Engine was called during this process.
-        engineMessage.Should().NotBeNull();
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .MustHaveHappened();
         
         // The API created an Image whose origin is the S3 location
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -660,7 +631,6 @@ public class AssetTests :
         var asset = await dbContext.Images.FindAsync(assetId.ToString());
         asset.Should().NotBeNull();
         asset.Origin.Should().Be("https://protagonist-test-origin.s3.eu-west-1.amazonaws.com/99/1/Post_ImageBytes_Ingests_New_Image");
-
     }
 
     [Theory]
@@ -691,5 +661,23 @@ public class AssetTests :
         // Assert
         var coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
         coll.Members.Length.Should().Be(count);
+    }
+    
+    private async Task AddMultipleAssets(int space, string name)
+    {
+        await dbContext.Spaces.AddTestSpace(99, space, name);
+        for (int i = 1; i <= 35; i++)
+        {
+            var padded = i.ToString().PadLeft(4, '0');
+            await dbContext.Images.AddTestAsset($"99/{space}/asset-{padded}",
+                customer: 99, space: space,
+                width: 2000 + i % 5,
+                height: 3000 + i % 6,
+                num1: i, num2: 100 - i,
+                ref1: $"Asset {padded}",
+                ref2: $"String2 {100 - i}");
+        }
+
+        await dbContext.SaveChangesAsync();
     }
 }

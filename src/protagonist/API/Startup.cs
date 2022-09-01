@@ -89,7 +89,7 @@ public class Startup
             .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
             .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
-            .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
+            .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
             .ConfigureMediatR()
             .ConfigureSwagger();
 
