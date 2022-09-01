@@ -2,6 +2,7 @@
 using DLCS.AWS.S3;
 using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
+using DLCS.Core.FileSystem;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Auth;
@@ -14,6 +15,7 @@ using DLCS.Repository.Assets.CustomHeaders;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
+using DLCS.Repository.Strategy;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -21,8 +23,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images.ImageServer;
 using Orchestrator.Features.Images.Orchestration;
-using Orchestrator.Features.Images.Orchestration.Status;
-using Orchestrator.Features.Images.Requests;
 using Orchestrator.Infrastructure.Deliverator;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
@@ -97,17 +97,20 @@ public static class ServiceCollectionX
     }
 
     /// <summary>
-    /// Add required caching dependencies
+    /// Add required orchestrator dependencies
     /// </summary>
     public static IServiceCollection AddOrchestration(this IServiceCollection services,
         OrchestratorSettings settings)
     {
         var serviceCollection = services
             .AddSingleton<IAssetTracker, MemoryAssetTracker>()
-            .AddSingleton<IImageOrchestrator, ImageOrchestrator>()
-            .AddSingleton<IImageOrchestrationStatusProvider, FileBasedStatusProvider>()
-            .AddSingleton<IOrchestrationQueue>(_ =>
-                new BoundedChannelOrchestrationQueue(settings.OrchestrateOnInfoJsonMaxCapacity));
+            .AddSingleton<IImageOrchestrator>(sp =>
+                ActivatorUtilities.CreateInstance<ImageOrchestrator>(sp,
+                    sp.GetRequiredService<S3AmbientOriginStrategy>()))
+            .AddSingleton<IFileSystem, FileSystem>()
+            .AddSingleton<IOrchestrationQueue>(sp =>
+                ActivatorUtilities.CreateInstance<BoundedChannelOrchestrationQueue>(sp,
+                    settings.OrchestrateOnInfoJsonMaxCapacity));
 
         if (settings.OrchestrateOnInfoJson)
             serviceCollection.AddHostedService<OrchestrationQueueMonitor>();

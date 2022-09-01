@@ -22,11 +22,6 @@ public class OrchestrationAsset
     /// Gets list of roles associated with Asset
     /// </summary>
     public List<string> Roles { get; set; } = new();
-
-    /// <summary>
-    /// Version identifier, used to validate saves are against correct version
-    /// </summary>
-    public int Version { get; set; }
 }
 
 public class OrchestrationFile : OrchestrationAsset
@@ -63,9 +58,4 @@ public class OrchestrationImage : OrchestrationAsset
     /// Get or set Asset location in S3 
     /// </summary>
     public string? S3Location { get; set; }
-    
-    /// <summary>
-    /// Get or set the OrchestrationStatus of object
-    /// </summary>
-    public OrchestrationStatus Status { get; set; } = OrchestrationStatus.Unknown;
 }

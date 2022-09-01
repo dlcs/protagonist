@@ -21,7 +21,6 @@ namespace Orchestrator.Features.Images;
 public static class ImageRouteHandlers
 {
     private static readonly HttpMessageInvoker HttpClient;
-    private static readonly HttpTransformer DefaultTransformer;
     private static readonly ForwarderRequestConfig RequestOptions;
 
     static ImageRouteHandlers()
@@ -35,8 +34,6 @@ public static class ImageRouteHandlers
             UseCookies = false,
             ActivityHeadersPropagator = new ReverseProxyPropagator(DistributedContextPropagator.Current)
         });
-
-        DefaultTransformer = HttpTransformer.Default;
         
         // TODO - make this configurable, potentially by target
         RequestOptions = new ForwarderRequestConfig { ActivityTimeout = TimeSpan.FromSeconds(60) };
@@ -78,7 +75,7 @@ public static class ImageRouteHandlers
 
         if (proxyActionResult is ProxyImageServerResult proxyImageServer)
         {
-            await EnsureImageOrchestrated(httpContext, proxyImageServer, imageOrchestrator);
+            await imageOrchestrator.EnsureImageOrchestrated(proxyImageServer.OrchestrationImage, httpContext.RequestAborted);
         }
 
         var proxyAction = proxyActionResult as ProxyActionResult; 
@@ -92,19 +89,6 @@ public static class ImageRouteHandlers
         {
             httpContext.Response.Headers.Add(header);
         }
-    }
-
-    private static async Task EnsureImageOrchestrated(HttpContext httpContext,
-        ProxyImageServerResult proxyImageServer, IImageOrchestrator imageOrchestrator)
-    {
-        if (proxyImageServer.OrchestrationImage.Status == OrchestrationStatus.Orchestrated)
-        {
-            // TODO - how do we handle an image having been scavenged?
-            return;
-        }
-     
-        // Orchestrate image
-        await imageOrchestrator.OrchestrateImage(proxyImageServer.OrchestrationImage, httpContext.RequestAborted);
     }
 
     private static async Task ProxyRequest(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
@@ -128,14 +112,10 @@ public static class ImageRouteHandlers
 
         var root = destination.Model.Config.Address;
 
-        var transformer = proxyAction.HasPath
-            ? new PathRewriteTransformer(proxyAction)
-            : DefaultTransformer;
+        var transformer = new PathRewriteTransformer(proxyAction);
+        var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions, transformer);
 
-        var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions,
-            transformer);
-
-        // TODO - spruce up this logging, store startTime.ticks and switch
+        // TODO - spruce up this logging, store startTime.ticks 
         // Check if the proxy operation was successful
         if (error != ForwarderError.None)
         {

@@ -1,3 +1,5 @@
+using System;
+
 namespace DLCS.Core.FileSystem;
 
 /// <summary>
@@ -11,4 +13,5 @@ public interface IFileSystem
     void DeleteFile(string path, bool swallowError = true);
     bool FileExists(string path);
     long GetFileSize(string path);
+    void SetLastWriteTimeUtc(string path, DateTime dateTime);
 }

@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using LazyCache;
 using Orchestrator.Assets;
 
 namespace Orchestrator.Features.Images.Orchestration;
@@ -26,10 +27,12 @@ public interface IOrchestrationQueue
 /// </summary>
 public class BoundedChannelOrchestrationQueue : IOrchestrationQueue
 {
+    private readonly IAppCache appCache;
     private readonly Channel<OrchestrationImage> queue;
 
-    public BoundedChannelOrchestrationQueue(int capacity)
+    public BoundedChannelOrchestrationQueue(int capacity, IAppCache appCache)
     {
+        this.appCache = appCache;
         var options = new BoundedChannelOptions(capacity)
         {
             FullMode = BoundedChannelFullMode.DropOldest,
@@ -38,7 +41,16 @@ public class BoundedChannelOrchestrationQueue : IOrchestrationQueue
     }
 
     public ValueTask QueueRequest(OrchestrationImage orchestrationImage, CancellationToken cancellationToken)
-        => queue.Writer.WriteAsync(orchestrationImage, cancellationToken);
+    {
+        // Save any processing by checking if 'orchestrated' cache key exists
+        if (appCache.TryGetValue(CacheKeys.GetOrchestrationCacheKey(orchestrationImage.AssetId), out bool cached) &&
+            cached)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        return queue.Writer.WriteAsync(orchestrationImage, cancellationToken);
+    }
 
     public ValueTask<OrchestrationImage> DequeueRequest(CancellationToken cancellationToken)
         => queue.Reader.ReadAsync(cancellationToken);

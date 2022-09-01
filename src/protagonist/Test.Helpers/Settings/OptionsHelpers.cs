@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 
 namespace Test.Helpers.Settings;
 
-public class OptionsHelpers
+public static class OptionsHelpers
 {
     /// <summary>
     /// Creates an <see cref="IOptionsMonitor{TOptions}"/> that returns provided object for CurrentValue

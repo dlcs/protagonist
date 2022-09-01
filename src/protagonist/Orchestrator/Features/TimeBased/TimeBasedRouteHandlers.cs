@@ -17,7 +17,6 @@ namespace Orchestrator.Features.TimeBased;
 public static class TimeBasedRouteHandlers
 {
     private static readonly HttpMessageInvoker HttpClient;
-    private static readonly HttpTransformer DefaultTransformer;
     private static readonly ForwarderRequestConfig RequestOptions;
 
     static TimeBasedRouteHandlers()
@@ -30,8 +29,7 @@ public static class TimeBasedRouteHandlers
             AutomaticDecompression = DecompressionMethods.GZip,
             UseCookies = false
         });
-
-        DefaultTransformer = HttpTransformer.Default;
+        
         RequestOptions = new ForwarderRequestConfig {ActivityTimeout = TimeSpan.FromSeconds(60)};
     }
     
@@ -81,9 +79,7 @@ public static class TimeBasedRouteHandlers
             return;
         }
         
-        var transformer = proxyAction.HasPath
-            ? new PathRewriteTransformer(proxyAction, true)
-            : DefaultTransformer;
+        var transformer = new PathRewriteTransformer(proxyAction, true);
 
         var error = await forwarder.SendAsync(httpContext, proxyAction.Path!, HttpClient, RequestOptions,
             transformer);

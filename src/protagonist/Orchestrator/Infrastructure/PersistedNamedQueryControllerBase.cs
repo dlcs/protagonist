@@ -31,10 +31,10 @@ public class PersistedNamedQueryControllerBase : Controller
         IOptions<CacheSettings> cacheSettings,
         ILogger logger)
     {
-        this.Mediator = mediator;
-        this.Logger = logger;
-        this.NamedQuerySettings = namedQuerySettings.Value;
-        this.CacheSettings = cacheSettings.Value;
+        Mediator = mediator;
+        Logger = logger;
+        NamedQuerySettings = namedQuerySettings.Value;
+        CacheSettings = cacheSettings.Value;
     }
 
     /// <summary>
@@ -54,7 +54,7 @@ public class PersistedNamedQueryControllerBase : Controller
         string contentType, CancellationToken cancellationToken = default)
         where T : IRequest<PersistedNamedQueryProjection>
     {
-        try
+        return await this.HandleAssetRequest(async () =>
         {
             var request = generateRequest();
             var result = await Mediator.Send(request, cancellationToken);
@@ -63,29 +63,12 @@ public class PersistedNamedQueryControllerBase : Controller
             if (result.IsBadRequest) return BadRequest();
             if (result.Status == PersistedProjectionStatus.Restricted) return Unauthorized();
             if (result.Status == PersistedProjectionStatus.Error) return StatusCode(500);
-            if (result.Status == PersistedProjectionStatus.InProcess)
-                return InProcess(NamedQuerySettings.ControlStaleSecs);
+            if (result.Status == PersistedProjectionStatus.InProcess) return this.InProcess(NamedQuerySettings.ControlStaleSecs);
             if (result.IsEmpty) return NotFound();
 
             SetCacheControl(result.RequiresAuth);
             return File(result.DataStream, contentType);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            // TODO - this error handling duplicates same in RequestHandlerBase
-            Logger.LogError(ex, "Could not find Customer/Space from '{Path}'", HttpContext.Request.Path);
-            return NotFound();
-        }
-        catch (FormatException ex)
-        {
-            Logger.LogError(ex, "Error parsing path '{Path}'", HttpContext.Request.Path);
-            return BadRequest();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Unknown exception returning projection '{Path}'", HttpContext.Request.Path);
-            return StatusCode(500);
-        }
+        }, Logger);
     }
 
     /// <summary>
@@ -98,7 +81,7 @@ public class PersistedNamedQueryControllerBase : Controller
     protected async Task<IActionResult> GetControlFile<T>(Func<IRequest<T>> generateRequest,
         CancellationToken cancellationToken = default)
     {
-        try
+        return await this.HandleAssetRequest(async () =>
         {
             var request = generateRequest();
             var result = await Mediator.Send(request, cancellationToken);
@@ -106,36 +89,12 @@ public class PersistedNamedQueryControllerBase : Controller
             if (result == null) return NotFound();
 
             return Content(JsonConvert.SerializeObject(result), "application/json");
-        }
-        catch (KeyNotFoundException ex)
-        {
-            // TODO - this error handling duplicates same in RequestHandlerBase
-            Logger.LogError(ex, "Could not find Customer/Space from '{Path}'", HttpContext.Request.Path);
-            return NotFound();
-        }
-        catch (FormatException ex)
-        {
-            Logger.LogError(ex, "Error parsing path '{Path}'", HttpContext.Request.Path);
-            return BadRequest();
-        }
+        }, Logger);
     }
 
-    private IActionResult InProcess(int retryAfter)
-    {
-        Response.Headers.Add("Retry-After", retryAfter.ToString());
-        return new StatusCodeResult(202);
-    }
-    
     private void SetCacheControl(bool requiresAuth)
     {
         var maxAge = TimeSpan.FromSeconds(CacheSettings.GetTtl(CacheDuration.Default, CacheSource.Http));
-        HttpContext.Response.GetTypedHeaders().CacheControl =
-            new CacheControlHeaderValue
-            {
-                Public = !requiresAuth,
-                Private = requiresAuth,
-                MaxAge = maxAge,
-                SharedMaxAge = requiresAuth ? null : maxAge
-            };
+        this.SetCacheControl(requiresAuth, maxAge);
     }
 }

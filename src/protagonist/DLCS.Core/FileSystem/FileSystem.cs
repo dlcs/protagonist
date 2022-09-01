@@ -43,4 +43,6 @@ public class FileSystem : IFileSystem
             return 0;
         }
     }
+
+    public void SetLastWriteTimeUtc(string path, DateTime dateTime) => File.SetLastWriteTimeUtc(path, dateTime);
 }
