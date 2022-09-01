@@ -50,9 +50,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .WithConnectionString(dbFixture.ConnectionString)
             .WithTestServices(services =>
             {
-                // swap out our AssetNotificationSender for a version with a controllable httpClient
-                // What would be more elegant is just replacing the HttpClient but how?
-                services.AddScoped<IEngineClient>(sp => EngineClient);
+                services.AddScoped<IEngineClient>(_ => EngineClient);
                 services.AddSingleton<IBucketWriter>(BucketWriter);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
