@@ -1,23 +1,26 @@
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 
 namespace DLCS.Model.Messaging;
 
+/// <summary>
+/// Interface for transmitting notifications related to <see cref="Asset"/> 
+/// </summary>
 public interface IAssetNotificationSender
 {
     /// <summary>
-    /// Enqueue a message for Engine that an asset needs to be ingested.
+    /// Enqueue a message that an asset needs to be ingested.
     /// </summary>
-    /// <param name="ingestAssetRequest"></param>
-    Task SendIngestAssetRequest(IngestAssetRequest ingestAssetRequest);
-    
+    Task<bool> SendIngestAssetRequest(Asset assetToIngest, CancellationToken cancellationToken = default);
+
     /// <summary>
-    /// Send an asset to Engine for immediate processing; the call blocks until Engine responds.
+    /// Send an asset for immediate processing; the call blocks until complete.
     /// </summary>
-    /// <param name="ingestAssetRequest"></param>
-    /// <param name="derivativesOnly">Just make new thumbs... or AV transcodes?</param>
-    Task<HttpStatusCode> SendImmediateIngestAssetRequest(IngestAssetRequest ingestAssetRequest, bool derivativesOnly);
+    /// <param name="derivativesOnly">If true, only derivatives (e.g. thumbs) will be created</param>
+    Task<HttpStatusCode> SendImmediateIngestAssetRequest(Asset assetToIngest, bool derivativesOnly,
+        CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Broadcast a change to the status of an Asset, for any subscribers.

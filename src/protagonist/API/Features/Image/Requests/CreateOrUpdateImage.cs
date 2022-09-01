@@ -218,15 +218,15 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
             // any others?
         }
         
-        var ingestAssetRequest = new IngestAssetRequest(assetAfterSave, DateTime.UtcNow);
-
         if (asset.Family == AssetFamily.Image)
         {
             await assetNotificationSender.SendAssetModifiedNotification(changeType, existingAsset, assetAfterSave);
             if (requiresEngineNotification)
             {
                 // await call to engine load-balancer, which processes synchronously (not a queue)
-                var statusCode = await assetNotificationSender.SendImmediateIngestAssetRequest(ingestAssetRequest, false);
+                var statusCode =
+                    await assetNotificationSender.SendImmediateIngestAssetRequest(assetAfterSave, false,
+                        cancellationToken);
                 if (statusCode is HttpStatusCode.Created or HttpStatusCode.OK)
                 {
                     // obtain it again after Engine has processed it
@@ -255,7 +255,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         else if (asset.Family == AssetFamily.Timebased)
         {
             // Queue record for ingestion
-            await assetNotificationSender.SendIngestAssetRequest(ingestAssetRequest);
+            await assetNotificationSender.SendIngestAssetRequest(assetAfterSave, cancellationToken);
             
             // Return a 201 / queue created response
         }
