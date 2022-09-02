@@ -34,17 +34,18 @@ public static class AssetPreparer
     private static readonly Asset DefaultAsset;
 
     /// <summary>
-    /// Prepares an asset for insert or update operations.
+    /// Prepares an asset for insert or update operations by
     /// Validates that things aren't being modified that shouldn't be,
     /// and that no null fields remain on the asset being upserted.
     /// </summary>
     /// <remarks>
     /// This is essentially the logic in 
     /// https://github.com/digirati-co-uk/deliverator/blob/master/DLCS.Application/Behaviour/API/ValidateImageUpsertBehaviour.cs
-    /// This method was called ValidateImageUpsert to match deliverator; now renamed
     /// </remarks>
     /// <param name="existingAsset">If this is an update, the current version of the asset</param>
-    /// <param name="updateAsset">The new or updated asset</param>
+    /// <param name="updateAsset">
+    /// The new or updated asset - this asset is modified to reflect final asset to be persisted
+    /// </param>
     /// <param name="allowNonApiUpdates">Permit setting of fields that would not be allowed on API calls</param>
     /// <returns>A validation result</returns>
     public static AssetPreparationResult PrepareAssetForUpsert(
@@ -182,6 +183,12 @@ public static class AssetPreparer
         {
             return new AssetPreparationResult { ErrorMessage = "Asset Origin must be supplied." };
         }
+
+        // 'File' family assets are never ingested so default back to false regardless of value
+        if (updateAsset.Family == AssetFamily.File)
+        {
+            requiresReingest = false;
+        }
     
         return new AssetPreparationResult
         {
@@ -193,8 +200,6 @@ public static class AssetPreparer
     /// <summary>
     /// Ensure that any unset fields are given their default Asset value.
     /// </summary>
-    /// <param name="templateAsset"></param>
-    /// <param name="upsertAsset"></param>
     private static void SetNullFieldsToExistingOrDefaults(Asset? templateAsset, Asset upsertAsset)
     {
         templateAsset ??= DefaultAsset;

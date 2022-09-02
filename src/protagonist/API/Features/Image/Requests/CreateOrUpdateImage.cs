@@ -17,20 +17,35 @@ using Microsoft.Extensions.Options;
 namespace API.Features.Image.Requests;
 
 /// <summary>
-/// Handle PUTs and PATCHes with a single command to ensure same validation happens.
+/// Handle create or update requests for assets.
+/// This may trigger a sync or async ingest request depending on fields updated and HTTP method used. 
 /// </summary>
+/// <remarks>Handles PUTs and PATCHes with a single command to ensure same validation happens.</remarks>
 public class CreateOrUpdateImage : IRequest<CreateOrUpdateImageResult>
 {
     /// <summary>
     /// The Asset to be updated or inserted; may contain null fields indicating no change
     /// </summary>
-    public Asset? Asset { get; set; }
+    public Asset? Asset { get; }
 
     /// <summary>
-    /// PUT or PATCH
-    /// (While this leaks HTTP into the Mediatr it's clearer than using Create or Update) 
+    /// Get a value indicating whether the asset must already exist in db (ie this only supports Update)
     /// </summary>
-    public string? Method { get; set; }
+    public bool AssetMustExist { get; }
+    
+    /// <summary>
+    /// Get a value indicating whether the asset will always be reingested, regardless of which fields are changed
+    /// </summary>
+    public bool AlwaysReingest { get; }
+
+    public CreateOrUpdateImage(Asset asset, string httpMethod)
+    {
+        Asset = asset;
+        AssetMustExist = httpMethod == "PATCH";
+        
+        // treat a PUT as a re-process instruction regardless of which values are changed
+        AlwaysReingest = httpMethod == "PUT";
+    }
 }
 
 /// <summary>
@@ -85,8 +100,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
     public async Task<CreateOrUpdateImageResult> Handle(CreateOrUpdateImage request, CancellationToken cancellationToken)
     {
         var asset = request.Asset;
-        var changeType = ChangeType.Update;
-        if (asset == null || request.Method == null)
+        if (asset == null)
         {
             return new CreateOrUpdateImageResult
             {
@@ -94,16 +108,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
                 Message = "Invalid Request"
             };
         }
-        
-        if (request.Method is not ("PUT" or "PATCH"))
-        {
-            return new CreateOrUpdateImageResult
-            {
-                StatusCode = HttpStatusCode.MethodNotAllowed,
-                Message = "Method must be PUT or PATCH"
-            };
-        }
-        
+
         if (!await DoesTargetSpaceExist(asset, cancellationToken))
         {
             return new CreateOrUpdateImageResult
@@ -115,21 +120,22 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         
         // Check if Asset already exists
         Asset? existingAsset;
+        var changeType = ChangeType.Update;
         try
         {
             existingAsset = await assetRepository.GetAsset(asset.Id, noCache: true);
             if (existingAsset == null)
             {
-                changeType = ChangeType.Create;
-                if (request.Method == "PATCH")
+                if (request.AssetMustExist)
                 {
                     return new CreateOrUpdateImageResult
                     {
                         StatusCode = HttpStatusCode.NotFound,
-                        Message = "Attempted to PATCH an Asset that could not be found."
+                        Message = "Attempted to update an Asset that could not be found."
                     };
                 }
 
+                changeType = ChangeType.Create;
                 var counts = await storageRepository.GetImageCounts(asset.Customer, cancellationToken);
                 if (counts.CurrentNumberOfStoredImages >= counts.MaximumNumberOfStoredImages)
                 {
@@ -150,7 +156,8 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
             };
         }
 
-        var assetPreparationResult = AssetPreparer.PrepareAssetForUpsert(existingAsset, asset, allowNonApiUpdates: false);
+        var assetPreparationResult =
+            AssetPreparer.PrepareAssetForUpsert(existingAsset, asset, allowNonApiUpdates: false);
         
         if (!assetPreparationResult.Success)
         {
@@ -161,9 +168,8 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
                 Message = assetPreparationResult.ErrorMessage
             };
         }
-
-        // we treat a PUT as a re-process instruction regardless
-        var requiresEngineNotification = assetPreparationResult.RequiresReingest || request.Method == "PUT";
+        
+        var requiresEngineNotification = RequiresEngineNotification(asset, request, assetPreparationResult);
 
         // Deliverator only does this for new assets, but it should verify PATCH assets too.
         if (existingAsset == null)
@@ -215,76 +221,27 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
             assetAfterSave.InitialOrigin = asset.InitialOrigin;
         }
 
-        async Task<CreateOrUpdateImageResult> GenerateFinalResult(bool success, string errorMessage,
-            HttpStatusCode errorCode)
-        {
-            if (success)
-            {
-                // obtain it again after Engine has processed it
-                var assetAfterEngine = await assetRepository.GetAsset(asset!.Id, noCache: true);
-                return new CreateOrUpdateImageResult
-                {
-                    Asset = assetAfterEngine,
-                    StatusCode = existingAsset == null ? HttpStatusCode.Created : HttpStatusCode.OK
-                };
-            }
-
-            return new CreateOrUpdateImageResult
-            {
-                Asset = assetAfterSave,
-                Message = errorMessage,
-                StatusCode = errorCode
-            };
-        }
-
         await assetNotificationSender.SendAssetModifiedNotification(changeType, existingAsset, assetAfterSave);
 
-        if (asset.Family == AssetFamily.Image)
+        if (requiresEngineNotification)
         {
-            if (requiresEngineNotification)
-            {
-                // await call to engine load-balancer, which processes synchronously (not a queue)
-                var statusCode =
-                    await assetNotificationSender.SendImmediateIngestAssetRequest(assetAfterSave, false,
-                        cancellationToken);
-                var success = statusCode is HttpStatusCode.Created or HttpStatusCode.OK;
-
-                // NOTE(DG) - do we want to pass the downstream status regardless?
-                return await GenerateFinalResult(success, "Engine was not able to process this asset", statusCode);
-            }
-
-            return new CreateOrUpdateImageResult
-            {
-                Asset = assetAfterSave,
-                StatusCode = existingAsset == null ? HttpStatusCode.Created : HttpStatusCode.OK
-            };
-        }
-        else if (asset.Family == AssetFamily.Timebased)
-        {
-            if (requiresEngineNotification)
-            {
-                // Queue record for ingestion
-                var success = await assetNotificationSender.SendIngestAssetRequest(assetAfterSave, cancellationToken);
-
-                return await GenerateFinalResult(success, "Unable to queue for processing",
-                    HttpStatusCode.InternalServerError);
-            }
-            
-            return new CreateOrUpdateImageResult
-            {
-                Asset = assetAfterSave,
-                StatusCode = existingAsset == null ? HttpStatusCode.Created : HttpStatusCode.OK
-            };
+            return await IngestAndGenerateResult(asset, existingAsset != null, cancellationToken);
         }
 
-        // return 200 or 201 or 500
-        // else
-        // TODO - this should go once we have F and T handled
         return new CreateOrUpdateImageResult
         {
-            StatusCode = HttpStatusCode.NotImplemented,
-            Message = "This handler has a limited implementation for now."
+            Asset = assetAfterSave,
+            StatusCode = existingAsset == null ? HttpStatusCode.Created : HttpStatusCode.OK
         };
+    }
+
+    private static bool RequiresEngineNotification(Asset asset, CreateOrUpdateImage request, 
+        AssetPreparationResult assetPreparationResult)
+    {
+        // A 'File' never results in the engine being called
+        if (asset.Family == AssetFamily.File) return false;
+        
+        return assetPreparationResult.RequiresReingest || request.AlwaysReingest;
     }
 
     private async Task<bool> DoesTargetSpaceExist(Asset asset, CancellationToken cancellationToken)
@@ -379,5 +336,57 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         }
 
         return asset.ThumbnailPolicy != incomingPolicy;
+    }
+    
+    private async Task<CreateOrUpdateImageResult> IngestAndGenerateResult(Asset asset, bool isUpdate,
+        CancellationToken cancellationToken)
+    {
+        async Task<CreateOrUpdateImageResult> GenerateFinalResult(bool success, string errorMessage,
+            HttpStatusCode errorCode)
+        {
+            if (success)
+            {
+                // obtain it again after Engine has processed it
+                var assetAfterEngine = await assetRepository.GetAsset(asset!.Id, noCache: true);
+                return new CreateOrUpdateImageResult
+                {
+                    Asset = assetAfterEngine,
+                    StatusCode = isUpdate ? HttpStatusCode.OK : HttpStatusCode.Created
+                };
+            }
+
+            return new CreateOrUpdateImageResult
+            {
+                Asset = asset,
+                Message = errorMessage,
+                StatusCode = errorCode
+            };
+        }
+
+        switch (asset.Family)
+        {
+            case AssetFamily.Image:
+            {
+                // await call to engine, which processes synchronously (not a queue)
+                var statusCode =
+                    await assetNotificationSender.SendImmediateIngestAssetRequest(asset, false,
+                        cancellationToken);
+                var success = statusCode is HttpStatusCode.Created or HttpStatusCode.OK;
+
+                // NOTE(DG) - do we want to pass the downstream status regardless?
+                return await GenerateFinalResult(success, "Engine was not able to process this asset", statusCode);
+            }
+            case AssetFamily.Timebased:
+            {
+                // Queue record for ingestion
+                var success =
+                    await assetNotificationSender.SendIngestAssetRequest(asset, cancellationToken);
+
+                return await GenerateFinalResult(success, "Unable to queue for processing",
+                    HttpStatusCode.InternalServerError);
+            }
+            default:
+                throw new ArgumentOutOfRangeException($"No engine logic for asset family {asset.Family}");
+        }
     }
 }
