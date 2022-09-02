@@ -15,25 +15,26 @@ namespace API.Features;
 [ApiController]
 public class HomeController : Controller
 {
-    private IWebHostEnvironment hostingEnvironment;
+    private readonly IWebHostEnvironment hostingEnvironment;
 
     public HomeController(IWebHostEnvironment hostingEnvironment)
     {
         this.hostingEnvironment = hostingEnvironment;
     }
-    
-    
+
     /// <summary>
     /// 
     /// </summary>
     /// <returns></returns>
+    [HttpGet]
     [AllowAnonymous]
     public EntryPoint Index()
     {
         return new(Request.GetBaseUrl());
     }
     
-    
+    [ApiExplorerSettings(IgnoreApi = true)]
+    [HttpGet]
     [AllowAnonymous]
     [Route("/favicon.ico")]
     public IActionResult Favicon()
@@ -41,11 +42,5 @@ public class HomeController : Controller
         Response.CacheForDays(28);
         var icoPath = Path.Combine(hostingEnvironment.ContentRootPath, "favicon.ico");
         return PhysicalFile(icoPath, "image/x-icon");
-    }
-    
-    [Route("/{name}")]
-    public IActionResult Demo(string name)
-    {
-        return Json("This is a non-customer resource that can only be called by admin");
     }
 }
