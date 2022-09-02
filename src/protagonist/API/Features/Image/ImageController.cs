@@ -189,7 +189,7 @@ public class ImageController : HydraController
         // See https://github.com/dlcs/protagonist/issues/338
         var method = hydraAsset is ImageWithFile ? "PUT" : Request.Method;
 
-        var request = new CreateOrUpdateImage { Asset = asset, Method = method };
+        var request = new CreateOrUpdateImage(asset, method);
         var result = await mediator.Send(request);
         if (result.Asset != null && result.StatusCode is HttpStatusCode.OK or HttpStatusCode.Created)
         {
@@ -259,7 +259,7 @@ public class ImageController : HydraController
                 try
                 {
                     var asset = hydraImage.ToDlcsModel(customerId, spaceId);
-                    var request = new CreateOrUpdateImage { Asset = asset, Method = "PATCH" };
+                    var request = new CreateOrUpdateImage(asset, "PATCH");
                     var result = await mediator.Send(request);
                     if (result.Asset != null)
                     {

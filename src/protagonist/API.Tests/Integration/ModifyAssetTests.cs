@@ -204,6 +204,32 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageOptimisationPolicy.Should().Be("video-max");
     }
+    
+    [Fact]
+    public async Task Put_NewFileAsset_Creates_Asset()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_NewFileAsset_Creates_Asset));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.pdf"",
+  ""family"": ""F"",
+  ""mediaType"": ""application/pdf""
+}}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+
+        // act
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = await dbContext.Images.FindAsync(assetId.ToString());
+        asset.Id.Should().Be(assetId.ToString());
+        asset.MaxUnauthorised.Should().Be(-1);
+        asset.ThumbnailPolicy.Should().BeEmpty();
+        asset.ImageOptimisationPolicy.Should().BeEmpty();
+    }
 
     [Fact]
     public async Task Put_NewTimebasedAsset_Returns500_IfEnqueueFails()
