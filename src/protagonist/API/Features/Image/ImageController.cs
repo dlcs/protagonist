@@ -206,12 +206,12 @@ public class ImageController : HydraController
             }
             else
             {
-                return Problem("No ID in returned Image", asset.Id,
+                return HydraProblem("No ID in returned Image", asset.Id,
                     (int?)result.StatusCode, "PUT or PATCH of Asset failed");
             }
         }
 
-        return Problem(result.Message, asset.Id,
+        return HydraProblem(result.Message, asset.Id,
             (int?)result.StatusCode, "PUT or PATCH of Asset failed");
     }
 
@@ -338,12 +338,12 @@ public class ImageController : HydraController
         var assetId = new AssetId(customerId, spaceId, imageId);
         if (asset.File == null || asset.File.Length == 0)
         {
-            return Problem("No file bytes in request body", assetId.ToString(),
+            return HydraProblem("No file bytes in request body", assetId.ToString(),
                 (int?)HttpStatusCode.BadRequest, errorTitle);
         }
         if (asset.MediaType.IsNullOrEmpty())
         {
-            return Problem("MediaType must be supplied", assetId.ToString(),
+            return HydraProblem("MediaType must be supplied", assetId.ToString(),
                 (int?)HttpStatusCode.BadRequest, errorTitle);
         }
         var saveRequest = new HostAssetAtOrigin
@@ -356,7 +356,7 @@ public class ImageController : HydraController
         var result = await mediator.Send(saveRequest);
         if (string.IsNullOrEmpty(result.Origin))
         {
-            return Problem("Could not save uploaded file", assetId.ToString(), 500, errorTitle);
+            return HydraProblem("Could not save uploaded file", assetId.ToString(), 500, errorTitle);
         }
 
         asset.Origin = result.Origin;
