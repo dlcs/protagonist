@@ -1,9 +1,8 @@
 using System;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
-using DLCS.Model.Assets;
 
-namespace API.Features.Assets;
+namespace DLCS.Model.Assets;
 
 /// <summary>
 /// Conveys whether an attempt to prepare an asset for upsert encountered an invalid state.
@@ -164,12 +163,14 @@ public static class AssetPreparer
             {
                 requiresReingest = true;
             }
+            
             if (updateAsset.ThumbnailPolicy.HasText() && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
             {
                 // requiresReingest = true; NO, because we'll re-create thumbs on demand - "backfill"
                 // However, we can treat a PUT as always triggering reingest, whereas a PATCH does not,
                 // even if they are otherwise equivalent - see CreateOrUpdateImage
             }
+            
             if (updateAsset.ImageOptimisationPolicy.HasText() && updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
             {
                 requiresReingest = true; // YES, because we've changed the way this image should be processed
