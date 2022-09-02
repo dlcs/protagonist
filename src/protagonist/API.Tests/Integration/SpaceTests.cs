@@ -143,21 +143,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         spaceImageCounter.Should().NotBeNull();
         spaceImageCounter.Next.Should().Be(1); // Deliverator makes 0 here. But that doesn't feel right!
     }
-    
-    // Run the comparer to look at new entity counters that appear when deliverator makes a space
-    // full test creates customer, creates space, validates space, patches space
-    // should these tests be cumulative?
-    // (each test calls the previous tests)
-    
-    // https://github.com/dlcs/protagonist/issues/151
 
-    // create, patch, delete - delete space? What if has images?
-    
-    
-    
-    // paging tests
-    // create lots of spaces!
-    
     [Fact]
     public async Task GetSpaces_Returns_HydraCollection()
     {
