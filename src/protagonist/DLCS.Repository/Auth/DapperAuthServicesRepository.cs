@@ -15,18 +15,20 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Auth;
 
-public class DapperAuthServicesRepository : DapperRepository, IAuthServicesRepository
+public class DapperAuthServicesRepository : IDapperConfigRepository, IAuthServicesRepository
 {
-    private readonly IConfiguration configuration;
+    public IConfiguration Configuration { get; }
     private readonly IAppCache appCache;
     private readonly CacheSettings cacheSettings;
     private readonly ILogger<DapperAuthServicesRepository> logger;
 
-    public DapperAuthServicesRepository(IConfiguration configuration, 
+    public DapperAuthServicesRepository(
+        IConfiguration configuration, 
         IAppCache appCache, 
         IOptions<CacheSettings> cacheOptions,
-        ILogger<DapperAuthServicesRepository> logger) : base(configuration)
+        ILogger<DapperAuthServicesRepository> logger)
     {
+        this.Configuration = configuration;
         this.appCache = appCache;
         this.logger = logger;
         cacheSettings = cacheOptions.Value;
@@ -52,7 +54,7 @@ public class DapperAuthServicesRepository : DapperRepository, IAuthServicesRepos
             return await appCache.GetOrAddAsync(cacheKey, async () =>
             {
                 logger.LogDebug("Refreshing {CacheKey} from database", cacheKey);
-                return await QuerySingleOrDefaultAsync<AuthService>(
+                return await this.QuerySingleOrDefaultAsync<AuthService>(
                     AuthServiceByNameSql, new {Customer = customer, Name = name});
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
         }
@@ -73,7 +75,7 @@ public class DapperAuthServicesRepository : DapperRepository, IAuthServicesRepos
             return await appCache.GetOrAddAsync(cacheKey, async () =>
             {
                 logger.LogDebug("Refreshing {CacheKey} from database", cacheKey);
-                return await QuerySingleOrDefaultAsync<Role>(RoleByIdSql, new { Customer = customer, Role = role });
+                return await this.QuerySingleOrDefaultAsync<Role>(RoleByIdSql, new { Customer = customer, Role = role });
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
         }
         catch (InvalidOperationException e)
@@ -92,7 +94,7 @@ public class DapperAuthServicesRepository : DapperRepository, IAuthServicesRepos
             return await appCache.GetOrAddAsync(cacheKey, async () =>
             {
                 logger.LogDebug("Refreshing {CacheKey} from database", cacheKey);
-                return await QuerySingleOrDefaultAsync<RoleProvider>(
+                return await this.QuerySingleOrDefaultAsync<RoleProvider>(
                     RoleProviderByIdSql, new { Id = roleProviderId });
             }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Short, priority: CacheItemPriority.Low));
         }
@@ -105,7 +107,7 @@ public class DapperAuthServicesRepository : DapperRepository, IAuthServicesRepos
 
     private async Task<IEnumerable<AuthService>> GetAuthServicesFromDatabase(int customer, string role)
     {
-        var result = await QueryAsync<AuthService>(AuthServiceSql,
+        var result = await this.QueryAsync<AuthService>(AuthServiceSql,
             new { Customer = customer, Role = role });
 
         var authServices = result.ToList();
@@ -166,6 +168,7 @@ public class DapperAuthServicesRepository : DapperRepository, IAuthServicesRepos
         return $"{fqRolePrefix}/customers/{customer}/roles/{firstCharLowered.ToCamelCase()}";
     }
 
+    // TODO (DG) - are these required?
     public void SaveAuthService(AuthService authService)
     {
         throw new NotImplementedException();

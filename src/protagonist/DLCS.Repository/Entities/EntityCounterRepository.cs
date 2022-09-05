@@ -5,20 +5,18 @@ using Microsoft.Extensions.Configuration;
 
 namespace DLCS.Repository.Entities;
 
-public class EntityCounterRepository : DapperRepository, IEntityCounterRepository
+public class EntityCounterRepository : IDapperContextRepository, IEntityCounterRepository
 {
-    private readonly DlcsContext dlcsContext;
+    public DlcsContext DlcsContext { get; }
 
-    public EntityCounterRepository(
-        IConfiguration configuration, 
-        DlcsContext dlcsContext) : base(configuration)
+    public EntityCounterRepository(DlcsContext dlcsContext)
     {
-        this.dlcsContext = dlcsContext;
+        DlcsContext = dlcsContext;
     }
 
     private async Task<EntityCounter> GetEntityCounter(int customer, string entityType, string scope)
     {
-        var entityCounter = await dlcsContext.EntityCounters.SingleAsync(ec =>
+        var entityCounter = await DlcsContext.EntityCounters.SingleAsync(ec =>
             ec.Customer == customer && ec.Type == entityType && ec.Scope == scope);
         return entityCounter;
     }
@@ -32,13 +30,13 @@ public class EntityCounterRepository : DapperRepository, IEntityCounterRepositor
             Scope = scope,
             Next = initialValue
         };
-        await dlcsContext.EntityCounters.AddAsync(ec);
-        await dlcsContext.SaveChangesAsync();
+        await DlcsContext.EntityCounters.AddAsync(ec);
+        await DlcsContext.SaveChangesAsync();
     }
 
     public async Task<bool> Exists(int customer, string entityType, string scope)
     {
-        return await dlcsContext.EntityCounters.AnyAsync(ec =>
+        return await DlcsContext.EntityCounters.AnyAsync(ec =>
             ec.Customer == customer && ec.Type == entityType && ec.Scope == scope);
     }
 
@@ -58,7 +56,7 @@ public class EntityCounterRepository : DapperRepository, IEntityCounterRepositor
     {
         var entityCounter = await GetEntityCounter(customer, entityType, scope);
         entityCounter.Next = value;
-        await dlcsContext.SaveChangesAsync();
+        await DlcsContext.SaveChangesAsync();
     }
 
     public async Task Reset(int customer, string entityType, string scope)
@@ -70,8 +68,8 @@ public class EntityCounterRepository : DapperRepository, IEntityCounterRepositor
     public async Task Remove(int customer, string entityType, string scope)
     {
         var entityCounter = await GetEntityCounter(customer, entityType, scope);
-        dlcsContext.EntityCounters.Remove(entityCounter);
-        await dlcsContext.SaveChangesAsync();
+        DlcsContext.EntityCounters.Remove(entityCounter);
+        await DlcsContext.SaveChangesAsync();
     }
 
     public async Task<long> Increment(int customer, string entityType, string scope, long initialValue = 1)
@@ -97,7 +95,7 @@ public class EntityCounterRepository : DapperRepository, IEntityCounterRepositor
     private async Task<long> LongUpdate(string sql, int customer, string entityType, string scope, long initialValue = 1)
     {
         await EnsureCounter(customer, entityType, scope, initialValue);
-        return await QuerySingleAsync<long>(sql, new {customer, entityType, scope});
+        return await this.QuerySingleAsync<long>(sql, new {customer, entityType, scope});
     }
 
 

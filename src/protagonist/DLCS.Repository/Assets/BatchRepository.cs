@@ -9,13 +9,13 @@ namespace DLCS.Repository.Assets;
 /// <summary>
 /// Implementation of <see cref="IBatchRepository"/> using EFCore
 /// </summary>
-public class BatchRepository : DapperRepository, IBatchRepository
+public class BatchRepository : IDapperContextRepository, IBatchRepository
 {
-    private readonly DlcsContext dlcsContext;
+    public DlcsContext DlcsContext { get; }
 
-    public BatchRepository(DlcsContext dlcsContext) : base(dlcsContext)
+    public BatchRepository(DlcsContext dlcsContext)
     {
-        this.dlcsContext = dlcsContext;
+        DlcsContext = dlcsContext;
     }
 
     /// <inheritdoc />
@@ -33,7 +33,7 @@ public class BatchRepository : DapperRepository, IBatchRepository
         };
 
         // Note - use Dapper to avoid calling .SaveChanges() and commiting any outstanding changes in dbcontext
-        batch.Id = await ExecuteScalarAsync<int>(CreateBatchSql, new { Customer = customerId, Count = assets.Count });
+        batch.Id = await this.ExecuteScalarAsync<int>(CreateBatchSql, new { Customer = customerId, Count = assets.Count });
 
         foreach (var asset in assets)
         {

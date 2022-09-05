@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Dapper;
@@ -6,83 +7,100 @@ using Npgsql;
 
 namespace DLCS.Repository;
 
-public abstract class DapperRepository
+/// <summary>
+/// Marker interface for repositories that user Dapper.
+/// Used as a hook for handle extension methods. Do not implement this alone, use <see cref="IDapperConfigRepository"/>
+/// or <see cref="IDapperContextRepository"/>
+/// </summary>
+public interface IDapperRepository
 {
-    private readonly DlcsContext? dlcsContext;
-    private readonly IConfiguration? configuration;
+}
 
-    /// <summary>
-    /// Get new DapperRepository object using IConfiguration to access connection string
-    /// </summary>
-    protected DapperRepository(IConfiguration configuration)
-    {
-        this.configuration = configuration;
-    }
-    
-    /// <summary>
-    /// Get new DapperRepository object using DlcsContext to access connection string
-    /// </summary>
-    protected DapperRepository(DlcsContext dlcsContext)
-    {
-        this.dlcsContext = dlcsContext;
-    }
+/// <summary>
+/// Interface for Dapper repositories that get DbConnection string from DlcsContext
+/// </summary>
+public interface IDapperContextRepository : IDapperRepository
+{
+    DlcsContext DlcsContext { get; }
+}
 
-    protected async Task ExecuteSqlAsync(string sql, object? param = null)
+/// <summary>
+/// Interface for Dapper repositories that get DbConnection string from configuration
+/// </summary>
+public interface IDapperConfigRepository : IDapperRepository
+{
+    IConfiguration Configuration { get; }
+}
+
+public static class DapperRepositoryX
+{
+    public static async Task ExecuteSqlAsync(this IDapperRepository repository, string sql, object? param = null)
     {
-        await using var connection = await GetOpenNpgSqlConnection();
+        await using var connection = await GetOpenNpgSqlConnection(repository);
         await connection.ExecuteAsync(sql, param);
     }
 
-    protected async Task<T?> QueryFirstOrDefaultAsync<T>(string sql, object? param = null)
+    public static async Task<T?> QueryFirstOrDefaultAsync<T>(this IDapperRepository repository, string sql,
+        object? param = null)
     {
-        await using var connection = await GetOpenNpgSqlConnection();
+        await using var connection = await GetOpenNpgSqlConnection(repository);
         return await connection.QueryFirstOrDefaultAsync<T?>(sql, param);
     }
 
-    protected async Task<dynamic?> QueryFirstOrDefaultAsync(string sql, object? param = null)
+    public static async Task<dynamic?> QueryFirstOrDefaultAsync(this IDapperRepository repository, string sql,
+        object? param = null)
     {
-        await using var connection = await GetOpenNpgSqlConnection();
+        await using var connection = await GetOpenNpgSqlConnection(repository);
         return await connection.QuerySingleOrDefaultAsync(sql, param);
     }
 
-    protected async Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param = null)
+    public static async Task<T?> QuerySingleOrDefaultAsync<T>(this IDapperRepository repository, string sql,
+        object? param = null)
     {
-        await using var connection = await GetOpenNpgSqlConnection();
+        await using var connection = await GetOpenNpgSqlConnection(repository);
         return await connection.QueryFirstOrDefaultAsync<T>(sql, param);
     }
 
-    protected async Task<dynamic?> QuerySingleOrDefaultAsync(string sql, object? param = null)
+    public static async Task<dynamic?> QuerySingleOrDefaultAsync(this IDapperRepository repository, string sql,
+        object? param = null)
     {
-        await using var connection = await GetOpenNpgSqlConnection();
+        await using var connection = await GetOpenNpgSqlConnection(repository);
         return await connection.QuerySingleOrDefaultAsync(sql, param);
     }
 
-    protected async Task<T> QuerySingleAsync<T>(string sql, object? param = null)
+    public static async Task<T> QuerySingleAsync<T>(this IDapperRepository repository, string sql, object? param = null)
     {
-        await using var connection = await GetOpenNpgSqlConnection();
+        await using var connection = await GetOpenNpgSqlConnection(repository);
         return await connection.QuerySingleAsync<T>(sql, param);
     }
 
-    protected async Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param = null)
+    public static async Task<IEnumerable<T>> QueryAsync<T>(this IDapperRepository repository, string sql,
+        object? param = null)
     {
-        await using var connection = await GetOpenNpgSqlConnection();
+        await using var connection = await GetOpenNpgSqlConnection(repository);
         return await connection.QueryAsync<T>(sql, param);
     }
 
-    protected async Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param = null)
+    public static async Task<IEnumerable<dynamic>> QueryAsync(this IDapperRepository repository, string sql,
+        object? param = null)
     {
-        await using var connection = await GetOpenNpgSqlConnection();
+        await using var connection = await GetOpenNpgSqlConnection(repository);
         return await connection.QueryAsync(sql, param);
     }
 
-    protected async Task<T> ExecuteScalarAsync<T>(string sql, object? param = null)
+    public static async Task<T> ExecuteScalarAsync<T>(this IDapperRepository repository, string sql,
+        object? param = null)
     {
-        await using var connection = await GetOpenNpgSqlConnection();
+        await using var connection = await GetOpenNpgSqlConnection(repository);
         return await connection.ExecuteScalarAsync<T>(sql, param);
     }
-    
-    private Task<NpgsqlConnection> GetOpenNpgSqlConnection()
-        => dlcsContext != null
-            ? dlcsContext.GetOpenNpgSqlConnection()
-            : DatabaseConnectionManager.GetOpenNpgSqlConnection(configuration!);
+
+    private static Task<NpgsqlConnection> GetOpenNpgSqlConnection(IDapperRepository dapperRepository)
+        => dapperRepository switch
+        {
+            IDapperContextRepository contextRepo => contextRepo.DlcsContext.GetOpenNpgSqlConnection(),
+            IDapperConfigRepository configRepo => DatabaseConnectionManager.GetOpenNpgSqlConnection(configRepo
+                .Configuration),
+            _ => throw new InvalidCastException("Cannot get source of Db connection from IDapperRepository")
+        };
 }
