@@ -45,7 +45,10 @@ public static class ChangeManager
         var changesApplied = 0;
         foreach (var prop in properties)
         {
+            if (!prop.CanWrite) continue;
+            
             // Null candidate value can be ignored
+            // NOTE - this means we can't default back to NULL
             var candidateValue = prop.GetValue(candidateChanges);
             if (candidateValue == null) continue;
             

@@ -46,7 +46,7 @@ public class ApiAssetRepositoryTests
             new NullLogger<DapperAssetRepository>()
         );
 
-        sut = new ApiAssetRepository(dbContext, config, dapperAssetRepository);
+        sut = new ApiAssetRepository(dbContext, dapperAssetRepository);
 
         dbFixture.CleanUp();
     }

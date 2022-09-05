@@ -1,4 +1,5 @@
 using System;
+using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 
@@ -12,17 +13,35 @@ public record AssetPreparationResult
     /// <summary>
     /// The asset is OK to go to the database
     /// </summary>
-    public bool Success { get; set; }
+    public bool Success { get; private init; }
     
     /// <summary>
     /// The asset cannot go to the DB for this reason.
     /// </summary>
-    public string? ErrorMessage { get; set; }
+    public string? ErrorMessage { get; private init; }
     
     /// <summary>
     /// As aspect of the Asset has changed that means it needs to be re-processed by Engine.
     /// </summary>
-    public bool RequiresReingest { get; set; }
+    public bool RequiresReingest { get; private init; }
+    
+    /// <summary>
+    /// The final asset that contains reconciled values.
+    /// This will either be an existing asset that has been updated; or  
+    /// </summary>
+    public Asset? UpdatedAsset { get; private init; }
+
+    /// <summary>
+    /// Create a new <see cref="AssetPreparationResult"/> that represents a failure
+    /// </summary>
+    public static AssetPreparationResult Failure(string errorMessage)
+        => new() { ErrorMessage = errorMessage };
+
+    /// <summary>
+    /// Create a new <see cref="AssetPreparationResult"/> that represents a successful operation
+    /// </summary>
+    public static AssetPreparationResult Succeed(Asset updatedAsset, bool requiresReingest)
+        => new() { Success = true, RequiresReingest = requiresReingest, UpdatedAsset = updatedAsset };
 }
     
 /// <summary>
@@ -43,119 +62,29 @@ public static class AssetPreparer
     /// </remarks>
     /// <param name="existingAsset">If this is an update, the current version of the asset</param>
     /// <param name="updateAsset">
-    /// The new or updated asset - this asset is modified to reflect final asset to be persisted
+    /// The new or updated asset - this is the submitted list of changes
     /// </param>
-    /// <param name="allowNonApiUpdates">Permit setting of fields that would not be allowed on API calls</param>
+    /// <param name="allowNonApiUpdates">
+    /// Permit setting of fields that would not be allowed on API calls. Use with caution - all values submitted will
+    /// be saved as this effectively drops validation.
+    /// </param>
     /// <returns>A validation result</returns>
     public static AssetPreparationResult PrepareAssetForUpsert(
         Asset? existingAsset,
         Asset updateAsset,
         bool allowNonApiUpdates)
     {
-        if (existingAsset is { NotForDelivery: true })
-        {
-            // We can relax this later but for now, you cannot use the API
-            // to modify an asset marked NotForDelivery.
-            return new AssetPreparationResult { ErrorMessage = "Cannot use API to modify a NotForDelivery asset." };
-            // However, this DOES allow the *creation* of a NotForDelivery asset.
-        }
-        
         bool requiresReingest = existingAsset == null;
-
-        if (allowNonApiUpdates == false)
-        {
-            // These cannot be created or modified via the API
-            if (updateAsset.Finished.HasValue)
-            {
-                return new AssetPreparationResult { ErrorMessage = "Cannot set Finished timestamp via API." };
-            }
-            
-            if (updateAsset.Error != null)
-            {
-                return new AssetPreparationResult { ErrorMessage = "Cannot set Error state via API." };
-            }
-        }
         
-        if (existingAsset != null)
+        // Set creation date - if this is a create
+        if (updateAsset.Created == null || updateAsset.Created == DateTime.MinValue && existingAsset == null)
         {
-            if (updateAsset.Customer == 0)
-            {
-                updateAsset.Customer = existingAsset.Customer;
-            }
-            
-            if (updateAsset.Space == 0)
-            {
-                updateAsset.Space = existingAsset.Space;
-            }
+            updateAsset.Created = DateTime.UtcNow;
         }
 
-        if (updateAsset.Created == null || updateAsset.Created == DateTime.MinValue)
-        {
-            if (existingAsset != null && existingAsset.Created != DateTime.MinValue)
-            {
-                updateAsset.Created = existingAsset.Created;
-            }
-            else
-            {
-                updateAsset.Created = DateTime.UtcNow;
-            }
-        }
-            
-        if (existingAsset != null && allowNonApiUpdates == false)
-        {
-            // https://github.com/dlcs/protagonist/issues/341 for further changes to this validation
-            if (updateAsset.Width.HasValue && updateAsset.Width != 0 && updateAsset.Width != existingAsset.Width)
-            {
-                return new AssetPreparationResult { ErrorMessage = "Width cannot be edited." };
-            }
-            
-            if (updateAsset.Height.HasValue && updateAsset.Height != 0 && updateAsset.Height != existingAsset.Height)
-            {
-                return new AssetPreparationResult { ErrorMessage = "Height cannot be edited." };
-            }
-            
-            if (updateAsset.Duration.HasValue && updateAsset.Duration != 0 && updateAsset.Duration != existingAsset.Duration)
-            {
-                return new AssetPreparationResult { ErrorMessage = "Duration cannot be edited." };
-            }
-                
-            if (updateAsset.PreservedUri != null && updateAsset.PreservedUri != existingAsset.PreservedUri)
-            {
-                return new AssetPreparationResult { ErrorMessage = "PreservedUri cannot be edited." };
-            }
-            
-            if (updateAsset.Error != null && updateAsset.Error != existingAsset.Error)
-            {
-                return new AssetPreparationResult { ErrorMessage = "Error cannot be edited." };
-            }
-            
-            if (updateAsset.Batch.HasValue && updateAsset.Batch != 0 && updateAsset.Batch != existingAsset.Batch)
-            {
-                return new AssetPreparationResult { ErrorMessage = "Batch cannot be edited." };
-            }
-
-            if (updateAsset.ImageOptimisationPolicy != null && updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
-            {
-                // I think it should be editable though, and doing so should trigger a re-ingest.
-                return new AssetPreparationResult { ErrorMessage = "ImageOptimisationPolicy cannot be edited." };
-            }
-            
-            if (updateAsset.ThumbnailPolicy != null && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
-            {
-                // And this one DEFINITELY should be editable!
-                return new AssetPreparationResult { ErrorMessage = "ThumbnailPolicy cannot be edited." };
-            }
-                
-            if (updateAsset.Family != null && updateAsset.Family != existingAsset.Family)
-            {
-                return new AssetPreparationResult { ErrorMessage = "Family cannot be edited." };
-            }
-
-            if (updateAsset.InitialOrigin != null)
-            {
-                return new AssetPreparationResult { ErrorMessage = "Cannot edit the InitialOrigin of an asset." };
-            }
-        }
+        // Validate there are no issues
+        var prepareAssetForUpsert = ValidateRequests(existingAsset, updateAsset, allowNonApiUpdates);
+        if (prepareAssetForUpsert != null) return prepareAssetForUpsert;
 
         if (existingAsset != null)
         {
@@ -177,61 +106,130 @@ public static class AssetPreparer
             }
         }
 
-        SetNullFieldsToExistingOrDefaults(existingAsset, updateAsset);
-        // updateAsset is now ready to be upserted into the database
-        
-        if (requiresReingest && updateAsset.Origin.IsNullOrEmpty())
+        var workingAsset = existingAsset ?? updateAsset;
+
+        if (existingAsset == null)
         {
-            return new AssetPreparationResult { ErrorMessage = "Asset Origin must be supplied." };
+            // Creation of new asset - the DB record is what's been submitted with any NULLs replaced by default
+            workingAsset.DefaultNullProperties(DefaultAsset);
+        }
+        else
+        {
+            // Update existing asset - the DB record is what was in DB with any submitted changes applied
+            workingAsset.ApplyChanges(updateAsset);
+        }
+        
+        if (requiresReingest && workingAsset.Origin.IsNullOrEmpty())
+        {
+            return AssetPreparationResult.Failure("Asset Origin must be supplied.");
         }
 
         // 'File' family assets are never ingested so default back to false regardless of value
-        if (updateAsset.Family == AssetFamily.File)
+        if (workingAsset.Family == AssetFamily.File)
         {
             requiresReingest = false;
         }
-    
-        return new AssetPreparationResult
-        {
-            Success = true,
-            RequiresReingest = requiresReingest
-        };
+
+        return AssetPreparationResult.Succeed(workingAsset, requiresReingest);
     }
 
-    /// <summary>
-    /// Ensure that any unset fields are given their default Asset value.
-    /// </summary>
-    private static void SetNullFieldsToExistingOrDefaults(Asset? templateAsset, Asset upsertAsset)
+    private static AssetPreparationResult? ValidateRequests(Asset? existingAsset, Asset updateAsset,
+        bool allowNonApiUpdates)
     {
-        templateAsset ??= DefaultAsset;
-            
-        // set if null
-        upsertAsset.Origin ??= templateAsset.Origin;
-        upsertAsset.Tags ??= templateAsset.Tags;
-        upsertAsset.Roles ??= templateAsset.Roles;
-        upsertAsset.PreservedUri ??= templateAsset.PreservedUri;
-        upsertAsset.Reference1 ??= templateAsset.Reference1;
-        upsertAsset.Reference2 ??= templateAsset.Reference2;
-        upsertAsset.Reference3 ??= templateAsset.Reference3;
-        upsertAsset.Error ??= templateAsset.Error;
-        upsertAsset.ImageOptimisationPolicy ??= templateAsset.ImageOptimisationPolicy;
-        upsertAsset.ThumbnailPolicy ??= templateAsset.ThumbnailPolicy;
-        upsertAsset.InitialOrigin ??= templateAsset.InitialOrigin;
-        upsertAsset.MediaType ??= templateAsset.MediaType;
+        if (existingAsset is { NotForDelivery: true })
+        {
+            // We can relax this later but for now, you cannot use the API
+            // to modify an asset marked NotForDelivery.
+            return AssetPreparationResult.Failure("Cannot use API to modify a NotForDelivery asset.");
+            // However, this DOES allow the *creation* of a NotForDelivery asset.
+        }
         
-        // These were previously non-nullable fields
-        upsertAsset.Created ??= templateAsset.Created;
-        upsertAsset.NumberReference1 ??= templateAsset.NumberReference1;
-        upsertAsset.NumberReference2 ??= templateAsset.NumberReference2;
-        upsertAsset.NumberReference3 ??= templateAsset.NumberReference3;
-        upsertAsset.MaxUnauthorised ??= templateAsset.MaxUnauthorised;
-        upsertAsset.Width ??= templateAsset.Width;
-        upsertAsset.Height ??= templateAsset.Height;
-        upsertAsset.Duration ??= templateAsset.Duration;
-        upsertAsset.Batch ??= templateAsset.Batch;
-        upsertAsset.Finished ??= templateAsset.Finished;
-        upsertAsset.Ingesting ??= templateAsset.Ingesting;
-        upsertAsset.Family ??= templateAsset.Family;
+        if (allowNonApiUpdates == false)
+        {
+            // These cannot be created or modified via the API
+            if (updateAsset.Finished.HasValue)
+            {
+                return AssetPreparationResult.Failure("Cannot set Finished timestamp via API.");
+            }
+
+            if (updateAsset.Error != null)
+            {
+                return AssetPreparationResult.Failure("Cannot set Error state via API.");
+            }
+        }
+
+        if (existingAsset != null)
+        {
+            if (updateAsset.Customer != existingAsset.Customer)
+            {
+                return AssetPreparationResult.Failure("Cannot change an Assets customer.");
+            }
+
+            if (updateAsset.Space != existingAsset.Space)
+            {
+                return AssetPreparationResult.Failure("Cannot change an Assets space.");
+            }
+        }
+
+        if (existingAsset != null && allowNonApiUpdates == false)
+        {
+            // https://github.com/dlcs/protagonist/issues/341 for further changes to this validation
+            if (updateAsset.Width.HasValue && updateAsset.Width != 0 && updateAsset.Width != existingAsset.Width)
+            {
+                return AssetPreparationResult.Failure("Width cannot be edited.");
+            }
+
+            if (updateAsset.Height.HasValue && updateAsset.Height != 0 && updateAsset.Height != existingAsset.Height)
+            {
+                return AssetPreparationResult.Failure("Height cannot be edited.");
+            }
+
+            if (updateAsset.Duration.HasValue && updateAsset.Duration != 0 &&
+                updateAsset.Duration != existingAsset.Duration)
+            {
+                return AssetPreparationResult.Failure("Duration cannot be edited.");
+            }
+
+            if (updateAsset.PreservedUri != null && updateAsset.PreservedUri != existingAsset.PreservedUri)
+            {
+                return AssetPreparationResult.Failure("PreservedUri cannot be edited.");
+            }
+
+            if (updateAsset.Error != null && updateAsset.Error != existingAsset.Error)
+            {
+                return AssetPreparationResult.Failure("Error cannot be edited.");
+            }
+
+            if (updateAsset.Batch.HasValue && updateAsset.Batch != 0 && updateAsset.Batch != existingAsset.Batch)
+            {
+                return AssetPreparationResult.Failure("Batch cannot be edited.");
+            }
+
+            if (updateAsset.ImageOptimisationPolicy != null &&
+                updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
+            {
+                // I think it should be editable though, and doing so should trigger a re-ingest.
+                return AssetPreparationResult.Failure("ImageOptimisationPolicy cannot be edited.");
+            }
+
+            if (updateAsset.ThumbnailPolicy != null && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
+            {
+                // And this one DEFINITELY should be editable!
+                return AssetPreparationResult.Failure("ThumbnailPolicy cannot be edited.");
+            }
+
+            if (updateAsset.Family != null && updateAsset.Family != existingAsset.Family)
+            {
+                return AssetPreparationResult.Failure("Family cannot be edited.");
+            }
+
+            if (updateAsset.InitialOrigin != null)
+            {
+                return AssetPreparationResult.Failure("Cannot edit the InitialOrigin of an asset.");
+            }
+        }
+
+        return null;
     }
 
     static AssetPreparer()

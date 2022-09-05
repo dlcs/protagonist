@@ -45,7 +45,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         ProtagonistAppFactory<Startup> factory)
     {
         dbContext = dbFixture.DbContext;
-
+        
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithTestServices(services =>
@@ -309,7 +309,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Put_Existing_Asset_ClearsError_AndMarksAsIngesting()
     {
         var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
-        await dbContext.Images.AddTestAsset(assetId.ToString(), error: "Sample Error");
+        var newAsset = await dbContext.Images.AddTestAsset(assetId.ToString(), error: "Sample Error");
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
@@ -329,9 +329,10 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var assetFromDatabase = await dbContext.Images.SingleOrDefaultAsync(a => a.Id == assetId.ToString());
-        assetFromDatabase.Ingesting.Should().BeTrue();
-        assetFromDatabase.Error.Should().BeEmpty();
+        
+        await dbContext.Entry(newAsset.Entity).ReloadAsync();
+        newAsset.Entity.Ingesting.Should().BeTrue();
+        newAsset.Entity.Error.Should().BeEmpty();
     }
     
     [Fact]
@@ -389,7 +390,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(), family: family,
             ref1: "I am string 1", origin: "https://images.org/image2.tiff");
         await dbContext.SaveChangesAsync();
-        testAsset.State = EntityState.Detached; // need to untrack before update
 
         var hydraImageBody = @"{
   ""@type"": ""Image"",
@@ -408,8 +408,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     A<CancellationToken>._))
             .MustNotHaveHappened();
         
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
-        asset.Reference1.Should().Be("I am edited");
+        await dbContext.Entry(testAsset.Entity).ReloadAsync();
+        testAsset.Entity.Reference1.Should().Be("I am edited");
     }
     
     [Fact]
@@ -421,7 +421,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ref1: "I am string 1", origin: $"https://example.org/{assetId.Asset}.tiff");
         
         await dbContext.SaveChangesAsync();
-        testAsset.State = EntityState.Detached; // need to untrack before update
         
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
@@ -446,8 +445,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
                     A<CancellationToken>._))
             .MustHaveHappened();
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
-        asset.Reference1.Should().Be("I am edited");
+        
+        await dbContext.Entry(testAsset.Entity).ReloadAsync();
+        testAsset.Entity.Reference1.Should().Be("I am edited");
     }
     
     [Fact]
@@ -460,7 +460,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ref1: "I am string 1", origin: $"https://example.org/{assetId.Asset}.mp4", mediaType: "video/mp4");
         
         await dbContext.SaveChangesAsync();
-        testAsset.State = EntityState.Detached; // need to untrack before update
         
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
@@ -485,9 +484,10 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), 
                     A<CancellationToken>._))
             .MustHaveHappened();
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
-        asset.Reference1.Should().Be("I am edited");
-        asset.Batch.Should().BeGreaterThan(0);
+        
+        await dbContext.Entry(testAsset.Entity).ReloadAsync();
+        testAsset.Entity.Reference1.Should().Be("I am edited");
+        testAsset.Entity.Batch.Should().BeGreaterThan(0);
     }
     
     [Fact]
@@ -495,9 +495,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // This test is really here ready for when this IS allowed! I think it should be.
         var assetId = new AssetId(99, 1, nameof(Patch_Asset_Change_ImageOptimisationPolicy_Not_Allowed));
-        
-        var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(),
-            ref1: "I am string 1", origin:"https://images.org/image1.tiff");
+
+        await dbContext.Images.AddTestAsset(assetId.ToString(), ref1: "I am string 1",
+            origin: "https://images.org/image1.tiff");
         var testPolicy = new DLCS.Model.Assets.ImageOptimisationPolicy
         {
             Id = "test-policy",
@@ -506,7 +506,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         };
         dbContext.ImageOptimisationPolicies.Add(testPolicy);
         await dbContext.SaveChangesAsync();
-        testAsset.State = EntityState.Detached; // need to untrack before update
         
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
@@ -617,7 +616,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(),
             ref1: "I am string 1", origin:$"https://images.org/{assetId.Asset}.tiff");
         await dbContext.SaveChangesAsync();
-        testAsset.State = EntityState.Detached; // need to untrack before update
         
         // There's only one member here, but we still don't allow engine-calling changes
         // via collections.

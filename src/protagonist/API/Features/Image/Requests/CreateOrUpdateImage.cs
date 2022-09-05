@@ -168,20 +168,21 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
                 Message = assetPreparationResult.ErrorMessage
             };
         }
-        
-        var requiresEngineNotification = RequiresEngineNotification(asset, request, assetPreparationResult);
+
+        var updatedAsset = assetPreparationResult.UpdatedAsset!;
+        var requiresEngineNotification = RequiresEngineNotification(updatedAsset, request, assetPreparationResult);
 
         // Deliverator only does this for new assets, but it should verify PATCH assets too.
         if (existingAsset == null)
         {
-            var imagePolicyChanged = await SelectImageOptimisationPolicy(asset);
+            var imagePolicyChanged = await SelectImageOptimisationPolicy(updatedAsset);
             if (imagePolicyChanged)
             {
                 // NB the AssetPreparer has already inspected image policy, but this will pick up
                 // a change from default.
                 requiresEngineNotification = true;
             }
-            var thumbnailPolicyChanged = await SelectThumbnailPolicy(asset);
+            var thumbnailPolicyChanged = await SelectThumbnailPolicy(updatedAsset);
             if (thumbnailPolicyChanged)
             {
                 // We won't alter the value of requiresEngineNotification
@@ -193,19 +194,19 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         // If a re-process is required, clear out fields related to processing
         if (requiresEngineNotification)
         {
-            ResetFieldsForIngestion(asset);
+            ResetFieldsForIngestion(updatedAsset);
             
-            if (asset.Family == AssetFamily.Timebased)
+            if (updatedAsset.Family == AssetFamily.Timebased)
             {
                 // Timebased asset - create a Batch record in DB and populate Batch property in Asset
-                await batchRepository.CreateBatch(asset.Customer, asset.AsList(), cancellationToken);
+                await batchRepository.CreateBatch(updatedAsset.Customer, updatedAsset.AsList(), cancellationToken);
             }
         }
 
-        await assetRepository.Save(asset, cancellationToken);
+        await assetRepository.Save(updatedAsset, cancellationToken);
 
         // now obtain the asset again
-        var assetAfterSave = await assetRepository.GetAsset(asset.Id, noCache: true);
+        var assetAfterSave = await assetRepository.GetAsset(updatedAsset.Id, noCache: true);
         if (assetAfterSave == null)
         {
             return new CreateOrUpdateImageResult
@@ -216,7 +217,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         }
         
         // Restore fields that are not persisted but are required
-        if (asset.InitialOrigin.HasText())
+        if (updatedAsset.InitialOrigin.HasText())
         {
             assetAfterSave.InitialOrigin = asset.InitialOrigin;
         }
@@ -225,7 +226,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
 
         if (requiresEngineNotification)
         {
-            return await IngestAndGenerateResult(asset, existingAsset != null, cancellationToken);
+            return await IngestAndGenerateResult(assetAfterSave, existingAsset != null, cancellationToken);
         }
 
         return new CreateOrUpdateImageResult

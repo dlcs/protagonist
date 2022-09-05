@@ -35,7 +35,7 @@ public class ChangeManagerTests
         toUpdate.DefaultNullProperties(defaults);
         
         // Assert
-        toUpdate.Should().BeEquivalentTo(expected);
+        toUpdate.Should().BeEquivalentTo(expected, opts => opts.Excluding(d => d.NullableList));
     }
     
     [Fact]
@@ -189,5 +189,7 @@ public class ChangeTest
     
     public DateTime? NullableDateTimeVal { get; set; }
     
-    public List<string> NullableList { get; set; } 
+    public List<string> NullableList { get; set; }
+
+    public bool GetOnly { get; } = true;
 }
