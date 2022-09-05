@@ -52,7 +52,7 @@ public class AssetNotificationSender : IAssetNotificationSender
             case ChangeType.Delete when after != null:
                 throw new ArgumentException("Asset Delete cannot have an after asset", nameof(after));
             default:
-                logger.LogDebug("Message Bus: Asset Modified: {AssetId}", after.Id);
+                logger.LogDebug("Message Bus: Asset Modified: {AssetId}", after?.Id ?? before.Id);
                 break;
         }
         

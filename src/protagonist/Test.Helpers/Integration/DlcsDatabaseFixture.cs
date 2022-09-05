@@ -94,10 +94,22 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             MaximumNumberOfStoredImages = 10,
             MaximumTotalSizeOfStoredImages = 100
         });
-        await DbContext.EntityCounters.AddAsync(new EntityCounter
+        await DbContext.EntityCounters.AddRangeAsync(new EntityCounter
         {
             Type = "space",
             Customer = customer,
+            Scope = customer.ToString(),
+            Next = 1
+        }, new EntityCounter
+        {
+            Type = "space-images",
+            Customer = customer,
+            Scope = customer.ToString(),
+            Next = 1
+        }, new EntityCounter
+        {
+            Type = "customer-images",
+            Customer = 0,
             Scope = customer.ToString(),
             Next = 1
         });

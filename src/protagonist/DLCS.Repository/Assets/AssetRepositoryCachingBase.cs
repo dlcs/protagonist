@@ -16,14 +16,14 @@ namespace DLCS.Repository.Assets;
 public abstract class AssetRepositoryCachingBase : IAssetRepository
 {
     protected readonly IAppCache AppCache;
-    private readonly ILogger logger;
+    protected readonly ILogger Logger;
     protected readonly CacheSettings CacheSettings;
     private static readonly Asset NullAsset = new() { Id = "__nullasset__" };
 
     public AssetRepositoryCachingBase(IAppCache appCache, IOptions<CacheSettings> cacheOptions, ILogger logger)
     {
         this.AppCache = appCache;
-        this.logger = logger;
+        this.Logger = logger;
         CacheSettings = cacheOptions.Value;
     }
 
@@ -68,7 +68,7 @@ public abstract class AssetRepositoryCachingBase : IAssetRepository
 
         var asset = await AppCache.GetOrAddAsync(key, async entry =>
         {
-            logger.LogDebug("Refreshing assetCache from database {Asset}", id);
+            Logger.LogDebug("Refreshing assetCache from database {Asset}", id);
             var dbAsset = await GetAssetFromDatabase(id);
             if (dbAsset == null)
             {

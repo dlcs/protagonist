@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,12 +22,16 @@ namespace API.Tests.Features.Assets;
 [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
 public class ApiAssetRepositoryTests
 {
+    private readonly DlcsContext contextForTests;
     private readonly DlcsContext dbContext;
     private readonly ApiAssetRepository sut;
 
     public ApiAssetRepositoryTests(DlcsDatabaseFixture dbFixture)
     {
-        // We use a customised dbcontext because we want different tracking behaviour
+        // Store non-tracking dbContext for adding items to backing store + verifying results
+        contextForTests = dbFixture.DbContext;
+        
+        // We use a customised dbcontext for SUT because we want different tracking behaviour
         dbContext = new DlcsContext(
             new DbContextOptionsBuilder<DlcsContext>()
                 .UseNpgsql(dbFixture.ConnectionString).Options
@@ -72,64 +75,28 @@ public class ApiAssetRepositoryTests
     [Fact]
     public async Task AssetRepository_Saves_Existing_Asset()
     {
-        var id = "existing-asset";
-        // previously
-        var assetEntry = await dbContext.Images.AddTestAsset(id, ref1:"I am original 1", ref2:"I am original 2");
-        await dbContext.SaveChangesAsync();
-        assetEntry.State = EntityState.Detached;
-    
-        var existingAsset = await dbContext.Images.AsNoTracking().FirstAsync(a => a.Id == id);
-        var patch = new Asset { Id = id };
-        // change something:
-        patch.Reference1 = "I am changed";
-    
+        // Arrange
+        const string id = "existing-asset";
+        var dbAsset = await contextForTests.Images.AddTestAsset(id, ref1: "I am original 1", ref2: "I am original 2");
+        await contextForTests.SaveChangesAsync();
+
+        var existingAsset = await dbContext.Images.FirstAsync(a => a.Id == id);
+        var patch = new Asset
+        {
+            Id = id,
+            Reference1 = "I am changed",
+            Customer = 99,
+            Space = 1
+        };
+        
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, patch, false);
         result.Success.Should().BeTrue();
     
+        // Act
         await sut.Save(patch, CancellationToken.None);
 
-        var dbAsset = await dbContext.Images.FindAsync(id);
-        dbAsset.Reference1.Should().Be("I am changed");
-        dbAsset.Reference2.Should().Be("I am original 2");
-    }
-
-    [Fact]
-    public async Task AssetRepository_Saves_Tracked_Asset()
-    {
-        var id = "tracked-asset";
-        // previously
-        var assetEntry = await dbContext.Images.AddTestAsset(id, ref1: "I am original 1", ref2: "I am original 2",
-            origin: "https://example.org/image1.tiff");
-        await dbContext.SaveChangesAsync();
-
-        var trackedAsset = assetEntry.Entity;
-        trackedAsset.Reference1 = "I am changed";
-    
-        var result = AssetPreparer.PrepareAssetForUpsert(null, trackedAsset,
-            true); // <-- note this is true for a tracked asset...
-        result.Success.Should().BeTrue();
-    
-        await sut.Save(trackedAsset, CancellationToken.None);
-
-        var dbAsset = await dbContext.Images.FindAsync(id);
-        dbAsset.Reference1.Should().Be("I am changed");
-        dbAsset.Reference2.Should().Be("I am original 2");
-    }
-
-    [Fact]
-    public async Task AssetRepository_Throws_if_Same_Asset_Tracked()
-    {
-        var id = "tracked-asset-same";
-        // previously
-        await dbContext.Images.AddTestAsset(id, ref1:"I am original 1", ref2:"I am original 2");
-        await dbContext.SaveChangesAsync();
-
-        var sameAsset = new Asset { Id = id, Reference1 = "I am changed" };
-    
-        AssetPreparer.PrepareAssetForUpsert(null, sameAsset,
-            true); // <-- note this is true for a tracked asset...
-    
-        Func<Task> save = () => sut.Save(sameAsset, CancellationToken.None); 
-        await save.Should().ThrowAsync<InvalidOperationException>();
+        contextForTests.Entry(dbAsset.Entity).Reload();
+        dbAsset.Entity.Reference1.Should().Be("I am changed");
+        dbAsset.Entity.Reference2.Should().Be("I am original 2");
     }
 }

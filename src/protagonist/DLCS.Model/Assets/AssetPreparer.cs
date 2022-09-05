@@ -77,7 +77,7 @@ public static class AssetPreparer
         bool requiresReingest = existingAsset == null;
         
         // Set creation date - if this is a create
-        if (updateAsset.Created == null || updateAsset.Created == DateTime.MinValue && existingAsset == null)
+        if ((updateAsset.Created == null || updateAsset.Created == DateTime.MinValue) && existingAsset == null)
         {
             updateAsset.Created = DateTime.UtcNow;
         }

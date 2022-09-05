@@ -694,4 +694,67 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Should().NotBeNull();
         asset.Origin.Should().Be("https://protagonist-test-origin.s3.eu-west-1.amazonaws.com/99/1/Post_ImageBytes_Ingests_New_Image");
     }
+
+    [Fact]
+    public async Task Delete_Returns404_IfAssetNotFound()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Delete_Returns404_IfAssetNotFound));
+        
+        // Act
+        var response = await httpClient.AsCustomer(99).DeleteAsync(assetId.ToApiResourcePath());
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Delete_RemovesAssetAndAssociatedEntities_FromDb()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Delete_RemovesAssetAndAssociatedEntities_FromDb));
+        await dbContext.Images.AddTestAsset(assetId.ToString());
+        await dbContext.ImageLocations.AddTestImageLocation(assetId.ToString());
+        await dbContext.ImageStorages.AddTestImageStorage(assetId.ToString(), size: 400L, thumbSize: 100L);
+        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
+            sizeOfStored: 1000L, sizeOfThumbs: 1000L);
+        var customerImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 0 && ec.Scope == "99" && ec.Type == "customer-images");
+        var currentCustomerImageCount = customerImagesCounter.Next;
+        var spaceImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 99 && ec.Scope == "99" && ec.Type == "space-images");
+        var currentSpaceImagesCounter = spaceImagesCounter.Next;
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer(99).DeleteAsync(assetId.ToApiResourcePath());
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        
+        // Asset, Location + Storage deleted
+        var dbAsset = await dbContext.Images.SingleOrDefaultAsync(i => i.Id == assetId.ToString());
+        dbAsset.Should().BeNull();
+        var dbLocation = await dbContext.ImageLocations.SingleOrDefaultAsync(i => i.Id == assetId.ToString());
+        dbLocation.Should().BeNull();
+        
+        var dbStorage = await dbContext.ImageStorages.SingleOrDefaultAsync(i => i.Id == assetId.ToString());
+        dbStorage.Should().BeNull();
+        
+        // CustomerStorage values reduced
+        await dbContext.Entry(customerStorage.Entity).ReloadAsync();
+        customerStorage.Entity.NumberOfStoredImages.Should().Be(99);
+        customerStorage.Entity.TotalSizeOfThumbnails.Should().Be(900L);
+        customerStorage.Entity.TotalSizeOfStoredImages.Should().Be(600L);
+        
+        // EntityCounter for customer images reduced
+        var dbCustomerCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 0 && ec.Scope == "99" && ec.Type == "customer-images");
+        dbCustomerCounter.Next.Should().Be(currentCustomerImageCount - 1);
+        
+        // EntityCounter for space images reduced
+        var dbSpaceCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 99 && ec.Scope == "99" && ec.Type == "space-images");
+        dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
+    }
 }
