@@ -214,4 +214,45 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
+    
+    [Fact]
+    public async Task Patch_Returns404_IfCustomerNotFound()
+    {
+        // Arrange
+        const string patchJson = @"{
+  ""@type"": ""Customer"",
+  ""DisplayName"": ""A new name""
+}";
+        
+        var content = new StringContent(patchJson, Encoding.UTF8, "application/json");
+        
+        // Act
+        var response = await httpClient.AsAdmin().PatchAsync("/customers/-2", content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Patch_Returns200_IfCustomerUpdateSuccesful()
+    {
+        // Arrange
+        await dbContext.Customers.AddTestCustomer(10, "test", "The original Name");
+        await dbContext.SaveChangesAsync();
+        
+        const string patchJson = @"{
+  ""@type"": ""Customer"",
+  ""DisplayName"": ""A new name""
+}";
+        
+        var content = new StringContent(patchJson, Encoding.UTF8, "application/json");
+        
+        // Act
+        var response = await httpClient.AsCustomer().PatchAsync("/customers/10", content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var newCustomer = await response.ReadAsHydraResponseAsync<Customer>();
+        newCustomer.DisplayName.Should().Be("A new name");
+    }
 }

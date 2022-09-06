@@ -64,4 +64,15 @@ public class CustomerPatchValidatorTests
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(c => c.AcceptedAgreement);
     }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void Error_DisplayName_NotProvided(string displayName)
+    {
+        var model = new DLCS.HydraModel.Customer { DisplayName = displayName };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(c => c.DisplayName);
+    }
 }

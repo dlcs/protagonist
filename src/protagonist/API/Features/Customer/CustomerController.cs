@@ -6,6 +6,7 @@ using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.Core;
 using DLCS.Core.Strings;
 using DLCS.Web.Auth;
 using DLCS.Web.Requests;
@@ -154,6 +155,19 @@ public class CustomerController : HydraController
             return ValidationFailed(validationResult);
         }
 
-        throw new NotImplementedException();
+        var request = new PatchCustomer(customerId, hydraCustomer.DisplayName!);
+        var result = await mediator.Send(request);
+
+        switch (result.UpdateResult)
+        {
+            case UpdateResult.Updated:
+                return Ok(result.Customer!.ToHydra(GetUrlRoots().BaseUrl));
+            case UpdateResult.NotFound:
+                return HydraNotFound();
+            case UpdateResult.Error:
+                return HydraProblem(result.Error, null, 500, "Error patching customer");
+        }
+
+        return HydraProblem("Unknown result", null, 500, "Unknown result");
     }
 }

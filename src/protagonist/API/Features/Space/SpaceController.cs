@@ -179,6 +179,4 @@ public class SpaceController : HydraController
         }
         return HydraProblem(result.ErrorMessages, null, 500, "Cannot patch space");
     }
-    
-    
 }
