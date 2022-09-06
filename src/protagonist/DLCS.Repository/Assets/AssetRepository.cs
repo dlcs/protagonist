@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using DLCS.Core;
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
+using DLCS.Model;
 using DLCS.Model.Assets;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
@@ -17,13 +18,16 @@ namespace DLCS.Repository.Assets;
 public class AssetRepository : AssetRepositoryCachingBase
 {
     private readonly DlcsContext dlcsContext;
+    private readonly IEntityCounterRepository entityCounterRepository;
 
     public AssetRepository(DlcsContext dlcsContext,
         IAppCache appCache,
+        IEntityCounterRepository entityCounterRepository,
         IOptions<CacheSettings> cacheOptions,
         ILogger<AssetRepository> logger) : base(appCache, cacheOptions, logger)
     {
         this.dlcsContext = dlcsContext;
+        this.entityCounterRepository = entityCounterRepository;
     }
 
     public override async Task<ImageLocation?> GetImageLocation(AssetId assetId)
@@ -44,15 +48,16 @@ public class AssetRepository : AssetRepositoryCachingBase
             dlcsContext.ImageLocations.Remove(imageLocation);
 
             var assetId = AssetId.FromString(id);
-
+            var customer = assetId.Customer;
+            
             var imageStorage =
-                await dlcsContext.ImageStorages.FindAsync(id, assetId.Customer, assetId.Space);
+                await dlcsContext.ImageStorages.FindAsync(id, customer, assetId.Space);
             if (imageStorage != null)
             {
                 // And related ImageStorage record
                 dlcsContext.Remove(imageStorage);
                 var customerStorage =
-                    await dlcsContext.CustomerStorages.FindAsync(assetId.Customer, assetId.Space);
+                    await dlcsContext.CustomerStorages.FindAsync(customer, assetId.Space);
 
                 if (customerStorage != null)
                 {
@@ -62,6 +67,9 @@ public class AssetRepository : AssetRepositoryCachingBase
                     customerStorage.TotalSizeOfStoredImages -= imageStorage.Size;
                 }
             }
+            
+            await entityCounterRepository.Decrement(customer, "space-images", customer.ToString());
+            await entityCounterRepository.Decrement(0, "customer-images", customer.ToString());
 
             var rowCount = await dlcsContext.SaveChangesAsync();
             return rowCount == 0

@@ -706,6 +706,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        
+        // TODO - test for notification not raised once implemented
     }
     
     [Fact]
@@ -756,5 +758,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var dbSpaceCounter = await dbContext.EntityCounters.SingleAsync(ec =>
             ec.Customer == 99 && ec.Scope == "99" && ec.Type == "space-images");
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
+        
+        // TODO - test for notification raised once implemented
     }
 }

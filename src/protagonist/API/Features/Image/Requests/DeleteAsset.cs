@@ -28,18 +28,15 @@ public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
 {
     private readonly IAssetNotificationSender assetNotificationSender;
     private readonly IAssetRepository assetRepository;
-    private readonly IEntityCounterRepository entityCounterRepository;
     private readonly ILogger<DeleteAssetHandler> logger;
 
     public DeleteAssetHandler(
         IAssetNotificationSender assetNotificationSender,
         IAssetRepository assetRepository,
-        IEntityCounterRepository entityCounterRepository,
         ILogger<DeleteAssetHandler> logger)
     {
         this.assetNotificationSender = assetNotificationSender;
         this.assetRepository = assetRepository;
-        this.entityCounterRepository = entityCounterRepository;
         this.logger = logger;
     }
     
@@ -55,11 +52,6 @@ public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
         
         try
         {
-            logger.LogDebug("Decrementing entityCounters {AssetId}", request.AssetId);
-            var customer = request.AssetId.Customer;
-            await entityCounterRepository.Decrement(customer, "space-images", customer.ToString());
-            await entityCounterRepository.Decrement(0, "customer-images", customer.ToString());
-            
             logger.LogDebug("Sending delete asset notification for {AssetId}", request.AssetId);
             await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Delete,
                 new Asset { Id = request.AssetId.ToString() }, null);

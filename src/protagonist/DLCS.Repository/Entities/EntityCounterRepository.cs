@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using DLCS.Model;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace DLCS.Repository.Entities;
 
