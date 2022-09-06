@@ -62,6 +62,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             "DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" not in ('fast-higher', 'video-max', 'audio-max')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerOriginStrategies\"");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerStorage\"");
         DbContext.Database.ExecuteSqlRaw($"DELETE FROM \"AuthServices\" WHERE \"Id\" != '{ClickThroughAuthService}'");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Roles\" WHERE \"Id\" != 'clickthrough'");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"SessionUsers\"");
@@ -103,7 +104,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         {
             Type = "space-images",
             Customer = customer,
-            Scope = customer.ToString(),
+            Scope = "1",
             Next = 1
         }, new EntityCounter
         {

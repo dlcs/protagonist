@@ -50,9 +50,10 @@ public class AssetRepository : AssetRepositoryCachingBase
 
             var assetId = AssetId.FromString(id);
             var customer = assetId.Customer;
+            var space = assetId.Space;
             
             var imageStorage =
-                await dlcsContext.ImageStorages.FindAsync(id, customer, assetId.Space);
+                await dlcsContext.ImageStorages.FindAsync(id, customer, space);
             if (imageStorage != null)
             {
                 // And related ImageStorage record
@@ -67,17 +68,15 @@ public class AssetRepository : AssetRepositoryCachingBase
                 }
 
                 // Reduce CustomerStorage for space
-                var customerSpaceStorage =
-                    await dlcsContext.CustomerStorages.FindAsync(customer, assetId.Space);
+                var customerSpaceStorage = await dlcsContext.CustomerStorages.FindAsync(customer, space);
                 if (customerSpaceStorage != null) ReduceCustomerStorage(customerSpaceStorage);
 
                 // Reduce CustomerStorage for overall customer
-                var customerStorage =
-                    await dlcsContext.CustomerStorages.FindAsync(customer, 0);
+                var customerStorage = await dlcsContext.CustomerStorages.FindAsync(customer, 0);
                 if (customerStorage != null) ReduceCustomerStorage(customerStorage);
             }
 
-            await entityCounterRepository.Decrement(customer, "space-images", customer.ToString());
+            await entityCounterRepository.Decrement(customer, "space-images", space.ToString());
             await entityCounterRepository.Decrement(0, "customer-images", customer.ToString());
 
             var rowCount = await dlcsContext.SaveChangesAsync();

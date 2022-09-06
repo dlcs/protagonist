@@ -726,7 +726,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ec.Customer == 0 && ec.Scope == "99" && ec.Type == "customer-images");
         var currentCustomerImageCount = customerImagesCounter.Next;
         var spaceImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
-            ec.Customer == 99 && ec.Scope == "99" && ec.Type == "space-images");
+            ec.Customer == 99 && ec.Scope == "1" && ec.Type == "space-images");
         var currentSpaceImagesCounter = spaceImagesCounter.Next;
         await dbContext.SaveChangesAsync();
         
@@ -763,7 +763,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // EntityCounter for space images reduced
         var dbSpaceCounter = await dbContext.EntityCounters.SingleAsync(ec =>
-            ec.Customer == 99 && ec.Scope == "99" && ec.Type == "space-images");
+            ec.Customer == 99 && ec.Scope == "1" && ec.Type == "space-images");
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
         
         // TODO - test for notification raised once implemented
