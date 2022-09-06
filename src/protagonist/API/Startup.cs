@@ -29,6 +29,7 @@ using DLCS.Repository.Spaces;
 using DLCS.Repository.Storage;
 using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
+using FluentValidation;
 using Hydra;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -90,6 +91,7 @@ public class Startup
             .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
             .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
+            .AddValidatorsFromAssemblyContaining<Startup>()
             .ConfigureMediatR()
             .ConfigureSwagger();
 

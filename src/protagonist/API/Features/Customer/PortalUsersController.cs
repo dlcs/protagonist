@@ -3,6 +3,7 @@ using System.Net;
 using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Customer.Requests;
+using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Strings;
 using DLCS.HydraModel;
