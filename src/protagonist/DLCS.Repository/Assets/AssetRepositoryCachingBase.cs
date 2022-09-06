@@ -78,7 +78,7 @@ public abstract class AssetRepositoryCachingBase : IAssetRepository
             }
 
             return dbAsset;
-        }, CacheSettings.GetMemoryCacheOptions(CacheDuration.Short));
+        }, CacheSettings.GetMemoryCacheOptions());
         
         return asset.Id == NullAsset.Id ? null : asset;
     }
