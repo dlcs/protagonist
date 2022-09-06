@@ -105,6 +105,4 @@ public class ApiKeysController : HydraController
 
         return NoContent();
     }
-
-
 }

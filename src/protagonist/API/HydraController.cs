@@ -142,6 +142,7 @@ public abstract class HydraController : Controller
     /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response with 404 status code.
     /// </summary>
     /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
+    [NonAction]
     public virtual ObjectResult HydraNotFound(string? detail = null)
     {
         return HydraProblem(detail, null, 404, "Not Found");

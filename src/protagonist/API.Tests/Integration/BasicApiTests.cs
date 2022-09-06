@@ -16,8 +16,7 @@ namespace API.Tests.Integration;
 public class BasicApiTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly HttpClient httpClient;
-    
-    
+
     public BasicApiTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
         httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
@@ -37,4 +36,13 @@ public class BasicApiTests : IClassFixture<ProtagonistAppFactory<Startup>>
         ep.Type.Should().Be("vocab:EntryPoint");
     }
 
+    [Fact]
+    public async Task SwaggerJson()
+    {
+        // Act
+        var response = await httpClient.GetAsync("/swagger/v2/swagger.json");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
 }
