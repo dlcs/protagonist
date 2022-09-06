@@ -4,7 +4,6 @@ using DLCS.Model.Assets;
 
 namespace DLCS.Model.Messaging;
 
-// NOTE: This currently duplicates https://github.com/dlcs/protagonist/blob/engine-rework/Engine/Ingest/Models/IngestAssetRequest.cs
 /// <summary>
 /// Represents a request to ingest an asset.
 /// </summary>

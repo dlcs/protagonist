@@ -33,17 +33,18 @@ public static class AssetPreparer
     private static readonly Asset DefaultAsset;
 
     /// <summary>
-    /// Prepares an asset for insert or update operations.
+    /// Prepares an asset for insert or update operations by
     /// Validates that things aren't being modified that shouldn't be,
     /// and that no null fields remain on the asset being upserted.
     /// </summary>
     /// <remarks>
     /// This is essentially the logic in 
     /// https://github.com/digirati-co-uk/deliverator/blob/master/DLCS.Application/Behaviour/API/ValidateImageUpsertBehaviour.cs
-    /// This method was called ValidateImageUpsert to match deliverator; now renamed
     /// </remarks>
     /// <param name="existingAsset">If this is an update, the current version of the asset</param>
-    /// <param name="updateAsset">The new or updated asset</param>
+    /// <param name="updateAsset">
+    /// The new or updated asset - this asset is modified to reflect final asset to be persisted
+    /// </param>
     /// <param name="allowNonApiUpdates">Permit setting of fields that would not be allowed on API calls</param>
     /// <returns>A validation result</returns>
     public static AssetPreparationResult PrepareAssetForUpsert(
@@ -51,7 +52,7 @@ public static class AssetPreparer
         Asset updateAsset,
         bool allowNonApiUpdates)
     {
-        if (existingAsset != null && existingAsset.NotForDelivery)
+        if (existingAsset is { NotForDelivery: true })
         {
             // We can relax this later but for now, you cannot use the API
             // to modify an asset marked NotForDelivery.
@@ -59,7 +60,7 @@ public static class AssetPreparer
             // However, this DOES allow the *creation* of a NotForDelivery asset.
         }
         
-        bool requiresReingest = (existingAsset == null);
+        bool requiresReingest = existingAsset == null;
 
         if (allowNonApiUpdates == false)
         {
@@ -68,6 +69,7 @@ public static class AssetPreparer
             {
                 return new AssetPreparationResult { ErrorMessage = "Cannot set Finished timestamp via API." };
             }
+            
             if (updateAsset.Error != null)
             {
                 return new AssetPreparationResult { ErrorMessage = "Cannot set Error state via API." };
@@ -80,6 +82,7 @@ public static class AssetPreparer
             {
                 updateAsset.Customer = existingAsset.Customer;
             }
+            
             if (updateAsset.Space == 0)
             {
                 updateAsset.Space = existingAsset.Space;
@@ -98,10 +101,6 @@ public static class AssetPreparer
             }
         }
             
-        // TODO:
-        // 1. Deliverator has Image.ReservedIds, but it's { } (empty). So will leave out that check.
-        // 2. Eventually Protagonist will restrict IDs to url-safe paths, but not for now.
-            
         if (existingAsset != null && allowNonApiUpdates == false)
         {
             // https://github.com/dlcs/protagonist/issues/341 for further changes to this validation
@@ -109,10 +108,12 @@ public static class AssetPreparer
             {
                 return new AssetPreparationResult { ErrorMessage = "Width cannot be edited." };
             }
+            
             if (updateAsset.Height.HasValue && updateAsset.Height != 0 && updateAsset.Height != existingAsset.Height)
             {
                 return new AssetPreparationResult { ErrorMessage = "Height cannot be edited." };
             }
+            
             if (updateAsset.Duration.HasValue && updateAsset.Duration != 0 && updateAsset.Duration != existingAsset.Duration)
             {
                 return new AssetPreparationResult { ErrorMessage = "Duration cannot be edited." };
@@ -122,10 +123,12 @@ public static class AssetPreparer
             {
                 return new AssetPreparationResult { ErrorMessage = "PreservedUri cannot be edited." };
             }
+            
             if (updateAsset.Error != null && updateAsset.Error != existingAsset.Error)
             {
                 return new AssetPreparationResult { ErrorMessage = "Error cannot be edited." };
             }
+            
             if (updateAsset.Batch.HasValue && updateAsset.Batch != 0 && updateAsset.Batch != existingAsset.Batch)
             {
                 return new AssetPreparationResult { ErrorMessage = "Batch cannot be edited." };
@@ -136,6 +139,7 @@ public static class AssetPreparer
                 // I think it should be editable though, and doing so should trigger a re-ingest.
                 return new AssetPreparationResult { ErrorMessage = "ImageOptimisationPolicy cannot be edited." };
             }
+            
             if (updateAsset.ThumbnailPolicy != null && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
             {
                 // And this one DEFINITELY should be editable!
@@ -159,12 +163,14 @@ public static class AssetPreparer
             {
                 requiresReingest = true;
             }
+            
             if (updateAsset.ThumbnailPolicy.HasText() && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
             {
                 // requiresReingest = true; NO, because we'll re-create thumbs on demand - "backfill"
                 // However, we can treat a PUT as always triggering reingest, whereas a PATCH does not,
-                // even if they are otherwise equivalent - see PutOrPatchImage
+                // even if they are otherwise equivalent - see CreateOrUpdateImage
             }
+            
             if (updateAsset.ImageOptimisationPolicy.HasText() && updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
             {
                 requiresReingest = true; // YES, because we've changed the way this image should be processed
@@ -178,6 +184,12 @@ public static class AssetPreparer
         {
             return new AssetPreparationResult { ErrorMessage = "Asset Origin must be supplied." };
         }
+
+        // 'File' family assets are never ingested so default back to false regardless of value
+        if (updateAsset.Family == AssetFamily.File)
+        {
+            requiresReingest = false;
+        }
     
         return new AssetPreparationResult
         {
@@ -189,8 +201,6 @@ public static class AssetPreparer
     /// <summary>
     /// Ensure that any unset fields are given their default Asset value.
     /// </summary>
-    /// <param name="templateAsset"></param>
-    /// <param name="upsertAsset"></param>
     private static void SetNullFieldsToExistingOrDefaults(Asset? templateAsset, Asset upsertAsset)
     {
         templateAsset ??= DefaultAsset;
@@ -223,7 +233,6 @@ public static class AssetPreparer
         upsertAsset.Ingesting ??= templateAsset.Ingesting;
         upsertAsset.Family ??= templateAsset.Family;
     }
-
 
     static AssetPreparer()
     {

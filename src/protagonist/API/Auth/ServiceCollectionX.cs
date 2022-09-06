@@ -7,9 +7,9 @@ namespace API.Auth;
 public static class ServiceCollectionX
 {
     /// <summary>
-    /// Add DlcsDelegatedBasicAuthenticationHandler to services collection.
+    /// Add <see cref="DlcsBasicAuthenticationHandler"/> to services collection.
     /// </summary>
-    public static AuthenticationBuilder AddDlcsDelegatedBasicAuth(this IServiceCollection services,
+    public static AuthenticationBuilder AddDlcsBasicAuth(this IServiceCollection services,
         Action<BasicAuthenticationOptions> configureOptions)
         => services
             .AddAuthentication(BasicAuthenticationDefaults.AuthenticationScheme)
