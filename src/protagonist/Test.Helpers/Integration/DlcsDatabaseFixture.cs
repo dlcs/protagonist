@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
-using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
 using DLCS.Model.Spaces;

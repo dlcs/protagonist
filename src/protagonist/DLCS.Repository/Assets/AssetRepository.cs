@@ -5,6 +5,7 @@ using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model;
 using DLCS.Model.Assets;
+using DLCS.Model.Storage;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -56,18 +57,26 @@ public class AssetRepository : AssetRepositoryCachingBase
             {
                 // And related ImageStorage record
                 dlcsContext.Remove(imageStorage);
-                var customerStorage =
-                    await dlcsContext.CustomerStorages.FindAsync(customer, assetId.Space);
 
-                if (customerStorage != null)
+                void ReduceCustomerStorage(CustomerStorage customerStorage)
                 {
                     // And reduce CustomerStorage record
                     customerStorage.NumberOfStoredImages -= 1;
                     customerStorage.TotalSizeOfThumbnails -= imageStorage.ThumbnailSize;
                     customerStorage.TotalSizeOfStoredImages -= imageStorage.Size;
                 }
+
+                // Reduce CustomerStorage for space
+                var customerSpaceStorage =
+                    await dlcsContext.CustomerStorages.FindAsync(customer, assetId.Space);
+                if (customerSpaceStorage != null) ReduceCustomerStorage(customerSpaceStorage);
+
+                // Reduce CustomerStorage for overall customer
+                var customerStorage =
+                    await dlcsContext.CustomerStorages.FindAsync(customer, 0);
+                if (customerStorage != null) ReduceCustomerStorage(customerStorage);
             }
-            
+
             await entityCounterRepository.Decrement(customer, "space-images", customer.ToString());
             await entityCounterRepository.Decrement(0, "customer-images", customer.ToString());
 
