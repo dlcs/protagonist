@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Repository;
 using MediatR;
@@ -11,7 +12,7 @@ namespace API.Features.Customer.Requests;
 /// Make a partial update to a customer.
 /// </summary>
 /// <remarks>This only takes a single field as it's the only one that can be updated</remarks>
-public class PatchCustomer : IRequest<PatchCustomerResult>
+public class PatchCustomer : IRequest<AssetModifyResult<DlcsCustomer>>
 {
     public int CustomerId { get; }
     
@@ -24,20 +25,7 @@ public class PatchCustomer : IRequest<PatchCustomerResult>
     }
 }
 
-public class PatchCustomerResult
-{
-    public UpdateResult UpdateResult { get; private init;}
-    public DlcsCustomer? Customer { get; private init;}
-    public string? Error { get; private init; }
-
-    public static PatchCustomerResult Failure(string error, UpdateResult result = UpdateResult.Unknown)
-        => new() { Error = error, UpdateResult = result };
-    
-    public static PatchCustomerResult Success(DlcsCustomer customer, UpdateResult result = UpdateResult.Updated)
-        => new() { Customer = customer, UpdateResult = result };
-}
-
-public class PatchCustomerHandler : IRequestHandler<PatchCustomer, PatchCustomerResult>
+public class PatchCustomerHandler : IRequestHandler<PatchCustomer, AssetModifyResult<DlcsCustomer>>
 {
     private readonly DlcsContext dlcsContext;
 
@@ -46,12 +34,12 @@ public class PatchCustomerHandler : IRequestHandler<PatchCustomer, PatchCustomer
         this.dlcsContext = dlcsContext;
     }
     
-    public async Task<PatchCustomerResult> Handle(PatchCustomer request, CancellationToken cancellationToken)
+    public async Task<AssetModifyResult<DlcsCustomer>> Handle(PatchCustomer request, CancellationToken cancellationToken)
     {
         var customer = await dlcsContext.Customers.FindAsync(new object?[] { request.CustomerId }, cancellationToken);
         if (customer == null)
         {
-            return PatchCustomerResult.Failure("Customer not found", UpdateResult.NotFound);
+            return AssetModifyResult<DlcsCustomer>.Failure("Customer not found", UpdateResult.NotFound);
         }
 
         // This is the only field that can be updated for an existing customer
@@ -60,10 +48,10 @@ public class PatchCustomerHandler : IRequestHandler<PatchCustomer, PatchCustomer
         var rowCount = await dlcsContext.SaveChangesAsync(cancellationToken);
         if (rowCount == 0)
         {
-            return PatchCustomerResult.Failure("Unable to Patch Customer", UpdateResult.Error);
+            return AssetModifyResult<DlcsCustomer>.Failure("Unable to Patch Customer", UpdateResult.Error);
         }
 
         await dlcsContext.Entry(customer).ReloadAsync(cancellationToken);
-        return PatchCustomerResult.Success(customer);
+        return AssetModifyResult<DlcsCustomer>.Success(customer);
     }
 }

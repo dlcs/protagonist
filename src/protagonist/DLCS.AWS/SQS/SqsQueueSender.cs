@@ -1,4 +1,5 @@
 ﻿using Amazon.SQS;
+using DLCS.Core;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.AWS.SQS;
@@ -27,9 +28,7 @@ public class SqsQueueSender : IQueueSender
         try
         {
             var result = await client.SendMessageAsync(queueUrl, messageContents, cancellationToken);
-
-            var statusCode = (int)result.HttpStatusCode;
-            return statusCode is >= 200 and < 300;
+            return result.HttpStatusCode.IsSuccess();
         }
         catch (Exception ex)
         {

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Converters;
@@ -138,6 +139,40 @@ public class ImageController : HydraController
             DeleteResult.Error => HydraProblem("Error deleting asset - delete failed", null, 500,
                 "Delete Asset failed"),
             _ => NoContent()
+        };
+    }
+
+    /// <summary>
+    /// POST /customers/{customerId}/spaces/{spaceId}/images/{imageId}/reingest
+    /// </summary>
+    /// <param name="customerId">(from resource path)</param>
+    /// <param name="spaceId">(from resource path)</param>
+    /// <param name="imageId">(from resource path)</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>The reingested Hydra Image object for the Asset</returns>
+    [ProducesResponseType((int)HttpStatusCode.OK)]
+    [ProducesResponseType((int)HttpStatusCode.NotFound)]
+    [ProducesResponseType((int)HttpStatusCode.BadRequest)]
+    [HttpPost]
+    [Route("reingest")]
+    public async Task<IActionResult> ReingestAsset([FromRoute] int customerId, [FromRoute] int spaceId,
+        [FromRoute] string imageId, CancellationToken cancellationToken)
+    {
+        var reingestRequest = new ReingestAsset(customerId, spaceId, imageId);
+        var result = await mediator.Send(reingestRequest, cancellationToken);
+
+        return result.UpdateResult switch
+        {
+            UpdateResult.Updated => Ok(result.Entity.ToHydra(GetUrlRoots())),
+            UpdateResult.NotFound => NotFound(),
+            UpdateResult.Error => HydraProblem(result.Error, reingestRequest.AssetId.ToString(), 500, "Reingest failed"),
+            UpdateResult.Conflict => HydraProblem(result.Error, reingestRequest.AssetId.ToString(), 409,
+                "Reingest failed"),
+            UpdateResult.FailedValidation => HydraProblem(result.Error, reingestRequest.AssetId.ToString(), 400,
+                "Storage limit exceeded"),
+            UpdateResult.StorageLimitExceeded => HydraProblem(result.Error, reingestRequest.AssetId.ToString(), 507,
+                "Storage limit exceeded"),
+            _ => HydraProblem(result.Error, reingestRequest.AssetId.ToString(), 500, "Reingest failed"),
         };
     }
     

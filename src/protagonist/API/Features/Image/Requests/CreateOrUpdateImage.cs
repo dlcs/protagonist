@@ -3,6 +3,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Features.Assets;
+using API.Infrastructure.Models;
 using DLCS.Core.Collections;
 using DLCS.Core.Settings;
 using DLCS.Core.Strings;
@@ -194,7 +195,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         // If a re-process is required, clear out fields related to processing
         if (requiresEngineNotification)
         {
-            ResetFieldsForIngestion(updatedAsset);
+            updatedAsset.SetFieldsForIngestion();
             
             if (updatedAsset.Family == AssetFamily.Timebased)
             {
@@ -203,19 +204,8 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
             }
         }
 
-        await assetRepository.Save(updatedAsset, cancellationToken);
+        var assetAfterSave = await assetRepository.Save(updatedAsset, cancellationToken);
 
-        // now obtain the asset again
-        var assetAfterSave = await assetRepository.GetAsset(updatedAsset.Id, noCache: true);
-        if (assetAfterSave == null)
-        {
-            return new CreateOrUpdateImageResult
-            {
-                StatusCode = HttpStatusCode.InternalServerError,
-                Message = "Error reloading asset after save"
-            };
-        }
-        
         // Restore fields that are not persisted but are required
         if (updatedAsset.InitialOrigin.HasText())
         {
@@ -249,12 +239,6 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
     {
         var targetSpace = await spaceRepository.GetSpace(asset.Customer, asset.Space, false, cancellationToken);
         return targetSpace != null;
-    }
-
-    private static void ResetFieldsForIngestion(Asset asset)
-    {
-        asset.Error = string.Empty;
-        asset.Ingesting = true;
     }
 
     private async Task<bool> SelectThumbnailPolicy(Asset asset)
@@ -348,7 +332,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
             if (success)
             {
                 // obtain it again after Engine has processed it
-                var assetAfterEngine = await assetRepository.GetAsset(asset!.Id, noCache: true);
+                var assetAfterEngine = await assetRepository.GetAsset(asset.Id, noCache: true);
                 return new CreateOrUpdateImageResult
                 {
                     Asset = assetAfterEngine,

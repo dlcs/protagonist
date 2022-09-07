@@ -161,7 +161,7 @@ public class CustomerController : HydraController
         switch (result.UpdateResult)
         {
             case UpdateResult.Updated:
-                return Ok(result.Customer!.ToHydra(GetUrlRoots().BaseUrl));
+                return Ok(result.Entity!.ToHydra(GetUrlRoots().BaseUrl));
             case UpdateResult.NotFound:
                 return HydraNotFound();
             case UpdateResult.Error:

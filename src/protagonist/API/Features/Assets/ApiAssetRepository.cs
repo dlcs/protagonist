@@ -73,7 +73,7 @@ public class ApiAssetRepository : IApiAssetRepository
     /// It can also have been obtained from the database by another repository class.
     /// </param>
     /// <param name="cancellationToken"></param>
-    public async Task Save(Asset asset, CancellationToken cancellationToken)
+    public async Task<Asset> Save(Asset asset, CancellationToken cancellationToken)
     {
         if (dlcsContext.Images.Local.All(trackedAsset => trackedAsset.Id != asset.Id))
         {
@@ -97,5 +97,8 @@ public class ApiAssetRepository : IApiAssetRepository
         imageLocation.Nas = string.Empty;
 
         await dlcsContext.SaveChangesAsync(cancellationToken);
+        await dlcsContext.Entry(asset).ReloadAsync(cancellationToken);
+
+        return asset;
     }
 }

@@ -33,5 +33,10 @@ public enum UpdateResult
     /// <summary>
     /// Entity was successfully updated
     /// </summary>
-    Updated
+    Updated,
+    
+    /// <summary>
+    /// Predefined storage limits exceeded
+    /// </summary>
+    StorageLimitExceeded,
 }
