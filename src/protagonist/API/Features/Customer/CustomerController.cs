@@ -139,7 +139,7 @@ public class CustomerController : HydraController
     /// Make a partial update to customer.
     /// </summary>
     /// <param name="customerId">Id of customer to Patch</param>
-    /// <param name="hydraCustomer"></param>
+    /// <param name="hydraCustomer">Hydra model containing changes to make (only DisplayName is supported)</param>
     /// <param name="validator">Model validator</param>
     /// <returns>The updated Customer entity</returns>
     [HttpPatch]
