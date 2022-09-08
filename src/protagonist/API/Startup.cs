@@ -8,6 +8,7 @@ using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
+using DLCS.Core.Handlers;
 using DLCS.Core.Settings;
 using DLCS.Model;
 using DLCS.Model.Assets;
@@ -91,6 +92,7 @@ public class Startup
             .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
             .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
+            .AddTransient<TimingHandler>()
             .AddValidatorsFromAssemblyContaining<Startup>()
             .ConfigureMediatR()
             .ConfigureSwagger();
@@ -106,7 +108,8 @@ public class Startup
             .WithAmazonS3()
             .WithAmazonSQS();
 
-        services.AddHttpClient<IEngineClient, EngineClient>();
+        services.AddHttpClient<IEngineClient, EngineClient>()
+            .AddHttpMessageHandler<TimingHandler>();
 
         services.AddDlcsBasicAuth(options =>
             {
