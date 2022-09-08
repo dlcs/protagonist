@@ -169,7 +169,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
             }
         }
 
-        var assetAfterSave = await assetRepository.Save(updatedAsset, cancellationToken);
+        var assetAfterSave = await assetRepository.Save(updatedAsset, existingAsset != null, cancellationToken);
 
         // Restore fields that are not persisted but are required
         if (updatedAsset.InitialOrigin.HasText())
@@ -312,7 +312,6 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
                         cancellationToken);
                 var success = statusCode is HttpStatusCode.Created or HttpStatusCode.OK;
 
-                // NOTE(DG) - do we want to pass the downstream status regardless?
                 return await GenerateFinalResult(success, "Engine was not able to process this asset", statusCode);
             }
             case AssetFamily.Timebased:

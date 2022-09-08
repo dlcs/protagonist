@@ -2,7 +2,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Repository;
 using MediatR;
 
 namespace API.Features.Image.Requests;

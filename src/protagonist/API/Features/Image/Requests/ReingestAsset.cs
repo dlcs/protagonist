@@ -90,7 +90,7 @@ public class ReingestAssetHandler : IRequestHandler<ReingestAsset, ModifyEntityR
     private async Task<Asset> MarkAssetAsIngesting(CancellationToken cancellationToken, Asset asset)
     {
         asset.SetFieldsForIngestion();
-        var assetAfterSave = await assetRepository.Save(asset, cancellationToken);
+        var assetAfterSave = await assetRepository.Save(asset, true, cancellationToken);
         return assetAfterSave;
     }
 }

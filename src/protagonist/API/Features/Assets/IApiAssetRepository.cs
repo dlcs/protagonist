@@ -12,5 +12,5 @@ public interface IApiAssetRepository : IAssetRepository
     public Task<PageOfAssets?> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize, string? orderBy,
         bool descending, AssetFilter? assetFilter, CancellationToken cancellationToken);
 
-    public Task<Asset> Save(Asset asset, CancellationToken cancellationToken);
+    public Task<Asset> Save(Asset asset, bool isUpdate, CancellationToken cancellationToken);
 }
