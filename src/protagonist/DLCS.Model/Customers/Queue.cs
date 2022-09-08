@@ -1,8 +1,6 @@
-﻿#nullable disable
+﻿namespace DLCS.Model.Customers;
 
-namespace DLCS.Repository.Entities;
-
-public partial class Queue
+public class Queue
 {
     public int Customer { get; set; }
     public int Size { get; set; }

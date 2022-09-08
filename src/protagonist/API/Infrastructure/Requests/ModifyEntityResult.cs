@@ -5,7 +5,7 @@ namespace API.Infrastructure.Requests;
 /// <summary>
 /// Represents the result of a request to modify an entity
 /// </summary>
-/// <typeparam name="T"></typeparam>
+/// <typeparam name="T">Type of entity being modified</typeparam>
 public class ModifyEntityResult<T>
     where T : class
 {

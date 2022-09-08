@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
+using DLCS.Model.Customers;
 using DLCS.Model.Processing;
-using Microsoft.Extensions.Configuration;
 
-namespace DLCS.Repository.Entities;
+namespace DLCS.Repository.Customers;
 
 public class CustomerQueueRepository : IDapperContextRepository, ICustomerQueueRepository
 {
