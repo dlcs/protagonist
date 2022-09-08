@@ -2,7 +2,11 @@ using System;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Exceptions;
 using API.Features.Assets;
+using API.Infrastructure.Models;
+using API.Infrastructure.Requests;
+using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Settings;
 using DLCS.Core.Strings;
@@ -21,7 +25,7 @@ namespace API.Features.Image.Requests;
 /// This may trigger a sync or async ingest request depending on fields updated and HTTP method used. 
 /// </summary>
 /// <remarks>Handles PUTs and PATCHes with a single command to ensure same validation happens.</remarks>
-public class CreateOrUpdateImage : IRequest<CreateOrUpdateImageResult>
+public class CreateOrUpdateImage : IRequest<ModifyEntityResult<Asset>>
 {
     /// <summary>
     /// The Asset to be updated or inserted; may contain null fields indicating no change
@@ -48,28 +52,7 @@ public class CreateOrUpdateImage : IRequest<CreateOrUpdateImageResult>
     }
 }
 
-/// <summary>
-/// The outcome of an update or insert operation
-/// </summary>
-public class CreateOrUpdateImageResult
-{
-    /// <summary>
-    /// The asset, which may have been processed by Engine during this operation
-    /// </summary>
-    public Asset? Asset { get; set; }
-    
-    /// <summary>
-    /// The appropriate status to return to the API caller.
-    /// </summary>
-    public HttpStatusCode? StatusCode { get; set; }
-    
-    /// <summary>
-    /// An error message, if anything went wrong.
-    /// </summary>
-    public string? Message { get; set; }
-}
-
-public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, CreateOrUpdateImageResult>
+public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, ModifyEntityResult<Asset>>
 {
     private readonly ISpaceRepository spaceRepository;
     private readonly IApiAssetRepository assetRepository;
@@ -97,25 +80,19 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         this.settings = dlcsSettings.Value;
     }
     
-    public async Task<CreateOrUpdateImageResult> Handle(CreateOrUpdateImage request, CancellationToken cancellationToken)
+    public async Task<ModifyEntityResult<Asset>> Handle(CreateOrUpdateImage request, CancellationToken cancellationToken)
     {
         var asset = request.Asset;
         if (asset == null)
         {
-            return new CreateOrUpdateImageResult
-            {
-                StatusCode = HttpStatusCode.BadRequest,
-                Message = "Invalid Request"
-            };
+            return ModifyEntityResult<Asset>.Failure("Invalid Request", WriteResult.FailedValidation);
         }
 
         if (!await DoesTargetSpaceExist(asset, cancellationToken))
         {
-            return new CreateOrUpdateImageResult
-            {
-                StatusCode = HttpStatusCode.BadRequest,
-                Message = $"Target space for asset does not exist: {asset.Customer}/{asset.Space}"
-            };
+            return ModifyEntityResult<Asset>.Failure(
+                $"Target space for asset does not exist: {asset.Customer}/{asset.Space}",
+                WriteResult.FailedValidation);
         }
         
         // Check if Asset already exists
@@ -128,32 +105,26 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
             {
                 if (request.AssetMustExist)
                 {
-                    return new CreateOrUpdateImageResult
-                    {
-                        StatusCode = HttpStatusCode.NotFound,
-                        Message = "Attempted to update an Asset that could not be found."
-                    };
+                    return ModifyEntityResult<Asset>.Failure(
+                        "Attempted to update an Asset that could not be found",
+                        WriteResult.NotFound
+                    );
                 }
 
                 changeType = ChangeType.Create;
                 var counts = await storageRepository.GetImageCounts(asset.Customer, cancellationToken);
                 if (counts.CurrentNumberOfStoredImages >= counts.MaximumNumberOfStoredImages)
                 {
-                    return new CreateOrUpdateImageResult
-                    {
-                        StatusCode = HttpStatusCode.InsufficientStorage,
-                        Message = $"This operation will fall outside of your storage policy for number of images: maximum is {counts.MaximumNumberOfStoredImages}"
-                    };
+                    return ModifyEntityResult<Asset>.Failure(
+                        $"This operation will fall outside of your storage policy for number of images: maximum is {counts.MaximumNumberOfStoredImages}",
+                        WriteResult.StorageLimitExceeded
+                    );
                 }
             }
         }
         catch (Exception e)
         {
-            return new CreateOrUpdateImageResult
-            {
-                StatusCode = HttpStatusCode.InternalServerError,
-                Message = e.Message
-            };
+            return ModifyEntityResult<Asset>.Failure(e.Message, WriteResult.Error);
         }
 
         var assetPreparationResult =
@@ -161,12 +132,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         
         if (!assetPreparationResult.Success)
         {
-            // ValidateImageUpsertBehaviour (though has been modified quite a bit)
-            return new CreateOrUpdateImageResult
-            {
-                StatusCode = HttpStatusCode.BadRequest,
-                Message = assetPreparationResult.ErrorMessage
-            };
+            return ModifyEntityResult<Asset>.Failure(assetPreparationResult.ErrorMessage, WriteResult.FailedValidation);
         }
 
         var updatedAsset = assetPreparationResult.UpdatedAsset!;
@@ -194,7 +160,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         // If a re-process is required, clear out fields related to processing
         if (requiresEngineNotification)
         {
-            ResetFieldsForIngestion(updatedAsset);
+            updatedAsset.SetFieldsForIngestion();
             
             if (updatedAsset.Family == AssetFamily.Timebased)
             {
@@ -203,19 +169,8 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
             }
         }
 
-        await assetRepository.Save(updatedAsset, cancellationToken);
+        var assetAfterSave = await assetRepository.Save(updatedAsset, existingAsset != null, cancellationToken);
 
-        // now obtain the asset again
-        var assetAfterSave = await assetRepository.GetAsset(updatedAsset.Id, noCache: true);
-        if (assetAfterSave == null)
-        {
-            return new CreateOrUpdateImageResult
-            {
-                StatusCode = HttpStatusCode.InternalServerError,
-                Message = "Error reloading asset after save"
-            };
-        }
-        
         // Restore fields that are not persisted but are required
         if (updatedAsset.InitialOrigin.HasText())
         {
@@ -229,11 +184,8 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
             return await IngestAndGenerateResult(assetAfterSave, existingAsset != null, cancellationToken);
         }
 
-        return new CreateOrUpdateImageResult
-        {
-            Asset = assetAfterSave,
-            StatusCode = existingAsset == null ? HttpStatusCode.Created : HttpStatusCode.OK
-        };
+        return ModifyEntityResult<Asset>.Success(assetAfterSave,
+            existingAsset == null ? WriteResult.Created : WriteResult.Updated);
     }
 
     private static bool RequiresEngineNotification(Asset asset, CreateOrUpdateImage request, 
@@ -249,12 +201,6 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
     {
         var targetSpace = await spaceRepository.GetSpace(asset.Customer, asset.Space, false, cancellationToken);
         return targetSpace != null;
-    }
-
-    private static void ResetFieldsForIngestion(Asset asset)
-    {
-        asset.Error = string.Empty;
-        asset.Ingesting = true;
     }
 
     private async Task<bool> SelectThumbnailPolicy(Asset asset)
@@ -339,29 +285,21 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
         return asset.ThumbnailPolicy != incomingPolicy;
     }
     
-    private async Task<CreateOrUpdateImageResult> IngestAndGenerateResult(Asset asset, bool isUpdate,
+    private async Task<ModifyEntityResult<Asset>> IngestAndGenerateResult(Asset asset, bool isUpdate,
         CancellationToken cancellationToken)
     {
-        async Task<CreateOrUpdateImageResult> GenerateFinalResult(bool success, string errorMessage,
+        async Task<ModifyEntityResult<Asset>> GenerateFinalResult(bool success, string errorMessage,
             HttpStatusCode errorCode)
         {
             if (success)
             {
                 // obtain it again after Engine has processed it
-                var assetAfterEngine = await assetRepository.GetAsset(asset!.Id, noCache: true);
-                return new CreateOrUpdateImageResult
-                {
-                    Asset = assetAfterEngine,
-                    StatusCode = isUpdate ? HttpStatusCode.OK : HttpStatusCode.Created
-                };
+                var assetAfterEngine = await assetRepository.GetAsset(asset.Id, noCache: true);
+                return ModifyEntityResult<Asset>.Success(assetAfterEngine,
+                    isUpdate ? WriteResult.Updated : WriteResult.Created);
             }
 
-            return new CreateOrUpdateImageResult
-            {
-                Asset = asset,
-                Message = errorMessage,
-                StatusCode = errorCode
-            };
+            throw new APIException(errorMessage) { StatusCode = (int)errorCode };
         }
 
         switch (asset.Family)
@@ -374,7 +312,6 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, C
                         cancellationToken);
                 var success = statusCode is HttpStatusCode.Created or HttpStatusCode.OK;
 
-                // NOTE(DG) - do we want to pass the downstream status regardless?
                 return await GenerateFinalResult(success, "Engine was not able to process this asset", statusCode);
             }
             case AssetFamily.Timebased:

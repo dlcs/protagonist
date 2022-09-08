@@ -1,6 +1,7 @@
 using System;
 using API;
 using API.Converters;
+using API.Exceptions;
 using DLCS.HydraModel;
 using FluentAssertions;
 using Xunit;

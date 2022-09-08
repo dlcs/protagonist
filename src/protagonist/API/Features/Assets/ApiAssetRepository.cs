@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core;
+using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
@@ -72,12 +73,21 @@ public class ApiAssetRepository : IApiAssetRepository
     /// has usually come from an incoming Hydra object.
     /// It can also have been obtained from the database by another repository class.
     /// </param>
+    /// <param name="isUpdate">True if this is an update, false if insert</param>
     /// <param name="cancellationToken"></param>
-    public async Task Save(Asset asset, CancellationToken cancellationToken)
+    public async Task<Asset> Save(Asset asset, bool isUpdate, CancellationToken cancellationToken)
     {
         if (dlcsContext.Images.Local.All(trackedAsset => trackedAsset.Id != asset.Id))
         {
-            await dlcsContext.Images.AddAsync(asset, cancellationToken);
+            if (isUpdate)
+            {
+                dlcsContext.Images.Attach(asset);
+                dlcsContext.Entry(asset).State = EntityState.Modified;
+            }
+            else
+            {
+                await dlcsContext.Images.AddAsync(asset, cancellationToken);   
+            }
         }
 
         // In Deliverator, if this is a PATCH, the ImageLocation is simply removed.
@@ -97,5 +107,9 @@ public class ApiAssetRepository : IApiAssetRepository
         imageLocation.Nas = string.Empty;
 
         await dlcsContext.SaveChangesAsync(cancellationToken);
+
+        // Reload the asset from GetAsset to refresh cache
+        var refreshedAsset = await GetAsset(asset.Id, true);
+        return refreshedAsset.ThrowIfNull(nameof(refreshedAsset))!;
     }
 }

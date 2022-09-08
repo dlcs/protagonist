@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core;
 using DLCS.Core.Caching;
@@ -113,6 +114,6 @@ public class AssetRepository : AssetRepositoryCachingBase
         }
     }
 
-    protected override async Task<Asset?> GetAssetFromDatabase(string id)
-        => await dlcsContext.Images.FindAsync(id);
+    protected override async Task<Asset?> GetAssetFromDatabase(string id) =>
+        await dlcsContext.Images.AsNoTracking().SingleOrDefaultAsync(i => i.Id == id);
 }

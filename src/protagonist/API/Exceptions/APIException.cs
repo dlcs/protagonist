@@ -1,11 +1,11 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace API;
+namespace API.Exceptions;
 
 public class APIException : Exception
 {
-    public virtual int StatusCode { get; set; }
+    public virtual int? StatusCode { get; set; }
     
     public virtual string Label { get; set; }
     

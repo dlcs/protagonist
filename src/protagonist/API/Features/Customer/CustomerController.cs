@@ -30,14 +30,11 @@ namespace API.Features.Customer;
 [ApiController]
 public class CustomerController : HydraController
 {
-    private readonly IMediator mediator;
-
     /// <inheritdoc />
     public CustomerController(
         IMediator mediator,
-        IOptions<ApiSettings> options) : base(options.Value)
+        IOptions<ApiSettings> options) : base(options.Value, mediator)
     {
-        this.mediator = mediator;
     }
 
     /// <summary>
@@ -86,7 +83,7 @@ public class CustomerController : HydraController
         var basicErrors = HydraCustomerValidator.GetNewHydraCustomerErrors(newCustomer);
         if (basicErrors.Any())
         {
-            return HydraProblem(basicErrors, null, 400, "Invalid Customer");
+            return this.HydraProblem(basicErrors, null, 400, "Invalid Customer");
         }
 
         var command = new CreateCustomer(newCustomer.Name!, newCustomer.DisplayName!);
@@ -97,23 +94,22 @@ public class CustomerController : HydraController
             if (result.Customer == null || result.ErrorMessages.Any())
             {
                 int statusCode = result.Conflict ? 409 : 500;
-                return HydraProblem(result.ErrorMessages, null, statusCode, "Could not create Customer");
+                return this.HydraProblem(result.ErrorMessages, null, statusCode, "Could not create Customer");
             }
             var newApiCustomer = result.Customer.ToHydra(GetUrlRoots().BaseUrl);
             if (newApiCustomer.Id.HasText())
             {
-                return Created(newApiCustomer.Id, newApiCustomer);
+                return this.HydraCreated(newApiCustomer);
             }
-            return HydraProblem("No ID assigned for new customer", null, 500, "Could not create Customer");
+            return this.HydraProblem("No ID assigned for new customer", null, 500, "Could not create Customer");
         }
         catch (Exception ex)
         {
             // Are exceptions the way this info should be passed back to the controller?
-            return HydraProblem(ex);
+            return this.HydraProblem(ex);
         }
     }
-        
-        
+
     /// <summary>
     /// GET /customers/{id}
     /// 
@@ -128,7 +124,7 @@ public class CustomerController : HydraController
         var dbCustomer = await mediator.Send(new GetCustomer(customerId));
         if (dbCustomer == null)
         {
-            return HydraNotFound();
+            return this.HydraNotFound();
         }
         return Ok(dbCustomer.ToHydra(GetUrlRoots().BaseUrl));
     }
@@ -152,22 +148,15 @@ public class CustomerController : HydraController
         var validationResult = await validator.ValidateAsync(hydraCustomer);
         if (!validationResult.IsValid)
         {
-            return ValidationFailed(validationResult);
+            return this.ValidationFailed(validationResult);
         }
 
         var request = new PatchCustomer(customerId, hydraCustomer.DisplayName!);
-        var result = await mediator.Send(request);
 
-        switch (result.UpdateResult)
-        {
-            case UpdateResult.Updated:
-                return Ok(result.Customer!.ToHydra(GetUrlRoots().BaseUrl));
-            case UpdateResult.NotFound:
-                return HydraNotFound();
-            case UpdateResult.Error:
-                return HydraProblem(result.Error, null, 500, "Error patching customer");
-        }
-
-        return HydraProblem("Unknown result", null, 500, "Unknown result");
+        return await HandleUpsert(
+            request, 
+            customer => customer.ToHydra(GetUrlRoots().BaseUrl), 
+            customerId.ToString(),
+            "Patch failed");
     }
 }

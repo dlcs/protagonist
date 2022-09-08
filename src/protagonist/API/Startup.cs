@@ -29,6 +29,7 @@ using DLCS.Repository.Spaces;
 using DLCS.Repository.Storage;
 using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
+using DLCS.Web.Handlers;
 using FluentValidation;
 using Hydra;
 using Microsoft.AspNetCore.Builder;
@@ -91,6 +92,7 @@ public class Startup
             .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
             .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
+            .AddTransient<TimingHandler>()
             .AddValidatorsFromAssemblyContaining<Startup>()
             .ConfigureMediatR()
             .ConfigureSwagger();
@@ -106,7 +108,8 @@ public class Startup
             .WithAmazonS3()
             .WithAmazonSQS();
 
-        services.AddHttpClient<IEngineClient, EngineClient>();
+        services.AddHttpClient<IEngineClient, EngineClient>()
+            .AddHttpMessageHandler<TimingHandler>();
 
         services.AddDlcsBasicAuth(options =>
             {

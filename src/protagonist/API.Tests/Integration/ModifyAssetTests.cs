@@ -16,7 +16,6 @@ using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Messaging;
 using FakeItEasy;
-using FluentAssertions;
 using Hydra.Collections;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -26,7 +25,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
-using Xunit;
 using AssetFamily = DLCS.Model.Assets.AssetFamily;
 
 namespace API.Tests.Integration;
@@ -767,5 +765,140 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
         
         // TODO - test for notification raised once implemented
+    }
+
+    [Fact]
+    public async Task Reingest_404_IfAssetNotFound()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Reingest_404_IfAssetNotFound));
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{assetId.ToApiResourcePath()}/reingest");
+
+        // Act
+        var response = await httpClient.AsCustomer(99).SendAsync(request);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Theory]
+    [InlineData(AssetFamily.File)]
+    [InlineData(AssetFamily.Timebased)]
+    public async Task Reingest_400_IfNotImageFamily(AssetFamily family)
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, $"{nameof(Reingest_400_IfNotImageFamily)}{family}");
+        await dbContext.Images.AddTestAsset(assetId.ToString(), family: family);
+        await dbContext.SaveChangesAsync();
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{assetId.ToApiResourcePath()}/reingest");
+
+        // Act
+        var response = await httpClient.AsCustomer(99).SendAsync(request);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Reingest_Success_IfImageLocationDoesNotExist()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Reingest_Success_IfImageLocationDoesNotExist));
+        var asset = (await dbContext.Images.AddTestAsset(assetId.ToString(), error: "Failed", ingesting: false)).Entity;
+        await dbContext.SaveChangesAsync();
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{assetId.ToApiResourcePath()}/reingest");
+
+        // Act
+        var response = await httpClient.AsCustomer(99).SendAsync(request);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        // Engine called
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .MustHaveHappened();
+
+        var imageLocation = await dbContext.ImageLocations.SingleAsync(l => l.Id == assetId.ToString());
+        imageLocation.Nas.Should().BeNullOrEmpty();
+
+        await dbContext.Entry(asset).ReloadAsync();
+        asset.Error.Should().BeNullOrEmpty();
+        asset.Ingesting.Should().BeTrue();
+    }
+    
+    [Fact]
+    public async Task Reingest_Success_IfImageLocationExists()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Reingest_Success_IfImageLocationExists));
+        var asset = (await dbContext.Images.AddTestAsset(assetId.ToString(), error: "Failed", ingesting: false)).Entity;
+        await dbContext.ImageLocations.AddTestImageLocation(assetId.ToString());
+        await dbContext.SaveChangesAsync();
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{assetId.ToApiResourcePath()}/reingest");
+
+        // Act
+        var response = await httpClient.AsCustomer(99).SendAsync(request);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        // Engine called
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .MustHaveHappened();
+
+        var imageLocation = await dbContext.ImageLocations.SingleAsync(l => l.Id == assetId.ToString());
+        imageLocation.Nas.Should().BeNullOrEmpty();
+
+        await dbContext.Entry(asset).ReloadAsync();
+        asset.Error.Should().BeNullOrEmpty();
+        asset.Ingesting.Should().BeTrue();
+    }
+    
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError, HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.BadRequest, HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.InsufficientStorage, HttpStatusCode.InsufficientStorage)]
+    [InlineData(HttpStatusCode.GatewayTimeout, HttpStatusCode.InternalServerError)]
+    public async Task Reingest_ReturnsAppropriateStatusCode_IfEngineFails(HttpStatusCode engine, HttpStatusCode api)
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, $"{nameof(Reingest_ReturnsAppropriateStatusCode_IfEngineFails)}{engine}");
+        await dbContext.Images.AddTestAsset(assetId.ToString(), error: "Failed", ingesting: false);
+        await dbContext.SaveChangesAsync();
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<CancellationToken>._))
+            .Returns(engine);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{assetId.ToApiResourcePath()}/reingest");
+
+        // Act
+        var response = await httpClient.AsCustomer(99).SendAsync(request);
+        
+        // Assert
+        response.StatusCode.Should().Be(api);
     }
 }

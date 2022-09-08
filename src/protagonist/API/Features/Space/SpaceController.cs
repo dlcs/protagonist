@@ -23,16 +23,14 @@ namespace API.Features.Space;
 [ApiController]
 public class SpaceController : HydraController
 {
-    private readonly IMediator mediator;
     private readonly ILogger<SpaceController> logger;
 
     /// <inheritdoc />
     public SpaceController(
         IMediator mediator,
         IOptions<ApiSettings> options,
-        ILogger<SpaceController> logger) : base(options.Value)
+        ILogger<SpaceController> logger) : base(options.Value, mediator)
     {
-        this.mediator = mediator;
         this.logger = logger;
     }
     
@@ -54,7 +52,7 @@ public class SpaceController : HydraController
     {
         if (pageSize is null or < 0) pageSize = Settings.PageSize;
         if (page is null or < 0) page = 1;
-        var orderByField = GetOrderBy(orderBy, orderByDescending, out var descending);
+        var orderByField = this.GetOrderBy(orderBy, orderByDescending, out var descending);
         var baseUrl = GetUrlRoots().BaseUrl;
         var pageOfSpaces = await mediator.Send(new GetPageOfSpaces(
             page.Value, pageSize.Value, customerId, orderByField, descending));
@@ -88,11 +86,11 @@ public class SpaceController : HydraController
         logger.LogInformation("API will create a space");
         if (string.IsNullOrWhiteSpace(space.Name))
         {
-            return HydraProblem("A space must have a name.", null, 400, "Invalid Space");
+            return this.HydraProblem("A space must have a name.", null, 400, "Invalid Space");
         }
         if (customerId <= 0)
         {
-            return HydraProblem("Space must be created for an existing Customer.", null, 400, "Invalid Space");
+            return this.HydraProblem("Space must be created for an existing Customer.", null, 400, "Invalid Space");
         }
         
         var command = new CreateSpace(customerId, space.Name)
@@ -108,15 +106,15 @@ public class SpaceController : HydraController
             var newApiSpace = newDbSpace.ToHydra(GetUrlRoots().BaseUrl);
             if (newApiSpace.Id.HasText())
             {
-                return Created(newApiSpace.Id, newApiSpace);
+                return this.HydraCreated(newApiSpace);
             }
-            return HydraProblem("New space not assigned an ID", 
+            return this.HydraProblem("New space not assigned an ID", 
                 null, 500, "Bad Request");
             
         }
         catch (BadRequestException badRequestException)
         {
-            return HydraProblem(badRequestException.Message, 
+            return this.HydraProblem(badRequestException.Message, 
                 null, badRequestException.StatusCode, "Bad Request");
         }
     }
@@ -175,8 +173,8 @@ public class SpaceController : HydraController
         
         if (result.Conflict)
         {
-            return HydraProblem(result.ErrorMessages, null, 409, "Space name taken");
+            return this.HydraProblem(result.ErrorMessages, null, 409, "Space name taken");
         }
-        return HydraProblem(result.ErrorMessages, null, 500, "Cannot patch space");
+        return this.HydraProblem(result.ErrorMessages, null, 500, "Cannot patch space");
     }
 }
