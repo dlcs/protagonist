@@ -3,7 +3,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Customer.Requests;
+using API.Features.Customer.Validation;
+using API.Infrastructure;
 using API.Settings;
+using DLCS.Core;
 using DLCS.Core.Strings;
 using DLCS.Web.Auth;
 using DLCS.Web.Requests;
@@ -18,9 +21,11 @@ namespace API.Features.Customer;
 
 /// <summary>
 /// DLCS REST API Operations for customers.
+/// </summary>
+/// <remarks>
 /// This controller does not do any data access; it creates Mediatr requests and passes them on.
 /// It converts to and from the Hydra form of the DLCS API.
-/// </summary>
+/// </remarks>
 [Route("/customers/")]
 [ApiController]
 public class CustomerController : HydraController
@@ -34,16 +39,17 @@ public class CustomerController : HydraController
     {
         this.mediator = mediator;
     }
-        
-    
+
     /// <summary>
     /// GET /customers
     /// 
     /// Get all the customers.
-    /// Although it returns a paged collection, the page size is always the total number of customers:
-    /// clients don't need to page this collection, it contains all customers.
     /// </summary>
     /// <returns>HydraCollection of JObject (simplified customer)</returns>
+    /// <remarks>
+    /// Although it returns a paged collection, the page size is always the total number of customers:
+    /// clients don't need to page this collection, it contains all customers.
+    /// </remarks>
     [AllowAnonymous]
     [HttpGet]
     public async Task<HydraCollection<JObject>> GetCustomers()
@@ -109,7 +115,7 @@ public class CustomerController : HydraController
         
         
     /// <summary>
-    /// GET /customers/id
+    /// GET /customers/{id}
     /// 
     /// Get a Customer
     /// </summary>
@@ -125,5 +131,43 @@ public class CustomerController : HydraController
             return HydraNotFound();
         }
         return Ok(dbCustomer.ToHydra(GetUrlRoots().BaseUrl));
+    }
+
+    /// <summary>
+    /// PATCH /customers/{id}
+    /// 
+    /// Make a partial update to customer.
+    /// </summary>
+    /// <param name="customerId">Id of customer to Patch</param>
+    /// <param name="hydraCustomer">Hydra model containing changes to make (only DisplayName is supported)</param>
+    /// <param name="validator">Model validator</param>
+    /// <returns>The updated Customer entity</returns>
+    [HttpPatch]
+    [Route("{customerId}")]
+    public async Task<IActionResult> PatchCustomer(
+        [FromRoute] int customerId,
+        [FromBody] DLCS.HydraModel.Customer hydraCustomer,
+        [FromServices] CustomerPatchValidator validator)
+    {
+        var validationResult = await validator.ValidateAsync(hydraCustomer);
+        if (!validationResult.IsValid)
+        {
+            return ValidationFailed(validationResult);
+        }
+
+        var request = new PatchCustomer(customerId, hydraCustomer.DisplayName!);
+        var result = await mediator.Send(request);
+
+        switch (result.UpdateResult)
+        {
+            case UpdateResult.Updated:
+                return Ok(result.Customer!.ToHydra(GetUrlRoots().BaseUrl));
+            case UpdateResult.NotFound:
+                return HydraNotFound();
+            case UpdateResult.Error:
+                return HydraProblem(result.Error, null, 500, "Error patching customer");
+        }
+
+        return HydraProblem("Unknown result", null, 500, "Unknown result");
     }
 }

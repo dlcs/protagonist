@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using API.Converters;
 using API.Settings;
 using DLCS.Core.Strings;
 using DLCS.Web.Requests;
+using FluentValidation.Results;
 using Hydra.Model;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API;
+namespace API.Infrastructure;
 
 /// <summary>
 /// Base class for DLCS API Controllers that return Hydra responses
@@ -146,6 +148,17 @@ public abstract class HydraController : Controller
     public virtual ObjectResult HydraNotFound(string? detail = null)
     {
         return HydraProblem(detail, null, 404, "Not Found");
+    }
+
+    /// <summary>
+    /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response with 404 status code.
+    /// </summary>
+    /// <param name="validationResult"></param>
+    /// <returns></returns>
+    protected ObjectResult ValidationFailed(ValidationResult validationResult)
+    {
+        var message = string.Join(". ", validationResult.Errors.Select(s => s.ErrorMessage));
+        return HydraProblem(message, null, 400, "Bad request");
     }
 }
 

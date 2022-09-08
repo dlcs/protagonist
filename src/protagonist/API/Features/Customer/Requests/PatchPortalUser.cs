@@ -47,7 +47,6 @@ public class PatchPortalUserHandler : IRequestHandler<PatchPortalUser, PatchPort
         settings = options.Value;
     }
 
-
     public async Task<PatchPortalUserResult> Handle(PatchPortalUser request, CancellationToken cancellationToken)
     {
         var dbUser = await dbContext.Users.FindAsync(new object?[]{request.PortalUser.Id}, cancellationToken);
