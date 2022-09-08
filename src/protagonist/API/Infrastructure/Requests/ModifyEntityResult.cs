@@ -6,13 +6,13 @@ namespace API.Infrastructure.Requests;
 /// Represents the result of a request to modify an entity
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class AssetModifyResult<T>
+public class ModifyEntityResult<T>
     where T : class
 {
     /// <summary>
     /// Enum representing overall result of operation
     /// </summary>
-    public UpdateResult UpdateResult { get; private init;}
+    public WriteResult WriteResult { get; private init;}
     
     /// <summary>
     /// Optional representation of entity
@@ -24,9 +24,9 @@ public class AssetModifyResult<T>
     /// </summary>
     public string? Error { get; private init; }
 
-    public static AssetModifyResult<T> Failure(string error, UpdateResult result = UpdateResult.Unknown)
-        => new() { Error = error, UpdateResult = result };
+    public static ModifyEntityResult<T> Failure(string error, WriteResult result = WriteResult.Unknown)
+        => new() { Error = error, WriteResult = result };
 
-    public static AssetModifyResult<T> Success(T entity, UpdateResult result = UpdateResult.Updated)
-        => new() { Entity = entity, UpdateResult = result };
+    public static ModifyEntityResult<T> Success(T entity, WriteResult result = WriteResult.Updated)
+        => new() { Entity = entity, WriteResult = result };
 }

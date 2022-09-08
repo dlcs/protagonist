@@ -1,12 +1,14 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using API.Converters;
+using API.Exceptions;
+using API.Infrastructure.Requests;
 using API.Settings;
-using DLCS.Core.Strings;
+using DLCS.HydraModel;
 using DLCS.Web.Requests;
-using FluentValidation.Results;
 using Hydra.Model;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Infrastructure;
@@ -20,11 +22,14 @@ public abstract class HydraController : Controller
     /// API Settings available to derived controller classes
     /// </summary>
     protected readonly ApiSettings Settings;
-    
+
+    protected readonly IMediator mediator;
+
     /// <inheritdoc />
-    protected HydraController(ApiSettings settings)
+    protected HydraController(ApiSettings settings, IMediator mediator)
     {
         Settings = settings;
+        this.mediator = mediator;
     }
 
     /// <summary>
@@ -40,125 +45,44 @@ public abstract class HydraController : Controller
         };
     }
     
-    
     /// <summary>
-    /// Evaluates incoming orderBy and orderByDescending fields to get a suitable
-    /// ordering field and its direction.
+    /// Handle an upsert request - this takes a IRequest which returns a ModifyEntityResult{T}.
+    /// The request is sent and result is transformed to an http hydra result.  
     /// </summary>
-    /// <param name="orderBy"></param>
-    /// <param name="orderByDescending"></param>
-    /// <param name="descending"></param>
-    /// <returns></returns>
-    protected string? GetOrderBy(string? orderBy, string? orderByDescending, out bool descending)
-    {
-        string? orderByField = null;
-        descending = false;
-        if (orderBy.HasText())
-        {
-            orderByField = orderBy;
-        }
-        else if (orderByDescending.HasText())
-        {
-            orderByField = orderByDescending;
-            descending = true;
-        }
-
-        return orderByField;
-    }
-
-    /// <summary>
-    /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
-    /// </summary>
-    /// <param name="statusCode">The value for <see cref="Error.Status" />.</param>
-    /// <param name="errorMessages">One or more string error messages.</param>
+    /// <param name="request">IRequest to modify data</param>
+    /// <param name="hydraBuilder">Delegate to transform returned entity to a Hydra representation</param>
     /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
-    /// <param name="title">The value for <see cref="Error.Title" />.</param>
-    /// <param name="type">The value for <see cref="Error.Type" />.</param>
-    /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
-    [NonAction]
-    protected virtual ObjectResult HydraProblem(
-        IEnumerable<string>? errorMessages = null,
+    /// <param name="errorTitle">
+    /// The value for <see cref="Error.Title" />. In some instances this will be prepended to the actual error name.
+    /// e.g. errorTitle + ": Conflict"
+    /// </param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <typeparam name="T">Type of entity being upserted</typeparam>
+    /// <returns>
+    /// ActionResult generated from ModifyEntityResult. This will be the Hydra model + 200/201 on success. Or a Hydra
+    /// error and appropriate status code if failed.
+    /// </returns>
+    protected async Task<IActionResult> HandleUpsert<T>(
+        IRequest<ModifyEntityResult<T>> request,
+        Func<T, DlcsResource> hydraBuilder,
         string? instance = null,
-        int? statusCode = null,
-        string? title = null,
-        string? type = null)
+        string? errorTitle = "Operation failed",
+        CancellationToken cancellationToken = default)
+        where T : class
     {
-        string? detail = null;
-        if (errorMessages != null)
+        try
         {
-            detail = string.Join("; ", errorMessages);
+            var result = await mediator.Send(request, cancellationToken);
+
+            return this.ModifyResultToHttpResult(result, hydraBuilder, instance, errorTitle);
         }
-
-        return HydraProblem(detail, instance, statusCode, title, type);
-    }
-
-
-    /// <summary>
-    /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
-    /// </summary>
-    /// <param name="statusCode">The value for <see cref="Error.Status" />.</param>
-    /// <param name="detail">The value for <see cref="Error.Detail" />.</param>
-    /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
-    /// <param name="title">The value for <see cref="Error.Title" />.</param>
-    /// <param name="type">The value for <see cref="Error.Type" />.</param>
-    /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
-    [NonAction]
-    protected virtual ObjectResult HydraProblem(
-        string? detail = null,
-        string? instance = null,
-        int? statusCode = null,
-        string? title = null,
-        string? type = null)
-    {
-        var hydraError = new Error
+        catch (APIException apiEx)
         {
-            Detail = detail,
-            Instance = instance ?? Request.GetDisplayUrl(),
-            Status = statusCode ?? 500,
-            Title = title,
-            ErrorTypeUri = type,
-        };
-
-        return new ObjectResult(hydraError)
+            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode ?? 500, apiEx.Label);
+        }
+        catch (Exception ex)
         {
-            StatusCode = hydraError.Status
-        };
-    }
-    
-    
-    /// <summary>
-    /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
-    /// This overload can wrap otherwise uncaught exceptions.
-    ///
-    /// Usually a more specific Hydra Error response should be constructed.
-    /// </summary>
-    /// <param name="otherException"></param>
-    /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
-    [NonAction]
-    protected virtual ObjectResult HydraProblem(Exception otherException)
-    {
-        return HydraProblem(otherException.Message, null, 500);
-    }
-
-    /// <summary> 
-    /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response with 404 status code.
-    /// </summary>
-    /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
-    [NonAction]
-    public virtual ObjectResult HydraNotFound(string? detail = null)
-    {
-        return HydraProblem(detail, null, 404, "Not Found");
-    }
-
-    /// <summary>
-    /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response with 404 status code.
-    /// </summary>
-    /// <param name="validationResult"></param>
-    /// <returns></returns>
-    protected ObjectResult ValidationFailed(ValidationResult validationResult)
-    {
-        var message = string.Join(". ", validationResult.Errors.Select(s => s.ErrorMessage));
-        return HydraProblem(message, null, 400, "Bad request");
+            return this.HydraProblem(ex.Message, null, 500, errorTitle);
+        }
     }
 }
-

@@ -64,7 +64,7 @@ public class ApiAssetRepositoryTests
         var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false);
         result.Success.Should().BeTrue();
 
-        await sut.Save(newAsset, CancellationToken.None);
+        await sut.Save(result.UpdatedAsset, CancellationToken.None);
 
         var dbAsset = await dbContext.Images.FindAsync(id);
         dbAsset.Reference1.Should().Be("I am new");
@@ -76,7 +76,7 @@ public class ApiAssetRepositoryTests
     public async Task AssetRepository_Saves_Existing_Asset()
     {
         // Arrange
-        const string id = "existing-asset";
+        const string id = nameof(AssetRepository_Saves_Existing_Asset);
         var dbAsset = await contextForTests.Images.AddTestAsset(id, ref1: "I am original 1", ref2: "I am original 2");
         await contextForTests.SaveChangesAsync();
 
@@ -93,7 +93,7 @@ public class ApiAssetRepositoryTests
         result.Success.Should().BeTrue();
     
         // Act
-        await sut.Save(patch, CancellationToken.None);
+        await sut.Save(result.UpdatedAsset, CancellationToken.None);
 
         contextForTests.Entry(dbAsset.Entity).Reload();
         dbAsset.Entity.Reference1.Should().Be("I am changed");

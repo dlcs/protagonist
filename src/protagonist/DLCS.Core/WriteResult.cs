@@ -1,9 +1,9 @@
 namespace DLCS.Core;
 
 /// <summary>
-/// Represents the result of an Update operation
+/// Represents the result of a Create or Update operation
 /// </summary>
-public enum UpdateResult
+public enum WriteResult
 {
     /// <summary>
     /// Default state - likely operation has yet to be run.
@@ -34,6 +34,11 @@ public enum UpdateResult
     /// Entity was successfully updated
     /// </summary>
     Updated,
+    
+    /// <summary>
+    /// Entity was successfully created
+    /// </summary>
+    Created,
     
     /// <summary>
     /// Predefined storage limits exceeded

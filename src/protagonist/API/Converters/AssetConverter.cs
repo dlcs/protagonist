@@ -1,5 +1,5 @@
-using System.Globalization;
 using System.Linq;
+using API.Exceptions;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
@@ -8,7 +8,6 @@ using DLCS.Model.Assets;
 using DLCS.Web.Requests;
 using Hydra;
 using Microsoft.AspNetCore.Http;
-using NuGet.Protocol.Plugins;
 using AssetFamily = DLCS.HydraModel.AssetFamily;
 
 namespace API.Converters;

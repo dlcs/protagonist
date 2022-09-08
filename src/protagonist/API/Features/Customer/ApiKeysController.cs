@@ -23,14 +23,11 @@ namespace API.Features.Customer;
 [ApiController]
 public class ApiKeysController : HydraController
 {
-    private readonly IMediator mediator;
-
     /// <inheritdoc />
     public ApiKeysController(
         IMediator mediator,
-        IOptions<ApiSettings> options) : base(options.Value)
+        IOptions<ApiSettings> options) : base(options.Value, mediator)
     {
-        this.mediator = mediator;
     }
     
     /// <summary>
@@ -47,7 +44,7 @@ public class ApiKeysController : HydraController
         var dbCustomer = await mediator.Send(new GetCustomer(customerId));
         if (dbCustomer == null)
         {
-            return HydraNotFound();
+            return this.HydraNotFound();
         }
 
         var urlRoots = GetUrlRoots();
@@ -82,7 +79,7 @@ public class ApiKeysController : HydraController
             return Ok(new ApiKey(GetUrlRoots().BaseUrl, customerId, result.Key, result.Secret));
         }
 
-        return HydraProblem("Unable to create API key", null, 500, "API Key");
+        return this.HydraProblem("Unable to create API key", null, 500, "API Key");
     }
         
         
@@ -101,7 +98,7 @@ public class ApiKeysController : HydraController
         var result = await mediator.Send(new DeleteApiKey(customerId, key));
         if (result.Error.HasText())
         {
-            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Bad Request");
+            return this.HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Bad Request");
         }
 
         return NoContent();

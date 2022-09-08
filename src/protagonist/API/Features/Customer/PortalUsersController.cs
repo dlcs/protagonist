@@ -25,17 +25,13 @@ namespace API.Features.Customer;
 [ApiController]
 public class PortalUsersController : HydraController
 {
-    private readonly IMediator mediator;
-
     /// <inheritdoc />
     public PortalUsersController(
         IMediator mediator,
-        IOptions<ApiSettings> options) : base(options.Value)
+        IOptions<ApiSettings> options) : base(options.Value, mediator)
     {
-        this.mediator = mediator;
     }
-    
-    
+
     /// <summary>
     /// GET /customers/{customerId}/portalUsers
     /// 
@@ -79,7 +75,7 @@ public class PortalUsersController : HydraController
             return Ok(user.ToHydra(GetUrlRoots().BaseUrl));
         }
 
-        return HydraNotFound();
+        return this.HydraNotFound();
     }
         
         
@@ -106,15 +102,15 @@ public class PortalUsersController : HydraController
         var result = await mediator.Send(request);
         if (result.Error.HasText() || result.PortalUser == null)
         {
-            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Cannot create user");
+            return this.HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Cannot create user");
         }
             
         var hydraPortalUser = result.PortalUser.ToHydra(GetUrlRoots().BaseUrl);
         if (hydraPortalUser.Id.HasText())
         {
-            return Created(hydraPortalUser.Id, hydraPortalUser);
+            return this.HydraCreated(hydraPortalUser);
         }
-        return HydraProblem("No id on returned portal user", null, 500, "Cannot create user");
+        return this.HydraProblem("No id on returned portal user", null, 500, "Cannot create user");
     }
         
         
@@ -145,7 +141,7 @@ public class PortalUsersController : HydraController
         var result = await mediator.Send(request);
         if (result.Error.HasText() || result.PortalUser == null)
         {
-            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Cannot Patch user");
+            return this.HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Cannot Patch user");
         }
             
         var hydraPortalUser = result.PortalUser.ToHydra(GetUrlRoots().BaseUrl);
@@ -167,7 +163,7 @@ public class PortalUsersController : HydraController
         var result = await mediator.Send(new DeletePortalUser(customerId, userId));
         if (result.Error.HasText())
         {
-            return HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Bad Request");
+            return this.HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Bad Request");
         }
 
         return NoContent();

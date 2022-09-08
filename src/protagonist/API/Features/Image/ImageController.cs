@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Converters;
@@ -8,7 +7,6 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.Core;
 using DLCS.Core.Collections;
-using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using Hydra.Model;
@@ -25,14 +23,11 @@ namespace API.Features.Image;
 [ApiController]
 public class ImageController : HydraController
 {
-    private readonly IMediator mediator;
-
     /// <inheritdoc />
     public ImageController(
         IMediator mediator,
-        IOptions<ApiSettings> options) : base(options.Value)
+        IOptions<ApiSettings> options) : base(options.Value, mediator)
     {
-        this.mediator = mediator;
     }
 
     /// <summary>
@@ -53,7 +48,7 @@ public class ImageController : HydraController
         var dbImage = await mediator.Send(new GetImage(assetId));
         if (dbImage == null)
         {
-            return HydraNotFound();
+            return this.HydraNotFound();
         }
         return Ok(dbImage.ToHydra(GetUrlRoots()));
     }
@@ -136,7 +131,7 @@ public class ImageController : HydraController
         return result switch
         {
             DeleteResult.NotFound => NotFound(),
-            DeleteResult.Error => HydraProblem("Error deleting asset - delete failed", null, 500,
+            DeleteResult.Error => this.HydraProblem("Error deleting asset - delete failed", null, 500,
                 "Delete Asset failed"),
             _ => NoContent()
         };
@@ -155,27 +150,16 @@ public class ImageController : HydraController
     [ProducesResponseType((int)HttpStatusCode.BadRequest)]
     [HttpPost]
     [Route("reingest")]
-    public async Task<IActionResult> ReingestAsset([FromRoute] int customerId, [FromRoute] int spaceId,
+    public Task<IActionResult> ReingestAsset([FromRoute] int customerId, [FromRoute] int spaceId,
         [FromRoute] string imageId, CancellationToken cancellationToken)
     {
         var reingestRequest = new ReingestAsset(customerId, spaceId, imageId);
-        var result = await mediator.Send(reingestRequest, cancellationToken);
-
-        return result.UpdateResult switch
-        {
-            UpdateResult.Updated => Ok(result.Entity.ToHydra(GetUrlRoots())),
-            UpdateResult.NotFound => NotFound(),
-            UpdateResult.Error => HydraProblem(result.Error, reingestRequest.AssetId.ToString(), 500, "Reingest failed"),
-            UpdateResult.Conflict => HydraProblem(result.Error, reingestRequest.AssetId.ToString(), 409,
-                "Reingest failed"),
-            UpdateResult.FailedValidation => HydraProblem(result.Error, reingestRequest.AssetId.ToString(), 400,
-                "Storage limit exceeded"),
-            UpdateResult.StorageLimitExceeded => HydraProblem(result.Error, reingestRequest.AssetId.ToString(), 507,
-                "Storage limit exceeded"),
-            _ => HydraProblem(result.Error, reingestRequest.AssetId.ToString(), 500, "Reingest failed"),
-        };
+        return HandleUpsert(reingestRequest, 
+            asset => asset.ToHydra(GetUrlRoots()), 
+            reingestRequest.AssetId.ToString(),
+            "Reingest Failed", cancellationToken);
     }
-    
+
     /// <summary>
     /// POST /customers/{customerId}/spaces/{spaceId}/images/{imageId}
     /// 
@@ -203,12 +187,12 @@ public class ImageController : HydraController
         var assetId = new AssetId(customerId, spaceId, imageId);
         if (asset.File == null || asset.File.Length == 0)
         {
-            return HydraProblem("No file bytes in request body", assetId.ToString(),
+            return this.HydraProblem("No file bytes in request body", assetId.ToString(),
                 (int?)HttpStatusCode.BadRequest, errorTitle);
         }
         if (asset.MediaType.IsNullOrEmpty())
         {
-            return HydraProblem("MediaType must be supplied", assetId.ToString(),
+            return this.HydraProblem("MediaType must be supplied", assetId.ToString(),
                 (int?)HttpStatusCode.BadRequest, errorTitle);
         }
         var saveRequest = new HostAssetAtOrigin
@@ -221,7 +205,7 @@ public class ImageController : HydraController
         var result = await mediator.Send(saveRequest);
         if (string.IsNullOrEmpty(result.Origin))
         {
-            return HydraProblem("Could not save uploaded file", assetId.ToString(), 500, errorTitle);
+            return this.HydraProblem("Could not save uploaded file", assetId.ToString(), 500, errorTitle);
         }
 
         asset.Origin = result.Origin;
@@ -230,41 +214,24 @@ public class ImageController : HydraController
         return await PutOrPatchAsset(customerId, spaceId, imageId, asset);
     }
 
-    private async Task<IActionResult> PutOrPatchAsset(int customerId, int spaceId, string imageId,
+    private Task<IActionResult> PutOrPatchAsset(int customerId, int spaceId, string imageId,
         DLCS.HydraModel.Image hydraAsset)
     {
         var assetId = new AssetId(customerId, spaceId, imageId);
         var asset = hydraAsset.ToDlcsModel(customerId, spaceId, imageId);
         asset.Id = assetId.ToString();
-
+                
         // In the special case where we were passed ImageWithFile from the PostImageWithFileBytes action, 
         // it was a POST - but we should revisit that as the direct image ingest should be a PUT as well I think
         // See https://github.com/dlcs/protagonist/issues/338
         var method = hydraAsset is ImageWithFile ? "PUT" : Request.Method;
 
-        var request = new CreateOrUpdateImage(asset, method);
-        var result = await mediator.Send(request);
-        if (result.Asset != null && result.StatusCode is HttpStatusCode.OK or HttpStatusCode.Created)
-        {
-            var hydraResponse = result.Asset.ToHydra(GetUrlRoots());
-            if (hydraResponse.Id.HasText())
-            {
-                switch (result.StatusCode)
-                {
-                    case HttpStatusCode.OK:
-                        return Ok(hydraResponse);
-                    case HttpStatusCode.Created:
-                        return Created(hydraResponse.Id, hydraResponse);
-                }
-            }
-            else
-            {
-                return HydraProblem("No ID in returned Image", asset.Id,
-                    (int?)result.StatusCode, "PUT or PATCH of Asset failed");
-            }
-        }
+        var createOrUpdateRequest = new CreateOrUpdateImage(asset, method);
 
-        return HydraProblem(result.Message, asset.Id,
-            (int?)result.StatusCode, "PUT or PATCH of Asset failed");
+        return HandleUpsert(
+            createOrUpdateRequest,
+            asset => asset.ToHydra(GetUrlRoots()),
+            assetId.ToString(),
+            "Upsert asset failed");
     }
 }

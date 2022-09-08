@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using API.Converters;
+using API.Exceptions;
 using API.Features.Image.Requests;
 using API.Features.Space.Requests;
 using API.Infrastructure;
@@ -27,16 +28,14 @@ namespace API.Features.Image;
 [ApiController]
 public class ImagesController : HydraController
 {
-    private readonly IMediator mediator;
     private readonly ILogger<ImagesController> logger;
 
     /// <inheritdoc />
     public ImagesController(
         IMediator mediator,
         IOptions<ApiSettings> options,
-        ILogger<ImagesController> logger) : base(options.Value)
+        ILogger<ImagesController> logger) : base(options.Value, mediator)
     {
-        this.mediator = mediator;
         this.logger = logger;
     }
     
@@ -68,15 +67,15 @@ public class ImagesController : HydraController
         assetFilter = Request.UpdateAssetFilterFromQueryStringParams(assetFilter);
         if (q.HasText() && assetFilter == null)
         {
-            return HydraProblem("Could not parse query", null, 400);
+            return this.HydraProblem("Could not parse query", null, 400);
         }
-        var orderByField = GetOrderBy(orderBy, orderByDescending, out var descending);
+        var orderByField = this.GetOrderBy(orderBy, orderByDescending, out var descending);
         var imagesRequest = new GetSpaceImages(descending, page.Value, pageSize.Value, 
             spaceId, customerId, orderByField, assetFilter);
         var spaceImagesResult = await mediator.Send(imagesRequest);
         if (!spaceImagesResult.SpaceExistsForCustomer || spaceImagesResult.PageOfAssets == null)
         {
-            return HydraNotFound(spaceImagesResult.Errors?[0]);
+            return this.HydraNotFound(spaceImagesResult.Errors?[0]);
         }
 
         var urlRoots = GetUrlRoots();
@@ -121,14 +120,14 @@ public class ImagesController : HydraController
         {
             if (BulkPatchMayCauseReprocessing(images))
             {
-                return HydraProblem(
+                return this.HydraProblem(
                     "Bulk patching operations may not contain origin or image policy information.", 
                     null, 400, "Not Supported");
             }
             
             if (images.Members.Any(image => image.ModelId == null))
             {
-                return HydraProblem(
+                return this.HydraProblem(
                     "All assets must have a ModelId", 
                     null, 400, "Missing identifier");
             }
@@ -139,9 +138,9 @@ public class ImagesController : HydraController
                     var asset = hydraImage.ToDlcsModel(customerId, spaceId);
                     var request = new CreateOrUpdateImage(asset, "PATCH");
                     var result = await mediator.Send(request);
-                    if (result.Asset != null)
+                    if (result.Entity != null)
                     {
-                        patchedAssets.Add(result.Asset);
+                        patchedAssets.Add(result.Entity);
                     }
                     else
                     {
@@ -150,13 +149,13 @@ public class ImagesController : HydraController
                 }
                 catch (APIException apiEx)
                 {
-                    return HydraProblem(
+                    return this.HydraProblem(
                         apiEx.Message, 
                         null, 500, apiEx.Label);
                 }
                 catch (Exception ex)
                 {
-                    return HydraProblem(
+                    return this.HydraProblem(
                         ex.Message, 
                         null, 500, "Could not patch images");
                 }

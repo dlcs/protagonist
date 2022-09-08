@@ -16,7 +16,7 @@ namespace API.Features.Image.Requests;
 /// <summary>
 /// Reingest specified asset - this will 
 /// </summary>
-public class ReingestAsset : IRequest<AssetModifyResult<Asset>>
+public class ReingestAsset : IRequest<ModifyEntityResult<Asset>>
 {
     public AssetId AssetId { get; }
 
@@ -26,7 +26,7 @@ public class ReingestAsset : IRequest<AssetModifyResult<Asset>>
     }
 }
 
-public class ReingestAssetHandler : IRequestHandler<ReingestAsset, AssetModifyResult<Asset>>
+public class ReingestAssetHandler : IRequestHandler<ReingestAsset, ModifyEntityResult<Asset>>
 {
     private readonly IAssetNotificationSender assetNotificationSender;
     private readonly IApiAssetRepository assetRepository;
@@ -42,7 +42,7 @@ public class ReingestAssetHandler : IRequestHandler<ReingestAsset, AssetModifyRe
         this.logger = logger;
     }
     
-    public async Task<AssetModifyResult<Asset>> Handle(ReingestAsset request, CancellationToken cancellationToken)
+    public async Task<ModifyEntityResult<Asset>> Handle(ReingestAsset request, CancellationToken cancellationToken)
     {
         var existingAsset = await assetRepository.GetAsset(request.AssetId, true);
 
@@ -57,31 +57,31 @@ public class ReingestAssetHandler : IRequestHandler<ReingestAsset, AssetModifyRe
         if (statusCode.IsSuccess())
         {
             logger.LogDebug("{AssetId} successfully reingested", request.AssetId);
-            return AssetModifyResult<Asset>.Success(asset);
+            return ModifyEntityResult<Asset>.Success(asset);
         }
 
         logger.LogDebug("{AssetId} error reingesting asset", request.AssetId);
         return statusCode switch
         {
-            HttpStatusCode.BadRequest => AssetModifyResult<Asset>.Failure("Engine unable to process - bad request",
-                UpdateResult.FailedValidation),
-            HttpStatusCode.InsufficientStorage => AssetModifyResult<Asset>.Failure(
-                "Engine unable to process - storage limit exceeded", UpdateResult.StorageLimitExceeded),
-            _ => AssetModifyResult<Asset>.Failure("Unknown engine error", UpdateResult.Error)
+            HttpStatusCode.BadRequest => ModifyEntityResult<Asset>.Failure("Engine unable to process - bad request",
+                WriteResult.FailedValidation),
+            HttpStatusCode.InsufficientStorage => ModifyEntityResult<Asset>.Failure(
+                "Engine unable to process - storage limit exceeded", WriteResult.StorageLimitExceeded),
+            _ => ModifyEntityResult<Asset>.Failure("Unknown engine error", WriteResult.Error)
         };
     }
     
-    private AssetModifyResult<Asset>? ValidateAsset(Asset? asset, AssetId assetId)
+    private ModifyEntityResult<Asset>? ValidateAsset(Asset? asset, AssetId assetId)
     {
         if (asset == null)
         {
-            return AssetModifyResult<Asset>.Failure($"Asset {assetId} not found", UpdateResult.NotFound);
+            return ModifyEntityResult<Asset>.Failure($"Asset {assetId} not found", WriteResult.NotFound);
         }
 
         if (asset.Family != AssetFamily.Image)
         {
-            return AssetModifyResult<Asset>.Failure("Invalid operation - cannot reingest non-Image asset",
-                UpdateResult.FailedValidation);
+            return ModifyEntityResult<Asset>.Failure("Invalid operation - cannot reingest non-Image asset",
+                WriteResult.FailedValidation);
         }
 
         return null;
