@@ -130,7 +130,7 @@ public class ImageController : HydraController
 
         return result switch
         {
-            DeleteResult.NotFound => NotFound(),
+            DeleteResult.NotFound => this.HydraNotFound(),
             DeleteResult.Error => this.HydraProblem("Error deleting asset - delete failed", null, 500,
                 "Delete Asset failed"),
             _ => NoContent()

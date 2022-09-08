@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace DLCS.Core.Handlers;
+namespace DLCS.Web.Handlers;
 
 /// <summary>
 /// A basic delegating handler that logs Debug level timing notifications
@@ -23,7 +23,9 @@ public class TimingHandler : DelegatingHandler
     {
         var sw = Stopwatch.StartNew();
         logger.LogDebug("Calling {Uri}..", request.RequestUri);
+        
         var result = await base.SendAsync(request, cancellationToken);
+        
         sw.Stop();
         logger.LogDebug("Request to {Uri} completed with status {StatusCode} in {Elapsed}ms", request.RequestUri,
             result.StatusCode, sw.ElapsedMilliseconds);
