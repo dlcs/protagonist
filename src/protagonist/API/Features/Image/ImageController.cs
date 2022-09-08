@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Image.Requests;
 using API.Features.Space.Requests;
 using API.Settings;
+using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
@@ -175,6 +177,36 @@ public class ImageController : HydraController
         [FromBody] DLCS.HydraModel.Image hydraAsset)
     {
         return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset);
+    }
+
+    /// <summary>
+    /// DELETE /customers/{customerId}/spaces/{spaceId}/images/{imageId}
+    ///
+    /// DELETE asset at specified location. This will remove asset immediately, generated derivatives will be picked up
+    /// and processed eventually. 
+    /// </summary>
+    /// <param name="customerId">(from resource path)</param>
+    /// <param name="spaceId">(from resource path)</param>
+    /// <param name="imageId">(from resource path)</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns></returns>
+    [ProducesResponseType((int)HttpStatusCode.NoContent)]
+    [ProducesResponseType((int)HttpStatusCode.NotFound)]
+    [HttpDelete]
+    [Route("{imageId}")]
+    public async Task<IActionResult> DeleteAsset([FromRoute] int customerId, [FromRoute] int spaceId,
+        [FromRoute] string imageId, CancellationToken cancellationToken)
+    {
+        var deleteRequest = new DeleteAsset(customerId, spaceId, imageId);
+        var result = await mediator.Send(deleteRequest, cancellationToken);
+
+        return result switch
+        {
+            DeleteResult.NotFound => NotFound(),
+            DeleteResult.Error => HydraProblem("Error deleting asset - delete failed", null, 500,
+                "Delete Asset failed"),
+            _ => NoContent()
+        };
     }
 
     private async Task<IActionResult> PutOrPatchAsset(int customerId, int spaceId, string imageId,

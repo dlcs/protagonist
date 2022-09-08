@@ -45,7 +45,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         ProtagonistAppFactory<Startup> factory)
     {
         dbContext = dbFixture.DbContext;
-
+        
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithTestServices(services =>
@@ -309,7 +309,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Put_Existing_Asset_ClearsError_AndMarksAsIngesting()
     {
         var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
-        await dbContext.Images.AddTestAsset(assetId.ToString(), error: "Sample Error");
+        var newAsset = await dbContext.Images.AddTestAsset(assetId.ToString(), error: "Sample Error");
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
@@ -329,9 +329,10 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var assetFromDatabase = await dbContext.Images.SingleOrDefaultAsync(a => a.Id == assetId.ToString());
-        assetFromDatabase.Ingesting.Should().BeTrue();
-        assetFromDatabase.Error.Should().BeEmpty();
+        
+        await dbContext.Entry(newAsset.Entity).ReloadAsync();
+        newAsset.Entity.Ingesting.Should().BeTrue();
+        newAsset.Entity.Error.Should().BeEmpty();
     }
     
     [Fact]
@@ -389,7 +390,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(), family: family,
             ref1: "I am string 1", origin: "https://images.org/image2.tiff");
         await dbContext.SaveChangesAsync();
-        testAsset.State = EntityState.Detached; // need to untrack before update
 
         var hydraImageBody = @"{
   ""@type"": ""Image"",
@@ -408,8 +408,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     A<CancellationToken>._))
             .MustNotHaveHappened();
         
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
-        asset.Reference1.Should().Be("I am edited");
+        await dbContext.Entry(testAsset.Entity).ReloadAsync();
+        testAsset.Entity.Reference1.Should().Be("I am edited");
     }
     
     [Fact]
@@ -421,7 +421,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ref1: "I am string 1", origin: $"https://example.org/{assetId.Asset}.tiff");
         
         await dbContext.SaveChangesAsync();
-        testAsset.State = EntityState.Detached; // need to untrack before update
         
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
@@ -446,8 +445,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
                     A<CancellationToken>._))
             .MustHaveHappened();
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
-        asset.Reference1.Should().Be("I am edited");
+        
+        await dbContext.Entry(testAsset.Entity).ReloadAsync();
+        testAsset.Entity.Reference1.Should().Be("I am edited");
     }
     
     [Fact]
@@ -460,7 +460,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ref1: "I am string 1", origin: $"https://example.org/{assetId.Asset}.mp4", mediaType: "video/mp4");
         
         await dbContext.SaveChangesAsync();
-        testAsset.State = EntityState.Detached; // need to untrack before update
         
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
@@ -485,9 +484,10 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), 
                     A<CancellationToken>._))
             .MustHaveHappened();
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
-        asset.Reference1.Should().Be("I am edited");
-        asset.Batch.Should().BeGreaterThan(0);
+        
+        await dbContext.Entry(testAsset.Entity).ReloadAsync();
+        testAsset.Entity.Reference1.Should().Be("I am edited");
+        testAsset.Entity.Batch.Should().BeGreaterThan(0);
     }
     
     [Fact]
@@ -495,9 +495,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // This test is really here ready for when this IS allowed! I think it should be.
         var assetId = new AssetId(99, 1, nameof(Patch_Asset_Change_ImageOptimisationPolicy_Not_Allowed));
-        
-        var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(),
-            ref1: "I am string 1", origin:"https://images.org/image1.tiff");
+
+        await dbContext.Images.AddTestAsset(assetId.ToString(), ref1: "I am string 1",
+            origin: "https://images.org/image1.tiff");
         var testPolicy = new DLCS.Model.Assets.ImageOptimisationPolicy
         {
             Id = "test-policy",
@@ -506,7 +506,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         };
         dbContext.ImageOptimisationPolicies.Add(testPolicy);
         await dbContext.SaveChangesAsync();
-        testAsset.State = EntityState.Detached; // need to untrack before update
         
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
@@ -617,7 +616,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(),
             ref1: "I am string 1", origin:$"https://images.org/{assetId.Asset}.tiff");
         await dbContext.SaveChangesAsync();
-        testAsset.State = EntityState.Detached; // need to untrack before update
         
         // There's only one member here, but we still don't allow engine-calling changes
         // via collections.
@@ -695,5 +693,79 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = await dbContext.Images.FindAsync(assetId.ToString());
         asset.Should().NotBeNull();
         asset.Origin.Should().Be("https://protagonist-test-origin.s3.eu-west-1.amazonaws.com/99/1/Post_ImageBytes_Ingests_New_Image");
+    }
+
+    [Fact]
+    public async Task Delete_Returns404_IfAssetNotFound()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Delete_Returns404_IfAssetNotFound));
+        
+        // Act
+        var response = await httpClient.AsCustomer(99).DeleteAsync(assetId.ToApiResourcePath());
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        
+        // TODO - test for notification not raised once implemented
+    }
+    
+    [Fact]
+    public async Task Delete_RemovesAssetAndAssociatedEntities_FromDb()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Delete_RemovesAssetAndAssociatedEntities_FromDb));
+        await dbContext.Images.AddTestAsset(assetId.ToString());
+        await dbContext.ImageLocations.AddTestImageLocation(assetId.ToString());
+        await dbContext.ImageStorages.AddTestImageStorage(assetId.ToString(), size: 400L, thumbSize: 100L);
+        var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
+            sizeOfStored: 1000L, sizeOfThumbs: 1000L);
+        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
+            sizeOfStored: 2000L, sizeOfThumbs: 2000L);
+        var customerImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 0 && ec.Scope == "99" && ec.Type == "customer-images");
+        var currentCustomerImageCount = customerImagesCounter.Next;
+        var spaceImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 99 && ec.Scope == "1" && ec.Type == "space-images");
+        var currentSpaceImagesCounter = spaceImagesCounter.Next;
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer(99).DeleteAsync(assetId.ToApiResourcePath());
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        
+        // Asset, Location + Storage deleted
+        var dbAsset = await dbContext.Images.SingleOrDefaultAsync(i => i.Id == assetId.ToString());
+        dbAsset.Should().BeNull();
+        var dbLocation = await dbContext.ImageLocations.SingleOrDefaultAsync(i => i.Id == assetId.ToString());
+        dbLocation.Should().BeNull();
+        
+        var dbStorage = await dbContext.ImageStorages.SingleOrDefaultAsync(i => i.Id == assetId.ToString());
+        dbStorage.Should().BeNull();
+        
+        // CustomerStorage values reduced
+        await dbContext.Entry(customerSpaceStorage.Entity).ReloadAsync();
+        customerSpaceStorage.Entity.NumberOfStoredImages.Should().Be(99);
+        customerSpaceStorage.Entity.TotalSizeOfThumbnails.Should().Be(900L);
+        customerSpaceStorage.Entity.TotalSizeOfStoredImages.Should().Be(600L);
+        
+        await dbContext.Entry(customerStorage.Entity).ReloadAsync();
+        customerStorage.Entity.NumberOfStoredImages.Should().Be(199);
+        customerStorage.Entity.TotalSizeOfThumbnails.Should().Be(1900L);
+        customerStorage.Entity.TotalSizeOfStoredImages.Should().Be(1600L);
+        
+        // EntityCounter for customer images reduced
+        var dbCustomerCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 0 && ec.Scope == "99" && ec.Type == "customer-images");
+        dbCustomerCounter.Next.Should().Be(currentCustomerImageCount - 1);
+        
+        // EntityCounter for space images reduced
+        var dbSpaceCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 99 && ec.Scope == "1" && ec.Type == "space-images");
+        dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
+        
+        // TODO - test for notification raised once implemented
     }
 }

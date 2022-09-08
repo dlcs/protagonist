@@ -11,8 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Customers;
 
-public class DapperCustomerRepository : DapperRepository, ICustomerRepository
+public class DapperCustomerRepository : IDapperConfigRepository, ICustomerRepository
 {
+    public IConfiguration Configuration { get; }
     private readonly IAppCache appCache;
     private readonly CacheSettings cacheSettings;
     private static readonly Customer NullCustomer = new() { Id = -99 };
@@ -20,15 +21,16 @@ public class DapperCustomerRepository : DapperRepository, ICustomerRepository
     public DapperCustomerRepository(
         IConfiguration configuration,
         IAppCache appCache,
-        IOptions<CacheSettings> cacheSettings) : base(configuration)
+        IOptions<CacheSettings> cacheSettings)
     {
+        Configuration = configuration;
         this.appCache = appCache;
         this.cacheSettings = cacheSettings.Value;
     }
 
     public async Task<Dictionary<string, int>> GetCustomerIdLookup()
     {
-        var results = await QueryAsync<CustomerPathElement>("SELECT \"Id\", \"Name\" FROM \"Customers\"");
+        var results = await this.QueryAsync<CustomerPathElement>("SELECT \"Id\", \"Name\" FROM \"Customers\"");
         return results.ToDictionary(cpe => cpe.Name, cpe => cpe.Id);
     }
 
@@ -45,7 +47,7 @@ public class DapperCustomerRepository : DapperRepository, ICustomerRepository
         else
         {
             const string sql = CustomerSelect + @" WHERE ""Id""=@Id;";
-            dynamic? rawCustomer = await QuerySingleOrDefaultAsync(sql, new {Id = customerId});
+            dynamic? rawCustomer = await this.QuerySingleOrDefaultAsync(sql, new {Id = customerId});
             return MapRawCustomer(rawCustomer);
         }
     }
@@ -53,7 +55,7 @@ public class DapperCustomerRepository : DapperRepository, ICustomerRepository
     public async Task<Customer?> GetCustomer(string name)
     {
         const string sql = CustomerSelect + @" WHERE ""Name""=@name;";
-        dynamic? rawCustomer = await QuerySingleOrDefaultAsync(sql, new {name});
+        dynamic? rawCustomer = await this.QuerySingleOrDefaultAsync(sql, new {name});
         return MapRawCustomer(rawCustomer);
     }
 
@@ -79,7 +81,7 @@ public class DapperCustomerRepository : DapperRepository, ICustomerRepository
         return appCache.GetOrAddAsync(key, async entry =>
         {
             const string sql = CustomerSelect + @" WHERE ""Id""=@Id;";
-            dynamic? rawCustomer = await QuerySingleOrDefaultAsync(sql, new {Id = customerId});
+            dynamic? rawCustomer = await this.QuerySingleOrDefaultAsync(sql, new {Id = customerId});
             if (rawCustomer == null)
             {
                 entry.AbsoluteExpirationRelativeToNow =
@@ -99,7 +101,7 @@ public class DapperCustomerRepository : DapperRepository, ICustomerRepository
         {
             // This allows for more than one admin customer - should it?
             const string sql = CustomerSelect + @" WHERE ""Administrator""=True;";
-            var rawAdmins = await QueryAsync(sql);
+            var rawAdmins = await this.QueryAsync(sql);
             var admins = new List<Customer>();
             foreach (dynamic rawCustomer in rawAdmins)
             {

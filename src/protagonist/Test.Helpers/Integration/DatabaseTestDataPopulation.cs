@@ -155,7 +155,7 @@ public static class DatabaseTestDataPopulation
 
     public static ValueTask<EntityEntry<CustomerStorage>> AddTestCustomerStorage(
         this DbSet<CustomerStorage> customerStorages, int customer = 99, int space = 0, int numberOfImages = 0,
-        int sizeOfStored = 0, int sizeOfThumbs = 0, string storagePolicy = "default")
+        long sizeOfStored = 0, long sizeOfThumbs = 0, string storagePolicy = "default")
         => customerStorages.AddAsync(new CustomerStorage
         {
             Customer = customer,

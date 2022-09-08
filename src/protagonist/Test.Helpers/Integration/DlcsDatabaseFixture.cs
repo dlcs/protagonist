@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
-using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
 using DLCS.Model.Spaces;
@@ -63,6 +62,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             "DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" not in ('fast-higher', 'video-max', 'audio-max')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerOriginStrategies\"");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerStorage\"");
         DbContext.Database.ExecuteSqlRaw($"DELETE FROM \"AuthServices\" WHERE \"Id\" != '{ClickThroughAuthService}'");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Roles\" WHERE \"Id\" != 'clickthrough'");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"SessionUsers\"");
@@ -94,10 +94,22 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             MaximumNumberOfStoredImages = 10,
             MaximumTotalSizeOfStoredImages = 100
         });
-        await DbContext.EntityCounters.AddAsync(new EntityCounter
+        await DbContext.EntityCounters.AddRangeAsync(new EntityCounter
         {
             Type = "space",
             Customer = customer,
+            Scope = customer.ToString(),
+            Next = 1
+        }, new EntityCounter
+        {
+            Type = "space-images",
+            Customer = customer,
+            Scope = "1",
+            Next = 1
+        }, new EntityCounter
+        {
+            Type = "customer-images",
+            Customer = 0,
             Scope = customer.ToString(),
             Next = 1
         });

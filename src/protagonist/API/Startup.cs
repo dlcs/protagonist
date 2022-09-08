@@ -75,7 +75,7 @@ public class Startup
             })
             .AddLazyCache()
             .AddDlcsContext(configuration)
-            .AddSingleton<IAssetRepository, DapperAssetRepository>()
+            .AddScoped<IAssetRepository, AssetRepository>()
             .AddScoped<IApiAssetRepository>(provider =>
                 ActivatorUtilities.CreateInstance<ApiAssetRepository>(
                     provider,

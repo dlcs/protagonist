@@ -1,28 +1,26 @@
-using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace API.Features.Assets;
 
 /// <summary>
 /// Asset repository, extends base <see cref="IAssetRepository"/> with custom, API-specific methods.
 /// </summary>
-public class ApiAssetRepository : DapperRepository, IApiAssetRepository
+public class ApiAssetRepository : IApiAssetRepository
 {
-    private readonly DlcsContext dlcsContext;
     private readonly IAssetRepository assetRepository;
+    private readonly DlcsContext dlcsContext;
 
     public ApiAssetRepository(
         DlcsContext dlcsContext,
-        IConfiguration configuration,
-        IAssetRepository assetRepository) : base(configuration)
+        IAssetRepository assetRepository)
     {
         this.dlcsContext = dlcsContext;
         this.assetRepository = assetRepository;
@@ -36,7 +34,9 @@ public class ApiAssetRepository : DapperRepository, IApiAssetRepository
 
     public Task<Asset?> GetAsset(AssetId id, bool noCache) => assetRepository.GetAsset(id, noCache);
 
-    public Task<ImageLocation> GetImageLocation(AssetId assetId) => assetRepository.GetImageLocation(assetId);
+    public Task<ImageLocation?> GetImageLocation(AssetId assetId) => assetRepository.GetImageLocation(assetId);
+    
+    public Task<ResultStatus<DeleteResult>> DeleteAsset(AssetId assetId) => assetRepository.DeleteAsset(assetId);
 
     public async Task<PageOfAssets?> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize,
         string? orderBy, bool descending, AssetFilter? assetFilter, CancellationToken cancellationToken)
@@ -75,30 +75,9 @@ public class ApiAssetRepository : DapperRepository, IApiAssetRepository
     /// <param name="cancellationToken"></param>
     public async Task Save(Asset asset, CancellationToken cancellationToken)
     {
-        // Consider that this may be used for an already-tracked entity, or more likely, one that's
-        // been constructed from API calls and therefore not tracked.
-        if (dlcsContext.Images.Local.Any(trackedAsset => trackedAsset.Id == asset.Id))
+        if (dlcsContext.Images.Local.All(trackedAsset => trackedAsset.Id != asset.Id))
         {
-            // asset with this ID is already being tracked
-            if (dlcsContext.Entry(asset).State == EntityState.Detached)
-            {
-                // but it isn't this instance!
-                // what do we do? EF will throw an exception if we try to save this. 
-                throw new InvalidOperationException("There is already an Asset with this ID being tracked");
-            }
-            // As it's already tracked, we don't need to do anything here.
-        }
-        else
-        {
-            var exists = await ExecuteScalarAsync<bool>(AssetExistsSql, new { asset.Id });
-            if (!exists)
-            {
-                await dlcsContext.Images.AddAsync(asset, cancellationToken);
-            }
-            else
-            {
-                dlcsContext.Images.Update(asset);
-            }
+            await dlcsContext.Images.AddAsync(asset, cancellationToken);
         }
 
         // In Deliverator, if this is a PATCH, the ImageLocation is simply removed.
@@ -119,6 +98,4 @@ public class ApiAssetRepository : DapperRepository, IApiAssetRepository
 
         await dlcsContext.SaveChangesAsync(cancellationToken);
     }
-
-    private const string AssetExistsSql = @"SELECT EXISTS(SELECT 1 from ""Images"" WHERE ""Id""=@Id)";
 }
