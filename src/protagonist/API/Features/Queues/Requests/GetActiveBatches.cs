@@ -5,6 +5,7 @@ using DLCS.Model.Assets;
 using DLCS.Model.Page;
 using DLCS.Repository;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Queues.Requests;
 
@@ -34,10 +35,9 @@ public class GetActiveBatchesHandler : IRequestHandler<GetActiveBatches, FetchEn
 
     public async Task<FetchEntityResult<PageOf<Batch>>> Handle(GetActiveBatches request, CancellationToken cancellationToken)
     {
-        var result = await dlcsContext.Batches.CreatePagedResult(
+        var result = await dlcsContext.Batches.AsNoTracking().CreatePagedResult(request, 
             b => b.Customer == request.CustomerId && b.Finished == null && !b.Superseded,
-            request, 
-            cancellationToken);
+            cancellationToken: cancellationToken);
         
         return FetchEntityResult<PageOf<Batch>>.Success(result);
     }

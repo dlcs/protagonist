@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using API.Tests.Integration.Infrastructure;
 using DLCS.Model.Assets;
 using DLCS.Model.Processing;
 using DLCS.Repository;
+using Hydra;
 using Hydra.Collections;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
@@ -28,7 +30,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Setup batches for testing
         dbContext.Batches.AddRange(
-            // finished
+            // finished today
             new Batch
             {
                 Id = 4000, Customer = 99, Submitted = DateTime.UtcNow, Count = 5, Completed = 5,
@@ -44,7 +46,19 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             // active - 5 left
             new Batch { Id = 4003, Customer = 99, Submitted = DateTime.UtcNow, Count = 10, Completed = 5, },
             // active - 2 errors, 2 done
-            new Batch { Id = 4004, Customer = 99, Submitted = DateTime.UtcNow, Count = 8, Completed = 2, Errors = 2 } 
+            new Batch { Id = 4004, Customer = 99, Submitted = DateTime.UtcNow, Count = 8, Completed = 2, Errors = 2 },
+            // finished last week
+            new Batch
+            {
+                Id = 4005, Customer = 99, Submitted = DateTime.UtcNow, Count = 5, Completed = 5,
+                Finished = DateTime.UtcNow.AddDays(-7)
+            }, 
+            // finished yesterday
+            new Batch
+            {
+                Id = 4006, Customer = 99, Submitted = DateTime.UtcNow, Count = 5, Completed = 5,
+                Finished = DateTime.UtcNow.AddDays(-1)
+            }
         );
         dbContext.SaveChanges();
     }
@@ -160,5 +174,58 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var queue = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Batch>>();
         queue.Members.Should().HaveCount(2);
+    }
+    
+    [Fact]
+    public async Task Get_RecentBatches_200_IfNoBatchesFound()
+    {
+        // Arrange
+        var customer = -4;
+        await dbContext.Customers.AddTestCustomer(customer);
+        await dbContext.SaveChangesAsync();
+        var path = $"customers/{customer}/queue/recent";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var queue = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Batch>>();
+        queue.Members.Should().BeEmpty();
+    }
+    
+    [Fact]
+    public async Task Get_RecentBatches_200_BatchesOrdered()
+    {
+        // Arrange
+        const string path = "customers/99/queue/recent";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var queue = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Batch>>();
+        queue.Members.Should().HaveCount(3);
+        queue.Members.Select(b => b.Id.GetLastPathElementAsInt()).Should().ContainInOrder(4000, 4006, 4005);
+    }
+    
+    [Fact]
+    public async Task Get_RecentBatches_200_SupportsPaging()
+    {
+        // Arrange
+        const string path = "customers/99/queue/recent?pageSize=2&page=2";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var queue = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Batch>>();
+        queue.Members.Should().HaveCount(1);
+        queue.Members.Single().Id.GetLastPathElementAsInt().Should().Be(4005);
     }
 }

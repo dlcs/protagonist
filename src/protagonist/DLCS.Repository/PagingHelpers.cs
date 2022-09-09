@@ -11,29 +11,37 @@ namespace DLCS.Repository;
 public static class PagingHelpers
 {
     /// <summary>
-    /// Create a <see cref="PageOf{T}"/> using specified filter over <see cref="DbSet{T}"/>
+    /// Create a <see cref="PageOf{T}"/> using specified filter over <see cref="IQueryable{T}"/>
     /// </summary>
-    /// <param name="entities">Dbset to derive results from</param>
-    /// <param name="filter">Filter to apply - this filter is applied to calculate both Total and Entities</param>
+    /// <param name="entities">IQueryable to derive results from</param>
     /// <param name="request"><see cref="IPagedRequest"/> containing page and pagesize props</param>
+    /// <param name="filter">Filter to apply - this filter is applied to calculate both Total and Entities</param>
+    /// <param name="entityOperations">
+    ///     Optional operations to run on query to set Entities, in addition to filter
+    /// </param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <typeparam name="T">Type of entity being paged</typeparam>
     /// <returns>
     /// New <see cref="PageOf{T}"/> containing Page, Total result, collection of entities for page and requested page
     /// size
     /// </returns>
-    public static async Task<PageOf<T>> CreatePagedResult<T>(this DbSet<T> entities, Expression<Func<T, bool>> filter,
-        IPagedRequest request, CancellationToken cancellationToken) where T : class
+    public static async Task<PageOf<T>> CreatePagedResult<T>(this IQueryable<T> entities,
+        IPagedRequest request,
+        Expression<Func<T, bool>> filter,
+        Func<IQueryable<T>, IQueryable<T>>? entityOperations = null,
+        CancellationToken cancellationToken = default) where T : class
     {
+        var entityQuery = entities.Where(filter);
+        if (entityOperations != null)
+        {
+            entityQuery = entityOperations(entityQuery);
+        }
+        
         var result = new PageOf<T>
         {
             Page = request.Page,
-            Total = await entities
-                .CountAsync(filter, cancellationToken: cancellationToken),
-            Entities = await entities
-                .Where(filter)
-                .WithPaging(request)
-                .ToListAsync(cancellationToken),
+            Total = await entities.CountAsync(filter, cancellationToken: cancellationToken),
+            Entities = await entityQuery.WithPaging(request).ToListAsync(cancellationToken),
             PageSize = request.PageSize
         };
 
