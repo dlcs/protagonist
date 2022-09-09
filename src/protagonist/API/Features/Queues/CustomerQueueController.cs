@@ -26,7 +26,7 @@ public class CustomerQueueController : HydraController
     /// <summary>
     /// GET /customers/{customerId}/queue
     ///
-    /// Get details of customer queue
+    /// Get details of default customer queue
     /// </summary>
     /// <param name="customerId">Id of customer</param>
     /// <param name="cancellationToken"></param>
@@ -39,7 +39,30 @@ public class CustomerQueueController : HydraController
         return await HandleFetch(
             getCustomerRequest,
             queue => queue.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Get CustomerQueue failed",
+            errorTitle: "Get Customer Queue failed",
+            cancellationToken: cancellationToken
+        );
+    }
+    
+    /// <summary>
+    /// GET /customers/{customerId}/queue/priority
+    ///
+    /// Get details of priority customer queue
+    /// </summary>
+    /// <param name="customerId">Id of customer</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>Hydra JSON-LD Queue object</returns>
+    [HttpGet]
+    [Route("priority")]
+    public async Task<IActionResult> GetCustomerPriorityQueue([FromRoute] int customerId, 
+        CancellationToken cancellationToken)
+    {
+        var getCustomerRequest = new GetCustomerQueue(customerId, "priority");
+
+        return await HandleFetch(
+            getCustomerRequest,
+            queue => queue.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Get Customer Priority Queue failed",
             cancellationToken: cancellationToken
         );
     }

@@ -108,9 +108,9 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var customer = -3;
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Queues.AddAsync(new Queue { Customer = customer, Name = "default", Size = 10 });
-        await dbContext.Batches.AddTestBatch(1, -3, count: 5, completed: 5, superseded: false); // 0
-        await dbContext.Batches.AddTestBatch(2, -3, count: 5, completed: 0, superseded: false); // 5
-        await dbContext.Batches.AddTestBatch(3, -3, count: 100, completed: 0, superseded: true); // superseded- ignored
+        await dbContext.Batches.AddTestBatch(1, customer, count: 5, completed: 5, superseded: false); // 0
+        await dbContext.Batches.AddTestBatch(2, customer, count: 5, completed: 0, superseded: false); // 5
+        await dbContext.Batches.AddTestBatch(3, customer, count: 100, completed: 0, superseded: true); // superseded- ignored
         await dbContext.SaveChangesAsync();
         var path = $"customers/{customer}/queue";
 
@@ -314,5 +314,67 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         batch.Count.Should().Be(8);
         batch.Completed.Should().Be(2);
         batch.Errors.Should().Be(2);
+    }
+    
+    [Fact]
+    public async Task Get_CustomerPriorityQueue_404_IfCustomerQueueNotFound()
+    {
+        // Arrange
+        await dbContext.Customers.AddTestCustomer(-1);
+        await dbContext.SaveChangesAsync();
+        const string path = "customers/-1/queue/priority";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_CustomerPriorityQueue_200_IfCustomerQueueFound_NoBatches()
+    {
+        // Arrange
+        var customer = -6;
+        await dbContext.Customers.AddTestCustomer(customer);
+        await dbContext.Queues.AddAsync(new Queue { Customer = customer, Name = "priority", Size = 10 });
+        await dbContext.SaveChangesAsync();
+        var path = $"customers/{customer}/queue/priority";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var queue = await response.ReadAsHydraResponseAsync<CustomerQueue>();
+        queue.Size.Should().Be(10);
+        queue.ImagesWaiting.Should().Be(0);
+        queue.BatchesWaiting.Should().Be(0);
+    }
+    
+    [Fact]
+    public async Task Get_CustomerPriorityQueue_200_IfCustomerQueueFound_WithBatches()
+    {
+        // Arrange
+        var customer = -7;
+        await dbContext.Customers.AddTestCustomer(customer);
+        await dbContext.Queues.AddAsync(new Queue { Customer = customer, Name = "priority", Size = 10 });
+        await dbContext.Batches.AddTestBatch(1, customer, count: 5, completed: 5, superseded: false); // 0
+        await dbContext.Batches.AddTestBatch(2, customer, count: 5, completed: 0, superseded: false); // 5
+        await dbContext.Batches.AddTestBatch(3, customer, count: 100, completed: 0, superseded: true); // superseded- ignored
+        await dbContext.SaveChangesAsync();
+        var path = $"customers/{customer}/queue/priority";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var queue = await response.ReadAsHydraResponseAsync<CustomerQueue>();
+        queue.Size.Should().Be(10);
+        queue.ImagesWaiting.Should().Be(5);
+        queue.BatchesWaiting.Should().Be(2);
     }
 }
