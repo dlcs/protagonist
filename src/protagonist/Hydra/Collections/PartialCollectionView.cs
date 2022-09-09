@@ -40,20 +40,20 @@ public class PartialCollectionView : JsonLdBaseWithHydraContext
             var baseUrl = collection.Id!.Split('?')[0];
             var partialView = new PartialCollectionView
             {
-                Id = $"{baseUrl}?page={page}&pageSize={pageSize}",
+                Id = $"{baseUrl}?page={page}",
                 Page = page,
                 PageSize = pageSize,
                 TotalPages = totalPages
             };
             if (page > 1)
             {
-                partialView.First = $"{baseUrl}?page={1}&pageSize={pageSize}";
-                partialView.Previous = $"{baseUrl}?page={page-1}&pageSize={pageSize}";
+                partialView.First = $"{baseUrl}?page={1}";
+                partialView.Previous = $"{baseUrl}?page={page-1}";
             }
             if (page < totalPages)
             {
-                partialView.Last = $"{baseUrl}?page={totalPages}&pageSize={pageSize}";
-                partialView.Next = $"{baseUrl}?page={page+1}&pageSize={pageSize}";
+                partialView.Last = $"{baseUrl}?page={totalPages}";
+                partialView.Next = $"{baseUrl}?page={page+1}";
             }
 
             partialView.Id = AppendCommonParams(partialView.Id, pageSize, orderBy, descending);

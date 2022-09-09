@@ -5,9 +5,12 @@ using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Strings;
 using DLCS.HydraModel;
+using DLCS.Model.Spaces;
 using DLCS.Web.Requests;
 using FluentValidation.Results;
+using Hydra;
 using Hydra.Model;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Infrastructure;
@@ -193,7 +196,7 @@ public static class ControllerBaseX
     /// </returns>
     public static IActionResult FetchResultToHttpResult<T>(this ControllerBase controller,
         FetchEntityResult<T> entityResult,
-        Func<T, DlcsResource> hydraBuilder, string? instance,
+        Func<T, JsonLdBase> hydraBuilder, string? instance,
         string? errorTitle)
         where T : class
     {

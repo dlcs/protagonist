@@ -1,10 +1,13 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
+using DLCS.Model.Assets;
 using DLCS.Model.Processing;
 using DLCS.Repository;
+using Hydra.Collections;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 
@@ -22,6 +25,28 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbContext = dbFixture.DbContext;
         httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
         dbFixture.CleanUp();
+
+        // Setup batches for testing
+        dbContext.Batches.AddRange(
+            // finished
+            new Batch
+            {
+                Id = 4000, Customer = 99, Submitted = DateTime.UtcNow, Count = 5, Completed = 5,
+                Finished = DateTime.UtcNow
+            }, 
+            // superseded
+            new Batch
+            {
+                Id = 4001, Customer = 99, Submitted = DateTime.UtcNow, Count = 5, Completed = 5, Superseded = true
+            },
+            // all "completed" but not finished
+            new Batch { Id = 4002, Customer = 99, Submitted = DateTime.UtcNow, Count = 10, Completed = 10, },
+            // active - 5 left
+            new Batch { Id = 4003, Customer = 99, Submitted = DateTime.UtcNow, Count = 10, Completed = 5, },
+            // active - 2 errors, 2 done
+            new Batch { Id = 4004, Customer = 99, Submitted = DateTime.UtcNow, Count = 8, Completed = 2, Errors = 2 } 
+        );
+        dbContext.SaveChanges();
     }
 
     [Fact]
@@ -84,5 +109,56 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         queue.Size.Should().Be(10);
         queue.ImagesWaiting.Should().Be(5);
         queue.BatchesWaiting.Should().Be(2);
+    }
+    
+    [Fact]
+    public async Task Get_ActiveBatches_200_IfNoBatchesFound()
+    {
+        // Arrange
+        var customer = -4;
+        await dbContext.Customers.AddTestCustomer(customer);
+        await dbContext.SaveChangesAsync();
+        var path = $"customers/{customer}/queue/active";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var queue = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Batch>>();
+        queue.Members.Should().BeEmpty();
+    }
+    
+    [Fact]
+    public async Task Get_ActiveBatches_200_IfIncludesActiveBatches()
+    {
+        // Arrange
+        const string path = "customers/99/queue/active";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var queue = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Batch>>();
+        queue.Members.Should().HaveCount(3);
+    }
+    
+    [Fact]
+    public async Task Get_ActiveBatches_200_SupportsPaging()
+    {
+        // Arrange
+        const string path = "customers/99/queue/active?pageSize=2";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var queue = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Batch>>();
+        queue.Members.Should().HaveCount(2);
     }
 }
