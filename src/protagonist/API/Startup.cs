@@ -25,6 +25,7 @@ using DLCS.Repository.Customers;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
 using DLCS.Repository.Policies;
+using DLCS.Repository.Processing;
 using DLCS.Repository.Spaces;
 using DLCS.Repository.Storage;
 using DLCS.Web.Auth;

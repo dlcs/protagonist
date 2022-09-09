@@ -173,4 +173,40 @@ public static class ControllerBaseX
                 $"{errorTitle}: Storage limit exceeded"),
             _ => controller.HydraProblem(entityResult.Error, instance, 500, errorTitle),
         };
+
+    /// <summary>
+    /// Create an IActionResult from specified FetchEntityResult{T}.
+    /// This will be the Hydra model + 200 on success. Or a Hydra
+    /// error and appropriate status code if failed.
+    /// </summary>
+    /// <param name="controller">Current controllerBase object</param>
+    /// <param name="entityResult">Result to transform</param>
+    /// <param name="hydraBuilder">Delegate to transform ModifyEntityResult.Entity to Hydra representation</param>
+    /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
+    /// <param name="errorTitle">
+    ///     The value for <see cref="Error.Title" />. In some instances this will be prepended to the actual error name.
+    ///     e.g. errorTitle + ": Conflict"
+    /// </param>
+    /// <typeparam name="T">Type of entity being upserted</typeparam>
+    /// <returns>
+    /// ActionResult generated from FetchEntityResult
+    /// </returns>
+    public static IActionResult FetchResultToHttpResult<T>(this ControllerBase controller,
+        FetchEntityResult<T> entityResult,
+        Func<T, DlcsResource> hydraBuilder, string? instance,
+        string? errorTitle)
+        where T : class
+    {
+        if (entityResult.Error)
+        {
+            return controller.HydraProblem(entityResult.ErrorMessage, instance, 500, errorTitle);
+        }
+        
+        if (entityResult.EntityNotFound || entityResult.Entity == null)
+        {
+            return controller.HydraNotFound();
+        }
+
+        return controller.Ok(hydraBuilder(entityResult.Entity));
+    }
 }

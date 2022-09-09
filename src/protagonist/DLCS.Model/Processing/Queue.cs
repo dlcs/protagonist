@@ -1,4 +1,4 @@
-﻿namespace DLCS.Model.Customers;
+﻿namespace DLCS.Model.Processing;
 
 public class Queue
 {

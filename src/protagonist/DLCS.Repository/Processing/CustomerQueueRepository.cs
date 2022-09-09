@@ -1,15 +1,21 @@
+using System;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Model.Customers;
 using DLCS.Model.Processing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
-namespace DLCS.Repository.Customers;
+namespace DLCS.Repository.Processing;
 
 public class CustomerQueueRepository : IDapperContextRepository, ICustomerQueueRepository
 {
+    private readonly ILogger<CustomerQueueRepository> logger;
     public DlcsContext DlcsContext { get; }
     
-    public CustomerQueueRepository(DlcsContext dlcsContext)
+    public CustomerQueueRepository(DlcsContext dlcsContext, ILogger<CustomerQueueRepository> logger)
     {
+        this.logger = logger;
         DlcsContext = dlcsContext;
     }
 
@@ -18,15 +24,24 @@ public class CustomerQueueRepository : IDapperContextRepository, ICustomerQueueR
         return (await DlcsContext.Queues.FindAsync(customer)).Size;
     }
 
-    public async Task<CustomerQueue> Get(int customer, string name)
+    public async Task<CustomerQueue?> Get(int customer, string name, CancellationToken cancellationToken)
     {
-        const string sql = @"SELECT 
+        try
+        {
+            // NOTE - this is currently difficult to migrate to EF due to how SET operations are handled
+            const string sql = @"SELECT 
 q.""Customer"", q.""Size"", q.""Name"", b.""BatchesWaiting"", b.""ImagesWaiting"" FROM ""Queues"" q,
 	(SELECT COUNT(""Id"") AS ""BatchesWaiting"", SUM(""Count"") - SUM(""Completed"") AS ""ImagesWaiting"" 
     FROM ""Batches"" WHERE ""Customer"" = @customer AND ""Finished"" IS NULL AND ""Superseded"" = false) b
   WHERE q.""Customer"" = @customer AND ""Name"" = @name
 ";
-        return await this.QueryFirstOrDefaultAsync<CustomerQueue>(sql, new {customer, name});
+            return await this.QueryFirstOrDefaultAsync<CustomerQueue>(sql, new {customer, name});
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting customer counts for customer {Customer}, queue {Queue}", customer, name);
+            return null;
+        }
     }
 
     public async Task Put(CustomerQueue queue)

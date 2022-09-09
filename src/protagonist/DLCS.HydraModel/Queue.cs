@@ -112,6 +112,17 @@ public class QueueClass : Class
                 Returns = Names.Hydra.Collection
             }
         };
+        
+        GetHydraLinkProperty("priority").SupportedOperations = new[]
+        {
+            new Operation
+            {
+                Id = "_:customer_queue_priority_collection_retrieve",
+                Method = "GET",
+                Label = "Retrieves the priority batches for customer.",
+                Returns = Names.Hydra.Collection
+            }
+        };
     }
 
     public static Operation[] GetSpecialQueueOperations()

@@ -85,4 +85,45 @@ public abstract class HydraController : Controller
             return this.HydraProblem(ex.Message, null, 500, errorTitle);
         }
     }
+    
+    /// <summary>
+    /// Handle an GET request - this takes a IRequest which returns a FetchEntityResult{T}.
+    /// The request is sent and result is transformed to an http hydra result.  
+    /// </summary>
+    /// <param name="request">IRequest to fetch data</param>
+    /// <param name="hydraBuilder">Delegate to transform returned entity to a Hydra representation</param>
+    /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
+    /// <param name="errorTitle">
+    /// The value for <see cref="Error.Title" />. In some instances this will be prepended to the actual error name.
+    /// e.g. errorTitle + ": Conflict"
+    /// </param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <typeparam name="T">Type of entity being upserted</typeparam>
+    /// <returns>
+    /// ActionResult generated from FetchEntityResult. This will be the Hydra model + 200/201 on success. Or a Hydra
+    /// error and appropriate status code if failed.
+    /// </returns>
+    protected async Task<IActionResult> HandleFetch<T>(
+        IRequest<FetchEntityResult<T>> request,
+        Func<T, DlcsResource> hydraBuilder,
+        string? instance = null,
+        string? errorTitle = "Fetch failed",
+        CancellationToken cancellationToken = default)
+        where T : class
+    {
+        try
+        {
+            var result = await mediator.Send(request, cancellationToken);
+
+            return this.FetchResultToHttpResult(result, hydraBuilder, instance, errorTitle);
+        }
+        catch (APIException apiEx)
+        {
+            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode ?? 500, apiEx.Label);
+        }
+        catch (Exception ex)
+        {
+            return this.HydraProblem(ex.Message, null, 500, errorTitle);
+        }
+    }
 }
