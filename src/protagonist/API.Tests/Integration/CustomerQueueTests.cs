@@ -5,13 +5,14 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
-using DLCS.Model.Assets;
-using DLCS.Model.Processing;
 using DLCS.Repository;
 using Hydra;
 using Hydra.Collections;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
+using Batch = DLCS.Model.Assets.Batch;
+using CustomerQueue = DLCS.Model.Processing.CustomerQueue;
+using Queue = DLCS.Model.Processing.Queue;
 
 namespace API.Tests.Integration;
 
@@ -282,5 +283,36 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         queue.Members.Should().HaveCount(2);
         queue.Members.Select(b => b.Id.GetLastPathElementAsInt())
             .Should().ContainInOrder(4002, 4003);
+    }
+
+    [Fact]
+    public async Task Get_Batch_404_IfNotFound()
+    {
+        // Arrange
+        const string path = "customers/99/queue/batches/-2";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_Batch_200_IfFound()
+    {
+        // Arrange
+        const string path = "customers/99/queue/batches/4004";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var batch = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.Batch>();
+        batch.Count.Should().Be(8);
+        batch.Completed.Should().Be(2);
+        batch.Errors.Should().Be(2);
     }
 }
