@@ -228,4 +228,59 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         queue.Members.Should().HaveCount(1);
         queue.Members.Single().Id.GetLastPathElementAsInt().Should().Be(4005);
     }
+    
+    [Fact]
+    public async Task Get_Batches_200_IfNoBatchesFound()
+    {
+        // Arrange
+        var customer = -5;
+        await dbContext.Customers.AddTestCustomer(customer);
+        await dbContext.SaveChangesAsync();
+        var path = $"customers/{customer}/queue/batches";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var queue = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Batch>>();
+        queue.Members.Should().BeEmpty();
+    }
+    
+    [Fact]
+    public async Task Get_Batches_200_BatchesOrdered()
+    {
+        // Arrange
+        const string path = "customers/99/queue/batches";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var queue = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Batch>>();
+        queue.Members.Should().HaveCount(7);
+        queue.Members.Select(b => b.Id.GetLastPathElementAsInt())
+            .Should().ContainInOrder(4000, 4001, 4002, 4003, 4004, 4005, 4006);
+    }
+    
+    [Fact]
+    public async Task Get_Batches_200_SupportsPaging()
+    {
+        // Arrange
+        const string path = "customers/99/queue/batches?pageSize=2&page=2";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var queue = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Batch>>();
+        queue.Members.Should().HaveCount(2);
+        queue.Members.Select(b => b.Id.GetLastPathElementAsInt())
+            .Should().ContainInOrder(4002, 4003);
+    }
 }

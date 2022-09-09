@@ -43,6 +43,27 @@ public class CustomerQueueController : HydraController
             cancellationToken: cancellationToken
         );
     }
+    
+    /// <summary>
+    /// GET /customers/{customerId}/queue/batches
+    ///
+    /// Get details of all customer batches 
+    /// </summary>
+    /// <param name="customerId">Id of customer</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>Hydra JSON-LD Queue object</returns>
+    [HttpGet]
+    [Route("batches")]
+    public async Task<IActionResult> GetBatches([FromRoute] int customerId, CancellationToken cancellationToken)
+    {
+        var getBatches = new GetBatches(customerId);
+
+        return await HandlePagedFetch<DLCS.Model.Assets.Batch, GetBatches, Batch>(
+            getBatches,
+            batch => batch.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Get batches failed",
+            cancellationToken: cancellationToken);
+    }
 
     /// <summary>
     /// GET /customers/{customerId}/queue/active
