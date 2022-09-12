@@ -76,7 +76,7 @@ public class SqsQueueUtilities
 
         try
         {
-            var queueUrl = await GetQueueUrl(queueName, cancellationToken);
+            var queueUrl = await QueueLookup.GetQueueUrl(this, queueName, cancellationToken);
             var queueAttributes = await client.GetQueueAttributesAsync(queueUrl, attributes, cancellationToken);
 
             return queueAttributes.ApproximateNumberOfMessages +

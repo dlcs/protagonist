@@ -24,7 +24,7 @@ public class SqsQueueSender : IQueueSender
     public async Task<bool> QueueMessage(string queueName, string messageContents,
         CancellationToken cancellationToken = default)
     {
-        var queueUrl = await GetQueueUrl(queueName, cancellationToken);
+        var queueUrl = await QueueLookup.GetQueueUrl(queueUtilities, queueName, cancellationToken);
         try
         {
             var result = await client.SendMessageAsync(queueUrl, messageContents, cancellationToken);
@@ -35,14 +35,5 @@ public class SqsQueueSender : IQueueSender
             logger.LogError(ex, "Error sending message to {QueueName}", queueName);
             return false;
         }
-    }
-
-    private async ValueTask<string> GetQueueUrl(string queueName, CancellationToken cancellationToken)
-    {
-        if (nameUrlLookup.TryGetValue(queueName, out var dictQueueUrl)) return dictQueueUrl;
-
-        var queueUrl = await queueUtilities.GetQueueUrl(queueName, cancellationToken);
-        nameUrlLookup[queueName] = queueUrl;
-        return queueUrl;
     }
 }

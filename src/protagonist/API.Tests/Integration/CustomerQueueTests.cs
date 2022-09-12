@@ -377,4 +377,17 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         queue.ImagesWaiting.Should().Be(5);
         queue.BatchesWaiting.Should().Be(2);
     }
+    
+    [Fact]
+    public async Task Get_Queue_200_DoesNotRequireAuth()
+    {
+        // Arrange
+        const string path = "queue";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
 }
