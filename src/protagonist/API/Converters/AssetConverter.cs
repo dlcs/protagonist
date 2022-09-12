@@ -371,8 +371,4 @@ public static class AssetConverter
 
         return assetFilter;
     }
-
-
-
-
 }

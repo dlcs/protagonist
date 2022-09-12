@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using API.Infrastructure.Requests;
 using DLCS.Model.Assets;
@@ -36,7 +37,7 @@ public class GetActiveBatchesHandler : IRequestHandler<GetActiveBatches, FetchEn
     public async Task<FetchEntityResult<PageOf<Batch>>> Handle(GetActiveBatches request, CancellationToken cancellationToken)
     {
         var result = await dlcsContext.Batches.AsNoTracking().CreatePagedResult(request, 
-            b => b.Customer == request.CustomerId && b.Finished == null && !b.Superseded,
+            q => q.Where(b => b.Customer == request.CustomerId && b.Finished == null && !b.Superseded),
             cancellationToken: cancellationToken);
         
         return FetchEntityResult<PageOf<Batch>>.Success(result);

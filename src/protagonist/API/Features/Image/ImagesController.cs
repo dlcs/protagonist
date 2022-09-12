@@ -50,7 +50,7 @@ public class ImagesController : HydraController
     /// <param name="pageSize"></param>
     /// <param name="orderBy"></param>
     /// <param name="orderByDescending"></param>
-    /// <param name="q">A serialised JSON <see cref="ImageQuery"/> object</param>
+    /// <param name="q">A serialised JSON <see cref="AssetFilter"/> object</param>
     /// <returns>A Hydra Collection of Image objects as JSON-LD</returns>
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]

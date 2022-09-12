@@ -38,7 +38,7 @@ public class GetRecentBatchesHandler : IRequestHandler<GetRecentBatches, FetchEn
     {
         var result = await dlcsContext.Batches.AsNoTracking().CreatePagedResult(
             request,
-            b => b.Customer == request.CustomerId && b.Finished != null,
+            q => q.Where(b => b.Customer == request.CustomerId && b.Finished != null),
             batches => batches.OrderByDescending(b => b.Finished), 
             cancellationToken: cancellationToken);
         

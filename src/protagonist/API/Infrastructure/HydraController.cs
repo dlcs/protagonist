@@ -164,6 +164,10 @@ public abstract class HydraController : Controller
         try
         {
             SetPaging(request);
+            if (request is IOrderableRequest orderableRequest)
+            {
+                SetOrderBy(orderableRequest);
+            }
 
             var result = await mediator.Send(request, cancellationToken);
 
@@ -221,5 +225,24 @@ public abstract class HydraController : Controller
 
         if (pagedrequest.PageSize is <= 0 or > 500) pagedrequest.PageSize = Settings.PageSize;
         if (pagedrequest.Page <= 0) pagedrequest.Page = 1;
+    }
+
+    /// <summary>
+    /// Set Field and Descending properties on specified request, reading properties from query params.
+    /// Field is from ?orderBy or ?orderByDescending. Descending true if latter, false if former.
+    /// </summary>
+    /// <param name="orderableRequest">Request object to update</param>
+    protected void SetOrderBy(IOrderableRequest orderableRequest)
+    {
+        if (Request.Query.TryGetValue("orderBy", out var orderBy))
+        {
+            orderableRequest.Field = orderBy;
+            orderableRequest.Descending = false;
+        }
+        else if (Request.Query.TryGetValue("orderByDescending", out var orderByDescending))
+        {
+            orderableRequest.Field = orderByDescending;
+            orderableRequest.Descending = true;
+        }
     }
 }

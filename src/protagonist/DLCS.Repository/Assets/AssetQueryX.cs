@@ -3,6 +3,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
+using DLCS.Model.Page;
 
 namespace DLCS.Repository.Assets;
 
@@ -12,13 +13,20 @@ namespace DLCS.Repository.Assets;
 public static class AssetQueryX
 {
     /// <summary>
-    /// 
+    /// Convert provided orderable to an .OrderBy or .OrderByDescending clause.
+    /// The orderBy field can be the API version of property or the full property version.
+    /// Defaults to "Created" field ordering if no field specified.
     /// </summary>
-    /// <param name="assetQuery"></param>
-    /// <param name="orderBy"></param>
-    /// <param name="descending"></param>
-    /// <returns></returns>
-    public static IQueryable<Asset> AsOrderedAssetQuery(this IQueryable<Asset> assetQuery, string orderBy, bool descending = false)
+    public static IQueryable<Asset> AsOrderedAssetQuery(this IQueryable<Asset> assetQuery, IOrderableRequest orderable)
+        => assetQuery.AsOrderedAssetQuery(orderable.Field, orderable.Descending);
+
+    /// <summary>
+    /// Convert provided orderBy and descending fields to an .OrderBy or .OrderByDescending clause.
+    /// The orderBy field can be the API version of property or the full property version.
+    /// Defaults to "Created" field ordering if no field specified.
+    /// </summary>
+    public static IQueryable<Asset> AsOrderedAssetQuery(this IQueryable<Asset> assetQuery, string? orderBy,
+        bool descending = false)
     {
         var field = GetPropertyName(orderBy);
         var lambda = (dynamic)CreateExpression(typeof(Asset), field);
@@ -27,7 +35,7 @@ public static class AssetQueryX
             : Queryable.OrderBy(assetQuery, lambda);
     }
 
-    private static string GetPropertyName(string orderBy)
+    private static string GetPropertyName(string? orderBy)
     {
         // This needs to be moved because it knows about hydra name values.
         if (string.IsNullOrWhiteSpace(orderBy) || orderBy.Length < 2)
@@ -74,7 +82,6 @@ public static class AssetQueryX
         }
 
         var filtered = queryable;
-        // is HasText right here? Would we want to select string1 = ""?
         if (assetFilter.Reference1.HasText())
         {
             filtered = filtered.Where(a => a.Reference1 == assetFilter.Reference1);
@@ -107,5 +114,4 @@ public static class AssetQueryX
 
         return filtered;
     }
-    
 }

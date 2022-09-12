@@ -5,12 +5,10 @@ using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Strings;
 using DLCS.HydraModel;
-using DLCS.Model.Spaces;
 using DLCS.Web.Requests;
 using FluentValidation.Results;
 using Hydra;
 using Hydra.Model;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Infrastructure;
@@ -38,6 +36,8 @@ public static class ControllerBaseX
 
         return orderByField;
     }
+    
+    
 
     /// <summary>
     /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
@@ -48,7 +48,6 @@ public static class ControllerBaseX
     /// <param name="title">The value for <see cref="Error.Title" />.</param>
     /// <param name="type">The value for <see cref="Error.Type" />.</param>
     /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
-    [NonAction]
     public static ObjectResult HydraProblem(
         this ControllerBase controller,
         IEnumerable<string>? errorMessages = null,
@@ -76,7 +75,6 @@ public static class ControllerBaseX
     /// <param name="title">The value for <see cref="Error.Title" />.</param>
     /// <param name="type">The value for <see cref="Error.Type" />.</param>
     /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
-    [NonAction]
     public static ObjectResult HydraProblem(
         this ControllerBase controller,
         string? detail = null,

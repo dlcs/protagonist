@@ -390,4 +390,88 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
+    
+    [Fact]
+    public async Task Get_BatchImages_404_IfBatchNotFoundForCustomer()
+    {
+        // Arrange
+        const string path = "customers/99/queue/batches/-1200/images";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_BatchImages_200_IfImagesFound()
+    {
+        // Arrange
+        var idRoot = $"99/1/{nameof(Get_BatchImages_200_IfImagesFound)}";
+        await dbContext.Images.AddTestAsset($"{idRoot}1", batch: 4006);
+        await dbContext.Images.AddTestAsset($"{idRoot}2", batch: 4006);
+        await dbContext.Images.AddTestAsset($"{idRoot}3", batch: 4006);
+        await dbContext.SaveChangesAsync();
+        
+        // Not batch 4006 is added in ctor
+        const string path = "customers/99/queue/batches/4006/images";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        images.TotalItems.Should().Be(3);
+        images.Members.Should().HaveCount(3);
+    }
+    
+    [Fact]
+    public async Task Get_BatchImages_200_IfImagesFound_SupportsPaging()
+    {
+        // Arrange
+        var idRoot = $"99/1/{nameof(Get_BatchImages_200_IfImagesFound_SupportsPaging)}";
+        await dbContext.Images.AddTestAsset($"{idRoot}1", batch: 4005);
+        await dbContext.Images.AddTestAsset($"{idRoot}2", batch: 4005);
+        await dbContext.Images.AddTestAsset($"{idRoot}3", batch: 4005);
+        await dbContext.SaveChangesAsync();
+        
+        const string path = "customers/99/queue/batches/4005/images?pageSize=2&page=2";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        images.TotalItems.Should().Be(3);
+        images.Members.Should().HaveCount(1);
+    }
+    
+    [Fact]
+    public async Task Get_BatchImages_200_IfImagesFound_SupportsQuery()
+    {
+        // Arrange
+        var idRoot = $"99/1/{nameof(Get_BatchImages_200_IfImagesFound_SupportsQuery)}";
+        await dbContext.Images.AddTestAsset($"{idRoot}1", batch: 4004, num1: 10);
+        await dbContext.Images.AddTestAsset($"{idRoot}2", batch: 4004, num1: 9);
+        await dbContext.Images.AddTestAsset($"{idRoot}3", batch: 4004, num1: 10);
+        await dbContext.SaveChangesAsync();
+        
+        var q = @"{""number1"":10}";
+        var path = "customers/99/queue/batches/4004/images?q=" + q;
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        images.TotalItems.Should().Be(2);
+        images.Members.Should().HaveCount(2);
+    }
 }

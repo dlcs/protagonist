@@ -27,11 +27,12 @@ public static class PagingHelpers
     /// </returns>
     public static async Task<PageOf<T>> CreatePagedResult<T>(this IQueryable<T> entities,
         IPagedRequest request,
-        Expression<Func<T, bool>> filter,
+        Func<IQueryable<T>, IQueryable<T>> filter,
         Func<IQueryable<T>, IQueryable<T>>? entityOperations = null,
         CancellationToken cancellationToken = default) where T : class
     {
-        var entityQuery = entities.Where(filter);
+        var workingEntities = filter(entities);
+        var entityQuery = workingEntities;
         if (entityOperations != null)
         {
             entityQuery = entityOperations(entityQuery);
@@ -40,7 +41,7 @@ public static class PagingHelpers
         var result = new PageOf<T>
         {
             Page = request.Page,
-            Total = await entities.CountAsync(filter, cancellationToken: cancellationToken),
+            Total = await workingEntities.CountAsync(cancellationToken: cancellationToken),
             Entities = await entityQuery.WithPaging(request).ToListAsync(cancellationToken),
             PageSize = request.PageSize
         };

@@ -1,13 +1,16 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using API.Converters;
 using API.Features.Queues.Converters;
 using API.Features.Queues.Requests;
 using API.Infrastructure;
 using API.Settings;
-using DLCS.HydraModel;
+using DLCS.Core.Strings;
+using DLCS.Model.Assets;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Batch = DLCS.HydraModel.Batch;
 
 namespace API.Features.Queues;
 
@@ -70,7 +73,7 @@ public class CustomerQueueController : HydraController
     /// <summary>
     /// GET /customers/{customerId}/queue/batches/{batchId}
     /// 
-    /// Get details of all customer batches 
+    /// Get details of specified batches 
     /// </summary>
     /// <param name="customerId">Id of customer</param>
     /// <param name="batchId">Id of batch to load</param>
@@ -90,7 +93,40 @@ public class CustomerQueueController : HydraController
             cancellationToken: cancellationToken
         );
     }
-    
+
+    /// <summary>
+    /// GET /customers/{customerId}/queue/batches/{batchId}/images
+    /// 
+    /// Get details of all images within batch.
+    /// </summary>
+    /// <param name="customerId">Id of customer</param>
+    /// <param name="batchId">Id of batch to load</param>
+    /// <param name="q">
+    /// Optional query parameter. A serialised JSON <see cref="AssetFilter"/> object</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>Hydra JSON-LD Queue object</returns>
+    [HttpGet]
+    [Route("batches/{batchId}/images")]
+    public async Task<IActionResult> GetBatchImages([FromRoute] int customerId, [FromRoute] int batchId,
+        [FromQuery] string? q = null, CancellationToken cancellationToken = default)
+    {
+        var assetFilter = Request.GetAssetFilterFromQParam(q);
+        assetFilter = Request.UpdateAssetFilterFromQueryStringParams(assetFilter);
+        if (q.HasText() && assetFilter == null)
+        {
+            return this.HydraProblem("Could not parse query", null, 400);
+        }
+
+        var getCustomerRequest = new GetBatchImages(customerId, batchId, assetFilter);
+
+        return await HandlePagedFetch<Asset, GetBatchImages, DLCS.HydraModel.Image>(
+            getCustomerRequest,
+            image => image.ToHydra(GetUrlRoots()),
+            errorTitle: "Get Batch Images failed",
+            cancellationToken: cancellationToken
+        );
+    }
+
     /// <summary>
     /// GET /customers/{customerId}/queue/batches
     ///

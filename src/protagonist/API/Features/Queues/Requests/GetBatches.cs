@@ -37,7 +37,7 @@ public class GetBatchesHandler : IRequestHandler<GetBatches, FetchEntityResult<P
     public async Task<FetchEntityResult<PageOf<Batch>>> Handle(GetBatches request, CancellationToken cancellationToken)
     {
         var result = await dlcsContext.Batches.AsNoTracking().CreatePagedResult(request, 
-            b => b.Customer == request.CustomerId,
+            q => q.Where(b => b.Customer == request.CustomerId),
             batches => batches.OrderBy(b => b.Id),
             cancellationToken: cancellationToken);
         
