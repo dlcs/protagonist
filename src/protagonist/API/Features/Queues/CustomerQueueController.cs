@@ -1,12 +1,15 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Queues.Converters;
 using API.Features.Queues.Requests;
+using API.Features.Queues.Validation;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
+using Hydra.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -46,7 +49,32 @@ public class CustomerQueueController : HydraController
             cancellationToken: cancellationToken
         );
     }
-    
+
+    /// <summary>
+    /// POST /customers/{customerId}/queue
+    ///
+    /// Create a batch of images to ingest
+    /// </summary>
+    /// <param name="customerId">Id of customer to create batch for</param>
+    /// <param name="images"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>Hydra JSON-LD Batch object</returns>
+    [HttpPost]
+    public async Task<IActionResult> GetCustomerQueue(
+        [FromRoute] int customerId,
+        [FromBody] HydraCollection<DLCS.HydraModel.Image> images,
+        [FromServices] QueuePostValidator validator,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await validator.ValidateAsync(images, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
+        
+        throw new NotImplementedException();
+    }
+
     /// <summary>
     /// GET /customers/{customerId}/queue/priority
     ///
