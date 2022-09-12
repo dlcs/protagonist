@@ -6,7 +6,6 @@ using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
-using DLCS.Repository.Assets;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Assets;
@@ -38,33 +37,7 @@ public class ApiAssetRepository : IApiAssetRepository
     public Task<ImageLocation?> GetImageLocation(AssetId assetId) => assetRepository.GetImageLocation(assetId);
     
     public Task<ResultStatus<DeleteResult>> DeleteAsset(AssetId assetId) => assetRepository.DeleteAsset(assetId);
-
-    public async Task<PageOfAssets?> GetPageOfAssets(int customerId, int spaceId, int page, int pageSize,
-        string? orderBy, bool descending, AssetFilter? assetFilter, CancellationToken cancellationToken)
-    {
-        var space = await dlcsContext.Spaces.SingleOrDefaultAsync(
-            s => s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
-        if (space == null)
-        {
-            return null;
-        }
-
-        var result = new PageOfAssets
-        {
-            Page = page,
-            Total = await dlcsContext.Images.CountAsync(
-                a => a.Customer == customerId && a.Space == spaceId, cancellationToken: cancellationToken),
-            Assets = await dlcsContext.Images.AsNoTracking()
-                .Where(a => a.Customer == customerId && a.Space == spaceId)
-                .ApplyAssetFilter(assetFilter, false)
-                .AsOrderedAssetQuery(orderBy, descending)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(cancellationToken: cancellationToken)
-        };
-        return result;
-    }
-
+    
     /// <summary>
     /// 
     /// </summary>

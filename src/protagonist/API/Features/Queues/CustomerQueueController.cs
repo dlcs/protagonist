@@ -100,7 +100,7 @@ public class CustomerQueueController : HydraController
     /// Get details of all images within batch.
     /// </summary>
     /// <param name="customerId">Id of customer</param>
-    /// <param name="batchId">Id of batch to load</param>
+    /// <param name="batchId">Id of batch to load images from</param>
     /// <param name="q">
     /// Optional query parameter. A serialised JSON <see cref="AssetFilter"/> object</param>
     /// <param name="cancellationToken"></param>

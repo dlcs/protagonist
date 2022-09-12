@@ -1,64 +1,51 @@
-using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using API.Features.Assets;
-using API.Features.Image;
+using API.Infrastructure.Requests;
 using DLCS.Model.Assets;
+using DLCS.Model.Page;
+using DLCS.Repository;
+using DLCS.Repository.Assets;
 using DLCS.Web.Auth;
 using MediatR;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Space.Requests;
 
-public class GetSpaceImages : IRequest<GetSpaceImagesResult>
+public class GetSpaceImages : IRequest<FetchEntityResult<PageOf<Asset>>>, IPagedRequest, IOrderableRequest
 {
-    public GetSpaceImages(bool descending, int page, int pageSize, int spaceId, int? customerId = null,
-        string? orderBy = null, AssetFilter? assetFilter = null)
+    public GetSpaceImages(int spaceId, int? customerId = null, AssetFilter? assetFilter = null)
     {
-        Page = page;
-        PageSize = pageSize;
         CustomerId = customerId;
         SpaceId = spaceId;
-        OrderBy = orderBy;
-        Descending = descending;
         AssetFilter = assetFilter;
     }
     
-    public int SpaceId { get; set; }
+    public int SpaceId { get; }
     public int? CustomerId { get; }
-    public int Page { get; }
-    public int PageSize { get; }
-    public string? OrderBy { get; }
-    public bool Descending { get; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public string? Field { get; set; }
+    public bool Descending { get; set; }
     
     public AssetFilter? AssetFilter { get; }
 }
 
-public class GetSpaceImagesResult
+public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, FetchEntityResult<PageOf<Asset>>>
 {
-    public PageOfAssets? PageOfAssets { get; set; }
-    public List<string>? Errors { get; set; }
-    public bool SpaceExistsForCustomer { get; set; }
-}
-
-public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, GetSpaceImagesResult>
-{
-    private readonly IApiAssetRepository assetRepository;
     private readonly ClaimsPrincipal principal;
-    private readonly ILogger logger;
+    private readonly DlcsContext dlcsContext;
     
     public GetSpaceImagesHandler(
-        IApiAssetRepository assetRepository, 
         ClaimsPrincipal principal,
-        ILogger<GetAllSpacesHandler> logger)
+        DlcsContext dlcsContext)
     {
-        this.assetRepository = assetRepository;
         this.principal = principal;
-        this.logger = logger;
+        this.dlcsContext = dlcsContext;
     }
     
-    public async Task<GetSpaceImagesResult> Handle(GetSpaceImages request, CancellationToken cancellationToken)
+    public async Task<FetchEntityResult<PageOf<Asset>>> Handle(GetSpaceImages request, CancellationToken cancellationToken)
     {
         int? customerId = request.CustomerId ?? principal.GetCustomerId();
         if (customerId == null)
@@ -66,26 +53,27 @@ public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, GetSpaceIma
             throw new BadRequestException("No customer Id supplied");
         }
         
-        var pageOfAssets = await assetRepository.GetPageOfAssets(
-            customerId.Value, request.SpaceId,
-            request.Page, request.PageSize,
-            request.OrderBy, request.Descending,
-            request.AssetFilter,
+        var result = await dlcsContext.Images.AsNoTracking().CreatePagedResult(
+            request,
+            i => i
+                .Where(a => a.Customer == request.CustomerId && a.Space == request.SpaceId)
+                .ApplyAssetFilter(request.AssetFilter),
+            images => images.AsOrderedAssetQuery(request),
             cancellationToken);
-
-        if (pageOfAssets == null)
+        
+        // Any empty result set could be the result of an applied asset filter - check if space exists
+        if (result.Total == 0 && !await DoesSpaceExist(request, cancellationToken))
         {
-            return new GetSpaceImagesResult
-            {
-                Errors = new List<string>() { "Space not found" },
-                SpaceExistsForCustomer = false
-            };
+            return FetchEntityResult<PageOf<Asset>>.NotFound();
         }
 
-        return new GetSpaceImagesResult
-        {
-            PageOfAssets = pageOfAssets,
-            SpaceExistsForCustomer = true
-        };
+        return FetchEntityResult<PageOf<Asset>>.Success(result);
+    }
+    
+    private async Task<bool> DoesSpaceExist(GetSpaceImages request, CancellationToken cancellationToken)
+    {
+        var spaceExists = await dlcsContext.Spaces.AsNoTracking()
+            .AnyAsync(b => b.Customer == request.CustomerId && b.Id == request.SpaceId, cancellationToken);
+        return spaceExists;
     }
 }

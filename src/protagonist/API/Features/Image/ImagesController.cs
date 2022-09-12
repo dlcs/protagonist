@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using API.Converters;
 using API.Exceptions;
@@ -44,52 +45,31 @@ public class ImagesController : HydraController
     /// 
     /// A page of images within a Space.
     /// </summary>
-    /// <param name="customerId"></param>
-    /// <param name="spaceId"></param>
-    /// <param name="page"></param>
-    /// <param name="pageSize"></param>
-    /// <param name="orderBy"></param>
-    /// <param name="orderByDescending"></param>
+    /// <param name="customerId">Id of customer</param>
+    /// <param name="spaceId">Id of space to load images from</param>
     /// <param name="q">A serialised JSON <see cref="AssetFilter"/> object</param>
     /// <returns>A Hydra Collection of Image objects as JSON-LD</returns>
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
     [ProducesResponseType(404, Type = typeof(Error))]
     public async Task<IActionResult> GetImages(
-        int customerId, int spaceId,
-        int? page = 1, int? pageSize = -1,
-        string? orderBy = null, string? orderByDescending = null,
-        string? q = null)
+        [FromRoute] int customerId, [FromRoute] int spaceId, [FromQuery] string? q = null, 
+        CancellationToken cancellationToken = default)
     {
-        if (pageSize is null or < 0) pageSize = Settings.PageSize;
-        if (page is null or < 0) page = 1;
         var assetFilter = Request.GetAssetFilterFromQParam(q);
         assetFilter = Request.UpdateAssetFilterFromQueryStringParams(assetFilter);
         if (q.HasText() && assetFilter == null)
         {
             return this.HydraProblem("Could not parse query", null, 400);
         }
-        var orderByField = this.GetOrderBy(orderBy, orderByDescending, out var descending);
-        var imagesRequest = new GetSpaceImages(descending, page.Value, pageSize.Value, 
-            spaceId, customerId, orderByField, assetFilter);
-        var spaceImagesResult = await mediator.Send(imagesRequest);
-        if (!spaceImagesResult.SpaceExistsForCustomer || spaceImagesResult.PageOfAssets == null)
-        {
-            return this.HydraNotFound(spaceImagesResult.Errors?[0]);
-        }
-
-        var urlRoots = GetUrlRoots();
-        var collection = new HydraCollection<DLCS.HydraModel.Image>
-        {
-            WithContext = true,
-            Members = spaceImagesResult.PageOfAssets.Assets
-                .Select(a => a.ToHydra(urlRoots)).ToArray(),
-            TotalItems = spaceImagesResult.PageOfAssets.Total,
-            PageSize = pageSize,
-            Id = Request.GetJsonLdId()
-        };
-        PartialCollectionView.AddPaging(collection, page.Value, pageSize.Value, orderByField, descending);
-        return Ok(collection);
+        
+        var imagesRequest = new GetSpaceImages(spaceId, customerId, assetFilter);
+        return await HandlePagedFetch<Asset, GetSpaceImages, DLCS.HydraModel.Image>(
+            imagesRequest,
+            image => image.ToHydra(GetUrlRoots()),
+            errorTitle: "Get Space Images failed",
+            cancellationToken: cancellationToken
+        );
     }
 
     /// <summary>
