@@ -23,10 +23,15 @@ public class ModifyEntityResult<T>
     /// Optional error message if didn't succeed
     /// </summary>
     public string? Error { get; private init; }
+    
+    /// <summary>
+    /// Explicit value stating success or failure
+    /// </summary>
+    public bool IsSuccess { get; private init; }
 
     public static ModifyEntityResult<T> Failure(string error, WriteResult result = WriteResult.Unknown)
-        => new() { Error = error, WriteResult = result };
+        => new() { Error = error, WriteResult = result, IsSuccess = false };
 
     public static ModifyEntityResult<T> Success(T entity, WriteResult result = WriteResult.Updated)
-        => new() { Entity = entity, WriteResult = result };
+        => new() { Entity = entity, WriteResult = result, IsSuccess = true };
 }

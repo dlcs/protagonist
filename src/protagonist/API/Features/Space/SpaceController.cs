@@ -83,7 +83,6 @@ public class SpaceController : HydraController
     public async Task<IActionResult> CreateSpace(
         [FromRoute] int customerId, [FromBody] DLCS.HydraModel.Space space)
     {
-        logger.LogInformation("API will create a space");
         if (string.IsNullOrWhiteSpace(space.Name))
         {
             return this.HydraProblem("A space must have a name.", null, 400, "Invalid Space");
@@ -93,6 +92,8 @@ public class SpaceController : HydraController
             return this.HydraProblem("Space must be created for an existing Customer.", null, 400, "Invalid Space");
         }
         
+        logger.LogDebug("API will create space {SpaceName} for {CustomerId}", space.Name, customerId);
+
         var command = new CreateSpace(customerId, space.Name)
         {
             Roles = space.DefaultRoles,

@@ -126,7 +126,7 @@ public static class ControllerBaseX
     /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
     public static ObjectResult ValidationFailed(this ControllerBase controller, ValidationResult validationResult)
     {
-        var message = string.Join(". ", validationResult.Errors.Select(s => s.ErrorMessage));
+        var message = string.Join(". ", validationResult.Errors.Select(s => s.ErrorMessage).Distinct());
         return controller.HydraProblem(message, null, 400, "Bad request");
     }
     

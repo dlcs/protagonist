@@ -23,6 +23,7 @@ public class AssetNotificationSender : IAssetNotificationSender
     
     public async Task<bool> SendIngestAssetRequest(Asset assetToIngest, CancellationToken cancellationToken = default)
     {
+        // TODO - increment queue count
         var ingestAssetRequest = new IngestAssetRequest(assetToIngest, DateTime.UtcNow);
         var success = await engineClient.AsynchronousIngest(ingestAssetRequest, cancellationToken);
         return success;

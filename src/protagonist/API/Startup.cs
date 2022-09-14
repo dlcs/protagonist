@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using API.Auth;
 using API.Features.Assets;
+using API.Features.Image.Ingest;
+using API.Features.Image.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.AWS.Configuration;
@@ -93,6 +95,7 @@ public class Startup
             .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
             .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
+            .AddScoped<AssetProcessor>()
             .AddTransient<TimingHandler>()
             .AddValidatorsFromAssemblyContaining<Startup>()
             .ConfigureMediatR()

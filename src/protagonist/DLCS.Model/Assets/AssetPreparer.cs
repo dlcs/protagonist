@@ -68,11 +68,13 @@ public static class AssetPreparer
     /// Permit setting of fields that would not be allowed on API calls. Use with caution - all values submitted will
     /// be saved as this effectively drops validation.
     /// </param>
+    /// <param name="isBatchUpdate">True if this is part of batch creation - allows Batch value to be set.</param>
     /// <returns>A validation result</returns>
     public static AssetPreparationResult PrepareAssetForUpsert(
         Asset? existingAsset,
         Asset updateAsset,
-        bool allowNonApiUpdates)
+        bool allowNonApiUpdates,
+        bool isBatchUpdate)
     {
         bool requiresReingest = existingAsset == null;
         
@@ -83,7 +85,7 @@ public static class AssetPreparer
         }
 
         // Validate there are no issues
-        var prepareAssetForUpsert = ValidateRequests(existingAsset, updateAsset, allowNonApiUpdates);
+        var prepareAssetForUpsert = ValidateRequests(existingAsset, updateAsset, allowNonApiUpdates, isBatchUpdate);
         if (prepareAssetForUpsert != null) return prepareAssetForUpsert;
 
         if (existingAsset != null)
@@ -134,7 +136,7 @@ public static class AssetPreparer
     }
 
     private static AssetPreparationResult? ValidateRequests(Asset? existingAsset, Asset updateAsset,
-        bool allowNonApiUpdates)
+        bool allowNonApiUpdates, bool isBatchUpdate)
     {
         if (existingAsset is { NotForDelivery: true })
         {
@@ -200,7 +202,8 @@ public static class AssetPreparer
                 return AssetPreparationResult.Failure("Error cannot be edited.");
             }
 
-            if (updateAsset.Batch.HasValue && updateAsset.Batch != 0 && updateAsset.Batch != existingAsset.Batch)
+            if (!isBatchUpdate && updateAsset.Batch.HasValue && updateAsset.Batch != 0 &&
+                updateAsset.Batch != existingAsset.Batch)
             {
                 return AssetPreparationResult.Failure("Batch cannot be edited.");
             }

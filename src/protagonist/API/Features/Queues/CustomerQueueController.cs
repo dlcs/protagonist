@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Converters;
@@ -60,7 +61,7 @@ public class CustomerQueueController : HydraController
     /// <param name="cancellationToken"></param>
     /// <returns>Hydra JSON-LD Batch object</returns>
     [HttpPost]
-    public async Task<IActionResult> GetCustomerQueue(
+    public async Task<IActionResult> CreateCustomerQueue(
         [FromRoute] int customerId,
         [FromBody] HydraCollection<DLCS.HydraModel.Image> images,
         [FromServices] QueuePostValidator validator,
@@ -72,7 +73,13 @@ public class CustomerQueueController : HydraController
             return this.ValidationFailed(validationResult);
         }
         
-        throw new NotImplementedException();
+        var request =
+            new CreateBatchOfImages(customerId, images.Members!.Select(i => i.ToDlcsModel(customerId)).ToList());
+
+        return await HandleUpsert(request,
+            batch => batch.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Create batch failed",
+            cancellationToken: cancellationToken);
     }
 
     /// <summary>

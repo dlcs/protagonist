@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Guard;
 using DLCS.Core.Threading;
 using DLCS.Model.Policies;
 using DLCS.Model.Storage;
@@ -30,6 +31,7 @@ public class CustomerStorageRepository : IStorageRepository
     public async Task<CustomerStorage?> GetCustomerStorage(int customerId, int spaceId, bool createOnDemand,
         CancellationToken cancellationToken)
     {
+        // TODO - periodically recalculate this as-per Deliverator
         var storageForSpace =
             await dlcsContext.CustomerStorages.SingleOrDefaultAsync(cs =>
                 cs.Customer == customerId && cs.Space == spaceId, cancellationToken: cancellationToken);
@@ -64,15 +66,9 @@ public class CustomerStorageRepository : IStorageRepository
         using var processLock = await asyncLocker.LockAsync(key, cancellationToken);
         try
         {
-            var customerStorage = await GetCustomerStorage(customer, 0, true, cancellationToken);
-            if (customerStorage == null || string.IsNullOrEmpty(customerStorage.StoragePolicy))
-            {
-                throw new ApplicationException(
-                    $"CustomerStorage for Customer {customer}, Space 0 not found or does not have a storage policy");
-            }
-            
-            var policy = await policyRepository.GetStoragePolicy(customerStorage.StoragePolicy, cancellationToken);
-            return customerStorage.TotalSizeOfStoredImages + proposedNewFileSize <= policy.MaximumTotalSizeOfStoredImages;
+            var storageCounts = await GetStorageMetrics(customer, cancellationToken);
+            return storageCounts.CurrentTotalSizeStoredImages + proposedNewFileSize <=
+                   storageCounts.MaximumTotalSizeOfStoredImages;
         }
         catch (Exception ex)
         {
@@ -114,17 +110,14 @@ public class CustomerStorageRepository : IStorageRepository
         // return sumSummary;
     }
 
-    public async Task<ImageCountStorageMetric> GetImageCounts(int customerId, CancellationToken cancellationToken)
+    public async Task<AssetStorageMetric> GetStorageMetrics(int customerId, CancellationToken cancellationToken)
     {
         var space0Record = await GetCustomerStorage(customerId, 0, true, cancellationToken);
         var policy = await policyRepository.GetStoragePolicy(space0Record.StoragePolicy, cancellationToken);
-        return new ImageCountStorageMetric
+        return new AssetStorageMetric
         {
-            PolicyId = policy.Id,
-            MaximumNumberOfStoredImages = policy.MaximumNumberOfStoredImages,
-            CurrentNumberOfStoredImages = space0Record.NumberOfStoredImages,
-            MaximumTotalSizeOfStoredImages = policy.MaximumTotalSizeOfStoredImages,
-            CurrentTotalSizeStoredImages = space0Record.TotalSizeOfStoredImages
+            Policy = policy.ThrowIfNull(nameof(policy))!,
+            CustomerStorage = space0Record,
         };
     }
 }
