@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,7 +30,16 @@ public class AssetNotificationSender : IAssetNotificationSender
         var success = await engineClient.AsynchronousIngest(ingestAssetRequest, cancellationToken);
         return success;
     }
-    
+
+    public async Task<int> SendIngestAssetsRequest(IReadOnlyList<Asset> assets, bool isPriority,
+        CancellationToken cancellationToken = default)
+    {
+        // TODO - increment queue count
+        var ingestAssetRequests = assets.Select(a => new IngestAssetRequest(a, DateTime.UtcNow)).ToList();
+        var sent = await engineClient.AsynchronousIngestBatch(ingestAssetRequests, isPriority, cancellationToken);
+        return sent;
+    }
+
     public async Task<HttpStatusCode> SendImmediateIngestAssetRequest(Asset assetToIngest, bool derivativesOnly, CancellationToken cancellationToken = default)
     {
         var ingestAssetRequest = new IngestAssetRequest(assetToIngest, DateTime.UtcNow);

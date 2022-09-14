@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Features.Image.Ingest;
-using API.Features.Image.Requests;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Assets;
@@ -24,14 +23,13 @@ public class CreateBatchOfImages : IRequest<ModifyEntityResult<Batch>>
 {
     public int CustomerId { get; }
     public IReadOnlyList<Asset> Assets { get; }
-    
-    public string Queue { get; }
+    public bool IsPriority { get; }
 
     public CreateBatchOfImages(int customerId, IReadOnlyList<Asset> assets, string queue = "default")
     {
         CustomerId = customerId;
         Assets = assets;
-        Queue = queue;
+        IsPriority = queue == "priority";
     }
 }
 
@@ -75,6 +73,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         await using var transaction = 
             await dlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
 
+        var assetNotificationList = new List<Asset>(request.Assets.Count);
         try
         {
             using var logScope = logger.BeginScope("Processing batch {BatchId}", batch.Id);
@@ -90,6 +89,18 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                     updateFailed = true;
                     failureMessage = processAssetResult.Result.Error;
                     break;
+                }
+
+                var savedAsset = processAssetResult.Result.Entity!;
+                
+                if (processAssetResult.RequiresEngineNotification)
+                {
+                    assetNotificationList.Add(savedAsset);
+                }
+
+                if (savedAsset.Family == AssetFamily.File)
+                {
+                    batch.Completed += 1;
                 }
             }
 
@@ -117,6 +128,8 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         else
         {
             // Raise notifications
+            await assetNotificationSender.SendIngestAssetsRequest(assetNotificationList, request.IsPriority,
+                cancellationToken);
         }
         
         return ModifyEntityResult<Batch>.Success(batch);

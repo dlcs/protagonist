@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -95,7 +97,38 @@ public class EngineClient : IEngineClient
 
         return success;
     }
-    
+
+    public async Task<int> AsynchronousIngestBatch(IReadOnlyCollection<IngestAssetRequest> ingestAssetRequests,
+        bool isPriority, CancellationToken cancellationToken)
+    {
+        var overallSent = 0;
+        var batchId = (ingestAssetRequests.First().Asset.Batch ?? 0).ToString();
+        
+        // Get a grouping of items in batch by Family - different families can use different queues 
+        var byFamily = ingestAssetRequests.GroupBy(a => a.Asset.Family);
+        foreach (var familyGrouping in byFamily)
+        {
+            var queueName = queueLookup.GetQueueNameForFamily(familyGrouping.Key ?? new AssetFamily(), isPriority);
+            var capacity = familyGrouping.Count();
+            
+            var jsonStrings = new List<string>(capacity);
+            foreach (IngestAssetRequest iar in familyGrouping)
+            {
+                jsonStrings.Add(await GetJsonString(iar, true));
+            }
+
+            var sentCount = await queueSender.QueueMessages(queueName, jsonStrings, batchId, cancellationToken);
+            overallSent += sentCount;
+            if (sentCount < capacity)
+            {
+                logger.LogWarning("Some messages failed to queue for {BatchId}, family {Family}", batchId,
+                    familyGrouping.Key);
+            }
+        }
+
+        return overallSent;
+    }
+
     private async Task<string> GetJsonString(IngestAssetRequest ingestAssetRequest, bool derivativesOnly)
     {
         if (dlcsSettings.UseLegacyEngineMessage)
