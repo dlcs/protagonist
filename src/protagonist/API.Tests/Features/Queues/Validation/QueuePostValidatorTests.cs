@@ -14,7 +14,7 @@ public class QueuePostValidatorTests
 
     public QueuePostValidatorTests()
     {
-        var apiSettings = new ApiSettings { MaxBatchSize = 2 };
+        var apiSettings = new ApiSettings { MaxBatchSize = 4 };
         sut = new QueuePostValidator(Options.Create(apiSettings));
     }
 
@@ -37,20 +37,39 @@ public class QueuePostValidatorTests
     [Fact]
     public void Members_GreaterThanMaxBatchSize()
     {
-        var model = new HydraCollection<Image> { Members = new[] { new Image(), new Image(), new Image() } };
+        var model = new HydraCollection<Image>
+            { Members = new[] { new Image(), new Image(), new Image(), new Image(), new Image() } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(r => r.Members);
+    }
+
+    [Fact]
+    public void Members_ContainsDuplicateIds()
+    {
+        var model = new HydraCollection<Image>
+        {
+            Members = new[]
+            {
+                new Image { ModelId = "1/2/foo" },
+                new Image { ModelId = "1/2/bar" },
+                new Image { ModelId = "1/2/foo" },
+            }
+        };
+        var result = sut.TestValidate(model);
+        result
+            .ShouldHaveValidationErrorFor(r => r.Members)
+            .WithErrorMessage("Members contains 1 duplicate Id(s): 1/2/foo");
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void Member_Id_NullOrEmpty(string id)
+    public void Member_ModelId_NullOrEmpty(string id)
     {
-        var model = new HydraCollection<Image> { Members = new[] { new Image { Id = id } } };
+        var model = new HydraCollection<Image> { Members = new[] { new Image { ModelId = id } } };
         var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("Members[0].Id");
+        result.ShouldHaveValidationErrorFor("Members[0].ModelId");
     }
     
     [Fact]

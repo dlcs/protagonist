@@ -1,4 +1,6 @@
-﻿using API.Settings;
+﻿using System.Linq;
+using API.Settings;
+using DLCS.Core.Collections;
 using DLCS.HydraModel;
 using FluentValidation;
 using Hydra.Collections;
@@ -13,13 +15,22 @@ public class QueuePostValidator : AbstractValidator<HydraCollection<DLCS.HydraMo
 {
     public QueuePostValidator(IOptions<ApiSettings> apiSettings)
     {
-        RuleFor(c => c.Members).NotEmpty().WithMessage("Members cannot be empty");
+        RuleFor(c => c.Members)
+            .NotEmpty().WithMessage("Members cannot be empty");
+        
+        RuleFor(c => c.Members)
+            .Must(m => m.IsNullOrEmpty() || m!.Select(a => a.ModelId).Distinct().Count() == m!.Length)
+            .WithMessage((_, mem) =>
+            {
+                var dupes = mem!.Select(a => a.ModelId).GetDuplicates().ToList();
+                return $"Members contains {dupes.Count} duplicate Id(s): {string.Join(",", dupes)}";
+            });
 
         var maxBatch = apiSettings.Value.MaxBatchSize;
         RuleFor(c => c.Members)
             .Must(m => (m?.Length ?? 0) < apiSettings.Value.MaxBatchSize)
             .WithMessage($"Maximum assets in single batch is {maxBatch}");
-        
+
         RuleForEach(c => c.Members).SetValidator(new QueuePostImageValidator());
     }
 }
@@ -29,7 +40,7 @@ public class QueuePostImageValidator : AbstractValidator<DLCS.HydraModel.Image>
     public QueuePostImageValidator()
     {
         // Required fields
-        RuleFor(a => a.Id).NotEmpty().WithMessage("Asset Id cannot be empty");
+        RuleFor(a => a.ModelId).NotEmpty().WithMessage("Asset Id cannot be empty");
         RuleFor(a => a.Space).NotEmpty().WithMessage("Space cannot be empty");
         RuleFor(a => a.MediaType).NotEmpty().WithMessage("Media type must be specified");
         RuleFor(a => a.Family).NotEmpty().WithMessage("Family must be specified");

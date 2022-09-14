@@ -61,4 +61,14 @@ public static class CollectionX
     /// </summary>
     public static IOrderedEnumerable<T> Shuffle<T>(this IEnumerable<T> source) 
         => source.OrderBy(_ => Guid.NewGuid());
+
+    /// <summary>
+    /// Get a list of all duplicates in specified list
+    /// </summary>
+    /// <remarks>This will use the default equality comparer for type</remarks>
+    public static IEnumerable<T> GetDuplicates<T>(this IEnumerable<T> source)
+        => source
+            .GroupBy(m => m)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key);
 }
