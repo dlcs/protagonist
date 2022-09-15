@@ -1,3 +1,4 @@
+using System.Data;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -58,9 +59,16 @@ public class EngineAssetRepository : IEngineAssetRepository
                 }
             }
 
-            return hasBatch
+            var success = hasBatch
                 ? await BatchSave(asset.Batch!.Value, cancellationToken)
                 : await NonBatchedSave(cancellationToken);
+
+            if (success && imageStorage != null)
+            {
+                await IncreaseCustomerStorage(imageStorage, cancellationToken);
+            }
+            
+            return success;
         }
         catch (Exception ex)
         {
@@ -80,8 +88,8 @@ public class EngineAssetRepository : IEngineAssetRepository
 
     private async Task<bool> BatchSave(int batchId, CancellationToken cancellationToken)
     {
-        // TODO - check isolation level
-        await using var transaction = await dlcsContext.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction =
+            await dlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
 
         try
         {
@@ -147,4 +155,23 @@ public class EngineAssetRepository : IEngineAssetRepository
         => await dlcsContext.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE \"Batches\" SET \"Finished\"=now() WHERE \"Id\" = {batchId} and \"Completed\"+\"Errors\"=\"Count\" ",
             cancellationToken);
+
+    private async Task IncreaseCustomerStorage(ImageStorage imageStorage, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await dlcsContext.Database.ExecuteSqlInterpolatedAsync(
+                $@"
+UPDATE ""CustomerStorage"" 
+SET     
+    ""TotalSizeOfStoredImages""= ""TotalSizeOfStoredImages"" + {imageStorage.Size},
+    ""TotalSizeOfThumbnails""= ""TotalSizeOfThumbnails"" + {imageStorage.ThumbnailSize}
+WHERE ""Customer"" = {imageStorage.Customer} AND ""Space"" = 0",
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Exception updating customer storage for {Customer}", imageStorage.Customer);
+        }
+    }
 }

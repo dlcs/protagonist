@@ -223,6 +223,7 @@ public class EngineAssetRepositoryTests
         await dbContext.Images.AddTestAsset(assetId);
         await dbContext.ImageLocations.AddTestImageLocation(assetId);
         await dbContext.ImageStorages.AddTestImageStorage(assetId);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(sizeOfStored: 500, sizeOfThumbs: 800);
         await dbContext.SaveChangesAsync();
 
         var newAsset = new Asset
@@ -246,9 +247,14 @@ public class EngineAssetRepositoryTests
         
         var dbImageLocation = await dbContext.ImageLocations.SingleAsync(a => a.Id == assetId);
         dbImageLocation.Should().BeEquivalentTo(imageLocation);
+        
         var dbImageStorage = await dbContext.ImageStorages.SingleAsync(a => a.Id == assetId);
         dbImageStorage.Should().BeEquivalentTo(imageStorage, opts => opts.Excluding(s => s.LastChecked));
         dbImageStorage.LastChecked.Should().BeCloseTo(imageStorage.LastChecked, TimeSpan.FromMinutes(1));
+
+        var dbCustomerStorage = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == 99 && cs.Space == 0);
+        dbCustomerStorage.TotalSizeOfStoredImages.Should().Be(1510);
+        dbCustomerStorage.TotalSizeOfThumbnails.Should().Be(2820);
     }
     
     [Fact]
