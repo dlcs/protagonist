@@ -1,9 +1,7 @@
-using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
-using DLCS.Core.Threading;
 using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +14,6 @@ public class CustomerStorageRepository : IStorageRepository
     private readonly DlcsContext dlcsContext;
     private readonly IPolicyRepository policyRepository;
     private readonly ILogger<CustomerStorageRepository> logger;
-    private readonly AsyncKeyedLock asyncLocker = new();
 
     public CustomerStorageRepository(
         DlcsContext dlcsContext, 
@@ -57,26 +54,6 @@ public class CustomerStorageRepository : IStorageRepository
 
         return storageForSpace;
 
-    }
-
-    public async Task<bool> VerifyStoragePolicyBySize(int customer, long proposedNewFileSize,
-        CancellationToken cancellationToken = default)
-    {
-        var key = $"verify:{customer}";
-        using var processLock = await asyncLocker.LockAsync(key, cancellationToken);
-        try
-        {
-            var storageCounts = await GetStorageMetrics(customer, cancellationToken);
-            return storageCounts.CurrentTotalSizeStoredImages + proposedNewFileSize <=
-                   storageCounts.MaximumTotalSizeOfStoredImages;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex,
-                "Error verifying storage policy for customer: {Customer}. New asset size: {Size}",
-                customer, proposedNewFileSize);
-            return false;
-        }
     }
 
     public async Task<CustomerStorageSummary> GetCustomerStorageSummary(

@@ -225,8 +225,12 @@ public class AssetToDiskTests
                 customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
             .Returns(originResponse);
 
-        A.CallTo(() => customerStorageRepository.VerifyStoragePolicyBySize(2, A<long>._, A<CancellationToken>._))
-            .Returns(isValid);
+        A.CallTo(() => customerStorageRepository.GetStorageMetrics(2, A<CancellationToken>._))
+            .Returns(new AssetStorageMetric
+            {
+                Policy = new StoragePolicy{MaximumTotalSizeOfStoredImages = isValid ? 1000000 : -1},
+                CustomerStorage = new CustomerStorage{ TotalSizeOfStoredImages = isValid ? 0 : 10}
+            });
 
         // Act
         var response = await sut.CopyAssetToLocalDisk(asset, destination, true, cos);
