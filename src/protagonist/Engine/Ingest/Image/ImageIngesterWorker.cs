@@ -35,7 +35,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker
     /// <summary>
     /// <see cref="IAssetIngesterWorker"/> for ingesting Image assets (Family = I).
     /// </summary>
-    public async Task<IngestResult> Ingest(IngestAssetRequest ingestAssetRequest,
+    public async Task<IngestResultStatus> Ingest(IngestAssetRequest ingestAssetRequest,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
         bool ingestSuccess;
@@ -60,7 +60,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker
             {
                 ingestAssetRequest.Asset.Error = "StoragePolicy size limit exceeded";
                 await imageCompletion.CompleteIngestion(context, false, sourceTemplate);
-                return IngestResult.StorageLimitExceeded;
+                return IngestResultStatus.StorageLimitExceeded;
             }
 
             context.WithAssetFromOrigin(assetOnDisk);
@@ -77,12 +77,12 @@ public class ImageIngesterWorker : IAssetIngesterWorker
         try
         {
             var completionSuccess = await imageCompletion.CompleteIngestion(context, ingestSuccess, sourceTemplate);
-            return ingestSuccess && completionSuccess ? IngestResult.Success : IngestResult.Failed;
+            return ingestSuccess && completionSuccess ? IngestResultStatus.Success : IngestResultStatus.Failed;
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error completing {AssetId}", ingestAssetRequest.Asset.Id);
-            return IngestResult.Failed;
+            return IngestResultStatus.Failed;
         }
     }
 

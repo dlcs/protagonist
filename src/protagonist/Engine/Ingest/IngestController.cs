@@ -32,7 +32,7 @@ public class IngestController : Controller
         // TODO - throw if this is a 'T' request
         var result = await ingester.Ingest(message, cancellationToken);
 
-        return ConvertToStatusCode(message, result);
+        return ConvertToStatusCode(message, result.Status);
     }
 
     /// <summary>
@@ -49,17 +49,17 @@ public class IngestController : Controller
         
         var result = await ingester.Ingest(message, cancellationToken);
 
-        return ConvertToStatusCode(message, result);
+        return ConvertToStatusCode(message, result.Status);
     }
 
-    private IActionResult ConvertToStatusCode(object message, IngestResult result)
+    private IActionResult ConvertToStatusCode(object message, IngestResultStatus result)
         => result switch
         {
-            IngestResult.Failed => StatusCode(500, message),
-            IngestResult.Success => Ok(message),
-            IngestResult.QueuedForProcessing => Accepted(message),
-            IngestResult.StorageLimitExceeded => StatusCode((int)HttpStatusCode.InsufficientStorage, message),
-            IngestResult.Unknown => StatusCode(500, message),
+            IngestResultStatus.Failed => StatusCode(500, message),
+            IngestResultStatus.Success => Ok(message),
+            IngestResultStatus.QueuedForProcessing => Accepted(message),
+            IngestResultStatus.StorageLimitExceeded => StatusCode((int)HttpStatusCode.InsufficientStorage, message),
+            IngestResultStatus.Unknown => StatusCode(500, message),
             _ => StatusCode(500, message)
         };
 }

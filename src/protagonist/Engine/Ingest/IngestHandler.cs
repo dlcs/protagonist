@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DLCS.AWS.SQS;
 using DLCS.Model.Messaging;
+using DLCS.Model.Processing;
 using Engine.Ingest.Models;
 
 namespace Engine.Ingest;
@@ -11,12 +12,15 @@ namespace Engine.Ingest;
 public class IngestHandler : IMessageHandler
 {
     private readonly IAssetIngester ingester;
+    private readonly ICustomerQueueRepository customerQueueRepository;
     private readonly ILogger<IngestHandler> logger;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
-    public IngestHandler(IAssetIngester ingester, ILogger<IngestHandler> logger)
+    public IngestHandler(IAssetIngester ingester, ICustomerQueueRepository customerQueueRepository, 
+        ILogger<IngestHandler> logger)
     {
         this.ingester = ingester;
+        this.customerQueueRepository = customerQueueRepository;
         this.logger = logger;
     }
     
@@ -35,13 +39,35 @@ public class IngestHandler : IMessageHandler
             if (ingestEvent == null) return false;
             ingestResult = await ingester.Ingest(ingestEvent, cancellationToken);
         }
-        
-        logger.LogInformation("Message {MessageId} handled with result {IngestResult}", message.MessageId, ingestResult);
-        
-        // TODO - return false so that the message is deleted from the queue in all instances.
+
+        logger.LogDebug("Message {MessageId} handled with result {IngestResult}", message.MessageId, ingestResult.Status);
+
+        await UpdateCustomerQueue(message, cancellationToken, ingestResult);
+
+        // return true so that the message is deleted from the queue in all instances.
         // This shouldn't be the case and can be revisited at a later date as it will need logic of how Batch.Errors is
         // calculated
         return true;
+    }
+
+    private async Task UpdateCustomerQueue(QueueMessage message, CancellationToken cancellationToken,
+        IngestResult ingestResult)
+    {
+        var queue = message.QueueName.ToLower().Contains("priority") ? QueueNames.Priority : QueueNames.Default;
+        int customer = 0;
+        try
+        {
+            if (ingestResult.Asset != null)
+            {
+                customer = ingestResult.Asset.Customer; 
+                await customerQueueRepository.DecrementSize(ingestResult.Asset.Customer, queue,
+                    cancellationToken: cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Error decrementing customer {Customer} queue {QueueName}", customer, queue);
+        }
     }
 
     private T? DeserializeBody<T>(QueueMessage message)

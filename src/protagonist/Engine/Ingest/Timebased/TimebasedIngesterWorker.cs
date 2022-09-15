@@ -34,7 +34,7 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
         this.logger = logger;
     }
     
-    public async Task<IngestResult> Ingest(IngestAssetRequest ingestAssetRequest,
+    public async Task<IngestResultStatus> Ingest(IngestAssetRequest ingestAssetRequest,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
         var context = new IngestionContext(ingestAssetRequest.Asset);
@@ -56,14 +56,14 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
                 ingestAssetRequest.Asset.Error = "StoragePolicy size limit exceeded";
                 await completion.CompleteAssetInDatabase(ingestAssetRequest.Asset,
                     cancellationToken: cancellationToken);
-                return IngestResult.StorageLimitExceeded;
+                return IngestResultStatus.StorageLimitExceeded;
             }
 
             var success = await mediaTranscoder.InitiateTranscodeOperation(context, cancellationToken);
             if (success)
             {
                 logger.LogDebug("Timebased asset {AssetId} successfully queued for processing", context.AssetId);
-                return IngestResult.QueuedForProcessing;
+                return IngestResultStatus.QueuedForProcessing;
             }
         }
         catch (Exception ex)
@@ -84,7 +84,7 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
         
         // If we reach here then it's failed, if successful then we would have aborted after initiating transcode
         logger.LogDebug("Failed to ingest timebased asset {AssetId}", context.AssetId);
-        return IngestResult.Failed;
+        return IngestResultStatus.Failed;
     }
     
     private bool SkipStoragePolicyCheck(int customerId)

@@ -153,6 +153,7 @@ public class ImageController : HydraController
     public Task<IActionResult> ReingestAsset([FromRoute] int customerId, [FromRoute] int spaceId,
         [FromRoute] string imageId, CancellationToken cancellationToken)
     {
+        // TODO - return the { "success": true } response for backward compat
         var reingestRequest = new ReingestAsset(customerId, spaceId, imageId);
         return HandleUpsert(reingestRequest, 
             asset => asset.ToHydra(GetUrlRoots()), 

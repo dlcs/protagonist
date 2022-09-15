@@ -49,7 +49,7 @@ public class TimebasedIngesterWorkerTests
         var result = await sut.Ingest(new IngestAssetRequest(asset, new DateTime()), new CustomerOriginStrategy());
 
         // Assert
-        result.Should().Be(IngestResult.Failed);
+        result.Should().Be(IngestResultStatus.Failed);
     }
     
     [Theory]
@@ -96,7 +96,7 @@ public class TimebasedIngesterWorkerTests
 
         // Assert
         A.CallTo(() => completion.CompleteAssetInDatabase(asset, null, A<CancellationToken>._)).MustHaveHappened();
-        result.Should().Be(IngestResult.StorageLimitExceeded);
+        result.Should().Be(IngestResultStatus.StorageLimitExceeded);
     }
     
     [Fact]
@@ -138,7 +138,7 @@ public class TimebasedIngesterWorkerTests
         var result = await sut.Ingest(new IngestAssetRequest(asset, new DateTime()), new CustomerOriginStrategy());
 
         // Assert
-        result.Should().Be(IngestResult.QueuedForProcessing);
+        result.Should().Be(IngestResultStatus.QueuedForProcessing);
         A.CallTo(() => completion.CompleteAssetInDatabase(asset, null, A<CancellationToken>._)).MustNotHaveHappened();
     }
 }

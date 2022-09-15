@@ -53,7 +53,7 @@ public class ImageIngesterWorkerTests
         var result = await sut.Ingest(new IngestAssetRequest(asset, new DateTime()), new CustomerOriginStrategy());
 
         // Assert
-        result.Should().Be(IngestResult.Failed);
+        result.Should().Be(IngestResultStatus.Failed);
     }
 
     [Theory]
@@ -101,7 +101,7 @@ public class ImageIngesterWorkerTests
         // Assert
         A.CallTo(() => imageIngestorCompletion.CompleteIngestion(A<IngestionContext>._, false, A<string>._))
             .MustHaveHappened();
-        result.Should().Be(IngestResult.StorageLimitExceeded);
+        result.Should().Be(IngestResultStatus.StorageLimitExceeded);
     }
 
     [Theory]
@@ -131,11 +131,11 @@ public class ImageIngesterWorkerTests
     }
 
     [Theory]
-    [InlineData(true, true, IngestResult.Success)]
-    [InlineData(false, true, IngestResult.Failed)]
-    [InlineData(true, false, IngestResult.Failed)]
+    [InlineData(true, true, IngestResultStatus.Success)]
+    [InlineData(false, true, IngestResultStatus.Failed)]
+    [InlineData(true, false, IngestResultStatus.Failed)]
     public async Task Ingest_ReturnsCorrectResult_DependingOnIngestAndCompletion(bool imageProcessSuccess,
-        bool completeResult, IngestResult expected)
+        bool completeResult, IngestResultStatus expected)
     {
         // Arrange
         var asset = new Asset { Id = "/2/1/remurdered", Customer = 2, Space = 1 };

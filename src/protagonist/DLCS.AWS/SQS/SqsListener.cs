@@ -158,6 +158,7 @@ public class SqsListener<TMessageType> : IQueueListener
                 Attributes = message.Attributes,
                 Body = JsonNode.Parse(message.Body)!.AsObject(),
                 MessageId = message.MessageId,
+                QueueName = QueueName
             };
 
             // create a new scope to avoid issues with Scoped dependencies

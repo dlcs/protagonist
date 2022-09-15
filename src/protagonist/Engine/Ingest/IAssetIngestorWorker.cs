@@ -12,7 +12,7 @@ public interface IAssetIngesterWorker
     /// <summary>
     /// Ingest provided asset using given CustomerOriginStrategy
     /// </summary>
-    Task<IngestResult> Ingest(IngestAssetRequest ingestAssetRequest,
+    Task<IngestResultStatus> Ingest(IngestAssetRequest ingestAssetRequest,
         CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default);
 }

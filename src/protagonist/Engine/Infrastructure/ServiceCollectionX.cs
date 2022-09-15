@@ -8,11 +8,13 @@ using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Model.Policies;
+using DLCS.Model.Processing;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
+using DLCS.Repository.Processing;
 using DLCS.Repository.Storage;
 using DLCS.Repository.Strategy.DependencyInjection;
 using Engine.Data;
@@ -121,6 +123,7 @@ public static class ServiceCollectionX
             .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
             .AddScoped<IStorageRepository, CustomerStorageRepository>()
+            .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>
