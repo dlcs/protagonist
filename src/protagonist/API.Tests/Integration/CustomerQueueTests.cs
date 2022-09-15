@@ -1,13 +1,24 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
+using DLCS.Model.Assets;
+using DLCS.Model.Messaging;
 using DLCS.Repository;
+using DLCS.Repository.Messaging;
+using FakeItEasy;
 using Hydra;
 using Hydra.Collections;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using Batch = DLCS.Model.Assets.Batch;
@@ -21,12 +32,25 @@ namespace API.Tests.Integration;
 public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsContext dbContext;
-    private readonly HttpClient httpClient;    
+    private readonly HttpClient httpClient;
+    private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
     
     public CustomerQueueTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
         dbContext = dbFixture.DbContext;
-        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
+        httpClient = factory
+            .WithConnectionString(dbFixture.ConnectionString)
+            .WithTestServices(services =>
+            {
+                services.AddScoped<IEngineClient>(_ => EngineClient);
+                services.AddAuthentication("API-Test")
+                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
+                        "API-Test", _ => { });
+            })
+            .CreateClient(new WebApplicationFactoryClientOptions
+            {
+                AllowAutoRedirect = false
+            });
         dbFixture.CleanUp();
 
         // Setup batches for testing
@@ -473,5 +497,285 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
         images.TotalItems.Should().Be(2);
         images.Members.Should().HaveCount(2);
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_400_IfValidationFails()
+    {
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""id"": ""one"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 1,
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = "/customers/99/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(99).PostAsync(path, content);
+
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Post_CreateBatch_400_IfSpaceNotFound()
+    {
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""id"": ""one"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 992,
+          ""family"": ""T"",
+          ""mediaType"": ""video/mp4""
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = "/customers/99/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(99).PostAsync(path, content);
+
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Post_CreateBatch_UpdatesQueueAndCounts()
+    {
+        // Arrange
+        const int customerId = 1800;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, 2);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // a batch of 3: T, I and F resource
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""id"": ""one"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 2,
+          ""family"": ""T"",
+          ""mediaType"": ""video/mp4""
+        },
+        {
+          ""id"": ""two"",
+          ""origin"": ""https://example.org/image.jpg"",
+          ""family"": ""I"",
+          ""space"": 2,
+          ""mediaType"": ""image/jpeg""
+        },
+        {
+          ""id"": ""three"",
+          ""origin"": ""https://example.org/file.pdf"",
+          ""family"": ""F"",
+          ""space"": 2,
+          ""mediaType"": ""application/pdf""
+        }
+    ]
+}";
+        
+        A.CallTo(() =>
+            EngineClient.AsynchronousIngestBatch(
+                A<IReadOnlyCollection<IngestAssetRequest>>._, false,
+                A<CancellationToken>._)).Returns(2);
+        
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+        
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        // Hydra batch received
+        var hydraBatch = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.Batch>();
+        hydraBatch.Completed.Should().Be(1, "File family are automatically completed");
+        hydraBatch.Count.Should().Be(3);
+        var batchId = hydraBatch.GetLastPathElementAsInt()!.Value;
+        
+        // Db batch exists (unnecessary?)
+        var dbBatch = await dbContext.Batches.SingleAsync(i => i.Customer == customerId);
+        dbBatch.Id.Should().Be(batchId);
+
+        // Images exist with Batch set + File marked as complete
+        var images = dbContext.Images.Where(i => i.Customer == customerId && i.Space == 2).ToList();
+        images.Count.Should().Be(3);
+        images.Should().AllSatisfy(a => a.Batch.Should().Be(batchId));
+        images.Where(i => i.Family != AssetFamily.File).Should().AllSatisfy(a =>
+        {
+            a.Finished.Should().BeNull();
+            a.Ingesting.Should().BeTrue();
+        });
+        var file = images.Single(i => i.Family == AssetFamily.File);
+        file.Ingesting.Should().BeFalse();
+        file.Finished.Should().NotBeNull();
+        
+        // Queue incremented
+        var queue = await dbContext.Queues.SingleAsync(q => q.Customer == customerId && q.Name == "default");
+        queue.Size.Should().Be(2);
+        
+        // Customer Storage incremented
+        var storage = await dbContext.CustomerStorages.SingleAsync(q => q.Customer == customerId && q.Space == 0);
+        storage.NumberOfStoredImages.Should().Be(3);
+
+        // Items queued for processing
+        A.CallTo(() =>
+            EngineClient.AsynchronousIngestBatch(
+                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 2), false,
+                A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Post_CreatePriorityBatch_400_IfNonImage()
+    {
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""id"": ""one"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 2,
+          ""family"": ""T"",
+          ""mediaType"": ""video/mp4""
+        },
+        {
+          ""id"": ""two"",
+          ""origin"": ""https://example.org/image.jpg"",
+          ""family"": ""I"",
+          ""space"": 2,
+          ""mediaType"": ""image/jpeg""
+        },
+        {
+          ""id"": ""three"",
+          ""origin"": ""https://example.org/file.pdf"",
+          ""family"": ""F"",
+          ""space"": 2,
+          ""mediaType"": ""application/pdf""
+        }
+    ]
+}";
+        
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = "/customers/99/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(99).PostAsync(path, content);
+        
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Post_CreatePriorityBatch_UpdatesQueueAndCounts()
+    {
+        // Arrange
+        const int customerId = 1900;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, 2);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // a batch of 3 images
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""id"": ""one"",
+          ""origin"": ""https://example.org/foo.jpg"",
+          ""space"": 2,
+          ""family"": ""I"",
+          ""mediaType"": ""image/jpeg""
+        },
+        {
+          ""id"": ""two"",
+          ""origin"": ""https://example.org/foo.png"",
+          ""family"": ""I"",
+          ""space"": 2,
+          ""mediaType"": ""image/png""
+        },
+        {
+          ""id"": ""three"",
+          ""origin"": ""https://example.org/foo.tiff"",
+          ""family"": ""I"",
+          ""space"": 2,
+          ""mediaType"": ""image/tiff""
+        }
+    ]
+}";
+        
+        A.CallTo(() =>
+            EngineClient.AsynchronousIngestBatch(
+                A<IReadOnlyCollection<IngestAssetRequest>>._, true,
+                A<CancellationToken>._)).Returns(3);
+        
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue/priority";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+        
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        // Hydra batch received
+        var hydraBatch = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.Batch>();
+        hydraBatch.Completed.Should().Be(0);
+        hydraBatch.Count.Should().Be(3);
+        var batchId = hydraBatch.GetLastPathElementAsInt()!.Value;
+        
+        // Db batch exists (unnecessary?)
+        var dbBatch = await dbContext.Batches.SingleAsync(i => i.Customer == customerId);
+        dbBatch.Id.Should().Be(batchId);
+
+        // Images exist with Batch set + File marked as complete
+        var images = dbContext.Images.Where(i => i.Customer == customerId && i.Space == 2).ToList();
+        images.Count.Should().Be(3);
+        images.Should().AllSatisfy(a =>
+        {
+            a.Finished.Should().BeNull();
+            a.Ingesting.Should().BeTrue();
+            a.Batch.Should().Be(batchId);
+        });
+
+        // Queue incremented
+        var queue = await dbContext.Queues.SingleAsync(q => q.Customer == customerId && q.Name == "priority");
+        queue.Size.Should().Be(3);
+        
+        // Customer Storage incremented
+        var storage = await dbContext.CustomerStorages.SingleAsync(q => q.Customer == customerId && q.Space == 0);
+        storage.NumberOfStoredImages.Should().Be(3);
+
+        // Items queued for processing
+        A.CallTo(() =>
+            EngineClient.AsynchronousIngestBatch(
+                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 3), true,
+                A<CancellationToken>._)).MustHaveHappened();
     }
 }

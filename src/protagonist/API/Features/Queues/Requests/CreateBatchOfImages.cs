@@ -59,6 +59,15 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
     public async Task<ModifyEntityResult<Batch>> Handle(CreateBatchOfImages request,
         CancellationToken cancellationToken)
     {
+        if (request.IsPriority)
+        {
+            if (request.Assets.Any(a => a.Family != AssetFamily.Image))
+            {
+                return ModifyEntityResult<Batch>.Failure("Priority queue only supports image assets",
+                    WriteResult.FailedValidation);
+            }
+        }
+        
         var (exists, missing) = await DoAllSpacesExist(request.CustomerId, request.Assets, cancellationToken);
         if (!exists)
         {
@@ -139,7 +148,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 cancellationToken);
         }
         
-        return ModifyEntityResult<Batch>.Success(batch);
+        return ModifyEntityResult<Batch>.Success(batch, WriteResult.Created);
     }
 
     private async Task<(bool Exists, IEnumerable<int> NonExistant)> DoAllSpacesExist(int customer,
