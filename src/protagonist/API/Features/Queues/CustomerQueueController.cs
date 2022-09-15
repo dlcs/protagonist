@@ -10,6 +10,7 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
+using DLCS.Model.Processing;
 using Hydra.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -57,11 +58,11 @@ public class CustomerQueueController : HydraController
     /// Create a batch of images to ingest
     /// </summary>
     /// <param name="customerId">Id of customer to create batch for</param>
-    /// <param name="images"></param>
+    /// <param name="images">Hydra collection of assets to add to batch</param>
     /// <param name="cancellationToken"></param>
     /// <returns>Hydra JSON-LD Batch object</returns>
     [HttpPost]
-    public async Task<IActionResult> CreateCustomerQueue(
+    public async Task<IActionResult> CreateBatch(
         [FromRoute] int customerId,
         [FromBody] HydraCollection<DLCS.HydraModel.Image> images,
         [FromServices] QueuePostValidator validator,
@@ -79,6 +80,39 @@ public class CustomerQueueController : HydraController
         return await HandleUpsert(request,
             batch => batch.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Create batch failed",
+            cancellationToken: cancellationToken);
+    }
+    
+    /// <summary>
+    /// POST /customers/{customerId}/queue/priority
+    ///
+    /// Create a batch of images to ingest, adding request to priority queue
+    /// </summary>
+    /// <param name="customerId">Id of customer to create batch for</param>
+    /// <param name="images">Hydra collection of assets to add to batch</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>Hydra JSON-LD Batch object</returns>
+    [HttpPost]
+    [Route("priority")]
+    public async Task<IActionResult> CreatePriorityBatch(
+        [FromRoute] int customerId,
+        [FromBody] HydraCollection<DLCS.HydraModel.Image> images,
+        [FromServices] QueuePostValidator validator,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await validator.ValidateAsync(images, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
+
+        var request =
+            new CreateBatchOfImages(customerId, images.Members!.Select(i => i.ToDlcsModel(customerId)).ToList(),
+                QueueNames.Priority);
+
+        return await HandleUpsert(request,
+            batch => batch.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Create priority batch failed",
             cancellationToken: cancellationToken);
     }
 

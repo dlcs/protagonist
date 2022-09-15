@@ -152,6 +152,7 @@ public class Startup
     {
         if (env.IsDevelopment())
         {
+            DlcsContextConfiguration.TryRunMigrations(configuration, logger);
             app.UseDeveloperExceptionPage();
         }
 
