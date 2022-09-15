@@ -126,6 +126,10 @@ public class AssetProcessor
                     await requiresReingestPreSave(updatedAsset);
                 }
             }
+            else
+            {
+                updatedAsset.MarkAsFinished();
+            }
 
             var assetAfterSave = await assetRepository.Save(updatedAsset, existingAsset != null, cancellationToken);
 

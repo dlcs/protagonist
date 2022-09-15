@@ -100,9 +100,15 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 }
                 else
                 {
-                    // If asset doesn't need to go to engine then it is done, no more work to do
+                    logger.LogDebug("Asset {AssetId} is file, marking as complete", asset.Id);
                     batch.Completed += 1;
                 }
+            }
+
+            if (batch.Completed > 0)
+            {
+                dlcsContext.Batches.Attach(batch);
+                dlcsContext.Entry(batch).State = EntityState.Modified;
             }
 
             if (!updateFailed)

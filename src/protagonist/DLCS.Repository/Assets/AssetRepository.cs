@@ -59,31 +59,33 @@ public class AssetRepository : AssetRepositoryCachingBase
             {
                 // And related ImageStorage record
                 dlcsContext.Remove(imageStorage);
-
-                void ReduceCustomerStorage(CustomerStorage customerStorage)
-                {
-                    // And reduce CustomerStorage record
-                    customerStorage.NumberOfStoredImages -= 1;
-                    customerStorage.TotalSizeOfThumbnails -= imageStorage.ThumbnailSize;
-                    customerStorage.TotalSizeOfStoredImages -= imageStorage.Size;
-                }
-
-                // Reduce CustomerStorage for space
-                var customerSpaceStorage = await dlcsContext.CustomerStorages.FindAsync(customer, space);
-                if (customerSpaceStorage != null) ReduceCustomerStorage(customerSpaceStorage);
-
-                // Reduce CustomerStorage for overall customer
-                var customerStorage = await dlcsContext.CustomerStorages.FindAsync(customer, 0);
-                if (customerStorage != null) ReduceCustomerStorage(customerStorage);
+            }
+            
+            void ReduceCustomerStorage(CustomerStorage customerStorage)
+            {
+                // And reduce CustomerStorage record
+                customerStorage.NumberOfStoredImages -= 1;
+                customerStorage.TotalSizeOfThumbnails -= imageStorage?.ThumbnailSize ?? 0;
+                customerStorage.TotalSizeOfStoredImages -= imageStorage?.Size ?? 0;
             }
 
-            await entityCounterRepository.Decrement(customer, "space-images", space.ToString());
-            await entityCounterRepository.Decrement(0, "customer-images", customer.ToString());
+            // Reduce CustomerStorage for space
+            var customerSpaceStorage = await dlcsContext.CustomerStorages.FindAsync(customer, space);
+            if (customerSpaceStorage != null) ReduceCustomerStorage(customerSpaceStorage);
+
+            // Reduce CustomerStorage for overall customer
+            var customerStorage = await dlcsContext.CustomerStorages.FindAsync(customer, 0);
+            if (customerStorage != null) ReduceCustomerStorage(customerStorage);
 
             var rowCount = await dlcsContext.SaveChangesAsync();
-            return rowCount == 0
-                ? ResultStatus<DeleteResult>.Unsuccessful(DeleteResult.NotFound)
-                : ResultStatus<DeleteResult>.Successful(DeleteResult.Deleted);
+            if (rowCount == 0)
+            {
+                return ResultStatus<DeleteResult>.Unsuccessful(DeleteResult.NotFound);
+            }
+            
+            await entityCounterRepository.Decrement(customer, "space-images", space.ToString());
+            await entityCounterRepository.Decrement(0, "customer-images", customer.ToString());
+            return ResultStatus<DeleteResult>.Successful(DeleteResult.Deleted);
         }
         catch (DbUpdateConcurrencyException dbEx)
         {
