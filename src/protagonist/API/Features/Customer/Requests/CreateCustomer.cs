@@ -55,20 +55,17 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
 {
     private readonly DlcsContext dbContext;
     private readonly IEntityCounterRepository entityCounterRepository;
-    private readonly ICustomerQueueRepository customerQueueRepository;
     private readonly IAuthServicesRepository authServicesRepository;
     private readonly ILogger<CreateCustomerHandler> logger;
 
     public CreateCustomerHandler(
         DlcsContext dbContext,
         IEntityCounterRepository entityCounterRepository,
-        ICustomerQueueRepository customerQueueRepository,
         IAuthServicesRepository authServicesRepository,
         ILogger<CreateCustomerHandler> logger)
     {
         this.dbContext = dbContext;
         this.entityCounterRepository = entityCounterRepository;
-        this.customerQueueRepository = customerQueueRepository;
         this.authServicesRepository = authServicesRepository;
         this.logger = logger;
     }
@@ -88,15 +85,10 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
 
         // create an entity counter for space IDs [CreateCustomerSpaceEntityCounterBehaviour]
         await entityCounterRepository.Create(result.Customer.Id, "space", result.Customer.Id.ToString());
-        
-        // create a Queue [CreateCustomerQueueBehaviour]...
-        var queue = new CustomerQueue { Customer = result.Customer.Id };
-        // ...and save it [UpdateQueueBehaviour]
-        await customerQueueRepository.Put(queue);
-        
+
         // Create a clickthrough auth service [CreateClickthroughAuthServiceBehaviour]
         var clickThrough = authServicesRepository.CreateAuthService(
-            result.Customer.Id, String.Empty, "clickthrough", 600);
+            result.Customer.Id, string.Empty, "clickthrough", 600);
         // Create a logout auth service [CreateLogoutAuthServiceBehaviour]
         var logout = authServicesRepository.CreateAuthService(
             result.Customer.Id, "http://iiif.io/api/auth/1/logout", "logout", 600);
@@ -114,6 +106,12 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         await dbContext.AuthServices.AddAsync(clickThrough, cancellationToken);
         await dbContext.AuthServices.AddAsync(logout, cancellationToken);
         await dbContext.Roles.AddAsync(clickthroughRole, cancellationToken);
+        
+        // Create both a default and priority queue
+        await dbContext.Queues.AddRangeAsync(
+            new Queue { Customer = result.Customer.Id, Name = QueueNames.Default, Size = 0 },
+            new Queue { Customer = result.Customer.Id, Name = QueueNames.Priority, Size = 0 }
+        );
         await dbContext.SaveChangesAsync(cancellationToken);
         
         // [UpdateCustomerBehaviour] - customer has already been saved.
@@ -124,7 +122,6 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         
         return result;
     }
-
 
     // Does this belong on ICustomerRepository?
     private async Task<DLCS.Model.Customers.Customer> CreateCustomer(
