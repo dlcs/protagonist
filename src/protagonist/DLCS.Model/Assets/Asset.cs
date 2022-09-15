@@ -141,3 +141,4 @@ public class Asset
         return this;
     }
 }
+

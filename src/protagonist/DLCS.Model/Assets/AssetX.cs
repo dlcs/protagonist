@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using IIIF;
@@ -62,6 +63,24 @@ public static class AssetX
     /// <returns><see cref="AssetId"/> containing current customer, space, asset id</returns>
     public static AssetId GetAssetId(this Asset asset)
         => AssetId.FromString(asset.Id);
+    
+    /// <summary>
+    /// Reset fields for ingestion, marking as "Ingesting" and clearing errors
+    /// </summary>
+    public static void SetFieldsForIngestion(this Asset asset)
+    {
+        asset.Error = string.Empty;
+        asset.Ingesting = true;
+    }
+
+    /// <summary>
+    /// Mark asset as finished, setting "Finished" and "Ingesting" = false 
+    /// </summary>
+    public static void MarkAsFinished(this Asset asset)
+    {
+        asset.Ingesting = false;
+        asset.Finished = DateTime.UtcNow;
+    }
 
     private static bool AssetIsUnavailableForSize(Asset asset, int boundingSize)
         => asset.RequiresAuth && boundingSize > asset.MaxUnauthorised;

@@ -451,8 +451,7 @@ public partial class DlcsContext : DbContext
 
         modelBuilder.Entity<Queue>(entity =>
         {
-            entity.HasKey(e => e.Customer)
-                .HasName("Queues_pkey");
+            entity.HasKey(e => new { e.Customer, e.Name });
 
             entity.Property(e => e.Customer).ValueGeneratedNever();
 

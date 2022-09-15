@@ -9,6 +9,7 @@ using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.Processing;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -25,11 +26,11 @@ public class CreateBatchOfImages : IRequest<ModifyEntityResult<Batch>>
     public IReadOnlyList<Asset> Assets { get; }
     public bool IsPriority { get; }
 
-    public CreateBatchOfImages(int customerId, IReadOnlyList<Asset> assets, string queue = "default")
+    public CreateBatchOfImages(int customerId, IReadOnlyList<Asset> assets, string queue = QueueNames.Default)
     {
         CustomerId = customerId;
         Assets = assets;
-        IsPriority = queue == "priority";
+        IsPriority = queue == QueueNames.Priority;
     }
 }
 
@@ -97,9 +98,9 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 {
                     assetNotificationList.Add(savedAsset);
                 }
-
-                if (savedAsset.Family == AssetFamily.File)
+                else
                 {
+                    // If asset doesn't need to go to engine then it is done, no more work to do
                     batch.Completed += 1;
                 }
             }

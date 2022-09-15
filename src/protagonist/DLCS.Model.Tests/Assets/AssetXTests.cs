@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using FluentAssertions;
@@ -183,5 +184,33 @@ public class AssetXTests
         var actual = asset.GetAssetId();
 
         actual.Should().BeEquivalentTo(expected);
+    }
+    
+    [Fact]
+    public void SetFieldsForIngestion_ClearsFields()
+    {
+        // Arrange
+        var asset = new Asset { Error = "I am an error", Ingesting = false };
+        var expected = new Asset { Error = string.Empty, Ingesting = true };
+
+        // Act
+        asset.SetFieldsForIngestion();
+        
+        // Assert
+        asset.Should().BeEquivalentTo(expected);
+    }
+    
+    [Fact]
+    public void MarkAsFinished_SetsFields()
+    {
+        // Arrange
+        var asset = new Asset { Ingesting = true };
+
+        // Act
+        asset.MarkAsFinished();
+        
+        // Assert
+        asset.Ingesting.Should().BeFalse();
+        asset.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(10));
     }
 }

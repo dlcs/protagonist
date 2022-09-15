@@ -80,6 +80,7 @@ public class EngineAssetRepository : IEngineAssetRepository
 
     private async Task<bool> BatchSave(int batchId, CancellationToken cancellationToken)
     {
+        // TODO - check isolation level
         await using var transaction = await dlcsContext.Database.BeginTransactionAsync(cancellationToken);
 
         try
@@ -121,8 +122,7 @@ public class EngineAssetRepository : IEngineAssetRepository
 
     private void UpdateAsset(Asset asset)
     {
-        asset.Ingesting = false;
-        asset.Finished = DateTime.UtcNow;
+        asset.MarkAsFinished();
 
         // If the asset is tracked then no need to attach + set modified properties
         // Assets will be tracked when finalising a Timebased ingest as the Asset will have been read from context

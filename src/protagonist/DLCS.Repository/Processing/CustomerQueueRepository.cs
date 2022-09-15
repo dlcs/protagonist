@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,15 +40,46 @@ q.""Customer"", q.""Size"", q.""Name"", b.""BatchesWaiting"", b.""ImagesWaiting"
         }
     }
 
-    public async Task IncrementSize(int customer, string name, int incrementAmount = 1)
+    public async Task IncrementSize(int customer, string name, int incrementAmount = 1,
+        CancellationToken cancellationToken = default)
     {
-        const string sql = @"UPDATE ""Queues"" SET ""Size"" = ""Size"" + @size WHERE ""Customer"" = @customer AND ""Name"" = @name";
-        await this.ExecuteSqlAsync(sql, new { customer, name, size = incrementAmount });
+        await ChangeQueueSize(customer, name, incrementAmount, cancellationToken);
     }
 
-    public async Task DecrementSize(int customer, string name, int incrementAmount = 1)
+    public async Task DecrementSize(int customer, string name, int decrementAmount = 1,
+        CancellationToken cancellationToken = default)
     {
-        const string sql = @"UPDATE ""Queues"" SET ""Size"" = ""Size"" - @size WHERE ""Customer"" = @customer AND ""Name"" = @name";
-        await this.ExecuteSqlAsync(sql, new { customer, name, size = incrementAmount });
+        await ChangeQueueSize(customer, name, -decrementAmount, cancellationToken);
+    }
+
+    private async Task ChangeQueueSize(int customer, string name, int amount, CancellationToken cancellationToken)
+    {
+        await using var transaction =
+            await DlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+
+        try
+        {
+            var queue = await DlcsContext.Queues.SingleOrDefaultAsync(q => q.Customer == customer && q.Name == name,
+                cancellationToken: cancellationToken);
+
+            if (queue == null)
+            {
+                await DlcsContext.Queues.AddAsync(
+                    new Queue { Customer = customer, Name = name, Size = Math.Max(0, amount) }, cancellationToken);
+            }
+            else
+            {
+                queue.Size += amount;
+                if (queue.Size < 0) queue.Size = 0;
+            }
+
+            await DlcsContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error incrementing customer {Customer}, queue {QueueName}", customer, name);
+            await transaction.RollbackAsync(cancellationToken);
+        }
     }
 }
