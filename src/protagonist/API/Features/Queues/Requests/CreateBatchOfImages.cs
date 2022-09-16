@@ -144,6 +144,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         else
         {
             // Raise notifications
+            logger.LogDebug("Batch {BatchId} created - sending engine notifications", batch.Id);
             await assetNotificationSender.SendIngestAssetsRequest(assetNotificationList, request.IsPriority,
                 cancellationToken);
         }

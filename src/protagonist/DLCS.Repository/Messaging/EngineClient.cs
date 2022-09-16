@@ -108,6 +108,7 @@ public class EngineClient : IEngineClient
         var byFamily = ingestAssetRequests.GroupBy(a => a.Asset.Family);
         foreach (var familyGrouping in byFamily)
         {
+            logger.LogDebug("Sending '{Family}' notifications for {BatchId}", familyGrouping.Key, batchId);
             var queueName = queueLookup.GetQueueNameForFamily(familyGrouping.Key ?? new AssetFamily(), isPriority);
             var capacity = familyGrouping.Count();
             
