@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using FluentAssertions;
 using IIIF;
 using Xunit;

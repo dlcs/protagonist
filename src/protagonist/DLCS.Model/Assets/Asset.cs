@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
+using DLCS.Model.Policies;
 
 namespace DLCS.Model.Assets;
 

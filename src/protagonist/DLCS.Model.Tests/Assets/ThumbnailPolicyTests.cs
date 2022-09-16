@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using FluentAssertions;
 using Xunit;
 

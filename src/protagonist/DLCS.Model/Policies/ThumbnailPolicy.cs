@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using IIIF.ImageApi;
 
-namespace DLCS.Model.Assets;
+namespace DLCS.Model.Policies;
 
 [DebuggerDisplay("{Name}: {Sizes}")]
 public class ThumbnailPolicy

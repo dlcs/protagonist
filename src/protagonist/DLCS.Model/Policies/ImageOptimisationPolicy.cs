@@ -1,11 +1,9 @@
-﻿#nullable disable
+﻿using System.Diagnostics;
 
-using System.Diagnostics;
-
-namespace DLCS.Model.Assets;
+namespace DLCS.Model.Policies;
 
 [DebuggerDisplay("{Name}")]
-public partial class ImageOptimisationPolicy
+public class ImageOptimisationPolicy
 {
     public string Id { get; set; }
     public string Name { get; set; }

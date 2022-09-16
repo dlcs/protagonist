@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using IIIF;
 using Newtonsoft.Json;
 

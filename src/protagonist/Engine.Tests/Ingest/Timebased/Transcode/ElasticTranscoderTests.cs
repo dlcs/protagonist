@@ -5,6 +5,7 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using Engine.Ingest;
 using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased.Transcode;
