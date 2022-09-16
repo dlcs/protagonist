@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using API.Auth;
 using API.Features.Assets;
+using API.Features.Image.Ingest;
+using API.Features.Image.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.AWS.Configuration;
@@ -25,6 +27,7 @@ using DLCS.Repository.Customers;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
 using DLCS.Repository.Policies;
+using DLCS.Repository.Processing;
 using DLCS.Repository.Spaces;
 using DLCS.Repository.Storage;
 using DLCS.Web.Auth;
@@ -92,6 +95,7 @@ public class Startup
             .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
             .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
+            .AddScoped<AssetProcessor>()
             .AddTransient<TimingHandler>()
             .AddValidatorsFromAssemblyContaining<Startup>()
             .ConfigureMediatR()
@@ -148,6 +152,7 @@ public class Startup
     {
         if (env.IsDevelopment())
         {
+            DlcsContextConfiguration.TryRunMigrations(configuration, logger);
             app.UseDeveloperExceptionPage();
         }
 

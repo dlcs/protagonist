@@ -20,7 +20,6 @@ namespace API.Tests.Integration;
 
 [Trait("Category", "Integration")]
 [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
-
 public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsContext dbContext;
@@ -32,9 +31,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
         dbFixture.CleanUp();
     }
-
-    /// <summary>
-    /// </summary>
+    
     [Fact]
     public async Task Post_SimpleSpace_Creates_Space()
     {

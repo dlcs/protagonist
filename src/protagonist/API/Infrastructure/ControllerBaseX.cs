@@ -7,6 +7,7 @@ using DLCS.Core.Strings;
 using DLCS.HydraModel;
 using DLCS.Web.Requests;
 using FluentValidation.Results;
+using Hydra;
 using Hydra.Model;
 using Microsoft.AspNetCore.Mvc;
 
@@ -35,6 +36,8 @@ public static class ControllerBaseX
 
         return orderByField;
     }
+    
+    
 
     /// <summary>
     /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
@@ -45,7 +48,6 @@ public static class ControllerBaseX
     /// <param name="title">The value for <see cref="Error.Title" />.</param>
     /// <param name="type">The value for <see cref="Error.Type" />.</param>
     /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
-    [NonAction]
     public static ObjectResult HydraProblem(
         this ControllerBase controller,
         IEnumerable<string>? errorMessages = null,
@@ -73,7 +75,6 @@ public static class ControllerBaseX
     /// <param name="title">The value for <see cref="Error.Title" />.</param>
     /// <param name="type">The value for <see cref="Error.Type" />.</param>
     /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
-    [NonAction]
     public static ObjectResult HydraProblem(
         this ControllerBase controller,
         string? detail = null,
@@ -125,7 +126,7 @@ public static class ControllerBaseX
     /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
     public static ObjectResult ValidationFailed(this ControllerBase controller, ValidationResult validationResult)
     {
-        var message = string.Join(". ", validationResult.Errors.Select(s => s.ErrorMessage));
+        var message = string.Join(". ", validationResult.Errors.Select(s => s.ErrorMessage).Distinct());
         return controller.HydraProblem(message, null, 400, "Bad request");
     }
     
@@ -173,4 +174,40 @@ public static class ControllerBaseX
                 $"{errorTitle}: Storage limit exceeded"),
             _ => controller.HydraProblem(entityResult.Error, instance, 500, errorTitle),
         };
+
+    /// <summary>
+    /// Create an IActionResult from specified FetchEntityResult{T}.
+    /// This will be the Hydra model + 200 on success. Or a Hydra
+    /// error and appropriate status code if failed.
+    /// </summary>
+    /// <param name="controller">Current controllerBase object</param>
+    /// <param name="entityResult">Result to transform</param>
+    /// <param name="hydraBuilder">Delegate to transform ModifyEntityResult.Entity to Hydra representation</param>
+    /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
+    /// <param name="errorTitle">
+    ///     The value for <see cref="Error.Title" />. In some instances this will be prepended to the actual error name.
+    ///     e.g. errorTitle + ": Conflict"
+    /// </param>
+    /// <typeparam name="T">Type of entity being upserted</typeparam>
+    /// <returns>
+    /// ActionResult generated from FetchEntityResult
+    /// </returns>
+    public static IActionResult FetchResultToHttpResult<T>(this ControllerBase controller,
+        FetchEntityResult<T> entityResult,
+        Func<T, JsonLdBase> hydraBuilder, string? instance,
+        string? errorTitle)
+        where T : class
+    {
+        if (entityResult.Error)
+        {
+            return controller.HydraProblem(entityResult.ErrorMessage, instance, 500, errorTitle);
+        }
+        
+        if (entityResult.EntityNotFound || entityResult.Entity == null)
+        {
+            return controller.HydraNotFound();
+        }
+
+        return controller.Ok(hydraBuilder(entityResult.Entity));
+    }
 }

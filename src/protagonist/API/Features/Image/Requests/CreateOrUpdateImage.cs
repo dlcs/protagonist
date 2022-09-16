@@ -4,19 +4,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using API.Exceptions;
 using API.Features.Assets;
-using API.Infrastructure.Models;
+using API.Features.Image.Ingest;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Collections;
-using DLCS.Core.Settings;
-using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
-using DLCS.Model.Policies;
 using DLCS.Model.Spaces;
-using DLCS.Model.Storage;
 using MediatR;
-using Microsoft.Extensions.Options;
 
 namespace API.Features.Image.Requests;
 
@@ -56,28 +51,22 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
 {
     private readonly ISpaceRepository spaceRepository;
     private readonly IApiAssetRepository assetRepository;
-    private readonly IStorageRepository storageRepository;
-    private readonly IPolicyRepository policyRepository;
     private readonly IBatchRepository batchRepository;
     private readonly IAssetNotificationSender assetNotificationSender;
-    private readonly DlcsSettings settings;
+    private readonly AssetProcessor assetProcessor;
 
     public CreateOrUpdateImageHandler(
         ISpaceRepository spaceRepository,
         IApiAssetRepository assetRepository,
-        IStorageRepository storageRepository,
-        IPolicyRepository policyRepository,
         IBatchRepository batchRepository,
         IAssetNotificationSender assetNotificationSender,
-        IOptions<DlcsSettings> dlcsSettings)
+        AssetProcessor assetProcessor)
     {
         this.spaceRepository = spaceRepository;
         this.assetRepository = assetRepository;
-        this.storageRepository = storageRepository;
-        this.policyRepository = policyRepository;
         this.batchRepository = batchRepository;
         this.assetNotificationSender = assetNotificationSender;
-        this.settings = dlcsSettings.Value;
+        this.assetProcessor = assetProcessor;
     }
     
     public async Task<ModifyEntityResult<Asset>> Handle(CreateOrUpdateImage request, CancellationToken cancellationToken)
@@ -94,197 +83,48 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
                 $"Target space for asset does not exist: {asset.Customer}/{asset.Space}",
                 WriteResult.FailedValidation);
         }
-        
-        // Check if Asset already exists
-        Asset? existingAsset;
-        var changeType = ChangeType.Update;
-        try
-        {
-            existingAsset = await assetRepository.GetAsset(asset.Id, noCache: true);
-            if (existingAsset == null)
+
+        var processAssetResult = await assetProcessor.Process(
+            asset,
+            request.AssetMustExist,
+            request.AlwaysReingest,
+            false,
+            async updatedAsset =>
             {
-                if (request.AssetMustExist)
+                if (updatedAsset.Family == AssetFamily.Timebased)
                 {
-                    return ModifyEntityResult<Asset>.Failure(
-                        "Attempted to update an Asset that could not be found",
-                        WriteResult.NotFound
-                    );
+                    // Timebased asset - create a Batch record in DB and populate Batch property in Asset
+                    await batchRepository.CreateBatch(updatedAsset.Customer, updatedAsset.AsList(), cancellationToken);
                 }
-
-                changeType = ChangeType.Create;
-                var counts = await storageRepository.GetImageCounts(asset.Customer, cancellationToken);
-                if (counts.CurrentNumberOfStoredImages >= counts.MaximumNumberOfStoredImages)
-                {
-                    return ModifyEntityResult<Asset>.Failure(
-                        $"This operation will fall outside of your storage policy for number of images: maximum is {counts.MaximumNumberOfStoredImages}",
-                        WriteResult.StorageLimitExceeded
-                    );
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            return ModifyEntityResult<Asset>.Failure(e.Message, WriteResult.Error);
-        }
-
-        var assetPreparationResult =
-            AssetPreparer.PrepareAssetForUpsert(existingAsset, asset, allowNonApiUpdates: false);
+            },
+            cancellationToken
+        );
         
-        if (!assetPreparationResult.Success)
-        {
-            return ModifyEntityResult<Asset>.Failure(assetPreparationResult.ErrorMessage, WriteResult.FailedValidation);
-        }
+        var modifyEntityResult = processAssetResult.Result;
+        
+        // Processing failed, return failure
+        if (!modifyEntityResult.IsSuccess) return processAssetResult.Result;
 
-        var updatedAsset = assetPreparationResult.UpdatedAsset!;
-        var requiresEngineNotification = RequiresEngineNotification(updatedAsset, request, assetPreparationResult);
-
-        // Deliverator only does this for new assets, but it should verify PATCH assets too.
-        if (existingAsset == null)
-        {
-            var imagePolicyChanged = await SelectImageOptimisationPolicy(updatedAsset);
-            if (imagePolicyChanged)
-            {
-                // NB the AssetPreparer has already inspected image policy, but this will pick up
-                // a change from default.
-                requiresEngineNotification = true;
-            }
-            var thumbnailPolicyChanged = await SelectThumbnailPolicy(updatedAsset);
-            if (thumbnailPolicyChanged)
-            {
-                // We won't alter the value of requiresEngineNotification
-                // TODO thumbs will be backfilled.
-                // This could be a config setting.
-            }
-        }
-
-        // If a re-process is required, clear out fields related to processing
-        if (requiresEngineNotification)
-        {
-            updatedAsset.SetFieldsForIngestion();
-            
-            if (updatedAsset.Family == AssetFamily.Timebased)
-            {
-                // Timebased asset - create a Batch record in DB and populate Batch property in Asset
-                await batchRepository.CreateBatch(updatedAsset.Customer, updatedAsset.AsList(), cancellationToken);
-            }
-        }
-
-        var assetAfterSave = await assetRepository.Save(updatedAsset, existingAsset != null, cancellationToken);
-
-        // Restore fields that are not persisted but are required
-        if (updatedAsset.InitialOrigin.HasText())
-        {
-            assetAfterSave.InitialOrigin = asset.InitialOrigin;
-        }
-
+        var changeType = processAssetResult.ExistingAsset == null ? ChangeType.Create : ChangeType.Update;
+        var existingAsset = processAssetResult.ExistingAsset;
+        var assetAfterSave = modifyEntityResult.Entity;
+        
         await assetNotificationSender.SendAssetModifiedNotification(changeType, existingAsset, assetAfterSave);
 
-        if (requiresEngineNotification)
+        if (processAssetResult.RequiresEngineNotification)
         {
             return await IngestAndGenerateResult(assetAfterSave, existingAsset != null, cancellationToken);
         }
 
-        return ModifyEntityResult<Asset>.Success(assetAfterSave,
-            existingAsset == null ? WriteResult.Created : WriteResult.Updated);
+        return modifyEntityResult;
     }
-
-    private static bool RequiresEngineNotification(Asset asset, CreateOrUpdateImage request, 
-        AssetPreparationResult assetPreparationResult)
-    {
-        // A 'File' never results in the engine being called
-        if (asset.Family == AssetFamily.File) return false;
-        
-        return assetPreparationResult.RequiresReingest || request.AlwaysReingest;
-    }
-
+    
     private async Task<bool> DoesTargetSpaceExist(Asset asset, CancellationToken cancellationToken)
     {
         var targetSpace = await spaceRepository.GetSpace(asset.Customer, asset.Space, false, cancellationToken);
         return targetSpace != null;
     }
 
-    private async Task<bool> SelectThumbnailPolicy(Asset asset)
-    {
-        bool changed = false;
-        if (asset.Family == AssetFamily.Image)
-        {
-            changed = await SetThumbnailPolicy(settings.IngestDefaults.ThumbnailPolicies.Graphics, asset);
-        }
-        else if (asset.Family == AssetFamily.Timebased && asset.MediaType.HasText() && asset.MediaType.Contains("video/"))
-        {
-            changed = await SetThumbnailPolicy(settings.IngestDefaults.ThumbnailPolicies.Video, asset);
-        }
-
-        return changed;
-    }
-
-    private async Task<bool> SelectImageOptimisationPolicy(Asset asset)
-    {
-        bool changed = false;
-        if (asset.Family == AssetFamily.Image)
-        {
-            changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Graphics, asset);
-        }
-        else if (asset.Family == AssetFamily.Timebased && asset.MediaType.HasText())
-        {
-            if (asset.MediaType.Contains("video/"))
-            {
-                changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Video, asset);
-            }
-            else if (asset.MediaType.Contains("audio/"))
-            {
-                changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Audio, asset);
-            }
-        }
-
-        return changed;
-    }
-
-    private async Task<bool> SetImagePolicy(string key, Asset asset)
-    {
-        string? incomingPolicy = asset.ImageOptimisationPolicy;
-        ImageOptimisationPolicy? policy = null;
-        if (incomingPolicy.HasText())
-        {
-            policy = await policyRepository.GetImageOptimisationPolicy(incomingPolicy);
-        }
-
-        if (policy == null)
-        {
-            // The asset doesn't have a valid ImageOptimisationPolicy
-            // This is adapted from Deliverator, but there wasn't a way of 
-            // taking the policy from the incoming PUT. There now is.
-            var imagePolicy = await policyRepository.GetImageOptimisationPolicy(key);
-            if (imagePolicy != null)
-            {
-                asset.ImageOptimisationPolicy = imagePolicy.Id;
-            }
-        }
-
-        return asset.ImageOptimisationPolicy != incomingPolicy;
-    }
-    
-    private async Task<bool> SetThumbnailPolicy(string key, Asset asset)
-    {
-        string? incomingPolicy = asset.ThumbnailPolicy;
-        ThumbnailPolicy? policy = null;
-        if (incomingPolicy.HasText())
-        {
-            policy = await policyRepository.GetThumbnailPolicy(incomingPolicy);
-        }
-
-        if (policy == null)
-        {
-            var thumbnailPolicy = await policyRepository.GetThumbnailPolicy(key);
-            if (thumbnailPolicy != null)
-            {
-                asset.ThumbnailPolicy = thumbnailPolicy.Id;
-            }
-        }
-
-        return asset.ThumbnailPolicy != incomingPolicy;
-    }
-    
     private async Task<ModifyEntityResult<Asset>> IngestAndGenerateResult(Asset asset, bool isUpdate,
         CancellationToken cancellationToken)
     {

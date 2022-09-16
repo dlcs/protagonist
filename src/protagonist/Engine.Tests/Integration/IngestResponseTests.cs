@@ -32,19 +32,19 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
-    [InlineData(IngestResult.Unknown, HttpStatusCode.InternalServerError)]
-    [InlineData(IngestResult.Failed, HttpStatusCode.InternalServerError)]
-    [InlineData(IngestResult.Success, HttpStatusCode.OK)]
-    [InlineData(IngestResult.QueuedForProcessing, HttpStatusCode.Accepted)]
-    [InlineData(IngestResult.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
-    public async Task IngestAsset_ReturnsExpectedCode_ForIngestResult(IngestResult ingestResult, HttpStatusCode expected)
+    [InlineData(IngestResultStatus.Unknown, HttpStatusCode.InternalServerError)]
+    [InlineData(IngestResultStatus.Failed, HttpStatusCode.InternalServerError)]
+    [InlineData(IngestResultStatus.Success, HttpStatusCode.OK)]
+    [InlineData(IngestResultStatus.QueuedForProcessing, HttpStatusCode.Accepted)]
+    [InlineData(IngestResultStatus.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
+    public async Task IngestAsset_ReturnsExpectedCode_ForIngestResult(IngestResultStatus ingestResult, HttpStatusCode expected)
     {
         // Arrange
         var assetId = $"1/2/{ingestResult}";
         var message = new IngestAssetRequest(new Asset { Id = assetId }, DateTime.UtcNow);
         A.CallTo(() =>
             assetIngester.Ingest(A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
-                A<CancellationToken>._)).Returns(ingestResult);
+                A<CancellationToken>._)).Returns(new IngestResult(null, ingestResult));
 
         // Act
         var result = await httpClient.PostAsync("asset-ingest", GetJsonContent(message));
@@ -54,12 +54,12 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
-    [InlineData(IngestResult.Unknown, HttpStatusCode.InternalServerError)]
-    [InlineData(IngestResult.Failed, HttpStatusCode.InternalServerError)]
-    [InlineData(IngestResult.Success, HttpStatusCode.OK)]
-    [InlineData(IngestResult.QueuedForProcessing, HttpStatusCode.Accepted)]
-    [InlineData(IngestResult.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
-    public async Task IngestImage_ReturnsExpectedCode_ForIngestResult_Legacy(IngestResult ingestResult, HttpStatusCode expected)
+    [InlineData(IngestResultStatus.Unknown, HttpStatusCode.InternalServerError)]
+    [InlineData(IngestResultStatus.Failed, HttpStatusCode.InternalServerError)]
+    [InlineData(IngestResultStatus.Success, HttpStatusCode.OK)]
+    [InlineData(IngestResultStatus.QueuedForProcessing, HttpStatusCode.Accepted)]
+    [InlineData(IngestResultStatus.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
+    public async Task IngestImage_ReturnsExpectedCode_ForIngestResult_Legacy(IngestResultStatus ingestResult, HttpStatusCode expected)
     {
         // Arrange
         var assetId = $"1/2/{ingestResult}";
@@ -74,7 +74,7 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
             assetIngester.Ingest(A<LegacyIngestEvent>.That.Matches(r => r.Type == assetId),
-                A<CancellationToken>._)).Returns(ingestResult);
+                A<CancellationToken>._)).Returns(new IngestResult(null, ingestResult));
 
         // Act
         var result = await httpClient.PostAsync("image-ingest", GetJsonContent(message));
@@ -84,12 +84,12 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
-    [InlineData(IngestResult.Unknown, HttpStatusCode.InternalServerError)]
-    [InlineData(IngestResult.Failed, HttpStatusCode.InternalServerError)]
-    [InlineData(IngestResult.Success, HttpStatusCode.OK)]
-    [InlineData(IngestResult.QueuedForProcessing, HttpStatusCode.Accepted)]
-    [InlineData(IngestResult.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
-    public async Task IngestAsset_ReturnsExpectedCode_ForIngestResult_ByteArray(IngestResult ingestResult,
+    [InlineData(IngestResultStatus.Unknown, HttpStatusCode.InternalServerError)]
+    [InlineData(IngestResultStatus.Failed, HttpStatusCode.InternalServerError)]
+    [InlineData(IngestResultStatus.Success, HttpStatusCode.OK)]
+    [InlineData(IngestResultStatus.QueuedForProcessing, HttpStatusCode.Accepted)]
+    [InlineData(IngestResultStatus.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
+    public async Task IngestAsset_ReturnsExpectedCode_ForIngestResult_ByteArray(IngestResultStatus ingestResult,
         HttpStatusCode expected)
     {
         // Arrange
@@ -97,7 +97,7 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var message = new IngestAssetRequest(new Asset { Id = assetId }, DateTime.UtcNow);
         A.CallTo(() =>
             assetIngester.Ingest(A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
-                A<CancellationToken>._)).Returns(ingestResult);
+                A<CancellationToken>._)).Returns(new IngestResult(null, ingestResult));
 
         // Act
         var result = await httpClient.PostAsync("asset-ingest", GetByteArrayContent(message));
@@ -107,12 +107,12 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Theory]
-    [InlineData(IngestResult.Unknown, HttpStatusCode.InternalServerError)]
-    [InlineData(IngestResult.Failed, HttpStatusCode.InternalServerError)]
-    [InlineData(IngestResult.Success, HttpStatusCode.OK)]
-    [InlineData(IngestResult.QueuedForProcessing, HttpStatusCode.Accepted)]
-    [InlineData(IngestResult.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
-    public async Task IngestImage_ReturnsExpectedCode_ForIngestResult_Legacy_ByteArray(IngestResult ingestResult,
+    [InlineData(IngestResultStatus.Unknown, HttpStatusCode.InternalServerError)]
+    [InlineData(IngestResultStatus.Failed, HttpStatusCode.InternalServerError)]
+    [InlineData(IngestResultStatus.Success, HttpStatusCode.OK)]
+    [InlineData(IngestResultStatus.QueuedForProcessing, HttpStatusCode.Accepted)]
+    [InlineData(IngestResultStatus.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
+    public async Task IngestImage_ReturnsExpectedCode_ForIngestResult_Legacy_ByteArray(IngestResultStatus ingestResult,
         HttpStatusCode expected)
     {
         // Arrange
@@ -128,7 +128,7 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
             assetIngester.Ingest(A<LegacyIngestEvent>.That.Matches(r => r.Type == assetId),
-                A<CancellationToken>._)).Returns(ingestResult);
+                A<CancellationToken>._)).Returns(new IngestResult(null, ingestResult));
 
         // Act
         var result = await httpClient.PostAsync("image-ingest", GetByteArrayContent(message));

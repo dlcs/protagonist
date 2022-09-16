@@ -14,7 +14,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { NotForDelivery = true };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, new Asset(), false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, new Asset(), false, false);
         
         // Assert
         result.Success.Should().BeFalse();
@@ -27,7 +27,7 @@ public class AssetPreparerTests
         var updateAsset = new Asset { Finished = DateTime.Now };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
         
         // Assert
         result.Success.Should().BeFalse();
@@ -40,7 +40,7 @@ public class AssetPreparerTests
         var updateAsset = new Asset { Error = "change" };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
         
         // Assert
         result.Success.Should().BeFalse();
@@ -57,7 +57,7 @@ public class AssetPreparerTests
         var updateAsset = new Asset { Origin = "https://whatever", Family = family};
 
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
 
         // Assert
         result.RequiresReingest.Should().Be(requiresReingest);
@@ -72,10 +72,27 @@ public class AssetPreparerTests
         var updateAsset = new Asset { Origin = origin };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
         
         // Assert
         result.Success.Should().BeFalse();
+    }
+    
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public void PrepareAssetForUpsert_IsBatchUpdate_DeterminesIfBatchCanBeChanged(bool isBatchUpdate, 
+        bool expectedSuccess)
+    {
+        // Arrange
+        var updateAsset = new Asset { Batch = 12 };
+        var existingAsset = new Asset { Origin = "foo", Batch = 24 };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, isBatchUpdate);
+        
+        // Assert
+        result.Success.Should().Be(expectedSuccess);
     }
     
     [Theory]
@@ -89,7 +106,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { Origin = "https://wherever", Family = family };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
         
         // Assert
         result.RequiresReingest.Should().Be(requiresReingest);

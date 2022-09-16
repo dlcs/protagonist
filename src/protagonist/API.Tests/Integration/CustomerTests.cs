@@ -151,13 +151,14 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var roleId = $"https://api.dlcs.io/customers/{expectedNewCustomerId}/roles/clickthrough";
         clickthroughRole.Id.Should().Be(roleId);
 
-        // Deliverator does not create a row in CustomerStorage at this point
-
         // Should be a row in Queues
-        var queue = await dbContext.Queues.SingleOrDefaultAsync(q => q.Customer == expectedNewCustomerId);
-        queue.Should().NotBeNull();
-        queue.Name.Should().Be("default");
-        queue.Size.Should().Be(0);
+        var defaultQueue =
+            await dbContext.Queues.SingleAsync(q => q.Customer == expectedNewCustomerId && q.Name == "default");
+        defaultQueue.Size.Should().Be(0);
+        
+        var priorityQueue =
+            await dbContext.Queues.SingleAsync(q => q.Customer == expectedNewCustomerId && q.Name == "priority");
+        priorityQueue.Size.Should().Be(0);
     }
 
     [Fact]

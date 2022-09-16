@@ -57,15 +57,16 @@ public class AssetIngester : IAssetIngester
     /// <remarks>This is to comply with message format sent by Deliverator API.</remarks>
     public Task<IngestResult> Ingest(LegacyIngestEvent request, CancellationToken cancellationToken = default)
     {
+        IngestAssetRequest? internalIngestRequest = null;
         try
         {
-            var internalIngestRequest = request.ConvertToAssetRequest();
+            internalIngestRequest = request.ConvertToAssetRequest();
             return Ingest(internalIngestRequest, cancellationToken);
         }
         catch (Exception e)
         {
             logger.LogError(e, "Exception ingesting IncomingIngest - {Message}", request.Message);
-            return Task.FromResult(IngestResult.Failed);
+            return Task.FromResult(new IngestResult(internalIngestRequest?.Asset, IngestResultStatus.Failed));
         }
     }
 
@@ -84,7 +85,8 @@ public class AssetIngester : IAssetIngester
         // get the relevant resolver (Image or Timebased)
         var ingestor = resolver(request.Asset.Family ?? AssetFamily.Image);
 
-        return await ingestor.Ingest(request, customerOriginStrategy, cancellationToken);
+        var status = await ingestor.Ingest(request, customerOriginStrategy, cancellationToken);
+        return new IngestResult(request.Asset, status);
     }
 
     private async Task HydrateAssetPolicies(Asset asset)
@@ -100,5 +102,17 @@ public class AssetIngester : IAssetIngester
             var optimisationPolicy = await policyRepository.GetImageOptimisationPolicy(asset.ImageOptimisationPolicy);
             asset.WithImageOptimisationPolicy(optimisationPolicy);
         }
+    }
+}
+
+public class IngestResult
+{
+    public Asset? Asset { get; }
+    public IngestResultStatus Status { get; }
+
+    public IngestResult(Asset? asset, IngestResultStatus ingestResult)
+    {
+        Asset = asset;
+        Status = ingestResult;
     }
 }

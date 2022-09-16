@@ -98,6 +98,7 @@ public static class AssetConverter
         {
             throw new APIException("Asserted space does not agree with supplied space.");
         }
+        
         if (hydraImage.Space <= 0)
         {
             if (spaceId.HasValue)
@@ -114,6 +115,7 @@ public static class AssetConverter
         {
             modelId = hydraImage.ModelId;
         }
+        
         if (modelId.IsNullOrEmpty() && hydraImage.Id.HasText())
         {
             modelId = hydraImage.Id.GetLastPathElement();
@@ -160,6 +162,8 @@ public static class AssetConverter
             Customer = hydraImage.CustomerId,
             Space = hydraImage.Space
         };
+        
+        // NOTE(DG) - would the below be better suited to AutoMapper? Would mean any new fields would auto-map
         
         // This conversion should not be supported?
         if (hydraImage.Batch != null)
@@ -273,10 +277,7 @@ public static class AssetConverter
         {
             asset.InitialOrigin = hydraImage.InitialOrigin;
         }
-
-        // We now have an asset that likely has many null fields.
-        // It's not safe to insert this into the database as-is, subsequent users will need to
-        // ensure that default values are set for INSERTs and UPDATEs.
+        
         return asset;
     }
 
@@ -371,8 +372,4 @@ public static class AssetConverter
 
         return assetFilter;
     }
-
-
-
-
 }

@@ -21,4 +21,9 @@ public class QueueMessage
     /// Unique identifier for message
     /// </summary>
     public string MessageId { get; set; }
+    
+    /// <summary>
+    /// The name of the queue that this message was from
+    /// </summary>
+    public string QueueName { get; set; }
 }

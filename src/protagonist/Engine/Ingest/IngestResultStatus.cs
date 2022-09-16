@@ -3,7 +3,7 @@ namespace Engine.Ingest;
 /// <summary>
 /// Represents the result of an ingest request.
 /// </summary>
-public enum IngestResult
+public enum IngestResultStatus
 {
     /// <summary>
     /// Fallback value.

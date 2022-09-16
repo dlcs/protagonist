@@ -86,4 +86,23 @@ public class CollectionXTests
 
         list.Should().ContainSingle(i => (DateTime)i == item);
     }
+    
+    [Fact]
+    public void GetDuplicates_ReturnsEmptyList_IfNoDuplicates()
+    {
+        var list = new List<int> { 1, 2, 3, 4, 5 };
+        var duplicates = list.GetDuplicates();
+
+        duplicates.Should().BeEmpty();
+    }
+    
+    [Fact]
+    public void GetDuplicates_ReturnsDuplicates()
+    {
+        var list = new List<int> { 1, 2, 3, 4, 5, 4, 3 };
+        var expected = new List<int> { 3, 4 };
+        var duplicates = list.GetDuplicates();
+
+        duplicates.Should().BeEquivalentTo(expected);
+    }
 }

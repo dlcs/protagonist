@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using API.Features.Assets;
-using API.Infrastructure.Models;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Types;

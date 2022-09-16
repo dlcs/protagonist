@@ -59,7 +59,7 @@ public class ApiAssetRepositoryTests
         var newAsset = new Asset { Id = id, Customer = 100, Space = 10, Reference1 = "I am new", 
             Origin = "https://example.org/image1.tiff"};
     
-        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false);
         result.Success.Should().BeTrue();
 
         await sut.Save(newAsset, false, CancellationToken.None);
@@ -77,7 +77,7 @@ public class ApiAssetRepositoryTests
         var newAsset = new Asset { Id = id, Customer = 100, Space = 10, Reference1 = "I am new", 
             Origin = "https://example.org/image1.tiff"};
     
-        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false);
         result.Success.Should().BeTrue();
 
         await sut.Save(result.UpdatedAsset!, false, CancellationToken.None);
@@ -105,7 +105,7 @@ public class ApiAssetRepositoryTests
             Space = 1
         };
         
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, patch, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, patch, false, false);
         result.Success.Should().BeTrue();
     
         // Act
@@ -133,7 +133,7 @@ public class ApiAssetRepositoryTests
             Space = 1
         };
         
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, patch, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, patch, false, false);
         result.Success.Should().BeTrue();
     
         // Act

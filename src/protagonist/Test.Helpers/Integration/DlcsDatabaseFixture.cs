@@ -67,6 +67,8 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Roles\" WHERE \"Id\" != 'clickthrough'");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"SessionUsers\"");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"AuthTokens\"");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Batches\"");
+        DbContext.ChangeTracker.Clear();
     }
 
     public const string ClickThroughAuthService = "ba7fd6e2-773b-4ef2-bdb9-c8ee9b46fd54";

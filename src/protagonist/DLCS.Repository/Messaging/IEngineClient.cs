@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Messaging;
@@ -25,4 +26,14 @@ public interface IEngineClient
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Boolean representing whether request successfully queued</returns>
     Task<bool> AsynchronousIngest(IngestAssetRequest ingestAssetRequest, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Queue a batch of ingest requests for engine to process
+    /// </summary>
+    /// <param name="ingestAssetRequests">List of requests containing details of assets to ingest</param>
+    /// <param name="isPriority">Whether request is for priority ingest</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>Count of items successfully processed</returns>
+    Task<int> AsynchronousIngestBatch(IReadOnlyCollection<IngestAssetRequest> ingestAssetRequests,
+        bool isPriority, CancellationToken cancellationToken);
 }
