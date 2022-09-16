@@ -59,6 +59,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
     public async Task<ModifyEntityResult<Batch>> Handle(CreateBatchOfImages request,
         CancellationToken cancellationToken)
     {
+        // TODO - we may need to support non-Image assets here 
         if (request.IsPriority)
         {
             if (request.Assets.Any(a => a.Family != AssetFamily.Image))
