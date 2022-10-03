@@ -26,6 +26,7 @@ using Newtonsoft.Json.Linq;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using AssetFamily = DLCS.Model.Assets.AssetFamily;
+using ImageOptimisationPolicy = DLCS.Model.Policies.ImageOptimisationPolicy;
 
 namespace API.Tests.Integration;
 
@@ -496,7 +497,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.Images.AddTestAsset(assetId.ToString(), ref1: "I am string 1",
             origin: "https://images.org/image1.tiff");
-        var testPolicy = new DLCS.Model.Assets.ImageOptimisationPolicy
+        var testPolicy = new ImageOptimisationPolicy
         {
             Id = "test-policy",
             Name = "Test Policy",

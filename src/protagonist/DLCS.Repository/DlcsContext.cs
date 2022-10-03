@@ -11,6 +11,7 @@ using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
+using DLCS.Model.Policies;
 using DLCS.Model.Processing;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
@@ -21,7 +22,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using OriginStrategy = DLCS.Repository.Entities.OriginStrategy;
+using OriginStrategy = DLCS.Model.Policies.OriginStrategy;
 namespace DLCS.Repository;
 
 public partial class DlcsContext : DbContext

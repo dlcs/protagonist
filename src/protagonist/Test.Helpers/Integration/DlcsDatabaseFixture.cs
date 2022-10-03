@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
+using DLCS.Model.Policies;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository;
@@ -84,18 +85,18 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             Name = "test",
             Keys = Array.Empty<string>()
         });
-        await DbContext.StoragePolicies.AddAsync(new StoragePolicy
-        {
-            Id = "default",
-            MaximumNumberOfStoredImages = 1000000,
-            MaximumTotalSizeOfStoredImages = 1000000000
-        });
-        await DbContext.StoragePolicies.AddAsync(new StoragePolicy
-        {
-            Id = "small",
-            MaximumNumberOfStoredImages = 10,
-            MaximumTotalSizeOfStoredImages = 100
-        });
+        await DbContext.StoragePolicies.AddRangeAsync(new StoragePolicy
+            {
+                Id = "default",
+                MaximumNumberOfStoredImages = 1000000,
+                MaximumTotalSizeOfStoredImages = 1000000000
+            },
+            new StoragePolicy
+            {
+                Id = "small",
+                MaximumNumberOfStoredImages = 10,
+                MaximumTotalSizeOfStoredImages = 100
+            });
         await DbContext.EntityCounters.AddRangeAsync(new EntityCounter
         {
             Type = "space",

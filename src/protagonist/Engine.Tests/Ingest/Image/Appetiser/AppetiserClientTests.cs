@@ -6,6 +6,7 @@ using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
+using DLCS.Model.Policies;
 using Engine.Ingest;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.Appetiser;
