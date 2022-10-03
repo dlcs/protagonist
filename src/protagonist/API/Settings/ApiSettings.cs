@@ -29,4 +29,9 @@ public class ApiSettings
     /// The maximum number of images that can be POSTed in a single batch
     /// </summary>
     public int MaxBatchSize { get; set; } = 250;
+    
+    /// <summary>
+    /// The maximum number of images that can be POSTed in a single batch
+    /// </summary>
+    public int MaxImageListSize { get; set; } = 500;
 }

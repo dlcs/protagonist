@@ -54,9 +54,16 @@ public record AssetId(int Customer, int Space, string Asset)
         var parts = assetImageId.Split("/", StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != 3)
         {
-            throw new FormatException("AssetId string must be in format customer/space/asset");
+            throw new FormatException($"AssetId '{assetImageId}' is invalid. Must be in format customer/space/asset");
         }
 
-        return new AssetId(int.Parse(parts[0]), int.Parse(parts[1]), parts[2]);
+        try
+        {
+            return new AssetId(int.Parse(parts[0]), int.Parse(parts[1]), parts[2]);
+        }
+        catch (FormatException)
+        {
+            throw new FormatException($"AssetId '{assetImageId}' is invalid. Must be in format customer/space/asset");
+        }
     }
 }

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Converters;
 using API.Exceptions;
 using API.Features.Image.Requests;
@@ -10,7 +9,6 @@ using API.Features.Space.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Strings;
-using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests;
 using Hydra.Collections;

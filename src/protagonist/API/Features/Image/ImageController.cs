@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Image.Requests;
 using API.Infrastructure;

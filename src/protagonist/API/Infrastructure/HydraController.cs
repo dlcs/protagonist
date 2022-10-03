@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -185,6 +186,65 @@ public abstract class HydraController : Controller
                     };
                     PartialCollectionView.AddPaging(collection, pageOf.Page, pageOf.PageSize);
                     return collection;
+                },
+                instance,
+                errorTitle);
+        }
+        catch (APIException apiEx)
+        {
+            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode ?? 500, apiEx.Label);
+        }
+        catch (Exception ex)
+        {
+            return this.HydraProblem(ex.Message, null, 500, errorTitle);
+        }
+    }
+    
+    /// <summary>
+    /// Handle a request that returns a non-paged list of assets.
+    /// This takes a IRequest which returns a FetchEntityResult{IReadOnlyCollection{T}}
+    /// The request is sent and result is transformed to HydraCollection.
+    /// </summary>
+    /// <param name="request">IRequest to fetch data</param>
+    /// <param name="hydraBuilder">Delegate to transform each returned entity to a Hydra representation</param>
+    /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
+    /// <param name="errorTitle">
+    /// The value for <see cref="Error.Title" />. In some instances this will be prepended to the actual error name.
+    /// e.g. errorTitle + ": Conflict"
+    /// </param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <typeparam name="TEntity">Type of db entity being fetched</typeparam>
+    /// <typeparam name="TRequest">Type of mediatr request being page</typeparam>
+    /// <typeparam name="THydra">Hydra type for each member</typeparam>
+    /// <returns>
+    /// ActionResult generated from FetchEntityResult. This will be the HydraCollection + 200 on success. Or a Hydra
+    /// error and appropriate status code if failed.
+    /// </returns>
+    protected async Task<IActionResult> HandleListFetch<TEntity, TRequest, THydra>(
+        TRequest request,
+        Func<TEntity, THydra> hydraBuilder,
+        string? instance = null,
+        string? errorTitle = "Fetch failed",
+        CancellationToken cancellationToken = default)
+        where TRequest : IRequest<FetchEntityResult<IReadOnlyCollection<TEntity>>>
+        where THydra : DlcsResource
+    {
+        try
+        {
+            var result = await mediator.Send(request, cancellationToken);
+
+            return this.FetchResultToHttpResult(
+                result,
+                results =>
+                {
+                    return new HydraCollection<THydra>
+                    {
+                        WithContext = true,
+                        Members = results.Select(b => hydraBuilder(b)).ToArray(),
+                        TotalItems = results.Count,
+                        PageSize = results.Count,
+                        Id = Request.GetJsonLdId()
+                    };
                 },
                 instance,
                 errorTitle);
