@@ -50,19 +50,18 @@ public class GetMultipleImagesByIdHandler
 
     private static void ValidateRequest(GetMultipleImagesById request)
     {
-        IEnumerable<AssetId> assetIds;
         try
         {
-            assetIds = request.ImageIds.Select(i => AssetId.FromString(i));
+            var assetIds = request.ImageIds.Select(i => AssetId.FromString(i)).ToList();
+            
+            if (assetIds.Any(a => a.Customer != request.CustomerId))
+            {
+                throw new BadRequestException("Cannot request images for different customer");
+            }
         }
         catch (FormatException formatException)
         {
             throw new BadRequestException(formatException.Message, formatException);
-        }
-
-        if (assetIds.Any(a => a.Customer != request.CustomerId))
-        {
-            throw new BadRequestException("Cannot request images for different customer");
         }
     }
 }
