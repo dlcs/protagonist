@@ -97,8 +97,7 @@ public static class ControllerBaseX
             StatusCode = hydraError.Status
         };
     }
-    
-    
+
     /// <summary>
     /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
     /// This overload can wrap otherwise uncaught exceptions.

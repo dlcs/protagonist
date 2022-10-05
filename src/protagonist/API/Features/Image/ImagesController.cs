@@ -115,7 +115,7 @@ public class ImagesController : HydraController
                 {
                     var asset = hydraImage.ToDlcsModel(customerId, spaceId);
                     var request = new CreateOrUpdateImage(asset, "PATCH");
-                    var result = await mediator.Send(request);
+                    var result = await Mediator.Send(request);
                     if (result.Entity != null)
                     {
                         patchedAssets.Add(result.Entity);

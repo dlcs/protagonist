@@ -81,6 +81,10 @@ public class AssetNotificationSender : IAssetNotificationSender
 
     public Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after)
     {
+        /*
+         * TODO - this should probably have a bulk implementation, assuming it handles bulk enqueuing of messages
+         * it's more efficient to do in batches rather than 1 at a time (like engine client)
+         */
         switch (changeType)
         {
             case ChangeType.Create when before != null:

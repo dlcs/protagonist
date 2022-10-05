@@ -44,7 +44,7 @@ public class ImageController : HydraController
     public async Task<IActionResult> GetImage(int customerId, int spaceId, string imageId)
     {
         var assetId = new AssetId(customerId, spaceId, imageId);
-        var dbImage = await mediator.Send(new GetImage(assetId));
+        var dbImage = await Mediator.Send(new GetImage(assetId));
         if (dbImage == null)
         {
             return this.HydraNotFound();
@@ -125,7 +125,7 @@ public class ImageController : HydraController
         [FromRoute] string imageId, CancellationToken cancellationToken)
     {
         var deleteRequest = new DeleteAsset(customerId, spaceId, imageId);
-        var result = await mediator.Send(deleteRequest, cancellationToken);
+        var result = await Mediator.Send(deleteRequest, cancellationToken);
 
         return result switch
         {
@@ -202,7 +202,7 @@ public class ImageController : HydraController
             MediaType = asset.MediaType
         };
 
-        var result = await mediator.Send(saveRequest);
+        var result = await Mediator.Send(saveRequest);
         if (string.IsNullOrEmpty(result.Origin))
         {
             return this.HydraProblem("Could not save uploaded file", assetId.ToString(), 500, errorTitle);

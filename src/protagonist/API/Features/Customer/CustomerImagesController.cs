@@ -49,7 +49,7 @@ public class CustomerImagesController : HydraController
     public async Task<IActionResult> GetAllImages(
         [FromRoute] int customerId,
         [FromBody] HydraCollection<IdentifierOnly> imageIdentifiers,
-        [FromServices] AllImagesValidator validator,
+        [FromServices] ImageIdListValidator validator,
         CancellationToken cancellationToken = default)
     {
         var validationResult = await validator.ValidateAsync(imageIdentifiers, cancellationToken);
@@ -65,5 +65,53 @@ public class CustomerImagesController : HydraController
             a => a.ToHydra(GetUrlRoots()),
             "Get customer images failed",
             cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// POST /customers/{customerId}/deleteImages
+    /// 
+    /// Accepts a list of image identifiers, will delete those that exist from DB
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    /// 
+    ///     POST: /customers/1/deleteImages
+    ///     {
+    ///         "@context": "http://www.w3.org/ns/hydra/context.jsonld",
+    ///         "@type":"Collection",
+    ///         "member": [
+    ///             { "id": "1/1/foo" },
+    ///             { "id": "1/99/bar" }
+    ///         ]
+    ///     }
+    /// </remarks>
+    [HttpPost]
+    [Route("deleteImages")]
+    public async Task<IActionResult> DeleteImages(
+        [FromRoute] int customerId,
+        [FromBody] HydraCollection<IdentifierOnly> imageIdentifiers,
+        [FromServices] ImageIdListValidator validator,
+        CancellationToken cancellationToken = default)
+    {
+        var validationResult = await validator.ValidateAsync(imageIdentifiers, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
+
+        return await HandleHydraRequest(async () =>
+        {
+            var request =
+                new DeleteMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(), customerId);
+            var deletedRows = await Mediator.Send(request, cancellationToken);
+
+            if (deletedRows == 0)
+            {
+                return this.HydraProblem("No assets found", null, 400, "Delete images failed");
+            }
+
+            // TODO - return a better message (or 204?). This is for backwards compat with Deliverator and
+            return Ok(new { message = "images deleted" });
+        }, "Delete images failed");
     }
 }

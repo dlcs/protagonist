@@ -11,9 +11,9 @@ namespace API.Features.Customer.Validation;
 /// <summary>
 /// Validator for body sent to POST /customer/{id}/allImages
 /// </summary>
-public class AllImagesValidator : AbstractValidator<HydraCollection<IdentifierOnly>>
+public class ImageIdListValidator : AbstractValidator<HydraCollection<IdentifierOnly>>
 {
-    public AllImagesValidator(IOptions<ApiSettings> apiSettings)
+    public ImageIdListValidator(IOptions<ApiSettings> apiSettings)
     {
         RuleFor(c => c.Members)
             .NotEmpty().WithMessage("Members cannot be empty");

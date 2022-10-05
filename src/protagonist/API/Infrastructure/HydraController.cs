@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Converters;
 using API.Exceptions;
 using API.Infrastructure.Requests;
@@ -27,13 +26,13 @@ public abstract class HydraController : Controller
     /// </summary>
     protected readonly ApiSettings Settings;
 
-    protected readonly IMediator mediator;
+    protected readonly IMediator Mediator;
 
     /// <inheritdoc />
     protected HydraController(ApiSettings settings, IMediator mediator)
     {
         Settings = settings;
-        this.mediator = mediator;
+        Mediator = mediator;
     }
 
     /// <summary>
@@ -74,20 +73,12 @@ public abstract class HydraController : Controller
         CancellationToken cancellationToken = default)
         where T : class
     {
-        try
+        return await HandleHydraRequest(async () =>
         {
-            var result = await mediator.Send(request, cancellationToken);
+            var result = await Mediator.Send(request, cancellationToken);
 
             return this.ModifyResultToHttpResult(result, hydraBuilder, instance, errorTitle);
-        }
-        catch (APIException apiEx)
-        {
-            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode ?? 500, apiEx.Label);
-        }
-        catch (Exception ex)
-        {
-            return this.HydraProblem(ex.Message, null, 500, errorTitle);
-        }
+        }, errorTitle);
     }
     
     /// <summary>
@@ -115,20 +106,12 @@ public abstract class HydraController : Controller
         CancellationToken cancellationToken = default)
         where T : class
     {
-        try
+        return await HandleHydraRequest(async () =>
         {
-            var result = await mediator.Send(request, cancellationToken);
+            var result = await Mediator.Send(request, cancellationToken);
 
             return this.FetchResultToHttpResult(result, hydraBuilder, instance, errorTitle);
-        }
-        catch (APIException apiEx)
-        {
-            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode ?? 500, apiEx.Label);
-        }
-        catch (Exception ex)
-        {
-            return this.HydraProblem(ex.Message, null, 500, errorTitle);
-        }
+        }, errorTitle);
     }
 
     /// <summary>
@@ -162,7 +145,7 @@ public abstract class HydraController : Controller
         where TRequest : IRequest<FetchEntityResult<PageOf<TEntity>>>, IPagedRequest
         where THydra : DlcsResource
     {
-        try
+        return await HandleHydraRequest(async () =>
         {
             SetPaging(request);
             if (request is IOrderableRequest orderableRequest)
@@ -170,7 +153,7 @@ public abstract class HydraController : Controller
                 SetOrderBy(orderableRequest);
             }
 
-            var result = await mediator.Send(request, cancellationToken);
+            var result = await Mediator.Send(request, cancellationToken);
 
             return this.FetchResultToHttpResult(
                 result,
@@ -189,15 +172,7 @@ public abstract class HydraController : Controller
                 },
                 instance,
                 errorTitle);
-        }
-        catch (APIException apiEx)
-        {
-            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode ?? 500, apiEx.Label);
-        }
-        catch (Exception ex)
-        {
-            return this.HydraProblem(ex.Message, null, 500, errorTitle);
-        }
+        }, errorTitle);
     }
     
     /// <summary>
@@ -229,9 +204,9 @@ public abstract class HydraController : Controller
         where TRequest : IRequest<FetchEntityResult<IReadOnlyCollection<TEntity>>>
         where THydra : DlcsResource
     {
-        try
+        return await HandleHydraRequest(async () =>
         {
-            var result = await mediator.Send(request, cancellationToken);
+            var result = await Mediator.Send(request, cancellationToken);
 
             return this.FetchResultToHttpResult(
                 result,
@@ -248,6 +223,18 @@ public abstract class HydraController : Controller
                 },
                 instance,
                 errorTitle);
+        }, errorTitle);
+    }
+
+    /// <summary>
+    /// Make a request and handle exceptions, converting to a HydraProblem 
+    /// </summary>
+    protected async Task<IActionResult> HandleHydraRequest(Func<Task<IActionResult>> handler,
+        string? errorTitle = "Request failed")
+    {
+        try
+        {
+            return await handler();
         }
         catch (APIException apiEx)
         {

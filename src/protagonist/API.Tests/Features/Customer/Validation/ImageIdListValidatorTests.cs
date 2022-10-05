@@ -8,14 +8,14 @@ using Microsoft.Extensions.Options;
 
 namespace API.Tests.Features.Customer.Validation;
 
-public class AllImagesValidatorTests
+public class ImageIdListValidatorTests
 {
-    private readonly AllImagesValidator sut;
+    private readonly ImageIdListValidator sut;
 
-    public AllImagesValidatorTests()
+    public ImageIdListValidatorTests()
     {
         var apiSettings = new ApiSettings { MaxImageListSize = 4 };
-        sut = new AllImagesValidator(Options.Create(apiSettings));
+        sut = new ImageIdListValidator(Options.Create(apiSettings));
     }
 
     [Fact]

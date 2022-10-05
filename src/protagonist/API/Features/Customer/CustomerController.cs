@@ -52,7 +52,7 @@ public class CustomerController : HydraController
     public async Task<HydraCollection<JObject>> GetCustomers()
     {
         var baseUrl = GetUrlRoots().BaseUrl;
-        var dbCustomers = await mediator.Send(new GetAllCustomers());
+        var dbCustomers = await Mediator.Send(new GetAllCustomers());
             
         return new HydraCollection<JObject>
         {
@@ -90,7 +90,7 @@ public class CustomerController : HydraController
 
         try
         {
-            var result = await mediator.Send(command);
+            var result = await Mediator.Send(command);
             if (result.Customer == null || result.ErrorMessages.Any())
             {
                 int statusCode = result.Conflict ? 409 : 500;
@@ -121,7 +121,7 @@ public class CustomerController : HydraController
     [Route("{customerId}")]
     public async Task<IActionResult> GetCustomer(int customerId)
     {
-        var dbCustomer = await mediator.Send(new GetCustomer(customerId));
+        var dbCustomer = await Mediator.Send(new GetCustomer(customerId));
         if (dbCustomer == null)
         {
             return this.HydraNotFound();
