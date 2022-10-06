@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
@@ -777,5 +778,90 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             EngineClient.AsynchronousIngestBatch(
                 A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 3), true,
                 A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Post_TestBatch_404_IfBatchNotFoundForCustomer()
+    {
+        // Arrange
+        const string path = "customers/99/queue/batches/-1200/test";
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync(path, null!);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Post_TestBatch_MarksBatchAsSuperseded_IfNoImagesFound()
+    {
+        // Arrange
+        await dbContext.Batches.AddTestBatch(201);
+        await dbContext.SaveChangesAsync();
+        const string path = "customers/99/queue/batches/201/test";
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync(path, null!);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jsonDoc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
+
+        var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == 201);
+        dbBatch.Superseded.Should().BeTrue();
+    }
+    
+    [Fact]
+    public async Task Post_TestBatch_MarksBatchAsComplete_IfImagesFoundAndAllFinished()
+    {
+        // Arrange
+        const int batch = 202;
+        await dbContext.Batches.AddTestBatch(batch, count: 100);
+        await dbContext.Images.AddTestAsset("2/1/clown", batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset("2/1/divine", batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset("2/1/predictable", batch: batch, finished: DateTime.UtcNow);
+        await dbContext.SaveChangesAsync();
+        const string path = "customers/99/queue/batches/202/test";
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync(path, null!);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jsonDoc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
+
+        var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == batch);
+        dbBatch.Superseded.Should().BeFalse();
+        dbBatch.Finished.Should().NotBeNull();
+        dbBatch.Count.Should().Be(3);
+    }
+    
+    [Fact]
+    public async Task Post_TestBatch_ReturnsFalse_IfNotSupersededOrFinished()
+    {
+        // Arrange
+        const int batch = 203;
+        await dbContext.Batches.AddTestBatch(batch, count: 100);
+        await dbContext.Images.AddTestAsset("2/1/twist", batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset("2/1/chi", batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset("2/1/lost", batch: batch, finished: null);
+        await dbContext.SaveChangesAsync();
+        const string path = "customers/99/queue/batches/203/test";
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync(path, null!);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jsonDoc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeFalse();
+
+        var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == batch);
+        dbBatch.Superseded.Should().BeFalse();
+        dbBatch.Finished.Should().BeNull();
+        dbBatch.Count.Should().Be(100);
     }
 }

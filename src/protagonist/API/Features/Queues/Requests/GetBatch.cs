@@ -37,6 +37,7 @@ public class GetBatchHandler : IRequestHandler<GetBatch, FetchEntityResult<Batch
         this.dlcsContext = dlcsContext;
         this.logger = logger;
     }
+    
     public async Task<FetchEntityResult<Batch>> Handle(GetBatch request, CancellationToken cancellationToken)
     {
         try
