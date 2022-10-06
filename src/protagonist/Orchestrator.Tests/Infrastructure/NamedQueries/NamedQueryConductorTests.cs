@@ -4,11 +4,12 @@ using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
+using DLCS.Repository.NamedQueries;
+using DLCS.Repository.NamedQueries.Parsing;
 using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Orchestrator.Infrastructure.NamedQueries;
-using Orchestrator.Infrastructure.NamedQueries.Parsing;
 using Xunit;
 
 namespace Orchestrator.Tests.Infrastructure.NamedQueries;

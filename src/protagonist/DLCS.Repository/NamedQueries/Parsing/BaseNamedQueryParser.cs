@@ -10,7 +10,7 @@ using QueryMapping = DLCS.Model.Assets.NamedQueries.ParsedNamedQuery.QueryMappin
 using OrderDirection = DLCS.Model.Assets.NamedQueries.ParsedNamedQuery.OrderDirection;
 using QueryOrder = DLCS.Model.Assets.NamedQueries.ParsedNamedQuery.QueryOrder;
 
-namespace Orchestrator.Infrastructure.NamedQueries.Parsing;
+namespace DLCS.Repository.NamedQueries.Parsing;
 
 /// <summary>
 /// Basic NQ parser, supporting the following arguments: s1, s2, s3, n1, n2, n3, space, spacename, canvas, # and p*

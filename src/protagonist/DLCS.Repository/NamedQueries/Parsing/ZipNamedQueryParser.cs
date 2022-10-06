@@ -2,17 +2,15 @@
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.Infrastructure.NamedQueries.Persistence;
-using Orchestrator.Settings;
 
-namespace Orchestrator.Infrastructure.NamedQueries.Zip;
+namespace DLCS.Repository.NamedQueries.Parsing;
 
 /// <summary>
 /// Named query parser for converting objects to Zip archive
 /// </summary>
 public class ZipNamedQueryParser : StoredNamedQueryParser<ZipParsedNamedQuery>
 {
-    public ZipNamedQueryParser(IOptions<NamedQuerySettings> namedQuerySettings, ILogger<ZipNamedQueryParser> logger)
+    public ZipNamedQueryParser(IOptions<NamedQueryTemplateSettings> namedQuerySettings, ILogger<ZipNamedQueryParser> logger)
         : base(namedQuerySettings, logger)
     {
     }
@@ -20,6 +18,6 @@ public class ZipNamedQueryParser : StoredNamedQueryParser<ZipParsedNamedQuery>
     protected override ZipParsedNamedQuery GenerateParsedQueryObject(CustomerPathElement customerPathElement)
         => new(customerPathElement);
 
-    protected override string GetTemplateFromSettings(NamedQuerySettings namedQuerySettings)
+    protected override string GetTemplateFromSettings(NamedQueryTemplateSettings namedQuerySettings)
         => namedQuerySettings.ZipStorageTemplate;
 }

@@ -25,6 +25,7 @@ using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
+using DLCS.Repository.NamedQueries.Infrastructure;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;
 using DLCS.Repository.Spaces;
@@ -98,6 +99,7 @@ public class Startup
             .AddTransient<TimingHandler>()
             .AddValidatorsFromAssemblyContaining<Startup>()
             .ConfigureMediatR()
+            .AddNamedQueriesCore()
             .ConfigureSwagger();
 
         services

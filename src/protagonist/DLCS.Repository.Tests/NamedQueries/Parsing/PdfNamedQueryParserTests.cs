@@ -2,14 +2,12 @@
 using System.Collections.Generic;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
-using FluentAssertions;
+using DLCS.Repository.NamedQueries;
+using DLCS.Repository.NamedQueries.Parsing;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Orchestrator.Infrastructure.NamedQueries.PDF;
-using Orchestrator.Settings;
-using Xunit;
 
-namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF;
+namespace DLCS.Repository.Tests.NamedQueries.Parsing;
 
 public class PdfNamedQueryParserTests
 {
@@ -18,7 +16,7 @@ public class PdfNamedQueryParserTests
 
     public PdfNamedQueryParserTests()
     {
-        var settings = Options.Create(new NamedQuerySettings());
+        var settings = Options.Create(new NamedQueryTemplateSettings());
         sut = new PdfNamedQueryParser(settings, new NullLogger<PdfNamedQueryParser>());
     }
 

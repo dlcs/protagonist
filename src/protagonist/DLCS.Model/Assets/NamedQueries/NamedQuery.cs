@@ -2,7 +2,7 @@
 
 namespace DLCS.Model.Assets.NamedQueries;
 
-public partial class NamedQuery
+public class NamedQuery
 {
     public string Id { get; set; }
     public int Customer { get; set; }

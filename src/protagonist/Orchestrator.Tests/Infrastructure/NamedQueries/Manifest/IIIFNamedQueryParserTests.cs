@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
+using DLCS.Repository.NamedQueries.Parsing;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using Orchestrator.Infrastructure.NamedQueries.Manifest;
 using Xunit;
 
 namespace Orchestrator.Tests.Infrastructure.NamedQueries.Manifest;

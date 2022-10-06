@@ -4,10 +4,8 @@ using DLCS.Core.Strings;
 using DLCS.Model.Assets.NamedQueries;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.Infrastructure.NamedQueries.Parsing;
-using Orchestrator.Settings;
 
-namespace Orchestrator.Infrastructure.NamedQueries.Persistence;
+namespace DLCS.Repository.NamedQueries.Parsing;
 
 /// <summary>
 /// Base named query parser for rendering objects that are stored and managed via a control-file.
@@ -15,11 +13,11 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence;
 public abstract class StoredNamedQueryParser<T> : BaseNamedQueryParser<T>
     where T : StoredParsedNamedQuery
 {
-    private readonly NamedQuerySettings namedQuerySettings;
+    private readonly NamedQueryTemplateSettings namedQuerySettings;
 
     private const string ObjectName = "objectname";
 
-    protected StoredNamedQueryParser(IOptions<NamedQuerySettings> namedQuerySettings, ILogger logger) : base(logger)
+    protected StoredNamedQueryParser(IOptions<NamedQueryTemplateSettings> namedQuerySettings, ILogger logger) : base(logger)
     {
         this.namedQuerySettings = namedQuerySettings.Value;
     }
@@ -41,7 +39,7 @@ public abstract class StoredNamedQueryParser<T> : BaseNamedQueryParser<T>
     /// Get the template to use from specified <see cref="NamedQuerySettings"/> object.
     /// </summary>
     /// <returns>Template to use containing {customer}, {queryname} + {args} replacements.</returns>
-    protected abstract string GetTemplateFromSettings(NamedQuerySettings namedQuerySettings);
+    protected abstract string GetTemplateFromSettings(NamedQueryTemplateSettings namedQuerySettings);
 
     protected override void PostParsingOperations(T parsedNamedQuery)
     {

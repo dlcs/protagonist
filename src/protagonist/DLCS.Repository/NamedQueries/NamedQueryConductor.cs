@@ -3,7 +3,7 @@ using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
 
-namespace Orchestrator.Infrastructure.NamedQueries;
+namespace DLCS.Repository.NamedQueries;
 
 /// <summary>
 /// Manages orchestration of named query parameters to generate list of results.

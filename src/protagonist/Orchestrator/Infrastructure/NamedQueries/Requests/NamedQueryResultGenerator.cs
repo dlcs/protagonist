@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
+using DLCS.Repository.NamedQueries;
 
 namespace Orchestrator.Infrastructure.NamedQueries.Requests;
 

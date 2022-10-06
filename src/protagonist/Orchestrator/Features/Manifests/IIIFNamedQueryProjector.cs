@@ -6,6 +6,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
+using DLCS.Repository.NamedQueries;
 using DLCS.Web.Requests;
 using IIIF;
 using IIIF.Presentation;
