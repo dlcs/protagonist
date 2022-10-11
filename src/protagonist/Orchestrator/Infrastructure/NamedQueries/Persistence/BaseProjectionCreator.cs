@@ -7,6 +7,7 @@ using DLCS.AWS.S3;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
+using DLCS.Repository.NamedQueries.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;

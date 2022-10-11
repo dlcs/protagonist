@@ -1,5 +1,4 @@
 ﻿using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using DLCS.Repository.NamedQueries;
 using MediatR;
 
@@ -26,23 +25,24 @@ public class DeletePdf : IRequest<bool?>
 public class DeletePdfHandler : IRequestHandler<DeletePdf, bool?>
 {
     private readonly NamedQueryConductor namedQueryConductor;
+    private readonly NamedQueryStorageService namedQueryStorageService;
 
-    public DeletePdfHandler(NamedQueryConductor namedQueryConductor)
+    public DeletePdfHandler(NamedQueryConductor namedQueryConductor,
+        NamedQueryStorageService namedQueryStorageService)
     {
         this.namedQueryConductor = namedQueryConductor;
+        this.namedQueryStorageService = namedQueryStorageService;
     }
-    
+
     public async Task<bool?> Handle(DeletePdf request, CancellationToken cancellationToken)
     {
-        var pathElement = new IdOnlyPathElement(request.CustomerId);
-        
         var namedQueryResult =
-            await namedQueryConductor.GetNamedQueryResult<PdfParsedNamedQuery>(request.NamedQuery, pathElement,
+            await namedQueryConductor.GetNamedQueryResult<PdfParsedNamedQuery>(request.NamedQuery, request.CustomerId,
                 request.NamedQueryArgs);
         
-        // Throw exception here?
         if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
 
-        var toDelete = namedQueryResult.ParsedQuery.StorageKey;
+        var success = await namedQueryStorageService.DeleteStoredNamedQuery(namedQueryResult.ParsedQuery);
+        return success;
     }
 }

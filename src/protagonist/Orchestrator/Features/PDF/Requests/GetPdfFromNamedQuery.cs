@@ -27,16 +27,16 @@ public class GetPdfFromNamedQuery : IBaseNamedQueryRequest, IRequest<PersistedNa
 
 public class GetPdfFromNamedQueryHandler : IRequestHandler<GetPdfFromNamedQuery, PersistedNamedQueryProjection>
 {
-    private readonly StoredNamedQueryService storedNamedQueryService;
+    private readonly StoredNamedQueryManager storedNamedQueryManager;
     private readonly NamedQueryResultGenerator namedQueryResultGenerator;
     private readonly IProjectionCreator<PdfParsedNamedQuery> pdfCreator;
 
     public GetPdfFromNamedQueryHandler(
-        StoredNamedQueryService storedNamedQueryService,
+        StoredNamedQueryManager storedNamedQueryManager,
         NamedQueryResultGenerator namedQueryResultGenerator,
         IProjectionCreator<PdfParsedNamedQuery> pdfCreator)
     {
-        this.storedNamedQueryService = storedNamedQueryService;
+        this.storedNamedQueryManager = storedNamedQueryManager;
         this.namedQueryResultGenerator = namedQueryResultGenerator;
         this.pdfCreator = pdfCreator;
     }
@@ -44,8 +44,8 @@ public class GetPdfFromNamedQueryHandler : IRequestHandler<GetPdfFromNamedQuery,
     public async Task<PersistedNamedQueryProjection> Handle(GetPdfFromNamedQuery request,
         CancellationToken cancellationToken)
     {
-        var namedQueryResult =
-            await namedQueryResultGenerator.GetNamedQueryResult<PdfParsedNamedQuery>(request);
+        var resultContainer = await namedQueryResultGenerator.GetNamedQueryResult<PdfParsedNamedQuery>(request);
+        var namedQueryResult = resultContainer.NamedQueryResult;
 
         if (namedQueryResult.ParsedQuery == null)
             return new PersistedNamedQueryProjection(PersistedProjectionStatus.NotFound);
@@ -53,7 +53,7 @@ public class GetPdfFromNamedQueryHandler : IRequestHandler<GetPdfFromNamedQuery,
             return PersistedNamedQueryProjection.BadRequest();
 
         var pdfResult =
-            await storedNamedQueryService.GetResults(namedQueryResult, pdfCreator, true, cancellationToken);
+            await storedNamedQueryManager.GetResults(namedQueryResult, pdfCreator, true, cancellationToken);
 
         return pdfResult.Status is PersistedProjectionStatus.InProcess or PersistedProjectionStatus.Restricted
             ? new PersistedNamedQueryProjection(pdfResult.Status)

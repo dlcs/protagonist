@@ -1,24 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.NamedQueries.Parsing;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using Orchestrator.Infrastructure.NamedQueries;
-using Xunit;
 
-namespace Orchestrator.Tests.Infrastructure.NamedQueries;
+namespace DLCS.Repository.Tests.NamedQueries;
 
 public class NamedQueryConductorTests
 {
     private readonly INamedQueryRepository namedQueryRepository;
     private readonly INamedQueryParser namedQueryParser;
-    private static readonly CustomerPathElement Customer = new(99, "test-customer");
+    private const int Customer = 99;
     private readonly NamedQueryConductor sut;
 
     public NamedQueryConductorTests()
@@ -34,7 +30,7 @@ public class NamedQueryConductorTests
     {
         // Arrange
         const string queryName = "my-query";
-        A.CallTo(() => namedQueryRepository.GetByName(Customer.Id, queryName, true)).Returns<NamedQuery?>(null);
+        A.CallTo(() => namedQueryRepository.GetByName(Customer, queryName, true)).Returns<NamedQuery?>(null);
         
         // Act
         var result = await sut.GetNamedQueryResult<IIIFParsedNamedQuery>(queryName, Customer, null);
@@ -53,7 +49,7 @@ public class NamedQueryConductorTests
         var namedQuery = new NamedQuery { Template = "s1=p2", Name = "test-query"};
         var faultedQuery = new IIIFParsedNamedQuery(Customer);
         faultedQuery.SetError("Test Error");
-        A.CallTo(() => namedQueryRepository.GetByName(Customer.Id, queryName, true))
+        A.CallTo(() => namedQueryRepository.GetByName(Customer, queryName, true))
             .Returns(namedQuery);
         A.CallTo(() =>
                 namedQueryParser.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args,
@@ -77,7 +73,7 @@ public class NamedQueryConductorTests
         var namedQuery = new NamedQuery { Template = "s1=p2", Name = "test-query" };
         var parsedQuery = new IIIFParsedNamedQuery(Customer);
         var images = new List<Asset> { new() { Id = "/1/1/my-image" } };
-        A.CallTo(() => namedQueryRepository.GetByName(Customer.Id, queryName, true))
+        A.CallTo(() => namedQueryRepository.GetByName(Customer, queryName, true))
             .Returns(namedQuery);
         A.CallTo(() =>
                 namedQueryParser.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args,

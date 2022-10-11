@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.NamedQueries.Parsing;
@@ -31,6 +30,6 @@ public class IIIFNamedQueryParser : BaseNamedQueryParser<IIIFParsedNamedQuery>
         }
     }
 
-    protected override IIIFParsedNamedQuery GenerateParsedQueryObject(CustomerPathElement customerPathElement)
-        => new(customerPathElement);
+    protected override IIIFParsedNamedQuery GenerateParsedQueryObject(int customerId)
+        => new(customerId);
 }

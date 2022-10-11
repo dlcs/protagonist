@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.NamedQueries.Parsing;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -12,7 +11,6 @@ namespace DLCS.Repository.Tests.NamedQueries.Parsing;
 public class PdfNamedQueryParserTests
 {
     private readonly PdfNamedQueryParser sut;
-    private static readonly CustomerPathElement Customer = new(99, "test-customer");
 
     public PdfNamedQueryParserTests()
     {
@@ -28,7 +26,7 @@ public class PdfNamedQueryParserTests
     {
         // Act
         Action action = () =>
-            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(Customer, null, template, "my-query");
+            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(99, null, template, "my-query");
 
         // Assert
         action.Should()
@@ -45,7 +43,7 @@ public class PdfNamedQueryParserTests
     {
         // Act
         var result =
-            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(Customer, args, template, "my-query");
+            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(99, args, template, "my-query");
 
         // Assert
         result.IsFaulty.Should().BeTrue();
@@ -62,7 +60,7 @@ public class PdfNamedQueryParserTests
     {
         // Act
         var result =
-            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(Customer, args, template, "my-query");
+            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(99, args, template, "my-query");
 
         // Assert
         result.IsFaulty.Should().BeTrue();
@@ -78,7 +76,7 @@ public class PdfNamedQueryParserTests
     {
         // Act
         var result =
-            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(Customer, args, template, "my-query");
+            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(99, args, template, "my-query");
 
         // Assert
         result.IsFaulty.Should().BeTrue();
@@ -94,7 +92,7 @@ public class PdfNamedQueryParserTests
     {
         // Act
         var result =
-            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(Customer, args, template, "my-query");
+            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(99, args, template, "my-query");
 
         // Assert
         result.StorageKey.Should().Be(expected);
@@ -108,7 +106,7 @@ public class PdfNamedQueryParserTests
     {
         // Act
         var result =
-            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(Customer, args, template, "my-query");
+            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(99, args, template, "my-query");
 
         // Assert
         result.Should().BeEquivalentTo(
@@ -123,33 +121,33 @@ public class PdfNamedQueryParserTests
         new object[]
         {
             "space=p1", "10",
-            new PdfParsedNamedQuery(Customer)
+            new PdfParsedNamedQuery(99)
                 { NamedQueryName = "my-query", Space = 10, Args = new List<string> { "10" } },
             "Space from param"
         },
         new object[]
         {
-            "space=5", "", new PdfParsedNamedQuery(Customer) { NamedQueryName = "my-query", Space = 5 },
+            "space=5", "", new PdfParsedNamedQuery(99) { NamedQueryName = "my-query", Space = 5 },
             "Hardcoded value"
         },
         new object[]
         {
             "space=p1&#=10", "",
-            new PdfParsedNamedQuery(Customer)
+            new PdfParsedNamedQuery(99)
                 { NamedQueryName = "my-query", Space = 10, Args = new List<string> { "10" } },
             "Space from template"
         },
         new object[]
         {
             "spacename=p1", "10",
-            new PdfParsedNamedQuery(Customer)
+            new PdfParsedNamedQuery(99)
                 { NamedQueryName = "my-query", SpaceName = "10", Args = new List<string> { "10" } },
             "Spacename from param"
         },
         new object[]
         {
             "redactedmessage=you cannot view&canvas=s1&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
-            new PdfParsedNamedQuery(Customer)
+            new PdfParsedNamedQuery(99)
             {
                 String1 = "string-1", Number1 = 40, Space = 1, RedactedMessage = "you cannot view",
                 AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.String1)}, 
@@ -160,7 +158,7 @@ public class PdfNamedQueryParserTests
         new object[]
         {
             "canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40/10/100",
-            new PdfParsedNamedQuery(Customer)
+            new PdfParsedNamedQuery(99)
             {
                 String1 = "string-1", Number1 = 40, Space = 10,
                 AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.Number2)},
@@ -171,7 +169,7 @@ public class PdfNamedQueryParserTests
         new object[]
         {
             "manifest=s1&&n3=&canvas=n2&=10&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
-            new PdfParsedNamedQuery(Customer)
+            new PdfParsedNamedQuery(99)
             {
                 String1 = "string-1", Number1 = 40, Space = 1, 
                 AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.Number2)},
@@ -182,7 +180,7 @@ public class PdfNamedQueryParserTests
         new object[]
         {
             "coverpage=https://{s3}&objectname={s3}_{n1}.pdf&n1=p1&s3=p2&#=foo", "10",
-            new PdfParsedNamedQuery(Customer)
+            new PdfParsedNamedQuery(99)
             {
                 String3 = "foo", Number1 = 10, CoverPageFormat = "https://{s3}", CoverPageUrl = "https://foo",
                 ObjectNameFormat = "{s3}_{n1}.pdf", ObjectName = "foo_10.pdf", NamedQueryName = "my-query",
@@ -193,7 +191,7 @@ public class PdfNamedQueryParserTests
         new object[]
         {
             "coverpage=https://{s3}&objectname={s3}_{n1}.pdf&n1=p1&s3=foo", "10",
-            new PdfParsedNamedQuery(Customer)
+            new PdfParsedNamedQuery(99)
             {
                 String3 = "foo", Number1 = 10, CoverPageFormat = "https://{s3}", CoverPageUrl = "https://foo",
                 ObjectNameFormat = "{s3}_{n1}.pdf", ObjectName = "foo_10.pdf", Args = new List<string> { "10" },
@@ -204,7 +202,7 @@ public class PdfNamedQueryParserTests
         new object[]
         {
             "coverpage=https://{s3}&objectname={s3}_{n1}.pdf&s3=foo", "",
-            new PdfParsedNamedQuery(Customer)
+            new PdfParsedNamedQuery(99)
             {
                 String3 = "foo", CoverPageFormat = "https://{s3}", CoverPageUrl = "https://foo",
                 ObjectNameFormat = "{s3}_{n1}.pdf", ObjectName = "foo_.pdf", NamedQueryName = "my-query",
@@ -214,7 +212,7 @@ public class PdfNamedQueryParserTests
         new object[]
         {
             "assetOrder=n2;s1 desc", "",
-            new PdfParsedNamedQuery(Customer)
+            new PdfParsedNamedQuery(99)
             {
                 AssetOrdering = new List<ParsedNamedQuery.QueryOrder>
                 {

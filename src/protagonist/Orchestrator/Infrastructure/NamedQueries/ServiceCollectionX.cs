@@ -23,7 +23,7 @@ public static class ServiceCollectionX
             .AddNamedQueriesCore()
             .AddScoped<IIIFNamedQueryParser>()
             .AddScoped<IIIFNamedQueryProjector>()
-            .AddScoped<StoredNamedQueryService>()
+            .AddScoped<StoredNamedQueryManager>()
             .AddScoped<PdfNamedQueryParser>()
             .AddScoped<ZipNamedQueryParser>()
             .AddScoped<NamedQueryResultGenerator>()

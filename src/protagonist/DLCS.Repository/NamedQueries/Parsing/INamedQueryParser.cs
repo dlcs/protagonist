@@ -1,5 +1,4 @@
 ﻿using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 
 namespace DLCS.Repository.NamedQueries.Parsing;
 
@@ -11,13 +10,13 @@ public interface INamedQueryParser
     /// <summary>
     /// Generate query from specified Args and NamedQuery record
     /// </summary>
-    /// <param name="customerPathElement">Customer to run query against.</param>
+    /// <param name="customerId">Customer to run query against.</param>
     /// <param name="namedQueryArgs">Additional args for generating query object.</param>
     /// <param name="namedQueryTemplate">String representing NQ template</param>
     /// <param name="namedQueryName">The name of the NQ template</param>
     /// <returns><see cref="ParsedNamedQuery"/> object</returns>
     T GenerateParsedNamedQueryFromRequest<T>(
-        CustomerPathElement customerPathElement,
+        int customerId,
         string? namedQueryArgs,
         string namedQueryTemplate,
         string namedQueryName)

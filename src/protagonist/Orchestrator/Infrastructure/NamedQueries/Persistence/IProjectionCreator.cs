@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
-using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
+using DLCS.Repository.NamedQueries.Models;
 
 namespace Orchestrator.Infrastructure.NamedQueries.Persistence;
 

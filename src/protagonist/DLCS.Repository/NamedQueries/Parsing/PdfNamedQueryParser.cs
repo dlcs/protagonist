@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -40,8 +39,8 @@ public class PdfNamedQueryParser : StoredNamedQueryParser<PdfParsedNamedQuery>
     protected override string GetTemplateFromSettings(NamedQueryTemplateSettings namedQuerySettings)
         => namedQuerySettings.PdfStorageTemplate;
 
-    protected override PdfParsedNamedQuery GenerateParsedQueryObject(CustomerPathElement customerPathElement)
-        => new(customerPathElement);
+    protected override PdfParsedNamedQuery GenerateParsedQueryObject(int customerId)
+        => new(customerId);
 
     protected override void PostParsingOperations(PdfParsedNamedQuery parsedNamedQuery)
     {

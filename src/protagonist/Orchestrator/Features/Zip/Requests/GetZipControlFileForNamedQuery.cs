@@ -1,9 +1,9 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
+using DLCS.Repository.NamedQueries;
+using DLCS.Repository.NamedQueries.Models;
 using MediatR;
-using Orchestrator.Infrastructure.NamedQueries.Persistence;
-using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Infrastructure.NamedQueries.Requests;
 
 namespace Orchestrator.Features.Zip.Requests;
@@ -29,26 +29,25 @@ public class GetZipControlFileForNamedQuery : IBaseNamedQueryRequest, IRequest<C
 
 public class GetZipControlFileForNamedQueryHandler : IRequestHandler<GetZipControlFileForNamedQuery, ControlFile?>
 {
-    private readonly StoredNamedQueryService storedNamedQueryService;
+    private readonly NamedQueryStorageService namedQueryStorageService;
     private readonly NamedQueryResultGenerator namedQueryResultGenerator;
 
     public GetZipControlFileForNamedQueryHandler(
-        StoredNamedQueryService storedNamedQueryService,
+        NamedQueryStorageService namedQueryStorageService,
         NamedQueryResultGenerator namedQueryResultGenerator)
     {
-        this.storedNamedQueryService = storedNamedQueryService;
+        this.namedQueryStorageService = namedQueryStorageService;
         this.namedQueryResultGenerator = namedQueryResultGenerator;
     }
     
     public async Task<ControlFile?> Handle(GetZipControlFileForNamedQuery request, CancellationToken cancellationToken)
     {
-        var namedQueryResult = await namedQueryResultGenerator.GetNamedQueryResult<ZipParsedNamedQuery>(request);
+        var resultContainer = await namedQueryResultGenerator.GetNamedQueryResult<ZipParsedNamedQuery>(request);
+        var namedQueryResult = resultContainer.NamedQueryResult;
 
         if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
 
-        var controlFile =
-            await storedNamedQueryService.GetControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey,
-                cancellationToken);
+        var controlFile = await namedQueryStorageService.GetControlFile(namedQueryResult.ParsedQuery, cancellationToken);
         return controlFile;
     }
 }

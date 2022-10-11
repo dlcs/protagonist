@@ -20,6 +20,7 @@ public static class ServiceCollectionX
         services
             .AddScoped<INamedQueryRepository, NamedQueryRepository>()
             .AddScoped<NamedQueryConductor>()
+            .AddScoped<NamedQueryStorageService>()
             .AddScoped<NamedQueryParserResolver>(provider => outputFormat => outputFormat switch
             {
                 NamedQueryType.PDF => provider.GetRequiredService<PdfNamedQueryParser>(),

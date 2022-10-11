@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
 using IIIF.Presentation;
-using IIIF.Serialisation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Orchestrator.Infrastructure.NamedQueries.Requests;
@@ -51,13 +50,15 @@ public class GetNamedQueryResultsHandler : IRequestHandler<GetNamedQueryResults,
 
     public async Task<DescriptionResourceResponse> Handle(GetNamedQueryResults request, CancellationToken cancellationToken)
     {
-        var namedQueryResult = await namedQueryResultGenerator.GetNamedQueryResult<IIIFParsedNamedQuery>(request);
+        var resultContainer = await namedQueryResultGenerator.GetNamedQueryResult<IIIFParsedNamedQuery>(request);
+        var namedQueryResult = resultContainer.NamedQueryResult;
 
         if (namedQueryResult.ParsedQuery == null) return DescriptionResourceResponse.Empty;
         if (namedQueryResult.ParsedQuery is { IsFaulty: true }) return DescriptionResourceResponse.BadRequest();
 
         var manifest = await iiifNamedQueryProjector.GenerateIIIFPresentation(
             namedQueryResult,
+            resultContainer.CustomerPathElement,
             httpContextAccessor.HttpContext.Request,
             request.IIIFPresentationVersion, cancellationToken);
 

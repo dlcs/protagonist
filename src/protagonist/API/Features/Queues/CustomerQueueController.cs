@@ -216,6 +216,7 @@ public class CustomerQueueController : HydraController
 
             var response = await Mediator.Send(testBatch, cancellationToken);
 
+            // TODO - return a better message. This is for backwards compat
             return response == null ? this.HydraNotFound() : Ok(new { success = response });
         }, "Test batch failed");
     }

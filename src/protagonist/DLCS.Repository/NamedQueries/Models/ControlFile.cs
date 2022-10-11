@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
+namespace DLCS.Repository.NamedQueries.Models;
 
 /// <summary>
 /// The PDF control file is a marker to track the progress of a generated PDF.

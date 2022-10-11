@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
 using MediatR;
-using Orchestrator.Features.PDF;
 using Orchestrator.Infrastructure.NamedQueries.Persistence;
 using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Infrastructure.NamedQueries.Requests;
@@ -25,24 +24,24 @@ public class GetZipFromNamedQuery : IBaseNamedQueryRequest, IRequest<PersistedNa
 
 public class GetZipFromNamedQueryHandler : IRequestHandler<GetZipFromNamedQuery, PersistedNamedQueryProjection>
 {
-    private readonly StoredNamedQueryService storedNamedQueryService;
+    private readonly StoredNamedQueryManager storedNamedQueryManager;
     private readonly NamedQueryResultGenerator namedQueryResultGenerator;
     private readonly IProjectionCreator<ZipParsedNamedQuery> zipCreator;
 
     public GetZipFromNamedQueryHandler(
-        StoredNamedQueryService storedNamedQueryService,
+        StoredNamedQueryManager storedNamedQueryManager,
         NamedQueryResultGenerator namedQueryResultGenerator,
         IProjectionCreator<ZipParsedNamedQuery> zipCreator)
     {
-        this.storedNamedQueryService = storedNamedQueryService;
+        this.storedNamedQueryManager = storedNamedQueryManager;
         this.namedQueryResultGenerator = namedQueryResultGenerator;
         this.zipCreator = zipCreator;
     }
     
     public async Task<PersistedNamedQueryProjection> Handle(GetZipFromNamedQuery request, CancellationToken cancellationToken)
     {
-        var namedQueryResult =
-            await namedQueryResultGenerator.GetNamedQueryResult<ZipParsedNamedQuery>(request);
+        var resultContainer = await namedQueryResultGenerator.GetNamedQueryResult<ZipParsedNamedQuery>(request);
+        var namedQueryResult = resultContainer.NamedQueryResult;
 
         if (namedQueryResult.ParsedQuery == null)
             return new PersistedNamedQueryProjection(PersistedProjectionStatus.NotFound);
@@ -51,7 +50,7 @@ public class GetZipFromNamedQueryHandler : IRequestHandler<GetZipFromNamedQuery,
         
         // Stream ZIP 
         var zipResult =
-            await storedNamedQueryService.GetResults(namedQueryResult, zipCreator, false, cancellationToken);
+            await storedNamedQueryManager.GetResults(namedQueryResult, zipCreator, false, cancellationToken);
 
         return zipResult.Status == PersistedProjectionStatus.InProcess
             ? new PersistedNamedQueryProjection(PersistedProjectionStatus.InProcess)

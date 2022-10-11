@@ -1,10 +1,10 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
+using DLCS.Repository.NamedQueries;
+using DLCS.Repository.NamedQueries.Models;
 using MediatR;
 using Newtonsoft.Json;
-using Orchestrator.Infrastructure.NamedQueries.Persistence;
-using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Infrastructure.NamedQueries.Requests;
 
 namespace Orchestrator.Features.PDF.Requests;
@@ -30,26 +30,26 @@ public class GetPdfControlFileForNamedQuery : IBaseNamedQueryRequest, IRequest<P
 
 public class GetPdfControlFileForNamedQueryHandler : IRequestHandler<GetPdfControlFileForNamedQuery, PdfControlFile?>
 {
-    private readonly StoredNamedQueryService storedNamedQueryService;
+    private readonly NamedQueryStorageService namedQueryStorageService;
     private readonly NamedQueryResultGenerator namedQueryResultGenerator;
 
     public GetPdfControlFileForNamedQueryHandler(
-        StoredNamedQueryService storedNamedQueryService,
+        NamedQueryStorageService namedQueryStorageService,
         NamedQueryResultGenerator namedQueryResultGenerator)
     {
-        this.storedNamedQueryService = storedNamedQueryService;
+        this.namedQueryStorageService = namedQueryStorageService;
         this.namedQueryResultGenerator = namedQueryResultGenerator;
     }
     
     public async Task<PdfControlFile?> Handle(GetPdfControlFileForNamedQuery request, CancellationToken cancellationToken)
     {
-        var namedQueryResult = await namedQueryResultGenerator.GetNamedQueryResult<PdfParsedNamedQuery>(request);
+        var resultContainer = await namedQueryResultGenerator.GetNamedQueryResult<PdfParsedNamedQuery>(request);
+        var namedQueryResult = resultContainer.NamedQueryResult;
 
         if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
-        
+
         var controlFile =
-            await storedNamedQueryService.GetControlFile(namedQueryResult.ParsedQuery.ControlFileStorageKey,
-                cancellationToken);
+            await namedQueryStorageService.GetControlFile(namedQueryResult.ParsedQuery, cancellationToken);
         return controlFile == null ? null : new PdfControlFile(controlFile);
     }
 }

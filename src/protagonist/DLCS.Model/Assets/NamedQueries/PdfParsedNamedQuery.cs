@@ -1,13 +1,11 @@
-﻿using DLCS.Model.PathElements;
-
-namespace DLCS.Model.Assets.NamedQueries;
+﻿namespace DLCS.Model.Assets.NamedQueries;
 
 /// <summary>
 /// NamedQuery that is projected to PDF
 /// </summary>
 public class PdfParsedNamedQuery : StoredParsedNamedQuery
 {
-    public PdfParsedNamedQuery(CustomerPathElement customerPathElement) : base(customerPathElement)
+    public PdfParsedNamedQuery(int customerId) : base(customerId)
     {
     }
 

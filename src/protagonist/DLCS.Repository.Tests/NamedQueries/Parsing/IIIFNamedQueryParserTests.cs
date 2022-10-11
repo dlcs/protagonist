@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using DLCS.Repository.NamedQueries.Parsing;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using Xunit;
 
-namespace Orchestrator.Tests.Infrastructure.NamedQueries.Manifest;
+namespace DLCS.Repository.Tests.NamedQueries.Parsing;
 
 public class IIIFNamedQueryParserTests
 {
     private readonly IIIFNamedQueryParser sut;
-    private static readonly CustomerPathElement Customer = new(99, "test-customer");
+    private const int Customer = 99;
 
     public IIIFNamedQueryParserTests()
     {

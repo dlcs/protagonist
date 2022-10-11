@@ -1,5 +1,4 @@
 ﻿using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -15,8 +14,8 @@ public class ZipNamedQueryParser : StoredNamedQueryParser<ZipParsedNamedQuery>
     {
     }
 
-    protected override ZipParsedNamedQuery GenerateParsedQueryObject(CustomerPathElement customerPathElement)
-        => new(customerPathElement);
+    protected override ZipParsedNamedQuery GenerateParsedQueryObject(int customerId)
+        => new(customerId);
 
     protected override string GetTemplateFromSettings(NamedQueryTemplateSettings namedQuerySettings)
         => namedQuerySettings.ZipStorageTemplate;

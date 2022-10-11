@@ -21,14 +21,31 @@ public class NamedQueryResultGenerator
         this.namedQueryConductor = namedQueryConductor;
     }
 
-    public async Task<NamedQueryResult<T>> GetNamedQueryResult<T>(IBaseNamedQueryRequest request)
+    public async Task<PathElementNamedQueryResultContainer<T>> GetNamedQueryResult<T>(IBaseNamedQueryRequest request)
         where T : ParsedNamedQuery
     {
         var customerPathElement = await pathCustomerRepository.GetCustomer(request.CustomerPathValue);
 
         var namedQueryResult =
             await namedQueryConductor.GetNamedQueryResult<T>(request.NamedQuery,
-                customerPathElement, request.NamedQueryArgs);
-        return namedQueryResult;
+                customerPathElement.Id, request.NamedQueryArgs);
+        return new PathElementNamedQueryResultContainer<T>(namedQueryResult, customerPathElement);
+    }
+}
+
+/// <summary>
+/// Class representing a <see cref="NamedQueryResult{T}"/> alongside <see cref="CustomerPathElement"/>
+/// </summary>
+/// <typeparam name="T">Type of named query result</typeparam>
+public class PathElementNamedQueryResultContainer<T>
+    where T : ParsedNamedQuery
+{
+    public NamedQueryResult<T> NamedQueryResult { get; }
+    public CustomerPathElement CustomerPathElement { get; }
+    
+    public PathElementNamedQueryResultContainer(NamedQueryResult<T> namedQueryResult, CustomerPathElement customerPathElement)
+    {
+        NamedQueryResult = namedQueryResult;
+        CustomerPathElement = customerPathElement;
     }
 }
