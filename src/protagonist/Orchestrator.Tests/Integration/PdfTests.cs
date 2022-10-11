@@ -65,7 +65,7 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         dbFixture.DbContext.SaveChanges();
     }
 
-     [Fact]
+    [Fact]
     public async Task Options_Returns200_WithCorsHeaders()
     {
         // Arrange
@@ -81,7 +81,7 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Should().ContainKey("Access-Control-Allow-Headers");
         response.Headers.Should().ContainKey("Access-Control-Allow-Methods");
     }
-        
+
     [Fact]
     public async Task GetPdf_Returns404_IfCustomerNotFound()
     {

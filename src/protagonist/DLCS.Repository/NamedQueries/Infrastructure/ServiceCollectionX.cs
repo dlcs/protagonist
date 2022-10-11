@@ -18,6 +18,7 @@ public static class ServiceCollectionX
     public static IServiceCollection AddNamedQueriesCore(this IServiceCollection services)
     {
         services
+            .AddScoped<PdfNamedQueryParser>()
             .AddScoped<INamedQueryRepository, NamedQueryRepository>()
             .AddScoped<NamedQueryConductor>()
             .AddScoped<NamedQueryStorageService>()

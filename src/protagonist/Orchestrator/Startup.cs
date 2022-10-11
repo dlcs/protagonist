@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Caching;
 using DLCS.Repository;
 using DLCS.Repository.Auth;
+using DLCS.Repository.NamedQueries;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Configuration;
 using DLCS.Web.Middleware;
@@ -53,6 +54,7 @@ public class Startup
         services
             .Configure<OrchestratorSettings>(configuration)
             .Configure<ProxySettings>(proxySection)
+            .Configure<NamedQueryTemplateSettings>(configuration)
             .Configure<NamedQuerySettings>(configuration.GetSection("NamedQuery"))
             .Configure<CacheSettings>(cachingSection);
 

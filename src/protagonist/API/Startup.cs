@@ -25,6 +25,7 @@ using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
+using DLCS.Repository.NamedQueries;
 using DLCS.Repository.NamedQueries.Infrastructure;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;
@@ -60,10 +61,13 @@ public class Startup
     
     public void ConfigureServices(IServiceCollection services)
     {
-        services.Configure<ApiSettings>(configuration);
-        services.Configure<DlcsSettings>(configuration.GetSection("DLCS"));
         var cachingSection = configuration.GetSection("Caching");
-        services.Configure<CacheSettings>(cachingSection);
+
+        services
+            .Configure<ApiSettings>(configuration)
+            .Configure<NamedQueryTemplateSettings>(configuration)
+            .Configure<DlcsSettings>(configuration.GetSection("DLCS"))
+            .Configure<CacheSettings>(cachingSection);
 
         var apiSettings = configuration.Get<ApiSettings>();
         var cacheSettings = cachingSection.Get<CacheSettings>();
