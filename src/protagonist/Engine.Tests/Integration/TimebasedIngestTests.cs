@@ -75,6 +75,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     {
         // Arrange
         var assetId = $"99/1/{nameof(IngestAsset_CreatesTranscoderJob_HttpOrigin)}-{type}";
+        const string jobId = "1234567890123-abcdef";
         
         var origin = $"{apiStub.Address}/{type}";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
@@ -82,7 +83,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
         var message = new IngestAssetRequest(asset, DateTime.UtcNow);
-        
+
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
                 AssetId.FromString(assetId),
                 A<string>._,
@@ -90,7 +91,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                 A<List<CreateJobOutput>>._,
                 A<string>._,
                 A<CancellationToken>._))
-            .Returns(new CreateJobResponse { HttpStatusCode = HttpStatusCode.Accepted, Job = new Job() });
+            .Returns(new CreateJobResponse { HttpStatusCode = HttpStatusCode.Accepted, Job = new Job { Id = jobId } });
         
         // Act
         var jsonContent =
@@ -105,7 +106,6 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         BucketWriter
             .ShouldHaveKeyThatStartsWith(assetId)
             .ForBucket(LocalStackFixture.TimebasedInputBucketName);
-        BucketWriter.ShouldHaveKey($"{assetId}/metadata").ForBucket(LocalStackFixture.StorageBucketName);
         
         // ET job created
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
@@ -116,6 +116,10 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                 A<string>._,
                 A<CancellationToken>._))
             .MustHaveHappened();
+
+        A.CallTo(() => ElasticTranscoderWrapper.PersistJobId(
+            AssetId.FromString(assetId), jobId, A<CancellationToken>._
+        )).MustHaveHappened();
     }
 
     [Theory]
@@ -155,7 +159,6 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         BucketWriter
             .ShouldHaveKeyThatStartsWith(assetId)
             .ForBucket(LocalStackFixture.TimebasedInputBucketName);
-        BucketWriter.ShouldNotHaveKey($"{assetId}/metadata");
         
         // ET job created
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
@@ -166,5 +169,11 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                 A<string>._,
                 A<CancellationToken>._))
             .MustHaveHappened();
+        
+        A.CallTo(() => ElasticTranscoderWrapper.PersistJobId(
+            AssetId.FromString(assetId),
+            A<string>._,
+            A<CancellationToken>._
+        )).MustNotHaveHappened();
     }
 }
