@@ -7,13 +7,13 @@ using DLCS.Model.Customers;
 namespace DLCS.Web.Auth;
 
 /// <summary>
-/// Class with helpers to get basic authentication credentials for Deliverator DLCS API.
+/// Class with helpers to get basic authentication credentials for DLCS API.
 /// </summary>
-public class DeliveratorApiAuth
+public class DlcsApiAuth
 {
     private readonly IEncryption encryption;
 
-    public DeliveratorApiAuth(IEncryption encryption)
+    public DlcsApiAuth(IEncryption encryption)
     {
         this.encryption = encryption;
     }
@@ -33,6 +33,13 @@ public class DeliveratorApiAuth
         return Convert.ToBase64String(Encoding.ASCII.GetBytes($"{apiKey}:{apiSecret}"));
     }
 
+    /// <summary>
+    /// Get the API secret for customer, salt and api-key
+    /// </summary>
+    /// <param name="customer"><see cref="Customer"/> to get credentials for.</param>
+    /// <param name="salt">ApiSalt for generating API key.</param>
+    /// <param name="apiKey">Customers API key</param>
+    /// <returns></returns>
     public string GetApiSecret(Customer customer, string salt, string apiKey)
     {
         return encryption.Encrypt(string.Concat(salt, customer.Id, apiKey));

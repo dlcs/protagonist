@@ -15,6 +15,9 @@ using Microsoft.Extensions.Options;
 namespace API.Auth;
 
 /// <summary>
+/// Basic authentication handler for DLCS
+/// </summary>
+/// <remarks>
 /// Auth in DLCS API
 ///  - Some paths, such as https://api.dlcs.io/ and various shared policies, can serve GET requests
 ///    to an anonymous user. Another example: https://api.dlcs.io/originStrategies
@@ -28,11 +31,11 @@ namespace API.Auth;
 /// customer making the call.
 /// When the caller is admin, these can be different.
 /// The resource might not be associated with any customer.
-/// </summary>
+/// </remarks>
 public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthenticationOptions>
 {
     private readonly ICustomerRepository customerRepository;
-    private readonly DeliveratorApiAuth deliveratorApiAuth; // TODO - will become apiAuth
+    private readonly DlcsApiAuth dlcsApiAuth;
 
     /// <summary>
     /// Deduces the caller's claims
@@ -48,17 +51,16 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         UrlEncoder encoder,
         ISystemClock clock,
         ICustomerRepository customerRepository,
-        DeliveratorApiAuth deliveratorApiAuth)
+        DlcsApiAuth dlcsApiAuth)
         : base(options, logger, encoder, clock)
     {
         this.customerRepository = customerRepository;
-        this.deliveratorApiAuth = deliveratorApiAuth;
+        this.dlcsApiAuth = dlcsApiAuth;
     }
 
     /// <summary>
     /// Called by the ASP.NET pipeline
     /// </summary>
-    /// <returns></returns>
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         // skip authentication if endpoint has [AllowAnonymous] attribute
@@ -99,7 +101,7 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
             return AuthenticateResult.Fail("No customer found for this key that is permitted to access this resource");
         }
 
-        if (apiCaller.Secret != deliveratorApiAuth.GetApiSecret(customerForKey, Options.Salt, apiCaller.Key))
+        if (apiCaller.Secret != dlcsApiAuth.GetApiSecret(customerForKey, Options.Salt, apiCaller.Key))
         {
             return AuthenticateResult.Fail("Invalid credentials");
         }
@@ -178,8 +180,6 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
     /// <summary>
     /// Called by the ASP.NET pipeline
     /// </summary>
-    /// <param name="properties"></param>
-    /// <returns></returns>
     protected override Task HandleChallengeAsync(AuthenticationProperties properties)
     {
         Response.Headers["WWW-Authenticate"] = $"Basic realm=\"{Options.Realm}\"";
@@ -192,11 +192,6 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
 /// </summary>
 public class ApiCaller
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="secret"></param>
     public ApiCaller(string key, string secret)
     {
         Key = key;

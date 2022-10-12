@@ -22,20 +22,20 @@ namespace Orchestrator.Infrastructure.Deliverator;
 public class DeliveratorApiClient : IDlcsApiClient
 {
     private readonly HttpClient httpClient;
-    private readonly DeliveratorApiAuth deliveratorApiAuth;
+    private readonly DlcsApiAuth dlcsApiAuth;
     private readonly ICustomerRepository customerRepository;
     private readonly OrchestratorSettings orchestratorSettings;
     private readonly ILogger<DeliveratorApiClient> logger;
 
     public DeliveratorApiClient(
         HttpClient httpClient, 
-        DeliveratorApiAuth deliveratorApiAuth,
+        DlcsApiAuth dlcsApiAuth,
         ICustomerRepository customerRepository,
         IOptions<OrchestratorSettings> orchestratorSettings,
         ILogger<DeliveratorApiClient> logger)
     {
         this.httpClient = httpClient;
-        this.deliveratorApiAuth = deliveratorApiAuth;
+        this.dlcsApiAuth = dlcsApiAuth;
         this.customerRepository = customerRepository;
         this.orchestratorSettings = orchestratorSettings.Value;
         this.logger = logger;
@@ -43,6 +43,7 @@ public class DeliveratorApiClient : IDlcsApiClient
 
     public async Task<bool> ReingestAsset(AssetId assetId, CancellationToken cancellationToken = default)
     {
+        // TODO - alter this to use Protagonist API
         try
         {
             var url = $"/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/reingest";
@@ -91,7 +92,7 @@ public class DeliveratorApiClient : IDlcsApiClient
             return false;
         }
 
-        var basicAuth = deliveratorApiAuth.GetBasicAuthForCustomer(customer, orchestratorSettings.ApiSalt);
+        var basicAuth = dlcsApiAuth.GetBasicAuthForCustomer(customer, orchestratorSettings.ApiSalt);
         if (string.IsNullOrEmpty(basicAuth))
         {
             logger.LogWarning("Unable to find customer key for API Auth - {CustomerId}", customerId);

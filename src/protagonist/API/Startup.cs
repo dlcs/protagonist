@@ -1,36 +1,16 @@
 using System.Security.Claims;
 using API.Auth;
-using API.Features.Assets;
 using API.Features.Image.Ingest;
 using API.Infrastructure;
 using API.Settings;
-using DLCS.AWS.Configuration;
-using DLCS.AWS.S3;
-using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
 using DLCS.Core.Settings;
-using DLCS.Model;
-using DLCS.Model.Assets;
-using DLCS.Model.Auth;
-using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
-using DLCS.Model.Policies;
-using DLCS.Model.Processing;
-using DLCS.Model.Spaces;
-using DLCS.Model.Storage;
 using DLCS.Repository;
-using DLCS.Repository.Assets;
-using DLCS.Repository.Auth;
-using DLCS.Repository.Customers;
-using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.NamedQueries.Infrastructure;
-using DLCS.Repository.Policies;
-using DLCS.Repository.Processing;
-using DLCS.Repository.Spaces;
-using DLCS.Repository.Storage;
 using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
 using DLCS.Web.Handlers;
@@ -75,48 +55,19 @@ public class Startup
         services
             .AddHttpContextAccessor()
             .AddSingleton<IEncryption, SHA256>()
-            .AddSingleton<DeliveratorApiAuth>()
+            .AddSingleton<DlcsApiAuth>()
             .AddTransient<ClaimsPrincipal>(s => s.GetRequiredService<IHttpContextAccessor>().HttpContext.User)
-            .AddMemoryCache(memoryCacheOptions =>
-            {
-                memoryCacheOptions.SizeLimit = cacheSettings.MemoryCacheSizeLimit;
-                memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
-            })
-            .AddLazyCache()
-            .AddDlcsContext(configuration)
-            .AddScoped<IAssetRepository, AssetRepository>()
-            .AddScoped<IApiAssetRepository>(provider =>
-                ActivatorUtilities.CreateInstance<ApiAssetRepository>(
-                    provider,
-                    provider.GetRequiredService<IAssetRepository>()))
-            .AddScoped<ISpaceRepository, SpaceRepository>()
-            .AddScoped<IBatchRepository, BatchRepository>()
-            .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
-            .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
-            .AddScoped<IStorageRepository, CustomerStorageRepository>()
-            // Do not use a DlcsContext, _may_ be Singleton (but should they)
-            .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
-            .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
-            .AddScoped<IPolicyRepository, PolicyRepository>()
+            .AddCaching(cacheSettings)
+            .AddDataAccess(configuration)
             .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
             .AddScoped<AssetProcessor>()
             .AddTransient<TimingHandler>()
             .AddValidatorsFromAssemblyContaining<Startup>()
             .ConfigureMediatR()
             .AddNamedQueriesCore()
+            .AddAws(configuration, webHostEnvironment)
             .ConfigureSwagger();
-
-        services
-            .AddSingleton<IBucketReader, S3BucketReader>()
-            .AddSingleton<IBucketWriter, S3BucketWriter>()
-            .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
-            .AddSingleton<IQueueLookup, SqsQueueLookup>()
-            .AddSingleton<IQueueSender, SqsQueueSender>()
-            .AddSingleton<SqsQueueUtilities>()
-            .SetupAWS(configuration, webHostEnvironment)
-            .WithAmazonS3()
-            .WithAmazonSQS();
-
+        
         services.AddHttpClient<IEngineClient, EngineClient>()
             .AddHttpMessageHandler<TimingHandler>();
 

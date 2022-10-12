@@ -36,7 +36,7 @@ public class DeliveratorApiClientTests
         A.CallTo(() => encryption.Encrypt(A<string>._)).Returns("encrypted");
         customerRepository = A.Fake<ICustomerRepository>();
 
-        sut = new DeliveratorApiClient(httpClient, new DeliveratorApiAuth(encryption), customerRepository, options,
+        sut = new DeliveratorApiClient(httpClient, new DlcsApiAuth(encryption), customerRepository, options,
             new NullLogger<DeliveratorApiClient>());
     }
     

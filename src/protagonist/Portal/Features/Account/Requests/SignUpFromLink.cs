@@ -40,20 +40,20 @@ public class SignUpFromLinkHandler : IRequestHandler<SignUpFromLink, SignupFromL
 {
     private readonly ILogger<SignUpFromLinkHandler> logger;
     private readonly PortalSettings options;
-    private readonly DeliveratorApiAuth deliveratorApiAuth;
+    private readonly DlcsApiAuth dlcsApiAuth;
     private readonly DlcsContext dbContext;
     private readonly AdminDlcsClient adminDlcsClient;
     
     public SignUpFromLinkHandler(
         ILogger<SignUpFromLinkHandler> logger,
         IOptions<PortalSettings> options,
-        DeliveratorApiAuth deliveratorApiAuth,
+        DlcsApiAuth dlcsApiAuth,
         DlcsContext dbContext,
         AdminDlcsClient adminDlcsClient)
     {
         this.logger = logger;
         this.options = options.Value;
-        this.deliveratorApiAuth = deliveratorApiAuth;
+        this.dlcsApiAuth = dlcsApiAuth;
         this.dbContext = dbContext;
         this.adminDlcsClient = adminDlcsClient;
     }
@@ -61,7 +61,7 @@ public class SignUpFromLinkHandler : IRequestHandler<SignUpFromLink, SignupFromL
     public async Task<SignupFromLinkResult> Handle(SignUpFromLink request, CancellationToken cancellationToken)
     {
         var admin = await dbContext.Customers.FirstAsync(c => c.Administrator, cancellationToken: cancellationToken);
-        var basicAuth = deliveratorApiAuth.GetBasicAuthForCustomer(admin, options.ApiSalt);
+        var basicAuth = dlcsApiAuth.GetBasicAuthForCustomer(admin, options.ApiSalt);
         // This isn't right... the adminDlcsClient should come equipped with an admin-level httpclient
         // do we want to do that in startup though? We don't have the admin customer there.
         adminDlcsClient.SetBasicAuth(basicAuth);

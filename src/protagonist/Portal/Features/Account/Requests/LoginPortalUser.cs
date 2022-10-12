@@ -33,7 +33,7 @@ public class LoginPortalUserHandler : IRequestHandler<LoginPortalUser, bool>
     private readonly IEncryption encryption;
     private readonly ILogger<LoginPortalUserHandler> logger;
     private readonly PortalSettings options;
-    private readonly DeliveratorApiAuth deliveratorApiAuth; // TODO - will become apiAuth
+    private readonly DlcsApiAuth dlcsApiAuth; // TODO - will become apiAuth
 
     public LoginPortalUserHandler(
         IHttpContextAccessor httpContextAccessor, 
@@ -41,14 +41,14 @@ public class LoginPortalUserHandler : IRequestHandler<LoginPortalUser, bool>
         IOptions<PortalSettings> options,
         IEncryption encryption,
         ILogger<LoginPortalUserHandler> logger,
-        DeliveratorApiAuth deliveratorApiAuth)
+        DlcsApiAuth dlcsApiAuth)
     {
         this.httpContextAccessor = httpContextAccessor;
         this.dbContext = dbContext;
         this.encryption = encryption;
         this.logger = logger;
         this.options = options.Value;
-        this.deliveratorApiAuth = deliveratorApiAuth;
+        this.dlcsApiAuth = dlcsApiAuth;
     }
 
     public async Task<bool> Handle(LoginPortalUser request, CancellationToken cancellationToken)
@@ -138,7 +138,7 @@ public class LoginPortalUserHandler : IRequestHandler<LoginPortalUser, bool>
         }
 
         // TODO - revisit how the API calls are authenticated
-        var basicAuth = deliveratorApiAuth.GetBasicAuthForCustomer(customer, options.ApiSalt);
+        var basicAuth = dlcsApiAuth.GetBasicAuthForCustomer(customer, options.ApiSalt);
         if (basicAuth != null)
         {
             logger.LogInformation("Api credentials provided, adding claim");
