@@ -1,8 +1,6 @@
 using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
-using DLCS.AWS.S3;
 using DLCS.Core.Guard;
-using DLCS.Core.Types;
 using Engine.Settings;
 using Microsoft.Extensions.Options;
 
@@ -12,23 +10,17 @@ public class ElasticTranscoder : IMediaTranscoder
 {
     private readonly IOptionsMonitor<EngineSettings> engineSettings;
     private readonly IElasticTranscoderWrapper elasticTranscoderWrapper;
-    private readonly IBucketWriter bucketWriter;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly ILogger<ElasticTranscoder> logger;
 
     public ElasticTranscoder(
         IElasticTranscoderWrapper elasticTranscoderWrapper,
-        IBucketWriter bucketWriter,
-        IStorageKeyGenerator storageKeyGenerator,
         IOptionsMonitor<EngineSettings> engineSettings,
         ILogger<ElasticTranscoder> logger)
     {
         this.elasticTranscoderWrapper = elasticTranscoderWrapper;
-        this.bucketWriter = bucketWriter;
         this.engineSettings = engineSettings;
         engineSettings.CurrentValue.TimebasedIngest.ThrowIfNull(nameof(engineSettings.CurrentValue.TimebasedIngest));
         this.logger = logger;
-        this.storageKeyGenerator = storageKeyGenerator;
     }
     
     public async Task<bool> InitiateTranscodeOperation(IngestionContext context, CancellationToken token = default)
@@ -71,7 +63,7 @@ public class ElasticTranscoder : IMediaTranscoder
             return false;
         }
 
-        await WriteMetadataObject(context.AssetId, elasticTranscoderJob.Job.Id, token);
+        await elasticTranscoderWrapper.PersistJobId(context.AssetId, elasticTranscoderJob.Job.Id, token);
         return true;
     }
 
@@ -112,18 +104,5 @@ public class ElasticTranscoder : IMediaTranscoder
         }
 
         return outputs;
-    }
-
-    private async Task WriteMetadataObject(AssetId assetId, string elasticTranscoderJobId,
-        CancellationToken cancellationToken)
-    {
-        // NOTE - this is XML to copy Deliverator implementation
-        var metadataKey = storageKeyGenerator.GetTimebasedMetadataLocation(assetId);
-        var metadataContent =
-            $"<JobInProgress><ElasticTranscoderJob>{elasticTranscoderJobId}</ElasticTranscoderJob></JobInProgress>";
-        
-        logger.LogDebug("Writing timebased metadata to {MetadataKey}", metadataKey);
-
-        await bucketWriter.WriteToBucket(metadataKey, metadataContent, "application/xml", cancellationToken);
     }
 }

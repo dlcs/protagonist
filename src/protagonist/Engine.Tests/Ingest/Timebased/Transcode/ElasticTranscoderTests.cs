@@ -1,8 +1,6 @@
 ﻿using System.Net;
 using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
-using DLCS.AWS.S3;
-using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
@@ -13,24 +11,17 @@ using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers.Settings;
-using Test.Helpers.Storage;
 
 namespace Engine.Tests.Ingest.Timebased.Transcode;
 
 public class ElasticTranscoderTests
 {
     private readonly IElasticTranscoderWrapper elasticTranscoderWrapper;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly TestBucketWriter bucketWriter;
     private readonly ElasticTranscoder sut;
 
     public ElasticTranscoderTests()
     {
-        bucketWriter = new TestBucketWriter();
         elasticTranscoderWrapper = A.Fake<IElasticTranscoderWrapper>();
-        storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
-        A.CallTo(() => storageKeyGenerator.GetTimebasedMetadataLocation(A<AssetId>._))
-            .ReturnsLazily((AssetId assetId) => new ObjectInBucket("bucket", $"{assetId}/metadata"));
         var es = new EngineSettings
         {
             TimebasedIngest = new TimebasedIngestSettings
@@ -44,8 +35,7 @@ public class ElasticTranscoderTests
         };
         var engineSettings = OptionsHelpers.GetOptionsMonitor(es);
 
-        sut = new ElasticTranscoder(elasticTranscoderWrapper, bucketWriter, storageKeyGenerator, engineSettings,
-            NullLogger<ElasticTranscoder>.Instance);
+        sut = new ElasticTranscoder(elasticTranscoderWrapper, engineSettings, NullLogger<ElasticTranscoder>.Instance);
     }
 
     [Fact]
@@ -175,7 +165,9 @@ public class ElasticTranscoderTests
         // Assert
         result.Should().BeFalse();
         asset.Error.Should().NotBeNullOrEmpty();
-        bucketWriter.ShouldNotHaveKey("20/10/asset-id/metadata");
+
+        A.CallTo(() => elasticTranscoderWrapper.PersistJobId(A<AssetId>._, A<string>._, A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
 
     [Theory]
@@ -192,8 +184,9 @@ public class ElasticTranscoderTests
         var context = new IngestionContext(asset);
         context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "s3://loc/ation", "video/mpeg"));
 
+        var elasticTranscoderJobId = "1234567890123-abcdef";
         A.CallTo(() => elasticTranscoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
-            .Returns("1234567890123-abcdef");
+            .Returns(elasticTranscoderJobId);
 
         A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
             .Returns(new Dictionary<string, string>()
@@ -205,7 +198,7 @@ public class ElasticTranscoderTests
         A.CallTo(() => elasticTranscoderWrapper.CreateJob(A<AssetId>._, A<string>._, A<string>._,
                 A<List<CreateJobOutput>>._, A<string>._, A<CancellationToken>._))
             .Returns(new CreateJobResponse
-                { HttpStatusCode = statusCode, Job = new Job { Id = "1234567890123-abcdef" } });
+                { HttpStatusCode = statusCode, Job = new Job { Id = elasticTranscoderJobId } });
 
         // Act
         var result = await sut.InitiateTranscodeOperation(context);
@@ -213,9 +206,11 @@ public class ElasticTranscoderTests
         // Assert
         result.Should().BeTrue();
         asset.Error.Should().BeNullOrEmpty();
-        bucketWriter
-            .ShouldHaveKey("20/10/asset-id/metadata")
-            .WithContents(
-                "<JobInProgress><ElasticTranscoderJob>1234567890123-abcdef</ElasticTranscoderJob></JobInProgress>");
+
+        A.CallTo(() => elasticTranscoderWrapper.PersistJobId(
+                A<AssetId>.That.Matches(a => a.ToString() == asset.Id),
+                elasticTranscoderJobId,
+                A<CancellationToken>._))
+            .MustHaveHappened();
     }
 }
