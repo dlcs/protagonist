@@ -147,7 +147,7 @@ public class ElasticTranscoderWrapper : IElasticTranscoderWrapper
         await bucketWriter.WriteToBucket(metadataKey, metadataContent, "application/xml", cancellationToken);
     }
 
-    public async Task<TranscoderJob?> GetElasticTranscoderJob(AssetId assetId, CancellationToken cancellationToken)
+    public async Task<TranscoderJob?> GetTranscoderJob(AssetId assetId, CancellationToken cancellationToken)
     {
         var metadataKey = storageKeyGenerator.GetTimebasedMetadataLocation(assetId);
         var metadataStream = await bucketReader.GetObjectContentFromBucket(metadataKey, cancellationToken);

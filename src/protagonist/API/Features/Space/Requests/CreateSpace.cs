@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using API.Exceptions;
 using DLCS.Model.Customers;
 using DLCS.Model.Spaces;
 using MediatR;

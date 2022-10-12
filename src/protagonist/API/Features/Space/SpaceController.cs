@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using API.Converters;
+using API.Exceptions;
 using API.Features.Space.Requests;
 using API.Infrastructure;
 using API.Settings;

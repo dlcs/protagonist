@@ -1,11 +1,9 @@
-using System;
 using System.Runtime.Serialization;
-using API.Exceptions;
 
-namespace API;
+namespace API.Exceptions;
 
 /// <summary>
-/// An exception that should result in an HTTP 403 Bad Request exception.
+/// An exception that should result in an HTTP 400 Bad Request exception.
 /// </summary>
 public class BadRequestException : APIException
 {

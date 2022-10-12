@@ -100,7 +100,7 @@ public class TranscoderJob
         private static string GetOutputKey(JobOutput jobOutput, string dlcsJobId)
         {
             // fixup output key for completed jobs as ET output doesn't match final location (Engine moves it)
-            if (jobOutput.Status == "Complete")
+            if (string.Equals(jobOutput.Status, "Complete", StringComparison.OrdinalIgnoreCase))
             {
                 // Current, prefix is JobId metadata value
                 // e.g. ac232ab4-c123-4a68-8562-2d9f1a7908fa/2/1/asset-id/full/full/max/max/0/default.mp4
