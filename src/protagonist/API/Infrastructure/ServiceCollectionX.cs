@@ -119,7 +119,7 @@ public static class ServiceCollectionX
                     Description = "Basic Authorization header using the Bearer scheme.",
                 });
 
-            c.AddSecurityRequirement(new OpenApiSecurityRequirement()
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
                 {
                     new OpenApiSecurityScheme
@@ -129,6 +129,9 @@ public static class ServiceCollectionX
                             Type = ReferenceType.SecurityScheme,
                             Id = "basic",
                         },
+                        Scheme = "basic",
+                        Name = "Authorization",
+                        In = ParameterLocation.Header
                     },
                     new string[] { }
                 },
