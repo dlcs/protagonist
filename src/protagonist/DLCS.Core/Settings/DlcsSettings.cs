@@ -18,12 +18,6 @@ public class DlcsSettings
     /// Default timeout for dlcs api requests.
     /// </summary>
     public int DefaultTimeoutMs { get; set; } = 30000;
-    
-    /// <summary>
-    /// Safe size of thumbnail to use in the portal
-    /// TODO - the DLCS API's returned Image resource should have this kind of information
-    /// </summary>
-    public int PortalThumb { get; set; }
 
     /// <summary>
     /// The AWS region that DLCS is running in
