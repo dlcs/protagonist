@@ -200,7 +200,7 @@ public class PolicyController : HydraController
     }
     
     /// <summary>
-    ///  Get details of specified origin strategy
+    /// Get details of specified origin strategy
     /// </summary>
     /// <param name="originStrategyId"></param>
     /// <param name="cancellationToken"></param>
