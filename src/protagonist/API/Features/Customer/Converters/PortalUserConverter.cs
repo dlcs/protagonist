@@ -1,6 +1,6 @@
 using DLCS.HydraModel;
 
-namespace API.Converters;
+namespace API.Features.Customer.Converters;
 
 public static class PortalUserConverter
 {
