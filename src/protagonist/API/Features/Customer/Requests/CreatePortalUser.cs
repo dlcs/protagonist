@@ -1,6 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using API.Settings;
 using DLCS.Core.Collections;
 using DLCS.Core.Encryption;
@@ -14,6 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace API.Features.Customer.Requests;
 
+/// <summary>
+/// Create a new Portal user with specified password
+/// </summary>
 public class CreatePortalUser : IRequest<CreatePortalUserResult>
 {
     public User PortalUser { get; set; }

@@ -1,6 +1,4 @@
-using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Customer.Requests;
 using API.Infrastructure;
@@ -42,7 +40,7 @@ public class PortalUsersController : HydraController
     [Route("{customerId}/portalUsers")]
     public async Task<HydraCollection<PortalUser>> GetPortalUsers(int customerId)
     {
-        var users = await Mediator.Send(new GetPortalUsers { CustomerId = customerId });
+        var users = await Mediator.Send(new GetPortalUsers(customerId));
             
         var baseUrl = GetUrlRoots().BaseUrl;
         var collection = new HydraCollection<PortalUser>
@@ -68,7 +66,7 @@ public class PortalUsersController : HydraController
     [Route("{customerId}/portalUsers/{userId}")]
     public async Task<IActionResult> GetPortalUser(int customerId, string userId)
     {
-        var users = await Mediator.Send(new GetPortalUsers { CustomerId = customerId });
+        var users = await Mediator.Send(new GetPortalUsers(customerId));
         var user = users.SingleOrDefault(u => u.Id == userId);
         if (user != null)
         {

@@ -1,7 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using API.Settings;
 using DLCS.Core.Encryption;
 using DLCS.Core.Strings;
@@ -9,11 +5,13 @@ using DLCS.Model.Customers;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Customer.Requests;
 
+/// <summary>
+/// Make a partial update to specified user
+/// </summary>
 public class PatchPortalUser : IRequest<PatchPortalUserResult>
 {
     public User PortalUser { get; set; }
@@ -31,18 +29,15 @@ public class PatchPortalUserResult
 public class PatchPortalUserHandler : IRequestHandler<PatchPortalUser, PatchPortalUserResult>
 {
     private readonly DlcsContext dbContext;
-    private readonly ILogger<PatchPortalUserHandler> logger;
     private readonly IEncryption encryption;
     private readonly ApiSettings settings;
 
     public PatchPortalUserHandler(
         DlcsContext dbContext,
-        ILogger<PatchPortalUserHandler> logger,
         IEncryption encryption,
         IOptions<ApiSettings> options)
     {
         this.dbContext = dbContext;
-        this.logger = logger;
         this.encryption = encryption;
         settings = options.Value;
     }

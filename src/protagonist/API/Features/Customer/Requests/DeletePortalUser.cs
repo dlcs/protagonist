@@ -1,13 +1,12 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using DLCS.Core.Collections;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace API.Features.Customer.Requests;
 
+/// <summary>
+/// Delete specified portal user from customer
+/// </summary>
 public class DeletePortalUser : IRequest<DeletePortalUserResult>
 {
     public DeletePortalUser(int customerId, string userId)
@@ -18,9 +17,7 @@ public class DeletePortalUser : IRequest<DeletePortalUserResult>
 
     public int CustomerId { get; }
     public string UserId { get; }
-    
 }
-
 
 public class DeletePortalUserResult
 {
@@ -52,7 +49,7 @@ public class DeletePortalUserHandler : IRequestHandler<DeletePortalUser, DeleteP
 
         if (dbUser.Customer != request.CustomerId)
         {
-            logger.LogWarning("Attempt to delete another customer's user.");
+            logger.LogWarning("Attempt to delete another customer's user");
             return new DeletePortalUserResult { Error = "Unable to delete user." };
         }
 

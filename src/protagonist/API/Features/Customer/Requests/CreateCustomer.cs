@@ -1,11 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using DLCS.Model;
 using DLCS.Model.Auth;
-using DLCS.Model.Customers;
 using DLCS.Model.Processing;
 using DLCS.Repository;
 using MediatR;
@@ -15,8 +10,7 @@ using Microsoft.Extensions.Logging;
 namespace API.Features.Customer.Requests;
 
 /// <summary>
-/// Mediatr Command to Create a new Customer
-/// See Deliverator: API/Architecture/Request/API/Entities/Customers.cs
+/// Create a new Customer
 /// </summary>
 public class CreateCustomer : IRequest<CreateCustomerResult>
 {
@@ -24,18 +18,13 @@ public class CreateCustomer : IRequest<CreateCustomerResult>
     /// Customer name. Will be checked for uniqueness.
     /// Used as the URL component.
     /// </summary>
-    public string Name { get; set; }
+    public string Name { get; }
     
     /// <summary>
     /// Display name, must also be unique.
     /// </summary>
-    public string DisplayName { get; set; }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="displayName"></param>
+    public string DisplayName { get; }
+    
     public CreateCustomer(string name, string displayName)
     {
         Name = name;
@@ -46,7 +35,7 @@ public class CreateCustomer : IRequest<CreateCustomerResult>
 public class CreateCustomerResult
 {
     public DLCS.Model.Customers.Customer? Customer;
-    public List<string> ErrorMessages = new List<string>();
+    public List<string> ErrorMessages = new();
     public bool Conflict { get; set; }
 }
 

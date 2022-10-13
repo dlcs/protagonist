@@ -1,6 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using API.Features.Customer.Validation;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;

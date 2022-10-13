@@ -1,11 +1,12 @@
-using System.Threading;
-using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using MediatR;
 
 namespace API.Features.Image.Requests;
 
+/// <summary>
+/// Get asset with provided Id
+/// </summary>
 public class GetImage : IRequest<Asset?>
 {
     public GetImage(AssetId assetId)
@@ -13,7 +14,7 @@ public class GetImage : IRequest<Asset?>
         AssetId = assetId;
     }
     
-    public AssetId AssetId { get; private set; }
+    public AssetId AssetId { get; }
 }
 
 public class GetImageHandler : IRequestHandler<GetImage, DLCS.Model.Assets.Asset?>

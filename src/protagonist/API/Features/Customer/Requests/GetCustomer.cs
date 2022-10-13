@@ -8,8 +8,8 @@ namespace API.Features.Customer.Requests;
 
 /// <summary>
 /// Mediatr command to Get a Customer
-/// This does not go via the customer repository and speaks to DBContext directly
 /// </summary>
+/// <remarks>This does not go via the customer repository and speaks to DBContext directly</remarks>
 public class GetCustomer : IRequest<DLCS.Model.Customers.Customer?>
 {
     /// <summary>

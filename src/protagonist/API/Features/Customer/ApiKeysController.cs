@@ -1,6 +1,4 @@
-using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using API.Features.Customer.Requests;
 using API.Infrastructure;
 using API.Settings;

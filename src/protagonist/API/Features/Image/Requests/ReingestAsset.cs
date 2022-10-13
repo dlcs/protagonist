@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 namespace API.Features.Image.Requests;
 
 /// <summary>
-/// Reingest specified asset - this will 
+/// Reingest specified asset - this will trigger immediate/synchronous ingest of asset
 /// </summary>
 public class ReingestAsset : IRequest<ModifyEntityResult<Asset>>
 {

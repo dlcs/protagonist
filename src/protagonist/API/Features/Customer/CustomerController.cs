@@ -1,12 +1,8 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using API.Converters;
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
 using API.Settings;
-using DLCS.Core;
 using DLCS.Core.Strings;
 using DLCS.Web.Auth;
 using DLCS.Web.Requests;
