@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using API.Converters;
 using API.Exceptions;
 using API.Features.Space.Requests;
@@ -35,18 +32,12 @@ public class SpaceController : HydraController
         this.logger = logger;
     }
     
-    
     /// <summary>
-    /// GET /customers/{customerId}/spaces
-    /// 
+    /// Get details of all spaces for customer.
     /// </summary>
-    /// <param name="customerId"></param>
-    /// <param name="page"></param>
-    /// <param name="pageSize"></param>
-    /// <param name="orderBy"></param>
-    /// <param name="orderByDescending"></param>
     /// <returns>HydraCollection of Space</returns>
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<HydraCollection<DLCS.HydraModel.Space>> GetSpaces(
         int customerId, int? page = 1, int? pageSize = -1, 
         string? orderBy = null, string? orderByDescending = null)
@@ -70,17 +61,21 @@ public class SpaceController : HydraController
         return collection;
     }
 
-
     /// <summary>
-    /// POST /customers/{customerId}/spaces
-    /// 
-    /// Create a new space within this customer.
-    /// DLCS assigns identity.
+    /// Create a new space within this customer. DLCS assigns identity.
     /// </summary>
-    /// <param name="customerId"></param>
-    /// <param name="space"></param>
-    /// <returns></returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST: /customers/1/spaces
+    ///     {
+    ///         "@type":"Space",
+    ///         "name":"foo"
+    ///     }
+    /// </remarks>
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateSpace(
         [FromRoute] int customerId, [FromBody] DLCS.HydraModel.Space space)
     {
@@ -122,12 +117,8 @@ public class SpaceController : HydraController
     }
     
     /// <summary>
-    /// GET /customers/{customerId}/spaces/{spaceId}
-    /// 
+    /// Get details of specified customers space
     /// </summary>
-    /// <param name="customerId"></param>
-    /// <param name="spaceId"></param>
-    /// <returns></returns>
     [HttpGet]
     [Route("{spaceId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.Space))]
@@ -142,18 +133,25 @@ public class SpaceController : HydraController
 
         return NotFound();
     }
-    
-    
+
     /// <summary>
-    /// PATCH /customers/{customerId}/spaces/{spaceId}
-    /// 
+    /// Make a partial update of an existing space
     /// </summary>
-    /// <param name="customerId"></param>
-    /// <param name="spaceId"></param>
-    /// <param name="space"></param>
-    /// <returns></returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     PATCH: /customers/1/spaces/5
+    ///     {
+    ///         "@type": "Space",
+    ///         "name": "New Space Name"
+    ///     }
+    /// </remarks>
     [HttpPatch]
     [Route("{spaceId}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.Space))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PatchSpace(
         int customerId, int spaceId, [FromBody] DLCS.HydraModel.Space space)
     {

@@ -4,10 +4,8 @@ using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
-using FluentAssertions;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
-using Xunit;
 
 namespace API.Tests.Integration;
 

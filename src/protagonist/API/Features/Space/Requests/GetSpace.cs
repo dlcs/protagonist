@@ -1,10 +1,11 @@
-using System.Threading;
-using System.Threading.Tasks;
 using DLCS.Model.Spaces;
 using MediatR;
 
 namespace API.Features.Space.Requests;
 
+/// <summary>
+/// Get details of specified space for customer
+/// </summary>
 public class GetSpace : IRequest<DLCS.Model.Spaces.Space?>
 {
     public GetSpace(int customerId, int spaceId)
@@ -13,8 +14,8 @@ public class GetSpace : IRequest<DLCS.Model.Spaces.Space?>
         SpaceId = spaceId;
     }
     
-    public int CustomerId { get; private set; }
-    public int SpaceId { get; private set; }
+    public int CustomerId { get; }
+    public int SpaceId { get; }
 }
 
 public class GetSpaceHandler : IRequestHandler<GetSpace, DLCS.Model.Spaces.Space?>

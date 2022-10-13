@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Strings;
@@ -36,8 +34,6 @@ public static class ControllerBaseX
 
         return orderByField;
     }
-    
-    
 
     /// <summary>
     /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
@@ -64,7 +60,6 @@ public static class ControllerBaseX
 
         return controller.HydraProblem(detail, instance, statusCode, title, type);
     }
-
 
     /// <summary>
     /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.

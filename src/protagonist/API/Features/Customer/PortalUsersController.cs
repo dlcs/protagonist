@@ -16,8 +16,6 @@ namespace API.Features.Customer;
 
 /// <summary>
 /// DLCS REST API Operations for Portal Users.
-/// This controller does not do any data access; it creates Mediatr requests and passes them on.
-/// It converts to and from the Hydra form of the DLCS API.
 /// </summary>
 [Route("/customers/")]
 [ApiController]

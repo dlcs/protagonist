@@ -1,4 +1,5 @@
 using API.Features.Customer.Requests;
+using API.Features.Customer.Validation;
 using DLCS.HydraModel;
 using FluentAssertions;
 using Xunit;

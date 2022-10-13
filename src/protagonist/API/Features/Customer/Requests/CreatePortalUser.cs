@@ -6,7 +6,6 @@ using DLCS.Model.Customers;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Customer.Requests;
@@ -32,18 +31,15 @@ public class CreatePortalUserResult
 public class CreatePortalUserHandler : IRequestHandler<CreatePortalUser, CreatePortalUserResult>
 {
     private readonly DlcsContext dbContext;
-    private readonly ILogger<CreatePortalUserHandler> logger;
     private readonly IEncryption encryption;
     private readonly ApiSettings settings;
 
     public CreatePortalUserHandler(
         DlcsContext dbContext,
-        ILogger<CreatePortalUserHandler> logger,
         IEncryption encryption,
         IOptions<ApiSettings> options)
     {
         this.dbContext = dbContext;
-        this.logger = logger;
         this.encryption = encryption;
         settings = options.Value;
     }

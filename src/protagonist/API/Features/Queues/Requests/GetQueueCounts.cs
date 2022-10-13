@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using API.Infrastructure.Requests;
 using DLCS.AWS.Settings;
 using DLCS.AWS.SQS;
@@ -14,9 +12,6 @@ namespace API.Features.Queues.Requests;
 /// <remarks>This is not customer specific</remarks>
 public class GetQueueCounts : IRequest<FetchEntityResult<QueueCount>>
 {
-    public GetQueueCounts()
-    {
-    }
 }
 
 public class QueueCount

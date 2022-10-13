@@ -5,7 +5,6 @@ using DLCS.Model.Processing;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace API.Features.Customer.Requests;
 
@@ -39,24 +38,20 @@ public class CreateCustomerResult
     public bool Conflict { get; set; }
 }
 
-/// <inheritdoc />
 public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCustomerResult>
 {
     private readonly DlcsContext dbContext;
     private readonly IEntityCounterRepository entityCounterRepository;
     private readonly IAuthServicesRepository authServicesRepository;
-    private readonly ILogger<CreateCustomerHandler> logger;
 
     public CreateCustomerHandler(
         DlcsContext dbContext,
         IEntityCounterRepository entityCounterRepository,
-        IAuthServicesRepository authServicesRepository,
-        ILogger<CreateCustomerHandler> logger)
+        IAuthServicesRepository authServicesRepository)
     {
         this.dbContext = dbContext;
         this.entityCounterRepository = entityCounterRepository;
         this.authServicesRepository = authServicesRepository;
-        this.logger = logger;
     }
 
     /// <inheritdoc />

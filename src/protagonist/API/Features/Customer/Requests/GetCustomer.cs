@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -27,15 +25,10 @@ public class GetCustomer : IRequest<DLCS.Model.Customers.Customer?>
     }
 }
 
-/// <inheritdoc />
 public class GetCustomerHandler : IRequestHandler<GetCustomer, DLCS.Model.Customers.Customer?>
 {
     private readonly DlcsContext dbContext;
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="dbContext"></param>
+    
     public GetCustomerHandler(DlcsContext dbContext)
     {
         this.dbContext = dbContext;

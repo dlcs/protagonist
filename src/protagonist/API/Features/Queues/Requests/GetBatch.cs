@@ -1,6 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using API.Infrastructure.Requests;
 using DLCS.Model.Assets;
 using DLCS.Repository;

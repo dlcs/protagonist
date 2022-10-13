@@ -1,11 +1,8 @@
 ﻿using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 using API.Exceptions;
 using DLCS.Model.Spaces;
 using DLCS.Web.Auth;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace API.Features.Space.Requests;
 
@@ -44,6 +41,7 @@ public class GetAllSpacesHandler : IRequestHandler<GetPageOfSpaces, PageOfSpaces
     
     public async Task<PageOfSpaces> Handle(GetPageOfSpaces request, CancellationToken cancellationToken)
     {
+        // TODO - principal isn't checked in any other requests - should it be removed?
         int? customerId = request.CustomerId ?? principal.GetCustomerId();
         if (customerId == null)
         {

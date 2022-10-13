@@ -3,7 +3,6 @@ using DLCS.Core.Collections;
 using DLCS.Core.Encryption;
 using DLCS.Repository;
 using MediatR;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Customer.Requests;
@@ -29,18 +28,15 @@ public class CreateApiKeyResult
 public class CreateApiKeyHandler : IRequestHandler<CreateApiKey, CreateApiKeyResult>
 {
     private readonly DlcsContext dbContext;
-    private readonly ILogger<CreateApiKeyHandler> logger;
     private readonly IEncryption encryption;
     private readonly ApiSettings settings;
     
     public CreateApiKeyHandler(
         DlcsContext dbContext,
-        ILogger<CreateApiKeyHandler> logger,
         IEncryption encryption,
         IOptions<ApiSettings> options)
     {
         this.dbContext = dbContext;
-        this.logger = logger;
         this.encryption = encryption;
         settings = options.Value;
     }

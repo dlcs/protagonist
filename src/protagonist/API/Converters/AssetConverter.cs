@@ -1,4 +1,3 @@
-using System.Linq;
 using API.Exceptions;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;

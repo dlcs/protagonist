@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -22,10 +20,6 @@ public class GetAllCustomersHandler : IRequestHandler<GetAllCustomers, List<DLCS
 {
     private readonly DlcsContext dbContext;
     
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="dbContext"></param>
     public GetAllCustomersHandler(DlcsContext dbContext)
     {
         this.dbContext = dbContext;
