@@ -194,12 +194,7 @@ public class ImageController : HydraController
             return this.HydraProblem("MediaType must be supplied", assetId.ToString(),
                 (int?)HttpStatusCode.BadRequest, errorTitle);
         }
-        var saveRequest = new HostAssetAtOrigin
-        {
-            AssetId = assetId,
-            FileBytes = asset.File,
-            MediaType = asset.MediaType
-        };
+        var saveRequest = new HostAssetAtOrigin(assetId, asset.File, asset.MediaType!);
 
         var result = await Mediator.Send(saveRequest);
         if (string.IsNullOrEmpty(result.Origin))
