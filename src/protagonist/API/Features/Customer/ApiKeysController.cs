@@ -41,7 +41,7 @@ public class ApiKeysController : HydraController
     [Route("{customerId}/keys")]
     public async Task<IActionResult> GetApiKeys(int customerId)
     {
-        var dbCustomer = await mediator.Send(new GetCustomer(customerId));
+        var dbCustomer = await Mediator.Send(new GetCustomer(customerId));
         if (dbCustomer == null)
         {
             return this.HydraNotFound();
@@ -73,7 +73,7 @@ public class ApiKeysController : HydraController
     [Route("{customerId}/keys")]
     public async Task<IActionResult> CreateApiKey(int customerId)
     {
-        var result = await mediator.Send(new CreateApiKey(customerId));
+        var result = await Mediator.Send(new CreateApiKey(customerId));
         if (result.Key.HasText() && result.Secret.HasText())
         {
             return Ok(new ApiKey(GetUrlRoots().BaseUrl, customerId, result.Key, result.Secret));
@@ -95,7 +95,7 @@ public class ApiKeysController : HydraController
     [Route("{customerId}/keys/{key}")]
     public async Task<IActionResult> DeleteApiKey(int customerId, string key)
     {
-        var result = await mediator.Send(new DeleteApiKey(customerId, key));
+        var result = await Mediator.Send(new DeleteApiKey(customerId, key));
         if (result.Error.HasText())
         {
             return this.HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Bad Request");

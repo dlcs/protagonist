@@ -54,7 +54,7 @@ public class SpaceController : HydraController
         if (page is null or < 0) page = 1;
         var orderByField = this.GetOrderBy(orderBy, orderByDescending, out var descending);
         var baseUrl = GetUrlRoots().BaseUrl;
-        var pageOfSpaces = await mediator.Send(new GetPageOfSpaces(
+        var pageOfSpaces = await Mediator.Send(new GetPageOfSpaces(
             page.Value, pageSize.Value, customerId, orderByField, descending));
         
         var collection = new HydraCollection<DLCS.HydraModel.Space>
@@ -103,7 +103,7 @@ public class SpaceController : HydraController
 
         try
         {
-            var newDbSpace = await mediator.Send(command);
+            var newDbSpace = await Mediator.Send(command);
             var newApiSpace = newDbSpace.ToHydra(GetUrlRoots().BaseUrl);
             if (newApiSpace.Id.HasText())
             {
@@ -133,7 +133,7 @@ public class SpaceController : HydraController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSpace(int customerId, int spaceId)
     {
-        var dbSpace = await mediator.Send(new GetSpace(customerId, spaceId));
+        var dbSpace = await Mediator.Send(new GetSpace(customerId, spaceId));
         if (dbSpace != null)
         {
             return Ok(dbSpace.ToHydra(GetUrlRoots().BaseUrl));
@@ -166,7 +166,7 @@ public class SpaceController : HydraController
             Roles = space.DefaultRoles
         };
         
-        var result = await mediator.Send(patchSpace);
+        var result = await Mediator.Send(patchSpace);
         if (!result.ErrorMessages.Any() && result.Space != null)
         {
             return Ok(result.Space.ToHydra(GetUrlRoots().BaseUrl));

@@ -31,9 +31,13 @@ public class AssetImageIdTests
     [Theory]
     [InlineData("image")]
     [InlineData("1/2/image/easrwt")]
+    [InlineData("1/str/image")]
+    [InlineData("str/2/image")]
     public void FromString_Throws_IfInvalidFormat(string assetId)
     {
         Action action = () => AssetId.FromString(assetId);
-        action.Should().Throw<FormatException>();
+        action.Should()
+            .Throw<FormatException>()
+            .WithMessage($"AssetId '{assetId}' is invalid. Must be in format customer/space/asset");
     }
 }

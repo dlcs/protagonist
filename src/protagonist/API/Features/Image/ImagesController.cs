@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Converters;
 using API.Exceptions;
 using API.Features.Image.Requests;
@@ -10,7 +9,6 @@ using API.Features.Space.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Strings;
-using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests;
 using Hydra.Collections;
@@ -117,7 +115,7 @@ public class ImagesController : HydraController
                 {
                     var asset = hydraImage.ToDlcsModel(customerId, spaceId);
                     var request = new CreateOrUpdateImage(asset, "PATCH");
-                    var result = await mediator.Send(request);
+                    var result = await Mediator.Send(request);
                     if (result.Entity != null)
                     {
                         patchedAssets.Add(result.Entity);

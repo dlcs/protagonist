@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Converters;
 using API.Exceptions;
 using API.Infrastructure.Requests;
@@ -26,13 +26,13 @@ public abstract class HydraController : Controller
     /// </summary>
     protected readonly ApiSettings Settings;
 
-    protected readonly IMediator mediator;
+    protected readonly IMediator Mediator;
 
     /// <inheritdoc />
     protected HydraController(ApiSettings settings, IMediator mediator)
     {
         Settings = settings;
-        this.mediator = mediator;
+        Mediator = mediator;
     }
 
     /// <summary>
@@ -73,20 +73,12 @@ public abstract class HydraController : Controller
         CancellationToken cancellationToken = default)
         where T : class
     {
-        try
+        return await HandleHydraRequest(async () =>
         {
-            var result = await mediator.Send(request, cancellationToken);
+            var result = await Mediator.Send(request, cancellationToken);
 
             return this.ModifyResultToHttpResult(result, hydraBuilder, instance, errorTitle);
-        }
-        catch (APIException apiEx)
-        {
-            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode ?? 500, apiEx.Label);
-        }
-        catch (Exception ex)
-        {
-            return this.HydraProblem(ex.Message, null, 500, errorTitle);
-        }
+        }, errorTitle);
     }
     
     /// <summary>
@@ -114,20 +106,12 @@ public abstract class HydraController : Controller
         CancellationToken cancellationToken = default)
         where T : class
     {
-        try
+        return await HandleHydraRequest(async () =>
         {
-            var result = await mediator.Send(request, cancellationToken);
+            var result = await Mediator.Send(request, cancellationToken);
 
             return this.FetchResultToHttpResult(result, hydraBuilder, instance, errorTitle);
-        }
-        catch (APIException apiEx)
-        {
-            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode ?? 500, apiEx.Label);
-        }
-        catch (Exception ex)
-        {
-            return this.HydraProblem(ex.Message, null, 500, errorTitle);
-        }
+        }, errorTitle);
     }
 
     /// <summary>
@@ -161,7 +145,7 @@ public abstract class HydraController : Controller
         where TRequest : IRequest<FetchEntityResult<PageOf<TEntity>>>, IPagedRequest
         where THydra : DlcsResource
     {
-        try
+        return await HandleHydraRequest(async () =>
         {
             SetPaging(request);
             if (request is IOrderableRequest orderableRequest)
@@ -169,7 +153,7 @@ public abstract class HydraController : Controller
                 SetOrderBy(orderableRequest);
             }
 
-            var result = await mediator.Send(request, cancellationToken);
+            var result = await Mediator.Send(request, cancellationToken);
 
             return this.FetchResultToHttpResult(
                 result,
@@ -188,6 +172,69 @@ public abstract class HydraController : Controller
                 },
                 instance,
                 errorTitle);
+        }, errorTitle);
+    }
+    
+    /// <summary>
+    /// Handle a request that returns a non-paged list of assets.
+    /// This takes a IRequest which returns a FetchEntityResult{IReadOnlyCollection{T}}
+    /// The request is sent and result is transformed to HydraCollection.
+    /// </summary>
+    /// <param name="request">IRequest to fetch data</param>
+    /// <param name="hydraBuilder">Delegate to transform each returned entity to a Hydra representation</param>
+    /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
+    /// <param name="errorTitle">
+    /// The value for <see cref="Error.Title" />. In some instances this will be prepended to the actual error name.
+    /// e.g. errorTitle + ": Conflict"
+    /// </param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <typeparam name="TEntity">Type of db entity being fetched</typeparam>
+    /// <typeparam name="TRequest">Type of mediatr request being page</typeparam>
+    /// <typeparam name="THydra">Hydra type for each member</typeparam>
+    /// <returns>
+    /// ActionResult generated from FetchEntityResult. This will be the HydraCollection + 200 on success. Or a Hydra
+    /// error and appropriate status code if failed.
+    /// </returns>
+    protected async Task<IActionResult> HandleListFetch<TEntity, TRequest, THydra>(
+        TRequest request,
+        Func<TEntity, THydra> hydraBuilder,
+        string? instance = null,
+        string? errorTitle = "Fetch failed",
+        CancellationToken cancellationToken = default)
+        where TRequest : IRequest<FetchEntityResult<IReadOnlyCollection<TEntity>>>
+        where THydra : DlcsResource
+    {
+        return await HandleHydraRequest(async () =>
+        {
+            var result = await Mediator.Send(request, cancellationToken);
+
+            return this.FetchResultToHttpResult(
+                result,
+                results =>
+                {
+                    return new HydraCollection<THydra>
+                    {
+                        WithContext = true,
+                        Members = results.Select(b => hydraBuilder(b)).ToArray(),
+                        TotalItems = results.Count,
+                        PageSize = results.Count,
+                        Id = Request.GetJsonLdId()
+                    };
+                },
+                instance,
+                errorTitle);
+        }, errorTitle);
+    }
+
+    /// <summary>
+    /// Make a request and handle exceptions, converting to a HydraProblem 
+    /// </summary>
+    protected async Task<IActionResult> HandleHydraRequest(Func<Task<IActionResult>> handler,
+        string? errorTitle = "Request failed")
+    {
+        try
+        {
+            return await handler();
         }
         catch (APIException apiEx)
         {

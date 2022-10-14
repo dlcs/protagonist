@@ -28,7 +28,7 @@ public class QueuePostValidator : AbstractValidator<HydraCollection<DLCS.HydraMo
 
         var maxBatch = apiSettings.Value.MaxBatchSize;
         RuleFor(c => c.Members)
-            .Must(m => (m?.Length ?? 0) < apiSettings.Value.MaxBatchSize)
+            .Must(m => (m?.Length ?? 0) < maxBatch)
             .WithMessage($"Maximum assets in single batch is {maxBatch}");
 
         RuleForEach(c => c.Members).SetValidator(new QueuePostImageValidator());

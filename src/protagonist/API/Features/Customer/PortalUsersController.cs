@@ -42,7 +42,7 @@ public class PortalUsersController : HydraController
     [Route("{customerId}/portalUsers")]
     public async Task<HydraCollection<PortalUser>> GetPortalUsers(int customerId)
     {
-        var users = await mediator.Send(new GetPortalUsers { CustomerId = customerId });
+        var users = await Mediator.Send(new GetPortalUsers { CustomerId = customerId });
             
         var baseUrl = GetUrlRoots().BaseUrl;
         var collection = new HydraCollection<PortalUser>
@@ -68,7 +68,7 @@ public class PortalUsersController : HydraController
     [Route("{customerId}/portalUsers/{userId}")]
     public async Task<IActionResult> GetPortalUser(int customerId, string userId)
     {
-        var users = await mediator.Send(new GetPortalUsers { CustomerId = customerId });
+        var users = await Mediator.Send(new GetPortalUsers { CustomerId = customerId });
         var user = users.SingleOrDefault(u => u.Id == userId);
         if (user != null)
         {
@@ -99,7 +99,7 @@ public class PortalUsersController : HydraController
                 Email = portalUser.Email
             }
         };
-        var result = await mediator.Send(request);
+        var result = await Mediator.Send(request);
         if (result.Error.HasText() || result.PortalUser == null)
         {
             return this.HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Cannot create user");
@@ -138,7 +138,7 @@ public class PortalUsersController : HydraController
                 Email = portalUser.Email
             }
         };
-        var result = await mediator.Send(request);
+        var result = await Mediator.Send(request);
         if (result.Error.HasText() || result.PortalUser == null)
         {
             return this.HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Cannot Patch user");
@@ -160,7 +160,7 @@ public class PortalUsersController : HydraController
     [Route("{customerId}/portalUsers/{userId}")]
     public async Task<IActionResult> DeletePortalUser(int customerId, string userId)
     {
-        var result = await mediator.Send(new DeletePortalUser(customerId, userId));
+        var result = await Mediator.Send(new DeletePortalUser(customerId, userId));
         if (result.Error.HasText())
         {
             return this.HydraProblem(result.Error, null, (int)HttpStatusCode.BadRequest, "Bad Request");

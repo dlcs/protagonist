@@ -16,7 +16,6 @@ public abstract class JsonLdBase
     [JsonIgnore]
     protected string? InternalContext;
 
-    
     [JsonProperty(Order = 2, PropertyName = "@id")]
     public string? Id { get; set; }
 
