@@ -68,7 +68,7 @@ public static class ServiceCollectionX
     {
         var apiRoot = orchestratorSettings.ApiRoot;
         services
-            .AddSingleton<DeliveratorApiAuth>()
+            .AddSingleton<DlcsApiAuth>()
             .AddSingleton<IEncryption, SHA256>()
             .AddHttpClient<IDlcsApiClient, DeliveratorApiClient>(client =>
             {

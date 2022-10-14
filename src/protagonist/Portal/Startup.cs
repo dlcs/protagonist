@@ -77,7 +77,7 @@ public class Startup
         services
             .AddHttpContextAccessor()
             .AddSingleton<IEncryption, SHA256>()
-            .AddSingleton<DeliveratorApiAuth>()
+            .AddSingleton<DlcsApiAuth>()
             .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
             .AddMediatR(typeof(Startup))
             .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))

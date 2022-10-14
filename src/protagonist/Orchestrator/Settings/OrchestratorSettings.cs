@@ -171,18 +171,6 @@ public class AuthSettings
 public class NamedQuerySettings
 {
     /// <summary>
-    /// String format for generating keys for PDF object storage.
-    /// Supported replacements are {customer}/{queryname}/{args}
-    /// </summary>
-    public string PdfStorageTemplate { get; set; } = "{customer}/pdf/{queryname}/{args}";
-
-    /// <summary>
-    /// String format for generating keys for Zip object storage.
-    /// Supported replacements are {customer}/{queryname}/{args}
-    /// </summary>
-    public string ZipStorageTemplate { get; set; } = "{customer}/zip/{queryname}/{args}";
-
-    /// <summary>
     /// Number of seconds after which an "InProcess" control file is considered stale for.
     /// After this time has elapsed it will be recreated.
     /// </summary>

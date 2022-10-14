@@ -1,13 +1,10 @@
 ﻿using System.Collections.Generic;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.Infrastructure.NamedQueries.Persistence;
-using Orchestrator.Settings;
 
-namespace Orchestrator.Infrastructure.NamedQueries.PDF;
+namespace DLCS.Repository.NamedQueries.Parsing;
 
 /// <summary>
 /// Named query parser for converting objects to PDF
@@ -18,7 +15,7 @@ public class PdfNamedQueryParser : StoredNamedQueryParser<PdfParsedNamedQuery>
     private const string CoverPage = "coverpage";
     private const string RedactedMessage = "redactedmessage";
 
-    public PdfNamedQueryParser(IOptions<NamedQuerySettings> namedQuerySettings, ILogger<PdfNamedQueryParser> logger)
+    public PdfNamedQueryParser(IOptions<NamedQueryTemplateSettings> namedQuerySettings, ILogger<PdfNamedQueryParser> logger)
         : base(namedQuerySettings, logger)
     {
     }
@@ -39,11 +36,11 @@ public class PdfNamedQueryParser : StoredNamedQueryParser<PdfParsedNamedQuery>
         }
     }
 
-    protected override string GetTemplateFromSettings(NamedQuerySettings namedQuerySettings)
+    protected override string GetTemplateFromSettings(NamedQueryTemplateSettings namedQuerySettings)
         => namedQuerySettings.PdfStorageTemplate;
 
-    protected override PdfParsedNamedQuery GenerateParsedQueryObject(CustomerPathElement customerPathElement)
-        => new(customerPathElement);
+    protected override PdfParsedNamedQuery GenerateParsedQueryObject(int customerId)
+        => new(customerId);
 
     protected override void PostParsingOperations(PdfParsedNamedQuery parsedNamedQuery)
     {

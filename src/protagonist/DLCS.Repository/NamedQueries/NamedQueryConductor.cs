@@ -1,9 +1,8 @@
 ﻿using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
 
-namespace Orchestrator.Infrastructure.NamedQueries;
+namespace DLCS.Repository.NamedQueries;
 
 /// <summary>
 /// Manages orchestration of named query parameters to generate list of results.
@@ -27,21 +26,21 @@ public class NamedQueryConductor
     /// Generate <see cref="NamedQueryResult{T}"/> from named query. 
     /// </summary>
     /// <param name="queryName">Name of NQ to use</param>
-    /// <param name="customerPathElement">CustomerPathElement used in request</param>
+    /// <param name="customerId">CustomerId for NQ</param>
     /// <param name="args">Collection of NQ args passed in url (e.g. /2/my-images/99</param>
     public async Task<NamedQueryResult<T>> GetNamedQueryResult<T>(string queryName,
-        CustomerPathElement customerPathElement, string? args)
+        int customerId, string? args)
         where T : ParsedNamedQuery
     {
-        var namedQuery = await namedQueryRepository.GetByName(customerPathElement.Id, queryName);
+        var namedQuery = await namedQueryRepository.GetByName(customerId, queryName);
         if (namedQuery == null)
         {
             logger.LogDebug("Could not find NQ with name {NamedQueryName} for customer {Customer}",
-                queryName, customerPathElement.Id);
+                queryName, customerId);
             return NamedQueryResult<T>.Empty();
         }
 
-        var parsedNamedQuery = ParseNamedQuery<T>(customerPathElement, args, namedQuery);
+        var parsedNamedQuery = ParseNamedQuery<T>(customerId, args, namedQuery);
         if (parsedNamedQuery.IsFaulty)
         {
             logger.LogInformation("Error parsing NQ for {QueryName} with {QueryArgs}", queryName, args);
@@ -52,12 +51,12 @@ public class NamedQueryConductor
         return new NamedQueryResult<T>(parsedNamedQuery, matchingImages);
     }
 
-    private T ParseNamedQuery<T>(CustomerPathElement customerPathElement, string? args, NamedQuery? namedQuery)
+    private T ParseNamedQuery<T>(int customerId, string? args, NamedQuery? namedQuery)
         where T : ParsedNamedQuery
     {
         var namedQueryParser = namedQueryParserResolver(NamedQueryTypeDeriver.GetNamedQueryParser<T>());
         var parsedNamedQuery =
-            namedQueryParser.GenerateParsedNamedQueryFromRequest<T>(customerPathElement, args, namedQuery.Template,
+            namedQueryParser.GenerateParsedNamedQueryFromRequest<T>(customerId, args, namedQuery.Template,
                 namedQuery.Name);
         return parsedNamedQuery;
     }

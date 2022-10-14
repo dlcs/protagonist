@@ -1,17 +1,14 @@
 ﻿using System.Linq;
-using System.Threading.Tasks;
 using DLCS.Core.Caching;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using DLCS.Repository.Assets;
-using FluentAssertions;
 using LazyCache.Mocks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Test.Helpers.Integration;
-using Xunit;
 
-namespace DLCS.Repository.Tests.Assets;
+namespace DLCS.Repository.Tests.NamedQueries;
 
 [Trait("Category", "Database")]
 [Collection(DatabaseCollection.CollectionName)]
@@ -102,7 +99,7 @@ public class NamedQueryRepositoryTests
     public async Task GetNamedQueryResults_Empty_IfNoMatches()
     {
         // Arrange
-        var query = new ParsedNamedQuery(new CustomerPathElement(1, "notfound"));
+        var query = new ParsedNamedQuery(1);
 
         // Act
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
@@ -115,7 +112,7 @@ public class NamedQueryRepositoryTests
     public async Task GetNamedQueryResults_ReturnsAllForCustomer_IfNoOtherCriteria()
     {
         // Arrange
-        var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"));
+        var query = new ParsedNamedQuery(99);
 
         // Act
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
@@ -128,7 +125,7 @@ public class NamedQueryRepositoryTests
     public async Task GetNamedQueryResults_FilterByString1()
     {
         // Arrange
-        var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
+        var query = new ParsedNamedQuery(99)
         {
             String1 = "foobar"
         };
@@ -144,7 +141,7 @@ public class NamedQueryRepositoryTests
     public async Task GetNamedQueryResults_FilterByString2()
     {
         // Arrange
-        var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
+        var query = new ParsedNamedQuery(99)
         {
             String2 = "foobar"
         };
@@ -160,7 +157,7 @@ public class NamedQueryRepositoryTests
     public async Task GetNamedQueryResults_FilterByString3()
     {
         // Arrange
-        var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
+        var query = new ParsedNamedQuery(99)
         {
             String3 = "foobar"
         };
@@ -176,7 +173,7 @@ public class NamedQueryRepositoryTests
     public async Task GetNamedQueryResults_FilterByNumber1()
     {
         // Arrange
-        var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
+        var query = new ParsedNamedQuery(99)
         {
             Number1 = 1
         };
@@ -192,7 +189,7 @@ public class NamedQueryRepositoryTests
     public async Task GetNamedQueryResults_FilterByNumber2()
     {
         // Arrange
-        var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
+        var query = new ParsedNamedQuery(99)
         {
             Number2 = 1
         };
@@ -208,7 +205,7 @@ public class NamedQueryRepositoryTests
     public async Task GetNamedQueryResults_FilterByNumber3()
     {
         // Arrange
-        var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
+        var query = new ParsedNamedQuery(99)
         {
             Number3 = 1
         };
@@ -224,7 +221,7 @@ public class NamedQueryRepositoryTests
     public async Task GetNamedQueryResults_FilterBySpace()
     {
         // Arrange
-        var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
+        var query = new ParsedNamedQuery(99)
         {
             Space = 1
         };
@@ -240,7 +237,7 @@ public class NamedQueryRepositoryTests
     public async Task GetNamedQueryResults_FilterBySpaceName()
     {
         // Arrange
-        var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
+        var query = new ParsedNamedQuery(99)
         {
             SpaceName = "space-1"
         };
@@ -256,7 +253,7 @@ public class NamedQueryRepositoryTests
     public async Task GetNamedQueryResults_FilterBySpaceAndSpaceName_SpaceTakesPriority()
     {
         // Arrange
-        var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
+        var query = new ParsedNamedQuery(99)
         {
             Space = 1, SpaceName = "unknown-space"
         };
@@ -272,7 +269,7 @@ public class NamedQueryRepositoryTests
     public async Task GetNamedQueryResults_FilterByMultipleCriteria()
     {
         // Arrange
-        var query = new ParsedNamedQuery(new CustomerPathElement(99, "test"))
+        var query = new ParsedNamedQuery(99)
         {
             Space = 1, SpaceName = "unknown-space", String1 = "foo", String2 = "bar", String3 = "baz", Number1 = 5,
             Number2 = 10, Number3 = 20

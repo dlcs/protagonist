@@ -5,22 +5,19 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
-using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using FluentAssertions;
+using DLCS.Repository.NamedQueries.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Orchestrator.Features.PDF.Requests;
 using Orchestrator.Infrastructure.NamedQueries.Persistence;
-using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
-using Xunit;
 
 namespace Orchestrator.Tests.Integration;
 
@@ -68,7 +65,7 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         dbFixture.DbContext.SaveChanges();
     }
 
-     [Fact]
+    [Fact]
     public async Task Options_Returns200_WithCorsHeaders()
     {
         // Arrange
@@ -84,7 +81,7 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Should().ContainKey("Access-Control-Allow-Headers");
         response.Headers.Should().ContainKey("Access-Control-Allow-Methods");
     }
-        
+
     [Fact]
     public async Task GetPdf_Returns404_IfCustomerNotFound()
     {

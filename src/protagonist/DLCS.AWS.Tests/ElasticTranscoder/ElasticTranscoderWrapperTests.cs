@@ -1,6 +1,7 @@
 ﻿using Amazon.ElasticTranscoder;
 using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.S3;
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using FakeItEasy;
@@ -13,14 +14,21 @@ namespace DLCS.AWS.Tests.ElasticTranscoder;
 public class ElasticTranscoderWrapperTests
 {
     private readonly IAmazonElasticTranscoder elasticTranscoder;
+    private readonly IStorageKeyGenerator storageKeyGenerator;
+    private readonly IBucketWriter bucketWriter;
+    private readonly IBucketReader bucketReader;
     private readonly ElasticTranscoderWrapper sut;
 
     public ElasticTranscoderWrapperTests()
     {
         elasticTranscoder = A.Fake<IAmazonElasticTranscoder>();
+        bucketWriter = A.Fake<IBucketWriter>();
+        bucketReader = A.Fake<IBucketReader>();
+        storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
+        
         var cacheSettings = Options.Create(new CacheSettings());
-        sut = new ElasticTranscoderWrapper(elasticTranscoder, new MockCachingService(), cacheSettings,
-            new NullLogger<ElasticTranscoderWrapper>());
+        sut = new ElasticTranscoderWrapper(elasticTranscoder, new MockCachingService(), bucketWriter, bucketReader,
+            storageKeyGenerator, cacheSettings, new NullLogger<ElasticTranscoderWrapper>());
     }
 
     [Fact]

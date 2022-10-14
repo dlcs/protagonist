@@ -23,9 +23,10 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// 
+    /// GET /
+    ///
+    /// Get EntryPoint object
     /// </summary>
-    /// <returns></returns>
     [HttpGet]
     [AllowAnonymous]
     public EntryPoint Index()

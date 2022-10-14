@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.S3;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.AWS.S3;
@@ -31,26 +32,29 @@ using ImageOptimisationPolicy = DLCS.Model.Policies.ImageOptimisationPolicy;
 namespace API.Tests.Integration;
 
 [Trait("Category", "Integration")]
-[Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
+[Collection(StorageCollection.CollectionName)]
 public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
-    private static readonly IBucketWriter BucketWriter = A.Fake<IBucketWriter>();
+    private readonly IAmazonS3 amazonS3;
     private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
     
     public ModifyAssetTests(
-        DlcsDatabaseFixture dbFixture, 
+        StorageFixture storageFixture, 
         ProtagonistAppFactory<Startup> factory)
     {
+        var dbFixture = storageFixture.DbFixture;
+        amazonS3 = storageFixture.LocalStackFixture.AWSS3ClientFactory();
+        
         dbContext = dbFixture.DbContext;
         
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
+            .WithLocalStack(storageFixture.LocalStackFixture)
             .WithTestServices(services =>
             {
                 services.AddScoped<IEngineClient>(_ => EngineClient);
-                services.AddSingleton<IBucketWriter>(BucketWriter);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                         "API-Test", _ => { });
@@ -612,7 +616,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         var assetId = new AssetId(99, 1, nameof(Bulk_Patch_Prevents_Engine_Call));
         
-        var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(),
+        await dbContext.Images.AddTestAsset(assetId.ToString(),
             ref1: "I am string 1", origin:$"https://images.org/{assetId.Asset}.tiff");
         await dbContext.SaveChangesAsync();
         
@@ -645,18 +649,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // The test just uses the string form, but we want this to validate later calls more easily
         var hydraJson = JsonConvert.DeserializeObject<ImageWithFile>(hydraBody);
-        var stream = new MemoryStream(hydraJson.File); // we'll make sure the stream written to S3 is the same length 
-        
-        // BucketWriter returns success if it writes that stream
-        A.CallTo(() =>
-                BucketWriter.WriteToBucket(
-                    A<ObjectInBucket>.That.Matches(o =>
-                        o.Bucket == "protagonist-test-origin" && 
-                        o.Key == assetId.ToString()), 
-                    A<MemoryStream>.That.Matches(s => s.Length == stream.Length),
-                    hydraJson.MediaType))
-            .Returns(true);
-        
+
         // make a callback for engine
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
@@ -669,16 +662,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer(99).PostAsync(assetId.ToApiResourcePath(), content);
         
         // assert
-        // The image was saved to S3:
-        A.CallTo(() =>
-                BucketWriter.WriteToBucket(
-                    A<ObjectInBucket>.That.Matches(o =>
-                        o.Bucket == "protagonist-test-origin" &&
-                        o.Key == assetId.ToString()),
-                    A<MemoryStream>.That.Matches(s => s.Length == stream.Length),
-                    hydraJson.MediaType))
-            .MustHaveHappened();
-        
+        // The image was saved to S3 with correct header
+        var item = await amazonS3.GetObjectAsync(LocalStackFixture.OriginBucketName, assetId.ToString());
+        item.Headers.ContentType.Should().Be(hydraJson.MediaType, "Media type set on stored asset");
+        var storedBytes = StreamToBytes(item.ResponseStream);
+        storedBytes.Should().BeEquivalentTo(hydraJson.File, "Correct file bytes stored");
+
         // Engine was called during this process.
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
@@ -691,7 +680,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
         var asset = await dbContext.Images.FindAsync(assetId.ToString());
         asset.Should().NotBeNull();
-        asset.Origin.Should().Be("https://protagonist-test-origin.s3.eu-west-1.amazonaws.com/99/1/Post_ImageBytes_Ingests_New_Image");
+        asset.Origin.Should()
+            .Be("https://protagonist-origin.s3.eu-west-1.amazonaws.com/99/1/Post_ImageBytes_Ingests_New_Image");
     }
 
     [Fact]
@@ -901,5 +891,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         response.StatusCode.Should().Be(api);
+    }
+    
+    private byte[] StreamToBytes(Stream input)
+    {
+        using MemoryStream ms = new MemoryStream();
+        input.CopyTo(ms);
+        return ms.ToArray();
     }
 }

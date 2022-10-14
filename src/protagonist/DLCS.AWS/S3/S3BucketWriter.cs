@@ -236,7 +236,7 @@ public class S3BucketWriter : IBucketWriter
             var deleteObjectsRequest = new DeleteObjectsRequest
             {
                 BucketName = toDelete[0].Bucket,
-                Objects = toDelete.Select(oib => new KeyVersion{Key = oib.Key}).ToList(),
+                Objects = toDelete.Select(oib => new KeyVersion { Key = oib.Key }).ToList(),
             };
 
             await s3Client.DeleteObjectsAsync(deleteObjectsRequest);

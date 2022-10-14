@@ -13,6 +13,11 @@ public class Batch
     public int Completed { get; set; }
     public int Errors { get; set; }
     public DateTime? Finished { get; set; }
+    
+    /// <summary>
+    /// Indicates whether all of the images in this batch have subsequently been processed, either in a new bath or
+    /// individually
+    /// </summary>
     public bool Superseded { get; set; }
     
     private string DebuggerDisplay => $"{Id}, Cust:{Customer}, {Count} item(s)";

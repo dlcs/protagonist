@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography;
-using System.Text;
+﻿using System.Text;
 using DLCS.Core.Guard;
 
 namespace DLCS.Core.Encryption;
@@ -30,8 +29,7 @@ public class SHA256 : IEncryption
     private static byte[] GenerateHash(string source)
     {
         byte[] bs = Encoding.UTF8.GetBytes(source);
-        using var sha256Managed = new SHA256Managed();
-        byte[] hash = sha256Managed.ComputeHash(bs);
+        var hash = System.Security.Cryptography.SHA256.HashData(bs);
         return hash;
     }
 }

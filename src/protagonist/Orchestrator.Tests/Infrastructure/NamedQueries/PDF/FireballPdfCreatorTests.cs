@@ -31,7 +31,7 @@ public class FireballPdfCreatorTests
     private readonly IBucketReader bucketReader;
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly FireballPdfCreator sut;
-    private readonly CustomerPathElement customer = new(99, "Test-Customer");
+    private const int Customer = 99;
     private readonly IBucketWriter bucketWriter;
 
     public FireballPdfCreatorTests()
@@ -76,7 +76,7 @@ public class FireballPdfCreatorTests
     {
         // Arrange
         const string controlFileStorageKey = "controlFileKey";
-        var parsedNamedQuery = new PdfParsedNamedQuery(customer)
+        var parsedNamedQuery = new PdfParsedNamedQuery(Customer)
         {
             StorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
         };
@@ -104,7 +104,7 @@ public class FireballPdfCreatorTests
     public async Task CreatePdf_False_IfNon2xxHttpResponse_CallingFireball()
     {
         // Arrange
-        var parsedNamedQuery = new PdfParsedNamedQuery(customer)
+        var parsedNamedQuery = new PdfParsedNamedQuery(Customer)
         {
             StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
         };
@@ -129,7 +129,7 @@ public class FireballPdfCreatorTests
     public async Task CreatePdf_False_IfFireballReturnsUnsuccessfulBody()
     {
         // Arrange
-        var parsedNamedQuery = new PdfParsedNamedQuery(customer)
+        var parsedNamedQuery = new PdfParsedNamedQuery(Customer)
         {
             StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
         };
@@ -158,7 +158,7 @@ public class FireballPdfCreatorTests
     {
         // Arrange
         const string controlFileStorageKey = "controlFileKey";
-        var parsedNamedQuery = new PdfParsedNamedQuery(customer)
+        var parsedNamedQuery = new PdfParsedNamedQuery(Customer)
         {
             StorageKey = "pdfKey", ControlFileStorageKey = controlFileStorageKey
         };
@@ -192,7 +192,7 @@ public class FireballPdfCreatorTests
     public async Task CreatePdf_RedactsNotWhitelistedRoles()
     {
         // Arrange
-        var parsedNamedQuery = new PdfParsedNamedQuery(customer)
+        var parsedNamedQuery = new PdfParsedNamedQuery(Customer)
         {
             StorageKey = "pdfKey", ControlFileStorageKey = "controlFileKey"
         };

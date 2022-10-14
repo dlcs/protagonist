@@ -1,8 +1,6 @@
 ﻿using System.Linq;
-using DLCS.Model.Assets;
-using DLCS.Model.Assets.NamedQueries;
 
-namespace Orchestrator.Infrastructure.NamedQueries;
+namespace DLCS.Model.Assets.NamedQueries;
 
 /// <summary>
 /// Object containing parsed named query and all assets matching criteria.

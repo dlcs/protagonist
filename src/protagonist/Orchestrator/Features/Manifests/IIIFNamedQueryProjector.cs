@@ -6,6 +6,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
+using DLCS.Model.PathElements;
 using DLCS.Web.Requests;
 using IIIF;
 using IIIF.Presentation;
@@ -14,7 +15,6 @@ using IIIF.Presentation.V3.Strings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.EntityFrameworkCore;
-using Orchestrator.Features.Manifests.Requests;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.NamedQueries;
 using IIIF2 = IIIF.Presentation.V2;
@@ -39,7 +39,8 @@ public class IIIFNamedQueryProjector
     /// Project NamedQueryResult to IIIF presentation object
     /// </summary>
     public async Task<JsonLdBase?> GenerateIIIFPresentation(NamedQueryResult<IIIFParsedNamedQuery> namedQueryResult,
-        HttpRequest request, Version iiifPresentationVersion, CancellationToken cancellationToken = default)
+        CustomerPathElement customerPathElement, HttpRequest request, Version iiifPresentationVersion, 
+        CancellationToken cancellationToken = default)
     {
         var parsedNamedQuery = namedQueryResult.ParsedQuery.ThrowIfNull(nameof(request.Query))!;
 
@@ -49,12 +50,12 @@ public class IIIFNamedQueryProjector
         var orderedImages = NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery).ToList();
 
         return iiifPresentationVersion == Version.V2
-            ? await GenerateV2Manifest(parsedNamedQuery, orderedImages, request)
-            : await GenerateV3Manifest(parsedNamedQuery, orderedImages, request);
+            ? await GenerateV2Manifest(parsedNamedQuery, customerPathElement, orderedImages, request)
+            : await GenerateV3Manifest(parsedNamedQuery, customerPathElement, orderedImages, request);
     }
 
-    private async Task<JsonLdBase> GenerateV2Manifest(IIIFParsedNamedQuery parsedNamedQuery, List<Asset> results,
-        HttpRequest request)
+    private async Task<JsonLdBase> GenerateV2Manifest(IIIFParsedNamedQuery parsedNamedQuery,
+        CustomerPathElement customerPathElement, List<Asset> results, HttpRequest request)
     {
         var rootUrl = HttpRequestX.GetDisplayUrl(request);
         var manifest = new IIIF2.Manifest
@@ -67,7 +68,7 @@ public class IIIFNamedQueryProjector
             }.AsList(),
         };
 
-        var canvases = await canvasFactory.CreateV2Canvases(results, parsedNamedQuery.CustomerPathElement);
+        var canvases = await canvasFactory.CreateV2Canvases(results, customerPathElement);
         var sequence = new IIIF2.Sequence
         {
             Id = string.Concat(rootUrl, "/iiif-query/sequence/0"),
@@ -82,7 +83,7 @@ public class IIIFNamedQueryProjector
     }
 
     private async Task<JsonLdBase> GenerateV3Manifest(IIIFParsedNamedQuery parsedNamedQuery,
-        List<Asset> results, HttpRequest request)
+        CustomerPathElement customerPathElement, List<Asset> results, HttpRequest request)
     {
         const string language = "en";
         var manifest = new IIIF3.Manifest
@@ -92,7 +93,7 @@ public class IIIFNamedQueryProjector
             Metadata = new LabelValuePair(language, "Title", "Created by DLCS").AsList(),
         };
 
-        var canvases = await canvasFactory.CreateV3Canvases(results, parsedNamedQuery.CustomerPathElement);
+        var canvases = await canvasFactory.CreateV3Canvases(results, customerPathElement);
         manifest.Items = canvases;
         manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
         

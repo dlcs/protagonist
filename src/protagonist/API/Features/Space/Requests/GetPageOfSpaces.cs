@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Exceptions;
 using DLCS.Model.Spaces;
 using DLCS.Web.Auth;
 using MediatR;

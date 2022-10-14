@@ -1,12 +1,11 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.AWS.S3;
-using DLCS.AWS.S3.Models;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets.NamedQueries;
+using DLCS.Repository.NamedQueries;
+using DLCS.Repository.NamedQueries.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -19,26 +18,23 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence;
 /// <summary>
 /// Service for handling NQ projections that are created and stored alongside a corresponding control-file.
 /// </summary>
-public class StoredNamedQueryService
+public class StoredNamedQueryManager
 {
-    private readonly IBucketReader bucketReader;
-    private readonly ILogger<StoredNamedQueryService> logger;
+    private readonly NamedQueryStorageService namedQueryStorageService;
+    private readonly ILogger<StoredNamedQueryManager> logger;
     private readonly IAssetAccessValidator assetAccessValidator;
     private readonly NamedQuerySettings namedQuerySettings;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
 
-    public StoredNamedQueryService(
-        IBucketReader bucketReader,
+    public StoredNamedQueryManager(
+        NamedQueryStorageService namedQueryStorageService,
         IOptions<NamedQuerySettings> namedQuerySettings,
-        ILogger<StoredNamedQueryService> logger, 
-        IAssetAccessValidator assetAccessValidator,
-        IStorageKeyGenerator storageKeyGenerator)
+        ILogger<StoredNamedQueryManager> logger, 
+        IAssetAccessValidator assetAccessValidator)
     {
-        this.bucketReader = bucketReader;
+        this.namedQueryStorageService = namedQueryStorageService;
         this.namedQuerySettings = namedQuerySettings.Value;
         this.logger = logger;
         this.assetAccessValidator = assetAccessValidator;
-        this.storageKeyGenerator = storageKeyGenerator;
     }
 
     /// <summary>
@@ -66,7 +62,7 @@ public class StoredNamedQueryService
         var imageResults = await namedQueryResult.Results.ToListAsync(cancellationToken);
         if (imageResults.Count == 0)
         {
-            logger.LogWarning("No results found for PDF file {PdfS3Key}, aborting", parsedNamedQuery.StorageKey);
+            logger.LogWarning("No results found for stored file {S3StorageKey}, aborting", parsedNamedQuery.StorageKey);
             return new StoredResult(Stream.Null, PersistedProjectionStatus.NotFound, existingResult.RequiresAuth);
         }
 
@@ -85,7 +81,7 @@ public class StoredNamedQueryService
             }
         }
 
-        var projection = await LoadStoredObject(parsedNamedQuery.StorageKey, cancellationToken);
+        var projection = await namedQueryStorageService.LoadProjection(parsedNamedQuery, cancellationToken);
         if (projection.Stream != null && projection.Stream != Stream.Null)
         {
             return new(projection.Stream!, PersistedProjectionStatus.Available, requiresAuth);
@@ -96,20 +92,10 @@ public class StoredNamedQueryService
         return new(Stream.Null, PersistedProjectionStatus.Error, requiresAuth);
     }
 
-    /// <summary>
-    /// Get <see cref="ControlFile"/> stored as specified key.
-    /// </summary>
-    public async Task<ControlFile?> GetControlFile(string controlFileKey, CancellationToken cancellationToken)
-    {
-        var controlObject = await LoadStoredObject(controlFileKey, cancellationToken);
-        if (controlObject.Stream == Stream.Null) return null;
-        return await controlObject.DeserializeFromJson<ControlFile>();
-    }
-
     private async Task<StoredResult> TryGetExistingResource(StoredParsedNamedQuery parsedNamedQuery,
         bool validateRoles, CancellationToken cancellationToken)
     {
-        var controlFile = await GetControlFile(parsedNamedQuery.ControlFileStorageKey, cancellationToken);
+        var controlFile = await namedQueryStorageService.GetControlFile(parsedNamedQuery, cancellationToken);
         if (controlFile == null) return new(Stream.Null, PersistedProjectionStatus.NotFound, null);
 
         var itemKey = parsedNamedQuery.StorageKey;
@@ -136,7 +122,7 @@ public class StoredNamedQueryService
             return new(Stream.Null, PersistedProjectionStatus.InProcess, requiresAuth);
         }
 
-        var resource = await LoadStoredObject(itemKey, cancellationToken);
+        var resource = await namedQueryStorageService.LoadProjection(parsedNamedQuery, cancellationToken);
         if (resource.Stream != null && resource.Stream != Stream.Null)
         {
             return new(resource.Stream!, PersistedProjectionStatus.Available, requiresAuth);
@@ -152,12 +138,6 @@ public class StoredNamedQueryService
             await assetAccessValidator.TryValidate(parsedNamedQuery.Customer, controlFile.Roles,
                 AuthMechanism.Cookie);
         return access is AssetAccessResult.Open or AssetAccessResult.Authorized;
-    }
-
-    private Task<ObjectFromBucket> LoadStoredObject(string key, CancellationToken cancellationToken)
-    {
-        var outputLocation = storageKeyGenerator.GetOutputLocation(key);
-        return bucketReader.GetObjectFromBucket(outputLocation, cancellationToken);
     }
 }
 

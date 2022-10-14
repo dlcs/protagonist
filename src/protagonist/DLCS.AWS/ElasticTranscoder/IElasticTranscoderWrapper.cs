@@ -1,4 +1,5 @@
 ﻿using Amazon.ElasticTranscoder.Model;
+using DLCS.AWS.ElasticTranscoder.Models.Job;
 using DLCS.Core.Types;
 
 namespace DLCS.AWS.ElasticTranscoder;
@@ -36,4 +37,21 @@ public interface IElasticTranscoderWrapper
     /// <returns><see cref="CreateJobResponse"/> object</returns>
     Task<CreateJobResponse> CreateJob(AssetId assetId, string inputKey, string pipelineId,
         List<CreateJobOutput> outputs, string jobId, CancellationToken token = default);
+
+    /// <summary>
+    /// Persist ElasticTranscoder metadata to storage for later retrieval 
+    /// </summary>
+    /// <param name="assetId">Asset job is for</param>
+    /// <param name="elasticTranscoderJobId">Unique identifier for latest elastic transcoder job</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns></returns>
+    Task PersistJobId(AssetId assetId, string elasticTranscoderJobId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Get ElasticTranscoder job for AssetId.
+    /// </summary>
+    /// <param name="assetId">AssetId to get latest job data for</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>Job details, if found. Else null</returns>
+    Task<TranscoderJob?> GetTranscoderJob(AssetId assetId, CancellationToken cancellationToken);
 }

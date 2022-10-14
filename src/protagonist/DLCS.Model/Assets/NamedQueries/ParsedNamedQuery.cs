@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using DLCS.Core.Guard;
-using DLCS.Model.PathElements;
 
 namespace DLCS.Model.Assets.NamedQueries;
 
@@ -61,14 +60,9 @@ public class ParsedNamedQuery
     public string NamedQueryName { get; set; }
 
     /// <summary>
-    /// CustomerPathElement object sent with request
-    /// </summary>
-    public CustomerPathElement CustomerPathElement { get; }
-    
-    /// <summary>
     /// CustomerId associated with request
     /// </summary>
-    public int Customer => CustomerPathElement.Id;
+    public int Customer { get; set; }
     
     /// <summary>
     /// Whether the NQ could be parsed correctly
@@ -80,9 +74,9 @@ public class ParsedNamedQuery
     /// </summary>
     public string? ErrorMessage { get; private set; }
 
-    public ParsedNamedQuery(CustomerPathElement customerPathElement)
+    public ParsedNamedQuery(int customerId)
     {
-        CustomerPathElement = customerPathElement;
+        Customer = customerId;
     }
 
     /// <summary>

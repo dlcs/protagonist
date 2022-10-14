@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Threading;
 using API.Converters;
 using API.Features.Image.Requests;
 using API.Infrastructure;
@@ -195,12 +194,7 @@ public class ImageController : HydraController
             return this.HydraProblem("MediaType must be supplied", assetId.ToString(),
                 (int?)HttpStatusCode.BadRequest, errorTitle);
         }
-        var saveRequest = new HostAssetAtOrigin
-        {
-            AssetId = assetId,
-            FileBytes = asset.File,
-            MediaType = asset.MediaType
-        };
+        var saveRequest = new HostAssetAtOrigin(assetId, asset.File, asset.MediaType!);
 
         var result = await Mediator.Send(saveRequest);
         if (string.IsNullOrEmpty(result.Origin))
@@ -212,6 +206,28 @@ public class ImageController : HydraController
         asset.File = null;
 
         return await PutOrPatchAsset(customerId, spaceId, imageId, asset);
+    }
+
+    /// <summary>
+    /// GET /customers/{customerId}/spaces/{spaceId}/images/{imageId}/metadata
+    ///
+    /// Get trancode metadata for Timebased assets
+    /// </summary>
+    [ProducesResponseType((int)HttpStatusCode.OK)]
+    [ProducesResponseType((int)HttpStatusCode.NotFound)]
+    [ProducesResponseType((int)HttpStatusCode.BadRequest)]
+    [HttpGet]
+    [Route("metadata")]
+    public async Task<IActionResult> GetAssetMetadata([FromRoute] int customerId, [FromRoute] int spaceId,
+        [FromRoute] string imageId, CancellationToken cancellationToken)
+    {
+        return await HandleHydraRequest(async () =>
+        {
+            var getMetadata = new GetAssetMetadata(customerId, spaceId, imageId);
+            var entityResult = await Mediator.Send(getMetadata, cancellationToken);
+
+            return this.FetchResultToHttpResult(entityResult, getMetadata.AssetId.ToString(), "Error getting metadata");
+        });
     }
 
     private Task<IActionResult> PutOrPatchAsset(int customerId, int spaceId, string imageId,

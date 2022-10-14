@@ -1,8 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using API.Converters;
+﻿using API.Converters;
 using API.Features.Queues.Converters;
 using API.Features.Queues.Requests;
 using API.Features.Queues.Validation;
@@ -194,6 +190,35 @@ public class CustomerQueueController : HydraController
             errorTitle: "Get Batch Images failed",
             cancellationToken: cancellationToken
         );
+    }
+
+    /// <summary>
+    /// POST /customers/{customerId}/queue/batches/{batchId}test
+    ///
+    /// Tests batch to check if superseded or completed and updates accordingly.
+    /// 
+    /// </summary>
+    /// <param name="customerId">Id of customer</param>
+    /// <param name="batchId">Id of batch to test</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>
+    /// If batch found will always return a 200. Content will be { "success" : true } if batch has been updated (ie
+    /// superseded or complete), or { "success": false } if batch found but not modified
+    /// </returns>
+    [HttpPost]
+    [Route("batches/{batchId}/test")]
+    public async Task<IActionResult> TestBatch([FromRoute] int customerId, [FromRoute] int batchId,
+        CancellationToken cancellationToken = default)
+    {
+        return await HandleHydraRequest(async () =>
+        {
+            var testBatch = new TestBatch(customerId, batchId);
+
+            var response = await Mediator.Send(testBatch, cancellationToken);
+
+            // TODO - return a better message. This is for backwards compat
+            return response == null ? this.HydraNotFound() : Ok(new { success = response });
+        }, "Test batch failed");
     }
 
     /// <summary>

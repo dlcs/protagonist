@@ -181,11 +181,14 @@ public static class ControllerBaseX
     /// </summary>
     /// <param name="controller">Current controllerBase object</param>
     /// <param name="entityResult">Result to transform</param>
-    /// <param name="hydraBuilder">Delegate to transform ModifyEntityResult.Entity to Hydra representation</param>
     /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
     /// <param name="errorTitle">
     ///     The value for <see cref="Error.Title" />. In some instances this will be prepended to the actual error name.
     ///     e.g. errorTitle + ": Conflict"
+    /// </param>
+    /// <param name="hydraBuilder">
+    /// Optional delegate to transform Result.Entity to Hydra representation, if not provided Entity property returned
+    /// as-is
     /// </param>
     /// <typeparam name="T">Type of entity being upserted</typeparam>
     /// <returns>
@@ -193,8 +196,9 @@ public static class ControllerBaseX
     /// </returns>
     public static IActionResult FetchResultToHttpResult<T>(this ControllerBase controller,
         FetchEntityResult<T> entityResult,
-        Func<T, JsonLdBase> hydraBuilder, string? instance,
-        string? errorTitle)
+        string? instance,
+        string? errorTitle,
+        Func<T, JsonLdBase>? hydraBuilder = null)
         where T : class
     {
         if (entityResult.Error)
@@ -207,6 +211,8 @@ public static class ControllerBaseX
             return controller.HydraNotFound();
         }
 
-        return controller.Ok(hydraBuilder(entityResult.Entity));
+        return hydraBuilder == null
+            ? controller.Ok(entityResult.Entity)
+            : controller.Ok(hydraBuilder(entityResult.Entity));
     }
 }

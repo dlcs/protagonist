@@ -1,10 +1,11 @@
-﻿using DLCS.Model.PathElements;
+﻿namespace DLCS.Model.Assets.NamedQueries;
 
-namespace DLCS.Model.Assets.NamedQueries;
-
+/// <summary>
+/// NamedQuery that is projected to IIIF Manifest
+/// </summary>
 public class IIIFParsedNamedQuery : ParsedNamedQuery
 {
-    public IIIFParsedNamedQuery(CustomerPathElement customerPathElement) : base(customerPathElement)
+    public IIIFParsedNamedQuery(int customerId) : base(customerId)
     {
     }
     

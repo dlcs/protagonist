@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using DLCS.Model.PathElements;
 
 namespace DLCS.Model.Assets.NamedQueries;
 
@@ -9,7 +8,7 @@ namespace DLCS.Model.Assets.NamedQueries;
 /// </summary>
 public class StoredParsedNamedQuery : ParsedNamedQuery
 {
-    public StoredParsedNamedQuery(CustomerPathElement customerPathElement) : base(customerPathElement)
+    public StoredParsedNamedQuery(int customerId) : base(customerId)
     {
     }
 

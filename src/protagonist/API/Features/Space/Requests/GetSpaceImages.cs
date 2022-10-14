@@ -2,6 +2,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using API.Exceptions;
 using API.Infrastructure.Requests;
 using DLCS.Model.Assets;
 using DLCS.Model.Page;

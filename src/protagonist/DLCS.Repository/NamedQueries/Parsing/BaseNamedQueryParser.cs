@@ -4,13 +4,12 @@ using System.Linq;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using Microsoft.Extensions.Logging;
 using QueryMapping = DLCS.Model.Assets.NamedQueries.ParsedNamedQuery.QueryMapping;
 using OrderDirection = DLCS.Model.Assets.NamedQueries.ParsedNamedQuery.OrderDirection;
 using QueryOrder = DLCS.Model.Assets.NamedQueries.ParsedNamedQuery.QueryOrder;
 
-namespace Orchestrator.Infrastructure.NamedQueries.Parsing;
+namespace DLCS.Repository.NamedQueries.Parsing;
 
 /// <summary>
 /// Basic NQ parser, supporting the following arguments: s1, s2, s3, n1, n2, n3, space, spacename, canvas, # and p*
@@ -42,7 +41,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
     }
 
     public T GenerateParsedNamedQueryFromRequest<T>(
-        CustomerPathElement customerPathElement,
+        int customerId,
         string? namedQueryArgs,
         string namedQueryTemplate,
         string namedQueryName) where T : ParsedNamedQuery
@@ -56,7 +55,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         var queryArgs = GetQueryArgsList(namedQueryArgs, templatePairing);
 
         // Populate the ParsedNamedQuery object using template + query args
-        var assetQuery = GenerateParsedNamedQuery(customerPathElement, templatePairing, queryArgs);
+        var assetQuery = GenerateParsedNamedQuery(customerId, templatePairing, queryArgs);
         assetQuery.NamedQueryName = namedQueryName;
         PostParsingOperations(assetQuery);
         return (assetQuery as T)!;
@@ -88,11 +87,9 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         return queryArgs;
     }
 
-    private T GenerateParsedNamedQuery(CustomerPathElement customer,
-        string[] templatePairing,
-        List<string> queryArgs)
+    private T GenerateParsedNamedQuery(int customerId, string[] templatePairing, List<string> queryArgs)
     {
-        var assetQuery = GenerateParsedQueryObject(customer);
+        var assetQuery = GenerateParsedQueryObject(customerId);
 
         // Iterate through all of the pairs and generate the NQ model
         try
@@ -142,7 +139,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "Error parsing named query for customer {Customer}", customer.Id);
+            Logger.LogError(e, "Error parsing named query for customer {Customer}", customerId);
             assetQuery.SetError(e.Message);
         }
 
@@ -162,7 +159,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
     /// Factory method to generate instance of <see cref="ParsedNamedQuery"/>.
     /// </summary>
     /// <remarks>Could use Activator.CreateInstance this avoids using reflection</remarks>
-    protected abstract T GenerateParsedQueryObject(CustomerPathElement customerPathElement);
+    protected abstract T GenerateParsedQueryObject(int customerId);
 
     protected string GetQueryArgumentFromTemplateElement(List<string> args, string element)
     {

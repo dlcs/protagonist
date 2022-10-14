@@ -110,7 +110,7 @@ public abstract class HydraController : Controller
         {
             var result = await Mediator.Send(request, cancellationToken);
 
-            return this.FetchResultToHttpResult(result, hydraBuilder, instance, errorTitle);
+            return this.FetchResultToHttpResult(result, instance, errorTitle, hydraBuilder);
         }, errorTitle);
     }
 
@@ -157,7 +157,8 @@ public abstract class HydraController : Controller
 
             return this.FetchResultToHttpResult(
                 result,
-                pageOf =>
+                instance,
+                errorTitle, pageOf =>
                 {
                     var collection = new HydraCollection<THydra>
                     {
@@ -169,9 +170,7 @@ public abstract class HydraController : Controller
                     };
                     PartialCollectionView.AddPaging(collection, pageOf.Page, pageOf.PageSize);
                     return collection;
-                },
-                instance,
-                errorTitle);
+                });
         }, errorTitle);
     }
     
@@ -210,7 +209,8 @@ public abstract class HydraController : Controller
 
             return this.FetchResultToHttpResult(
                 result,
-                results =>
+                instance,
+                errorTitle, results =>
                 {
                     return new HydraCollection<THydra>
                     {
@@ -220,9 +220,7 @@ public abstract class HydraController : Controller
                         PageSize = results.Count,
                         Id = Request.GetJsonLdId()
                     };
-                },
-                instance,
-                errorTitle);
+                });
         }, errorTitle);
     }
 
