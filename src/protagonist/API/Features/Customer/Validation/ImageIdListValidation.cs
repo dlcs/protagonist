@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using API.Exceptions;
+using DLCS.Core.Exceptions;
 using DLCS.Core.Types;
 
 namespace API.Features.Customer.Validation;
@@ -20,9 +21,9 @@ internal static class ImageIdListValidation
                 throw new BadRequestException("Cannot request images for different customer");
             }
         }
-        catch (FormatException formatException)
+        catch (InvalidAssetIdException assetIdEx)
         {
-            throw new BadRequestException(formatException.Message, formatException);
+            throw new BadRequestException(assetIdEx.Message, assetIdEx);
         }
     }
 }
