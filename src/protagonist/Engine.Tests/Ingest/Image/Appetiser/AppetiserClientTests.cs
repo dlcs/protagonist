@@ -304,7 +304,7 @@ public class AppetiserClientTests
 
         // Assert
         var storage = context.ImageStorage;
-        storage.Id.Should().Be("/1/2/something");
+        storage.Id.Should().Be(AssetId.FromString("/1/2/something"));
         storage.Customer.Should().Be(1);
         storage.Space.Should().Be(2);
         storage.LastChecked.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(30));
@@ -314,7 +314,7 @@ public class AppetiserClientTests
     private static IngestionContext GetIngestionContext(string assetId = "/1/2/something",
         string contentType = "image/jpg")
     {
-        var asset = new Asset { Id = assetId, Customer = 1, Space = 2 };
+        var asset = new Asset { Id = AssetId.FromString(assetId), Customer = 1, Space = 2 };
         asset
             .WithImageOptimisationPolicy(new ImageOptimisationPolicy { TechnicalDetails = Array.Empty<string>() })
             .WithThumbnailPolicy(new ThumbnailPolicy());

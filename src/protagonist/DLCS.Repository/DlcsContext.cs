@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Enum;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Assets.NamedQueries;
@@ -294,7 +295,11 @@ public partial class DlcsContext : DbContext
 
             entity.HasIndex(e => new { e.Customer, e.Space }, "IX_ImagesBySpace");
 
-            entity.Property(e => e.Id).HasMaxLength(500);
+            entity.Property(e => e.Id)
+                .HasMaxLength(500)
+                .HasConversion(
+                    aId => aId.ToString(),
+                    id => AssetId.FromString(id));
 
             entity.Property(e => e.Created)
                 .IsRequired()
@@ -378,7 +383,11 @@ public partial class DlcsContext : DbContext
         {
             entity.ToTable("ImageLocation");
 
-            entity.Property(e => e.Id).HasMaxLength(500);
+            entity.Property(e => e.Id)
+                .HasMaxLength(500)
+                .HasConversion(
+                    aId => aId.ToString(),
+                    id => AssetId.FromString(id));;
 
             entity.Property(e => e.Nas)
                 .IsRequired()
@@ -421,7 +430,11 @@ public partial class DlcsContext : DbContext
 
             entity.HasIndex(e => new { e.Customer, e.Space, e.Id }, "IX_ImageStorageByCustomerSpace");
 
-            entity.Property(e => e.Id).HasMaxLength(500);
+            entity.Property(e => e.Id)
+                .HasMaxLength(500)
+                .HasConversion(
+                    aId => aId.ToString(),
+                    id => AssetId.FromString(id));;
 
             entity.Property(e => e.LastChecked).HasColumnType("timestamp with time zone");
         });

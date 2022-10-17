@@ -80,7 +80,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // GET IMAGE
         // arrange
         var modelId = nameof(Get_Asset_Returns_Asset);
-        var id = $"99/1/{modelId}";
+        var id = AssetId.FromString($"99/1/{modelId}");
         await dbContext.Images.AddTestAsset(id, customer:99, space:1);
         await dbContext.SaveChangesAsync();
         var getUrl = $"/customers/99/spaces/1/images/{modelId}";
@@ -107,7 +107,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_Assets_In_Space_Returns_Page_of_Assets()
     {
         // GET PAGE OF IMAGES
-        var id = "99/2998/asset1";
+        var id = AssetId.FromString("99/2998/asset1");
         await dbContext.Spaces.AddTestSpace(99, 2998, "Space 2998");
         await dbContext.Images.AddTestAsset(id, space:2998);
         await dbContext.SaveChangesAsync();
@@ -223,7 +223,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         for (int i = 1; i <= 20; i++)
         {
             var padded = i.ToString().PadLeft(4, '0');
-            await dbContext.Images.AddTestAsset($"99/{space}/asset-{padded}",
+            await dbContext.Images.AddTestAsset(AssetId.FromString($"99/{space}/asset-{padded}"),
                 customer: 99, space: space,
                 num1: i, num2: i % 2, num3: i % 3,
                 ref1: $"Asset {padded}",
@@ -246,7 +246,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         for (int i = 1; i <= 35; i++)
         {
             var padded = i.ToString().PadLeft(4, '0');
-            await dbContext.Images.AddTestAsset($"99/{space}/asset-{padded}",
+            await dbContext.Images.AddTestAsset(AssetId.FromString($"99/{space}/asset-{padded}"),
                 customer: 99, space: space,
                 width: 2000 + i % 5,
                 height: 3000 + i % 6,

@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using DLCS.Core.Guard;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 
@@ -43,7 +44,7 @@ public static class LegacyIngestEventConverter
         var parsedJson = JsonObject.Parse(assetJsonString).AsObject();
 
         var asset = new Asset();
-        asset.Id = parsedJson.TryGetPropertyValue("id", out var id) ? id.GetValue<string>() : null;
+        asset.Id = parsedJson.TryGetPropertyValue("id", out var id) ? AssetId.FromString(id.GetValue<string>()) : null;
         asset.Customer = parsedJson.TryGetPropertyValue("customer", out var customer) ? customer.GetValue<int>() : 0;
         asset.Space = parsedJson.TryGetPropertyValue("space", out var space) ? space.GetValue<int>() : 0;
         asset.Created = parsedJson.TryGetPropertyValue("created", out var created) ? created.GetValue<DateTime>() : null;

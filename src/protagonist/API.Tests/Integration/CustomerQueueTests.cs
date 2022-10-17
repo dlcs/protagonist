@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
@@ -434,9 +435,9 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var idRoot = $"99/1/{nameof(Get_BatchImages_200_IfImagesFound)}";
-        await dbContext.Images.AddTestAsset($"{idRoot}1", batch: 4006);
-        await dbContext.Images.AddTestAsset($"{idRoot}2", batch: 4006);
-        await dbContext.Images.AddTestAsset($"{idRoot}3", batch: 4006);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}1"), batch: 4006);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}2"), batch: 4006);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}3"), batch: 4006);
         await dbContext.SaveChangesAsync();
         
         // Not batch 4006 is added in ctor
@@ -458,9 +459,9 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var idRoot = $"99/1/{nameof(Get_BatchImages_200_IfImagesFound_SupportsPaging)}";
-        await dbContext.Images.AddTestAsset($"{idRoot}1", batch: 4005);
-        await dbContext.Images.AddTestAsset($"{idRoot}2", batch: 4005);
-        await dbContext.Images.AddTestAsset($"{idRoot}3", batch: 4005);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}1"), batch: 4005);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}2"), batch: 4005);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}3"), batch: 4005);
         await dbContext.SaveChangesAsync();
         
         const string path = "customers/99/queue/batches/4005/images?pageSize=2&page=2";
@@ -481,9 +482,9 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var idRoot = $"99/1/{nameof(Get_BatchImages_200_IfImagesFound_SupportsQuery)}";
-        await dbContext.Images.AddTestAsset($"{idRoot}1", batch: 4004, num1: 10);
-        await dbContext.Images.AddTestAsset($"{idRoot}2", batch: 4004, num1: 9);
-        await dbContext.Images.AddTestAsset($"{idRoot}3", batch: 4004, num1: 10);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}1"), batch: 4004, num1: 10);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}2"), batch: 4004, num1: 9);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}3"), batch: 4004, num1: 10);
         await dbContext.SaveChangesAsync();
         
         var q = @"{""number1"":10}";
@@ -819,9 +820,9 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         const int batch = 202;
         await dbContext.Batches.AddTestBatch(batch, count: 100);
-        await dbContext.Images.AddTestAsset("2/1/clown", batch: batch, finished: DateTime.UtcNow);
-        await dbContext.Images.AddTestAsset("2/1/divine", batch: batch, finished: DateTime.UtcNow);
-        await dbContext.Images.AddTestAsset("2/1/predictable", batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/clown"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/divine"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/predictable"), batch: batch, finished: DateTime.UtcNow);
         await dbContext.SaveChangesAsync();
         const string path = "customers/99/queue/batches/202/test";
 
@@ -845,9 +846,9 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         const int batch = 203;
         await dbContext.Batches.AddTestBatch(batch, count: 100);
-        await dbContext.Images.AddTestAsset("2/1/twist", batch: batch, finished: DateTime.UtcNow);
-        await dbContext.Images.AddTestAsset("2/1/chi", batch: batch, finished: DateTime.UtcNow);
-        await dbContext.Images.AddTestAsset("2/1/lost", batch: batch, finished: null);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/twist"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/chi"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/lost"), batch: batch, finished: null);
         await dbContext.SaveChangesAsync();
         const string path = "customers/99/queue/batches/203/test";
 

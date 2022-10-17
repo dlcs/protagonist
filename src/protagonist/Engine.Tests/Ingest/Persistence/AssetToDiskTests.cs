@@ -53,10 +53,10 @@ public class AssetToDiskTests
     {
         // Arrange
         const string origin = "http://test-origin";
-        var asset = new Asset { Id = "/2/1/godzilla" };
+        var asset = new Asset { Id = AssetId.FromString("/2/1/godzilla") };
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient };
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadAssetFromOrigin(asset.Id, origin, cos, A<CancellationToken>._))
             .Returns<OriginResponse?>(null);
 
         // Act
@@ -71,10 +71,10 @@ public class AssetToDiskTests
     {
         // Arrange
         const string origin = "http://test-origin";
-        var asset = new Asset { Id = "/2/1/godzilla", Origin = origin};
+        var asset = new Asset { Id = AssetId.FromString("/2/1/godzilla"), Origin = origin};
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient };
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadAssetFromOrigin(asset.Id, origin, cos, A<CancellationToken>._))
             .Returns(new OriginResponse(Stream.Null));
 
         // Act
@@ -90,14 +90,14 @@ public class AssetToDiskTests
         // Arrange
         var destination = Path.Join(".", "2", "1", "godzilla");
         const string origin = "http://test-origin";
-        var asset = new Asset { Id = "/2/1/godzilla", Customer = 2, Space = 1, Origin = origin };
-        AssetId assetId = AssetId.FromString(asset.Id);
+        AssetId assetId = AssetId.FromString("2/1/godzilla");
+        var asset = new Asset(assetId) { Origin = origin };
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient };
 
         var responseStream = "{\"foo\":\"bar\"}".ToMemoryStream();
         var originResponse = new OriginResponse(responseStream).WithContentType("application/json");
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadAssetFromOrigin(asset.Id, origin, cos, A<CancellationToken>._))
             .Returns(originResponse);
         const long fileLength = 224L;
         A.CallTo(() => fileSaver.SaveResponseToDisk(A<AssetId>._, originResponse, A<string>._, A<CancellationToken>._))
@@ -124,8 +124,9 @@ public class AssetToDiskTests
         // Arrange
         var destination = Path.Join(".", "2", "1", "godzilla1");
         const string origin = "http://test-origin";
-        var asset = new Asset { Id = "/2/1/godzilla1", Customer = 2, Space = 1, Origin = origin };
-        AssetId assetId = AssetId.FromString(asset.Id);
+        var assetId = AssetId.FromString("2/1/godzilla1");
+        var asset = new Asset(assetId) { Origin = origin };
+        
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient };
 
         var responseStream = "{\"foo\":\"bar\"}".ToMemoryStream();
@@ -133,7 +134,7 @@ public class AssetToDiskTests
             .WithContentType("application/json")
             .WithContentLength(8);
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadAssetFromOrigin(asset.Id, origin, cos, A<CancellationToken>._))
             .Returns(originResponse);
         const long fileLength = 224L;
         A.CallTo(() => fileSaver.SaveResponseToDisk(A<AssetId>._, originResponse, A<string>._, A<CancellationToken>._))
@@ -163,7 +164,7 @@ public class AssetToDiskTests
         // Arrange
         var destination = Path.Join(".", "2", "1", "godzilla.jp2");
         const string origin = "http://test-origin";
-        var asset = new Asset { Id = "/2/1/godzilla.jp2", Customer = 2, Space = 1, Origin = origin };
+        var asset = new Asset { Id = AssetId.FromString("/2/1/godzilla.jp2"), Customer = 2, Space = 1, Origin = origin };
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient };
 
         var responseStream = "{\"foo\":\"bar\"}".ToMemoryStream();
@@ -171,7 +172,7 @@ public class AssetToDiskTests
             .WithContentType(contentType)
             .WithContentLength(8);
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadAssetFromOrigin(asset.Id, origin, cos, A<CancellationToken>._))
             .Returns(originResponse);
 
         // Act
@@ -190,7 +191,7 @@ public class AssetToDiskTests
         // Arrange
         var destination = Path.Join(".", "2", "1", "godzilla.jp2");
         const string origin = "http://test-origin";
-        var asset = new Asset { Id = "/2/1/godzilla.jp2", Customer = 2, Space = 1, Origin = origin };
+        var asset = new Asset { Id = AssetId.FromString("/2/1/godzilla.jp2"), Customer = 2, Space = 1, Origin = origin };
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient };
 
         var responseStream = "{\"foo\":\"bar\"}".ToMemoryStream();
@@ -198,7 +199,7 @@ public class AssetToDiskTests
             .WithContentType(contentType)
             .WithContentLength(8);
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadAssetFromOrigin(asset.Id, origin, cos, A<CancellationToken>._))
             .Returns(originResponse);
 
         // Act
@@ -216,13 +217,13 @@ public class AssetToDiskTests
         // Arrange
         var destination = Path.Join(".", "2", "1", "godzilla");
         const string origin = "http://test-origin";
-        var asset = new Asset { Id = "/2/1/godzilla", Customer = 2, Space = 1, Origin = origin };
+        var asset = new Asset { Id = AssetId.FromString("/2/1/godzilla"), Customer = 2, Space = 1, Origin = origin };
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient };
 
         var responseStream = "{\"foo\":\"bar\"}".ToMemoryStream();
         var originResponse = new OriginResponse(responseStream).WithContentType("application/json");
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.GetAssetId(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadAssetFromOrigin(asset.Id, origin, cos, A<CancellationToken>._))
             .Returns(originResponse);
 
         A.CallTo(() => customerStorageRepository.GetStorageMetrics(2, A<CancellationToken>._))

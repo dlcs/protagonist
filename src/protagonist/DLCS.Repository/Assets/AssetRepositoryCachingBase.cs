@@ -18,7 +18,7 @@ public abstract class AssetRepositoryCachingBase : IAssetRepository
     protected readonly IAppCache AppCache;
     protected readonly ILogger Logger;
     protected readonly CacheSettings CacheSettings;
-    private static readonly Asset NullAsset = new() { Id = "__nullasset__" };
+    private static readonly Asset NullAsset = new() { Id = AssetId.Null };
 
     public AssetRepositoryCachingBase(IAppCache appCache, IOptions<CacheSettings> cacheOptions, ILogger logger)
     {
@@ -26,40 +26,35 @@ public abstract class AssetRepositoryCachingBase : IAssetRepository
         this.Logger = logger;
         CacheSettings = cacheOptions.Value;
     }
+    
+    public Task<Asset?> GetAsset(AssetId id) => GetAssetInternal(id);
 
-    public Task<Asset?> GetAsset(string id) => GetAssetInternal(id);
-
-    public Task<Asset?> GetAsset(AssetId id) => GetAssetInternal(id.ToString());
-
-    public Task<Asset?> GetAsset(string id, bool noCache) => GetAssetInternal(id, noCache);
-
-    public Task<Asset?> GetAsset(AssetId id, bool noCache) => GetAssetInternal(id.ToString(), noCache);
+    public Task<Asset?> GetAsset(AssetId id, bool noCache) => GetAssetInternal(id, noCache);
 
     public abstract Task<ImageLocation?> GetImageLocation(AssetId assetId);
 
     public Task<ResultStatus<DeleteResult>> DeleteAsset(AssetId assetId)
     {
-        var id = assetId.ToString();
-        AppCache.Remove(GetCacheKey(id));
+        AppCache.Remove(GetCacheKey(assetId));
         
-        return DeleteAssetFromDatabase(id);
+        return DeleteAssetFromDatabase(assetId);
     }
 
     /// <summary>
     /// Delete asset from database
     /// </summary>
-    protected abstract Task<ResultStatus<DeleteResult>> DeleteAssetFromDatabase(string id);
+    protected abstract Task<ResultStatus<DeleteResult>> DeleteAssetFromDatabase(AssetId assetId);
     
     /// <summary>
     /// Find asset in DB and materialise to <see cref="Asset"/> object
     /// </summary>
-    protected abstract Task<Asset?> GetAssetFromDatabase(string id);
+    protected abstract Task<Asset?> GetAssetFromDatabase(AssetId assetId);
 
-    private string GetCacheKey(string id) => $"asset:{id}";
+    private string GetCacheKey(AssetId assetId) => $"asset:{assetId}";
 
-    private async Task<Asset?> GetAssetInternal(string id, bool noCache = false)
+    private async Task<Asset?> GetAssetInternal(AssetId assetId, bool noCache = false)
     {
-        var key = GetCacheKey(id);
+        var key = GetCacheKey(assetId);
         
         if (noCache)
         {
@@ -68,8 +63,8 @@ public abstract class AssetRepositoryCachingBase : IAssetRepository
 
         var asset = await AppCache.GetOrAddAsync(key, async entry =>
         {
-            Logger.LogDebug("Refreshing assetCache from database {Asset}", id);
-            var dbAsset = await GetAssetFromDatabase(id);
+            Logger.LogDebug("Refreshing assetCache from database {Asset}", assetId);
+            var dbAsset = await GetAssetFromDatabase(assetId);
             if (dbAsset == null)
             {
                 entry.AbsoluteExpirationRelativeToNow =

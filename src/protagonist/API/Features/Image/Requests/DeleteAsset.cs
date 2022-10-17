@@ -50,7 +50,7 @@ public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
         {
             logger.LogDebug("Sending delete asset notification for {AssetId}", request.AssetId);
             await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Delete,
-                new Asset { Id = request.AssetId.ToString() }, null);
+                new Asset { Id = request.AssetId }, null);
         }
         catch (Exception ex)
         {

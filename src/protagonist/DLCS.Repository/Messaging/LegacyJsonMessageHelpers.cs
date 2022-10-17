@@ -18,7 +18,7 @@ internal static class LegacyJsonMessageHelpers
     {
         var stringParams = new Dictionary<string, string>
         {
-            ["id"] = ingestAssetRequest.Asset.Id,
+            ["id"] = ingestAssetRequest.Asset.Id.ToString(),
             ["customer"] = ingestAssetRequest.Asset.Customer.ToString(),
             ["space"] = ingestAssetRequest.Asset.Space.ToString(),
             ["image"] = AsJsonStringForMessaging(ingestAssetRequest.Asset)
@@ -82,13 +82,13 @@ internal static class LegacyJsonMessageHelpers
         if (!asLinkedData)
         {
             writer.WritePropertyName("id");
-            writer.WriteValue(asset.Id);
+            writer.WriteValue(asset.Id.ToString());
             writer.WritePropertyName("customer");
             writer.WriteValue(asset.Customer);
             writer.WritePropertyName("space");
             writer.WriteValue(asset.Space);
             writer.WritePropertyName("rawId");
-            writer.WriteValue(asset.GetUniqueName());
+            writer.WriteValue(asset.Id.Asset);
         }
         
         writer.WritePropertyName("created");

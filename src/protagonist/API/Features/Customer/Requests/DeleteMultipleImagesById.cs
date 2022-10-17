@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using API.Features.Customer.Validation;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
@@ -42,10 +43,10 @@ public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleIma
 
     public async Task<int> Handle(DeleteMultipleImagesById request, CancellationToken cancellationToken)
     {
-        ImageIdListValidation.ValidateRequest(request.AssetIds, request.CustomerId);
+        var assetIds = ImageIdListValidation.ValidateRequest(request.AssetIds, request.CustomerId);
 
         var deletedRows = await dlcsContext.Images.AsNoTracking()
-            .Where(i => i.Customer == request.CustomerId && request.AssetIds.Contains(i.Id))
+            .Where(i => i.Customer == request.CustomerId && assetIds.Contains(i.Id))
             .DeleteFromQueryAsync(cancellationToken);
 
         logger.LogInformation("Deleted {DeletedRows} assets from a requested {RequestedRows}", deletedRows,
@@ -62,7 +63,7 @@ public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleIma
     {
         // NOTE(DG) there is the possibility to raise a notification for an object that doesn't exist here,
         // we just issue a DELETE request to DB without checking which items exist 
-        foreach (var asset in request.AssetIds.Select(i => new Asset { Id = i }))
+        foreach (var asset in request.AssetIds.Select(i => new Asset { Id = AssetId.FromString(i) }))
         {
             await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Delete, asset, null);
         }

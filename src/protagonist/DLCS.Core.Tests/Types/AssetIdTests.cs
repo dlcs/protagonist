@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using DLCS.Core.Exceptions;
 using DLCS.Core.Types;
 
@@ -6,6 +7,22 @@ namespace DLCS.Core.Tests.Types;
 
 public class AssetIdTests
 {
+    [Fact]
+    public void Ctor_Throws_IfLongerThan225()
+    {
+        var sb = new StringBuilder(215);
+        for (var x = 0; x < 250; x++)
+        {
+            sb.Append('a');
+        }
+
+        Action action = () => new AssetId(10, 10, sb.ToString());
+        action.Should()
+            .Throw<InvalidAssetIdException>()
+            .WithMessage("AssetId cannot be longer than 220")
+            .And.Error.Should().Be(AssetIdError.TooLong);
+    }
+    
     [Fact]
     public void ToString_CorrectFormat()
     {
@@ -73,6 +90,17 @@ public class AssetIdTests
 
         (assetId1 == assetId2).Should().Be(expected);
     }
+
+    [Fact]
+    public void EqualsOperator_HandlesNull()
+    {
+        var assetId = new AssetId(1, 2, "foo");
+        AssetId? nullAsset = null;
+
+        (assetId == nullAsset).Should().BeFalse();
+        (nullAsset == assetId).Should().BeFalse();
+        (nullAsset == nullAsset).Should().BeTrue();
+    }
     
     [Theory]
     [InlineData("99/100/foo", "99/100/foo", false)]
@@ -85,5 +113,27 @@ public class AssetIdTests
         var assetId2 = AssetId.FromString(two);
 
         (assetId1 != assetId2).Should().Be(expected);
+    }
+    
+    [Fact]
+    public void NotEqualsOperator_HandlesNull()
+    {
+        var assetId = new AssetId(1, 2, "foo");
+        AssetId? nullAsset = null;
+
+        (assetId != nullAsset).Should().BeTrue();
+        (nullAsset != assetId).Should().BeTrue();
+        (nullAsset != nullAsset).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ExplicitConversion_FromString()
+    {
+        var assetId = (AssetId)"1/2/foo";
+
+        assetId.Customer.Should().Be(1);
+        assetId.Space.Should().Be(2);
+        assetId.Asset.Should().Be("foo");
+
     }
 }

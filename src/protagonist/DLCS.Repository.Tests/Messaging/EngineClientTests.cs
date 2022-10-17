@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.SQS;
 using DLCS.Core.Settings;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository.Messaging;
@@ -43,11 +44,8 @@ public class EngineClientTests
         AssetFamily family, char expected)
     {
         // Arrange
-        var asset = new Asset
+        var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
         {
-            Id = "99/1/ingest-asset",
-            Customer = 99,
-            Space = 1,
             Family = family
         };
         
@@ -79,11 +77,8 @@ public class EngineClientTests
     public async Task SynchronousIngest_CallsEngineWithCurrentModel_IfUseLegacyEngineMessageFalse()
     {
         // Arrange
-        var asset = new Asset
+        var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
         {
-            Id = "99/1/ingest-asset",
-            Customer = 99,
-            Space = 1,
             Family = AssetFamily.Image,
             Tags = "whatever",
             Roles = "secure",
@@ -115,11 +110,8 @@ public class EngineClientTests
     public async Task AsynchronousIngest_QueuesMessageWithLegacyModel_IfUseLegacyEngineMessageTrue()
     {
         // Arrange
-        var asset = new Asset
+        var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
         {
-            Id = "99/1/ingest-asset",
-            Customer = 99,
-            Space = 1,
             Family = AssetFamily.Image
         };
         
@@ -145,11 +137,8 @@ public class EngineClientTests
     public async Task AsynchronousIngest_QueuesMessageWithCurrentModel_IfUseLegacyEngineMessageFalse()
     {
         // Arrange
-        var asset = new Asset
+        var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
         {
-            Id = "99/1/ingest-asset",
-            Customer = 99,
-            Space = 1,
             Family = AssetFamily.Image,
             Tags = "whatever",
             Roles = "secure",

@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
+using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Repository;
 using Hydra.Collections;
@@ -88,9 +89,9 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Post_AllImages_200_WithMatches()
     {
         // Arrange
-        await dbContext.Images.AddTestAsset("99/1/allImages_1");
-        await dbContext.Images.AddTestAsset("99/1/allImages_2");
-        await dbContext.Images.AddTestAsset("99/2/allImages_3", space: 2);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_1"));
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_2"));
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/2/allImages_3"), space: 2);
         await dbContext.SaveChangesAsync();
         
         const string newCustomerJson = @"{
@@ -171,9 +172,9 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Post_DeleteImages_200_WithMatches()
     {
         // Arrange
-        await dbContext.Images.AddTestAsset("99/1/deleteImages_1");
-        await dbContext.Images.AddTestAsset("99/1/deleteImages_2");
-        await dbContext.Images.AddTestAsset("99/2/deleteImages_3", space: 2);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/deleteImages_1"));
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/deleteImages_2"));
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/2/deleteImages_3"), space: 2);
         await dbContext.SaveChangesAsync();
         
         const string newCustomerJson = @"{

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
@@ -72,7 +73,7 @@ public class NamedQueryConductorTests
         const string args = "/123";
         var namedQuery = new NamedQuery { Template = "s1=p2", Name = "test-query" };
         var parsedQuery = new IIIFParsedNamedQuery(Customer);
-        var images = new List<Asset> { new() { Id = "/1/1/my-image" } };
+        var images = new List<Asset> { new(AssetId.FromString("1/1/my-image")) };
         A.CallTo(() => namedQueryRepository.GetByName(Customer, queryName, true))
             .Returns(namedQuery);
         A.CallTo(() =>

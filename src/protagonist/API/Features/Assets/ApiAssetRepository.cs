@@ -23,11 +23,7 @@ public class ApiAssetRepository : IApiAssetRepository
         this.assetRepository = assetRepository;
     }
 
-    public Task<Asset?> GetAsset(string id) => assetRepository.GetAsset(id);
-
     public Task<Asset?> GetAsset(AssetId id) => assetRepository.GetAsset(id);
-
-    public Task<Asset?> GetAsset(string id, bool noCache) => assetRepository.GetAsset(id, noCache);
 
     public Task<Asset?> GetAsset(AssetId id, bool noCache) => assetRepository.GetAsset(id, noCache);
 

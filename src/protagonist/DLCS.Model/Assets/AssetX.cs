@@ -62,8 +62,9 @@ public static class AssetX
     /// </summary>
     /// <param name="asset">Current <see cref="Asset"/></param>
     /// <returns><see cref="AssetId"/> containing current customer, space, asset id</returns>
+    [Obsolete("Use asset.Id instead")]
     public static AssetId GetAssetId(this Asset asset)
-        => AssetId.FromString(asset.Id);
+        => asset.Id;
     
     /// <summary>
     /// Reset fields for ingestion, marking as "Ingesting" and clearing errors

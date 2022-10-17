@@ -1,5 +1,6 @@
 ﻿using System;
 using DLCS.Core.Exceptions;
+// ReSharper disable ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
 
 namespace DLCS.Core.Types;
 
@@ -16,6 +17,16 @@ public class AssetId
 
     /// <summary>Id of asset</summary>
     public string Asset { get; }
+
+    /// <summary>
+    /// The maximum length of an asset Id
+    /// </summary>
+    public const int MaxLength = 220;
+
+    /// <summary>
+    /// Represents a null asset
+    /// </summary>
+    public static readonly AssetId Null = new(-1, -1, "_null_");
     
     /// <summary>
     /// A record that represents an identifier for a DLCS Asset.
@@ -28,6 +39,12 @@ public class AssetId
         Customer = customer;
         Space = space;
         Asset = asset;
+
+        // The 2 is for the 2 separators
+        if (customer.ToString().Length + space.ToString().Length + asset.Length + 2 > MaxLength)
+        {
+            throw new InvalidAssetIdException(AssetIdError.TooLong, $"AssetId cannot be longer than {MaxLength}");
+        }
     }
     
     public override string ToString() => $"{Customer}/{Space}/{Asset}";
@@ -83,14 +100,28 @@ public class AssetId
         return Equals((AssetId)obj);
     }
 
-    public static bool operator ==(AssetId assetId1, AssetId assetId2) 
-        => assetId1.Equals(assetId2);
+    public static bool operator ==(AssetId assetId1, AssetId assetId2)
+    {
+        if (assetId1 is null)
+        {
+            return assetId2 is null;
+        }
+        
+        if (assetId2 is null)
+        {
+            return false;
+        }
+        
+        return assetId1.Equals(assetId2);
+    }
 
     public static bool operator !=(AssetId assetId1, AssetId assetId2) 
         => !(assetId1 == assetId2);
 
+    public static explicit operator AssetId(string s) => FromString(s);
+
     public override int GetHashCode() => HashCode.Combine(Customer, Space, Asset);
 
-    protected bool Equals(AssetId other) => Customer == other.Customer && Space == other.Space && Asset == other.Asset;
+    private bool Equals(AssetId other) => Customer == other.Customer && Space == other.Space && Asset == other.Asset;
 }
 

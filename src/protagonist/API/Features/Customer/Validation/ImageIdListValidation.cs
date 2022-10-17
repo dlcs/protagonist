@@ -10,7 +10,7 @@ internal static class ImageIdListValidation
     /// <summary>
     /// Validate that imageIds are all in a valid format and are all for the same customer
     /// </summary>
-    public static void ValidateRequest(IReadOnlyCollection<string> assetIdentifiers, int customerId)
+    public static List<AssetId> ValidateRequest(IReadOnlyCollection<string> assetIdentifiers, int customerId)
     {
         try
         {
@@ -20,6 +20,8 @@ internal static class ImageIdListValidation
             {
                 throw new BadRequestException("Cannot request images for different customer");
             }
+
+            return assetIds;
         }
         catch (InvalidAssetIdException assetIdEx)
         {

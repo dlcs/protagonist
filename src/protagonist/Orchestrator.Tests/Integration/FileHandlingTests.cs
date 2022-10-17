@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
@@ -103,7 +104,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_NotFoundHttpOrigin_Returns404()
     {
         // Arrange
-        var id = $"99/1/{nameof(Get_NotFoundHttpOrigin_Returns404)}";
+        var id = AssetId.FromString($"99/1/{nameof(Get_NotFoundHttpOrigin_Returns404)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
             origin: $"{stubAddress}/not-found");
         await dbFixture.DbContext.SaveChangesAsync();
@@ -119,7 +120,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_Returns404_IfNotForDelivery()
     {
         // Arrange
-        var id = $"99/1/{nameof(Get_Returns404_IfNotForDelivery)}";
+        var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNotForDelivery)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true);
         await dbFixture.DbContext.SaveChangesAsync();
 
@@ -134,7 +135,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_HttpOrigin_ReturnsFile()
     {
         // Arrange
-        var id = $"99/1/{nameof(Get_HttpOrigin_ReturnsFile)}";
+        var id = AssetId.FromString($"99/1/{nameof(Get_HttpOrigin_ReturnsFile)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
             origin: $"{stubAddress}/testfile");
         await dbFixture.DbContext.SaveChangesAsync();
@@ -151,7 +152,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_BasicAuthHttpOrigin_ReturnsFile()
     {
         // Arrange
-        var id = $"99/1/{nameof(Get_BasicAuthHttpOrigin_ReturnsFile)}";
+        var id = AssetId.FromString($"99/1/{nameof(Get_BasicAuthHttpOrigin_ReturnsFile)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
             origin: $"{stubAddress}/authfile");
         await dbFixture.DbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
@@ -173,7 +174,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_BasicAuthHttpOrigin_BadCredentials_Returns404()
     {
         // Arrange
-        var id = $"99/1/{nameof(Get_BasicAuthHttpOrigin_BadCredentials_Returns404)}";
+        var id = AssetId.FromString($"99/1/{nameof(Get_BasicAuthHttpOrigin_BadCredentials_Returns404)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.File, mediaType: "application/pdf",
             origin: $"{stubAddress}/forbiddenfile");
         await dbFixture.DbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy

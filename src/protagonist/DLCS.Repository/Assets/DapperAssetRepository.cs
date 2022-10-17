@@ -30,13 +30,14 @@ public class DapperAssetRepository : AssetRepositoryCachingBase, IDapperConfigRe
     public override async Task<ImageLocation?> GetImageLocation(AssetId assetId) 
         => await this.QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql, new {Id = assetId.ToString()});
     
-    protected override Task<ResultStatus<DeleteResult>> DeleteAssetFromDatabase(string id)
+    protected override Task<ResultStatus<DeleteResult>> DeleteAssetFromDatabase(AssetId assetId)
     {
         throw new NotImplementedException();
     }
 
-    protected override async Task<Asset?> GetAssetFromDatabase(string id)
+    protected override async Task<Asset?> GetAssetFromDatabase(AssetId assetId)
     {
+        var id = assetId.ToString();
         dynamic? rawAsset = await this.QuerySingleOrDefaultAsync(AssetSql, new { Id = id });
         if (rawAsset == null)
         {
@@ -53,7 +54,7 @@ public class DapperAssetRepository : AssetRepositoryCachingBase, IDapperConfigRe
             Family = (AssetFamily)rawAsset.Family.ToString()[0],
             Finished = rawAsset.Finished,
             Height = rawAsset.Height,
-            Id = rawAsset.Id,
+            Id = AssetId.FromString(rawAsset.Id),
             Ingesting = rawAsset.Ingesting,
             Origin = rawAsset.Origin,
             Reference1 = rawAsset.Reference1,

@@ -177,17 +177,6 @@ public class AssetXTests
     }
     
     [Fact]
-    public void GetAssetId_ReturnsExpected()
-    {
-        var asset = new Asset { Id = "100/14/image" };
-        var expected = new AssetId(100, 14, "image");
-
-        var actual = asset.GetAssetId();
-
-        actual.Should().BeEquivalentTo(expected);
-    }
-    
-    [Fact]
     public void SetFieldsForIngestion_ClearsFields()
     {
         // Arrange

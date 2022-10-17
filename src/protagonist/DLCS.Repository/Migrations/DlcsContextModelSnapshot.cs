@@ -209,7 +209,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasIndex(new[] { "Customer", "Superseded", "Submitted" }, "IX_BatchTest");
 
-                    b.ToTable("Batches");
+                    b.ToTable("Batches", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Assets.CustomHeaders.CustomHeader", b =>
@@ -244,7 +244,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasIndex(new[] { "Customer", "Space" }, "IX_CustomHeaders_ByCustomerSpace");
 
-                    b.ToTable("CustomHeaders");
+                    b.ToTable("CustomHeaders", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Assets.ImageLocation", b =>
@@ -286,7 +286,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ImageOptimisationPolicies");
+                    b.ToTable("ImageOptimisationPolicies", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Assets.ImageStorage", b =>
@@ -344,7 +344,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("NamedQueries");
+                    b.ToTable("NamedQueries", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Assets.ThumbnailPolicy", b =>
@@ -365,7 +365,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ThumbnailPolicies");
+                    b.ToTable("ThumbnailPolicies", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Auth.Entities.AuthService", b =>
@@ -421,7 +421,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id", "Customer");
 
-                    b.ToTable("AuthServices");
+                    b.ToTable("AuthServices", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Auth.Entities.Role", b =>
@@ -449,7 +449,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id", "Customer");
 
-                    b.ToTable("Roles");
+                    b.ToTable("Roles", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Auth.Entities.RoleProvider", b =>
@@ -476,7 +476,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RoleProviders");
+                    b.ToTable("RoleProviders", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Customers.Customer", b =>
@@ -510,7 +510,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Customers.CustomerOriginStrategy", b =>
@@ -542,7 +542,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CustomerOriginStrategies");
+                    b.ToTable("CustomerOriginStrategies", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Customers.SignupLink", b =>
@@ -564,7 +564,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SignupLinks");
+                    b.ToTable("SignupLinks", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Customers.User", b =>
@@ -599,7 +599,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Processing.Queue", b =>
@@ -618,7 +618,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Customer", "Name");
 
-                    b.ToTable("Queues");
+                    b.ToTable("Queues", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Spaces.Space", b =>
@@ -664,7 +664,7 @@ namespace DLCS.Repository.Migrations
                     b.HasKey("Id", "Customer")
                         .HasName("Spaces_pkey");
 
-                    b.ToTable("Spaces");
+                    b.ToTable("Spaces", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Model.Storage.CustomerStorage", b =>
@@ -710,7 +710,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("StoragePolicies");
+                    b.ToTable("StoragePolicies", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Repository.Auth.AuthToken", b =>
@@ -756,7 +756,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasIndex(new[] { "CookieId" }, "IX_AuthTokens_CookieId");
 
-                    b.ToTable("AuthTokens");
+                    b.ToTable("AuthTokens", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Repository.Auth.SessionUser", b =>
@@ -774,7 +774,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SessionUsers");
+                    b.ToTable("SessionUsers", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Repository.Entities.ActivityGroup", b =>
@@ -792,7 +792,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Group");
 
-                    b.ToTable("ActivityGroups");
+                    b.ToTable("ActivityGroups", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Repository.Entities.CustomerImageServer", b =>
@@ -807,7 +807,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Customer");
 
-                    b.ToTable("CustomerImageServers");
+                    b.ToTable("CustomerImageServers", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Repository.Entities.EntityCounter", b =>
@@ -828,7 +828,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Type", "Scope", "Customer");
 
-                    b.ToTable("EntityCounters");
+                    b.ToTable("EntityCounters", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Repository.Entities.ImageServer", b =>
@@ -843,7 +843,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ImageServers");
+                    b.ToTable("ImageServers", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Repository.Entities.InfoJsonTemplate", b =>
@@ -859,7 +859,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("InfoJsonTemplates");
+                    b.ToTable("InfoJsonTemplates", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Repository.Entities.MetricThreshold", b =>
@@ -880,7 +880,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Name", "Metric");
 
-                    b.ToTable("MetricThresholds");
+                    b.ToTable("MetricThresholds", (string)null);
                 });
 
             modelBuilder.Entity("DLCS.Repository.Entities.OriginStrategy", b =>
@@ -894,7 +894,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("OriginStrategies");
+                    b.ToTable("OriginStrategies", (string)null);
                 });
 #pragma warning restore 612, 618
         }

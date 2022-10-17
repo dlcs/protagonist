@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using DLCS.Core.Caching;
+using DLCS.Core.Types;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using DLCS.Repository.Assets;
@@ -29,14 +30,15 @@ public class NamedQueryRepositoryTests
         dbContext.NamedQueries.AddTestNamedQuery("different-customer", 98, global: false);
         dbContext.NamedQueries.AddTestNamedQuery("customer", 99, global: false);
 
-        dbContext.Images.AddTestAsset("99/1/1", ref1: "foobar");
-        dbContext.Images.AddTestAsset("99/1/2", ref2: "foobar");
-        dbContext.Images.AddTestAsset("99/1/3", ref3: "foobar");
-        dbContext.Images.AddTestAsset("99/1/4", num1: 1);
-        dbContext.Images.AddTestAsset("99/1/5", num2: 1);
-        dbContext.Images.AddTestAsset("99/1/6", num3: 1);
-        dbContext.Images.AddTestAsset("99/1/7", space: 2);
-        dbContext.Images.AddTestAsset("99/1/8", ref1: "foo", ref2: "bar", ref3: "baz", num1: 5, num2: 10, num3: 20);
+        dbContext.Images.AddTestAsset(AssetId.FromString("99/1/1"), ref1: "foobar");
+        dbContext.Images.AddTestAsset(AssetId.FromString("99/1/2"), ref2: "foobar");
+        dbContext.Images.AddTestAsset(AssetId.FromString("99/1/3"), ref3: "foobar");
+        dbContext.Images.AddTestAsset(AssetId.FromString("99/1/4"), num1: 1);
+        dbContext.Images.AddTestAsset(AssetId.FromString("99/1/5"), num2: 1);
+        dbContext.Images.AddTestAsset(AssetId.FromString("99/1/6"), num3: 1);
+        dbContext.Images.AddTestAsset(AssetId.FromString("99/1/7"), space: 2);
+        dbContext.Images.AddTestAsset(AssetId.FromString("99/1/8"), ref1: "foo", ref2: "bar", ref3: "baz", num1: 5,
+            num2: 10, num3: 20);
         dbContext.SaveChanges();
     }
 
@@ -134,7 +136,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be("99/1/1");
+        result.Single().Id.Should().Be(AssetId.FromString("99/1/1"));
     }
     
     [Fact]
@@ -150,7 +152,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be("99/1/2");
+        result.Single().Id.Should().Be(AssetId.FromString("99/1/2"));
     }
     
     [Fact]
@@ -166,7 +168,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be("99/1/3");
+        result.Single().Id.Should().Be(AssetId.FromString("99/1/3"));
     }
     
     [Fact]
@@ -182,7 +184,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be("99/1/4");
+        result.Single().Id.Should().Be(AssetId.FromString("99/1/4"));
     }
     
     [Fact]
@@ -198,7 +200,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be("99/1/5");
+        result.Single().Id.Should().Be(AssetId.FromString("99/1/5"));
     }
     
     [Fact]
@@ -214,7 +216,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be("99/1/6");
+        result.Single().Id.Should().Be(AssetId.FromString("99/1/6"));
     }
     
     [Fact]
@@ -279,6 +281,6 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be("99/1/8");
+        result.Single().Id.Should().Be(AssetId.FromString("99/1/8"));
     }
 }

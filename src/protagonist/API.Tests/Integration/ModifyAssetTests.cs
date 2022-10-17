@@ -76,7 +76,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -87,8 +87,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
-        asset.Id.Should().Be(assetId.ToString());
+        var asset = await dbContext.Images.FindAsync(assetId);
+        asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ThumbnailPolicy.Should().Be("default");
         asset.ImageOptimisationPolicy.Should().Be("fast-higher");
@@ -104,7 +104,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.TooManyRequests);  // Random status to verify it filters down
         
@@ -115,8 +115,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
         response.Headers.Location.Should().BeNull();
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
-        asset.Id.Should().Be(assetId.ToString());
+        var asset = await dbContext.Images.FindAsync(assetId);
+        asset.Id.Should().Be(assetId);
     }
     
     [Fact(Skip = "Is this an expected behaviour?")]
@@ -130,7 +130,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.InternalServerError);
         
@@ -141,7 +141,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
 
-        var assetFromDatabase = await dbContext.Images.SingleOrDefaultAsync(a => a.Id == assetId.ToString());
+        var assetFromDatabase = await dbContext.Images.SingleOrDefaultAsync(a => a.Id == assetId);
         assetFromDatabase.Ingesting.Should().BeFalse();
         assetFromDatabase.Error.Should().NotBeEmpty();
     }
@@ -158,7 +158,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()),
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
                     A<CancellationToken>._))
             .Returns(true);
         
@@ -170,8 +170,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
-        asset.Id.Should().Be(assetId.ToString());
+        var asset = await dbContext.Images.FindAsync(assetId);
+        asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageOptimisationPolicy.Should().Be("audio-max");
@@ -189,7 +189,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()),
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
                     A<CancellationToken>._))
             .Returns(true);
         
@@ -201,8 +201,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
-        asset.Id.Should().Be(assetId.ToString());
+        var asset = await dbContext.Images.FindAsync(assetId);
+        asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageOptimisationPolicy.Should().Be("video-max");
@@ -227,8 +227,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
-        asset.Id.Should().Be(assetId.ToString());
+        var asset = await dbContext.Images.FindAsync(assetId);
+        asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageOptimisationPolicy.Should().BeEmpty();
@@ -246,7 +246,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()),
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
                     A<CancellationToken>._))
             .Returns(false);
         
@@ -257,8 +257,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
         response.Headers.Location.Should().BeNull();
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
-        asset.Id.Should().Be(assetId.ToString());
+        var asset = await dbContext.Images.FindAsync(assetId);
+        asset.Id.Should().Be(assetId);
     }
 
     [Fact]
@@ -289,7 +289,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -303,7 +303,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         A.CallTo(() =>
             EngineClient.SynchronousIngest(
                 A<IngestAssetRequest>.That.Matches(r =>
-                    r.Asset.Id == assetId.ToString() && r.Asset.InitialOrigin == initialOrigin), false,
+                    r.Asset.Id == assetId && r.Asset.InitialOrigin == initialOrigin), false,
                 A<CancellationToken>._))
             .MustHaveHappened();
     }
@@ -312,7 +312,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Put_Existing_Asset_ClearsError_AndMarksAsIngesting()
     {
         var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
-        var newAsset = await dbContext.Images.AddTestAsset(assetId.ToString(), error: "Sample Error");
+        var newAsset = await dbContext.Images.AddTestAsset(assetId, error: "Sample Error");
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
@@ -322,7 +322,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -390,7 +390,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         var assetId = new AssetId(99, 1, $"{nameof(Patch_Asset_Updates_Asset_Without_Calling_Engine)}{family}");
 
-        var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(), family: family,
+        var testAsset = await dbContext.Images.AddTestAsset(assetId, family: family,
             ref1: "I am string 1", origin: "https://images.org/image2.tiff");
         await dbContext.SaveChangesAsync();
 
@@ -407,7 +407,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .MustNotHaveHappened();
         
@@ -420,7 +420,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         var assetId = new AssetId(99, 1, nameof(Patch_ImageAsset_Updates_Asset_And_Calls_Engine_If_Reingest_Required));
 
-        var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(),
+        var testAsset = await dbContext.Images.AddTestAsset(assetId,
             ref1: "I am string 1", origin: $"https://example.org/{assetId.Asset}.tiff");
         
         await dbContext.SaveChangesAsync();
@@ -433,7 +433,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -445,7 +445,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .MustHaveHappened();
         
@@ -459,7 +459,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = new AssetId(99, 1,
             nameof(Patch_TimebasedAsset_Updates_Asset_AndEnqueuesMessage_IfReingestRequired));
 
-        var testAsset = await dbContext.Images.AddTestAsset(assetId.ToString(), family: AssetFamily.Timebased,
+        var testAsset = await dbContext.Images.AddTestAsset(assetId, family: AssetFamily.Timebased,
             ref1: "I am string 1", origin: $"https://example.org/{assetId.Asset}.mp4", mediaType: "video/mp4");
         
         await dbContext.SaveChangesAsync();
@@ -472,7 +472,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()),
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
                     A<CancellationToken>._))
             .Returns(true);
 
@@ -484,7 +484,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), 
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), 
                     A<CancellationToken>._))
             .MustHaveHappened();
         
@@ -499,7 +499,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // This test is really here ready for when this IS allowed! I think it should be.
         var assetId = new AssetId(99, 1, nameof(Patch_Asset_Change_ImageOptimisationPolicy_Not_Allowed));
 
-        await dbContext.Images.AddTestAsset(assetId.ToString(), ref1: "I am string 1",
+        await dbContext.Images.AddTestAsset(assetId, ref1: "I am string 1",
             origin: "https://images.org/image1.tiff");
         var testPolicy = new ImageOptimisationPolicy
         {
@@ -525,14 +525,14 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .MustNotHaveHappened();
         
         // assert THIS IS WHAT IT SHOULD BE!
         // response.StatusCode.Should().Be(HttpStatusCode.OK);
         // engineMessage.Should().NotBeNull();
-        // var asset = await dbContext.Images.FindAsync(assetId.ToString());
+        // var asset = await dbContext.Images.FindAsync(assetId);
         // asset.Reference1.Should().Be("I am edited");
     }
 
@@ -556,12 +556,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // note "member" not "members"
         await dbContext.Spaces.AddTestSpace(99, 3003, nameof(Patch_Images_Updates_Multiple_Images));
-        await dbContext.Images.AddTestAsset("99/3003/asset-0010", customer: 99, space: 3003, ref1: "Asset 0010",
-            ref2: "String2 0010");
-        await dbContext.Images.AddTestAsset("99/3003/asset-0011", customer: 99, space: 3003, ref1: "Asset 0011",
-            ref2: "String2 0011");
-        await dbContext.Images.AddTestAsset("99/3003/asset-0012", customer: 99, space: 3003, ref1: "Asset 0012",
-            ref2: "String2 0012");
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/3003/asset-0010"), customer: 99, space: 3003,
+            ref1: "Asset 0010", ref2: "String2 0010");
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/3003/asset-0011"), customer: 99, space: 3003,
+            ref1: "Asset 0011", ref2: "String2 0011");
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/3003/asset-0012"), customer: 99, space: 3003,
+            ref1: "Asset 0012", ref2: "String2 0012");
 
         await dbContext.SaveChangesAsync();
         
@@ -604,9 +604,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         hydra12["string3"].Value<string>().Should().Be("Asset 12 string3 added");
         
         dbContext.ChangeTracker.Clear();
-        var img10 = await dbContext.Images.FindAsync("99/3003/asset-0010");
+        var img10 = await dbContext.Images.FindAsync(AssetId.FromString("99/3003/asset-0010"));
         img10.Reference1.Should().Be("Asset 10 patched");
-        var img12 = await dbContext.Images.FindAsync("99/3003/asset-0012");
+        var img12 = await dbContext.Images.FindAsync(AssetId.FromString("99/3003/asset-0012"));
         img12.Reference1.Should().Be("Asset 12 patched");
         img12.Reference3.Should().Be("Asset 12 string3 added");
     }
@@ -616,7 +616,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         var assetId = new AssetId(99, 1, nameof(Bulk_Patch_Prevents_Engine_Call));
         
-        await dbContext.Images.AddTestAsset(assetId.ToString(),
+        await dbContext.Images.AddTestAsset(assetId,
             ref1: "I am string 1", origin:$"https://images.org/{assetId.Asset}.tiff");
         await dbContext.SaveChangesAsync();
         
@@ -653,7 +653,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // make a callback for engine
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -671,14 +671,14 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Engine was called during this process.
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .MustHaveHappened();
         
         // The API created an Image whose origin is the S3 location
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = await dbContext.Images.FindAsync(assetId.ToString());
+        var asset = await dbContext.Images.FindAsync(assetId);
         asset.Should().NotBeNull();
         asset.Origin.Should()
             .Be("https://protagonist-origin.s3.eu-west-1.amazonaws.com/99/1/Post_ImageBytes_Ingests_New_Image");
@@ -704,9 +704,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = new AssetId(99, 1, nameof(Delete_RemovesAssetAndAssociatedEntities_FromDb));
-        await dbContext.Images.AddTestAsset(assetId.ToString());
-        await dbContext.ImageLocations.AddTestImageLocation(assetId.ToString());
-        await dbContext.ImageStorages.AddTestImageStorage(assetId.ToString(), size: 400L, thumbSize: 100L);
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.ImageLocations.AddTestImageLocation(assetId);
+        await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 100L);
         var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
             sizeOfStored: 1000L, sizeOfThumbs: 1000L);
         var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
@@ -726,12 +726,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         
         // Asset, Location + Storage deleted
-        var dbAsset = await dbContext.Images.SingleOrDefaultAsync(i => i.Id == assetId.ToString());
+        var dbAsset = await dbContext.Images.SingleOrDefaultAsync(i => i.Id == assetId);
         dbAsset.Should().BeNull();
-        var dbLocation = await dbContext.ImageLocations.SingleOrDefaultAsync(i => i.Id == assetId.ToString());
+        var dbLocation = await dbContext.ImageLocations.SingleOrDefaultAsync(i => i.Id == assetId);
         dbLocation.Should().BeNull();
         
-        var dbStorage = await dbContext.ImageStorages.SingleOrDefaultAsync(i => i.Id == assetId.ToString());
+        var dbStorage = await dbContext.ImageStorages.SingleOrDefaultAsync(i => i.Id == assetId);
         dbStorage.Should().BeNull();
         
         // CustomerStorage values reduced
@@ -779,7 +779,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = new AssetId(99, 1, $"{nameof(Reingest_400_IfNotImageFamily)}{family}");
-        await dbContext.Images.AddTestAsset(assetId.ToString(), family: family);
+        await dbContext.Images.AddTestAsset(assetId, family: family);
         await dbContext.SaveChangesAsync();
 
         var request = new HttpRequestMessage(HttpMethod.Post, $"{assetId.ToApiResourcePath()}/reingest");
@@ -796,12 +796,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = new AssetId(99, 1, nameof(Reingest_Success_IfImageLocationDoesNotExist));
-        var asset = (await dbContext.Images.AddTestAsset(assetId.ToString(), error: "Failed", ingesting: false)).Entity;
+        var asset = (await dbContext.Images.AddTestAsset(assetId, error: "Failed", ingesting: false)).Entity;
         await dbContext.SaveChangesAsync();
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -816,11 +816,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Engine called
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .MustHaveHappened();
 
-        var imageLocation = await dbContext.ImageLocations.SingleAsync(l => l.Id == assetId.ToString());
+        var imageLocation = await dbContext.ImageLocations.SingleAsync(l => l.Id == assetId);
         imageLocation.Nas.Should().BeNullOrEmpty();
 
         await dbContext.Entry(asset).ReloadAsync();
@@ -833,13 +833,13 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = new AssetId(99, 1, nameof(Reingest_Success_IfImageLocationExists));
-        var asset = (await dbContext.Images.AddTestAsset(assetId.ToString(), error: "Failed", ingesting: false)).Entity;
-        await dbContext.ImageLocations.AddTestImageLocation(assetId.ToString());
+        var asset = (await dbContext.Images.AddTestAsset(assetId, error: "Failed", ingesting: false)).Entity;
+        await dbContext.ImageLocations.AddTestImageLocation(assetId);
         await dbContext.SaveChangesAsync();
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -854,11 +854,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Engine called
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .MustHaveHappened();
 
-        var imageLocation = await dbContext.ImageLocations.SingleAsync(l => l.Id == assetId.ToString());
+        var imageLocation = await dbContext.ImageLocations.SingleAsync(l => l.Id == assetId);
         imageLocation.Nas.Should().BeNullOrEmpty();
 
         await dbContext.Entry(asset).ReloadAsync();
@@ -875,12 +875,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = new AssetId(99, 1, $"{nameof(Reingest_ReturnsAppropriateStatusCode_IfEngineFails)}{engine}");
-        await dbContext.Images.AddTestAsset(assetId.ToString(), error: "Failed", ingesting: false);
+        await dbContext.Images.AddTestAsset(assetId, error: "Failed", ingesting: false);
         await dbContext.SaveChangesAsync();
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId.ToString()), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
             .Returns(engine);
 

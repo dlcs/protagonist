@@ -1,4 +1,5 @@
-﻿using DLCS.Model.Assets;
+﻿using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using Engine.Ingest;
@@ -43,7 +44,7 @@ public class ImageIngesterWorkerTests
     public async Task Ingest_ReturnsFailed_IfCopyAssetError()
     {
         // Arrange
-        var asset = new Asset { Id = "/2/1/shallow", Customer = 99, Space = 1 };
+        var asset = new Asset(AssetId.FromString("2/1/shallow"));
         A.CallTo(() =>
                 assetToDisk.CopyAssetToLocalDisk(A<Asset>._, A<string>._, true, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
@@ -63,12 +64,12 @@ public class ImageIngesterWorkerTests
     {
         // Arrange
         const int customerId = 54;
-        var asset = new Asset { Id = "/2/1/shallow", Customer = customerId, Space = 1 };
+        var asset = new Asset(AssetId.FromString($"{customerId}/1/shallow"));
         engineSettings.CustomerOverrides.Add(customerId.ToString(), new CustomerOverridesSettings
         {
             NoStoragePolicyCheck = noStoragePolicyCheck
         });
-        var assetFromOrigin = new AssetFromOrigin(asset.GetAssetId(), 13, "/target/location", "application/json");
+        var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
         A.CallTo(() => assetToDisk.CopyAssetToLocalDisk(A<Asset>._, A<string>._, A<bool>._, A<CustomerOriginStrategy>._,
                 A<CancellationToken>._))
             .Returns(assetFromOrigin);
@@ -87,8 +88,8 @@ public class ImageIngesterWorkerTests
     public async Task Ingest_ReturnsStorageLimitExceeded_IfFileSizeTooLarge()
     {
         // Arrange
-        var asset = new Asset { Id = "/2/1/remurdered", Customer = 2, Space = 1 };
-        var assetFromOrigin = new AssetFromOrigin(asset.GetAssetId(), 13, "/target/location", "application/json");
+        var asset = new Asset(AssetId.FromString("/2/1/remurdered"));
+        var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
         assetFromOrigin.FileTooLarge();
         A.CallTo(() =>
                 assetToDisk.CopyAssetToLocalDisk(A<Asset>._, A<string>._, true, A<CustomerOriginStrategy>._,
@@ -112,12 +113,12 @@ public class ImageIngesterWorkerTests
         // Arrange
         var target = $".{Path.PathSeparator}{nameof(Ingest_CompletesIngestion_RegardlessOfImageProcessResult)}";
 
-        var asset = new Asset { Id = "/2/1/remurdered", Customer = 2, Space = 1 };
+        var asset = new Asset(AssetId.FromString("/2/1/remurdered"));
 
         A.CallTo(() =>
                 assetToDisk.CopyAssetToLocalDisk(A<Asset>._, A<string>._, true, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
-            .Returns(new AssetFromOrigin(asset.GetAssetId(), 13, target, "application/json"));
+            .Returns(new AssetFromOrigin(asset.Id, 13, target, "application/json"));
         imageProcessor.ReturnValue = imageProcessSuccess;
 
         // Act
@@ -138,12 +139,12 @@ public class ImageIngesterWorkerTests
         bool completeResult, IngestResultStatus expected)
     {
         // Arrange
-        var asset = new Asset { Id = "/2/1/remurdered", Customer = 2, Space = 1 };
+        var asset = new Asset(AssetId.FromString("/2/1/remurdered"));
 
         A.CallTo(() =>
                 assetToDisk.CopyAssetToLocalDisk(A<Asset>._, A<string>._, true, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
-            .Returns(new AssetFromOrigin(asset.GetAssetId(), 13, "target", "application/json"));
+            .Returns(new AssetFromOrigin(asset.Id, 13, "target", "application/json"));
 
         A.CallTo(() =>
                 imageIngestorCompletion.CompleteIngestion(A<IngestionContext>._, imageProcessSuccess, A<string>._))

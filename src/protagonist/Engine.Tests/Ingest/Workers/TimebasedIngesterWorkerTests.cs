@@ -1,4 +1,5 @@
-﻿using DLCS.Model.Assets;
+﻿using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using Engine.Ingest;
@@ -39,7 +40,7 @@ public class TimebasedIngesterWorkerTests
     public async Task Ingest_ReturnsFailed_IfCopyAssetError()
     {
         // Arrange
-        var asset = new Asset { Id = "/2/1/shallow", Customer = 99, Space = 1 };
+        var asset = new Asset(AssetId.FromString("2/1/shallow"));
         A.CallTo(() =>
                 assetToS3.CopyAssetToTranscodeInput(A<Asset>._, true, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
@@ -59,12 +60,12 @@ public class TimebasedIngesterWorkerTests
     {
         // Arrange
         const int customerId = 54;
-        var asset = new Asset { Id = "/2/1/shallow", Customer = customerId, Space = 1 };
+        var asset = new Asset(AssetId.FromString($"{customerId}/1/shallow"));
         engineSettings.CustomerOverrides.Add(customerId.ToString(), new CustomerOverridesSettings
         {
             NoStoragePolicyCheck = noStoragePolicyCheck
         });
-        var assetFromOrigin = new AssetFromOrigin(asset.GetAssetId(), 13, "/target/location", "application/json");
+        var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
         A.CallTo(() => assetToS3.CopyAssetToTranscodeInput(A<Asset>._, A<bool>._, A<CustomerOriginStrategy>._,
                 A<CancellationToken>._))
             .Returns(assetFromOrigin);
@@ -83,8 +84,8 @@ public class TimebasedIngesterWorkerTests
     public async Task Ingest_ReturnsStorageLimitExceeded_IfFileSizeTooLarge()
     {
         // Arrange
-        var asset = new Asset { Id = "/2/1/remurdered", Customer = 2, Space = 1 };
-        var assetFromOrigin = new AssetFromOrigin(asset.GetAssetId(), 13, "/target/location", "application/json");
+        var asset = new Asset(AssetId.FromString("2/1/shallow"));
+        var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
         assetFromOrigin.FileTooLarge();
         A.CallTo(() =>
             assetToS3.CopyAssetToTranscodeInput(A<Asset>._, A<bool>._, A<CustomerOriginStrategy>._,
@@ -103,12 +104,12 @@ public class TimebasedIngesterWorkerTests
     public async Task Ingest_CompletesIngestion_IfMediaTranscodeFails()
     {
         // Arrange
-        var asset = new Asset { Id = "/2/1/remurdered", Customer = 2, Space = 1 };
+        var asset = new Asset(AssetId.FromString("2/1/remurdered"));
 
         A.CallTo(() =>
                 assetToS3.CopyAssetToTranscodeInput(A<Asset>._, A<bool>._, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
-            .Returns(new AssetFromOrigin(asset.GetAssetId(), 13, "target", "application/json"));
+            .Returns(new AssetFromOrigin(asset.Id, 13, "target", "application/json"));
 
         A.CallTo(() => mediaTranscoder.InitiateTranscodeOperation(A<IngestionContext>._, A<CancellationToken>._))
             .Returns(false);
@@ -124,12 +125,12 @@ public class TimebasedIngesterWorkerTests
     public async Task Ingest_ReturnsQueuedForProcessing_AndDoesNotComplete_IfMediaTranscodeSuccess()
     {
         // Arrange
-        var asset = new Asset { Id = "/2/1/remurdered", Customer = 2, Space = 1 };
+        var asset = new Asset(AssetId.FromString("2/1/remurdered"));
 
         A.CallTo(() =>
                 assetToS3.CopyAssetToTranscodeInput(A<Asset>._, A<bool>._, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
-            .Returns(new AssetFromOrigin(asset.GetAssetId(), 13, "target", "application/json"));
+            .Returns(new AssetFromOrigin(asset.Id, 13, "target", "application/json"));
 
         A.CallTo(() => mediaTranscoder.InitiateTranscodeOperation(A<IngestionContext>._, A<CancellationToken>._))
             .Returns(true);

@@ -7,6 +7,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.NamedQueries.Models;
@@ -49,13 +50,13 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
             Template = "assetOrder=n2&s1=p1&space=p2&n1=p3&objectname=tester.zip"
         });
 
-        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-zip-1", num1: 2, ref1: "my-ref");
-        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-zip-2", num1: 1, ref1: "my-ref");
-        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-zip-3-auth", num1: 3, ref1: "my-ref",
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-zip-1"), num1: 2, ref1: "my-ref");
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-zip-2"), num1: 1, ref1: "my-ref");
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-zip-3-auth"), num1: 3, ref1: "my-ref",
             maxUnauthorised: 10, roles: "default");
-        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-zip-4", num1: 4, ref1: "my-ref");
-        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-zip-5", num1: 5, ref1: "my-ref");
-        dbFixture.DbContext.Images.AddTestAsset("99/1/not-for-delivery", num1: 6, ref1: "my-ref",
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-zip-4"), num1: 4, ref1: "my-ref");
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-zip-5"), num1: 5, ref1: "my-ref");
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/not-for-delivery"), num1: 6, ref1: "my-ref",
             notForDelivery: true);
         dbFixture.DbContext.SaveChanges();
     }
@@ -262,14 +263,24 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
             Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "ordered-zip",
             Template = "assetOrder=n1;n2 desc;s1&s2=p1&objectname=tester"
         });
-        
-        await dbFixture.DbContext.Images.AddTestAsset("99/1/third", num1: 1, num2: 10, ref1: "z", ref2: "ordered");
-        await dbFixture.DbContext.Images.AddTestAsset("99/1/first", num1: 1, num2: 20, ref1: "c", ref2: "ordered");
-        await dbFixture.DbContext.Images.AddTestAsset("99/1/fourth", num1: 2, num2: 10, ref1: "a", ref2: "ordered");
-        await dbFixture.DbContext.Images.AddTestAsset("99/1/second", num1: 1, num2: 10, ref1: "x", ref2: "ordered");
+
+        await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/third"), num1: 1, num2: 10, ref1: "z",
+            ref2: "ordered");
+        await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/first"), num1: 1, num2: 20, ref1: "c",
+            ref2: "ordered");
+        await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/fourth"), num1: 2, num2: 10, ref1: "a",
+            ref2: "ordered");
+        await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/second"), num1: 1, num2: 10, ref1: "x",
+            ref2: "ordered");
         await dbFixture.DbContext.SaveChangesAsync();
 
-        var expectedOrder = new[] { "99/1/first", "99/1/second", "99/1/third", "99/1/fourth" };
+        var expectedOrder = new[]
+        {
+            AssetId.FromString("99/1/first"),
+            AssetId.FromString("99/1/second"),
+            AssetId.FromString("99/1/third"),
+            AssetId.FromString("99/1/fourth"),
+        };
 
         const string path = "zip/99/ordered-zip/ordered";
         const string storageKey = "99/zip/ordered-zip/ordered/tester";

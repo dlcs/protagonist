@@ -8,6 +8,7 @@ using System.Threading;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Core.Collections;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.NamedQueries.Models;
@@ -51,16 +52,16 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
             Template = "canvas=n2&s1=p1&space=p2&n1=p3&coverpage=https://coverpage.pdf&objectname=tester"
         });
 
-        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-1", num1: 2, ref1: "my-ref");
-        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-2", num1: 1, ref1: "my-ref");
-        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-3-auth", num1: 3, ref1: "my-ref",
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-1"), num1: 2, ref1: "my-ref");
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-2"), num1: 1, ref1: "my-ref");
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-3-auth"), num1: 3, ref1: "my-ref",
             maxUnauthorised: 10, roles: "default");
-        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-4", num1: 4, ref1: "my-ref");
-        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-5", num1: 5, ref1: "my-ref");
-        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-6", num1: 6, ref1: "my-ref");
-        dbFixture.DbContext.Images.AddTestAsset("99/1/matching-pdf-6-auth", num1: 6, ref1: "my-ref",
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-4"), num1: 4, ref1: "my-ref");
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-5"), num1: 5, ref1: "my-ref");
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-6"), num1: 6, ref1: "my-ref");
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-6-auth"), num1: 6, ref1: "my-ref",
             maxUnauthorised: 10, roles: "clickthrough");
-        dbFixture.DbContext.Images.AddTestAsset("99/1/not-for-delivery", num1: 6, ref1: "my-ref",
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/not-for-delivery"), num1: 6, ref1: "my-ref",
             notForDelivery: true);
         dbFixture.DbContext.SaveChanges();
     }
@@ -332,14 +333,24 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
             Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "ordered-pdf",
             Template = "assetOrder=n1;n2 desc;s1&s2=p1&coverpage=https://coverpage.pdf&objectname=tester"
         });
-            
-        await dbFixture.DbContext.Images.AddTestAsset("99/1/3", num1: 1, num2: 10, ref1: "z", ref2: "possum");
-        await dbFixture.DbContext.Images.AddTestAsset("99/1/1", num1: 1, num2: 20, ref1: "c", ref2: "possum");
-        await dbFixture.DbContext.Images.AddTestAsset("99/1/4", num1: 2, num2: 10, ref1: "a", ref2: "possum");
-        await dbFixture.DbContext.Images.AddTestAsset("99/1/2", num1: 1, num2: 10, ref1: "x", ref2: "possum");
+
+        await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/3"), num1: 1, num2: 10, ref1: "z",
+            ref2: "possum");
+        await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/1"), num1: 1, num2: 20, ref1: "c",
+            ref2: "possum");
+        await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/4"), num1: 2, num2: 10, ref1: "a",
+            ref2: "possum");
+        await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/2"), num1: 1, num2: 10, ref1: "x",
+            ref2: "possum");
         await dbFixture.DbContext.SaveChangesAsync();
 
-        var expectedOrder = new[] { "99/1/1", "99/1/2", "99/1/3", "99/1/4" };
+        var expectedOrder = new[]
+        {
+            AssetId.FromString("99/1/1"),
+            AssetId.FromString("99/1/2"),
+            AssetId.FromString("99/1/3"),
+            AssetId.FromString("99/1/4")
+        };
 
         const string path = "pdf/99/ordered-pdf/possum";
         const string pdfStorageKey = "99/pdf/ordered-pdf/possum/tester";

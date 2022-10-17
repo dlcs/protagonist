@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Assets.NamedQueries;
@@ -17,7 +18,7 @@ namespace Test.Helpers.Integration;
 public static class DatabaseTestDataPopulation
 {
     public static ValueTask<EntityEntry<Asset>> AddTestAsset(this DbSet<Asset> assets,
-        string id,
+        AssetId id,
         AssetFamily family = AssetFamily.Image,
         int customer = 99,
         int space = 1,
@@ -131,11 +132,11 @@ public static class DatabaseTestDataPopulation
     });
     
     public static ValueTask<EntityEntry<ImageLocation>> AddTestImageLocation(this DbSet<ImageLocation> locations,
-        string id, string s3 = "s3://wherever", string nas = "")
+        AssetId id, string s3 = "s3://wherever", string nas = "")
         => locations.AddAsync(new ImageLocation { Id = id, S3 = s3, Nas = nas });
     
     public static ValueTask<EntityEntry<ImageStorage>> AddTestImageStorage(this DbSet<ImageStorage> storage,
-        string id, int space = 1, int customer = 99, long size = 123, long thumbSize = 10)
+        AssetId id, int space = 1, int customer = 99, long size = 123, long thumbSize = 10)
         => storage.AddAsync(new ImageStorage
         {
             Id = id,

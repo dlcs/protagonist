@@ -42,7 +42,7 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_Fail_IfPipelineIdNotFound()
     {
         // Arrange
-        var asset = new Asset { Id = "1/2/hello", Customer = 1, Space = 2 };
+        var asset = new Asset(AssetId.FromString("1/2/hello"));
         asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
         {
             TechnicalDetails = Array.Empty<string>()
@@ -65,13 +65,13 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_Fail_IfUnableToMakesCreateJobRequest()
     {
         // Arrange
-        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20, MediaType = "video/mp4"};
+        var asset = new Asset(AssetId.FromString("20/10/asset-id")) { MediaType = "video/mp4" };
         asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
         {
             TechnicalDetails = new[] { "Standard WebM(webm)", "auto-preset(mp4)" }
         });
         var context = new IngestionContext(asset);
-        context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "s3://loc/ation", "video/mpeg"));
+        context.WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "s3://loc/ation", "video/mpeg"));
 
         A.CallTo(() => elasticTranscoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
             .Returns("1234567890123-abcdef");
@@ -88,13 +88,13 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_MakesCreateJobRequest()
     {
         // Arrange
-        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20, MediaType = "video/mp4" };
+        var asset = new Asset(AssetId.FromString("20/10/asset-id")) { MediaType = "video/mp4" };
         asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
         {
             TechnicalDetails = new[] { "Standard WebM(webm)", "auto-preset(mp4)" }
         });
         var context = new IngestionContext(asset);
-        context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "s3://loc/ation", "video/mpeg"));
+        context.WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "s3://loc/ation", "video/mpeg"));
 
         A.CallTo(() => elasticTranscoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
             .Returns("1234567890123-abcdef");
@@ -137,13 +137,13 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_ReturnsFalseAndSetsError_IfErrorStatusCodeFromET(HttpStatusCode statusCode)
     {
         // Arrange
-        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20, MediaType = "video/mp4" };
+        var asset = new Asset(AssetId.FromString("20/10/asset-id")) { MediaType = "video/mp4" };
         asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
         {
             TechnicalDetails = new[]{ "Standard WebM(webm)", "auto-preset(mp4)" }
         });
         var context = new IngestionContext(asset);
-        context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "s3://loc/ation", "video/mpeg"));
+        context.WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "s3://loc/ation", "video/mpeg"));
 
         A.CallTo(() => elasticTranscoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
             .Returns("1234567890123-abcdef");
@@ -176,20 +176,20 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_ReturnsTrue_IfSuccessStatusCodeFromET(HttpStatusCode statusCode)
     {
         // Arrange
-        var asset = new Asset { Id = "20/10/asset-id", Space = 10, Customer = 20, MediaType = "video/mp4" };
+        var asset = new Asset(AssetId.FromString("20/10/asset-id")) { MediaType = "video/mp4" };
         asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
         {
             TechnicalDetails = new[]{ "Standard WebM(webm)", "auto-preset(mp4)" }
         });
         var context = new IngestionContext(asset);
-        context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "s3://loc/ation", "video/mpeg"));
+        context.WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "s3://loc/ation", "video/mpeg"));
 
         var elasticTranscoderJobId = "1234567890123-abcdef";
         A.CallTo(() => elasticTranscoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
             .Returns(elasticTranscoderJobId);
 
         A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
-            .Returns(new Dictionary<string, string>()
+            .Returns(new Dictionary<string, string>
             {
                 ["my-custom-preset"] = "1111111111111-aaaaaa",
                 ["auto-preset"] = "9999999999999-bbbbbb"
@@ -208,7 +208,7 @@ public class ElasticTranscoderTests
         asset.Error.Should().BeNullOrEmpty();
 
         A.CallTo(() => elasticTranscoderWrapper.PersistJobId(
-                A<AssetId>.That.Matches(a => a.ToString() == asset.Id),
+                A<AssetId>.That.Matches(a => a == asset.Id),
                 elasticTranscoderJobId,
                 A<CancellationToken>._))
             .MustHaveHappened();

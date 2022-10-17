@@ -23,11 +23,11 @@ public static class AssetConverter
     /// <param name="urlRoots">The domain name of the API and orchestrator applications</param>
     /// <returns></returns>
     public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots)
-    {   
-        var prefix = $"{dbAsset.Customer}/{dbAsset.Space}/";
-        if (!dbAsset.Id.StartsWith(prefix))
+    {
+        if (dbAsset.Id.Customer != dbAsset.Customer || dbAsset.Id.Space != dbAsset.Space)
         {
-            throw new APIException($"Asset {dbAsset.Id} does not start with expected prefix {prefix}");
+            throw new APIException(
+                $"Asset {dbAsset.Id} does not start with expected prefix {dbAsset.Customer}/{dbAsset.Space}/");
         }
 
         var modelId = dbAsset.GetUniqueName();
@@ -133,7 +133,7 @@ public static class AssetConverter
             modelId = modelId.Substring(testPrefix.Length);
         }
 
-        var assetId = new AssetId(hydraImage.CustomerId, hydraImage.Space, modelId).ToString();
+        var assetId = new AssetId(hydraImage.CustomerId, hydraImage.Space, modelId);
         if (hydraImage.Id.HasText())
         {
             var idParts = hydraImage.Id.Split("/");
@@ -146,7 +146,8 @@ public static class AssetConverter
             {
                 throw new APIException("Caller supplied an ID that is not in the correct form");
             }
-            var assetIdFromHydraId = $"{idParts[1]}/{idParts[3]}/{idParts[5]}";
+
+            var assetIdFromHydraId = AssetId.FromString($"{idParts[1]}/{idParts[3]}/{idParts[5]}");
             if (assetIdFromHydraId != assetId)
             {
                 throw new APIException("Caller supplied an ID that is not supported by the request URL");
