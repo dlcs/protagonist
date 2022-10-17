@@ -1,6 +1,4 @@
-using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using API.Features.Customer.Requests;
 using API.Infrastructure;
 using API.Settings;
@@ -9,6 +7,7 @@ using DLCS.HydraModel;
 using DLCS.Web.Requests;
 using Hydra.Collections;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -16,14 +15,11 @@ namespace API.Features.Customer;
 
 /// <summary>
 /// DLCS REST API Operations for API Keys.
-/// This controller does not do any data access; it creates Mediatr requests and passes them on.
-/// It converts to and from the Hydra form of the DLCS API.
 /// </summary>
 [Route("/customers/")]
 [ApiController]
 public class ApiKeysController : HydraController
 {
-    /// <inheritdoc />
     public ApiKeysController(
         IMediator mediator,
         IOptions<ApiSettings> options) : base(options.Value, mediator)
@@ -31,14 +27,14 @@ public class ApiKeysController : HydraController
     }
     
     /// <summary>
-    /// GET /customers/id/keys
-    ///
-    /// List of all the API Keys available for this customer
+    /// Get a list of all the API Keys available for this customer
     /// </summary>
-    /// <param name="customerId"></param>
+    /// <param name="customerId">Customer Id to get keys for</param>
     /// <returns>HydraCollection of ApiKey objects</returns>
     [HttpGet]
     [Route("{customerId}/keys")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetApiKeys(int customerId)
     {
         var dbCustomer = await Mediator.Send(new GetCustomer(customerId));
@@ -60,17 +56,24 @@ public class ApiKeysController : HydraController
         };
         return Ok(collection);
     }
-        
-        
+
     /// <summary>
-    /// POST /customers/id/keys
+    /// Obtain a new API key by posting an empty payload.
     ///
-    /// Client can obtain a new key by posting an empty payload
+    /// The return value contains both Key and Secret - it is the only time the Secret is visible
     /// </summary>
-    /// <param name="customerId"></param>
-    /// <returns>newly created ApiKey</returns>
+    /// <param name="customerId">Customer Id to create key for</param>
+    /// <returns>Newly created ApiKey</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST: /customers/1/keys
+    ///     { }
+    /// </remarks>
     [HttpPost]
     [Route("{customerId}/keys")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateApiKey(int customerId)
     {
         var result = await Mediator.Send(new CreateApiKey(customerId));
@@ -81,16 +84,15 @@ public class ApiKeysController : HydraController
 
         return this.HydraProblem("Unable to create API key", null, 500, "API Key");
     }
-        
-        
+
     /// <summary>
-    /// DELETE /customers/id/keys/key
-    ///
     /// Remove a key so that it can no longer be used.
     /// </summary>
-    /// <param name="customerId"></param>
-    /// <param name="key"></param>
+    /// <param name="customerId">Customer Id that owns key to be deleted</param>
+    /// <param name="key">Key to remove</param>
     /// <returns>No content</returns>
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [HttpDelete]
     [Route("{customerId}/keys/{key}")]
     public async Task<IActionResult> DeleteApiKey(int customerId, string key)

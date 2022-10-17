@@ -1,7 +1,4 @@
-﻿using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using API.Infrastructure.Requests;
+﻿using API.Infrastructure.Requests;
 using DLCS.Model.Page;
 using DLCS.Model.Storage;
 using DLCS.Repository;

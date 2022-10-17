@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using DLCS.Core.Strings;
 
-namespace API.Features.Customer.Requests;
+namespace API.Features.Customer.Validation;
 
 /// <summary>
 /// Performs basic checks on a new POSTed or PUT Hydra Customer.

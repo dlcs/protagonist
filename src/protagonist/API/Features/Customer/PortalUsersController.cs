@@ -1,7 +1,5 @@
-using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
-using API.Converters;
+using API.Features.Customer.Converters;
 using API.Features.Customer.Requests;
 using API.Infrastructure;
 using API.Settings;
@@ -18,8 +16,6 @@ namespace API.Features.Customer;
 
 /// <summary>
 /// DLCS REST API Operations for Portal Users.
-/// This controller does not do any data access; it creates Mediatr requests and passes them on.
-/// It converts to and from the Hydra form of the DLCS API.
 /// </summary>
 [Route("/customers/")]
 [ApiController]
@@ -42,7 +38,7 @@ public class PortalUsersController : HydraController
     [Route("{customerId}/portalUsers")]
     public async Task<HydraCollection<PortalUser>> GetPortalUsers(int customerId)
     {
-        var users = await Mediator.Send(new GetPortalUsers { CustomerId = customerId });
+        var users = await Mediator.Send(new GetPortalUsers(customerId));
             
         var baseUrl = GetUrlRoots().BaseUrl;
         var collection = new HydraCollection<PortalUser>
@@ -68,7 +64,7 @@ public class PortalUsersController : HydraController
     [Route("{customerId}/portalUsers/{userId}")]
     public async Task<IActionResult> GetPortalUser(int customerId, string userId)
     {
-        var users = await Mediator.Send(new GetPortalUsers { CustomerId = customerId });
+        var users = await Mediator.Send(new GetPortalUsers(customerId));
         var user = users.SingleOrDefault(u => u.Id == userId);
         if (user != null)
         {

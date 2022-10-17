@@ -1,6 +1,4 @@
 ﻿using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 using API.Features.Assets;
 using API.Infrastructure.Requests;
 using DLCS.Core;
@@ -13,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace API.Features.Image.Requests;
 
 /// <summary>
-/// Reingest specified asset - this will 
+/// Reingest specified asset - this will trigger immediate/synchronous ingest of asset
 /// </summary>
 public class ReingestAsset : IRequest<ModifyEntityResult<Asset>>
 {

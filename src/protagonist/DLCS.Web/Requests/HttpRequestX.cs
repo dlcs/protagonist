@@ -40,10 +40,9 @@ public static class HttpRequestX
     }
     
     /// <summary>
-    /// Similar to GetDisplayUrl but omits path and query string
+    /// Generate a display URL, deriving values from specified HttpRequest. Omitting path and query string
     /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <remarks> Similar to GetDisplayUrl but omits path and query string</remarks>
     public static string GetBaseUrl(this HttpRequest request)
     {
         var host = request.Host.Value ?? string.Empty;

@@ -1,21 +1,19 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using API.Settings;
 using DLCS.Core.Collections;
 using DLCS.Core.Encryption;
-using DLCS.Core.Strings;
 using DLCS.Repository;
 using MediatR;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Customer.Requests;
 
-
+/// <summary>
+/// Create a new API key for customer
+/// </summary>
 public class CreateApiKey : IRequest<CreateApiKeyResult>
 {
     public CreateApiKey(int customerId) => CustomerId = customerId;
+    
     public int CustomerId { get; }
 }
 
@@ -30,18 +28,15 @@ public class CreateApiKeyResult
 public class CreateApiKeyHandler : IRequestHandler<CreateApiKey, CreateApiKeyResult>
 {
     private readonly DlcsContext dbContext;
-    private readonly ILogger<CreateApiKeyHandler> logger;
     private readonly IEncryption encryption;
     private readonly ApiSettings settings;
     
     public CreateApiKeyHandler(
         DlcsContext dbContext,
-        ILogger<CreateApiKeyHandler> logger,
         IEncryption encryption,
         IOptions<ApiSettings> options)
     {
         this.dbContext = dbContext;
-        this.logger = logger;
         this.encryption = encryption;
         settings = options.Value;
     }

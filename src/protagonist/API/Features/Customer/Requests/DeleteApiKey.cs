@@ -1,12 +1,13 @@
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Repository;
 using MediatR;
 
 namespace API.Features.Customer.Requests;
 
+/// <summary>
+/// Delete specified API key.
+/// Call will fail if current user is admin and there's only 1 key  
+/// </summary>
 public class DeleteApiKey : IRequest<DeleteApiKeyResult>
 {
     public DeleteApiKey(int customerId, string key)
@@ -17,13 +18,10 @@ public class DeleteApiKey : IRequest<DeleteApiKeyResult>
 
     public int CustomerId { get; }
     public string Key { get; }
-    
 }
-
 
 public class DeleteApiKeyResult
 {
-    public bool AdminKeyConstraint { get; set; }
     public string Error { get; set; }
 }
 
@@ -31,13 +29,11 @@ public class DeleteApiKeyHandler : IRequestHandler<DeleteApiKey, DeleteApiKeyRes
 {
     private readonly DlcsContext dbContext;
 
-
     public DeleteApiKeyHandler(
         DlcsContext dbContext)
     {
         this.dbContext = dbContext;
     }
-
 
     public async Task<DeleteApiKeyResult> Handle(DeleteApiKey request, CancellationToken cancellationToken)
     {
@@ -54,7 +50,6 @@ public class DeleteApiKeyHandler : IRequestHandler<DeleteApiKey, DeleteApiKeyRes
                 // We're not actually checking that it's _this_ key - but that's good!
                 return new DeleteApiKeyResult
                 {
-                    AdminKeyConstraint = true,
                     Error = "Admin user cannot delete last key"
                 };
             }

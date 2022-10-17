@@ -1,6 +1,4 @@
-﻿using System.Linq;
-using System.Threading;
-using API.Converters;
+﻿using API.Converters;
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
@@ -9,6 +7,7 @@ using DLCS.Model;
 using DLCS.Model.Assets;
 using Hydra.Collections;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -21,15 +20,14 @@ namespace API.Features.Customer;
 [ApiController]
 public class CustomerImagesController : HydraController
 {
-    /// <inheritdoc />
     public CustomerImagesController(IOptions<ApiSettings> settings, IMediator mediator) : base(settings.Value, mediator)
     {
     }
 
     /// <summary>
-    /// POST /customers/{customerId}/allImages
-    /// 
-    /// Accepts a list of image identifiers, will return a list of matching images
+    /// Accepts a list of image identifiers, will return a list of matching images.
+    ///
+    /// This endpoint doesn't support paging - all results are returned in single page 
     /// </summary>
     /// <remarks>
     /// Sample request:
@@ -46,6 +44,8 @@ public class CustomerImagesController : HydraController
     /// </remarks>
     [HttpPost]
     [Route("allImages")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAllImages(
         [FromRoute] int customerId,
         [FromBody] HydraCollection<IdentifierOnly> imageIdentifiers,
@@ -68,8 +68,6 @@ public class CustomerImagesController : HydraController
     }
 
     /// <summary>
-    /// POST /customers/{customerId}/deleteImages
-    /// 
     /// Accepts a list of image identifiers, will delete those that exist from DB
     /// </summary>
     /// <remarks>
@@ -87,6 +85,8 @@ public class CustomerImagesController : HydraController
     /// </remarks>
     [HttpPost]
     [Route("deleteImages")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteImages(
         [FromRoute] int customerId,
         [FromBody] HydraCollection<IdentifierOnly> imageIdentifiers,

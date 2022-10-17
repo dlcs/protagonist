@@ -1,9 +1,5 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using DLCS.Core;
+﻿using DLCS.Core;
 using DLCS.Core.Types;
-using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using MediatR;

@@ -1,18 +1,15 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using API.Converters;
+using API.Features.Customer.Converters;
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
 using API.Settings;
-using DLCS.Core;
 using DLCS.Core.Strings;
 using DLCS.Web.Auth;
 using DLCS.Web.Requests;
 using Hydra.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
@@ -22,15 +19,10 @@ namespace API.Features.Customer;
 /// <summary>
 /// DLCS REST API Operations for customers.
 /// </summary>
-/// <remarks>
-/// This controller does not do any data access; it creates Mediatr requests and passes them on.
-/// It converts to and from the Hydra form of the DLCS API.
-/// </remarks>
 [Route("/customers/")]
 [ApiController]
 public class CustomerController : HydraController
 {
-    /// <inheritdoc />
     public CustomerController(
         IMediator mediator,
         IOptions<ApiSettings> options) : base(options.Value, mediator)
@@ -38,17 +30,16 @@ public class CustomerController : HydraController
     }
 
     /// <summary>
-    /// GET /customers
-    /// 
     /// Get all the customers.
     /// </summary>
-    /// <returns>HydraCollection of JObject (simplified customer)</returns>
+    /// <returns>HydraCollection of simplified customer</returns>
     /// <remarks>
     /// Although it returns a paged collection, the page size is always the total number of customers:
     /// clients don't need to page this collection, it contains all customers.
     /// </remarks>
     [AllowAnonymous]
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<HydraCollection<JObject>> GetCustomers()
     {
         var baseUrl = GetUrlRoots().BaseUrl;
@@ -64,15 +55,27 @@ public class CustomerController : HydraController
         };
     }
 
-        
     /// <summary>
-    /// POST /customers
+    /// Create a new Customer.
     /// 
-    /// The /customers/ path is not access controlled, but only an admin may call this.
+    /// Only an admin may call this.
     /// </summary>
-    /// <param name="newCustomer"></param>
-    /// <returns></returns>
+    /// <param name="newCustomer">Object containing new customer to create</param>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST: /customers
+    ///     {
+    ///         "Name": "new-url-friendly-name"
+    ///         "DisplayName": "Display Name"
+    ///     }
+    /// </remarks>
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateCustomer([FromBody] DLCS.HydraModel.Customer newCustomer)
     {
         if (!User.IsAdmin())
@@ -111,14 +114,12 @@ public class CustomerController : HydraController
     }
 
     /// <summary>
-    /// GET /customers/{id}
-    /// 
-    /// Get a Customer
+    /// Get details of specified customer
     /// </summary>
-    /// <param name="customerId"></param>
-    /// <returns></returns>
     [HttpGet]
     [Route("{customerId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCustomer(int customerId)
     {
         var dbCustomer = await Mediator.Send(new GetCustomer(customerId));
@@ -130,16 +131,25 @@ public class CustomerController : HydraController
     }
 
     /// <summary>
-    /// PATCH /customers/{id}
-    /// 
     /// Make a partial update to customer.
+    /// Note: Only the DisplayName property can be updated
     /// </summary>
     /// <param name="customerId">Id of customer to Patch</param>
     /// <param name="hydraCustomer">Hydra model containing changes to make (only DisplayName is supported)</param>
     /// <param name="validator">Model validator</param>
     /// <returns>The updated Customer entity</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     PATCH: /customers/100
+    ///     {
+    ///         "DisplayName": "Updated Display Name"
+    ///     }
+    /// </remarks>
     [HttpPatch]
     [Route("{customerId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> PatchCustomer(
         [FromRoute] int customerId,
         [FromBody] DLCS.HydraModel.Customer hydraCustomer,

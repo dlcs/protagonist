@@ -1,12 +1,11 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using API.Features.Policies.Converters;
+﻿using API.Features.Policies.Converters;
 using API.Features.Policies.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -23,15 +22,21 @@ public class PolicyController : HydraController
     }
     
     /// <summary>
-    /// GET /imageOptimisationPolicies
+    /// Get paged list of all image optimisation policies.
     ///
-    /// Get paged list of all image optimisation policies
+    /// Supports ?page= and ?pageSize= query parameters
     /// </summary>
-    /// <param name="cancellationToken"></param>
     /// <returns>Collection of Hydra JSON-LD image optimisation policy object</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET: /imageOptimisationPolicies
+    ///     GET: /imageOptimisationPolicies?page=2&pagesize=10
+    /// </remarks>
     [HttpGet]
     [AllowAnonymous]
     [Route("/imageOptimisationPolicies")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetImageOptimisationPolicies(CancellationToken cancellationToken)
     {
         var getImageOptimisationPolicies = new GetImageOptimisationPolicies();
@@ -46,16 +51,14 @@ public class PolicyController : HydraController
     }
 
     /// <summary>
-    /// GET /imageOptimisationPolicies/{imageOptimisationPolicyId}
-    /// 
-    /// Get details of specified image optimisation policies
+    /// Get details of specified image optimisation policy
     /// </summary>
-    /// <param name="imageOptimisationPolicyId"></param>
-    /// <param name="cancellationToken"></param>
     /// <returns>Hydra JSON-LD image optimisation policy object</returns>
     [HttpGet]
     [AllowAnonymous]
     [Route("/imageOptimisationPolicies/{imageOptimisationPolicyId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetImageOptimisationPolicy([FromRoute] string imageOptimisationPolicyId, CancellationToken cancellationToken)
     {
         var getImageOptimisationPolicy = new GetImageOptimisationPolicy(imageOptimisationPolicyId);
@@ -69,15 +72,21 @@ public class PolicyController : HydraController
     }
     
     /// <summary>
-    /// GET /storagePolices
-    ///
     /// Get paged list of all storage policies
+    ///
+    /// Supports ?page= and ?pageSize= query parameters
     /// </summary>
-    /// <param name="cancellationToken"></param>
     /// <returns>Collection of Hydra JSON-LD storage policy objects</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET: /storagePolicies
+    ///     GET: /storagePolicies?page=2&pagesize=10
+    /// </remarks>
     [HttpGet]
     [AllowAnonymous]
     [Route("/storagePolicies")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetStoragePolicies(CancellationToken cancellationToken)
     {
         var getStoragePolicies = new GetStoragePolicies();
@@ -92,16 +101,14 @@ public class PolicyController : HydraController
     }
     
     /// <summary>
-    /// GET /storagePolicies/{storagePolicyId}
-    /// 
     /// Get details of specified storage policy
     /// </summary>
-    /// <param name="storagePolicyId"></param>
-    /// <param name="cancellationToken"></param>
     /// <returns>Hydra JSON-LD storage policy object</returns>
     [HttpGet]
     [AllowAnonymous]
     [Route("/storagePolicies/{storagePolicyId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetStoragePolicy([FromRoute] string storagePolicyId, CancellationToken cancellationToken)
     {
         var getStoragePolicy = new GetStoragePolicy(storagePolicyId);
@@ -115,15 +122,21 @@ public class PolicyController : HydraController
     }
     
     /// <summary>
-    /// GET /thumbnailPolicies
-    ///
     /// Get paged list of all thumbnail policies
+    ///
+    /// Supports ?page= and ?pageSize= query parameters
     /// </summary>
-    /// <param name="cancellationToken"></param>
     /// <returns>Collection of Hydra JSON-LD image optimisation policy objects</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET: /thumbnailPolicies
+    ///     GET: /thumbnailPolicies?page=2&pagesize=10
+    /// </remarks>
     [HttpGet]
     [AllowAnonymous]
     [Route("/thumbnailPolicies")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetThumbnailPolicies(CancellationToken cancellationToken)
     {
         var getThumbnailPolicies = new GetThumbnailPolicies();
@@ -137,20 +150,18 @@ public class PolicyController : HydraController
     }
     
     /// <summary>
-    /// GET /thumbnailPolicies/{thumbnailPolicyId}
-    /// 
     /// Get details of specified thumbnail policy
     /// </summary>
-    /// <param name="originStrategyId"></param>
-    /// <param name="cancellationToken"></param>
     /// <returns>Hydra JSON-LD storage policy object</returns>
     [HttpGet]
     [AllowAnonymous]
-    [Route("/thumbnailPolicies/{originStrategyId}")]
-    public async Task<IActionResult> GetThumbnailPolicy([FromRoute] string originStrategyId, 
+    [Route("/thumbnailPolicies/{thumbnailPolicyId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetThumbnailPolicy([FromRoute] string thumbnailPolicyId, 
         CancellationToken cancellationToken)
     {
-        var getThumbnailPolicy = new GetThumbnailPolicy(originStrategyId);
+        var getThumbnailPolicy = new GetThumbnailPolicy(thumbnailPolicyId);
 
         return await HandleFetch(
             getThumbnailPolicy,
@@ -161,15 +172,21 @@ public class PolicyController : HydraController
     }
     
     /// <summary>
-    /// GET /originStrategies
-    ///
     /// Get paged list of all origin strategies
+    ///
+    /// Supports ?page= and ?pageSize= query parameters
     /// </summary>
-    /// <param name="cancellationToken"></param>
     /// <returns>Collection of Hydra JSON-LD origin strategy objects</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET: /originStrategies
+    ///     GET: /originStrategies?page=2&pagesize=10
+    /// </remarks>
     [HttpGet]
     [AllowAnonymous]
     [Route("/originStrategies")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetOriginStrategies(CancellationToken cancellationToken)
     {
         var getOriginStrategies = new GetOriginStrategies();
@@ -177,30 +194,31 @@ public class PolicyController : HydraController
         return await HandlePagedFetch<DLCS.Model.Policies.OriginStrategy, GetOriginStrategies, OriginStrategy>(
             getOriginStrategies,
             policy => policy.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Get thumbnail policies failed",
+            errorTitle: "Get origin strategies failed",
             cancellationToken: cancellationToken
         );
     }
     
     /// <summary>
-    /// GET /originStrategies/{originStrategyId}
-    /// 
     /// Get details of specified origin strategy
     /// </summary>
     /// <param name="originStrategyId"></param>
     /// <param name="cancellationToken"></param>
     /// <returns>Hydra JSON-LD origin strategy object</returns>
+    /// [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HttpGet]
     [AllowAnonymous]
     [Route("/originStrategies/{originStrategyId}")]
-    public async Task<IActionResult> GetOriginStrategy([FromRoute] string originStrategyId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetOriginStrategy([FromRoute] string originStrategyId, 
+        CancellationToken cancellationToken)
     {
         var getStrategy = new GetOriginStrategy(originStrategyId);
 
         return await HandleFetch(
             getStrategy,
             policy => policy.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Get thumbnail policy failed",
+            errorTitle: "Get origin strategy failed",
             cancellationToken: cancellationToken
         );
     }

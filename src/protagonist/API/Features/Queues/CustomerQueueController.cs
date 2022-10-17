@@ -9,6 +9,7 @@ using DLCS.Model.Assets;
 using DLCS.Model.Processing;
 using Hydra.Collections;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Batch = DLCS.HydraModel.Batch;
@@ -22,20 +23,19 @@ namespace API.Features.Queues;
 [ApiController]
 public class CustomerQueueController : HydraController
 {
-    /// <inheritdoc />
     public CustomerQueueController(IOptions<ApiSettings> settings, IMediator mediator) : base(settings.Value, mediator)
     {
     }
 
     /// <summary>
-    /// GET /customers/{customerId}/queue
-    ///
     /// Get details of default customer queue
     /// </summary>
-    /// <param name="customerId">Id of customer</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="customerId">Id of customer to get queue details for</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCustomerQueue([FromRoute] int customerId, CancellationToken cancellationToken)
     {
         var getCustomerRequest = new GetCustomerQueue(customerId);
@@ -49,15 +49,41 @@ public class CustomerQueueController : HydraController
     }
 
     /// <summary>
-    /// POST /customers/{customerId}/queue
+    /// Create a batch of images to ingest.
     ///
-    /// Create a batch of images to ingest
+    /// These will be enqueued for processing and asynchronously ingested
     /// </summary>
     /// <param name="customerId">Id of customer to create batch for</param>
     /// <param name="images">Hydra collection of assets to add to batch</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Hydra JSON-LD Batch object</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST: /customers/99/queue
+    ///     {
+    ///         "@context": "http://www.w3.org/ns/hydra/context.jsonld",
+    ///         "@type": "Collection",
+    ///         "member": [
+    ///         {
+    ///             "id": "foo",
+    ///             "space": 1,
+    ///             "origin": "https://example.origin/foo.jpg",
+    ///             "family": "I",
+    ///             "mediaType": "image/jpeg"
+    ///         },
+    ///         {
+    ///             "id": "bar",
+    ///             "space": 2,
+    ///             "origin": "https://example.origin/movie.mp4",
+    ///             "family": "T",
+    ///             "mediaType": "video/mp4"
+    ///         }
+    ///     }
+    /// </remarks>
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateBatch(
         [FromRoute] int customerId,
         [FromBody] HydraCollection<DLCS.HydraModel.Image> images,
@@ -80,16 +106,36 @@ public class CustomerQueueController : HydraController
     }
     
     /// <summary>
-    /// POST /customers/{customerId}/queue/priority
-    ///
     /// Create a batch of images to ingest, adding request to priority queue
+    ///
+    /// The processing is the same but the priority queue is for images that need to be processed quickly.
+    /// Only Image assets are supported
     /// </summary>
     /// <param name="customerId">Id of customer to create batch for</param>
     /// <param name="images">Hydra collection of assets to add to batch</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Hydra JSON-LD Batch object</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST: /customers/99/queue/priority
+    ///     {
+    ///         "@context": "http://www.w3.org/ns/hydra/context.jsonld",
+    ///         "@type": "Collection",
+    ///         "member": [
+    ///         {
+    ///             "id": "foo",
+    ///             "space": 1,
+    ///             "origin": "https://example.origin/foo.jpg",
+    ///             "family": "I",
+    ///             "mediaType": "image/jpeg"
+    ///         }
+    ///     }
+    /// </remarks>
     [HttpPost]
     [Route("priority")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreatePriorityBatch(
         [FromRoute] int customerId,
         [FromBody] HydraCollection<DLCS.HydraModel.Image> images,
@@ -113,15 +159,14 @@ public class CustomerQueueController : HydraController
     }
 
     /// <summary>
-    /// GET /customers/{customerId}/queue/priority
-    ///
     /// Get details of priority customer queue
     /// </summary>
     /// <param name="customerId">Id of customer</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [Route("priority")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCustomerPriorityQueue([FromRoute] int customerId, 
         CancellationToken cancellationToken)
     {
@@ -136,16 +181,16 @@ public class CustomerQueueController : HydraController
     }
 
     /// <summary>
-    /// GET /customers/{customerId}/queue/batches/{batchId}
-    /// 
-    /// Get details of specified batches 
+    /// Get details of specified batch 
     /// </summary>
     /// <param name="customerId">Id of customer</param>
     /// <param name="batchId">Id of batch to load</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [Route("batches/{batchId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBatch([FromRoute] int customerId, [FromRoute] int batchId, 
         CancellationToken cancellationToken)
     {
@@ -160,18 +205,31 @@ public class CustomerQueueController : HydraController
     }
 
     /// <summary>
-    /// GET /customers/{customerId}/queue/batches/{batchId}/images
-    /// 
-    /// Get details of all images within batch.
+    /// Get details of all images within specified batch.
+    ///
+    /// Supports the following query parameters:
+    ///   ?q= parameter for filtering
+    ///   ?orderBy= and ?orderByDescending= for ordering
+    ///   ?page= and ?pageSize= for paging 
     /// </summary>
     /// <param name="customerId">Id of customer</param>
     /// <param name="batchId">Id of batch to load images from</param>
     /// <param name="q">
     /// Optional query parameter. A serialised JSON <see cref="AssetFilter"/> object</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Hydra JSON-LD Queue object</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET: /customers/1/queue/12345/images?q={"string1":"metadata-value"}
+    ///     GET: /customers/1/queue/12345/images?orderByDescending=width
+    ///     GET: /customers/1/queue/12345/images?orderBy=height
+    ///     GET: /customers/1/queue/12345/images?orderBy=width&page=2&pageSize=10
+    /// </remarks>
     [HttpGet]
     [Route("batches/{batchId}/images")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBatchImages([FromRoute] int customerId, [FromRoute] int batchId,
         [FromQuery] string? q = null, CancellationToken cancellationToken = default)
     {
@@ -193,20 +251,26 @@ public class CustomerQueueController : HydraController
     }
 
     /// <summary>
-    /// POST /customers/{customerId}/queue/batches/{batchId}test
+    /// Tests batch to check if superseded or completed and updates underlying batch accordingly.
     ///
-    /// Tests batch to check if superseded or completed and updates accordingly.
-    /// 
+    /// Post empty body.
     /// </summary>
     /// <param name="customerId">Id of customer</param>
     /// <param name="batchId">Id of batch to test</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>
     /// If batch found will always return a 200. Content will be { "success" : true } if batch has been updated (ie
     /// superseded or complete), or { "success": false } if batch found but not modified
     /// </returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST: /customers/1/queue/batches/12345/test
+    ///     { }
+    /// </remarks>
     [HttpPost]
     [Route("batches/{batchId}/test")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> TestBatch([FromRoute] int customerId, [FromRoute] int batchId,
         CancellationToken cancellationToken = default)
     {
@@ -222,15 +286,16 @@ public class CustomerQueueController : HydraController
     }
 
     /// <summary>
-    /// GET /customers/{customerId}/queue/batches
+    /// Get details of all customer batches.
     ///
-    /// Get details of all customer batches 
+    /// Supports ?page= and ?pageSize= query parameters for paging 
     /// </summary>
     /// <param name="customerId">Id of customer</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [Route("batches")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBatches([FromRoute] int customerId, CancellationToken cancellationToken)
     {
         var getBatches = new GetBatches(customerId);
@@ -243,12 +308,12 @@ public class CustomerQueueController : HydraController
     }
 
     /// <summary>
-    /// GET /customers/{customerId}/queue/active
+    /// Get details of customer active batches. An "active" batch is one that is incomplete and has not been superseded.
     ///
-    /// Get details of customer active batches. An "active" batch is one that is incomplete and has not been superseded 
+    /// Supports ?page= and ?pageSize= query parameters for paging  
     /// </summary>
     /// <param name="customerId">Id of customer</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [Route("active")]
@@ -264,12 +329,12 @@ public class CustomerQueueController : HydraController
     }
     
     /// <summary>
-    /// GET /customers/{customerId}/queue/recent
-    ///
     /// Get details of customer recent batches. These are all batches that are finished, ordered by latest finished.
+    ///
+    /// Supports ?page= and ?pageSize= query parameters for paging 
     /// </summary>
     /// <param name="customerId">Id of customer</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [Route("recent")]

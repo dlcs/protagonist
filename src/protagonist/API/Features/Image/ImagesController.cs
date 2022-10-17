@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
+﻿using System.Collections.Generic;
 using API.Converters;
 using API.Exceptions;
 using API.Features.Image.Requests;
@@ -39,14 +36,25 @@ public class ImagesController : HydraController
     }
     
     /// <summary>
-    /// GET /customers/{customerId}/spaces/{spaceId}/images
-    /// 
-    /// A page of images within a Space.
+    /// Get a page of images within space
+    ///
+    /// Supports the following query parameters:
+    ///   ?q= parameter for filtering
+    ///   ?orderBy= and ?orderByDescending= for ordering
+    ///   ?page= and ?pageSize= for paging 
     /// </summary>
     /// <param name="customerId">Id of customer</param>
     /// <param name="spaceId">Id of space to load images from</param>
     /// <param name="q">A serialised JSON <see cref="AssetFilter"/> object</param>
     /// <returns>A Hydra Collection of Image objects as JSON-LD</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET: /customers/1/spaces/5/images?q={"string1":"metadata-value"}
+    ///     GET: /customers/1/spaces/5/images?orderByDescending=width
+    ///     GET: /customers/1/spaces/5/images?orderBy=height
+    ///     GET: /customers/1/spaces/5/images?orderBy=width&page=2&pageSize=10
+    /// </remarks>
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
     [ProducesResponseType(404, Type = typeof(Error))]
@@ -71,8 +79,6 @@ public class ImagesController : HydraController
     }
 
     /// <summary>
-    /// PATCH /customers/{customerId}/spaces/{spaceId}/images
-    /// 
     /// PATCH a collection of images.
     /// This is for bulk patch operations on images in the same space.
     /// </summary>
@@ -80,6 +86,20 @@ public class ImagesController : HydraController
     /// <param name="spaceId">(from resource path)</param>
     /// <param name="images">The JSON-LD request body, a HydraCollection of Hydra Image objects.</param>
     /// <returns>A HydraCollection of the updated Assets, as Hydra Image objects.</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     PATCH: /customers/1/spaces/5/images
+    ///     {
+    ///         "@context": "http://www.w3.org/ns/hydra/context.jsonld",
+    ///         "@type": "Collection",
+    ///         "member": [
+    ///         {
+    ///             "id": "identifier-1",
+    ///             "string3": "patched"
+    ///         }]
+    ///     }
+    /// </remarks>
     [HttpPatch]
     [ProducesResponseType(200, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
     [ProducesResponseType(400, Type = typeof(Error))]
@@ -87,8 +107,6 @@ public class ImagesController : HydraController
         [FromRoute] int customerId, [FromRoute] int spaceId,
         [FromBody] HydraCollection<DLCS.HydraModel.Image> images)
     {
-        // DELIVERATOR: https://github.com/digirati-co-uk/deliverator/blob/master/API/Architecture/Request/API/Entities/CustomerSpaceImages.cs#L147
-            
         var patchedAssets = new List<Asset>();
             
         // Should there be a size limit on how many assets can be patched in a single go?

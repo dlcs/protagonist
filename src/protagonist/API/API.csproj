@@ -5,11 +5,11 @@
         <Nullable>enable</Nullable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <LangVersion>default</LangVersion>
+        <NoWarn>$(NoWarn);1591</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="Amazon.Extensions.Configuration.SystemsManager" Version="2.1.0" />
-      <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="6.0.3" />
       <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.150" />
       <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.2.1" />
       <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />
@@ -28,7 +28,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\API.Client\API.Client.csproj" />
       <ProjectReference Include="..\DLCS.AWS\DLCS.AWS.csproj" />
       <ProjectReference Include="..\DLCS.HydraModel\DLCS.HydraModel.csproj" />
       <ProjectReference Include="..\DLCS.Mediatr\DLCS.Mediatr.csproj" />

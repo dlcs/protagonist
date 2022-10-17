@@ -9,6 +9,7 @@ using DLCS.Core.Types;
 using DLCS.HydraModel;
 using Hydra.Model;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -21,7 +22,6 @@ namespace API.Features.Image;
 [ApiController]
 public class ImageController : HydraController
 {
-    /// <inheritdoc />
     public ImageController(
         IMediator mediator,
         IOptions<ApiSettings> options) : base(options.Value, mediator)
@@ -29,13 +29,8 @@ public class ImageController : HydraController
     }
 
     /// <summary>
-    /// GET /customers/{customerId}/spaces/{spaceId}/images/{imageId}
-    /// 
-    /// A single Hydra Image.
+    /// Get details of a single Hydra Image.
     /// </summary>
-    /// <param name="customerId">(from resource path)</param>
-    /// <param name="spaceId">(from resource path)</param>
-    /// <param name="imageId">(from resource path)</param>
     /// <returns>A Hydra JSON-LD Image object representing the Asset.</returns>
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(DLCS.HydraModel.Image))]
@@ -52,15 +47,26 @@ public class ImageController : HydraController
     }
 
     /// <summary>
-    /// PUT /customers/{customerId}/spaces/{spaceId}/images/{imageId}
-    /// 
-    /// PUT an asset to its ID location
+    /// Create or update asset at specified ID.
+    ///
+    /// PUT requests always trigger reingesting of asset - in general batch processing should be preferred.
+    ///
+    /// Image assets are ingested synchronously. Timebased assets are ingested asynchronously.
     /// </summary>
-    /// <param name="customerId">(from resource path)</param>
-    /// <param name="spaceId">(from resource path)</param>
-    /// <param name="imageId">(from resource path)</param>
     /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
     /// <returns>The created or updated Hydra Image object for the Asset</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     PUT: /customers/1/spaces/1/images/my-image
+    ///     {
+    ///         "@type":"Image",
+    ///         "family": "I",
+    ///         "origin": "https://example.text/.../image.jpeg",
+    ///         "mediaType": "image/jpeg",
+    ///         "string1": "my-metadata"
+    ///     }
+    /// </remarks>
     [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))]
     [ProducesResponseType((int)HttpStatusCode.Created, Type = typeof(DLCS.HydraModel.Image))]
     [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
@@ -80,15 +86,23 @@ public class ImageController : HydraController
     }
 
     /// <summary>
-    /// PATCH /customers/{customerId}/spaces/{spaceId}/images/{imageId}
+    /// Make a partial update to an existing asset resource.
+    ///
+    /// This may trigger a reingest depending on which fields have been updated.
     /// 
     /// PATCH asset at that location.
     /// </summary>
-    /// <param name="customerId">(from resource path)</param>
-    /// <param name="spaceId">(from resource path)</param>
-    /// <param name="imageId">(from resource path)</param>
     /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
-    /// <returns>The created or updated Hydra Image object for the Asset</returns>
+    /// <returns>The updated Hydra Image object for the Asset</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     PATCH: /customers/1/spaces/1/images/my-image
+    ///     {
+    ///         "origin": "https://example.text/.../image.jpeg",
+    ///         "string1": "my-new-metadata"
+    ///     }
+    /// </remarks>
     [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))]
     [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
     [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(ProblemDetails))]
@@ -107,16 +121,9 @@ public class ImageController : HydraController
     }
 
     /// <summary>
-    /// DELETE /customers/{customerId}/spaces/{spaceId}/images/{imageId}
-    ///
     /// DELETE asset at specified location. This will remove asset immediately, generated derivatives will be picked up
     /// and processed eventually. 
     /// </summary>
-    /// <param name="customerId">(from resource path)</param>
-    /// <param name="spaceId">(from resource path)</param>
-    /// <param name="imageId">(from resource path)</param>
-    /// <param name="cancellationToken">Current cancellation token</param>
-    /// <returns></returns>
     [ProducesResponseType((int)HttpStatusCode.NoContent)]
     [ProducesResponseType((int)HttpStatusCode.NotFound)]
     [HttpDelete]
@@ -136,13 +143,14 @@ public class ImageController : HydraController
     }
 
     /// <summary>
-    /// POST /customers/{customerId}/spaces/{spaceId}/images/{imageId}/reingest
+    /// Reingest asset at specified location
     /// </summary>
-    /// <param name="customerId">(from resource path)</param>
-    /// <param name="spaceId">(from resource path)</param>
-    /// <param name="imageId">(from resource path)</param>
-    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>The reingested Hydra Image object for the Asset</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST /customers/99/spaces/10/images/changed_image/reingest
+    /// </remarks>
     [ProducesResponseType((int)HttpStatusCode.OK)]
     [ProducesResponseType((int)HttpStatusCode.NotFound)]
     [ProducesResponseType((int)HttpStatusCode.BadRequest)]
@@ -160,9 +168,7 @@ public class ImageController : HydraController
     }
 
     /// <summary>
-    /// POST /customers/{customerId}/spaces/{spaceId}/images/{imageId}
-    /// 
-    /// Ingest specified file bytes to DLCS.
+    /// Ingest specified file bytes to DLCS. Only "I" family assets are accepted.
     /// "File" property should be base64 encoded image. 
     /// </summary>
     /// <remarks>
@@ -209,13 +215,11 @@ public class ImageController : HydraController
     }
 
     /// <summary>
-    /// GET /customers/{customerId}/spaces/{spaceId}/images/{imageId}/metadata
-    ///
-    /// Get trancode metadata for Timebased assets
+    /// Get transcode metadata for Timebased assets
     /// </summary>
-    [ProducesResponseType((int)HttpStatusCode.OK)]
-    [ProducesResponseType((int)HttpStatusCode.NotFound)]
-    [ProducesResponseType((int)HttpStatusCode.BadRequest)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [HttpGet]
     [Route("metadata")]
     public async Task<IActionResult> GetAssetMetadata([FromRoute] int customerId, [FromRoute] int spaceId,

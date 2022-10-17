@@ -1,15 +1,12 @@
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using DLCS.Core.Strings;
 using DLCS.Model.Spaces;
-using DLCS.Repository;
 using MediatR;
 
 namespace API.Features.Space.Requests;
 
 /// <summary>
-/// 
+/// Make a partial updated to an existing space
 /// </summary>
 public class PatchSpace : IRequest<PatchSpaceResult>
 {
@@ -23,8 +20,8 @@ public class PatchSpace : IRequest<PatchSpaceResult>
 
 public class PatchSpaceResult
 {
-    public DLCS.Model.Spaces.Space? Space;
-    public List<string> ErrorMessages = new List<string>();
+    public DLCS.Model.Spaces.Space? Space { get; set; }
+    public List<string> ErrorMessages { get; } = new();
     public bool Conflict { get; set; }
 }
 

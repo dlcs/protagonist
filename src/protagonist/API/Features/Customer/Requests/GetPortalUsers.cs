@@ -1,7 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using DLCS.Model.Customers;
 using DLCS.Repository;
 using MediatR;
@@ -9,9 +6,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Customer.Requests;
 
+/// <summary>
+/// Get a list of all portal users for customer
+/// </summary>
 public class GetPortalUsers : IRequest<IList<User>>
 {
-    public int CustomerId { get; set; }
+    public int CustomerId { get; }
+
+    public GetPortalUsers(int customerId)
+    {
+        CustomerId = customerId;
+    }
 }
 
 public class GetPortalUsersHandler : IRequestHandler<GetPortalUsers, IList<User>>

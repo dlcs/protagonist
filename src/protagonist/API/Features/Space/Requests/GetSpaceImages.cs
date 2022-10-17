@@ -1,7 +1,4 @@
-using System.Linq;
 using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 using API.Exceptions;
 using API.Infrastructure.Requests;
 using DLCS.Model.Assets;
@@ -14,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Space.Requests;
 
+/// <summary>
+/// Get a paged results of images in specified space.
+/// </summary>
 public class GetSpaceImages : IRequest<FetchEntityResult<PageOf<Asset>>>, IPagedRequest, IOrderableRequest
 {
     public GetSpaceImages(int spaceId, int? customerId = null, AssetFilter? assetFilter = null)

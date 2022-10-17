@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using API.Settings;
+﻿using API.Settings;
 using DLCS.Core.Collections;
 using DLCS.HydraModel;
 using FluentValidation;

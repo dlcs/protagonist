@@ -1,10 +1,7 @@
-using System.Threading;
-using System.Threading.Tasks;
 using API.Exceptions;
 using DLCS.Model.Customers;
 using DLCS.Model.Spaces;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace API.Features.Space.Requests;
 
@@ -13,8 +10,8 @@ namespace API.Features.Space.Requests;
 /// </remark>
 public class CreateSpace : IRequest<DLCS.Model.Spaces.Space>
 {
-    public string Name { get; set; }
-    public int Customer { get; set; }
+    public string Name { get; }
+    public int Customer { get; }
     public string? ImageBucket { get; set; } = string.Empty;
     public string[]? Tags { get; set; }
     public string[]? Roles { get; set; }
@@ -32,17 +29,13 @@ public class CreateSpaceHandler : IRequestHandler<CreateSpace, DLCS.Model.Spaces
 {
     private readonly ISpaceRepository spaceRepository;
     private readonly ICustomerRepository customerRepository;
-    private readonly ILogger<CreateSpaceHandler> logger;
 
     public CreateSpaceHandler(
         ISpaceRepository spaceRepository,
-        ICustomerRepository customerRepository,
-        ILogger<CreateSpaceHandler> logger)
+        ICustomerRepository customerRepository)
     {
         this.spaceRepository = spaceRepository;
         this.customerRepository = customerRepository;
-        this.logger = logger;
-        
     }
     
     public async Task<DLCS.Model.Spaces.Space> Handle(CreateSpace request, CancellationToken cancellationToken)

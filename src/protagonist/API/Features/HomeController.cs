@@ -4,13 +4,11 @@ using DLCS.Web.Requests;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Features;
 
-/// <summary>
-/// 
-/// </summary>
 [Route("/")]
 [ApiController]
 public class HomeController : Controller
@@ -23,12 +21,11 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// GET /
-    ///
-    /// Get EntryPoint object
+    /// Main EntryPoint of API, containing Hypermedia links
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public EntryPoint Index()
     {
         return new(Request.GetBaseUrl());

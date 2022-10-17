@@ -6,9 +6,6 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using MediatR;
 
-#pragma warning disable CS8618
-#pragma warning disable CS1591
-
 namespace API.Features.Image.Requests;
 
 /// <summary>

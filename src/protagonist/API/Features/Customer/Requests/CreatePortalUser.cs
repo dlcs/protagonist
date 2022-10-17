@@ -1,6 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using API.Settings;
 using DLCS.Core.Collections;
 using DLCS.Core.Encryption;
@@ -9,11 +6,13 @@ using DLCS.Model.Customers;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Customer.Requests;
 
+/// <summary>
+/// Create a new Portal user with specified password
+/// </summary>
 public class CreatePortalUser : IRequest<CreatePortalUserResult>
 {
     public User PortalUser { get; set; }
@@ -32,18 +31,15 @@ public class CreatePortalUserResult
 public class CreatePortalUserHandler : IRequestHandler<CreatePortalUser, CreatePortalUserResult>
 {
     private readonly DlcsContext dbContext;
-    private readonly ILogger<CreatePortalUserHandler> logger;
     private readonly IEncryption encryption;
     private readonly ApiSettings settings;
 
     public CreatePortalUserHandler(
         DlcsContext dbContext,
-        ILogger<CreatePortalUserHandler> logger,
         IEncryption encryption,
         IOptions<ApiSettings> options)
     {
         this.dbContext = dbContext;
-        this.logger = logger;
         this.encryption = encryption;
         settings = options.Value;
     }

@@ -21,11 +21,10 @@ public class QueueController : HydraController
     }
     
     /// <summary>
-    /// GET /queue
+    /// Get counts of requests per queue.
     ///
-    /// Get counts of requests per queue
+    /// This includes DLCS-internal queue's and external queues (e.g. SQS) 
     /// </summary>
-    /// <param name="cancellationToken"></param>
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [AllowAnonymous]
