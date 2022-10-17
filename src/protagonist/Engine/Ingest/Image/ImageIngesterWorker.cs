@@ -92,7 +92,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker
         var root = imageIngest.GetRoot();
             
         // source is the main folder for storing downloaded image
-        var assetId = asset.GetAssetId();
+        var assetId = asset.Id;
         var source = TemplatedFolders.GenerateFolderTemplate(imageIngest.SourceTemplate, assetId, root: root);
         return source;
     }

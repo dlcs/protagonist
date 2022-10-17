@@ -236,7 +236,7 @@ public class IIIFCanvasFactory
         var request = new BasicPathElements
         {
             Space = asset.Space,
-            AssetPath = $"{asset.GetUniqueName()}/full/{size.Width},{size.Height}/0/default.jpg",
+            AssetPath = $"{asset.Id.Asset}/full/{size.Width},{size.Height}/0/default.jpg",
             RoutePrefix = isThumb ? orchestratorSettings.Proxy.ThumbsPath : orchestratorSettings.Proxy.ImagePath,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
@@ -258,7 +258,7 @@ public class IIIFCanvasFactory
         var imageRequest = new BasicPathElements
         {
             Space = asset.Space,
-            AssetPath = asset.GetUniqueName(),
+            AssetPath = asset.Id.Asset,
             RoutePrefix = $"{routePrefix}{versionPart}",
             CustomerPathValue = customerPathElement.Id.ToString(),
         };

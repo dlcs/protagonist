@@ -30,7 +30,7 @@ public static class AssetConverter
                 $"Asset {dbAsset.Id} does not start with expected prefix {dbAsset.Customer}/{dbAsset.Space}/");
         }
 
-        var modelId = dbAsset.GetUniqueName();
+        var modelId = dbAsset.Id.Asset;
         
         var image = new Image(urlRoots.BaseUrl, dbAsset.Customer, dbAsset.Space, modelId)
         {

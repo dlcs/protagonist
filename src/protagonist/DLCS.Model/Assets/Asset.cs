@@ -100,17 +100,6 @@ public class Asset
     /// </summary>
     public string GetIngestOrigin()
         => string.IsNullOrWhiteSpace(InitialOrigin) ? Origin : InitialOrigin;
-    
-    /// <summary>
-    /// Get the identifier part from from Id.
-    /// Id contains {cust}/{space}/{identifier}
-    /// </summary>
-    /// <returns></returns>
-    [Obsolete("Use Id.Asset instead")]
-    public string GetUniqueName()
-    {
-        return Id.Asset;
-    }
 
     /// <summary>
     /// Full thumbnail policy object for Asset

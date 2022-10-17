@@ -320,7 +320,7 @@ public class AppetiserClientTests
             .WithThumbnailPolicy(new ThumbnailPolicy());
 
         var context = new IngestionContext(asset);
-        return context.WithAssetFromOrigin(new AssetFromOrigin(asset.GetAssetId(), 123, "./scratch/here.jpg",
+        return context.WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "./scratch/here.jpg",
             contentType));
     }
 }

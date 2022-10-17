@@ -102,7 +102,7 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
             }
             else
             {
-                var largestThumb = StorageKeyGenerator.GetLargestThumbnailLocation(i.GetAssetId());
+                var largestThumb = StorageKeyGenerator.GetLargestThumbnailLocation(i.Id);
                 playbook.Pages.Add(FireballPage.Image(largestThumb.GetS3Uri().ToString()));
             }
         }
