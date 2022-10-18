@@ -4,6 +4,7 @@ using DLCS.AWS.S3;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Thumbs;
 using DLCS.Model.Policies;
+using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Assets.Thumbs;
 using DLCS.Repository.Policies;
@@ -26,8 +27,7 @@ public static class ServiceCollectionX
     public static IServiceCollection AddThumbnailHandling(this IServiceCollection services, ThumbsSettings settings)
     {
         services
-            .AddSingleton<ThumbnailHandler>()
-            .AddSingleton<IPolicyRepository, PolicyRepository>();
+            .AddSingleton<ThumbnailHandler>();
 
         if (settings.EnsureNewThumbnailLayout)
         {
@@ -35,6 +35,7 @@ public static class ServiceCollectionX
             // decorator for default IThumbRespositry
             Log.Information("Thumbs supports reorganising thumbs");
             services
+                .AddSingleton<IThumbnailPolicyRepository, DapperThumbnailPolicy>()
                 .AddSingleton<ThumbRepository>()
                 .AddSingleton<IThumbRepository>(provider =>
                     ActivatorUtilities.CreateInstance<ReorganisingThumbRepository>(
