@@ -4,7 +4,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
-using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Threading;
 using DLCS.Core.Types;
@@ -26,7 +25,7 @@ public class ThumbReorganiser : ThumbsManager, IThumbReorganiser
     private readonly IBucketReader bucketReader;
     private readonly ILogger<ThumbReorganiser> logger;
     private readonly IAssetRepository assetRepository;
-    private readonly IPolicyRepository policyRepository;
+    private readonly IThumbnailPolicyRepository policyRepository;
     private readonly AsyncKeyedLock asyncLocker = new();
     private static readonly Regex BoundedThumbRegex = new("^[0-9]+.jpg$");
 
@@ -35,7 +34,7 @@ public class ThumbReorganiser : ThumbsManager, IThumbReorganiser
         IBucketWriter bucketWriter,
         ILogger<ThumbReorganiser> logger,
         IAssetRepository assetRepository,
-        IPolicyRepository policyRepository,
+        IThumbnailPolicyRepository policyRepository,
         IStorageKeyGenerator storageKeyGenerator) : base(bucketWriter, storageKeyGenerator)
     {
         this.bucketReader = bucketReader;

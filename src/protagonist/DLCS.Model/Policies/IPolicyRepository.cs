@@ -1,17 +1,11 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 
 namespace DLCS.Model.Policies;
 
-public interface IPolicyRepository
+public interface IPolicyRepository : IThumbnailPolicyRepository
 {
-    /// <summary>
-    /// Get ThumbnailPolicy with specified Id.
-    /// </summary>
-    Task<ThumbnailPolicy?> GetThumbnailPolicy(string thumbnailPolicyId, CancellationToken cancellationToken = default);
-
     /// <summary>
     /// Get ImageOptimisationPolicy with specified Id.
     /// </summary>
