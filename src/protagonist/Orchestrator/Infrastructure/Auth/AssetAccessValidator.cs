@@ -92,8 +92,6 @@ public class AssetAccessValidator : IAssetAccessValidator
         Func<Task<AuthToken?>> getAuthToken, bool setCookieInResponse)
     {
         var assetRoles = roles.ToList();
-        if (assetRoles.IsNullOrEmpty()) return AssetAccessResult.Open;
-
         var authToken = await getAuthToken();
         
         if (authToken?.SessionUser == null)
