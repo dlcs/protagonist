@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
@@ -111,7 +112,7 @@ public class FireballPdfCreatorTests
         var images = Builder<Asset>
             .CreateListOfSize(10)
             .All()
-            .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
+            .With(a => a.Id = AssetId.FromString($"/{a.Customer}/{a.Space}/{a.Origin}"))
             .Build()
             .ToList();
 
@@ -136,7 +137,7 @@ public class FireballPdfCreatorTests
         var images = Builder<Asset>
             .CreateListOfSize(10)
             .All()
-            .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
+            .With(a => a.Id = AssetId.FromString($"/{a.Customer}/{a.Space}/{a.Origin}"))
             .Build()
             .ToList();
 
@@ -165,7 +166,7 @@ public class FireballPdfCreatorTests
         var images = Builder<Asset>
             .CreateListOfSize(10)
             .All()
-            .With(a => a.Id = $"/{a.Customer}/{a.Space}/{a.Origin}")
+            .With(a => a.Id = AssetId.FromString($"/{a.Customer}/{a.Space}/{a.Origin}"))
             .Build()
             .ToList();
 
@@ -202,31 +203,31 @@ public class FireballPdfCreatorTests
             new()
             {
                 Roles = "whitelist",
-                Id = "/99/1/image1.jpg",
+                Id = AssetId.FromString("/99/1/image1.jpg"),
                 MaxUnauthorised = 0
             },
             new ()
             {
                 Roles = "whitelist,notwhitelist",
-                Id = "/99/1/image1.jpg",
+                Id = AssetId.FromString("/99/1/image1.jpg"),
                 MaxUnauthorised = 0
             },
             new ()
             {
                 Roles = "notwhitelist",
-                Id = "/99/1/image1.jpg",
+                Id = AssetId.FromString("/99/1/image1.jpg"),
                 MaxUnauthorised = 0
             },
             new ()
             {
                 Roles = String.Empty,
-                Id = "/99/1/image1.jpg",
+                Id = AssetId.FromString("/99/1/image1.jpg"),
                 MaxUnauthorised = -1
             },
             new ()
             {
                 Roles = String.Empty,
-                Id = "/99/1/image1.jpg",
+                Id = AssetId.FromString("/99/1/image1.jpg"),
                 MaxUnauthorised = -1
             }
         };

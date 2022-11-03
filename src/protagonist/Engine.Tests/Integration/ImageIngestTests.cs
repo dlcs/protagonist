@@ -75,7 +75,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task IngestAsset_Success_HttpOrigin_AllOpen()
     {
         // Arrange
-        const string assetId = $"99/1/{nameof(IngestAsset_Success_HttpOrigin_AllOpen)}";
+        var assetId = AssetId.FromString( $"99/1/{nameof(IngestAsset_Success_HttpOrigin_AllOpen)}");
 
         // Note - API will have set this up before handing off
         var origin = $"{apiStub.Address}/image";
@@ -94,7 +94,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         result.Should().BeSuccessful();
         
         // S3 assets created
-        BucketWriter.ShouldHaveKey(assetId).ForBucket(LocalStackFixture.StorageBucketName);
+        BucketWriter.ShouldHaveKey(assetId.ToString()).ForBucket(LocalStackFixture.StorageBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/low.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/200.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/400.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
@@ -122,7 +122,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task IngestAsset_Success_HttpOrigin_InitialOrigin_AllOpen()
     {
         // Arrange
-        const string assetId = $"99/1/{nameof(IngestAsset_Success_HttpOrigin_InitialOrigin_AllOpen)}";
+        var assetId = AssetId.FromString($"99/1/{nameof(IngestAsset_Success_HttpOrigin_InitialOrigin_AllOpen)}");
 
         // Note - API will have set this up before handing off
         var initial = $"{apiStub.Address}/image";
@@ -143,7 +143,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         result.Should().BeSuccessful();
         
         // S3 assets created
-        BucketWriter.ShouldHaveKey(assetId).ForBucket(LocalStackFixture.StorageBucketName);
+        BucketWriter.ShouldHaveKey(assetId.ToString()).ForBucket(LocalStackFixture.StorageBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/low.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/200.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/400.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
@@ -173,7 +173,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         // Create a new customer to have control over CustomerStorage and make sure it's isolated
         const int customerId = -10;
-        var assetId = $"{customerId}/1/{nameof(IngestAsset_Error_ExceedAllowance)}";
+        var assetId = AssetId.FromString($"{customerId}/1/{nameof(IngestAsset_Error_ExceedAllowance)}");
 
         // Note - API will have set this up before handing off
         var origin = $"{apiStub.Address}/image";
@@ -197,7 +197,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         result.StatusCode.Should().Be(HttpStatusCode.InsufficientStorage);
 
         // No S3 assets created
-        BucketWriter.ShouldNotHaveKey(assetId);
+        BucketWriter.ShouldNotHaveKey(assetId.ToString());
         
         // Database records updated
         var updatedAsset = await dbContext.Images.SingleAsync(a => a.Id == assetId);
@@ -218,7 +218,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task IngestAsset_Error_HttpOrigin()
     {
         // Arrange
-        const string assetId = $"99/1/{nameof(IngestAsset_Error_HttpOrigin)}";
+        var assetId = AssetId.FromString($"99/1/{nameof(IngestAsset_Error_HttpOrigin)}");
 
         // Note - API will have set this up before handing off
         var origin = $"{apiStub.Address}/this-will-fail";
@@ -237,7 +237,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         result.Should().HaveServerError();
 
         // No S3 assets created
-        BucketWriter.ShouldNotHaveKey(assetId);
+        BucketWriter.ShouldNotHaveKey(assetId.ToString());
         
         // Database records updated
         var updatedAsset = await dbContext.Images.SingleAsync(a => a.Id == assetId);

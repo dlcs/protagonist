@@ -241,7 +241,7 @@ public static class AssetPreparer
         // So we need a set of default values to fill in any nulls.
         DefaultAsset = new Asset
         {
-            Id = string.Empty,
+            Id = null,
             Customer = 0,
             Space = 0,
             Created = DateTime.MinValue.ToUniversalTime(),

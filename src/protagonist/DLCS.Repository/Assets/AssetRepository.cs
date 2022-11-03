@@ -35,26 +35,24 @@ public class AssetRepository : AssetRepositoryCachingBase
     public override async Task<ImageLocation?> GetImageLocation(AssetId assetId)
         => await dlcsContext.ImageLocations.FindAsync(assetId.ToString());
 
-    protected override async Task<ResultStatus<DeleteResult>> DeleteAssetFromDatabase(string id)
+    protected override async Task<ResultStatus<DeleteResult>> DeleteAssetFromDatabase(AssetId assetId)
     {
         try
         {
             // Delete Asset
-            var toDelete = new Asset { Id = id };
+            var toDelete = new Asset { Id = assetId };
             dlcsContext.Images.Attach(toDelete);
             dlcsContext.Images.Remove(toDelete);
 
             // And related ImageLocation
-            var imageLocation = new ImageLocation { Id = id };
+            var imageLocation = new ImageLocation { Id = assetId };
             dlcsContext.ImageLocations.Attach(imageLocation);
             dlcsContext.ImageLocations.Remove(imageLocation);
-
-            var assetId = AssetId.FromString(id);
             var customer = assetId.Customer;
             var space = assetId.Space;
             
             var imageStorage =
-                await dlcsContext.ImageStorages.FindAsync(id, customer, space);
+                await dlcsContext.ImageStorages.FindAsync(assetId, customer, space);
             if (imageStorage != null)
             {
                 // And related ImageStorage record
@@ -105,17 +103,17 @@ public class AssetRepository : AssetRepositoryCachingBase
             }
             else
             {
-                Logger.LogError(dbEx, "Concurrency exception deleting Asset {AssetId}", id);
+                Logger.LogError(dbEx, "Concurrency exception deleting Asset {AssetId}", assetId);
                 return ResultStatus<DeleteResult>.Unsuccessful(DeleteResult.Error);
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error deleting asset {AssetId}", id);
+            Logger.LogError(ex, "Error deleting asset {AssetId}", assetId);
             return ResultStatus<DeleteResult>.Unsuccessful(DeleteResult.Error);
         }
     }
 
-    protected override async Task<Asset?> GetAssetFromDatabase(string id) =>
-        await dlcsContext.Images.AsNoTracking().SingleOrDefaultAsync(i => i.Id == id);
+    protected override async Task<Asset?> GetAssetFromDatabase(AssetId assetId) =>
+        await dlcsContext.Images.AsNoTracking().SingleOrDefaultAsync(i => i.Id == assetId);
 }

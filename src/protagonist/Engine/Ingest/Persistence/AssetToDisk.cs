@@ -62,7 +62,7 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
         destinationTemplate.ThrowIfNullOrWhiteSpace(nameof(destinationTemplate));
 
         var originResponse =
-            await originFetcher.LoadAssetFromLocation(asset.GetAssetId(), asset.GetIngestOrigin(),
+            await originFetcher.LoadAssetFromLocation(asset.Id, asset.GetIngestOrigin(),
                 customerOriginStrategy, cancellationToken);
 
         if (originResponse == null || originResponse.Stream.IsNull())
@@ -91,12 +91,12 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
         TrySetContentTypeForBinary(originResponse, asset);
         var extension = GetFileExtension(originResponse);
         
-        var targetPath = $"{Path.Join(destinationTemplate, asset.GetUniqueName())}.{extension}";
+        var targetPath = $"{Path.Join(destinationTemplate, asset.Id.Asset)}.{extension}";
 
-        var received = await fileSaver.SaveResponseToDisk(asset.GetAssetId(), originResponse, targetPath,
+        var received = await fileSaver.SaveResponseToDisk(asset.Id, originResponse, targetPath,
             cancellationToken);
         
-        return new AssetFromOrigin(asset.GetAssetId(), received, targetPath, originResponse.ContentType);
+        return new AssetFromOrigin(asset.Id, received, targetPath, originResponse.ContentType);
     }
     
     // TODO - this may need refined depending on whether it's 'I' or 'T' ingest
@@ -113,7 +113,7 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
         var contentType = originResponse.ContentType;
         if (string.IsNullOrWhiteSpace(contentType) || IsBinaryContent(contentType))
         {
-            var uniqueName = asset.GetUniqueName();
+            var uniqueName = asset.Id.Asset;
             
             var guess = GuessContentType(asset.GetIngestOrigin());
             if (string.IsNullOrEmpty(guess))
@@ -150,7 +150,7 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
     
     private async Task VerifyFileSize(Asset asset, AssetFromOrigin assetFromOrigin)
     {
-        var customerHasEnoughSize = await VerifyFileSize(asset.GetAssetId(), assetFromOrigin.AssetSize);
+        var customerHasEnoughSize = await VerifyFileSize(asset.Id, assetFromOrigin.AssetSize);
 
         if (!customerHasEnoughSize)
         {

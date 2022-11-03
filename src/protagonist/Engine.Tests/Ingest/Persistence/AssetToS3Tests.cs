@@ -56,7 +56,7 @@ public class AssetToS3Tests
         // Arrange
         var asset = new Asset
         {
-            Customer = 99, Space = 1, Id = "99/1/balrog",
+            Customer = 99, Space = 1, Id = AssetId.FromString("99/1/balrog"),
             Origin = "s3://eu-west-1/origin/large_file.mov"
         };
         var originStrategy = new CustomerOriginStrategy
@@ -67,7 +67,7 @@ public class AssetToS3Tests
         A.CallTo(() => bucketWriter.CopyLargeObject(A<ObjectInBucket>._, A<ObjectInBucket>._,
                 A<Func<long, Task<bool>>>._, false, A<CancellationToken>._))
             .Returns(new LargeObjectCopyResult(LargeObjectStatus.Success, 100));
-        A.CallTo(() => storageKeyGenerator.GetTimebasedInputLocation(asset.GetAssetId()))
+        A.CallTo(() => storageKeyGenerator.GetTimebasedInputLocation(asset.Id))
             .Returns(new ObjectInBucket("fantasy", "99/1/balrog/1234"));
 
         var ct = new CancellationToken();
@@ -92,8 +92,8 @@ public class AssetToS3Tests
 
         var asset = new Asset
         {
-            Customer = 99, Space = 1, Id = "99/1/balrog", Origin = "s3://eu-west-1/origin/large_file.mov",
-            MediaType = mediaType
+            Customer = 99, Space = 1, Id = AssetId.FromString("99/1/balrog"),
+            Origin = "s3://eu-west-1/origin/large_file.mov", MediaType = mediaType
         };
         var originStrategy = new CustomerOriginStrategy
         {
@@ -104,7 +104,7 @@ public class AssetToS3Tests
                 A<Func<long, Task<bool>>>._, false, A<CancellationToken>._))
             .Returns(new LargeObjectCopyResult(LargeObjectStatus.Success, assetSize));
 
-        var expected = new AssetFromOrigin(asset.GetAssetId(), assetSize, "s3://fantasy/test-key", mediaType);
+        var expected = new AssetFromOrigin(asset.Id, assetSize, "s3://fantasy/test-key", mediaType);
 
         var ct = new CancellationToken();
 
@@ -124,8 +124,8 @@ public class AssetToS3Tests
 
         var asset = new Asset
         {
-            Customer = 99, Space = 1, Id = "99/1/balrog", Origin = "s3://eu-west-1/origin/large_file.mov",
-            MediaType = mediaType
+            Customer = 99, Space = 1, Id = AssetId.FromString("99/1/balrog"), 
+            Origin = "s3://eu-west-1/origin/large_file.mov", MediaType = mediaType
         };
         var originStrategy = new CustomerOriginStrategy
         {
@@ -136,7 +136,7 @@ public class AssetToS3Tests
                 A<Func<long, Task<bool>>>._, false, A<CancellationToken>._))
             .Returns(new LargeObjectCopyResult(LargeObjectStatus.FileTooLarge, assetSize));
 
-        var expected = new AssetFromOrigin(asset.GetAssetId(), assetSize, "s3://fantasy/test-key", mediaType);
+        var expected = new AssetFromOrigin(asset.Id, assetSize, "s3://fantasy/test-key", mediaType);
         expected.FileTooLarge();
 
         var ct = new CancellationToken();
@@ -158,7 +158,7 @@ public class AssetToS3Tests
         // Arrange
         var asset = new Asset
         {
-            Customer = 99, Space = 1, Id = "99/1/balrog",
+            Customer = 99, Space = 1, Id = AssetId.FromString("99/1/balrog"),
             Origin = "s3://eu-west-1/origin/large_file.mov"
         };
         var originStrategy = new CustomerOriginStrategy
@@ -190,7 +190,7 @@ public class AssetToS3Tests
         // Arrange
         var asset = new Asset
         {
-            Customer = customerId, Space = 1, Id = $"{customerId}/1/balrog",
+            Customer = customerId, Space = 1, Id = AssetId.FromString($"{customerId}/1/balrog"),
             Origin = "s3://eu-west-1/origin/large_file.mov"
         };
         var originStrategy = new CustomerOriginStrategy
@@ -220,7 +220,7 @@ public class AssetToS3Tests
         // Arrange
         var asset = new Asset
         {
-            Customer = 1, Space = 1, Id = "1/1/balrog",
+            Customer = 1, Space = 1, Id = AssetId.FromString("1/1/balrog"),
             Origin = "s3://eu-west-1/origin/large_file.mov"
         };
         var originStrategy = new CustomerOriginStrategy
@@ -229,7 +229,7 @@ public class AssetToS3Tests
         };
         var ct = new CancellationToken();
 
-        var assetOnDisk = new AssetFromOrigin(asset.GetAssetId(), 1234, "1", "video/mpeg");
+        var assetOnDisk = new AssetFromOrigin(asset.Id, 1234, "1", "video/mpeg");
         assetOnDisk.FileTooLarge();
         A.CallTo(() =>
                 assetToDisk.CopyAssetToLocalDisk(asset, A<string>._, true, originStrategy, A<CancellationToken>._))
@@ -250,7 +250,7 @@ public class AssetToS3Tests
         // Arrange
         var asset = new Asset
         {
-            Customer = 1, Space = 1, Id = "1/1/balrog",
+            Customer = 1, Space = 1, Id = AssetId.FromString("1/1/balrog"),
             Origin = "s3://eu-west-1/origin/large_file.mov"
         };
         var originStrategy = new CustomerOriginStrategy
@@ -259,7 +259,7 @@ public class AssetToS3Tests
         };
         var ct = new CancellationToken();
 
-        var assetOnDisk = new AssetFromOrigin(asset.GetAssetId(), 1234, "1", "video/mpeg");
+        var assetOnDisk = new AssetFromOrigin(asset.Id, 1234, "1", "video/mpeg");
         A.CallTo(() =>
                 assetToDisk.CopyAssetToLocalDisk(asset, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetOnDisk);
@@ -288,7 +288,7 @@ public class AssetToS3Tests
 
         var asset = new Asset
         {
-            Customer = 9, Space = 1, Id = "9/1/balrog",
+            Customer = 9, Space = 1, Id = AssetId.FromString("9/1/balrog"),
             Origin = "s3://eu-west-1/origin/large_file.mov",
             MediaType = mediaType
         };
@@ -297,10 +297,10 @@ public class AssetToS3Tests
             Strategy = OriginStrategyType.S3Ambient
         };
 
-        var expected = new AssetFromOrigin(asset.GetAssetId(), assetSize, "s3://fantasy/test-key", mediaType);
+        var expected = new AssetFromOrigin(asset.Id, assetSize, "s3://fantasy/test-key", mediaType);
 
         var ct = new CancellationToken();
-        var assetOnDisk = new AssetFromOrigin(asset.GetAssetId(), assetSize, "/on/disk", mediaType);
+        var assetOnDisk = new AssetFromOrigin(asset.Id, assetSize, "/on/disk", mediaType);
         A.CallTo(() =>
                 assetToDisk.CopyAssetToLocalDisk(asset, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetOnDisk);
@@ -321,7 +321,7 @@ public class AssetToS3Tests
         // Arrange
         var asset = new Asset
         {
-            Customer = 9, Space = 1, Id = "9/1/balrog",
+            Customer = 9, Space = 1, Id = AssetId.FromString("9/1/balrog"),
             Origin = "s3://eu-west-1/origin/large_file.mov"
         };
         var originStrategy = new CustomerOriginStrategy
@@ -330,7 +330,7 @@ public class AssetToS3Tests
         };
 
         var ct = new CancellationToken();
-        var assetOnDisk = new AssetFromOrigin(asset.GetAssetId(), 1234, "/on/disk", "video/mpeg");
+        var assetOnDisk = new AssetFromOrigin(asset.Id, 1234, "/on/disk", "video/mpeg");
         A.CallTo(() =>
                 assetToDisk.CopyAssetToLocalDisk(asset, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetOnDisk);

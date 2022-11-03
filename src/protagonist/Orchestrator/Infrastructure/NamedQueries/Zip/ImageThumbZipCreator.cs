@@ -99,7 +99,7 @@ public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
             return;
         }
 
-        var largestThumb = StorageKeyGenerator.GetLargestThumbnailLocation(image.GetAssetId());
+        var largestThumb = StorageKeyGenerator.GetLargestThumbnailLocation(image.Id);
         var largestThumbStream = await BucketReader.GetObjectContentFromBucket(largestThumb);
         if (largestThumbStream == null || largestThumbStream == Stream.Null)
         {
@@ -107,7 +107,7 @@ public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
             return;
         }
 
-        var archiveEntry = zipArchive.CreateEntry($"{image.GetUniqueName()}.jpg");
+        var archiveEntry = zipArchive.CreateEntry($"{image.Id.Asset}.jpg");
         await using var archiveEntryStream = archiveEntry.Open();
         await largestThumbStream.CopyToAsync(archiveEntryStream);
     }

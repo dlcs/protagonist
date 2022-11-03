@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
+using DLCS.Core.Types;
 using DLCS.Model.Policies;
 
 namespace DLCS.Model.Assets;
@@ -13,7 +14,7 @@ namespace DLCS.Model.Assets;
 /// </summary>
 public class Asset
 {
-    public string Id { get; set; }
+    public AssetId Id { get; set; }
     public int Customer { get; set; }
     public int Space { get; set; }
     public DateTime? Created { get; set; }
@@ -99,22 +100,6 @@ public class Asset
     /// </summary>
     public string GetIngestOrigin()
         => string.IsNullOrWhiteSpace(InitialOrigin) ? Origin : InitialOrigin;
-    
-    private string uniqueName;
-    /// <summary>
-    /// Get the identifier part from from Id.
-    /// Id contains {cust}/{space}/{identifier}
-    /// </summary>
-    /// <returns></returns>
-    public string GetUniqueName()
-    {
-        if (string.IsNullOrWhiteSpace(uniqueName))
-        {
-            uniqueName = Id[(Id.LastIndexOf('/') + 1)..];
-        }
-
-        return uniqueName;
-    }
 
     /// <summary>
     /// Full thumbnail policy object for Asset
@@ -127,6 +112,17 @@ public class Asset
     /// </summary>
     [NotMapped]
     public ImageOptimisationPolicy FullImageOptimisationPolicy { get; private set; } = new();
+
+    public Asset()
+    {
+    }
+
+    public Asset(AssetId assetId)
+    {
+        Id = assetId;
+        Customer = assetId.Customer;
+        Space = assetId.Space;
+    }
     
     public Asset WithThumbnailPolicy(ThumbnailPolicy? thumbnailPolicy)
     {

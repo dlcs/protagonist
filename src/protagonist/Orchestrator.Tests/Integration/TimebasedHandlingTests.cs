@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -102,7 +103,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_Returns404_IfNotForDelivery()
     {
         // Arrange
-        var id = $"99/1/{nameof(Get_Returns404_IfNotForDelivery)}";
+        var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNotForDelivery)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true);
         await dbFixture.DbContext.SaveChangesAsync();
 
@@ -117,7 +118,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_AssetDoesNotRequireAuth_Returns302ToS3Location()
     {
         // Arrange
-        var id = "99/1/test-noauth";
+        var id = AssetId.FromString("99/1/test-noauth");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
             maxUnauthorised: -1, origin: "/test/space");
         await dbFixture.DbContext.SaveChangesAsync();
@@ -137,7 +138,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_AssetRequiresAuth_Returns401_IfNoAuthProvided()
     {
         // Arrange
-        string id = "99/1/test-auth";
+        var id = AssetId.FromString("99/1/test-auth");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
             maxUnauthorised: 100, origin: "/test/space", roles: "basic");
         await dbFixture.DbContext.SaveChangesAsync();
@@ -153,7 +154,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_AssetRequiresAuth_Returns401_IfBearerTokenProvided_ButInvalid()
     {
         // Arrange
-        var id = "99/1/bearer-fail";
+        var id = AssetId.FromString("99/1/bearer-fail");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
             maxUnauthorised: 100, origin: "/test/space", roles: "basic");
         await dbFixture.DbContext.SaveChangesAsync();
@@ -173,7 +174,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_AssetRequiresAuth_Returns401_IfBearerTokenValid()
     {
         // Arrange
-        var id = "99/1/bearer-pass";
+        var id = AssetId.FromString("99/1/bearer-pass");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
             maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
         var userSession =
@@ -197,7 +198,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Head_AssetRequiresAuth_Returns200_IfBearerTokenValid()
     {
         // Arrange
-        var id = "99/1/bearer-head";
+        var id = AssetId.FromString("99/1/bearer-head");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
             maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
         var userSession =
@@ -221,7 +222,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Head_AssetRequiresAuth_Returns401_IfBearerTokenProvided_ButInvalid()
     {
         // Arrange
-        var id = "99/1/bearer-head-invalid";
+        var id = AssetId.FromString("99/1/bearer-head-invalid");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
             maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
         var userSession =
@@ -244,7 +245,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_AssetRequiresAuth_Returns401_IfCookieProvided_ButInvalid()
     {
         // Arrange
-        var id = "99/1/cookie-fail";
+        var id = AssetId.FromString("99/1/cookie-fail");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
             maxUnauthorised: 100, origin: "/test/space", roles: "basic");
         await dbFixture.DbContext.SaveChangesAsync();
@@ -263,7 +264,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_AssetRequiresAuth_ProxiesToS3_IfCookieTokenValid()
     {
         // Arrange
-        var id = "99/1/cookie-pass";
+        var id = AssetId.FromString("99/1/cookie-pass");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
             maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
         var userSession =
@@ -292,7 +293,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Head_AssetRequiresAuth_Returns200_IfCookieValid()
     {
         // Arrange
-        var id = "99/1/cookie-head";
+        var id = AssetId.FromString("99/1/cookie-head");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
             maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
         var userSession =
@@ -316,7 +317,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Head_AssetRequiresAuth_Returns401_IfCookieProvided_ButInvalid()
     {
         // Arrange
-        var id = "99/1/cookie-head-invalid";
+        var id = AssetId.FromString("99/1/cookie-head-invalid");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
             maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
         var userSession =

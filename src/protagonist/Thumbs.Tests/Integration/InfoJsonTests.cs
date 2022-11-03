@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.Core.Types;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Newtonsoft.Json.Linq;
@@ -56,7 +57,7 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV2_Correct_ViaDirectPath()
     {
         // Arrange
-        var id = $"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath)}";
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath)}");
         await dbFixture.DbContext.Images.AddTestAsset(id);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -88,7 +89,7 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV2_Correct_ViaConneg()
     {
         // Arrange
-        var id = $"99/1/{nameof(GetInfoJsonV2_Correct_ViaConneg)}";
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaConneg)}");
         const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/image/2/context.json\"";
         await dbFixture.DbContext.Images.AddTestAsset(id);
 
@@ -122,7 +123,7 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV3_RedirectsToCanonical_AsV3IsDefault()
     {
         // Arrange
-        var id = $"99/1/{nameof(GetInfoJsonV3_RedirectsToCanonical_AsV3IsDefault)}";
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV3_RedirectsToCanonical_AsV3IsDefault)}");
         await dbFixture.DbContext.Images.AddTestAsset(id);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -146,7 +147,7 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV3_Correct_ViaConneg()
     {
         // Arrange
-        var id = $"99/1/{nameof(GetInfoJsonV3_Correct_ViaConneg)}";
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV3_Correct_ViaConneg)}");
         const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
         await dbFixture.DbContext.Images.AddTestAsset(id);
 

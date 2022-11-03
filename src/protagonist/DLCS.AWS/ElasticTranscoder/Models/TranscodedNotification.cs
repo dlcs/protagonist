@@ -1,4 +1,5 @@
 ﻿using Amazon.ElasticTranscoder.Model;
+using DLCS.Core.Exceptions;
 using DLCS.Core.Types;
 
 namespace DLCS.AWS.ElasticTranscoder.Models;
@@ -63,7 +64,7 @@ public class TranscodedNotification
                 ? AssetId.FromString(rawAssetId)
                 : null;
         }
-        catch (FormatException)
+        catch (InvalidAssetIdException)
         {
             return null;
         }

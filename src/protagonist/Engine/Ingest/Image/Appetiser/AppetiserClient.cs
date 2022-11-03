@@ -156,7 +156,7 @@ public class AppetiserClient : IImageProcessor
         var unixPath = TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.SourceTemplate, context.AssetId,
             root: imageProcessorRoot);
 
-        unixPath += $"/{context.Asset.GetUniqueName()}.{extension}";
+        unixPath += $"/{context.Asset.Id.Asset}.{extension}";
         return unixPath;
     }
 

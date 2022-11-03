@@ -22,7 +22,7 @@ public class IngestionContext
     public IngestionContext(Asset asset)
     {
         Asset = asset;
-        AssetId = asset.GetAssetId();
+        AssetId = asset.Id;
     }
 
     public IngestionContext WithAssetFromOrigin(AssetFromOrigin assetFromOrigin)

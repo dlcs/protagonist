@@ -1,4 +1,5 @@
-﻿using DLCS.Model.Assets;
+﻿using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using Engine.Ingest.Models;
 
 namespace Engine.Tests.Ingest.Models;
@@ -66,7 +67,7 @@ public class LegacyIngestEventConverterTests
         DateTime.SpecifyKind(created, DateTimeKind.Utc);
         var expected = new Asset
         {
-            Id = "2/1/engine-9", Customer = 2, Space = 1, Created = created,
+            Id = AssetId.FromString("2/1/engine-9"), Customer = 2, Space = 1, Created = created,
             Origin = "https://burst.shopifycdn.com/photos/chrome-engine-close-up.jpg", Tags = "one",
             Roles = "https://api.dlcs.digirati.io/customers/2/roles/clickthrough", PreservedUri = "", Reference1 = "foo",
             Reference2 = "bar", Reference3 = "baz", MaxUnauthorised = 300, NumberReference1 = 10, NumberReference2 = 20,

@@ -44,8 +44,8 @@ public class ImageIngestorCompletionTests
     public async Task CompleteIngestion_CallsRepositoryUpdateIngestedAsset_RegardlessOfSuccess(bool success)
     {
         // Arrange
-        var asset = new Asset { Id = "2/1/foo-bar", Customer = 2, Space = 1 };
-        var assetId = AssetId.FromString(asset.Id);
+        var assetId = AssetId.FromString("2/1/foo-bar");
+        var asset = new Asset(assetId);
         var imageLocation = new ImageLocation { Id = asset.Id };
         var imageStorage = new ImageStorage { Id = asset.Id };
         var context = new IngestionContext(asset).WithAssetFromOrigin(new AssetFromOrigin(assetId, 0, null, null));
@@ -78,8 +78,8 @@ public class ImageIngestorCompletionTests
         bool theDefault, bool theOverride, bool ingestSuccess, bool markAsCompleteSuccess)
     {
         // Arrange
-        var asset = new Asset { Id = "2/1/foo-bar", Customer = 2, Space = 1 };
-        var assetId = AssetId.FromString(asset.Id);
+        var assetId = AssetId.FromString("2/1/foo-bar");
+        var asset = new Asset(assetId);
         var imageLocation = new ImageLocation { Id = asset.Id };
         var imageStorage = new ImageStorage { Id = asset.Id };
         var context = new IngestionContext(asset)
@@ -107,8 +107,8 @@ public class ImageIngestorCompletionTests
         bool theDefault, bool theOverride)
     {
         // Arrange
-        var asset = new Asset { Id = "2/1/foo-bar", Customer = 2, Space = 1 };
-        var assetId = AssetId.FromString(asset.Id);
+        var assetId = AssetId.FromString("2/1/foo-bar");
+        var asset = new Asset(assetId);
         var imageLocation = new ImageLocation { Id = asset.Id };
         var imageStorage = new ImageStorage { Id = asset.Id };
         var context = new IngestionContext(asset)

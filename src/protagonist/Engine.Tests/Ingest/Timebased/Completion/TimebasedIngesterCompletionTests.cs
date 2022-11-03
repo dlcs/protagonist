@@ -34,7 +34,7 @@ public class TimebasedIngesterCompletionTests
     public async Task CompleteAssetInDatabase_DoesNotCreateLocationOrStorage_IfNoSize()
     {
         // Arrange
-        var asset = new Asset { Id = "10/20/foo" };
+        var asset = new Asset(AssetId.FromString("10/20/foo"));
         var token = new CancellationToken();
 
         // Act
@@ -52,7 +52,7 @@ public class TimebasedIngesterCompletionTests
     public async Task CompleteAssetInDatabase_ReturnsResultOfRepositoryCall(bool result)
     {
         // Arrange
-        var asset = new Asset { Id = "10/20/foo" };
+        var asset = new Asset(AssetId.FromString("10/20/foo"));
         var token = new CancellationToken();
 
         A.CallTo(() => engineAssetRepository.UpdateIngestedAsset(asset, null, null, token)).Returns(result);
@@ -69,8 +69,8 @@ public class TimebasedIngesterCompletionTests
     public async Task CompleteAssetInDatabase_CreatesLocationAndStorage_IfSize()
     {
         // Arrange
-        const string assetId = "10/20/foo";
-        var asset = new Asset { Id = assetId, Customer = 10, Space = 20 };
+        var assetId = AssetId.FromString("10/20/foo");
+        var asset = new Asset(assetId);
         var size = 1967L;
         var token = new CancellationToken();
 
@@ -108,7 +108,7 @@ public class TimebasedIngesterCompletionTests
     {
         // Arrange
         var assetId = new AssetId(10, 9, "endtroducing");
-        var asset = new Asset { Id = "endtroducing", Customer = 10, Space = 9 };
+        var asset = new Asset(assetId);
         A.CallTo(() => engineAssetRepository.GetAsset(assetId, A<CancellationToken>._)).Returns(asset);
         
         // Act
@@ -131,7 +131,7 @@ public class TimebasedIngesterCompletionTests
     {
         // Arrange
         var assetId = new AssetId(10, 9, "endtroducing");
-        var asset = new Asset { Id = "endtroducing", Customer = 10, Space = 9 };
+        var asset = new Asset(assetId);
         A.CallTo(() => engineAssetRepository.GetAsset(assetId, A<CancellationToken>._)).Returns(asset);
         var transcodeResult = new TranscodeResult(new TranscodedNotification
         {
@@ -148,10 +148,8 @@ public class TimebasedIngesterCompletionTests
         
         // Act
         var sut = GetSut();
-        
         var result = await sut.CompleteSuccessfulIngest(assetId, transcodeResult);
-        
-        
+
         // Assert
         result.Should().BeFalse();
         asset.Error.Should().NotBeNull();

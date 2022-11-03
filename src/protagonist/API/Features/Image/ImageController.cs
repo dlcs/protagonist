@@ -239,7 +239,7 @@ public class ImageController : HydraController
     {
         var assetId = new AssetId(customerId, spaceId, imageId);
         var asset = hydraAsset.ToDlcsModel(customerId, spaceId, imageId);
-        asset.Id = assetId.ToString();
+        asset.Id = assetId;
                 
         // In the special case where we were passed ImageWithFile from the PostImageWithFileBytes action, 
         // it was a POST - but we should revisit that as the direct image ingest should be a PUT as well I think

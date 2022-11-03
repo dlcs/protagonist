@@ -74,7 +74,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     public async Task IngestAsset_CreatesTranscoderJob_HttpOrigin(string type, string expectedKey)
     {
         // Arrange
-        var assetId = $"99/1/{nameof(IngestAsset_CreatesTranscoderJob_HttpOrigin)}-{type}";
+        var assetId = AssetId.FromString($"99/1/{nameof(IngestAsset_CreatesTranscoderJob_HttpOrigin)}-{type}");
         const string jobId = "1234567890123-abcdef";
         
         var origin = $"{apiStub.Address}/{type}";
@@ -85,7 +85,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         var message = new IngestAssetRequest(asset, DateTime.UtcNow);
 
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
-                AssetId.FromString(assetId),
+                assetId,
                 A<string>._,
                 A<string>._,
                 A<List<CreateJobOutput>>._,
@@ -104,12 +104,12 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         // S3 assets created for transcoding + a metadata file
         var outputKey = $"{assetId}{expectedKey}";
         BucketWriter
-            .ShouldHaveKeyThatStartsWith(assetId)
+            .ShouldHaveKeyThatStartsWith(assetId.ToString())
             .ForBucket(LocalStackFixture.TimebasedInputBucketName);
         
         // ET job created
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
-                AssetId.FromString(assetId),
+                assetId,
                 A<string>.That.Matches(s => s.StartsWith($"s3://{LocalStackFixture.TimebasedInputBucketName}/{assetId}")),
                 "pipeline-id-1234",
                 A<List<CreateJobOutput>>.That.Matches(o => o.Single().Key.EndsWith(outputKey)),
@@ -117,9 +117,8 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                 A<CancellationToken>._))
             .MustHaveHappened();
 
-        A.CallTo(() => ElasticTranscoderWrapper.PersistJobId(
-            AssetId.FromString(assetId), jobId, A<CancellationToken>._
-        )).MustHaveHappened();
+        A.CallTo(() => ElasticTranscoderWrapper.PersistJobId(assetId, jobId, A<CancellationToken>._))
+            .MustHaveHappened();
     }
 
     [Theory]
@@ -128,7 +127,8 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     public async Task IngestAsset_ReturnsNoSuccess_IfCreateTranscoderJobFails(string type, string expectedKey)
     {
         // Arrange
-        var assetId = $"99/1/{nameof(IngestAsset_ReturnsNoSuccess_IfCreateTranscoderJobFails)}-{type}";
+        var assetId =
+            AssetId.FromString($"99/1/{nameof(IngestAsset_ReturnsNoSuccess_IfCreateTranscoderJobFails)}-{type}");
         
         var origin = $"{apiStub.Address}/{type}";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
@@ -136,9 +136,9 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
         var message = new IngestAssetRequest(asset, DateTime.UtcNow);
-        
+
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
-                AssetId.FromString(assetId),
+                assetId,
                 A<string>._,
                 A<string>._,
                 A<List<CreateJobOutput>>._,
@@ -157,23 +157,20 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         // S3 assets created for transcoding + a metadata file
         var outputKey = $"{assetId}{expectedKey}";
         BucketWriter
-            .ShouldHaveKeyThatStartsWith(assetId)
+            .ShouldHaveKeyThatStartsWith(assetId.ToString())
             .ForBucket(LocalStackFixture.TimebasedInputBucketName);
         
         // ET job created
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
-                AssetId.FromString(assetId),
+                assetId,
                 A<string>.That.Matches(s => s.StartsWith($"s3://{LocalStackFixture.TimebasedInputBucketName}/{assetId}")),
                 "pipeline-id-1234",
                 A<List<CreateJobOutput>>.That.Matches(o => o.Single().Key.EndsWith(outputKey)),
                 A<string>._,
                 A<CancellationToken>._))
             .MustHaveHappened();
-        
-        A.CallTo(() => ElasticTranscoderWrapper.PersistJobId(
-            AssetId.FromString(assetId),
-            A<string>._,
-            A<CancellationToken>._
-        )).MustNotHaveHappened();
+
+        A.CallTo(() => ElasticTranscoderWrapper.PersistJobId(assetId, A<string>._, A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
 }

@@ -36,10 +36,10 @@ public class GetMultipleImagesByIdHandler
     public async Task<FetchEntityResult<IReadOnlyCollection<Asset>>> Handle(GetMultipleImagesById request,
         CancellationToken cancellationToken)
     {
-        ImageIdListValidation.ValidateRequest(request.AssetIds, request.CustomerId);
+        var assetIds = ImageIdListValidation.ValidateRequest(request.AssetIds, request.CustomerId);
 
         var results = await dlcsContext.Images.AsNoTracking()
-            .Where(i => i.Customer == request.CustomerId && request.AssetIds.Contains(i.Id))
+            .Where(i => i.Customer == request.CustomerId && assetIds.Contains(i.Id))
             .ToListAsync(cancellationToken);
 
         return FetchEntityResult<IReadOnlyCollection<Asset>>.Success(results);

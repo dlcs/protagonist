@@ -58,14 +58,6 @@ public static class AssetX
     }
 
     /// <summary>
-    /// Get <see cref="AssetId"/> for asset
-    /// </summary>
-    /// <param name="asset">Current <see cref="Asset"/></param>
-    /// <returns><see cref="AssetId"/> containing current customer, space, asset id</returns>
-    public static AssetId GetAssetId(this Asset asset)
-        => AssetId.FromString(asset.Id);
-    
-    /// <summary>
     /// Reset fields for ingestion, marking as "Ingesting" and clearing errors
     /// </summary>
     public static void SetFieldsForIngestion(this Asset asset)

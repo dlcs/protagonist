@@ -1,12 +1,13 @@
 ﻿#nullable disable
 
 using System;
+using DLCS.Core.Types;
 
 namespace DLCS.Model.Assets;
 
-public partial class ImageStorage
+public class ImageStorage
 {
-    public string Id { get; set; }
+    public AssetId Id { get; set; }
     public int Customer { get; set; }
     public int Space { get; set; }
     public long ThumbnailSize { get; set; }

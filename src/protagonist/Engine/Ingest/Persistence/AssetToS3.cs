@@ -67,7 +67,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
     public async Task<AssetFromOrigin> CopyAssetToTranscodeInput(Asset asset, bool verifySize,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
-        var destination = storageKeyGenerator.GetTimebasedInputLocation(asset.GetAssetId());
+        var destination = storageKeyGenerator.GetTimebasedInputLocation(asset.Id);
 
         if (ShouldCopyBucketToBucket(asset, customerOriginStrategy))
         {
@@ -90,7 +90,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
     private async Task<AssetFromOrigin> CopyBucketToBucket(Asset asset, ObjectInBucket destination, bool verifySize,
         CancellationToken cancellationToken)
     {
-        var assetId = asset.GetAssetId();
+        var assetId = asset.Id;
         var source = RegionalisedObjectInBucket.Parse(asset.GetIngestOrigin());
 
         if (source == null)
@@ -131,7 +131,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
     {
         logger.LogDebug("Copying asset '{AssetId}' indirectly from bucket to bucket. {Source} - {Dest}", asset.Id,
             asset.GetIngestOrigin(), destination.GetS3Uri());
-        var assetId = asset.GetAssetId();
+        var assetId = asset.Id;
         string? downloadedFile = null;
 
         try

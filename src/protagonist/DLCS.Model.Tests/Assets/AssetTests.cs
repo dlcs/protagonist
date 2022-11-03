@@ -1,4 +1,5 @@
-﻿using DLCS.Model.Assets;
+﻿using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using FluentAssertions;
 using Xunit;
 
@@ -25,19 +26,23 @@ public class AssetTests
         // Assert
         actual.Should().BeTrue();
     }
-    
-    [Theory]
-    [InlineData("foo-bar")]
-    [InlineData("/foo-bar")]
-    [InlineData("2/1/foo-bar")]
-    public void GetUniqueName_ReturnsExpected(string id)
+
+    [Fact]
+    public void Ctor_SetsCustomerAndSpace()
     {
         // Arrange
-        const string expected = "foo-bar";
-        var asset = new Asset {Id = id};
-
+        const int customer = 10;
+        const int space = 50;
+        const string asset = "foo";
+        var assetId = new AssetId(customer, space, asset);
+        
+        // Act
+        var constructed = new Asset(assetId);
+        
         // Assert
-        asset.GetUniqueName().Should().Be(expected);
+        constructed.Id.Should().Be(assetId);
+        constructed.Customer.Should().Be(assetId.Customer);
+        constructed.Space.Should().Be(assetId.Space);
     }
 
     [Fact]
@@ -63,8 +68,7 @@ public class AssetTests
         var expected = new[] { "a", "b", "c" };
         asset.TagsList.Should().BeEquivalentTo(expected);
     }
-    
-    
+
     [Fact]
     public void Tags_Convert_From_List()
     {

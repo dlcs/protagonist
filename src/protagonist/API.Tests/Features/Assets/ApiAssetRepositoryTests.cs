@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using API.Features.Assets;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Caching;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
@@ -55,16 +56,15 @@ public class ApiAssetRepositoryTests
     [Fact]
     public async Task AssetRepository_Saves_New_Asset()
     {
-        var id = "new-asset";
-        var newAsset = new Asset { Id = id, Customer = 100, Space = 10, Reference1 = "I am new", 
-            Origin = "https://example.org/image1.tiff"};
+        var assetId = AssetId.FromString("100/10/new-asset");
+        var newAsset = new Asset(assetId) { Reference1 = "I am new", Origin = "https://example.org/image1.tiff" };
     
         var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false);
         result.Success.Should().BeTrue();
 
         await sut.Save(newAsset, false, CancellationToken.None);
 
-        var dbAsset = await dbContext.Images.FindAsync(id);
+        var dbAsset = await dbContext.Images.FindAsync(assetId);
         dbAsset.Reference1.Should().Be("I am new");
         dbAsset.Reference2.Should().Be("");
         dbAsset.MediaType.Should().Be("unknown");
@@ -73,16 +73,15 @@ public class ApiAssetRepositoryTests
     [Fact]
     public async Task AssetRepository_Saves_New_Asset_UsingResultFromPreparer()
     {
-        var id = nameof(AssetRepository_Saves_New_Asset_UsingResultFromPreparer);
-        var newAsset = new Asset { Id = id, Customer = 100, Space = 10, Reference1 = "I am new", 
-            Origin = "https://example.org/image1.tiff"};
+        var assetId = AssetId.FromString($"100/10/{nameof(AssetRepository_Saves_New_Asset_UsingResultFromPreparer)}");
+        var newAsset = new Asset(assetId) { Reference1 = "I am new", Origin = "https://example.org/image1.tiff" };
     
         var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false);
         result.Success.Should().BeTrue();
 
         await sut.Save(result.UpdatedAsset!, false, CancellationToken.None);
 
-        var dbAsset = await dbContext.Images.FindAsync(id);
+        var dbAsset = await dbContext.Images.FindAsync(assetId);
         dbAsset.Reference1.Should().Be("I am new");
         dbAsset.Reference2.Should().Be("");
         dbAsset.MediaType.Should().Be("unknown");
@@ -92,14 +91,16 @@ public class ApiAssetRepositoryTests
     public async Task AssetRepository_Saves_Existing_Asset()
     {
         // Arrange
-        const string id = nameof(AssetRepository_Saves_Existing_Asset);
-        var dbAsset = await contextForTests.Images.AddTestAsset(id, ref1: "I am original 1", ref2: "I am original 2");
+        var assetId = AssetId.FromString($"100/10/{nameof(AssetRepository_Saves_Existing_Asset)}");
+        var dbAsset =
+            await contextForTests.Images.AddTestAsset(assetId, ref1: "I am original 1",
+                ref2: "I am original 2");
         await contextForTests.SaveChangesAsync();
 
-        var existingAsset = await dbContext.Images.FirstAsync(a => a.Id == id);
+        var existingAsset = await dbContext.Images.FirstAsync(a => a.Id == assetId);
         var patch = new Asset
         {
-            Id = id,
+            Id = assetId,
             Reference1 = "I am changed",
             Customer = 99,
             Space = 1
@@ -111,7 +112,7 @@ public class ApiAssetRepositoryTests
         // Act
         await sut.Save(existingAsset, true, CancellationToken.None);
 
-        contextForTests.Entry(dbAsset.Entity).Reload();
+        await contextForTests.Entry(dbAsset.Entity).ReloadAsync();
         dbAsset.Entity.Reference1.Should().Be("I am changed");
         dbAsset.Entity.Reference2.Should().Be("I am original 2");
     }
@@ -120,14 +121,16 @@ public class ApiAssetRepositoryTests
     public async Task AssetRepository_Saves_Existing_Asset_UsingResultFromPreparer()
     {
         // Arrange
-        const string id = nameof(AssetRepository_Saves_Existing_Asset_UsingResultFromPreparer);
-        var dbAsset = await contextForTests.Images.AddTestAsset(id, ref1: "I am original 1", ref2: "I am original 2");
+        var assetId =
+            AssetId.FromString($"100/10/{nameof(AssetRepository_Saves_Existing_Asset_UsingResultFromPreparer)}");
+        var dbAsset = await contextForTests.Images.AddTestAsset(assetId, ref1: "I am original 1",
+                ref2: "I am original 2");
         await contextForTests.SaveChangesAsync();
 
-        var existingAsset = await dbContext.Images.FirstAsync(a => a.Id == id);
+        var existingAsset = await dbContext.Images.FirstAsync(a => a.Id == assetId);
         var patch = new Asset
         {
-            Id = id,
+            Id = assetId,
             Reference1 = "I am changed",
             Customer = 99,
             Space = 1
@@ -139,7 +142,7 @@ public class ApiAssetRepositoryTests
         // Act
         await sut.Save(result.UpdatedAsset, true, CancellationToken.None);
 
-        contextForTests.Entry(dbAsset.Entity).Reload();
+        await contextForTests.Entry(dbAsset.Entity).ReloadAsync();
         dbAsset.Entity.Reference1.Should().Be("I am changed");
         dbAsset.Entity.Reference2.Should().Be("I am original 2");
     }

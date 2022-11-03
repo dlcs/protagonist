@@ -78,7 +78,7 @@ public class EngineAssetRepository : IEngineAssetRepository
     }
 
     public ValueTask<Asset?> GetAsset(AssetId assetId, CancellationToken cancellationToken = default)
-        => dlcsContext.Images.FindAsync(new object[] { assetId.ToString() }, cancellationToken);
+        => dlcsContext.Images.FindAsync(new object[] { assetId }, cancellationToken);
 
     private async Task<bool> NonBatchedSave(CancellationToken cancellationToken)
     {

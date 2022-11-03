@@ -21,7 +21,7 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
     public async Task CreateNewThumbs(Asset asset, IReadOnlyList<ImageOnDisk> thumbsToProcess)
     {
         if (thumbsToProcess.Count == 0) return;
-        var assetId = asset.GetAssetId();
+        var assetId = asset.Id;
             
         using var processLock = await asyncLocker.LockAsync($"create:{assetId}");
         var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);

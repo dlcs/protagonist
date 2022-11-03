@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Text;
 using System.Text.Json;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using Engine.Ingest;
@@ -40,8 +41,8 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task IngestAsset_ReturnsExpectedCode_ForIngestResult(IngestResultStatus ingestResult, HttpStatusCode expected)
     {
         // Arrange
-        var assetId = $"1/2/{ingestResult}";
-        var message = new IngestAssetRequest(new Asset { Id = assetId }, DateTime.UtcNow);
+        var assetId = AssetId.FromString($"1/2/{ingestResult}");
+        var message = new IngestAssetRequest(new Asset(assetId), DateTime.UtcNow);
         A.CallTo(() =>
             assetIngester.Ingest(A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
                 A<CancellationToken>._)).Returns(new IngestResult(null, ingestResult));
@@ -93,8 +94,8 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
         HttpStatusCode expected)
     {
         // Arrange
-        var assetId = $"1/2/{ingestResult}";
-        var message = new IngestAssetRequest(new Asset { Id = assetId }, DateTime.UtcNow);
+        var assetId = AssetId.FromString($"1/2/{ingestResult}");
+        var message = new IngestAssetRequest(new Asset(assetId), DateTime.UtcNow);
         A.CallTo(() =>
             assetIngester.Ingest(A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
                 A<CancellationToken>._)).Returns(new IngestResult(null, ingestResult));
