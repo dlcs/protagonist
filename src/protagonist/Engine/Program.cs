@@ -1,3 +1,4 @@
+using DLCS.AWS.SSM;
 using Serilog;
 
 public class Program
@@ -38,14 +39,7 @@ public class Program
             )
             .ConfigureAppConfiguration((context, builder) =>
             {
-                if (context.HostingEnvironment.IsProduction())
-                {
-                    builder.AddSystemsManager(configurationSource =>
-                    {
-                        configurationSource.Path = "/protagonist/";
-                        configurationSource.ReloadAfter = TimeSpan.FromMinutes(90);
-                    });
-                }
+                builder.AddSystemsManager(context);
             })
             .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
 }
