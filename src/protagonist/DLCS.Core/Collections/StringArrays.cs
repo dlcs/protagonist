@@ -2,8 +2,12 @@ using System.Linq;
 
 namespace DLCS.Core.Collections;
 
-public class StringArrays
+public static class StringArrays
 {
+    /// <summary>
+    /// Ensure that newString is contained within returned array.
+    /// If string already exists it is not added again.
+    /// </summary>
     public static string[] EnsureString(string[]? strings, string newString)
     {
         if (strings == null || strings.Length == 0)
@@ -16,9 +20,7 @@ public class StringArrays
             return strings;
         }
         
-        var list = strings.ToList();
-        list.Add(newString);
-        return list.ToArray();
+        return strings.Append(newString).ToArray();
     }
     
     

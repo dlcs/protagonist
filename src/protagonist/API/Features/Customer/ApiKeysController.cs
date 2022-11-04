@@ -77,7 +77,7 @@ public class ApiKeysController : HydraController
     public async Task<IActionResult> CreateApiKey(int customerId)
     {
         var result = await Mediator.Send(new CreateApiKey(customerId));
-        if (result.Key.HasText() && result.Secret.HasText())
+        if (result.CreateSuccess)
         {
             return Ok(new ApiKey(GetUrlRoots().BaseUrl, customerId, result.Key, result.Secret));
         }

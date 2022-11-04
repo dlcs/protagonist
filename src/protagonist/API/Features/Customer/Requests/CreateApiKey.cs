@@ -1,9 +1,7 @@
-using API.Settings;
+using API.Auth;
 using DLCS.Core.Collections;
-using DLCS.Core.Encryption;
 using DLCS.Repository;
 using MediatR;
-using Microsoft.Extensions.Options;
 
 namespace API.Features.Customer.Requests;
 
@@ -17,55 +15,37 @@ public class CreateApiKey : IRequest<CreateApiKeyResult>
     public int CustomerId { get; }
 }
 
-public class CreateApiKeyResult
-{
-    public string Key { get; set; }
-    public string Secret { get; set; }
-    public string Error { get; set; }
-}
-
-
 public class CreateApiKeyHandler : IRequestHandler<CreateApiKey, CreateApiKeyResult>
 {
     private readonly DlcsContext dbContext;
-    private readonly IEncryption encryption;
-    private readonly ApiSettings settings;
+    private readonly ApiKeyGenerator apiKeyGenerator;
     
     public CreateApiKeyHandler(
         DlcsContext dbContext,
-        IEncryption encryption,
-        IOptions<ApiSettings> options)
+        ApiKeyGenerator apiKeyGenerator)
     {
         this.dbContext = dbContext;
-        this.encryption = encryption;
-        settings = options.Value;
+        this.apiKeyGenerator = apiKeyGenerator;
     }
     
     public async Task<CreateApiKeyResult> Handle(CreateApiKey request, CancellationToken cancellationToken)
     {
-        var result = new CreateApiKeyResult();
-        var customer = await dbContext.Customers.FindAsync(request.CustomerId);
-        if (customer == null || settings.Salt.IsNullOrEmpty())
+        var customer = await dbContext.Customers.FindAsync(new object?[] { request.CustomerId },
+            cancellationToken: cancellationToken);
+        if (customer == null)
         {
-            result.Error = "Insufficient data to create key";
-            return result;
+            return CreateApiKeyResult.Fail("Insufficient data to create key");
         }
-        
-        string apiKey = Guid.NewGuid().ToString();
-        string apiSecret = encryption.Encrypt(String.Concat(settings.Salt, customer.Id.ToString(), apiKey));
 
+        var (apiKey, apiSecret) = apiKeyGenerator.CreateApiKey(customer);
+        
         customer.Keys = StringArrays.EnsureString(customer.Keys, apiKey);
         var i = await dbContext.SaveChangesAsync(cancellationToken);
         if (i == 1)
         {
-            result.Key = apiKey;
-            result.Secret = apiSecret;
-        }
-        else
-        {
-            result.Error = "Unable to save new ApiKey";
+            return CreateApiKeyResult.Success(apiKey, apiSecret);
         }
 
-        return result;
+        return CreateApiKeyResult.Fail("Unable to save new ApiKey");
     }
 }
