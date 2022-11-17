@@ -90,7 +90,7 @@ namespace DLCS.Repository.Assets
             }
 
             // All the thumbnail jpgs will already exist and need copied up to root
-            await CreateThumbnails(rootKey, boundingSquares, thumbnailSizes, existingSizes);
+            await CreateThumbnails(rootKey, thumbnailSizes, existingSizes);
 
             // Create sizes json file last, as this dictates whether this process will be attempted again
             await CreateSizesJson(rootKey, thumbnailSizes);
@@ -125,32 +125,34 @@ namespace DLCS.Repository.Assets
             return existingSizes;
         }
 
-        private async Task CreateThumbnails(ObjectInBucket rootKey, List<int> boundingSquares,
-            ThumbnailSizes thumbnailSizes, List<Size> existingSizes)
+        private async Task CreateThumbnails(ObjectInBucket rootKey, ThumbnailSizes thumbnailSizes,
+            List<Size> existingSizes)
         {
             var copyTasks = new List<Task>(thumbnailSizes.Count);
 
-            // low.jpg becomes the first in this list
-            var largestSize = boundingSquares[0];
+            var openSizes = thumbnailSizes.Open.Select(wh => Size.FromArray(wh)).ToList();
+            var authSizes = thumbnailSizes.Auth.Select(wh => Size.FromArray(wh)).ToList();
+            var largestSize = openSizes.Concat(authSizes).Max(sz => sz.MaxDimension);
+
+            // low.jpg becomes the largest sized thumb
             var largestSlug = thumbnailSizes.Auth.IsNullOrEmpty() ? thumbConsts.OpenSlug : thumbConsts.AuthorisedSlug;
             copyTasks.Add(bucketReader.CopyWithinBucket(rootKey.Bucket,
                 $"{rootKey.Key}low.jpg",
                 $"{rootKey.Key}{largestSlug}/{largestSize}.jpg"));
 
-            copyTasks.AddRange(ProcessThumbBatch(rootKey, thumbnailSizes.Auth, thumbConsts.AuthorisedSlug, largestSize,
+            copyTasks.AddRange(ProcessThumbBatch(rootKey, authSizes, thumbConsts.AuthorisedSlug, largestSize,
                 existingSizes));
-            copyTasks.AddRange(ProcessThumbBatch(rootKey, thumbnailSizes.Open, thumbConsts.OpenSlug, largestSize,
+            copyTasks.AddRange(ProcessThumbBatch(rootKey, openSizes, thumbConsts.OpenSlug, largestSize,
                 existingSizes));
 
             await Task.WhenAll(copyTasks);
         }
 
-        private IEnumerable<Task> ProcessThumbBatch(ObjectInBucket rootKey, IEnumerable<int[]> thumbnailSizes,
-            string slug, int largestSize, List<Size> existingSizes)
+        private IEnumerable<Task> ProcessThumbBatch(ObjectInBucket rootKey, IEnumerable<Size> thumbnailSizes,
+            string slug, int largestSize, IReadOnlyCollection<Size> existingSizes)
         {
-            foreach (var wh in thumbnailSizes)
+            foreach (var currentSize in thumbnailSizes)
             {
-                var currentSize = Size.FromArray(wh);
                 var maxDimension = currentSize.MaxDimension;
                 if (maxDimension == largestSize) continue;
 
