@@ -204,6 +204,64 @@ namespace DLCS.Repository.Tests.Assets
                         "application/json"))
                 .MustHaveHappened();
         }
+        
+        [Fact]
+        public async Task EnsureNewLayout_CreatesExpectedResources_MixedAuthAndOpen_ImageSmallerThanThumbnail()
+        {
+            var rootKey = new ObjectInBucket {Bucket = "the-bucket", Key = "2/1/the-astronaut/"};
+            A.CallTo(() => bucketReader.GetMatchingKeys(rootKey))
+                .Returns(new[]
+                {
+                    "2/1/the-astronaut/full/200,/0/default.jpg",
+                    "2/1/the-astronaut/full/200,400/0/default.jpg",
+                    "2/1/the-astronaut/full/100,/0/default.jpg",
+                    "2/1/the-astronaut/full/100,200/0/default.jpg",
+                    "2/1/the-astronaut/full/50,/0/default.jpg",
+                    "2/1/the-astronaut/full/50,100/0/default.jpg"
+                });
+
+            A.CallTo(() => assetRepository.GetAsset(A<string>._))
+                .Returns(new Asset {Width = 300, Height = 600, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
+            A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne"))
+                .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
+            
+            // Act
+            var response = await sut.EnsureNewLayout(rootKey);
+
+            // Assert
+            response.Should().Be(ReorganiseResult.Reorganised);
+
+            // move jpg per thumbnail size
+            A.CallTo(() =>
+                    bucketReader.CopyWithinBucket("the-bucket",
+                        "2/1/the-astronaut/low.jpg",
+                        "2/1/the-astronaut/auth/600.jpg"))
+                .MustHaveHappened();
+            A.CallTo(() =>
+                    bucketReader.CopyWithinBucket("the-bucket", 
+                        "2/1/the-astronaut/full/200,400/0/default.jpg",
+                        "2/1/the-astronaut/auth/400.jpg"))
+                .MustHaveHappened();
+            A.CallTo(() =>
+                    bucketReader.CopyWithinBucket("the-bucket",
+                        "2/1/the-astronaut/full/100,200/0/default.jpg",
+                        "2/1/the-astronaut/open/200.jpg"))
+                .MustHaveHappened();
+            A.CallTo(() =>
+                    bucketReader.CopyWithinBucket("the-bucket", 
+                        "2/1/the-astronaut/full/50,100/0/default.jpg",
+                        "2/1/the-astronaut/open/100.jpg"))
+                .MustHaveHappened();
+            
+            // create sizes.json
+            const string expected = "{\"o\":[[100,200],[50,100]],\"a\":[[300,600],[200,400]]}";
+            A.CallTo(() =>
+                    bucketReader.WriteToBucket(
+                        A<ObjectInBucket>.That.Matches(o =>
+                            o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
+                        "application/json"))
+                .MustHaveHappened();
+        }
 
         [Fact]
         public async Task EnsureNewLayout_CreatesExpectedResources_HandlingRoundingDifference_Portrait()
