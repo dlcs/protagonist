@@ -17,7 +17,7 @@ public class ImageOptimisationPolicy
     /// <summary>
     /// Customer that this optimisation policy is for
     /// </summary>
-    public int? Customer { get; set; }
+    public int Customer { get; set; }
     
     /// <summary>
     /// If true, optimisation policy is for all customers

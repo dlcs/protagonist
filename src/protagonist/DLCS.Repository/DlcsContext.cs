@@ -400,6 +400,8 @@ public partial class DlcsContext : DbContext
 
         modelBuilder.Entity<ImageOptimisationPolicy>(entity =>
         {
+            entity.HasKey(e => new { e.Id, e.Customer });
+            
             entity.Property(e => e.Id).HasMaxLength(500);
 
             entity.Property(e => e.Name)

@@ -99,7 +99,8 @@ public class AssetIngester : IAssetIngester
 
         if (!string.IsNullOrEmpty(asset.ImageOptimisationPolicy))
         {
-            var optimisationPolicy = await policyRepository.GetImageOptimisationPolicy(asset.ImageOptimisationPolicy);
+            var optimisationPolicy =
+                await policyRepository.GetImageOptimisationPolicy(asset.ImageOptimisationPolicy, asset.Customer);
             asset.WithImageOptimisationPolicy(optimisationPolicy);
         }
     }

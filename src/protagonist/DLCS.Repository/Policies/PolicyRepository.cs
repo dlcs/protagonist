@@ -50,12 +50,14 @@ public class PolicyRepository : IPolicyRepository
     }
 
     public async Task<ImageOptimisationPolicy?> GetImageOptimisationPolicy(string imageOptimisationPolicyId,
-        CancellationToken cancellationToken = default)
+        int customerId, CancellationToken cancellationToken = default)
     {
         try
         {
             var imageOptimisationPolicies = await GetImageOptimisationPolicies(cancellationToken);
-            return imageOptimisationPolicies.SingleOrDefault(p => p.Id == imageOptimisationPolicyId);
+            return imageOptimisationPolicies
+                .OrderBy(c => c.Global)
+                .FirstOrDefault(p => p.Id == imageOptimisationPolicyId && (p.Global || p.Customer == customerId));
         }
         catch (Exception e)
         {
