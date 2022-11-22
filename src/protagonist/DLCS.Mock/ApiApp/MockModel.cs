@@ -79,7 +79,7 @@ public class MockModel
     {
         return new List<ImageOptimisationPolicy>
         {
-            new ImageOptimisationPolicy(BaseUrl, "fast_lossy", "Fast lossy", "kdu_1")
+            new ImageOptimisationPolicy(BaseUrl, "fast_lossy", "Fast lossy", "kdu_1", true, null)
         };
     }
 
