@@ -32,8 +32,8 @@ public class CustomerPolicyController : HydraController
     /// <remarks>
     /// Sample request:
     ///
-    ///     GET: /imageOptimisationPolicies/123
-    ///     GET: /imageOptimisationPolicies/123?page=2&pagesize=10
+    ///     GET: /customer/99/imageOptimisationPolicies/123
+    ///     GET: /customer/99//imageOptimisationPolicies/123?page=2&pagesize=10
     /// </remarks>
     [HttpGet]
     [Route("imageOptimisationPolicies")]
