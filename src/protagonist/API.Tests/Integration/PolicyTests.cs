@@ -73,10 +73,23 @@ public class PolicyTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task Get_ImageOptimisationPolicy_400_IfNotFound()
+    public async Task Get_ImageOptimisationPolicy_404_IfNotFound()
     {
         // Arrange
         var path = "imageOptimisationPolicies/foofoo";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_ImageOptimisationPolicy_404_IfCustomerSpecific()
+    {
+        // Arrange
+        var path = "imageOptimisationPolicies/cust-default";
 
         // Act
         var response = await httpClient.GetAsync(path);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth.Entities;
@@ -60,7 +61,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"StoragePolicies\" WHERE \"Id\" not in ('default', 'small')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
         DbContext.Database.ExecuteSqlRaw(
-            "DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" not in ('fast-higher', 'video-max', 'audio-max')");
+            "DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" not in ('fast-higher', 'video-max', 'audio-max', 'cust-default')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerOriginStrategies\"");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerStorage\"");
@@ -122,11 +123,24 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             { Id = "default", Name = "default", Sizes = "800,400,200" });
         await DbContext.ImageOptimisationPolicies.AddRangeAsync(
             new ImageOptimisationPolicy
-                { Id = "video-max", Name = "Video", TechnicalDetails = new[] { "System preset: Webm 720p(webm)" } },
+            {
+                Id = "video-max", Name = "Video", TechnicalDetails = new[] { "System preset: Webm 720p(webm)" },
+                Global = true
+            },
             new ImageOptimisationPolicy
-                { Id = "audio-max", Name = "Audio", TechnicalDetails = new[] { "System preset: Audio MP3 - 128k(mp3)" } },
+            {
+                Id = "audio-max", Name = "Audio", TechnicalDetails = new[] { "System preset: Audio MP3 - 128k(mp3)" },
+                Global = true
+            },
             new ImageOptimisationPolicy
-                { Id = "fast-higher", Name = "Fast higher quality", TechnicalDetails = new[] { "kdu_max" } });
+            {
+                Id = "fast-higher", Name = "Fast higher quality", TechnicalDetails = new[] { "kdu_max" }, Global = true
+            },
+            new ImageOptimisationPolicy
+            {
+                Id = "cust-default", Name = "Customer Scoped", TechnicalDetails = new[] { "default" },
+                Global = false, Customer = 99
+            });
         await DbContext.AuthServices.AddAsync(new AuthService
         {
             Customer = customer, Name = "clickthrough", Id = ClickThroughAuthService,

@@ -22,7 +22,7 @@ public class PolicyController : HydraController
     }
     
     /// <summary>
-    /// Get paged list of all image optimisation policies.
+    /// Get paged list of all global image optimisation policies.
     ///
     /// Supports ?page= and ?pageSize= query parameters
     /// </summary>
