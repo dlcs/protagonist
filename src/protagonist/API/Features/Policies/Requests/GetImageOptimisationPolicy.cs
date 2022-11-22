@@ -49,7 +49,7 @@ public class GetImageOptimisationPolicyHandler : IRequestHandler<GetImageOptimis
         var imageOptimisationPolicies = dlcsContext.ImageOptimisationPolicies.AsNoTracking();
 
         imageOptimisationPolicies = request.Customer.HasValue
-            ? imageOptimisationPolicies.Where(p => p.Customer == request.Customer || p.Global)
+            ? imageOptimisationPolicies.Where(p => p.Customer == request.Customer)
             : imageOptimisationPolicies.Where(p => p.Global);
         return imageOptimisationPolicies;
     }

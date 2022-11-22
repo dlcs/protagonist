@@ -56,7 +56,7 @@ public class CustomerPolicyTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Get_ImageOptimisationPolicy_200_Global()
+    public async Task Get_ImageOptimisationPolicy_404_Global()
     {
         // Arrange
         var path = "customers/99/imageOptimisationPolicies/video-max";
@@ -65,10 +65,7 @@ public class CustomerPolicyTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer(99).GetAsync(path);
         
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
-        var model = await response.ReadAsHydraResponseAsync<ImageOptimisationPolicy>();
-        model.TechnicalDetails.Should().BeEquivalentTo("System preset: Webm 720p(webm)");
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
     
     [Fact]
