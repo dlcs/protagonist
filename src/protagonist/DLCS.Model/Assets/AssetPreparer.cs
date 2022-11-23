@@ -2,6 +2,7 @@ using System;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
+using DLCS.Model.Policies;
 
 namespace DLCS.Model.Assets;
 
@@ -173,23 +174,37 @@ public static class AssetPreparer
             }
         }
 
+        // If we have an existing Asset and we are not allowed nonApiUpdates
         if (existingAsset != null && allowNonApiUpdates == false)
         {
-            // https://github.com/dlcs/protagonist/issues/341 for further changes to this validation
+            bool isNoOpPolicy = ImageOptimisationPolicyX.IsNoOpIdentifier(existingAsset.ImageOptimisationPolicy);
+            
             if (updateAsset.Width.HasValue && updateAsset.Width != 0 && updateAsset.Width != existingAsset.Width)
             {
-                return AssetPreparationResult.Failure("Width cannot be edited.");
+                // if it's a policy other than "none" or it is an audio asset then this isn't valid
+                if (!isNoOpPolicy || MIMEHelper.IsAudio(existingAsset.MediaType))
+                {
+                    return AssetPreparationResult.Failure("Width cannot be edited.");
+                }
             }
 
             if (updateAsset.Height.HasValue && updateAsset.Height != 0 && updateAsset.Height != existingAsset.Height)
             {
-                return AssetPreparationResult.Failure("Height cannot be edited.");
+                // if it's a policy other than "none" or it is an audio asset then this isn't valid
+                if (!isNoOpPolicy || MIMEHelper.IsAudio(existingAsset.MediaType))
+                {
+                    return AssetPreparationResult.Failure("Height cannot be edited.");
+                }
             }
 
             if (updateAsset.Duration.HasValue && updateAsset.Duration != 0 &&
                 updateAsset.Duration != existingAsset.Duration)
             {
-                return AssetPreparationResult.Failure("Duration cannot be edited.");
+                // if it's a policy other than "none" or family other than Timebased then isn't valid
+                if (!isNoOpPolicy || existingAsset.Family != AssetFamily.Timebased)
+                {
+                    return AssetPreparationResult.Failure("Duration cannot be edited.");
+                }
             }
 
             if (updateAsset.PreservedUri != null && updateAsset.PreservedUri != existingAsset.PreservedUri)
