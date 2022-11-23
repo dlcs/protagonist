@@ -1,6 +1,6 @@
-﻿using API.Settings;
+﻿using API.Features.Image.Validation;
+using API.Settings;
 using DLCS.Core.Collections;
-using DLCS.HydraModel;
 using FluentValidation;
 using Hydra.Collections;
 using Microsoft.Extensions.Options;
@@ -30,32 +30,14 @@ public class QueuePostValidator : AbstractValidator<HydraCollection<DLCS.HydraMo
             .Must(m => (m?.Length ?? 0) < maxBatch)
             .WithMessage($"Maximum assets in single batch is {maxBatch}");
 
-        RuleForEach(c => c.Members).SetValidator(new QueuePostImageValidator());
-    }
-}
+        RuleForEach(c => c.Members).SetValidator(new HydraImageValidator());
 
-public class QueuePostImageValidator : AbstractValidator<DLCS.HydraModel.Image>
-{
-    public QueuePostImageValidator()
-    {
-        // Required fields
-        RuleFor(a => a.ModelId).NotEmpty().WithMessage("Asset Id cannot be empty");
-        RuleFor(a => a.Space).NotEmpty().WithMessage("Space cannot be empty");
-        RuleFor(a => a.MediaType).NotEmpty().WithMessage("Media type must be specified");
-        RuleFor(a => a.Family).NotEmpty().WithMessage("Family must be specified");
-
-        // System edited fields
-        RuleFor(a => a.Batch).Empty().WithMessage("Should not include batch");
-        RuleFor(a => a.Width).Empty().WithMessage("Should not include width");
-        RuleFor(a => a.Height).Empty().WithMessage("Should not include height");
-        RuleFor(a => a.Duration).Empty().WithMessage("Should not include duration");
-        RuleFor(a => a.Finished).Empty().WithMessage("Should not include finished");
-        RuleFor(a => a.Created).Empty().WithMessage("Should not include created");
-        
-        // Other validation
-        RuleFor(a => a.MediaType)
-            .Must(mediaType => mediaType.StartsWith("video/") || mediaType.StartsWith("audio/"))
-            .When(a => a.Family == AssetFamily.Timebased)
-            .WithMessage("Timebased assets must have mediaType starting video/ or audio/");
+        // In addition to above validation, batched updates must have ModelId + Space as this can't be taken from
+        // path
+        RuleForEach(c => c.Members).ChildRules(members =>
+        {
+            members.RuleFor(a => a.ModelId).NotEmpty().WithMessage("Asset Id cannot be empty");
+            members.RuleFor(a => a.Space).NotEmpty().WithMessage("Space cannot be empty");
+        });
     }
 }

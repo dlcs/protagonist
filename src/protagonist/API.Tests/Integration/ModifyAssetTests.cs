@@ -72,7 +72,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_Creates_Asset));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff""
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff""
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
@@ -100,7 +102,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_ReturnsEngineStatusCode_IfEngineRequestFails));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff""
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff""
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
@@ -284,6 +288,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff"",
   ""initialOrigin"": ""{initialOrigin}""
 }}";
 
@@ -317,7 +323,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff""
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff""
 }}";
         
         A.CallTo(() =>
@@ -372,7 +380,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = new AssetId(customer, 1, nameof(Put_Asset_Returns_InsufficientStorage_if_Policy_Exceeded));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff""
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff""
 }}";
         
         // act
