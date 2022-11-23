@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using DLCS.AWS.S3;
+using DLCS.Core;
 using DLCS.Core.Types;
 
 namespace DLCS.AWS.ElasticTranscoder;
@@ -48,12 +49,12 @@ public static class TranscoderTemplates
     {
         // audio: {customer}/{space}/{image}/full/max/default.{extension} (mediatype like audio/)
         // video: {customer}/{space}/{image}/full/full/max/max/0/default.{extension} (mediatype like video/)
-        if (mediaType.StartsWith("audio/"))
+        if (MIMEHelper.IsAudio(mediaType))
         {
             return "{jobId}/{asset}/full/max/default.{extension}";
         }
             
-        if (mediaType.StartsWith("video/"))
+        if (MIMEHelper.IsVideo(mediaType))
         {
             return "{jobId}/{asset}/full/full/max/max/0/default.{extension}";
         }
