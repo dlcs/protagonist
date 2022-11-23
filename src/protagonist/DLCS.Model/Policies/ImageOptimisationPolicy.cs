@@ -24,3 +24,11 @@ public class ImageOptimisationPolicy
     /// </summary>
     public bool Global { get; set; }
 }
+
+public static class ImageOptimisationPolicyX
+{
+    /// <summary>
+    /// Check if this policy is the special no-op/no-transcode policy
+    /// </summary>
+    public static bool IsNoOp(this ImageOptimisationPolicy policy) => policy.Id == "none";
+}
