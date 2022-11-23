@@ -24,17 +24,11 @@ public class CustomerPolicyController : HydraController
     }
 
     /// <summary>
-    /// Get paged list of all customer accessible image optimisation policies (customer specific + global).
+    /// Get paged list of all customer accessible image optimisation policies (customer specific + global)
     ///
     /// Supports ?page= and ?pageSize= query parameters
     /// </summary>
     /// <returns>Collection of Hydra JSON-LD image optimisation policy object</returns>
-    /// <remarks>
-    /// Sample request:
-    ///
-    ///     GET: /customer/99/imageOptimisationPolicies/123
-    ///     GET: /customer/99//imageOptimisationPolicies/123?page=2&pagesize=10
-    /// </remarks>
     [HttpGet]
     [Route("imageOptimisationPolicies")]
     [ProducesResponseType(StatusCodes.Status200OK)]
