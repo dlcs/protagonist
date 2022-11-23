@@ -24,4 +24,20 @@ public class ImageOptimisationPolicyXTests
 
         policy.IsNoOp().Should().BeTrue();
     }
+    
+    [Theory]
+    [InlineData("video-max")]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData(null)]
+    public void IsNoOpIdentifier_False(string id)
+    {
+        ImageOptimisationPolicyX.IsNoOpIdentifier(id).Should().BeFalse();
+    }
+    
+    [Fact]
+    public void IsNoOpIdentifier_True()
+    {
+        ImageOptimisationPolicyX.IsNoOpIdentifier("none").Should().BeTrue();
+    }
 }

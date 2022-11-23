@@ -27,8 +27,18 @@ public class ImageOptimisationPolicy
 
 public static class ImageOptimisationPolicyX
 {
+    // Id of imageOptimisationPolicy for no-op
+    private const string NoneId = "none";
+
     /// <summary>
     /// Check if this policy is the special no-op/no-transcode policy
     /// </summary>
-    public static bool IsNoOp(this ImageOptimisationPolicy policy) => policy.Id == "none";
+    public static bool IsNoOp(this ImageOptimisationPolicy policy) => policy.Id == NoneId;
+    
+    /// <summary>
+    /// Check if specified policy Id is the special no-op/no-transcode policy
+    /// </summary>
+    /// <param name="policyId"></param>
+    /// <returns></returns>
+    public static bool IsNoOpIdentifier(string? policyId) => policyId == NoneId;
 }
