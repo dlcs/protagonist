@@ -18,27 +18,34 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
 
         // ImageOptimisationPolicy dependant validation
         When(a => ImageOptimisationPolicyX.IsNoOpIdentifier(a.ImageOptimisationPolicy) && a.Family != AssetFamily.File,
-            () =>
+                () =>
+                {
+                    When(a => !MIMEHelper.IsAudio(a.MediaType), () =>
+                    {
+                        RuleFor(a => a.Width)
+                            .NotEmpty()
+                            .WithMessage("Width cannot be empty if 'none' imageOptimisationPolicy specified");
+                        RuleFor(a => a.Height)
+                            .NotEmpty()
+                            .WithMessage("Height cannot be empty if 'none' imageOptimisationPolicy specified");
+                    });
+
+                    RuleFor(a => a.Duration)
+                        .NotEmpty()
+                        .When(a => a.Family == AssetFamily.Timebased)
+                        .WithMessage(
+                            "Duration cannot be empty if 'none' imageOptimisationPolicy specified for timebased asset");
+                    RuleFor(a => a.Duration)
+                        .Empty()
+                        .When(a => a.Family == AssetFamily.Image)
+                        .WithMessage("Should not include duration");
+                })
+            .Otherwise(() =>
             {
-                RuleFor(a => a.Width)
-                    .NotEmpty()
-                    .When(a => !MIMEHelper.IsAudio(a.MediaType))
-                    .WithMessage("Width cannot be empty if 'none' imageOptimisationPolicy specified");
-                RuleFor(a => a.Height)
-                    .NotEmpty()
-                    .When(a => !MIMEHelper.IsAudio(a.MediaType))
-                    .WithMessage("Height cannot be empty if 'none' imageOptimisationPolicy specified");
-                RuleFor(a => a.Duration)
-                    .NotEmpty()
-                    .When(a => a.Family == AssetFamily.Timebased)
-                    .WithMessage(
-                        "Duration cannot be empty if 'none' imageOptimisationPolicy specified for timebased asset");
-            }).Otherwise(() =>
-        {
-            RuleFor(a => a.Width).Empty().WithMessage("Should not include width");
-            RuleFor(a => a.Height).Empty().WithMessage("Should not include height");
-            RuleFor(a => a.Duration).Empty().WithMessage("Should not include duration");
-        });
+                RuleFor(a => a.Width).Empty().WithMessage("Should not include width");
+                RuleFor(a => a.Height).Empty().WithMessage("Should not include height");
+                RuleFor(a => a.Duration).Empty().WithMessage("Should not include duration");
+            });
 
         // System edited fields
         RuleFor(a => a.Batch).Empty().WithMessage("Should not include batch");

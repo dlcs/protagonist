@@ -107,6 +107,17 @@ public class HydraImageValidatorTests
     }
     
     [Fact]
+    public void Duration_Provided_NoTranscode_ButImage()
+    {
+        var model = new DLCS.HydraModel.Image
+            { Duration = 10, ImageOptimisationPolicy = "none", Family = AssetFamily.Image };
+        var result = sut.TestValidate(model);
+        result
+            .ShouldHaveValidationErrorFor(a => a.Duration)
+            .WithErrorMessage("Should not include duration");
+    }
+    
+    [Fact]
     public void Duration_NotSetForTimebased_NoTranscodePolicy()
     {
         var model = new DLCS.HydraModel.Image { ImageOptimisationPolicy = "none", Family = AssetFamily.Timebased };
