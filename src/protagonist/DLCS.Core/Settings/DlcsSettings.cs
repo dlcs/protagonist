@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using DLCS.Core.Collections;
+using DLCS.Core.Strings;
 
 namespace DLCS.Core.Settings;
 
@@ -78,28 +80,27 @@ public class IngestDefaultSettings
             throw new ArgumentOutOfRangeException(nameof(family), family, "Could not find defaults for provided family");
         }
 
-        if (defaultForFamily.OptimisationPolicy.Count == 1)
+        string? GetMatchingPolicy(Dictionary<string, string>? policyDict)
         {
-            return new IngestPresets(defaultForFamily.OptimisationPolicy.Single().Value,
-                defaultForFamily.DeliveryChannel, defaultForFamily.ThumbnailPolicy);
+            if (policyDict.IsNullOrEmpty()) return null;
+
+            var matchingPolicy = policyDict.FirstOrDefault(p => mediaType.StartsWith(p.Key)).Value;
+            return matchingPolicy.HasText()
+                ? matchingPolicy
+                : policyDict.SingleOrDefault(a => a.Key == catchAllPolicy).Value;
         }
 
-        var optimisationPolicy =
-            defaultForFamily.OptimisationPolicy.FirstOrDefault(p => mediaType.StartsWith(p.Key)).Value;
-        if (string.IsNullOrEmpty(optimisationPolicy))
-        {
-            optimisationPolicy = defaultForFamily.OptimisationPolicy.SingleOrDefault(a => a.Key == catchAllPolicy).Key;
-        }
+        var optimisationPolicy = GetMatchingPolicy(defaultForFamily.OptimisationPolicy);
+        var thumbnailPolicy = GetMatchingPolicy(defaultForFamily.ThumbnailPolicy);
 
-        return new IngestPresets(optimisationPolicy, defaultForFamily.DeliveryChannel,
-            defaultForFamily.ThumbnailPolicy);
+        return new IngestPresets(optimisationPolicy, defaultForFamily.DeliveryChannel, thumbnailPolicy);
     }
 }
 
 public class IngestFamilyDefaults
 {
     /// <summary>
-    /// A collection of optimisation policies, keyed by type mediaType. e.g. "audio"/"video".
+    /// A collection of optimisation policies, keyed by mediaType. e.g. "audio"/"video".
     /// Key is "*" for all in that family, or as a default if there are no other matching items.
     /// </summary>
     public Dictionary<string, string> OptimisationPolicy { get; set; }
@@ -110,7 +111,8 @@ public class IngestFamilyDefaults
     public string DeliveryChannel { get; set; }
     
     /// <summary>
-    /// Default thumbnail policy for family
+    /// A collection of thumbnail policies, keyed by mediaType. e.g. "audio"/"video".
+    /// Key is "*" for all in that family, or as a default if there are no other matching items.
     /// </summary>
-    public string ThumbnailPolicy { get; set; }
+    public Dictionary<string, string> ThumbnailPolicy { get; set; }
 }
