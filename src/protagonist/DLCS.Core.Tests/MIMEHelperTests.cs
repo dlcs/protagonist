@@ -1,7 +1,4 @@
-﻿using FluentAssertions;
-using Xunit;
-
-namespace DLCS.Core.Tests;
+﻿namespace DLCS.Core.Tests;
 
 public class MIMEHelperTests
 {
@@ -44,4 +41,34 @@ public class MIMEHelperTests
     [InlineData(" ")]
     public void GetContentTypeForExtension_ReturnsNullForNullOrWhitespace(string contentType)
         => MIMEHelper.GetContentTypeForExtension(contentType).Should().BeNull();
+
+    [Theory]
+    [InlineData("audio/mp4")]
+    [InlineData("audio/mp3")]
+    public void IsAudio_True(string mediaType)
+        => MIMEHelper.IsAudio(mediaType).Should().BeTrue();
+    
+    [Theory]
+    [InlineData("x-audio/mp4")]
+    [InlineData("video/mp4")]
+    [InlineData("image/jpeg")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void IsAudio_False(string mediaType)
+        => MIMEHelper.IsAudio(mediaType).Should().BeFalse();
+    
+    [Theory]
+    [InlineData("video/mp4")]
+    [InlineData("video/mpeg")]
+    public void IsVideo_True(string mediaType)
+        => MIMEHelper.IsVideo(mediaType).Should().BeTrue();
+    
+    [Theory]
+    [InlineData("x-video/mp4")]
+    [InlineData("audio/mp3")]
+    [InlineData("image/jpeg")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void IsVideo_False(string mediaType)
+        => MIMEHelper.IsVideo(mediaType).Should().BeFalse();
 }

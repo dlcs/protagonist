@@ -186,11 +186,11 @@ public class AssetProcessor
         }
         else if (asset.Family == AssetFamily.Timebased && asset.MediaType.HasText())
         {
-            if (asset.MediaType.StartsWith("video/"))
+            if (MIMEHelper.IsVideo(asset.MediaType))
             {
                 changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Video, asset);
             }
-            else if (asset.MediaType.StartsWith("audio/"))
+            else if (MIMEHelper.IsAudio(asset.MediaType))
             {
                 changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Audio, asset);
             }

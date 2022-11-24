@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using API.Converters;
 using API.Features.Image.Requests;
+using API.Features.Image.Validation;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core;
@@ -80,9 +81,17 @@ public class ImageController : HydraController
         [FromRoute] int customerId,
         [FromRoute] int spaceId,
         [FromRoute] string imageId,
-        [FromBody] DLCS.HydraModel.Image hydraAsset)
+        [FromBody] DLCS.HydraModel.Image hydraAsset,
+        [FromServices] HydraImageValidator validator,
+        CancellationToken cancellationToken)
     {
-        return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset);
+        var validationResult = await validator.ValidateAsync(hydraAsset, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
+        
+        return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset, cancellationToken);
     }
 
     /// <summary>
@@ -115,9 +124,10 @@ public class ImageController : HydraController
         [FromRoute] int customerId,
         [FromRoute] int spaceId,
         [FromRoute] string imageId,
-        [FromBody] DLCS.HydraModel.Image hydraAsset)
+        [FromBody] DLCS.HydraModel.Image hydraAsset,
+        CancellationToken cancellationToken)
     {
-        return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset);
+        return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset, cancellationToken);
     }
 
     /// <summary>
@@ -185,33 +195,40 @@ public class ImageController : HydraController
     [ProducesResponseType(400, Type = typeof(ProblemDetails))]
     [HttpPost]  // This should be a PUT? But then it will be the same op to same location as a normal asset without File.
     [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000, ValueLengthLimit = 100_000_000)]
-    public async Task<IActionResult> PostImageWithFileBytes([FromRoute] int customerId, [FromRoute] int spaceId,
-        [FromRoute] string imageId, [FromBody] ImageWithFile asset)
+    public async Task<IActionResult> PostImageWithFileBytes(
+        [FromRoute] int customerId, 
+        [FromRoute] int spaceId,
+        [FromRoute] string imageId,
+        [FromBody] ImageWithFile hydraAsset,
+        [FromServices] HydraImageValidator validator,
+        CancellationToken cancellationToken)
     {
+        var validationResult = await validator.ValidateAsync(hydraAsset, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
+        
         const string errorTitle = "POST of Asset bytes failed";
         var assetId = new AssetId(customerId, spaceId, imageId);
-        if (asset.File == null || asset.File.Length == 0)
+        if (hydraAsset.File == null || hydraAsset.File.Length == 0)
         {
             return this.HydraProblem("No file bytes in request body", assetId.ToString(),
                 (int?)HttpStatusCode.BadRequest, errorTitle);
         }
-        if (asset.MediaType.IsNullOrEmpty())
-        {
-            return this.HydraProblem("MediaType must be supplied", assetId.ToString(),
-                (int?)HttpStatusCode.BadRequest, errorTitle);
-        }
-        var saveRequest = new HostAssetAtOrigin(assetId, asset.File, asset.MediaType!);
 
-        var result = await Mediator.Send(saveRequest);
+        var saveRequest = new HostAssetAtOrigin(assetId, hydraAsset.File, hydraAsset.MediaType!);
+
+        var result = await Mediator.Send(saveRequest, cancellationToken);
         if (string.IsNullOrEmpty(result.Origin))
         {
             return this.HydraProblem("Could not save uploaded file", assetId.ToString(), 500, errorTitle);
         }
 
-        asset.Origin = result.Origin;
-        asset.File = null;
+        hydraAsset.Origin = result.Origin;
+        hydraAsset.File = null;
 
-        return await PutOrPatchAsset(customerId, spaceId, imageId, asset);
+        return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset, cancellationToken);
     }
 
     /// <summary>
@@ -235,7 +252,7 @@ public class ImageController : HydraController
     }
 
     private Task<IActionResult> PutOrPatchAsset(int customerId, int spaceId, string imageId,
-        DLCS.HydraModel.Image hydraAsset)
+        DLCS.HydraModel.Image hydraAsset, CancellationToken cancellationToken)
     {
         var assetId = new AssetId(customerId, spaceId, imageId);
         var asset = hydraAsset.ToDlcsModel(customerId, spaceId, imageId);
@@ -252,6 +269,6 @@ public class ImageController : HydraController
             createOrUpdateRequest,
             asset => asset.ToHydra(GetUrlRoots()),
             assetId.ToString(),
-            "Upsert asset failed");
+            "Upsert asset failed", cancellationToken);
     }
 }
