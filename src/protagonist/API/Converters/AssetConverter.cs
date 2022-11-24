@@ -59,7 +59,8 @@ public static class AssetConverter
             Family = (AssetFamily)dbAsset.Family,
             // Text (to replace with https://github.com/dlcs/protagonist/issues/148)
             // TextType
-            Roles = dbAsset.RolesList.ToArray()
+            Roles = dbAsset.RolesList.ToArray(),
+            DeliveryChannel = dbAsset.DeliveryChannel
         };
         if (dbAsset.Batch > 0)
         {
@@ -258,6 +259,11 @@ public static class AssetConverter
         if (hydraImage.MediaType != null)
         {
             asset.MediaType = hydraImage.MediaType;
+        }
+        
+        if (hydraImage.DeliveryChannel != null)
+        {
+            asset.DeliveryChannel = hydraImage.DeliveryChannel;
         }
 
         var thumbnailPolicy = hydraImage.ThumbnailPolicy.GetLastPathElement("thumbnailPolicies/");

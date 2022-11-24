@@ -194,6 +194,11 @@ public class Image : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 130, PropertyName = "textType")]
     public string? TextType { get; set; } // e.g., METS-ALTO, hOCR, TEI, text/plain etc
+    
+    [RdfProperty(Description = "Delivery channel specifying how the asset will be available.",
+        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 140, PropertyName = "textType")]
+    public string[]? DeliveryChannel { get; set; }
    
 
     [RdfProperty(Description = "The role or roles that a user must possess to view this image above maxUnauthorised. " +
