@@ -54,7 +54,6 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         this.authServicesRepository = authServicesRepository;
     }
 
-    /// <inheritdoc />
     public async Task<CreateCustomerResult> Handle(CreateCustomer request, CancellationToken cancellationToken)
     {
         // Reproducing POST behaviour for customer in Deliverator

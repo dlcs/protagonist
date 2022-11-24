@@ -18,7 +18,6 @@ public interface ICustomerRepository
     /// <returns><see cref="Customer"/> object if found, else null</returns>
     public Task<Customer?> GetCustomer(int customerId);
 
-    
     /// <summary>
     /// Get Customer with specified Name
     /// </summary>

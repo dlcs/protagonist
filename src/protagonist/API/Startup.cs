@@ -2,6 +2,7 @@ using System.Security.Claims;
 using API.Auth;
 using API.Features.Image.Ingest;
 using API.Infrastructure;
+using API.Infrastructure.Validation;
 using API.Settings;
 using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
@@ -44,7 +45,11 @@ public class Startup
         var cachingSection = configuration.GetSection("Caching");
 
         services
-            .Configure<ApiSettings>(configuration)
+            .AddOptions<ApiSettings>().Bind(configuration)
+            .ValidateFluentValidation()
+            .ValidateOnStart();
+
+        services
             .Configure<NamedQueryTemplateSettings>(configuration)
             .Configure<DlcsSettings>(configuration.GetSection("DLCS"))
             .Configure<CacheSettings>(cachingSection);
@@ -54,6 +59,7 @@ public class Startup
         
         services
             .AddHttpContextAccessor()
+            .AddSingleton<ApiKeyGenerator>()
             .AddSingleton<IEncryption, SHA256>()
             .AddSingleton<DlcsApiAuth>()
             .AddTransient<ClaimsPrincipal>(s => s.GetRequiredService<IHttpContextAccessor>().HttpContext.User)

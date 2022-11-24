@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using DLCS.AWS.SSM;
 using Serilog;
 
 namespace API;
@@ -35,14 +35,7 @@ public class Program
             )
             .ConfigureAppConfiguration((context, builder) =>
             {
-                if (context.HostingEnvironment.IsProduction())
-                {
-                    builder.AddSystemsManager(configurationSource =>
-                    {
-                        configurationSource.Path = "/protagonist/";
-                        configurationSource.ReloadAfter = TimeSpan.FromMinutes(90);
-                    });
-                }
+                builder.AddSystemsManager(context);
             })
             .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
 }
