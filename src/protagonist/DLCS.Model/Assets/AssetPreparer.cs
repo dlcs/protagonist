@@ -177,12 +177,13 @@ public static class AssetPreparer
         // If we have an existing Asset and we are not allowed nonApiUpdates
         if (existingAsset != null && allowNonApiUpdates == false)
         {
-            bool isNoOpPolicy = ImageOptimisationPolicyX.IsNoOpIdentifier(existingAsset.ImageOptimisationPolicy);
+            bool isNotProcessedIdentifier =
+                ImageOptimisationPolicyX.IsNotProcessedIdentifier(existingAsset.ImageOptimisationPolicy);
             
             if (updateAsset.Width.HasValue && updateAsset.Width != 0 && updateAsset.Width != existingAsset.Width)
             {
                 // if it's a policy other than "none" or it is an audio asset then this isn't valid
-                if (!isNoOpPolicy || MIMEHelper.IsAudio(existingAsset.MediaType))
+                if (!isNotProcessedIdentifier || MIMEHelper.IsAudio(existingAsset.MediaType))
                 {
                     return AssetPreparationResult.Failure("Width cannot be edited.");
                 }
@@ -191,7 +192,7 @@ public static class AssetPreparer
             if (updateAsset.Height.HasValue && updateAsset.Height != 0 && updateAsset.Height != existingAsset.Height)
             {
                 // if it's a policy other than "none" or it is an audio asset then this isn't valid
-                if (!isNoOpPolicy || MIMEHelper.IsAudio(existingAsset.MediaType))
+                if (!isNotProcessedIdentifier || MIMEHelper.IsAudio(existingAsset.MediaType))
                 {
                     return AssetPreparationResult.Failure("Height cannot be edited.");
                 }
@@ -201,7 +202,7 @@ public static class AssetPreparer
                 updateAsset.Duration != existingAsset.Duration)
             {
                 // if it's a policy other than "none" or family other than Timebased then isn't valid
-                if (!isNoOpPolicy || existingAsset.Family != AssetFamily.Timebased)
+                if (!isNotProcessedIdentifier || existingAsset.Family != AssetFamily.Timebased)
                 {
                     return AssetPreparationResult.Failure("Duration cannot be edited.");
                 }

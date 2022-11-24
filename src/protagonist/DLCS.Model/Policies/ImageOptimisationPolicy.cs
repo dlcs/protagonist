@@ -33,12 +33,12 @@ public static class ImageOptimisationPolicyX
     /// <summary>
     /// Check if this policy is the special no-op/no-transcode policy
     /// </summary>
-    public static bool IsNoOp(this ImageOptimisationPolicy policy) => policy.Id == NoneId;
+    public static bool IsNotProcessed(this ImageOptimisationPolicy policy) => policy.Id == NoneId;
     
     /// <summary>
     /// Check if specified policy Id is the special no-op/no-transcode policy
     /// </summary>
     /// <param name="policyId"></param>
     /// <returns></returns>
-    public static bool IsNoOpIdentifier(string? policyId) => policyId == NoneId;
+    public static bool IsNotProcessedIdentifier(string? policyId) => policyId == NoneId;
 }

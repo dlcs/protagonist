@@ -14,7 +14,7 @@ public class ImageOptimisationPolicyXTests
     {
         var policy = new ImageOptimisationPolicy { Id = id };
 
-        policy.IsNoOp().Should().BeFalse();
+        policy.IsNotProcessed().Should().BeFalse();
     }
     
     [Fact]
@@ -22,7 +22,7 @@ public class ImageOptimisationPolicyXTests
     {
         var policy = new ImageOptimisationPolicy { Id = "none" };
 
-        policy.IsNoOp().Should().BeTrue();
+        policy.IsNotProcessed().Should().BeTrue();
     }
     
     [Theory]
@@ -32,12 +32,12 @@ public class ImageOptimisationPolicyXTests
     [InlineData(null)]
     public void IsNoOpIdentifier_False(string id)
     {
-        ImageOptimisationPolicyX.IsNoOpIdentifier(id).Should().BeFalse();
+        ImageOptimisationPolicyX.IsNotProcessedIdentifier(id).Should().BeFalse();
     }
     
     [Fact]
     public void IsNoOpIdentifier_True()
     {
-        ImageOptimisationPolicyX.IsNoOpIdentifier("none").Should().BeTrue();
+        ImageOptimisationPolicyX.IsNotProcessedIdentifier("none").Should().BeTrue();
     }
 }

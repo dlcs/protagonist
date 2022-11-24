@@ -17,7 +17,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleFor(a => a.Family).NotEmpty().WithMessage("Family must be specified");
 
         // ImageOptimisationPolicy dependant validation
-        When(a => ImageOptimisationPolicyX.IsNoOpIdentifier(a.ImageOptimisationPolicy) && a.Family != AssetFamily.File,
+        When(a => ImageOptimisationPolicyX.IsNotProcessedIdentifier(a.ImageOptimisationPolicy) && a.Family != AssetFamily.File,
                 () =>
                 {
                     When(a => !MIMEHelper.IsAudio(a.MediaType), () =>
