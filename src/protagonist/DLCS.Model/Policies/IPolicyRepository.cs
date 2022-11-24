@@ -9,7 +9,7 @@ public interface IPolicyRepository : IThumbnailPolicyRepository
     /// <summary>
     /// Get ImageOptimisationPolicy with specified Id.
     /// </summary>
-    Task<ImageOptimisationPolicy?> GetImageOptimisationPolicy(string imageOptimisationPolicyId,
+    Task<ImageOptimisationPolicy?> GetImageOptimisationPolicy(string imageOptimisationPolicyId, int customerId,
         CancellationToken cancellationToken = default);
 
     /// <summary>

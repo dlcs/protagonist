@@ -22,17 +22,11 @@ public class PolicyController : HydraController
     }
     
     /// <summary>
-    /// Get paged list of all image optimisation policies.
+    /// Get paged list of all global image optimisation policies.
     ///
     /// Supports ?page= and ?pageSize= query parameters
     /// </summary>
     /// <returns>Collection of Hydra JSON-LD image optimisation policy object</returns>
-    /// <remarks>
-    /// Sample request:
-    ///
-    ///     GET: /imageOptimisationPolicies
-    ///     GET: /imageOptimisationPolicies?page=2&pagesize=10
-    /// </remarks>
     [HttpGet]
     [AllowAnonymous]
     [Route("/imageOptimisationPolicies")]

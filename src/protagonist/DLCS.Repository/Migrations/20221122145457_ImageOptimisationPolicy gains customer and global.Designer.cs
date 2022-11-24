@@ -3,6 +3,7 @@ using System;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    partial class DlcsContextModelSnapshot : ModelSnapshot
+    [Migration("20221122145457_ImageOptimisationPolicy gains customer and global")]
+    partial class ImageOptimisationPolicygainscustomerandglobal
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -566,7 +568,7 @@ namespace DLCS.Repository.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<int>("Customer")
+                    b.Property<int?>("Customer")
                         .HasColumnType("integer");
 
                     b.Property<bool>("Global")
@@ -582,7 +584,7 @@ namespace DLCS.Repository.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.HasKey("Id", "Customer");
+                    b.HasKey("Id");
 
                     b.ToTable("ImageOptimisationPolicies");
                 });

@@ -18,6 +18,7 @@ public class CustomerOriginStrategyRepositoryTests
 {
     private readonly DlcsContext dbContext;
     private readonly CustomerOriginStrategyRepository sut;
+    
     public CustomerOriginStrategyRepositoryTests(DlcsDatabaseFixture dbFixture)
     {
         dbContext = dbFixture.DbContext;

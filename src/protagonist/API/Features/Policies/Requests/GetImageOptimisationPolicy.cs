@@ -12,10 +12,12 @@ namespace API.Features.Policies.Requests;
 public class GetImageOptimisationPolicy : IRequest<FetchEntityResult<ImageOptimisationPolicy>>
 {
     public string ImageOptimisationPolicyId { get; }
+    public int? Customer { get; }
 
-    public GetImageOptimisationPolicy(string imageOptimisationPolicyId)
+    public GetImageOptimisationPolicy(string imageOptimisationPolicyId, int? customer = null)
     {
         ImageOptimisationPolicyId = imageOptimisationPolicyId;
+        Customer = customer;
     }
 }
 
@@ -32,11 +34,23 @@ public class GetImageOptimisationPolicyHandler : IRequestHandler<GetImageOptimis
     public async Task<FetchEntityResult<ImageOptimisationPolicy>> Handle(GetImageOptimisationPolicy request,
         CancellationToken cancellationToken)
     {
-        var policy = await dlcsContext.ImageOptimisationPolicies.AsNoTracking()
+        var filteredPolicies = GetFilteredPolicies(request);
+
+        var policy = await filteredPolicies
             .SingleOrDefaultAsync(b => b.Id == request.ImageOptimisationPolicyId,
                 cancellationToken);
         return policy == null
             ? FetchEntityResult<ImageOptimisationPolicy>.NotFound()
             : FetchEntityResult<ImageOptimisationPolicy>.Success(policy);
+    }
+
+    private IQueryable<ImageOptimisationPolicy> GetFilteredPolicies(GetImageOptimisationPolicy request)
+    {
+        var imageOptimisationPolicies = dlcsContext.ImageOptimisationPolicies.AsNoTracking();
+
+        imageOptimisationPolicies = request.Customer.HasValue
+            ? imageOptimisationPolicies.Where(p => p.Customer == request.Customer)
+            : imageOptimisationPolicies.Where(p => p.Global);
+        return imageOptimisationPolicies;
     }
 }

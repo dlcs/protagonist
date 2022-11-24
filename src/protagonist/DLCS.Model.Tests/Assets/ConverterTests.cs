@@ -74,6 +74,27 @@ public class ConverterTests
         asset.Id.Should().Be(AssetId.FromString("99/55/model-id"));
     }
     
+    [Theory]
+    [InlineData("https://dlcs.io/thumbnailPolicies/thumb100")]
+    [InlineData("thumb100")]
+    public void ToDlcsModel_ThumbnailPolicy_CanBeIdOrFull(string policy)
+    {
+        var hydraImage = new Image { ThumbnailPolicy = policy };
+        var asset = hydraImage.ToDlcsModel(99, 55, "model-id");
+        asset.ThumbnailPolicy.Should().Be("thumb100");
+    }
+
+    [Theory]
+    [InlineData("https://dlcs.io/imageOptimisationPolicies/super-max")]
+    [InlineData("https://dlcs.io/customer/123/imageOptimisationPolicies/super-max")]
+    [InlineData("super-max")]
+    public void ToDlcsModel_ImageOptimisationPolicy_CanBeIdOrFull(string policy)
+    {
+        var hydraImage = new Image { ImageOptimisationPolicy = policy };
+        var asset = hydraImage.ToDlcsModel(99, 55, "model-id");
+        asset.ImageOptimisationPolicy.Should().Be("super-max");
+    }
+    
     [Fact]
     public void ToDlcsModel_All_Fields_Should_Convert()
     {

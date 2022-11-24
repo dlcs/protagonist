@@ -205,7 +205,7 @@ public class AssetProcessor
         ImageOptimisationPolicy? policy = null;
         if (incomingPolicy.HasText())
         {
-            policy = await policyRepository.GetImageOptimisationPolicy(incomingPolicy);
+            policy = await policyRepository.GetImageOptimisationPolicy(incomingPolicy, asset.Customer);
         }
 
         if (policy == null)
@@ -213,7 +213,7 @@ public class AssetProcessor
             // The asset doesn't have a valid ImageOptimisationPolicy
             // This is adapted from Deliverator, but there wasn't a way of 
             // taking the policy from the incoming PUT. There now is.
-            var imagePolicy = await policyRepository.GetImageOptimisationPolicy(key);
+            var imagePolicy = await policyRepository.GetImageOptimisationPolicy(key, asset.Customer);
             if (imagePolicy != null)
             {
                 asset.ImageOptimisationPolicy = imagePolicy.Id;

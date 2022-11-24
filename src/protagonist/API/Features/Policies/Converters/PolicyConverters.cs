@@ -19,7 +19,8 @@ public static class PolicyConverters
     /// </summary>
     public static HydraOptimisationPolicy ToHydra(this EntityOptimisationPolicy policy, string baseUrl)
     {
-        var hydra = new HydraOptimisationPolicy(baseUrl, policy.Id, policy.Name, string.Join(",", policy.TechnicalDetails));
+        var hydra = new HydraOptimisationPolicy(baseUrl, policy.Id, policy.Name,
+            string.Join(",", policy.TechnicalDetails), policy.Global, policy.Customer);
         return hydra;
     }
     

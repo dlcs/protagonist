@@ -265,11 +265,19 @@ public static class AssetConverter
         {
             asset.ThumbnailPolicy = thumbnailPolicy;
         }
+        else if (hydraImage.ThumbnailPolicy.HasText())
+        {
+            asset.ThumbnailPolicy = hydraImage.ThumbnailPolicy;
+        }
         
         var imageOptimisationPolicy = hydraImage.ImageOptimisationPolicy.GetLastPathElement("imageOptimisationPolicies/");
         if (imageOptimisationPolicy != null)
         {
             asset.ImageOptimisationPolicy = imageOptimisationPolicy;
+        }
+        else if (hydraImage.ImageOptimisationPolicy.HasText())
+        {
+            asset.ImageOptimisationPolicy = hydraImage.ImageOptimisationPolicy;
         }
         
         // This can only arrive on a new Asset
