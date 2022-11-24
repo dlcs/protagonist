@@ -375,6 +375,13 @@ public partial class DlcsContext : DbContext
             entity.Property(e => e.NumberReference3).IsRequired();
             entity.Property(e => e.Ingesting).IsRequired();
             entity.Property(e => e.Batch).IsRequired();
+            entity.Property(e => e.DeliveryChannel)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasConversion(
+                    dc => string.Join(',', dc.OrderBy(v => v)),
+                    dc => dc.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray(),
+                    stringArrayComparer);
 
             entity.Ignore(e => e.InitialOrigin);
         });
