@@ -97,7 +97,9 @@ public class AssetProcessor
 
             if (existingAsset == null)
             {
-                var imagePolicyChanged = await SelectImageOptimisationPolicy(updatedAsset);
+                var preset = settings.IngestDefaults.GetPresets((char)updatedAsset.Family!,
+                    updatedAsset.MediaType ?? string.Empty);
+                var imagePolicyChanged = await SelectImageOptimisationPolicy(updatedAsset, preset);
                 if (imagePolicyChanged)
                 {
                     // NB the AssetPreparer has already inspected image policy, but this will pick up
@@ -105,7 +107,7 @@ public class AssetProcessor
                     requiresEngineNotification = true;
                 }
 
-                var thumbnailPolicyChanged = await SelectThumbnailPolicy(updatedAsset);
+                var thumbnailPolicyChanged = await SelectThumbnailPolicy(updatedAsset, preset);
                 if (thumbnailPolicyChanged)
                 {
                     // We won't alter the value of requiresEngineNotification
@@ -162,38 +164,31 @@ public class AssetProcessor
         return assetPreparationResult.RequiresReingest || alwaysReingest;
     }
 
-    private async Task<bool> SelectThumbnailPolicy(Asset asset)
+    private async Task<bool> SelectThumbnailPolicy(Asset asset, IngestPresets ingestPresets)
     {
         bool changed = false;
         if (asset.Family == AssetFamily.Image)
         {
-            changed = await SetThumbnailPolicy(settings.IngestDefaults.ThumbnailPolicies.Graphics, asset);
+            changed = await SetThumbnailPolicy(ingestPresets.ThumbnailPolicy, asset);
         }
-        else if (asset.Family == AssetFamily.Timebased && asset.MediaType.HasText() && asset.MediaType.Contains("video/"))
+        else if (asset.Family == AssetFamily.Timebased && MIMEHelper.IsVideo(asset.MediaType))
         {
-            changed = await SetThumbnailPolicy(settings.IngestDefaults.ThumbnailPolicies.Video, asset);
+            changed = await SetThumbnailPolicy(ingestPresets.ThumbnailPolicy, asset);
         }
 
         return changed;
     }
 
-    private async Task<bool> SelectImageOptimisationPolicy(Asset asset)
+    private async Task<bool> SelectImageOptimisationPolicy(Asset asset, IngestPresets ingestPresets)
     {
         bool changed = false;
         if (asset.Family == AssetFamily.Image)
         {
-            changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Graphics, asset);
+            changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
         }
-        else if (asset.Family == AssetFamily.Timebased && asset.MediaType.HasText())
+        else if (asset.Family == AssetFamily.Timebased)
         {
-            if (MIMEHelper.IsVideo(asset.MediaType))
-            {
-                changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Video, asset);
-            }
-            else if (MIMEHelper.IsAudio(asset.MediaType))
-            {
-                changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Audio, asset);
-            }
+            changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
         }
 
         return changed;

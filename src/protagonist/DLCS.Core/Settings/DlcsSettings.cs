@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace DLCS.Core.Settings;
 
@@ -20,11 +22,6 @@ public class DlcsSettings
     public int DefaultTimeoutMs { get; set; } = 30000;
 
     /// <summary>
-    /// The AWS region that DLCS is running in
-    /// </summary>
-    public string Region { get; set; } = "eu-west-1";
-    
-    /// <summary>
     /// URL format of NamedQuery for generating manifest for space.
     /// </summary>
     public string SpaceManifestQuery { get; set; }
@@ -36,30 +33,84 @@ public class DlcsSettings
     
     public Uri EngineDirectIngestUri { get; set; }
     
-    public SettingsIngestDefaults IngestDefaults { get; set; }
+    /// <summary>
+    /// A collection of default settings for ingesting assets, keyed by AssetFamily
+    /// </summary>
+    public IngestDefaultSettings IngestDefaults { get; set; }
 }
 
-public class SettingsIngestDefaults
+public class IngestDefaultSettings
 {
-    public SettingsIngestDefaultsImageOptimisationPolicies ImageOptimisationPolicies { get; set; }
+    /// <summary>
+    /// A collection of default settings for ingesting assets, keyed by AssetFamily
+    /// </summary>
+    public Dictionary<string, IngestFamilyDefaults> FamilyDefaults { get; set; }
 
-    public SettingsIngestDefaultsThumbnailPolicies ThumbnailPolicies { get; set; }
-
+    /// <summary>
+    /// Default storage policy
+    /// </summary>
     public string StoragePolicy { get; set; }
 
-    public class SettingsIngestDefaultsImageOptimisationPolicies
+    // Naive cache of presets that have already been fetched
+    private static readonly Dictionary<string, IngestPresets> CachedPresets = new();
+    
+    /// <summary>
+    /// Get ingest presets for specific family and mediaType
+    /// </summary>
+    public IngestPresets GetPresets(char family, string mediaType)
     {
-        public string Audio { get; set; }
+        var cacheKey = $"{family}:{mediaType}";
+        if (CachedPresets.TryGetValue(cacheKey, out var presets))
+        {
+            return presets;
+        }
 
-        public string Video { get; set; }
-
-        public string Graphics { get; set; }
+        var newPreset = GetPresetInternal(family, mediaType);
+        CachedPresets[cacheKey] = newPreset;
+        return newPreset;
     }
-
-    public class SettingsIngestDefaultsThumbnailPolicies
+    
+    private IngestPresets GetPresetInternal(char family, string mediaType)
     {
-        public string Video { get; set; }
+        const string catchAllPolicy = "*";
+        if (!FamilyDefaults.TryGetValue(family.ToString(), out var defaultForFamily))
+        {
+            throw new ArgumentOutOfRangeException(nameof(family), family, "Could not find defaults for provided family");
+        }
 
-        public string Graphics { get; set; }
+        if (defaultForFamily.OptimisationPolicy.Count == 1)
+        {
+            return new IngestPresets(defaultForFamily.OptimisationPolicy.Single().Value,
+                defaultForFamily.DeliveryChannel, defaultForFamily.ThumbnailPolicy);
+        }
+
+        var optimisationPolicy =
+            defaultForFamily.OptimisationPolicy.FirstOrDefault(p => mediaType.StartsWith(p.Key)).Value;
+        if (string.IsNullOrEmpty(optimisationPolicy))
+        {
+            optimisationPolicy = defaultForFamily.OptimisationPolicy.SingleOrDefault(a => a.Key == catchAllPolicy).Key;
+        }
+
+        return new IngestPresets(optimisationPolicy, defaultForFamily.DeliveryChannel,
+            defaultForFamily.ThumbnailPolicy);
     }
+}
+
+public class IngestFamilyDefaults
+{
+    /// <summary>
+    /// A collection of optimisation policies, keyed by type mediaType. e.g. "audio"/"video".
+    /// Key is "*" for all in that family, or as a default if there are no other matching items.
+    /// </summary>
+    public Dictionary<string, string> OptimisationPolicy { get; set; }
+    
+    /// <summary>
+    /// Default delivery-channel for family
+    /// </summary>
+    public string DeliveryChannel { get; set; }
+    
+    /// <summary>
+    /// Default thumbnail policy for family
+    /// </summary>
+    public string ThumbnailPolicy { get; set; }
 }
