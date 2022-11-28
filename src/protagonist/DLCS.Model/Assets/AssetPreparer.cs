@@ -155,6 +155,18 @@ public static class AssetPreparer
             return AssetPreparationResult.Failure("Cannot use API to modify a NotForDelivery asset.");
             // However, this DOES allow the *creation* of a NotForDelivery asset.
         }
+
+        if (updateAsset.DeliveryChannel.Any())
+        {
+            foreach (var dc in updateAsset.DeliveryChannel)
+            {
+                if (!AssetDeliveryChannels.All.Contains(dc))
+                {
+                    return AssetPreparationResult.Failure(
+                        $"'{dc}' is an invalid deliveryChannel. Valid values are: {AssetDeliveryChannels.AllString}.");
+                }
+            }
+        }
         
         if (allowNonApiUpdates == false)
         {
@@ -292,7 +304,7 @@ public static class AssetPreparer
             ThumbnailPolicy = string.Empty,
             InitialOrigin = string.Empty,
             Family = AssetFamily.Image,
-            DeliveryChannel = new[] { AssetDeliveryChannels.Image },
+            DeliveryChannel = Array.Empty<string>(),
             MediaType = "unknown"
         };
     }

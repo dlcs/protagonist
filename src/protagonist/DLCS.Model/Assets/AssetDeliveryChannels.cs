@@ -10,4 +10,9 @@ public static class AssetDeliveryChannels
     /// All possible delivery channels
     /// </summary>
     public static string[] All { get; } = { File, Timebased, Image };
+
+    /// <summary>
+    /// All possible delivery channels as a comma-delimited string
+    /// </summary>
+    public static string AllString = string.Join(',', All);
 }

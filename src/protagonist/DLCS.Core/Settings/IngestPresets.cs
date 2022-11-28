@@ -1,4 +1,6 @@
-﻿namespace DLCS.Core.Settings;
+﻿using System;
+
+namespace DLCS.Core.Settings;
 
 /// <summary>
 /// A collection of presets to use for an ingest
@@ -13,7 +15,7 @@ public class IngestPresets
     /// <summary>
     /// Default delivery-channel for family
     /// </summary>
-    public string DeliveryChannel { get; }
+    public string[] DeliveryChannel { get; }
     
     /// <summary>
     /// Default thumbnail policy for family
@@ -23,7 +25,7 @@ public class IngestPresets
     public IngestPresets(string? optimisationPolicy, string deliveryChannel, string? thumbnailPolicy)
     {
         OptimisationPolicy = optimisationPolicy;
-        DeliveryChannel = deliveryChannel;
+        DeliveryChannel = deliveryChannel.Split(',', StringSplitOptions.RemoveEmptyEntries);
         ThumbnailPolicy = thumbnailPolicy;
     }
 }

@@ -95,10 +95,11 @@ public class AssetProcessor
             var requiresEngineNotification =
                 RequiresEngineNotification(updatedAsset, alwaysReingest, assetPreparationResult);
 
+            var preset =
+                settings.IngestDefaults.GetPresets((char)updatedAsset.Family!, updatedAsset.MediaType ?? string.Empty);
+            
             if (existingAsset == null)
             {
-                var preset = settings.IngestDefaults.GetPresets((char)updatedAsset.Family!,
-                    updatedAsset.MediaType ?? string.Empty);
                 var imagePolicyChanged = await SelectImageOptimisationPolicy(updatedAsset, preset);
                 if (imagePolicyChanged)
                 {
@@ -113,6 +114,12 @@ public class AssetProcessor
                     // We won't alter the value of requiresEngineNotification
                     // TODO thumbs will be backfilled.
                     // This could be a config setting.
+                }
+                
+                var deliveryChannelChanged = SetDeliveryChannel(updatedAsset, preset);
+                if (deliveryChannelChanged)
+                {
+                    requiresEngineNotification = true;
                 }
             }
 
@@ -153,6 +160,17 @@ public class AssetProcessor
                 Result = ModifyEntityResult<Asset>.Failure(e.Message, WriteResult.Error)
             };
         }
+    }
+
+    private bool SetDeliveryChannel(Asset updatedAsset, IngestPresets preset)
+    {
+        // Creation, set DeliveryChannel to default value for Family, if not already set
+        if (!updatedAsset.DeliveryChannel.Any())
+        {
+            updatedAsset.DeliveryChannel = preset.DeliveryChannel;
+        }
+
+        return true;
     }
 
     private static bool RequiresEngineNotification(Asset asset, bool alwaysReingest,

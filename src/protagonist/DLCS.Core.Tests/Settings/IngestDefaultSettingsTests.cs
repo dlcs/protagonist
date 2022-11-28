@@ -21,7 +21,7 @@ public class IngestDefaultSettingsTests
                 },
                 ["T"] = new()
                 {
-                    DeliveryChannel = "iiif-av",
+                    DeliveryChannel = "file,iiif-av",
                     OptimisationPolicy = new Dictionary<string, string>
                         { ["audio"] = "audio-max", ["video"] = "video-max" },
                     ThumbnailPolicy = new Dictionary<string, string>
@@ -48,14 +48,14 @@ public class IngestDefaultSettingsTests
     [Theory]
     [InlineData('I', "image/tiff", "iiif-img", "image-default", "default")]
     [InlineData('F', "application/pdf", "file", null, "none")]
-    [InlineData('T', "video/mp4", "iiif-av", "video-default", "video-max")]
-    [InlineData('T', "audio/mp4", "iiif-av", null, "audio-max")]
-    [InlineData('T', "", "iiif-av", null, null)]
+    [InlineData('T', "video/mp4", "file,iiif-av", "video-default", "video-max")]
+    [InlineData('T', "audio/mp4", "file,iiif-av", null, "audio-max")]
+    [InlineData('T', "", "file,iiif-av", null, null)]
     public void GetPresets_Correct(char family, string mediaType, string channel, string thumb, string iop)
     {
         var result = settings.GetPresets(family, mediaType);
 
-        result.DeliveryChannel.Should().Be(channel);
+        result.DeliveryChannel.Should().BeEquivalentTo(channel.Split(','));
         result.OptimisationPolicy.Should().Be(iop);
         result.ThumbnailPolicy.Should().Be(thumb);
     }

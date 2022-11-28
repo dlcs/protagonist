@@ -60,6 +60,6 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .WithMessage("Timebased assets must have mediaType starting video/ or audio/");
         RuleForEach(a => a.DeliveryChannel)
             .Must(dc => AssetDeliveryChannels.All.Contains(dc))
-            .WithMessage($"DeliveryChannel must be one of {string.Join(',', AssetDeliveryChannels.All)}");
+            .WithMessage($"DeliveryChannel must be one of {AssetDeliveryChannels.AllString}");
     }
 }
