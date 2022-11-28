@@ -263,7 +263,7 @@ public static class AssetConverter
         
         if (hydraImage.DeliveryChannel != null)
         {
-            asset.DeliveryChannel = hydraImage.DeliveryChannel;
+            asset.DeliveryChannel = hydraImage.DeliveryChannel.OrderBy(dc => dc).ToArray();
         }
 
         var thumbnailPolicy = hydraImage.ThumbnailPolicy.GetLastPathElement("thumbnailPolicies/");

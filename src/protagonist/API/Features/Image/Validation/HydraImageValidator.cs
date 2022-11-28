@@ -1,7 +1,8 @@
 ﻿using DLCS.Core;
-using DLCS.HydraModel;
+using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using FluentValidation;
+using AssetFamily = DLCS.HydraModel.AssetFamily;
 
 namespace API.Features.Image.Validation;
 
@@ -10,9 +11,6 @@ namespace API.Features.Image.Validation;
 /// </summary>
 public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
 {
-    // TODO - should this live elsewhere?
-    private static readonly string[] KnownDeliveryChannels = { "file", "iiif-av", "iiif-img" };
-    
     public HydraImageValidator()
     {
         // Required fields
@@ -61,7 +59,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .When(a => a.Family == AssetFamily.Timebased)
             .WithMessage("Timebased assets must have mediaType starting video/ or audio/");
         RuleForEach(a => a.DeliveryChannel)
-            .Must(dc => KnownDeliveryChannels.Contains(dc))
-            .WithMessage($"DeliveryChannel must be one of {string.Join(',', KnownDeliveryChannels)}");
+            .Must(dc => AssetDeliveryChannels.All.Contains(dc))
+            .WithMessage($"DeliveryChannel must be one of {string.Join(',', AssetDeliveryChannels.All)}");
     }
 }
