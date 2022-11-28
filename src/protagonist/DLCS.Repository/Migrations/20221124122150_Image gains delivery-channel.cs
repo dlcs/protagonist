@@ -15,6 +15,14 @@ namespace DLCS.Repository.Migrations
                 maxLength: 100,
                 nullable: false,
                 defaultValue: "");
+
+            migrationBuilder.Sql(@"
+UPDATE ""Images""
+SET ""DeliveryChannel"" = CASE ""Family""
+                            WHEN 'F' THEN 'file'
+                            WHEN 'I' THEN 'iiif-img'
+                            WHEN 'T' THEN 'iiif-av' END 
+");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
