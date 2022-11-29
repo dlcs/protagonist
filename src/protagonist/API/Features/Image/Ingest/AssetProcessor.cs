@@ -184,12 +184,8 @@ public class AssetProcessor
 
     private async Task<bool> SelectThumbnailPolicy(Asset asset, IngestPresets ingestPresets)
     {
-        bool changed = false;
-        if (asset.Family == AssetFamily.Image)
-        {
-            changed = await SetThumbnailPolicy(ingestPresets.ThumbnailPolicy, asset);
-        }
-        else if (asset.Family == AssetFamily.Timebased && MIMEHelper.IsVideo(asset.MediaType))
+        bool changed = false; 
+        if (MIMEHelper.IsImage(asset.MediaType) && asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbs))
         {
             changed = await SetThumbnailPolicy(ingestPresets.ThumbnailPolicy, asset);
         }
@@ -200,11 +196,14 @@ public class AssetProcessor
     private async Task<bool> SelectImageOptimisationPolicy(Asset asset, IngestPresets ingestPresets)
     {
         bool changed = false;
-        if (asset.Family == AssetFamily.Image)
+
+        if (MIMEHelper.IsImage(asset.MediaType) && (asset.HasDeliveryChannel(AssetDeliveryChannels.Image) ||
+                                                    asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbs)))
         {
             changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
         }
-        else if (asset.Family == AssetFamily.Timebased)
+        else if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased) && (MIMEHelper.IsAudio(asset.MediaType) || 
+                                                                               MIMEHelper.IsVideo(asset.MediaType)))
         {
             changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
         }

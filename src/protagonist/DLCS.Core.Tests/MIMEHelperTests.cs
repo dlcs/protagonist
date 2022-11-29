@@ -71,4 +71,19 @@ public class MIMEHelperTests
     [InlineData(null)]
     public void IsVideo_False(string mediaType)
         => MIMEHelper.IsVideo(mediaType).Should().BeFalse();
+    
+    [Theory]
+    [InlineData("image/tiff")]
+    [InlineData("image/jpeg")]
+    public void IsImage_True(string mediaType)
+        => MIMEHelper.IsImage(mediaType).Should().BeTrue();
+    
+    [Theory]
+    [InlineData("x-video/mp4")]
+    [InlineData("audio/mp3")]
+    [InlineData("x-image/jpeg")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void IsImage_False(string mediaType)
+        => MIMEHelper.IsImage(mediaType).Should().BeFalse();
 }
