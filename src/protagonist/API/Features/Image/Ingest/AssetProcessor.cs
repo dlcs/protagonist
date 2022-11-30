@@ -1,6 +1,7 @@
 ﻿using API.Features.Assets;
 using API.Infrastructure.Requests;
 using DLCS.Core;
+using DLCS.Core.Collections;
 using DLCS.Core.Settings;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
@@ -100,6 +101,12 @@ public class AssetProcessor
             
             if (existingAsset == null)
             {
+                var deliveryChannelChanged = SetDeliveryChannel(updatedAsset, preset);
+                if (deliveryChannelChanged)
+                {
+                    requiresEngineNotification = true;
+                }
+                
                 var imagePolicyChanged = await SelectImageOptimisationPolicy(updatedAsset, preset);
                 if (imagePolicyChanged)
                 {
@@ -114,12 +121,6 @@ public class AssetProcessor
                     // We won't alter the value of requiresEngineNotification
                     // TODO thumbs will be backfilled.
                     // This could be a config setting.
-                }
-                
-                var deliveryChannelChanged = SetDeliveryChannel(updatedAsset, preset);
-                if (deliveryChannelChanged)
-                {
-                    requiresEngineNotification = true;
                 }
             }
 
@@ -165,12 +166,13 @@ public class AssetProcessor
     private bool SetDeliveryChannel(Asset updatedAsset, IngestPresets preset)
     {
         // Creation, set DeliveryChannel to default value for Family, if not already set
-        if (!updatedAsset.DeliveryChannel.Any())
+        if (updatedAsset.DeliveryChannel.IsNullOrEmpty())
         {
             updatedAsset.DeliveryChannel = preset.DeliveryChannel;
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     private static bool RequiresEngineNotification(Asset asset, bool alwaysReingest,
@@ -195,7 +197,7 @@ public class AssetProcessor
 
     private async Task<bool> SelectImageOptimisationPolicy(Asset asset, IngestPresets ingestPresets)
     {
-        bool changed = false;
+        bool changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);;
 
         if (MIMEHelper.IsImage(asset.MediaType) && (asset.HasDeliveryChannel(AssetDeliveryChannels.Image) ||
                                                     asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbs)))
@@ -211,7 +213,7 @@ public class AssetProcessor
         return changed;
     }
 
-    private async Task<bool> SetImagePolicy(string key, Asset asset)
+    private async Task<bool> SetImagePolicy(string? defaultKey, Asset asset)
     {
         string? incomingPolicy = asset.ImageOptimisationPolicy;
         ImageOptimisationPolicy? policy = null;
@@ -220,12 +222,12 @@ public class AssetProcessor
             policy = await policyRepository.GetImageOptimisationPolicy(incomingPolicy, asset.Customer);
         }
 
-        if (policy == null)
+        if (policy == null && defaultKey.HasText())
         {
             // The asset doesn't have a valid ImageOptimisationPolicy
             // This is adapted from Deliverator, but there wasn't a way of 
             // taking the policy from the incoming PUT. There now is.
-            var imagePolicy = await policyRepository.GetImageOptimisationPolicy(key, asset.Customer);
+            var imagePolicy = await policyRepository.GetImageOptimisationPolicy(defaultKey, asset.Customer);
             if (imagePolicy != null)
             {
                 asset.ImageOptimisationPolicy = imagePolicy.Id;

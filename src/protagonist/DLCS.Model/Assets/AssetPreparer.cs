@@ -156,7 +156,7 @@ public static class AssetPreparer
             // However, this DOES allow the *creation* of a NotForDelivery asset.
         }
 
-        if (updateAsset.DeliveryChannel.Any())
+        if (!updateAsset.DeliveryChannel.IsNullOrEmpty())
         {
             foreach (var dc in updateAsset.DeliveryChannel)
             {

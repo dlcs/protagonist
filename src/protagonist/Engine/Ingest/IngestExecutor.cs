@@ -38,8 +38,8 @@ public class IngestExecutor
                 postProcessors.Add(process);
             }
 
+            logger.LogDebug("Calling {Worker} for {AssetId}..", worker.GetType(), asset.Id);
             var result = await worker.Ingest(context, customerOriginStrategy, cancellationToken);
-            logger.LogDebug("Calling {Worker} for {AssetId}", worker.GetType(), asset.Id);
             if (result is IngestResultStatus.Failed or IngestResultStatus.StorageLimitExceeded)
             {
                 overallStatus = result;

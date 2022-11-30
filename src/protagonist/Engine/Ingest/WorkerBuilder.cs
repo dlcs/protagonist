@@ -62,8 +62,11 @@ public class WorkerBuilder : IWorkerBuilder
             throw new InvalidOperationException($"Asset {asset.Id} - no processing to do");
         }
 
-        logger.LogDebug("Asset {AssetId} processed by {Processors}", asset.Id,
-            workers.Select(p => p.GetType()));
+        if (logger.IsEnabled(LogLevel.Trace))
+        {
+            logger.LogTrace("Asset {AssetId} to be processed by {Processors}", asset.Id,
+                workers.Select(p => p.GetType()));
+        }
 
         return workers;
     }
