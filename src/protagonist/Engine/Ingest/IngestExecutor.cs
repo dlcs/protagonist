@@ -1,5 +1,4 @@
-﻿using DLCS.Core.Strings;
-using DLCS.Model.Assets;
+﻿using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using Engine.Data;
 
@@ -38,8 +37,9 @@ public class IngestExecutor
             {
                 postProcessors.Add(process);
             }
-            
+
             var result = await worker.Ingest(context, customerOriginStrategy, cancellationToken);
+            logger.LogDebug("Calling {Worker} for {AssetId}", worker.GetType(), asset.Id);
             if (result is IngestResultStatus.Failed or IngestResultStatus.StorageLimitExceeded)
             {
                 overallStatus = result;
@@ -56,6 +56,7 @@ public class IngestExecutor
         
         foreach (var postProcessor in postProcessors)
         {
+            logger.LogDebug("Calling {Worker} post-process for {AssetId}", postProcessor.GetType(), asset.Id);
             await postProcessor.PostIngest(context,
                 dbSuccess && overallStatus is IngestResultStatus.Success or IngestResultStatus.QueuedForProcessing);
         }
