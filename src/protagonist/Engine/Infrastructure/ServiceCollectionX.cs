@@ -4,7 +4,6 @@ using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
-using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Model.Policies;
@@ -82,7 +81,7 @@ public static class ServiceCollectionX
             .AddScoped<ImageIngesterWorker>()
             .AddScoped<IngestExecutor>()
             .AddSingleton<IThumbCreator, ThumbCreator>()
-            .AddScoped<WorkerBuilder>()
+            .AddScoped<IWorkerBuilder, WorkerBuilder>()
             .AddSingleton<IFileSystem, FileSystem>()
             .AddSingleton<IMediaTranscoder, ElasticTranscoder>()
             .AddScoped<IAssetToDisk, AssetToDisk>()

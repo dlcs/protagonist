@@ -5,10 +5,15 @@ using Engine.Ingest.Timebased;
 
 namespace Engine.Ingest;
 
+public interface IWorkerBuilder
+{
+    IReadOnlyCollection<IAssetIngesterWorker> GetWorkers(Asset asset);
+}
+
 /// <summary>
 /// Class responsible for generating a list of workers required to ingest asset 
 /// </summary>
-public class WorkerBuilder
+public class WorkerBuilder : IWorkerBuilder
 {
     private readonly IServiceProvider serviceProvider;
     private readonly ILogger<WorkerBuilder> logger;
@@ -45,7 +50,7 @@ public class WorkerBuilder
         }
         else if (MIMEHelper.IsVideo(asset.MediaType) || MIMEHelper.IsAudio(asset.MediaType))
         {
-            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbs))
+            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
             {
                 AddProcessor(serviceProvider.GetRequiredService<TimebasedIngesterWorker>());
             }
