@@ -78,19 +78,14 @@ public static class ServiceCollectionX
         services
             .AddScoped<IAssetIngester, AssetIngester>()
             .AddScoped<TimebasedIngesterWorker>()
+            .AddScoped<FileChannelWorker>()
             .AddScoped<ImageIngesterWorker>()
+            .AddScoped<IngestExecutor>()
             .AddSingleton<IThumbCreator, ThumbCreator>()
-            .AddTransient<IngestorResolver>(provider => family => family switch
-            {
-                AssetFamily.Image => provider.GetRequiredService<ImageIngesterWorker>(),
-                AssetFamily.Timebased => provider.GetRequiredService<TimebasedIngesterWorker>(),
-                AssetFamily.File => throw new NotImplementedException("File shouldn't be here"),
-                _ => throw new KeyNotFoundException("Attempt to resolve ingestor handler for unknown family")
-            })
+            .AddScoped<WorkerBuilder>()
             .AddSingleton<IFileSystem, FileSystem>()
             .AddSingleton<IMediaTranscoder, ElasticTranscoder>()
             .AddScoped<IAssetToDisk, AssetToDisk>()
-            .AddScoped<IImageIngestorCompletion, ImageIngestorCompletion>()
             .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
             .AddScoped<IAssetToS3, AssetToS3>()
             .AddOriginStrategies();
@@ -103,7 +98,7 @@ public static class ServiceCollectionX
                 client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
             });
 
-            services.AddHttpClient<OrchestratorClient>(client =>
+            services.AddHttpClient<IOrchestratorClient, InfoJsonOrchestratorClient>(client =>
             {
                 client.BaseAddress = engineSettings.ImageIngest.OrchestratorBaseUrl;
                 client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.OrchestratorTimeoutMs);

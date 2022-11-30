@@ -2,12 +2,23 @@ using DLCS.Core.Types;
 
 namespace Engine.Ingest.Image.Completion;
 
-public class OrchestratorClient
+/// <summary>
+/// Basic interface for triggering orchestration of an asset
+/// </summary>
+public interface IOrchestratorClient
+{
+    Task<bool> TriggerOrchestration(AssetId assetId);
+}
+
+/// <summary>
+/// Implementation of <see cref="IOrchestratorClient"/> that triggers orchestration via info.json request
+/// </summary>
+public class InfoJsonOrchestratorClient : IOrchestratorClient
 {
     private readonly HttpClient httpClient;
-    private readonly ILogger<OrchestratorClient> logger;
+    private readonly ILogger<InfoJsonOrchestratorClient> logger;
 
-    public OrchestratorClient(HttpClient httpClient, ILogger<OrchestratorClient> logger)
+    public InfoJsonOrchestratorClient(HttpClient httpClient, ILogger<InfoJsonOrchestratorClient> logger)
     {
         this.httpClient = httpClient;
         this.logger = logger;

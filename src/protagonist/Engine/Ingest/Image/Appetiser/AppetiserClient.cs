@@ -8,7 +8,6 @@ using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Templates;
 using DLCS.Web.Requests;
-using Engine.Ingest.Persistence;
 using Engine.Settings;
 using Microsoft.Extensions.Options;
 
@@ -47,13 +46,23 @@ public class AppetiserClient : IImageProcessor
 
     public async Task<bool> ProcessImage(IngestionContext context)
     {
-        EnsureRequiredFoldersExist(context.AssetId);
+        /*
+         * The outcome can be that we generate:
+         *   thumbs only, because ["thumbs"] OR ["thumbs", "iiif-img"] but it's already optimised
+         *   image only, because ["iiif-img"]
+         *   both, because ["thumbs", "iiif-img"]
+         *   nothing, because ["iiif-img"] and already optimised
+         */
+        var (dest, thumb) = GetFolders(context.AssetId);
+        
+        fileSystem.CreateDirectory(dest);
+        fileSystem.CreateDirectory(thumb);
 
         try
         {
-            var derivativesOnly = IsDerivativesOnly(context.AssetFromOrigin);
-            var responseModel = await CallImageProcessor(context, derivativesOnly);
-            await ProcessResponse(context, responseModel, derivativesOnly);
+            var flags = ProcessFlags.Create(context);
+            var responseModel = await CallImageProcessor(context, flags);
+            await ProcessResponse(context, responseModel, flags);
             return true;
         }
         catch (Exception e)
@@ -62,9 +71,14 @@ public class AppetiserClient : IImageProcessor
             context.Asset.Error = $"Appetiser Error: {e.Message}";
             return false;
         }
+        finally
+        {
+            fileSystem.DeleteDirectory(dest, true);
+            fileSystem.DeleteDirectory(thumb, true);
+        }
     }
-
-    private void EnsureRequiredFoldersExist(AssetId assetId)
+    
+    private (string dest, string thumb) GetFolders(AssetId assetId)
     {
         var imageIngest = engineSettings.ImageIngest;
         var root = imageIngest.GetRoot();
@@ -74,20 +88,20 @@ public class AppetiserClient : IImageProcessor
 
         // thumb is the folder where generated thumbnails will be output to
         var thumb = TemplatedFolders.GenerateFolderTemplate(imageIngest.ThumbsTemplate, assetId, root: root);
-
-        fileSystem.CreateDirectory(dest);
-        fileSystem.CreateDirectory(thumb);
+        return (dest, thumb);
     }
-
-    // If image is already a JPEG2000, only generate derivatives
-    private static bool IsDerivativesOnly(AssetFromOrigin assetFromOrigin)
-        => assetFromOrigin.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
-
-    private async Task<AppetiserResponseModel> CallImageProcessor(IngestionContext context,
-        bool derivativesOnly)
+    
+    private async Task<AppetiserResponseModel> CallImageProcessor(IngestionContext context, ProcessFlags flags)
     {
+        if (!flags.NeedThumbs && flags.OriginTileOptimised)
+        {
+            logger.LogInformation("Asset {AssetId} does not need thumbs and is tile-optimised so no processing to do",
+                context.AssetId);
+            return new AppetiserResponseModel();
+        }
+        
         // call tizer/appetiser
-        var requestModel = CreateModel(context, derivativesOnly);
+        var requestModel = CreateModel(context, flags);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "convert");
         request.SetJsonContent(requestModel);
@@ -105,21 +119,21 @@ public class AppetiserClient : IImageProcessor
         return responseModel;
     }
 
-    private AppetiserRequestModel CreateModel(IngestionContext context, bool derivativesOnly)
+    private AppetiserRequestModel CreateModel(IngestionContext context, ProcessFlags flags)
     {
         var asset = context.Asset;
         var imageOptimisationPolicy = asset.FullImageOptimisationPolicy;
         if (imageOptimisationPolicy.TechnicalDetails.Length > 1)
         {
             logger.LogWarning(
-                "ImageOptimisationPolicy {PolicyId} has {TechDetailsCount} technicalDetails but we can only handle 1",
+                "ImageOptimisationPolicy {PolicyId} has {TechDetailsCount} technicalDetails but Appetiser can only handle 1",
                 imageOptimisationPolicy.Id, imageOptimisationPolicy.TechnicalDetails.Length);
         }
 
         var requestModel = new AppetiserRequestModel
         {
             Destination = GetJP2File(context.AssetId, true),
-            Operation = derivativesOnly ? "derivatives-only" : "ingest",
+            Operation = flags.DerivativesOnly ? "derivatives-only" : "ingest",
             Optimisation = imageOptimisationPolicy.TechnicalDetails.FirstOrDefault() ?? string.Empty,
             Origin = asset.Origin,
             Source = GetRelativeLocationOnDisk(context),
@@ -127,7 +141,8 @@ public class AppetiserClient : IImageProcessor
             JobId = Guid.NewGuid().ToString(),
             ThumbDir = TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.ThumbsTemplate,
                 context.AssetId, root: engineSettings.ImageIngest.GetRoot(true)),
-            ThumbSizes = asset.FullThumbnailPolicy.SizeList
+            // HACK - Appetiser expects to generate thumbs so default to a single 100px thumb
+            ThumbSizes = flags.NeedThumbs ? asset.FullThumbnailPolicy.SizeList : new []{ 100 }  
         };
 
         return requestModel;
@@ -160,44 +175,53 @@ public class AppetiserClient : IImageProcessor
         return unixPath;
     }
 
-    private async Task ProcessResponse(IngestionContext context, AppetiserResponseModel responseModel, 
-        bool derivativesOnly)
+    private async Task ProcessResponse(IngestionContext context, AppetiserResponseModel responseModel,
+        ProcessFlags flags)
     {
-        UpdateImageSize(context.Asset, responseModel);
+        UpdateImageSize(context.Asset, responseModel, flags);
 
-        var imageLocation = await ProcessOriginImage(context, derivativesOnly);
+        var imageLocation = await ProcessTileOptimisedImage(context, flags);
 
-        await CreateNewThumbs(context, responseModel);
+        await CreateNewThumbs(context, responseModel, flags);
 
-        ImageStorage imageStorage = GetImageStorage(context, responseModel);
+        ImageStorage imageStorage = GetImageStorage(context, responseModel, flags);
 
         context.WithLocation(imageLocation).WithStorage(imageStorage);
     }
 
-    private static void UpdateImageSize(Asset asset, AppetiserResponseModel responseModel)
+    private static void UpdateImageSize(Asset asset, AppetiserResponseModel responseModel, ProcessFlags flags)
     {
+        if (flags.DerivativesOnly) return;
+        
         asset.Height = responseModel.Height;
         asset.Width = responseModel.Width;
     }
 
-    private async Task<ImageLocation> ProcessOriginImage(IngestionContext context, bool derivativesOnly)
+    private async Task<ImageLocation> ProcessTileOptimisedImage(IngestionContext context, ProcessFlags flags)
     {
         var asset = context.Asset;
         var imageLocation = new ImageLocation { Id = asset.Id, Nas = string.Empty};
 
-        var originStrategy = context.AssetFromOrigin.CustomerOriginStrategy;
+        if (!flags.NeedTileOptimised)
+        {
+            logger.LogDebug("Asset {AssetId} not available on image channel, no further image processing required", asset.Id);
+            return imageLocation;
+        }
+
         var imageIngestSettings = engineSettings.ImageIngest;
 
-        if (originStrategy.Optimised && originStrategy.Strategy == OriginStrategyType.S3Ambient)
+        if (flags.OriginTileOptimised)
         {
-            logger.LogDebug("Asset {AssetId} is optimised s3Ambient strategy", context.AssetId);
-            // Optimised strategy - we don't want to store as we've not created a new version - just set imageLocation
+            // Optimised strategy - we don't want to store in S3 as we've not created a new version - set imageLocation
+            logger.LogDebug("Asset {AssetId} origin is optimised s3Ambient strategy. No need to store",
+                context.AssetId);
             var originObject = RegionalisedObjectInBucket.Parse(asset.Origin);
             imageLocation.S3 =
                 storageKeyGenerator.GetS3Uri(originObject, imageIngestSettings.IncludeRegionInS3Uri).ToString();
             return imageLocation;
         }
 
+        var originStrategy = context.AssetFromOrigin.CustomerOriginStrategy;
         if (originStrategy.Optimised)
         {
             logger.LogWarning(
@@ -208,7 +232,7 @@ public class AppetiserClient : IImageProcessor
         var jp2BucketObject = storageKeyGenerator.GetStorageLocation(context.AssetId);
 
         // if derivatives-only, no new JP2 will have been generated so use the 'origin' file
-        var jp2File = derivativesOnly ? context.AssetFromOrigin.Location : GetJP2File(context.AssetId, false);
+        var jp2File = flags.DerivativesOnly ? context.AssetFromOrigin.Location : GetJP2File(context.AssetId, false);
 
         // Not optimised - upload JP2 to S3 and set ImageLocation to new bucket location
         if (!await bucketWriter.WriteFileToBucket(jp2BucketObject, jp2File, MIMEHelper.JP2))
@@ -222,8 +246,11 @@ public class AppetiserClient : IImageProcessor
         return imageLocation;
     }
 
-    private async Task CreateNewThumbs(IngestionContext context, AppetiserResponseModel responseModel)
+    private async Task CreateNewThumbs(IngestionContext context, AppetiserResponseModel responseModel,
+        ProcessFlags flags)
     {
+        if (!flags.NeedThumbs) return;
+
         SetThumbsOnDiskLocation(context, responseModel);
 
         await thumbCreator.CreateNewThumbs(context.Asset, responseModel.Thumbs.ToList());
@@ -240,13 +267,19 @@ public class AppetiserClient : IImageProcessor
             thumb.Path = string.Concat(partialTemplate, key);
         }
     }
-    
-    private ImageStorage GetImageStorage(IngestionContext context, AppetiserResponseModel responseModel)
+
+    private ImageStorage GetImageStorage(IngestionContext context, AppetiserResponseModel responseModel,
+        ProcessFlags flags)
     {
         var asset = context.Asset;
 
-        var jp2Size = fileSystem.GetFileSize(GetJP2File(context.AssetId, false));
-        var thumbSizes = responseModel.Thumbs.Sum(t => fileSystem.GetFileSize(t.Path));
+        // Only count jp2 size if we will be serving AND we're storing it (which we aren't if originTileOptimised)
+        var jp2Size = flags.NeedTileOptimised && !flags.OriginTileOptimised
+            ? fileSystem.GetFileSize(GetJP2File(context.AssetId, false))
+            : 0;
+        
+        // Only count thumbs if we're serving 
+        var thumbSizes = flags.NeedThumbs ? responseModel.Thumbs.Sum(t => fileSystem.GetFileSize(t.Path)) : 0;
 
         return new ImageStorage
         {
@@ -257,5 +290,64 @@ public class AppetiserClient : IImageProcessor
             Size = jp2Size,
             ThumbnailSize = thumbSizes
         };
+    }
+    
+    private class ProcessFlags
+    {
+        /// <summary>
+        /// Flag for whether we have to generate thumbs. For /thumbs/ delivery channel
+        /// </summary>
+        public bool NeedThumbs { get; private init; }
+
+        /// <summary>
+        /// Flag for whether we have to generate tile-optimised JP2. For /iiif-img/ delivery channel
+        /// </summary>
+        public bool NeedTileOptimised { get; private init; }
+
+        /// <summary>
+        /// Flag for whether we have to generate derivatives only. 
+        /// </summary>
+        /// <remarks>
+        /// This is irrespective of other flags which only take into account delivery-channel. This also takes into
+        /// account whether the origin is optimised 
+        /// </remarks>
+        public bool DerivativesOnly { get; private init; }
+        
+        /// <summary>
+        /// Flag that indicates whether the origin image is already tile-optimised and we can use the origin for serving
+        /// image requests
+        /// </summary>
+        /// <remarks>This logic will change in the future with enhancements to customerOriginStrategy</remarks>
+        public bool OriginTileOptimised { get; private init; }
+
+        public static ProcessFlags Create(IngestionContext context)
+        {
+            // Set flags required for processing request
+
+            var thumbs = context.Asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbs);
+            var tileOptimised = context.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image);
+            
+            // Default derivates-only to be true if we want /thumbs/ but not /iiif-img/
+            var derivativesOnly = thumbs && !tileOptimised;
+
+            var originStrategy = context.AssetFromOrigin!.CustomerOriginStrategy;
+            var originTileOptimised = originStrategy.Optimised &&
+                                      originStrategy.Strategy == OriginStrategyType.S3Ambient &&
+                                      context.AssetFromOrigin.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
+
+            // if the master is pre-optimised set the operation to be "derivatives-only"
+            if (tileOptimised && originTileOptimised)
+            {
+                derivativesOnly = thumbs;
+            }
+        
+            return new ProcessFlags
+            {
+                NeedThumbs = thumbs,
+                NeedTileOptimised = tileOptimised,
+                DerivativesOnly = derivativesOnly,
+                OriginTileOptimised = originTileOptimised,
+            };
+        }
     }
 }

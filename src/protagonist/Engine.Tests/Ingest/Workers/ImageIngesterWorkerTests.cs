@@ -7,6 +7,7 @@ using Engine.Ingest.Image;
 using Engine.Ingest.Image.Completion;
 using Engine.Ingest.Persistence;
 using Engine.Settings;
+using Engine.Tests.Integration;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers.Settings;
@@ -16,10 +17,10 @@ namespace Engine.Tests.Ingest.Workers;
 public class ImageIngesterWorkerTests
 {
     private readonly IAssetToDisk assetToDisk;
-    private readonly IImageIngestorCompletion imageIngestorCompletion;
     private readonly FakeImageProcessor imageProcessor;
     private readonly ImageIngesterWorker sut;
     private readonly EngineSettings engineSettings;
+    private readonly IOrchestratorClient orchestratorClient;
 
     public ImageIngesterWorkerTests()
     {
@@ -28,16 +29,17 @@ public class ImageIngesterWorkerTests
             ImageIngest = new ImageIngestSettings
             {
                 SourceTemplate = "{root}",
-            }
+                OrchestrateImageAfterIngest = true
+            },
         };
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
 
         assetToDisk = A.Fake<IAssetToDisk>();
-        imageIngestorCompletion = A.Fake<IImageIngestorCompletion>();
         imageProcessor = new FakeImageProcessor();
+        orchestratorClient = A.Fake<IOrchestratorClient>();
 
-        sut = new ImageIngesterWorker(assetToDisk, imageProcessor, imageIngestorCompletion, optionsMonitor,
-            new NullLogger<ImageIngesterWorker>());
+        sut = new ImageIngesterWorker(assetToDisk, imageProcessor, orchestratorClient, new FakeFileSystem(),
+            optionsMonitor, new NullLogger<ImageIngesterWorker>());
     }
 
     [Fact]
@@ -51,7 +53,7 @@ public class ImageIngesterWorkerTests
             .ThrowsAsync(new ArgumentNullException());
 
         // Act
-        var result = await sut.Ingest(new IngestAssetRequest(asset, new DateTime()), new CustomerOriginStrategy());
+        var result = await sut.Ingest(new IngestionContext(asset), new CustomerOriginStrategy());
 
         // Assert
         result.Should().Be(IngestResultStatus.Failed);
@@ -75,7 +77,7 @@ public class ImageIngesterWorkerTests
             .Returns(assetFromOrigin);
 
         // Act
-        await sut.Ingest(new IngestAssetRequest(asset, new DateTime()), new CustomerOriginStrategy());
+        await sut.Ingest(new IngestionContext(asset), new CustomerOriginStrategy());
 
         // Assert
         A.CallTo(() =>
@@ -97,46 +99,17 @@ public class ImageIngesterWorkerTests
             .Returns(assetFromOrigin);
 
         // Act
-        var result = await sut.Ingest(new IngestAssetRequest(asset, DateTime.Now), new CustomerOriginStrategy());
+        var result = await sut.Ingest(new IngestionContext(asset), new CustomerOriginStrategy());
 
         // Assert
-        A.CallTo(() => imageIngestorCompletion.CompleteIngestion(A<IngestionContext>._, false, A<string>._))
-            .MustHaveHappened();
         result.Should().Be(IngestResultStatus.StorageLimitExceeded);
     }
-
+    
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task Ingest_CompletesIngestion_RegardlessOfImageProcessResult(bool imageProcessSuccess)
-    {
-        // Arrange
-        var target = $".{Path.PathSeparator}{nameof(Ingest_CompletesIngestion_RegardlessOfImageProcessResult)}";
-
-        var asset = new Asset(AssetId.FromString("/2/1/remurdered"));
-
-        A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(A<Asset>._, A<string>._, true, A<CustomerOriginStrategy>._,
-                    A<CancellationToken>._))
-            .Returns(new AssetFromOrigin(asset.Id, 13, target, "application/json"));
-        imageProcessor.ReturnValue = imageProcessSuccess;
-
-        // Act
-        await sut.Ingest(new IngestAssetRequest(asset, new DateTime()), new CustomerOriginStrategy());
-
-        // Assert
-        A.CallTo(() =>
-                imageIngestorCompletion.CompleteIngestion(A<IngestionContext>._, imageProcessSuccess, A<string>._))
-            .MustHaveHappened();
-        imageProcessor.WasCalled.Should().BeTrue();
-    }
-
-    [Theory]
-    [InlineData(true, true, IngestResultStatus.Success)]
-    [InlineData(false, true, IngestResultStatus.Failed)]
-    [InlineData(true, false, IngestResultStatus.Failed)]
+    [InlineData(true, IngestResultStatus.Success)]
+    [InlineData(false, IngestResultStatus.Failed)]
     public async Task Ingest_ReturnsCorrectResult_DependingOnIngestAndCompletion(bool imageProcessSuccess,
-        bool completeResult, IngestResultStatus expected)
+        IngestResultStatus expected)
     {
         // Arrange
         var asset = new Asset(AssetId.FromString("/2/1/remurdered"));
@@ -146,17 +119,41 @@ public class ImageIngesterWorkerTests
                     A<CancellationToken>._))
             .Returns(new AssetFromOrigin(asset.Id, 13, "target", "application/json"));
 
-        A.CallTo(() =>
-                imageIngestorCompletion.CompleteIngestion(A<IngestionContext>._, imageProcessSuccess, A<string>._))
-            .Returns(completeResult);
-
         imageProcessor.ReturnValue = imageProcessSuccess;
 
         // Act
-        var result = await sut.Ingest(new IngestAssetRequest(asset, new DateTime()), new CustomerOriginStrategy());
+        var result = await sut.Ingest(new IngestionContext(asset), new CustomerOriginStrategy());
 
         // Assert
         result.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task PostIngest_CallsOrchestrator_IfSuccessfulIngest()
+    {
+        // Arrange
+        var assetId = AssetId.FromString("/2/1/faithless");
+        var asset = new Asset(assetId);
+
+        // Act
+        await sut.PostIngest(new IngestionContext(asset), true);
+        
+        // Assert
+        A.CallTo(() => orchestratorClient.TriggerOrchestration(assetId)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task PostIngest_DoesNotCallOrchestrator_IfIngestFailed()
+    {
+        // Arrange
+        var assetId = AssetId.FromString("/2/1/faithless");
+        var asset = new Asset(assetId);
+
+        // Act
+        await sut.PostIngest(new IngestionContext(asset), false);
+        
+        // Assert
+        A.CallTo(() => orchestratorClient.TriggerOrchestration(assetId)).MustNotHaveHappened();
     }
 
     public class FakeImageProcessor : IImageProcessor
