@@ -93,7 +93,7 @@ public class AssetProcessor
             }
 
             var updatedAsset = assetPreparationResult.UpdatedAsset!;
-            var requiresEngineNotification =
+            var (requiresEngineNotification, neverCallEngine) =
                 RequiresEngineNotification(updatedAsset, alwaysReingest, assetPreparationResult);
 
             var preset =
@@ -123,6 +123,9 @@ public class AssetProcessor
                     // This could be a config setting.
                 }
             }
+
+            // If engine is never to be called reset value here regardless of what it was 
+            if (neverCallEngine) requiresEngineNotification = false;
 
             if (requiresEngineNotification)
             {
@@ -175,13 +178,13 @@ public class AssetProcessor
         return false;
     }
 
-    private static bool RequiresEngineNotification(Asset asset, bool alwaysReingest,
-        AssetPreparationResult assetPreparationResult)
+    private static (bool requiresReingest, bool neverReingest) RequiresEngineNotification(Asset asset, 
+        bool alwaysReingest, AssetPreparationResult assetPreparationResult)
     {
         // A 'File' never results in the engine being called
-        if (asset.Family == AssetFamily.File) return false;
+        if (asset.Family == AssetFamily.File) return (false, true);
         
-        return assetPreparationResult.RequiresReingest || alwaysReingest;
+        return (assetPreparationResult.RequiresReingest || alwaysReingest, false);
     }
 
     private async Task<bool> SelectThumbnailPolicy(Asset asset, IngestPresets ingestPresets)

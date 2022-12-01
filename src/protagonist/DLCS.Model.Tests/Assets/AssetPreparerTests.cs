@@ -256,11 +256,11 @@ public class AssetPreparerTests
     {
         new object[]
         {
-            new[] { "" }, new[] { "iiif-img" }, "set"
+            Array.Empty<string>(), new[] { "iiif-img" }, "set"
         },
         new object[]
         {
-            new[] { "iiif-av" }, new[] { "" }, "unset"
+            new[] { "iiif-av" }, Array.Empty<string>(), "unset"
         },
         new object[]
         {

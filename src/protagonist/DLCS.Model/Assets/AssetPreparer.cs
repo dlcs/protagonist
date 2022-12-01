@@ -97,7 +97,7 @@ public static class AssetPreparer
                 requiresReingest = true;
             }
 
-            if (!updateAsset.DeliveryChannel.IsNullOrEmpty() &&
+            if (updateAsset.DeliveryChannel != null &&
                 !updateAsset.DeliveryChannel.SequenceEqual(existingAsset.DeliveryChannel))
             {
                 // Changing DeliveryChannel can alter how the image should be processed
