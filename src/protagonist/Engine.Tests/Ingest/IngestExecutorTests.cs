@@ -21,6 +21,20 @@ public class IngestExecutorTests
         sut = new IngestExecutor(workerBuilder, repo, new NullLogger<IngestExecutor>());
     }
 
+    [Fact]
+    public async Task IngestAsset_HandlesNoWorkers()
+    {
+        var asset = new Asset();
+        A.CallTo(() => workerBuilder.GetWorkers(asset)).Returns(Array.Empty<IAssetIngesterWorker>());
+
+        // Act
+        await sut.IngestAsset(asset, customerOriginStrategy);
+        
+        // Assert
+        A.CallTo(() => repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<CancellationToken>._))
+            .MustHaveHappened();
+    }
+
     [Theory]
     [InlineData(IngestResultStatus.Success, IngestResultStatus.Success, IngestResultStatus.Success)]
     [InlineData(IngestResultStatus.Success, IngestResultStatus.QueuedForProcessing,

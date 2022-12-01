@@ -304,7 +304,7 @@ public static class AssetPreparer
             ThumbnailPolicy = string.Empty,
             InitialOrigin = string.Empty,
             Family = AssetFamily.Image,
-            DeliveryChannel = Array.Empty<string>(),
+            DeliveryChannel = null,
             MediaType = "unknown"
         };
     }

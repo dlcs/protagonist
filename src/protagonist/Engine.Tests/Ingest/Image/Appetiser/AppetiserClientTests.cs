@@ -27,7 +27,6 @@ public class AppetiserClientTests
     private readonly TestBucketWriter bucketWriter;
     private readonly IThumbCreator thumbnailCreator;
     private readonly AppetiserClient sut;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IFileSystem fileSystem;
     private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
 
@@ -47,7 +46,7 @@ public class AppetiserClientTests
             }
         };
         thumbnailCreator = A.Fake<IThumbCreator>();
-        storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
+        var storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
         A.CallTo(() => storageKeyGenerator.GetStorageLocation(A<AssetId>._))
             .ReturnsLazily((AssetId assetId) =>
                 new RegionalisedObjectInBucket("appetiser-test", assetId.ToString(), "Fake-Region"));
@@ -120,13 +119,13 @@ public class AppetiserClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        requestModel.Operation.Should().Be("derivatives-only");
+        requestModel.Operation.Should().Be("ingest");
         A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
             .MustHaveHappened();
         context.ImageStorage.ThumbnailSize.Should().Be(200, "Thumbs saved");
         context.ImageStorage.Size.Should().Be(0, "JP2 not written to S3");
-        context.Asset.Height.Should().NotBe(imageProcessorResponse.Height, "JP2 not generated");
-        context.Asset.Width.Should().NotBe(imageProcessorResponse.Width, "JP2 not generated");
+        context.Asset.Height.Should().Be(imageProcessorResponse.Height);
+        context.Asset.Width.Should().Be(imageProcessorResponse.Width);
     }
 
     [Fact]
@@ -206,8 +205,8 @@ public class AppetiserClientTests
         context.ImageStorage.ThumbnailSize.Should().Be(200, "Thumbs saved");
         context.ImageStorage.Size.Should().Be(0, "JP2 not written to S3");
         bucketWriter.Operations.Should().BeEmpty("JP2 not written to S3");
-        context.Asset.Height.Should().NotBe(imageProcessorResponse.Height, "JP2 not generated");
-        context.Asset.Width.Should().NotBe(imageProcessorResponse.Width, "JP2 not generated");
+        context.Asset.Height.Should().Be(imageProcessorResponse.Height);
+        context.Asset.Width.Should().Be(imageProcessorResponse.Width);
     }
     
     [Theory]

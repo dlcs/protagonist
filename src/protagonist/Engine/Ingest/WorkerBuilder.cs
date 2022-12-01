@@ -56,12 +56,6 @@ public class WorkerBuilder : IWorkerBuilder
             }
         }
 
-        if (workers.Count == 0)
-        {
-            // TODO - is this a safe assumption to make? Should it have been caught already?
-            throw new InvalidOperationException($"Asset {asset.Id} - no processing to do");
-        }
-
         if (logger.IsEnabled(LogLevel.Trace))
         {
             logger.LogTrace("Asset {AssetId} to be processed by {Processors}", asset.Id,

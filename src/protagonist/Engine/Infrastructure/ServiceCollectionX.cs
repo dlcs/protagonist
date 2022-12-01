@@ -16,6 +16,7 @@ using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;
 using DLCS.Repository.Storage;
 using DLCS.Repository.Strategy.DependencyInjection;
+using DLCS.Web.Handlers;
 using Engine.Data;
 using Engine.Ingest;
 using Engine.Ingest.Image;
@@ -91,17 +92,18 @@ public static class ServiceCollectionX
 
         if (engineSettings.ImageIngest != null)
         {
+            services.AddTransient<TimingHandler>();
             services.AddHttpClient<IImageProcessor, AppetiserClient>(client =>
             {
                 client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
                 client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
-            });
+            }).AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<IOrchestratorClient, InfoJsonOrchestratorClient>(client =>
             {
                 client.BaseAddress = engineSettings.ImageIngest.OrchestratorBaseUrl;
                 client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.OrchestratorTimeoutMs);
-            });
+            }).AddHttpMessageHandler<TimingHandler>();
         }
 
         return services;

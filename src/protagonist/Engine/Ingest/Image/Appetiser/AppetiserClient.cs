@@ -95,12 +95,13 @@ public class AppetiserClient : IImageProcessor
     {
         if (!flags.NeedThumbs && flags.OriginTileOptimised)
         {
-            logger.LogInformation("Asset {AssetId} does not need thumbs and is tile-optimised so no processing to do",
+            logger.LogDebug("Asset {AssetId} does not need thumbs and is tile-optimised so no processing to do",
                 context.AssetId);
             return new AppetiserResponseModel();
         }
         
         // call tizer/appetiser
+        logger.LogDebug("Calling Appetiser for {AssetId}..", context.AssetId);
         var requestModel = CreateModel(context, flags);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "convert");
@@ -191,8 +192,6 @@ public class AppetiserClient : IImageProcessor
 
     private static void UpdateImageSize(Asset asset, AppetiserResponseModel responseModel, ProcessFlags flags)
     {
-        if (flags.DerivativesOnly) return;
-        
         asset.Height = responseModel.Height;
         asset.Width = responseModel.Width;
     }
@@ -204,7 +203,9 @@ public class AppetiserClient : IImageProcessor
 
         if (!flags.NeedTileOptimised)
         {
-            logger.LogDebug("Asset {AssetId} not available on image channel, no further image processing required", asset.Id);
+            logger.LogDebug("Asset {AssetId} not available on image channel, no further image processing required",
+                asset.Id);
+            imageLocation.S3 = string.Empty;
             return imageLocation;
         }
 
@@ -305,12 +306,9 @@ public class AppetiserClient : IImageProcessor
         public bool NeedTileOptimised { get; private init; }
 
         /// <summary>
-        /// Flag for whether we have to generate derivatives only. 
+        /// Flag for whether we have to generate derivatives only.
+        /// Requires a tile-optimised source image - doesn't mean "generate thumbs only". 
         /// </summary>
-        /// <remarks>
-        /// This is irrespective of other flags which only take into account delivery-channel. This also takes into
-        /// account whether the origin is optimised 
-        /// </remarks>
         public bool DerivativesOnly { get; private init; }
         
         /// <summary>
@@ -323,29 +321,19 @@ public class AppetiserClient : IImageProcessor
         public static ProcessFlags Create(IngestionContext context)
         {
             // Set flags required for processing request
-
             var thumbs = context.Asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbs);
             var tileOptimised = context.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image);
             
-            // Default derivates-only to be true if we want /thumbs/ but not /iiif-img/
-            var derivativesOnly = thumbs && !tileOptimised;
-
             var originStrategy = context.AssetFromOrigin!.CustomerOriginStrategy;
             var originTileOptimised = originStrategy.Optimised &&
                                       originStrategy.Strategy == OriginStrategyType.S3Ambient &&
                                       context.AssetFromOrigin.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
 
-            // if the master is pre-optimised set the operation to be "derivatives-only"
-            if (tileOptimised && originTileOptimised)
-            {
-                derivativesOnly = thumbs;
-            }
-        
             return new ProcessFlags
             {
                 NeedThumbs = thumbs,
                 NeedTileOptimised = tileOptimised,
-                DerivativesOnly = derivativesOnly,
+                DerivativesOnly = tileOptimised && originTileOptimised,
                 OriginTileOptimised = originTileOptimised,
             };
         }
