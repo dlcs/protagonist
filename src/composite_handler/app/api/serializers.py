@@ -30,21 +30,21 @@ _collection_schema, _member_schema, _resolver = __initialise_json_schemas()
 
 
 class MemberSerializer(serializers.ModelSerializer):
+    def validate_json_data(self, json_data):
+        return _validate_json(json_data, _member_schema)
+
     class Meta:
         model = Member
         fields = "__all__"
 
-        def validate_json_data(self, json_data):
-            return _validate_json(json_data, _member_schema)
-
 
 class CollectionSerializer(serializers.ModelSerializer):
+    def validate_json_data(self, json_data):
+        return _validate_json(json_data, _collection_schema)
+
     class Meta:
         model = Collection
         fields = "__all__"
-
-    def validate_json_data(self, json_data):
-        return _validate_json(json_data, _collection_schema)
 
 
 def _validate_json(json_data, json_schema):

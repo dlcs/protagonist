@@ -2,7 +2,7 @@ from django.conf import settings
 
 
 class MemberBuilder:
-    STATIC_FIELDS = {"mediaType": "image/jp2"}
+    STATIC_FIELDS = {"mediaType": "image/jpeg", "family": "I"}
 
     STRIP_FIELDS = ["@type", "originFormat", "incrementSeed"]
 

@@ -1,5 +1,9 @@
+import logging
+
 import requests
 from django.conf import settings
+
+logger = logging.Logger(__name__)
 
 
 class DLCS:
@@ -25,4 +29,5 @@ class DLCS:
         if response.status_code == requests.codes.created:
             return response.json()
         else:
+            logger.info(f"ingest failed with status {response.status_code}: {response.text}")
             response.raise_for_status()
