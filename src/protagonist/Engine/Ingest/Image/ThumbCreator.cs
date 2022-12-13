@@ -1,6 +1,6 @@
+using AsyncKeyedLock;
 using DLCS.AWS.S3;
 using DLCS.Core;
-using DLCS.Core.Threading;
 using DLCS.Model.Assets;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Assets.Thumbs;
@@ -10,7 +10,7 @@ namespace Engine.Ingest.Image;
 
 public class ThumbCreator : ThumbsManager, IThumbCreator
 {
-    private readonly AsyncKeyedLock asyncLocker = new();
+    private readonly AsyncKeyedLocker<string> asyncLocker = new();
 
     public ThumbCreator(
         IBucketWriter bucketWriter,

@@ -1,11 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using AsyncKeyedLock;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Collections;
-using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Thumbs;
@@ -14,6 +10,10 @@ using DLCS.Repository.Assets;
 using DLCS.Repository.Assets.Thumbs;
 using IIIF;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Thumbs.Reorganising;
 
@@ -26,10 +26,11 @@ public class ThumbReorganiser : ThumbsManager, IThumbReorganiser
     private readonly ILogger<ThumbReorganiser> logger;
     private readonly IAssetRepository assetRepository;
     private readonly IThumbnailPolicyRepository policyRepository;
-    private readonly AsyncKeyedLock asyncLocker = new();
+    private readonly AsyncKeyedLocker<string> asyncKeyedLocker;
     private static readonly Regex BoundedThumbRegex = new("^[0-9]+.jpg$");
 
     public ThumbReorganiser(
+        AsyncKeyedLocker<string> asyncKeyedLocker,
         IBucketReader bucketReader,
         IBucketWriter bucketWriter,
         ILogger<ThumbReorganiser> logger,
@@ -37,6 +38,7 @@ public class ThumbReorganiser : ThumbsManager, IThumbReorganiser
         IThumbnailPolicyRepository policyRepository,
         IStorageKeyGenerator storageKeyGenerator) : base(bucketWriter, storageKeyGenerator)
     {
+        this.asyncKeyedLocker = asyncKeyedLocker;
         this.bucketReader = bucketReader;
         this.logger = logger;
         this.assetRepository = assetRepository;
@@ -46,7 +48,7 @@ public class ThumbReorganiser : ThumbsManager, IThumbReorganiser
     public async Task<ReorganiseResult> EnsureNewLayout(AssetId assetId)
     {
         // Create lock on assetId unique value (bucket + target key)
-        using var processLock = await asyncLocker.LockAsync(assetId.ToString());
+        using var processLock = await asyncKeyedLocker.LockAsync(assetId.ToString());
             
         var rootKey = StorageKeyGenerator.GetThumbnailsRoot(assetId);
         var keysInTargetBucket = await bucketReader.GetMatchingKeys(rootKey);

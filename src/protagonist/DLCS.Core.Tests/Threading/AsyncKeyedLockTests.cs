@@ -1,7 +1,7 @@
-﻿using System;
+﻿using AsyncKeyedLock;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using DLCS.Core.Threading;
 using FluentAssertions;
 using Xunit;
 
@@ -10,11 +10,11 @@ namespace DLCS.Core.Tests.Threading;
 [Trait("Category", "Manual")]
 public class AsyncKeyedLockTests
 {
-    private readonly AsyncKeyedLock sut;
+    private readonly AsyncKeyedLocker<string> sut;
 
     public AsyncKeyedLockTests()
     {
-        sut = new AsyncKeyedLock();
+        sut = new AsyncKeyedLocker<string>();
     }
     
     [Fact]
@@ -28,11 +28,10 @@ public class AsyncKeyedLockTests
             Task.Run(async () =>
             {
                 // Task will get lock immediately but wait 400ms to release
-                using (var theLock = await new AsyncKeyedLock().LockAsync(key))
+                using (var theLock = await new AsyncKeyedLocker<string>().LockAsync(key))
                 {
                     await Task.Delay(400);
                     calls.Add("Quick attain, run slow");
-                    theLock.HaveLock.Should().BeTrue();
                     task1Complete = true;
                 }
             }),
@@ -40,10 +39,9 @@ public class AsyncKeyedLockTests
             {
                 // Task will try get lock after 200ms 
                 await Task.Delay(200);
-                using (var theLock = await new AsyncKeyedLock().LockAsync(key))
+                using (var theLock = await new AsyncKeyedLocker<string>().LockAsync(key))
                 {
                     calls.Add("Slow attain, run quick");
-                    theLock.HaveLock.Should().BeTrue();
                     task1Complete.Should().BeTrue();
                 }
             }));
@@ -68,7 +66,6 @@ public class AsyncKeyedLockTests
                 {
                     await Task.Delay(400);
                     calls.Add("Quick attain, run slow");
-                    theLock.HaveLock.Should().BeTrue();
                     task1Complete = true;
                 }
             }),
@@ -79,7 +76,6 @@ public class AsyncKeyedLockTests
                 using (var theLock = await sut.LockAsync(key))
                 {
                     calls.Add("Slow attain, run quick");
-                    theLock.HaveLock.Should().BeTrue();
                     task1Complete.Should().BeTrue();
                 }
             }));
@@ -104,7 +100,6 @@ public class AsyncKeyedLockTests
                 {
                     await Task.Delay(400);
                     calls.Add("Quick attain, run slow");
-                    theLock.HaveLock.Should().BeTrue();
                     task1Complete = true;
                 }
             }),
@@ -115,7 +110,6 @@ public class AsyncKeyedLockTests
                 using (var theLock = await sut.LockAsync($"not{key}"))
                 {
                     calls.Add("Slow attain, run quick");
-                    theLock.HaveLock.Should().BeTrue();
                     task1Complete.Should().BeFalse();
                 }
             }));
@@ -140,7 +134,6 @@ public class AsyncKeyedLockTests
                 using (var theLock = await sut.LockAsync(key))
                 {
                     await Task.Delay(400);
-                    theLock.HaveLock.Should().BeTrue();
                     calls.Add("Quick attain, run slow");
                     task1Complete = true;
                 }
@@ -152,7 +145,6 @@ public class AsyncKeyedLockTests
                 using (var theLock = await sut.LockAsync(key, TimeSpan.FromMilliseconds(100)))
                 {
                     calls.Add("Slow attain, run quick");
-                    theLock.HaveLock.Should().BeFalse();
                     task1Complete.Should().BeFalse();
                 }
             }),
@@ -163,7 +155,6 @@ public class AsyncKeyedLockTests
                 using (var theLock = await sut.LockAsync(key))
                 {
                     calls.Add("Verify timeout lock doesn't affect normal process");
-                    theLock.HaveLock.Should().BeTrue();
                     task2Complete.Should().BeFalse();
                 }
             }));
@@ -182,11 +173,9 @@ public class AsyncKeyedLockTests
         using (var firstLock = await sut.LockAsync("first"))
         {
             calls.Add("Attained first");
-            firstLock.HaveLock.Should().BeTrue();
             using (var secondLock = await sut.LockAsync("second"))
             {
                 calls.Add("Attained second");
-                secondLock.HaveLock.Should().BeTrue();
             }
             calls.Add("Released second");
         }

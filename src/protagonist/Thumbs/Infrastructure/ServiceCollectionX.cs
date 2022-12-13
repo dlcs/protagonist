@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using AsyncKeyedLock;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.Model.Assets;
@@ -41,7 +42,8 @@ public static class ServiceCollectionX
                     ActivatorUtilities.CreateInstance<ReorganisingThumbRepository>(
                         provider,
                         provider.GetRequiredService<ThumbRepository>()))
-                .AddSingleton<IThumbReorganiser, ThumbReorganiser>();
+                .AddSingleton<IThumbReorganiser, ThumbReorganiser>()
+                .AddSingleton<AsyncKeyedLocker<string>>();
         }
         else
         {
