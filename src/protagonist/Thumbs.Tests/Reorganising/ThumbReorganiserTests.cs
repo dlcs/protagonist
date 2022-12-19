@@ -1,4 +1,5 @@
-﻿using DLCS.AWS.S3;
+﻿using AsyncKeyedLock;
+using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.Core.Types;
@@ -29,7 +30,7 @@ public class ThumbReorganiserTests
         thumbPolicyRepository = A.Fake<IPolicyRepository>();
         IStorageKeyGenerator storageKeyGenerator = new S3StorageKeyGenerator(
             Options.Create(new AWSSettings { S3 = new S3Settings { ThumbsBucket = "the-bucket" } }));
-        sut = new ThumbReorganiser(bucketReader, bucketWriter, new NullLogger<ThumbReorganiser>(), assetRepository,
+        sut = new ThumbReorganiser(new AsyncKeyedLocker<string>(), bucketReader, bucketWriter, new NullLogger<ThumbReorganiser>(), assetRepository,
             thumbPolicyRepository, storageKeyGenerator);
     }
 
