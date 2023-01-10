@@ -44,6 +44,12 @@ public class SqsListenerManager
                 subscribedToQueue);
         listeners.Add(listener);
     }
+
+    public async Task SetupDefaultQueue(string? queueName)
+    {
+        await AddQueueListener(queueName, SingleHandler.Default);
+        StartListening();
+    } 
     
     public void StartListening()
     {

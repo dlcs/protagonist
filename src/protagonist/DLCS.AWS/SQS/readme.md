@@ -17,11 +17,11 @@ services
     })
 ```
 
-The `IMessageHandler` interface contains a single method; it receives a `QueueMessage` object and returns a `bool` value indicating whether the message was successfull processed or not.
+The `IMessageHandler` interface contains a single method; it receives a `QueueMessage` object and returns a `bool` value indicating whether the message was successfully processed or not.
 
 `QueueMessage` contains details of the message (raw `JsonObject Body`, `Dictionary<string, string> Attributes` and an Id).
 
-`SqsListenerManager` is  passed a queue name and the `Enum` message type. Using this it gets the QueueUrl and creates a `SqsListener` object for given queue.
+`SqsListenerManager` is passed a queue name and the `Enum` message type. Using this it gets the QueueUrl and creates a `SqsListener` object for given queue.
 
 ```cs
 // Configure queues
@@ -33,3 +33,35 @@ sqsListenerManager.StartListening();
 ```
 
 `SqsListener` monitors the queue on a background thread. On receipt of a message it calls the `QueueHandlerResolver` to get handler for given type. If handler was successful message is deleted, else it's left on queue.
+
+## Single Queue + Handler
+
+The above allows for handling messages from multiple queues with different handlers.
+
+However, when there's a single queue with a single handler it feels overly cumbersome.
+
+There are a couple of convenience methods when working with 1 handler for 1 queue.
+
+First use `AddDefaultQueueHandler<THandler>` when configuring services, this will setup `QueueHandlerResolver` to always return `THandler`.
+Internally it uses a default `Enum` to avoid needing to create one just for this purpose.
+
+```cs
+services
+  .AddScoped<MyHandler>()
+  .AddDefaultQueueHandler<MyHandler>();
+  
+// this is equivalent to
+services
+  .AddScoped<MyHandler>()
+  .AddSingleton<QueueHandlerResolver<SingleHandler>>(provider => _ => provider.GetRequiredService<MyHandler>());
+```
+
+Then, when setting up `SqsListenerManager` there's no need to add a listener then start listening. `SetupDefaultQueue` does this in 1 operation.
+
+```
+await sqsListenerManager.SetupDefaultQueue("my-queue-name");
+
+// which is equivalent to
+await sqsListenerManager.AddQueueListener("my-queue-name", SingleHandler.Default);
+sqsListenerManager.StartListening();
+```
