@@ -29,6 +29,6 @@ public static class ResolverExtensions
     /// <returns>Modified <see cref="IServiceCollection"/></returns>
     public static IServiceCollection AddDefaultQueueHandler<T>(this IServiceCollection serviceCollection)
         where T : IMessageHandler
-        => serviceCollection.AddSingleton<QueueHandlerResolver<SingleHandler>>(provider =>
+        => serviceCollection.AddScoped<QueueHandlerResolver<SingleHandler>>(provider =>
             _ => provider.GetRequiredService<T>());
 }
