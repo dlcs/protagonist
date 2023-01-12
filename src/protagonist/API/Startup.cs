@@ -120,6 +120,7 @@ public class Startup
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
     {
+        app.UseForwardedHeaders();
         if (env.IsDevelopment())
         {
             DlcsContextConfiguration.TryRunMigrations(configuration, logger);
