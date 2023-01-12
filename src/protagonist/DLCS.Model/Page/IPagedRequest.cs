@@ -1,3 +1,5 @@
+using DLCS.Model.Assets;
+
 namespace DLCS.Model.Page;
 
 /// <summary>
@@ -7,6 +9,11 @@ public interface IPagedRequest
 {
     int Page { get; set; }
     int PageSize { get; set; }
+}
+
+public interface IAssetFilterableRequest
+{
+    AssetFilter? AssetFilter { get; }
 }
 
 /// <summary>

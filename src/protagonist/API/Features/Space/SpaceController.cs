@@ -57,7 +57,10 @@ public class SpaceController : HydraController
             PageSize = pageSize,
             Id = Request.GetJsonLdId()
         };
-        PartialCollectionView.AddPaging(collection, page.Value, pageSize.Value, orderByField, descending);
+        PartialCollectionView.AddPaging(collection, new PartialCollectionViewPagingValues
+        {
+            Page = page.Value, PageSize = pageSize.Value, OrderBy = orderByField, Descending = descending
+        });
         return collection;
     }
 

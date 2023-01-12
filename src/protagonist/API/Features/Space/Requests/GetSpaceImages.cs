@@ -14,7 +14,11 @@ namespace API.Features.Space.Requests;
 /// <summary>
 /// Get a paged results of images in specified space.
 /// </summary>
-public class GetSpaceImages : IRequest<FetchEntityResult<PageOf<Asset>>>, IPagedRequest, IOrderableRequest
+public class GetSpaceImages : 
+    IRequest<FetchEntityResult<PageOf<Asset>>>, 
+    IPagedRequest, 
+    IOrderableRequest, 
+    IAssetFilterableRequest
 {
     public GetSpaceImages(int spaceId, int? customerId = null, AssetFilter? assetFilter = null)
     {

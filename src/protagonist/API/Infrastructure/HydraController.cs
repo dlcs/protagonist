@@ -165,12 +165,37 @@ public abstract class HydraController : Controller
                         PageSize = pageOf.PageSize,
                         Id = Request.GetJsonLdId()
                     };
-                    PartialCollectionView.AddPaging(collection, pageOf.Page, pageOf.PageSize);
+                    PartialCollectionView.AddPaging(collection, new PartialCollectionViewPagingValues
+                    {
+                        Page = pageOf.Page, PageSize = pageOf.PageSize,
+                        FurtherParameters = GetFurtherPageLinkParameters(request)
+                    });
                     return collection;
                 });
         }, errorTitle);
     }
-    
+
+    private List<KeyValuePair<string, string>>? GetFurtherPageLinkParameters(IPagedRequest pagedRequest)
+    {
+        List<KeyValuePair<string, string>>? furtherParameters = null;
+        
+        // This is an example of a known parameter that we can normalise
+        if (pagedRequest is IAssetFilterableRequest assetFilterableRequest)
+        {
+            if (assetFilterableRequest.AssetFilter != null)
+            {
+                var imageQuery = assetFilterableRequest.AssetFilter.ToImageQuery();
+                furtherParameters ??= new List<KeyValuePair<string, string>>();
+                furtherParameters.Add(new KeyValuePair<string, string>("q", imageQuery.ToQueryParam()));
+            }
+        }
+        
+        // If we want to we can inspect the original HTTP request params here and add some or all of them back in
+        // Request.QueryString...
+        
+        return furtherParameters;
+    }
+
     /// <summary>
     /// Handle a request that returns a non-paged list of assets.
     /// This takes a IRequest which returns a FetchEntityResult{IReadOnlyCollection{T}}

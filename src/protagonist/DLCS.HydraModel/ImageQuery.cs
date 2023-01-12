@@ -37,4 +37,9 @@ public class ImageQuery
             return null;
         }
     }
+
+    public string ToQueryParam()
+    {
+        return JsonConvert.SerializeObject(this, JsonSerializerSettings);
+    }
 }

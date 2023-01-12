@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 
 namespace Hydra.Collections;
@@ -28,60 +30,76 @@ public class PartialCollectionView : JsonLdBaseWithHydraContext
     [JsonProperty(Order = 23, PropertyName = "totalPages")]
     public int TotalPages { get; set; }
 
-    public static void AddPaging<T>(HydraCollection<T> collection, 
-        int page, int pageSize, string? orderBy = null, bool descending = false)
+    public static void AddPaging<T>(HydraCollection<T> collection, PartialCollectionViewPagingValues values)
     {
         if (collection.Members == null) return;
         if (collection.TotalItems <= 0) return;
         if (collection.TotalItems > collection.Members.Length)
         {
-            int totalPages = collection.TotalItems / pageSize;
-            if (collection.TotalItems % pageSize > 0) totalPages++;
+            int totalPages = collection.TotalItems / values.PageSize;
+            if (collection.TotalItems % values.PageSize > 0) totalPages++;
             var baseUrl = collection.Id!.Split('?')[0];
             var partialView = new PartialCollectionView
             {
-                Id = $"{baseUrl}?page={page}",
-                Page = page,
-                PageSize = pageSize,
+                Id = $"{baseUrl}?page={values.Page}",
+                Page = values.Page,
+                PageSize = values.PageSize,
                 TotalPages = totalPages
             };
-            if (page > 1)
+            if (values.Page > 1)
             {
                 partialView.First = $"{baseUrl}?page={1}";
-                partialView.Previous = $"{baseUrl}?page={page-1}";
+                partialView.Previous = $"{baseUrl}?page={values.Page-1}";
             }
-            if (page < totalPages)
+            if (values.Page < totalPages)
             {
                 partialView.Last = $"{baseUrl}?page={totalPages}";
-                partialView.Next = $"{baseUrl}?page={page+1}";
+                partialView.Next = $"{baseUrl}?page={values.Page+1}";
             }
 
-            partialView.Id = AppendCommonParams(partialView.Id, pageSize, orderBy, descending);
-            partialView.First = AppendCommonParams(partialView.First, pageSize, orderBy, descending);
-            partialView.Previous = AppendCommonParams(partialView.Previous, pageSize, orderBy, descending);
-            partialView.Last = AppendCommonParams(partialView.Last, pageSize, orderBy, descending);
-            partialView.Next = AppendCommonParams(partialView.Next, pageSize, orderBy, descending);
+            partialView.Id = AppendCommonParams(partialView.Id, values);
+            partialView.First = AppendCommonParams(partialView.First, values);
+            partialView.Previous = AppendCommonParams(partialView.Previous, values);
+            partialView.Last = AppendCommonParams(partialView.Last, values);
+            partialView.Next = AppendCommonParams(partialView.Next, values);
 
             collection.View = partialView;
         }
     }
 
-    private static string? AppendCommonParams(string? partial, int pageSize, string? orderBy, bool descending)
+    private static string? AppendCommonParams(string? partial, PartialCollectionViewPagingValues values)
     {
         if (partial == null) return null;
-        var full = $"{partial}&pageSize={pageSize}";
-        if (!string.IsNullOrWhiteSpace(orderBy))
+        var full = $"{partial}&pageSize={values.PageSize}";
+        if (!string.IsNullOrWhiteSpace(values.OrderBy))
         {
-            if (descending)
+            if (values.Descending)
             {
-                full = $"{full}&orderByDescending={orderBy}";
+                full = $"{full}&orderByDescending={values.OrderBy}";
             }
             else
             {
-                full = $"{full}&orderBy={orderBy}";
+                full = $"{full}&orderBy={values.OrderBy}";
+            }
+        }
+
+        if (values.FurtherParameters != null)
+        {
+            foreach (var keyValuePair in values.FurtherParameters)
+            {
+                full = $"{full}&{keyValuePair.Key}={keyValuePair.Value}";
             }
         }
 
         return full;
     }
+}
+
+public class PartialCollectionViewPagingValues
+{
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public string? OrderBy { get; set; }
+    public bool Descending { get; set; } = false;
+    public List<KeyValuePair<string, string>>? FurtherParameters { get; set; }
 }
