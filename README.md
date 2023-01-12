@@ -35,6 +35,7 @@ In addition to the above there are a number of `*.Tests` classes for automated t
 * Orchestrator - reverse proxy that serves user requests (WIP).
 * Portal - administration UI for managing assets (WIP).
 * Thumbs - simplified handling of thumbnail requests.
+* DeleteHandler - monitors queue for notifications + deletes asset derivatives on receipt.
 
 ## Technology :robot:
 
