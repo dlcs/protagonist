@@ -57,9 +57,9 @@ public class AssetDeletedHandler : IMessageHandler
             return;
         }
 
-        var thumbsKey = storageKeyGenerator.GetThumbnailsRoot(assetId);
-        logger.LogInformation("Deleting thumbs from {ThumbnailRoot} for {AssetId}", thumbsKey, assetId);
-        await bucketWriter.DeleteFromBucket(thumbsKey);
+        var thumbsRoot = storageKeyGenerator.GetThumbnailsRoot(assetId);
+        logger.LogInformation("Deleting thumbs from {ThumbnailRoot} for {AssetId}", thumbsRoot, assetId);
+        await bucketWriter.DeleteFolder(thumbsRoot);
     }
     
     private async Task DeleteTileOptimised(AssetId assetId)

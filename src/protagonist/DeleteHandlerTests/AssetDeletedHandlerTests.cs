@@ -43,7 +43,7 @@ public class AssetDeletedHandlerTests
         fakeFileSystem = new FakeFileSystem();
     }
 
-    public AssetDeletedHandler GetSut()
+    private AssetDeletedHandler GetSut()
         => new(storageKeyGenerator, bucketWriter, fakeFileSystem, Options.Create(handlerSettings),
             new NullLogger<AssetDeletedHandler>());
 
@@ -107,8 +107,8 @@ public class AssetDeletedHandlerTests
         
         // Thumbs deleted
         A.CallTo(() =>
-            bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(a =>
-                a[0].Bucket == LocalStackFixture.ThumbsBucketName && a[0].Key == $"{assetId}/"
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
             ))).MustHaveHappened();
         
         A.CallTo(() =>
@@ -140,8 +140,8 @@ public class AssetDeletedHandlerTests
         
         // Thumbs deleted
         A.CallTo(() =>
-            bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(a =>
-                a[0].Bucket == LocalStackFixture.ThumbsBucketName && a[0].Key == $"{assetId}/"
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
             ))).MustHaveHappened();
         
         A.CallTo(() =>
@@ -173,8 +173,8 @@ public class AssetDeletedHandlerTests
         
         // Thumbs deleted
         A.CallTo(() =>
-            bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(a =>
-                a[0].Bucket == LocalStackFixture.ThumbsBucketName && a[0].Key == $"{assetId}/"
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
             ))).MustNotHaveHappened();
         
         A.CallTo(() =>
@@ -206,8 +206,8 @@ public class AssetDeletedHandlerTests
         
         // Thumbs deleted
         A.CallTo(() =>
-            bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(a =>
-                a[0].Bucket == LocalStackFixture.ThumbsBucketName && a[0].Key == $"{assetId}/"
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
             ))).MustHaveHappened();
         
         A.CallTo(() =>
