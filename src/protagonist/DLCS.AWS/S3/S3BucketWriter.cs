@@ -4,7 +4,6 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using DLCS.AWS.S3.Models;
-using DLCS.Core;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.AWS.S3;

@@ -1,5 +1,4 @@
-﻿using System.Text.Json.Nodes;
-using DeleteHandler.Infrastructure;
+﻿using DeleteHandler.Infrastructure;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Exceptions;
@@ -81,7 +80,7 @@ public class AssetDeletedHandler : IMessageHandler
     {
         if (string.IsNullOrEmpty(handlerSettings.ImageFolderTemplate))
         {
-            logger.LogDebug("No ImageFolderTemplate configured - NAS file will not be deleted");
+            logger.LogDebug("No ImageFolderTemplate configured - NAS file will not be deleted. {AssetId}", assetId);
             return;
         }
 

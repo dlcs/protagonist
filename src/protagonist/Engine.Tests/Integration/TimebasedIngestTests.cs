@@ -14,6 +14,7 @@ using Engine.Tests.Integration.Infrastructure;
 using FakeItEasy;
 using Microsoft.Extensions.DependencyInjection;
 using Stubbery;
+using Test.Helpers;
 using Test.Helpers.Integration;
 using Test.Helpers.Storage;
 
