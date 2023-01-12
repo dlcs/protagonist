@@ -46,7 +46,8 @@ public class QueueMessageXTests
         contents.ToJsonString().Should().BeEquivalentTo(expected);
     }
 
-    [Fact] public void GetMessageContents_ReturnsNull_IfSnsOrigin_AndBodyNotJson()
+    [Fact] 
+    public void GetMessageContents_ReturnsNull_IfSnsOrigin_AndBodyNotJson()
     {
         // Arrange
         var body = new JsonObject
