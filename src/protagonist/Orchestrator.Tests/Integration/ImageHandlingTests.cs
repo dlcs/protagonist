@@ -5,13 +5,11 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading;
-using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Auth.Entities;
-using FluentAssertions;
 using IIIF;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
@@ -25,7 +23,6 @@ using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers;
 using Test.Helpers.Integration;
-using Xunit;
 using Yarp.ReverseProxy.Forwarder;
 using Version = IIIF.ImageApi.Version;
 
@@ -159,6 +156,49 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules)}");
+        var rewrittenPathId = $"{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules)}/99";
+        await dbFixture.DbContext.Images.AddTestAsset(id);
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+        });
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"iiif-img/v2/{id}/info.json");
+        request.Headers.Add("Host", "my-proxy.com");
+        var response = await httpClient.SendAsync(request);
+        
+        // Assert
+        // Verify correct info.json returned
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["@id"].ToString().Should().Be($"http://my-proxy.com/iiif-img/v2/{rewrittenPathId}");
+        jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+
+        // With correct headers/status
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        response.Content.Headers.ContentType.ToString().Should()
+            .Be("application/json", "application/json unless Accept header specified");
+        
+        // And a copy was put in S3 for future requests
+        var s3InfoJsonObject =
+            await amazonS3.GetObjectAsync(LocalStackFixture.StorageBucketName, $"info/Cantaloupe/v2/{id}/info.json");
+        var s3InfoJson = JObject.Parse(s3InfoJsonObject.ResponseStream.GetContentString());
+        s3InfoJson["@id"].ToString().Should()
+            .NotBe($"http://my-proxy.com/iiif-img/v2/{rewrittenPathId}", "Stored Id is placeholder only");
+        s3InfoJson["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+    }
+    
+    [Fact]
     public async Task GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3()
     {
         // Arrange
@@ -186,6 +226,47 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Verify correct info.json returned
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/v2/{id}");
+        jsonResponse["@context"].ToString().Should().Be("_this_proves_s3_origin_");
+
+        // With correct headers/status
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        response.Content.Headers.ContentType.ToString().Should()
+            .Be("application/json", "application/json unless Accept header specified");
+    }
+    
+    [Fact]
+    public async Task GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3_CustomPathRules()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3_CustomPathRules)}");
+        var rewrittenPathId = $"{nameof(GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3_CustomPathRules)}/99";
+        await dbFixture.DbContext.Images.AddTestAsset(id);
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+        });
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"info/Cantaloupe/v2/{id}/info.json",
+            BucketName = LocalStackFixture.StorageBucketName,
+            ContentBody = "{\"@context\": \"_this_proves_s3_origin_\"}"
+        });
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"iiif-img/v2/{id}/info.json");
+        request.Headers.Add("Host", "my-proxy.com");
+        var response = await httpClient.SendAsync(request);
+        
+        // Assert
+        // Verify correct info.json returned
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["@id"].ToString().Should().Be($"http://my-proxy.com/iiif-img/v2/{rewrittenPathId}");
         jsonResponse["@context"].ToString().Should().Be("_this_proves_s3_origin_");
 
         // With correct headers/status
@@ -240,6 +321,39 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Redirect);
         response.Headers.Location.Should().Be($"/iiif-img/{id}/info.json");
+    }
+    
+    [Fact]
+    public async Task GetInfoJsonV3_Correct_ViaConneg_CustomPathRules()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV3_Correct_ViaConneg_CustomPathRules)}");
+        var rewrittenPathId = $"{nameof(GetInfoJsonV3_Correct_ViaConneg_CustomPathRules)}/99";
+        const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
+        await dbFixture.DbContext.Images.AddTestAsset(id);
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+        });
+        await dbFixture.DbContext.SaveChangesAsync();
+        
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"iiif-img/{id}/info.json");
+        request.Headers.Add("Accept", iiif3);
+        request.Headers.Add("Host", "my-proxy.com");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["id"].ToString().Should().Be($"http://my-proxy.com/iiif-img/{rewrittenPathId}");
+        jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/3/context.json");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
     }
     
     [Fact]
