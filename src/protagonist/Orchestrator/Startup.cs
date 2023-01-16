@@ -56,6 +56,7 @@ public class Startup
             .Configure<ProxySettings>(proxySection)
             .Configure<NamedQueryTemplateSettings>(configuration)
             .Configure<NamedQuerySettings>(configuration.GetSection("NamedQuery"))
+            .Configure<PathTemplateOptions>(configuration.GetSection("PathRules"))
             .Configure<CacheSettings>(cachingSection);
 
         var orchestratorSettings = configuration.Get<OrchestratorSettings>();
