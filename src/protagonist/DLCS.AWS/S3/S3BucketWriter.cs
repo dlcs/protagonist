@@ -4,7 +4,6 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using DLCS.AWS.S3.Models;
-using DLCS.Core;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.AWS.S3;
@@ -250,6 +249,57 @@ public class S3BucketWriter : IBucketWriter
         {
             logger.LogWarning(e,
                 "Unknown encountered on server. Message:'{Message}' when deleting objects from bucket", e.Message);
+        }
+    }
+
+    public async Task DeleteFolder(ObjectInBucket root)
+    {
+        // NOTE - this is based on the S3DirectoryInfo.Delete method that was removed from SDK
+        try
+        {
+            var listObjectsRequest = new ListObjectsRequest
+            {
+                BucketName = root.Bucket,
+                Prefix = root.Key
+            };
+
+            var deleteObjectsRequest = new DeleteObjectsRequest
+            {
+                BucketName = root.Bucket
+            };
+
+            ListObjectsResponse listObjectsResponse;
+            do
+            {
+                listObjectsResponse = await s3Client.ListObjectsAsync(listObjectsRequest);
+                foreach (var item in listObjectsResponse.S3Objects.OrderBy(x => x.Key))
+                {
+                    deleteObjectsRequest.AddKey(item.Key);
+                    if (deleteObjectsRequest.Objects.Count == 1000)
+                    {
+                        await s3Client.DeleteObjectsAsync(deleteObjectsRequest);
+                        deleteObjectsRequest.Objects.Clear();
+                    }
+
+                    listObjectsRequest.Marker = item.Key;
+                }
+            } while (listObjectsResponse.IsTruncated);
+
+            if (deleteObjectsRequest.Objects.Count > 0)
+            {
+                await s3Client.DeleteObjectsAsync(deleteObjectsRequest);
+            }
+        }
+        catch (AmazonS3Exception e)
+        {
+            logger.LogWarning("S3 Error encountered. Message:'{Message}' when deleting folder '{Folder}' from bucket",
+                e.Message, root);
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning(e,
+                "Unknown encountered on server. Message:'{Message}' when deleting folder '{Folder}' from bucket",
+                e.Message, root);
         }
     }
 

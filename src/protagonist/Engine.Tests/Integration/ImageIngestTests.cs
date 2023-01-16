@@ -14,6 +14,7 @@ using Engine.Tests.Integration.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Stubbery;
+using Test.Helpers;
 using Test.Helpers.Integration;
 using Test.Helpers.Storage;
 
@@ -252,26 +253,6 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var storage = await dbContext.ImageStorages.SingleOrDefaultAsync(a => a.Id == assetId);
         storage.Should().BeNull();
-    }
-}
-
-public class FakeFileSystem : IFileSystem
-{
-    public List<string> CreatedDirectories = new();
-    public List<string> DeletedDirectories = new();
-    public List<string> DeletedFiles = new();
-
-    public void CreateDirectory(string path) => CreatedDirectories.Add(path);
-
-    public void DeleteDirectory(string path, bool recursive, bool swallowError = true) => DeletedDirectories.Add(path);
-
-    public void DeleteFile(string path, bool swallowError = true) => DeletedFiles.Add(path);
-
-    public bool FileExists(string path) => true;
-    public long GetFileSize(string path) => 10;
-    public void SetLastWriteTimeUtc(string path, DateTime dateTime)
-    {
-        // no-op
     }
 }
 

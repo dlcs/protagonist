@@ -166,6 +166,11 @@ public class TestBucketWriter : IBucketWriter
 
         return Task.CompletedTask;
     }
+
+    public Task DeleteFolder(ObjectInBucket root)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class BucketObject
