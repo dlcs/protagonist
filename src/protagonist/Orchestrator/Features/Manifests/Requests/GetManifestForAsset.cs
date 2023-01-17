@@ -133,6 +133,6 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
                     request.CustomerPathValue,
                     request.Space.ToString(),
                     request.AssetId);
-            });
+            }, true);
 
 }

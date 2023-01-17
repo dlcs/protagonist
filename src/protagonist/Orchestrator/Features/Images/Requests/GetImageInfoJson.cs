@@ -15,6 +15,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Features.Auth.Paths;
 using Orchestrator.Features.Images.ImageServer;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.Auth;
@@ -32,11 +33,11 @@ public class GetImageInfoJson : IRequest<DescriptionResourceResponse>, IImageReq
 {
     public string FullPath { get; }
     public bool NoOrchestrationOverride { get; }
-    public IIIF.ImageApi.Version Version { get; }
+    public Version Version { get; }
 
     public ImageAssetDeliveryRequest AssetRequest { get; set; }
 
-    public GetImageInfoJson(string path, IIIF.ImageApi.Version version, bool noOrchestrationOverride)
+    public GetImageInfoJson(string path, Version version, bool noOrchestrationOverride)
     {
         FullPath = path;
         Version = version;
@@ -47,6 +48,7 @@ public class GetImageInfoJson : IRequest<DescriptionResourceResponse>, IImageReq
 public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, DescriptionResourceResponse>
 {
     private readonly IAssetTracker assetTracker;
+    private readonly IAuthPathGenerator authPathGenerator;
     private readonly IAssetPathGenerator assetPathGenerator;
     private readonly IOrchestrationQueue orchestrationQueue;
     private readonly IAssetAccessValidator accessValidator;
@@ -57,6 +59,7 @@ public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, Descrip
     public GetImageInfoJsonHandler(
         IAssetTracker assetTracker,
         IAssetPathGenerator assetPathGenerator,
+        IAuthPathGenerator authPathGenerator,
         IOrchestrationQueue orchestrationQueue,
         IAssetAccessValidator accessValidator,
         IOptions<OrchestratorSettings> orchestratorSettings,
@@ -69,6 +72,7 @@ public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, Descrip
         this.accessValidator = accessValidator;
         this.infoJsonService = infoJsonService;
         this.logger = logger;
+        this.authPathGenerator = authPathGenerator;
         this.orchestratorSettings = orchestratorSettings.Value;
     }
     
@@ -172,12 +176,8 @@ public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, Descrip
     {
         void SetAuthId(IService service)
         {
-            // TODO - this needs to be aware of incoming host headers and alter paths accordingly
-            var authServicesUriFormat = orchestratorSettings.Auth.AuthServicesUriTemplate;
-            var id = authServicesUriFormat
-                .Replace("{customer}", assetId.Customer.ToString())
-                .Replace("{behaviour}", service.Id);
-            service.Id = id;
+            service.Id =
+                authPathGenerator.GetAuthPathForRequest(assetId.Customer.ToString(), service.Id ?? "_unknown_");
         }
         
         foreach (var service in services ?? Enumerable.Empty<IService>())

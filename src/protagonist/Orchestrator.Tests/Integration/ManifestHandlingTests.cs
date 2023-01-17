@@ -128,11 +128,10 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     }
         
     [Fact]
-    public async Task Get_ManifestForImage_ReturnsManifest_CustomPathRules()
+    public async Task Get_ManifestForImage_ReturnsManifest_CustomPathRules_Ignored()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest_CustomPathRules)}");
-        var rewrittenPathId = $"{nameof(Get_ManifestForImage_ReturnsManifest_CustomPathRules)}/99";
+        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest_CustomPathRules_Ignored)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin");
         await dbFixture.DbContext.SaveChangesAsync();
             
@@ -145,9 +144,9 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             
         // Assert
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["@id"].ToString().Should().Be($"http://my-proxy.com/iiif-manifest/v2/{rewrittenPathId}");
+        jsonResponse["@id"].ToString().Should().Be($"http://my-proxy.com/iiif-manifest/v2/{id}");
         jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
-            .Should().StartWith($"http://my-proxy.com/thumbs/{nameof(Get_ManifestForImage_ReturnsManifest_CustomPathRules)}");
+            .Should().StartWith($"http://my-proxy.com/thumbs/{id}/full");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.CacheControl.Public.Should().BeTrue();

@@ -25,4 +25,19 @@ public static class DlcsPathHelpers
             .Replace("{customer}", customer ?? string.Empty)
             .Replace("{space}", space ?? string.Empty)
             .Replace("{assetPath}", assetPath ?? string.Empty);
+    
+    /// <summary>
+    /// Replace known slugs in DLCS auth path template.
+    /// </summary>
+    /// <param name="template">DLCS auth path template, including slugs to replace</param>
+    /// /// <param name="customer">Value to replace {customer} with</param>
+    /// <param name="behaviour">Value to replace {behaviour} with</param>
+    /// <returns>Template with string replacements made</returns>
+    public static string GenerateAuthPathFromTemplate(
+        string template, 
+        string? customer = null, 
+        string? behaviour = null) =>
+        template
+            .Replace("{customer}", customer ?? string.Empty)
+            .Replace("{behaviour}", behaviour ?? string.Empty);
 }

@@ -551,7 +551,50 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var infoJson = responseStream.FromJsonStream<ImageService3>();
 
         infoJson.Id.Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_Correct");
-        infoJson.Service.Single().Id.Should().Be("https://localhost/auth/99/test-service");
+        infoJson.Service.Single().Id.Should().Be("http://localhost/auth/99/test-service");
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.CacheControl.Public.Should().BeFalse();
+        response.Headers.CacheControl.Private.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+    }
+    
+    [Fact]
+    public async Task GetInfoJson_RestrictedImage_Correct_CustomPathRules()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_RestrictedImage_Correct_CustomPathRules)}");
+        var rewrittenPathId = $"{nameof(GetInfoJson_RestrictedImage_Correct_CustomPathRules)}/99";
+        const string roleName = "my-test-role";
+        const string authServiceName = "my-auth-service";
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: roleName, maxUnauthorised: 500);
+        await dbFixture.DbContext.Roles.AddAsync(new Role
+        {
+            Customer = 99, Id = roleName, Name = "test-role", AuthService = authServiceName
+        });
+        await dbFixture.DbContext.AuthServices.AddAsync(new AuthService
+        {
+            Name = "test-service", Customer = 99, Id = authServiceName, Profile = "profile"
+        });
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": [[400,400],[200,200]]}"
+        });
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"iiif-img/{id}/info.json");
+        request.Headers.Add("Host", "my-proxy.com");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        var responseStream = await response.Content.ReadAsStreamAsync();
+        var infoJson = responseStream.FromJsonStream<ImageService3>();
+
+        infoJson.Id.Should().Be($"http://my-proxy.com/iiif-img/{rewrittenPathId}");
+        infoJson.Service.Single().Id.Should().Be("http://my-proxy.com/auth/test-service");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         response.Headers.CacheControl.Public.Should().BeFalse();
         response.Headers.CacheControl.Private.Should().BeTrue();

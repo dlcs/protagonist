@@ -20,6 +20,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Features.Auth;
+using Orchestrator.Features.Auth.Paths;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
@@ -71,6 +72,7 @@ public class Startup
             .AddScoped<ISessionAuthService, SessionAuthService>()
             .AddScoped<AuthCookieManager>()
             .AddSingleton<AssetRequestProcessor>()
+            .AddScoped<IAuthPathGenerator, ConfigDrivenAuthPathGenerator>()
             .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
             .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
             .AddScoped<IIIFAuthBuilder>()

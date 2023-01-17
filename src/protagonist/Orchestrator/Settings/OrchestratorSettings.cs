@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Caching;
+using DLCS.Web.Response;
 
 namespace Orchestrator.Settings;
 
@@ -160,9 +161,9 @@ public class AuthSettings
     public bool UseCurrentDomainForCookie { get; set; } = true;
     
     /// <summary>
-    /// URI template for auth services
+    /// URI template configuration for auth paths 
     /// </summary>
-    public string AuthServicesUriTemplate { get; set; }
+    public PathTemplateOptions AuthPathRules { get; set; }
 }
 
 /// <summary>

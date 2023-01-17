@@ -240,7 +240,7 @@ public class IIIFCanvasFactory
             RoutePrefix = isThumb ? orchestratorSettings.Proxy.ThumbsPath : orchestratorSettings.Proxy.ImagePath,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(request);
+        return assetPathGenerator.GetFullPathForRequest(request, true);
     }
 
     private string GetFullyQualifiedId(Asset asset, CustomerPathElement customerPathElement,
@@ -262,7 +262,7 @@ public class IIIFCanvasFactory
             RoutePrefix = $"{routePrefix}{versionPart}",
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(imageRequest);
+        return assetPathGenerator.GetFullPathForRequest(imageRequest, true);
     }
 
     private List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement)
