@@ -113,6 +113,25 @@ To facilitate using proxy servers to receive alternative URLs that are then rewr
 
 As an convenience you can specify "PathRules:OverridesAsJson" appSetting that includes a string-based config. This makes it easier to configure via environment variables etc
 
+#### Auth PathTemplates
+
+There is a similar config block availabe for authentication under the `"Auth"` key.
+
+For auth the path replacements are simpler:
+* `customer` is the customer the auth service is for
+* `behaviour` is the name of the auth service.
+
+```
+"Auth": {
+  "AuthPathRules": {
+    "Default": "/auth/{customer}/{behaviour}",
+    "Overrides": {
+      "exclude-space.com": "/auth/{behaviour}"
+    }
+  }
+},
+```
+
 ### Versioned Requests
 
 `DefaultIIIFImageVersion` and `DefaultIIIFPresentationVersion` specify the default IIIF Image and Presentation API's supported.
