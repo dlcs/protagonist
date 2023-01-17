@@ -10,7 +10,7 @@ namespace DLCS.Web.Response;
 /// Generate paths related to running Dlcs instance using appSettings config for rules.
 /// </summary>
 /// <remarks>
-/// This class uses <see cref="PathOverrides"/> to determine different URL patterns for different hostnames,
+/// This class uses <see cref="PathTemplateOptions"/> to determine different URL patterns for different hostnames,
 /// this allows e.g. "id" values on manifests to use different URL structures than the default DLCS paths.
 /// e.g. /images/{image}/ rather than default of /iiif-img/{cust}/{space}/{image} 
 /// </remarks>
