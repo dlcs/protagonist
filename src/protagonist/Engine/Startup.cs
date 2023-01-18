@@ -23,6 +23,7 @@ public class Startup
         
         services
             .AddAws(configuration, webHostEnvironment)
+            .AddHttpContextAccessor()
             .AddQueueMonitoring()
             .AddAssetIngestion(configuration.Get<EngineSettings>())
             .AddDataAccess(configuration)

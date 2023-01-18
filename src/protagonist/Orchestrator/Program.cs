@@ -34,6 +34,8 @@ public class Program
             .UseSerilog((hostingContext, loggerConfiguration)
                 => loggerConfiguration
                     .ReadFrom.Configuration(hostingContext.Configuration)
+                    .Enrich.FromLogContext()
+                    .Enrich.WithCorrelationIdHeader()
             )
             .ConfigureAppConfiguration((context, builder) =>
             {
