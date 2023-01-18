@@ -2,6 +2,7 @@ using System;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using DLCS.AWS.SSM;
+using DLCS.Web.Logging;
 using Serilog;
 
 namespace Orchestrator;
@@ -35,7 +36,7 @@ public class Program
                 => loggerConfiguration
                     .ReadFrom.Configuration(hostingContext.Configuration)
                     .Enrich.FromLogContext()
-                    .Enrich.WithCorrelationIdHeader()
+                    .Enrich.WithCorrelationIdHeader(addToRequest: true)
             )
             .ConfigureAppConfiguration((context, builder) =>
             {

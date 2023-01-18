@@ -1,4 +1,5 @@
 using DLCS.AWS.SSM;
+using DLCS.Web.Logging;
 using Serilog;
 
 public class Program

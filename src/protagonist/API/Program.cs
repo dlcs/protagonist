@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using DLCS.AWS.SSM;
+using DLCS.Web.Logging;
 using Serilog;
 
 namespace API;
