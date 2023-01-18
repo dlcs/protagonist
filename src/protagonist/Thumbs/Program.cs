@@ -12,7 +12,6 @@ public class Program
     {
         Log.Logger = new LoggerConfiguration()
             .Enrich.FromLogContext()
-            .Enrich.WithCorrelationIdHeader()
             .WriteTo.Console()
             .CreateLogger();
         try

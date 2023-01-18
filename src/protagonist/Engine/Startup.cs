@@ -1,4 +1,5 @@
 ﻿using DLCS.Core.Caching;
+using DLCS.Web.Configuration;
 using Engine.Infrastructure;
 using Engine.Settings;
 using Serilog;
@@ -28,6 +29,7 @@ public class Startup
             .AddAssetIngestion(configuration.Get<EngineSettings>())
             .AddDataAccess(configuration)
             .AddCaching(cachingSection.Get<CacheSettings>())
+            .AddHeaderPropagation()
             .ConfigureHealthChecks();
 
         services.AddControllers();
