@@ -179,7 +179,6 @@ public abstract class HydraController : Controller
     {
         List<KeyValuePair<string, string>>? furtherParameters = null;
         
-        // This is an example of a known parameter that we can normalise
         if (pagedRequest is IAssetFilterableRequest assetFilterableRequest)
         {
             if (assetFilterableRequest.AssetFilter != null)
@@ -190,8 +189,7 @@ public abstract class HydraController : Controller
             }
         }
         
-        // If we want to we can inspect the original HTTP request params here and add some or all of them back in
-        // Request.QueryString...
+        // Add any other parameters we want to pass through here
         
         return furtherParameters;
     }

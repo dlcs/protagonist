@@ -11,7 +11,7 @@ namespace API.Features.Queues.Requests;
 /// <summary>
 /// Get details of images within batch
 /// </summary>
-public class GetBatchImages : IRequest<FetchEntityResult<PageOf<Asset>>>, IPagedRequest, IOrderableRequest
+public class GetBatchImages : IRequest<FetchEntityResult<PageOf<Asset>>>, IPagedRequest, IOrderableRequest, IAssetFilterableRequest
 {
     public int CustomerId { get; }
     
