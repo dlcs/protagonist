@@ -6,6 +6,7 @@ using DLCS.Repository.Auth;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Configuration;
+using DLCS.Web.Logging;
 using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
@@ -143,7 +144,10 @@ public class Startup
             .UseForwardedHeaders()
             .UseRouting()
             .UseOptions()
-            .UseSerilogRequestLogging()
+            .UseSerilogRequestLogging(opts =>
+            {
+                opts.GetLevel = LogHelper.ExcludeHealthChecks;
+            })
             .UseCors("CorsPolicy")
             .UseAuthorization()
             .UseEndpoints(endpoints =>
