@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 
@@ -62,5 +64,15 @@ public static class ApplicationBuilderX
                     $"/{(havePathBase ? $"{pathBase}/" : string.Empty)}swagger/{version}/swagger.json",
                     name)
             );
+    }
+    
+    /// <summary>
+    /// Propagate x-correlation-id header to any downstream calls.
+    /// NOTE: This will be added to ALL httpClient requests.
+    /// </summary>
+    public static IServiceCollection AddHeaderPropagation(this IServiceCollection services)
+    {
+        services.AddSingleton<IHttpMessageHandlerBuilderFilter, HeaderPropagationMessageHandlerBuilderFilter>();
+        return services;
     }
 }

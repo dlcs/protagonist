@@ -1,5 +1,6 @@
 using System;
 using DLCS.AWS.SSM;
+using DLCS.Web.Logging;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -12,7 +13,6 @@ public class Program
     {
         Log.Logger = new LoggerConfiguration()
             .Enrich.FromLogContext()
-            .Enrich.WithCorrelationIdHeader()
             .WriteTo.Console()
             .CreateLogger();
         try

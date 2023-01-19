@@ -73,6 +73,7 @@ public class Startup
             .ConfigureMediatR()
             .AddNamedQueriesCore()
             .AddAws(configuration, webHostEnvironment)
+            .AddHeaderPropagation()
             .ConfigureSwagger();
         
         services.AddHttpClient<IEngineClient, EngineClient>()

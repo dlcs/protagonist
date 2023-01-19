@@ -84,6 +84,7 @@ public class Startup
             .AddApiClient(orchestratorSettings)
             .ConfigureHealthChecks(proxySection, configuration)
             .AddAws(configuration, webHostEnvironment)
+            .AddHeaderPropagation()
             .AddInfoJsonClient();
         
         // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
