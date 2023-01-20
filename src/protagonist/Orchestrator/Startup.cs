@@ -89,7 +89,8 @@ public class Startup
             .ConfigureHealthChecks(proxySection, configuration)
             .AddAws(configuration, webHostEnvironment)
             .AddHeaderPropagation()
-            .AddInfoJsonClient();
+            .AddInfoJsonClient()
+            .HandlePathTemplates();
         
         // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
         services.Configure<ForwardedHeadersOptions>(opts =>

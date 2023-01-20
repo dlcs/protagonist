@@ -5,6 +5,7 @@ using DLCS.Model.PathElements;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Customers;
+using DLCS.Web.Configuration;
 using DLCS.Web.Logging;
 using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
