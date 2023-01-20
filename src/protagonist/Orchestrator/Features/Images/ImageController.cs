@@ -122,7 +122,7 @@ public class ImageController : IIIFAssetControllerBase
                 RoutePrefix = "iiif-img",
                 Space = space,
                 CustomerPathValue = customer,
-                AssetPath = image,
+                AssetPath = $"{image}/info.json",
             };
             var canonicalRoute = assetPathGenerator.GetRelativePathForRequest(basicPathElements);
             return Redirect(canonicalRoute);

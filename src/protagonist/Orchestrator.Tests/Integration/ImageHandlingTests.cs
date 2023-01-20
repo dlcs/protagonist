@@ -354,8 +354,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV3_Correct_ViaConneg_CustomPathRules()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV3_Correct_ViaConneg_CustomPathRules)}");
-        var rewrittenPathId = $"{nameof(GetInfoJsonV3_Correct_ViaConneg_CustomPathRules)}/99";
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV3_Correct_ViaConneg_CustomPathRules)}"); 
         const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
         await dbFixture.DbContext.Images.AddTestAsset(id);
 
