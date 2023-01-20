@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
@@ -159,19 +158,14 @@ public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, Descrip
     }
 
     private string GetImageId(GetImageInfoJson request)
-        => assetPathGenerator.GetFullPathForRequest(
-            request.AssetRequest,
-            (assetRequest, template) =>
-            {
-                var baseAssetRequest = assetRequest as BaseAssetRequest;
-                return DlcsPathHelpers.GeneratePathFromTemplate(
-                    template,
-                    baseAssetRequest.VersionedRoutePrefix,
-                    baseAssetRequest.CustomerPathValue,
-                    baseAssetRequest.Space.ToString(),
-                    baseAssetRequest.AssetId);
-            });
-    
+    {
+        var baseRequest = request.AssetRequest.CloneBasicPathElements();
+        
+        // We want the image id only, without "/info.json"
+        baseRequest.AssetPath = request.AssetRequest.AssetId;
+        return assetPathGenerator.GetFullPathForRequest(baseRequest);
+    }
+
     private void SetServiceIdProperties(AssetId assetId, List<IService>? services)
     {
         void SetAuthId(IService service)

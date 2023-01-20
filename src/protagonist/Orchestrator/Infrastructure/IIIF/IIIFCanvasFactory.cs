@@ -259,7 +259,8 @@ public class IIIFCanvasFactory
         {
             Space = asset.Space,
             AssetPath = asset.Id.Asset,
-            RoutePrefix = $"{routePrefix}{versionPart}",
+            VersionPathValue = versionPart,
+            RoutePrefix = routePrefix,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
         return assetPathGenerator.GetFullPathForRequest(imageRequest, true);

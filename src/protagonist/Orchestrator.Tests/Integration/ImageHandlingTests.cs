@@ -160,7 +160,6 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules)}");
-        var rewrittenPathId = $"{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules)}/99";
         await dbFixture.DbContext.Images.AddTestAsset(id);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -179,7 +178,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         // Verify correct info.json returned
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["@id"].ToString().Should().Be($"http://my-proxy.com/iiif-img/v2/{rewrittenPathId}");
+        jsonResponse["@id"].ToString().Should()
+            .Be($"http://my-proxy.com/const_value/v2/99/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules)}");
         jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
 
         // With correct headers/status
@@ -194,7 +194,9 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             await amazonS3.GetObjectAsync(LocalStackFixture.StorageBucketName, $"info/Cantaloupe/v2/{id}/info.json");
         var s3InfoJson = JObject.Parse(s3InfoJsonObject.ResponseStream.GetContentString());
         s3InfoJson["@id"].ToString().Should()
-            .NotBe($"http://my-proxy.com/iiif-img/v2/{rewrittenPathId}", "Stored Id is placeholder only");
+            .NotBe(
+                $"http://my-proxy.com/const_value/v2/99/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules)}",
+                "Stored Id is placeholder only");
         s3InfoJson["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
     }
     
@@ -241,7 +243,6 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3_CustomPathRules)}");
-        var rewrittenPathId = $"{nameof(GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3_CustomPathRules)}/99";
         await dbFixture.DbContext.Images.AddTestAsset(id);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -266,7 +267,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         // Verify correct info.json returned
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["@id"].ToString().Should().Be($"http://my-proxy.com/iiif-img/v2/{rewrittenPathId}");
+        jsonResponse["@id"].ToString().Should()
+            .Be($"http://my-proxy.com/const_value/v2/99/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3_CustomPathRules)}");
         jsonResponse["@context"].ToString().Should().Be("_this_proves_s3_origin_");
 
         // With correct headers/status
@@ -348,7 +350,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["id"].ToString().Should().Be($"http://my-proxy.com/iiif-img/{rewrittenPathId}");
+        jsonResponse["id"].ToString().Should()
+            .Be($"http://my-proxy.com/const_value/99/{nameof(GetInfoJsonV3_Correct_ViaConneg_CustomPathRules)}");
         jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/3/context.json");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.CacheControl.Public.Should().BeTrue();
@@ -563,7 +566,6 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_RestrictedImage_Correct_CustomPathRules)}");
-        var rewrittenPathId = $"{nameof(GetInfoJson_RestrictedImage_Correct_CustomPathRules)}/99";
         const string roleName = "my-test-role";
         const string authServiceName = "my-auth-service";
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: roleName, maxUnauthorised: 500);
@@ -593,7 +595,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var responseStream = await response.Content.ReadAsStreamAsync();
         var infoJson = responseStream.FromJsonStream<ImageService3>();
 
-        infoJson.Id.Should().Be($"http://my-proxy.com/iiif-img/{rewrittenPathId}");
+        infoJson.Id.Should()
+            .Be($"http://my-proxy.com/const_value/99/{nameof(GetInfoJson_RestrictedImage_Correct_CustomPathRules)}");
         infoJson.Service.Single().Id.Should().Be("http://my-proxy.com/auth/test-service");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         response.Headers.CacheControl.Public.Should().BeFalse();

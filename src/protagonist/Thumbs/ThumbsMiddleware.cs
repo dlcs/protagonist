@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
@@ -182,19 +181,17 @@ public class ThumbsMiddleware
 
     private string GetFullImagePath(ImageAssetDeliveryRequest imageAssetDeliveryRequest, Version requestedVersion)
     {
-        var isCanonical = IsCanonical(requestedVersion);
-        return pathGenerator.GetFullPathForRequest(
-            imageAssetDeliveryRequest,
-            (assetRequest, template) =>
-            {
-                var baseAssetRequest = assetRequest as BaseAssetRequest;
-                return DlcsPathHelpers.GeneratePathFromTemplate(
-                    template,
-                    isCanonical ? baseAssetRequest.RoutePrefix : baseAssetRequest.VersionedRoutePrefix,
-                    baseAssetRequest.CustomerPathValue,
-                    baseAssetRequest.Space.ToString(),
-                    baseAssetRequest.AssetId);
-            });
+        var baseRequest = imageAssetDeliveryRequest.CloneBasicPathElements();
+        
+        // We want the image id only, without "/info.json"
+        baseRequest.AssetPath = imageAssetDeliveryRequest.AssetId;
+
+        if (IsCanonical(requestedVersion))
+        {
+            baseRequest.VersionPathValue = null;
+        }
+        
+        return pathGenerator.GetFullPathForRequest(baseRequest);
     }
 
     private bool IsCanonical(Version requestedVersion)

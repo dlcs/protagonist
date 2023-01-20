@@ -26,4 +26,29 @@ public class BaseAssetRequestTests
         assetImageId.Space.Should().Be(4);
         assetImageId.Asset.Should().Be("my-asset");
     }
+
+    [Fact]
+    public void CloneBasicPathElements_CreatesClone()
+    {
+        // Arrange
+        var baseRequest = new BasicPathElements
+        {
+            CustomerPathValue = "1234",
+            Space = 4,
+            AssetPath = "10/10/consideration",
+            VersionPathValue = "v9",
+            RoutePrefix = "iiif-img",
+        };
+        
+        // Act
+        var clone = baseRequest.CloneBasicPathElements();
+        
+        // Assert
+        clone.Should().NotBe(baseRequest);
+        clone.CustomerPathValue.Should().Be(baseRequest.CustomerPathValue);
+        clone.Space.Should().Be(baseRequest.Space);
+        clone.AssetPath.Should().Be(baseRequest.AssetPath);
+        clone.RoutePrefix.Should().Be(baseRequest.RoutePrefix);
+        clone.VersionPathValue.Should().Be(baseRequest.VersionPathValue);
+    }
 }

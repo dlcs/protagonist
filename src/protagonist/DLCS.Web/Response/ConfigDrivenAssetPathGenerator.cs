@@ -1,6 +1,7 @@
 ﻿using DLCS.Core;
 using DLCS.Web.Requests;
 using DLCS.Web.Requests.AssetDelivery;
+using IIIF.Presentation.V3.Content;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
@@ -44,11 +45,11 @@ public class ConfigDrivenAssetPathGenerator : IAssetPathGenerator
     private string GetPathForRequestInternal(IBasicPathElements assetRequest, PathGenerator pathGenerator,
         bool fullRequest, bool useNativeFormat)
     {
-        const string dlcsNativeFormat = "/{prefix}/{customer}/{space}/{assetPath}";
-        
         var request = httpContextAccessor.HttpContext.Request;
         var host = request.Host.Value ?? string.Empty;
-        var template = useNativeFormat ? dlcsNativeFormat : pathTemplateOptions.GetPathTemplateForHost(host);
+        var template = useNativeFormat
+            ? PathTemplateOptions.DefaultPathFormat
+            : pathTemplateOptions.GetPathTemplateForHost(host);
 
         var path = pathGenerator(assetRequest, template);
 
@@ -56,10 +57,11 @@ public class ConfigDrivenAssetPathGenerator : IAssetPathGenerator
     }
 
     // Default path replacements
-    private string GeneratePathFromTemplate(IBasicPathElements assetRequest, string template) 
+    private string GeneratePathFromTemplate(IBasicPathElements assetRequest, string template)
         => DlcsPathHelpers.GeneratePathFromTemplate(template,
             prefix: assetRequest.RoutePrefix,
             customer: assetRequest.CustomerPathValue,
+            version: assetRequest.VersionPathValue,
             space: assetRequest.Space.ToString(),
             assetPath: assetRequest.AssetPath);
 }

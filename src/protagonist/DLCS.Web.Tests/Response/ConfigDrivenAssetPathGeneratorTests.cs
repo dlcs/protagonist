@@ -117,7 +117,8 @@ public class ConfigDrivenAssetPathGeneratorTests
                     template, 
                     assetRequest.RoutePrefix, 
                     assetRequest.CustomerPathValue, 
-                    "2000", "not-asset"));
+                    space: "2000",
+                    assetPath: "not-asset"));
         
         // Assert
         actual.Should().Be(expected);
@@ -149,7 +150,8 @@ public class ConfigDrivenAssetPathGeneratorTests
                     template, 
                     assetRequest.RoutePrefix, 
                     assetRequest.CustomerPathValue, 
-                    "2000", "not-asset"));
+                    space: "2000",
+                    assetPath: "not-asset"));
         
         // Assert
         actual.Should().Be(expected);
@@ -181,7 +183,8 @@ public class ConfigDrivenAssetPathGeneratorTests
                     template, 
                     assetRequest.RoutePrefix, 
                     assetRequest.CustomerPathValue, 
-                    "2000", "not-asset"),
+                    space: "2000",
+                    assetPath: "not-asset"),
             true);
         
         // Assert

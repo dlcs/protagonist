@@ -12,8 +12,10 @@ public delegate string PathGenerator(IBasicPathElements assetRequest, string tem
 /// </summary>
 public interface IAssetPathGenerator
 {
+    /// <summary>
     /// Generate full path for specified <see cref="IBasicPathElements"/>, including host.
     /// Uses default template replacements.
+    /// </summary>
     /// <param name="assetRequest"><see cref="IBasicPathElements"/></param>
     /// <param name="useNativeFormat"></param>
     /// <returns></returns>
