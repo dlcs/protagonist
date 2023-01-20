@@ -1,7 +1,6 @@
 ﻿using DLCS.Core;
 using DLCS.Web.Requests;
 using DLCS.Web.Requests.AssetDelivery;
-using IIIF.Presentation.V3.Content;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
@@ -27,6 +26,9 @@ public class ConfigDrivenAssetPathGenerator : IAssetPathGenerator
         this.httpContextAccessor = httpContextAccessor;
         this.pathTemplateOptions = pathTemplateOptions.Value;
     }
+    
+    public string GetRelativePathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false)
+        => GetForPath(assetRequest, false, useNativeFormat);
 
     public string GetFullPathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false)
         => GetForPath(assetRequest, true, useNativeFormat);

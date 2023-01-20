@@ -101,6 +101,31 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
+    [InlineData("/iiif-img/2/1/image", "/const_value/2/image/info.json")]
+    [InlineData("/iiif-img/2/1/image/", "/const_value/2/image/info.json")]
+    [InlineData("/iiif-img/display-name/1/image", "/const_value/display-name/image/info.json")]
+    [InlineData("/iiif-img/display-name/1/image/", "/const_value/display-name/image/info.json")]
+    [InlineData("/iiif-img/v2/2/1/image", "/const_value/v2/2/image/info.json")]
+    [InlineData("/iiif-img/v2/2/1/image/", "/const_value/v2/2/image/info.json")]
+    [InlineData("/iiif-img/v3/2/1/image", "/const_value/2/image/info.json")]
+    [InlineData("/iiif-img/v3/2/1/image/", "/const_value/2/image/info.json")]
+    [InlineData("/iiif-img/v2/display-name/1/image", "/const_value/v2/display-name/image/info.json")]
+    [InlineData("/iiif-img/v2/display-name/1/image/", "/const_value/v2/display-name/image/info.json")]
+    [InlineData("/iiif-img/v3/display-name/1/image", "/const_value/display-name/image/info.json")]
+    [InlineData("/iiif-img/v3/display-name/1/image/", "/const_value/display-name/image/info.json")]
+    public async Task Get_ImageRoot_RedirectsToInfoJson_CustomPathValues(string path, string expected)
+    {
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Add("Host", "my-proxy.com");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.SeeOther);
+        response.Headers.Location.Should().Be(expected);
+    }
+    
+    [Theory]
     [InlineData("/iiif-img/v3/2/1/image", "/iiif-img/2/1/image/info.json")]
     [InlineData("/iiif-img/v3/2/1/image/", "/iiif-img/2/1/image/info.json")]
     [InlineData("/iiif-img/v3/display-name/1/image", "/iiif-img/display-name/1/image/info.json")]
