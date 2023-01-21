@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Core.Tests.Threading;
 
