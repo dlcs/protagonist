@@ -30,6 +30,11 @@ public class SQSSettings
     public string? TranscodeCompleteQueueName { get; set; }
     
     /// <summary>
+    /// Name of queue for handling notifications that assets have been deleted
+    /// </summary>
+    public string? DeleteNotificationQueueName { get; set; }
+    
+    /// <summary>
     /// The duration (in seconds) for which the call waits for a message to arrive in the queue before returning
     /// </summary>
     public int WaitTimeSecs { get; set; } = 20;

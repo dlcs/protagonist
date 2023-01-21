@@ -310,6 +310,20 @@ public static class AssetConverter
         };
     }
 
+    public static ImageQuery ToImageQuery(this AssetFilter assetFilter)
+    {
+        return new ImageQuery
+        {
+            Space = assetFilter.Space,
+            String1 = assetFilter.Reference1,
+            String2 = assetFilter.Reference2,
+            String3 = assetFilter.Reference3,
+            Number1 = assetFilter.NumberReference1,
+            Number2 = assetFilter.NumberReference2,
+            Number3 = assetFilter.NumberReference3
+        };
+    }
+
     /// <summary>
     /// Attempt to parse an AssetFilter from a supplied ImageQuery object on the query string.
     /// </summary>

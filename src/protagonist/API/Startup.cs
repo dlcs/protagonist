@@ -20,6 +20,7 @@ using Hydra;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -72,6 +73,7 @@ public class Startup
             .ConfigureMediatR()
             .AddNamedQueriesCore()
             .AddAws(configuration, webHostEnvironment)
+            .AddHeaderPropagation()
             .ConfigureSwagger();
         
         services.AddHttpClient<IEngineClient, EngineClient>()
@@ -108,10 +110,18 @@ public class Startup
         {
             options.Limits.MaxRequestBodySize = 100_000_000; // if don't set default value is: 30 MB
         });
+        
+        // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
+        services.Configure<ForwardedHeadersOptions>(opts =>
+        {
+            opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+        });
+        
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
     {
+        app.UseForwardedHeaders();
         if (env.IsDevelopment())
         {
             DlcsContextConfiguration.TryRunMigrations(configuration, logger);

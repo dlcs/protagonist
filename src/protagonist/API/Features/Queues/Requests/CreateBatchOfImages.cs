@@ -92,7 +92,8 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                     await assetProcessor.Process(asset, false, true, true, cancellationToken: cancellationToken);
                 if (!processAssetResult.IsSuccess)
                 {
-                    logger.LogDebug("Processing asset {AssetId} failed, aborting batch", asset.Id);
+                    logger.LogDebug("Processing asset {AssetId} failed, aborting batch. Error: '{Error}'", asset.Id,
+                        processAssetResult.Result.Error);
                     updateFailed = true;
                     failureMessage = processAssetResult.Result.Error;
                     break;

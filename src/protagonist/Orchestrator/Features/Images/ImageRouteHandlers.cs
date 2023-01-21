@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
-using Orchestrator.Assets;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Yarp.ReverseProxy.Forwarder;

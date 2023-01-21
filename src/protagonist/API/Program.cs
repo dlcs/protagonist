@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using DLCS.AWS.SSM;
+using DLCS.Web.Logging;
 using Serilog;
 
 namespace API;
@@ -31,7 +32,10 @@ public class Program
     public static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
             .UseSerilog((hostingContext, loggerConfiguration)
-                => loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration)
+                => loggerConfiguration
+                    .ReadFrom.Configuration(hostingContext.Configuration)
+                    .Enrich.FromLogContext()
+                    .Enrich.WithCorrelationIdHeader()
             )
             .ConfigureAppConfiguration((context, builder) =>
             {

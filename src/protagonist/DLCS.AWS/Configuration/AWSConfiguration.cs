@@ -5,7 +5,6 @@ using Amazon.S3;
 using Amazon.SQS;
 using DLCS.AWS.Settings;
 using DLCS.Core.Guard;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -21,7 +20,7 @@ public static class AWSConfiguration
     /// Setup AWS environment by configuring appropriate services.
     /// </summary>
     public static AwsBuilder SetupAWS(this IServiceCollection services, IConfiguration configuration,
-        IWebHostEnvironment environment)
+        IHostEnvironment environment)
     {
         IConfigurationSection? configurationSection = configuration.GetSection("AWS");
         services.Configure<AWSSettings>(configurationSection);

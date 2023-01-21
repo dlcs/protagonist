@@ -100,7 +100,7 @@ public class AssetId
         return Equals((AssetId)obj);
     }
 
-    public static bool operator ==(AssetId assetId1, AssetId assetId2)
+    public static bool operator ==(AssetId? assetId1, AssetId? assetId2)
     {
         if (assetId1 is null)
         {

@@ -165,12 +165,35 @@ public abstract class HydraController : Controller
                         PageSize = pageOf.PageSize,
                         Id = Request.GetJsonLdId()
                     };
-                    PartialCollectionView.AddPaging(collection, pageOf.Page, pageOf.PageSize);
+                    PartialCollectionView.AddPaging(collection, new PartialCollectionViewPagingValues
+                    {
+                        Page = pageOf.Page, PageSize = pageOf.PageSize,
+                        FurtherParameters = GetFurtherPageLinkParameters(request)
+                    });
                     return collection;
                 });
         }, errorTitle);
     }
-    
+
+    private List<KeyValuePair<string, string>>? GetFurtherPageLinkParameters(IPagedRequest pagedRequest)
+    {
+        List<KeyValuePair<string, string>>? furtherParameters = null;
+        
+        if (pagedRequest is IAssetFilterableRequest assetFilterableRequest)
+        {
+            if (assetFilterableRequest.AssetFilter != null)
+            {
+                var imageQuery = assetFilterableRequest.AssetFilter.ToImageQuery();
+                furtherParameters ??= new List<KeyValuePair<string, string>>();
+                furtherParameters.Add(new KeyValuePair<string, string>("q", imageQuery.ToQueryParam()));
+            }
+        }
+        
+        // Add any other parameters we want to pass through here
+        
+        return furtherParameters;
+    }
+
     /// <summary>
     /// Handle a request that returns a non-paged list of assets.
     /// This takes a IRequest which returns a FetchEntityResult{IReadOnlyCollection{T}}

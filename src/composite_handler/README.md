@@ -1,6 +1,6 @@
 # DLCS - Composite Handler
 
-The DLCS Composite Handler is an implementation of [RFC011](../docs/rfcs/011-pdfs-as-input.md).
+The DLCS Composite Handler is an implementation of [RFC011](../../docs/rfcs/011-pdfs-as-input.md).
 
 ## About
 
