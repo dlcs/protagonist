@@ -48,63 +48,64 @@ public class ThumbReorganiser : ThumbsManager, IThumbReorganiser
     public async Task<ReorganiseResult> EnsureNewLayout(AssetId assetId)
     {
         // Create lock on assetId unique value (bucket + target key)
-        using var processLock = await asyncKeyedLocker.LockAsync(assetId.ToString());
-            
-        var rootKey = StorageKeyGenerator.GetThumbnailsRoot(assetId);
-        var keysInTargetBucket = await bucketReader.GetMatchingKeys(rootKey);
-        if (HasCurrentLayout(assetId, keysInTargetBucket))
+        using (await asyncKeyedLocker.LockAsync(assetId.ToString()).ConfigureAwait(false))
         {
-            logger.LogDebug("{RootKey} has expected current layout", rootKey);
-            return ReorganiseResult.HasExpectedLayout;
-        }
-
-        // under full/ we will find some sizes, but not the largest.
-        // the largest is at low.jpg in the "root".
-        // trouble is we do not know how big it is!
-        // we'll need to fetch the image dimensions from the database, the Thumbnail policy the image was created with, and compute the sizes.
-        // Then sanity check them against the known sizes.
-        var asset = await assetRepository.GetAsset(assetId);
-
-        // 404 Not Found Asset
-        if (asset == null)
-        {
-            return ReorganiseResult.AssetNotFound;
-        }
-
-        var policy = await policyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
-
-        var maxAvailableThumb = GetMaxAvailableThumb(asset, policy);
-
-        var realSize = new Size(asset.Width.Value, asset.Height.Value);
-        var boundingSquares = policy.SizeList.OrderByDescending(i => i).ToList();
-
-        var thumbnailSizes = new ThumbnailSizes(boundingSquares.Count);
-            
-        foreach (int boundingSquare in boundingSquares)
-        {
-            var thumb = Size.Confine(boundingSquare, realSize);
-            if (thumb.IsConfinedWithin(maxAvailableThumb))
+            var rootKey = StorageKeyGenerator.GetThumbnailsRoot(assetId);
+            var keysInTargetBucket = await bucketReader.GetMatchingKeys(rootKey);
+            if (HasCurrentLayout(assetId, keysInTargetBucket))
             {
-                thumbnailSizes.AddOpen(thumb);
+                logger.LogDebug("{RootKey} has expected current layout", rootKey);
+                return ReorganiseResult.HasExpectedLayout;
             }
-            else
+
+            // under full/ we will find some sizes, but not the largest.
+            // the largest is at low.jpg in the "root".
+            // trouble is we do not know how big it is!
+            // we'll need to fetch the image dimensions from the database, the Thumbnail policy the image was created with, and compute the sizes.
+            // Then sanity check them against the known sizes.
+            var asset = await assetRepository.GetAsset(assetId);
+
+            // 404 Not Found Asset
+            if (asset == null)
             {
-                thumbnailSizes.AddAuth(thumb);
+                return ReorganiseResult.AssetNotFound;
             }
+
+            var policy = await policyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
+
+            var maxAvailableThumb = GetMaxAvailableThumb(asset, policy);
+
+            var realSize = new Size(asset.Width.Value, asset.Height.Value);
+            var boundingSquares = policy.SizeList.OrderByDescending(i => i).ToList();
+
+            var thumbnailSizes = new ThumbnailSizes(boundingSquares.Count);
+
+            foreach (int boundingSquare in boundingSquares)
+            {
+                var thumb = Size.Confine(boundingSquare, realSize);
+                if (thumb.IsConfinedWithin(maxAvailableThumb))
+                {
+                    thumbnailSizes.AddOpen(thumb);
+                }
+                else
+                {
+                    thumbnailSizes.AddAuth(thumb);
+                }
+            }
+
+            var existingSizes = GetExistingSizesList(thumbnailSizes, keysInTargetBucket);
+
+            // All the thumbnail jpgs will already exist and need copied up to root
+            await CreateThumbnails(assetId, boundingSquares, thumbnailSizes, existingSizes);
+
+            // Create sizes json file last, as this dictates whether this process will be attempted again
+            await CreateSizesJson(assetId, thumbnailSizes);
+
+            // Clean up legacy format from before /open /auth paths
+            await CleanupRootConfinedSquareThumbs(rootKey, keysInTargetBucket);
+
+            return ReorganiseResult.Reorganised;
         }
-
-        var existingSizes = GetExistingSizesList(thumbnailSizes, keysInTargetBucket);
-
-        // All the thumbnail jpgs will already exist and need copied up to root
-        await CreateThumbnails(assetId, boundingSquares, thumbnailSizes, existingSizes);
-
-        // Create sizes json file last, as this dictates whether this process will be attempted again
-        await CreateSizesJson(assetId, thumbnailSizes);
-
-        // Clean up legacy format from before /open /auth paths
-        await CleanupRootConfinedSquareThumbs(rootKey, keysInTargetBucket);
-
-        return ReorganiseResult.Reorganised;
     }
 
     private bool HasCurrentLayout(AssetId assetId, string[] keysInTargetBucket)

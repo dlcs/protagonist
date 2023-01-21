@@ -10,54 +10,58 @@ namespace Engine.Ingest.Image;
 
 public class ThumbCreator : ThumbsManager, IThumbCreator
 {
-    private readonly AsyncKeyedLocker<string> asyncLocker = new();
+    private readonly AsyncKeyedLocker<string> asyncKeyedLocker;
 
     public ThumbCreator(
         IBucketWriter bucketWriter,
-        IStorageKeyGenerator storageKeyGenerator) : base(bucketWriter, storageKeyGenerator)
+        IStorageKeyGenerator storageKeyGenerator,
+        AsyncKeyedLocker<string> asyncKeyedLocker) : base(bucketWriter, storageKeyGenerator)
     {
+        this.asyncKeyedLocker = asyncKeyedLocker;
     }
 
     public async Task CreateNewThumbs(Asset asset, IReadOnlyList<ImageOnDisk> thumbsToProcess)
     {
         if (thumbsToProcess.Count == 0) return;
         var assetId = asset.Id;
-            
-        using var processLock = await asyncLocker.LockAsync($"create:{assetId}");
-        var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);
-        var maxAvailableThumb = GetMaxAvailableThumb(asset, asset.FullThumbnailPolicy);
-            
-        // this is the largest thumb, regardless of being available or not.
-        var largestThumb = asset.FullThumbnailPolicy.SizeList[0];
-            
-        foreach (var thumbCandidate in thumbsToProcess)
+
+        using (await asyncKeyedLocker.LockAsync($"create:{assetId}").ConfigureAwait(false))
         {
-            var thumb = new Size(thumbCandidate.Width, thumbCandidate.Height);
-            bool isOpen;
+            var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);
+            var maxAvailableThumb = GetMaxAvailableThumb(asset, asset.FullThumbnailPolicy);
 
-            if (thumb.IsConfinedWithin(maxAvailableThumb))
+            // this is the largest thumb, regardless of being available or not.
+            var largestThumb = asset.FullThumbnailPolicy.SizeList[0];
+
+            foreach (var thumbCandidate in thumbsToProcess)
             {
-                thumbnailSizes.AddOpen(thumb);
-                isOpen = true;
-            }
-            else
-            {
-                thumbnailSizes.AddAuth(thumb);
-                isOpen = false;
+                var thumb = new Size(thumbCandidate.Width, thumbCandidate.Height);
+                bool isOpen;
+
+                if (thumb.IsConfinedWithin(maxAvailableThumb))
+                {
+                    thumbnailSizes.AddOpen(thumb);
+                    isOpen = true;
+                }
+                else
+                {
+                    thumbnailSizes.AddAuth(thumb);
+                    isOpen = false;
+                }
+
+                var currentMax = thumb.MaxDimension;
+                if (currentMax == largestThumb)
+                {
+                    // The largest thumb always goes to low.jpg as well as the 'normal' place
+                    var lowKey = StorageKeyGenerator.GetLargestThumbnailLocation(assetId);
+                    await BucketWriter.WriteFileToBucket(lowKey, thumbCandidate.Path, MIMEHelper.JPEG);
+                }
+
+                var thumbKey = StorageKeyGenerator.GetThumbnailLocation(assetId, thumb.MaxDimension, isOpen);
+                await BucketWriter.WriteFileToBucket(thumbKey, thumbCandidate.Path, MIMEHelper.JPEG);
             }
 
-            var currentMax = thumb.MaxDimension;
-            if (currentMax == largestThumb)
-            {
-                // The largest thumb always goes to low.jpg as well as the 'normal' place
-                var lowKey = StorageKeyGenerator.GetLargestThumbnailLocation(assetId);
-                await BucketWriter.WriteFileToBucket(lowKey, thumbCandidate.Path, MIMEHelper.JPEG);
-            }
-
-            var thumbKey = StorageKeyGenerator.GetThumbnailLocation(assetId, thumb.MaxDimension, isOpen);
-            await BucketWriter.WriteFileToBucket(thumbKey, thumbCandidate.Path, MIMEHelper.JPEG);
+            await CreateSizesJson(assetId, thumbnailSizes);
         }
-            
-        await CreateSizesJson(assetId, thumbnailSizes);
     }
 }

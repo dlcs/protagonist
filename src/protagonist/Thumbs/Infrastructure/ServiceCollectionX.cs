@@ -43,7 +43,11 @@ public static class ServiceCollectionX
                         provider,
                         provider.GetRequiredService<ThumbRepository>()))
                 .AddSingleton<IThumbReorganiser, ThumbReorganiser>()
-                .AddSingleton<AsyncKeyedLocker<string>>();
+                .AddSingleton(new AsyncKeyedLocker<string>(o =>
+                {
+                    o.PoolSize = 20;
+                    o.PoolInitialFill = 1;
+                }));
         }
         else
         {

@@ -14,7 +14,11 @@ public class AsyncKeyedLockTests
 
     public AsyncKeyedLockTests()
     {
-        sut = new AsyncKeyedLocker<string>();
+        sut = new AsyncKeyedLocker<string>(o =>
+        {
+            o.PoolSize = 20;
+            o.PoolInitialFill = 1;
+        });
     }
     
     [Fact]
@@ -28,7 +32,7 @@ public class AsyncKeyedLockTests
             Task.Run(async () =>
             {
                 // Task will get lock immediately but wait 400ms to release
-                using (var theLock = await new AsyncKeyedLocker<string>().LockAsync(key))
+                using (var theLock = await sut.LockAsync(key))
                 {
                     await Task.Delay(400);
                     calls.Add("Quick attain, run slow");
@@ -39,7 +43,7 @@ public class AsyncKeyedLockTests
             {
                 // Task will try get lock after 200ms 
                 await Task.Delay(200);
-                using (var theLock = await new AsyncKeyedLocker<string>().LockAsync(key))
+                using (var theLock = await sut.LockAsync(key))
                 {
                     calls.Add("Slow attain, run quick");
                     task1Complete.Should().BeTrue();
