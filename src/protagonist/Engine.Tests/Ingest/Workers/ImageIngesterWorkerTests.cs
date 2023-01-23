@@ -1,13 +1,11 @@
 ﻿using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
-using DLCS.Model.Messaging;
 using Engine.Ingest;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.Completion;
 using Engine.Ingest.Persistence;
 using Engine.Settings;
-using Engine.Tests.Integration;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers;

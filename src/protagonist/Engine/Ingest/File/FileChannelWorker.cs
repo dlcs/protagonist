@@ -2,7 +2,7 @@
 using DLCS.Model.Customers;
 using Engine.Ingest.Persistence;
 
-namespace Engine.Ingest.Image;
+namespace Engine.Ingest.File;
 
 public class FileChannelWorker : IAssetIngesterWorker
 {
@@ -20,7 +20,7 @@ public class FileChannelWorker : IAssetIngesterWorker
         {
             // S3 to S3 copy
             // Check storage limits
-            // assetToS3.CopyAssetToTranscodeInput()
+            // method like - assetToS3.CopyAssetToTranscodeInput()
         }
         else
         {

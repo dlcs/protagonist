@@ -19,6 +19,7 @@ using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Handlers;
 using Engine.Data;
 using Engine.Ingest;
+using Engine.Ingest.File;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.Appetiser;
 using Engine.Ingest.Image.Completion;

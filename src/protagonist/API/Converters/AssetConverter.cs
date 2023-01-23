@@ -40,8 +40,6 @@ public static class AssetConverter
             Origin = dbAsset.Origin,
             InitialOrigin = dbAsset.InitialOrigin,
             MaxUnauthorised = dbAsset.MaxUnauthorised,
-            // Queued     -- not directly available on just a dbAsset, needs more info
-            // Dequeued
             Finished = dbAsset.Finished,
             Ingesting = dbAsset.Ingesting,
             Error = dbAsset.Error,
@@ -57,8 +55,6 @@ public static class AssetConverter
             Height = dbAsset.Height,
             MediaType = dbAsset.MediaType,
             Family = (AssetFamily)dbAsset.Family,
-            // Text (to replace with https://github.com/dlcs/protagonist/issues/148)
-            // TextType
             Roles = dbAsset.RolesList.ToArray(),
             DeliveryChannel = dbAsset.DeliveryChannel
         };

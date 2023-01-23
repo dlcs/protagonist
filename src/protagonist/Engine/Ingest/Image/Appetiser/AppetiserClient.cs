@@ -325,8 +325,7 @@ public class AppetiserClient : IImageProcessor
             var tileOptimised = context.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image);
             
             var originStrategy = context.AssetFromOrigin!.CustomerOriginStrategy;
-            var originTileOptimised = originStrategy.Optimised &&
-                                      originStrategy.Strategy == OriginStrategyType.S3Ambient &&
+            var originTileOptimised = originStrategy is { Optimised: true, Strategy: OriginStrategyType.S3Ambient } &&
                                       context.AssetFromOrigin.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
 
             return new ProcessFlags

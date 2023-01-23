@@ -10,7 +10,7 @@ public class ImageOptimisationPolicyXTests
     [InlineData("video-max")]
     [InlineData("")]
     [InlineData(" ")]
-    public void IsNoOp_False(string id)
+    public void IsNotProcessed_False(string id)
     {
         var policy = new ImageOptimisationPolicy { Id = id };
 
@@ -18,7 +18,7 @@ public class ImageOptimisationPolicyXTests
     }
     
     [Fact]
-    public void IsNoOp_True()
+    public void IsNotProcessed_True()
     {
         var policy = new ImageOptimisationPolicy { Id = "none" };
 
@@ -30,13 +30,13 @@ public class ImageOptimisationPolicyXTests
     [InlineData("")]
     [InlineData(" ")]
     [InlineData(null)]
-    public void IsNoOpIdentifier_False(string id)
+    public void IsNotProcessedIdentifier_False(string id)
     {
         ImageOptimisationPolicyX.IsNotProcessedIdentifier(id).Should().BeFalse();
     }
     
     [Fact]
-    public void IsNoOpIdentifier_True()
+    public void IsNotProcessedIdentifier_True()
     {
         ImageOptimisationPolicyX.IsNotProcessedIdentifier("none").Should().BeTrue();
     }
