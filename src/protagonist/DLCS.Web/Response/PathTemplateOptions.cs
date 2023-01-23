@@ -8,9 +8,14 @@ namespace DLCS.Web.Response;
 public class PathTemplateOptions
 {
     /// <summary>
+    /// The default path format for DLCS
+    /// </summary>
+    internal const string DefaultPathFormat = "/{prefix}/{version}/{customer}/{space}/{assetPath}";
+
+    /// <summary>
     /// Default path template if no overrides found.
     /// </summary>
-    public string Default { get; set; } = "/{prefix}/{customer}/{space}/{assetPath}";
+    public string Default { get; set; } = DefaultPathFormat;
 
     /// <summary>
     /// Collection of path template overrides, keyed by hostname.

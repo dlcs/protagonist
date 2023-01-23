@@ -11,6 +11,11 @@ public interface IBasicPathElements
     public string RoutePrefix { get; }
     
     /// <summary>
+    /// Optional version value, e.g. "v2", "v3" 
+    /// </summary>
+    public string? VersionPathValue { get; }
+    
+    /// <summary>
     /// The "customer" value from request (int or string value). 
     /// </summary>
     public string CustomerPathValue { get; }
@@ -27,4 +32,22 @@ public interface IBasicPathElements
     /// file-identifier
     /// </summary>
     public string AssetPath { get; }
+}
+
+public static class BasicPathElementsX
+{
+    /// <summary>
+    /// Get a new <see cref="BasicPathElements"/> object created from current <see cref="IBasicPathElements"/> object
+    /// </summary>
+    /// <param name="elements"><see cref="IBasicPathElements"/> to clone</param>
+    /// <returns>New <see cref="BasicPathElements"/> object</returns>
+    public static BasicPathElements CloneBasicPathElements(this IBasicPathElements elements)
+    => new()
+    {
+        Space = elements.Space,
+        AssetPath = elements.AssetPath,
+        RoutePrefix = elements.RoutePrefix,
+        CustomerPathValue = elements.CustomerPathValue,
+        VersionPathValue = elements.VersionPathValue
+    };
 }

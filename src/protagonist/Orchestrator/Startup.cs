@@ -6,6 +6,7 @@ using DLCS.Repository.Auth;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Configuration;
+using DLCS.Web.Logging;
 using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
@@ -20,6 +21,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Features.Auth;
+using Orchestrator.Features.Auth.Paths;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
@@ -56,6 +58,7 @@ public class Startup
             .Configure<ProxySettings>(proxySection)
             .Configure<NamedQueryTemplateSettings>(configuration)
             .Configure<NamedQuerySettings>(configuration.GetSection("NamedQuery"))
+            .Configure<PathTemplateOptions>(configuration.GetSection("PathRules"))
             .Configure<CacheSettings>(cachingSection);
 
         var orchestratorSettings = configuration.Get<OrchestratorSettings>();
@@ -70,6 +73,7 @@ public class Startup
             .AddScoped<ISessionAuthService, SessionAuthService>()
             .AddScoped<AuthCookieManager>()
             .AddSingleton<AssetRequestProcessor>()
+            .AddScoped<IAuthPathGenerator, ConfigDrivenAuthPathGenerator>()
             .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
             .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
             .AddScoped<IIIFAuthBuilder>()
@@ -85,7 +89,8 @@ public class Startup
             .ConfigureHealthChecks(proxySection, configuration)
             .AddAws(configuration, webHostEnvironment)
             .AddHeaderPropagation()
-            .AddInfoJsonClient();
+            .AddInfoJsonClient()
+            .HandlePathTemplates();
         
         // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
         services.Configure<ForwardedHeadersOptions>(opts =>
@@ -140,7 +145,10 @@ public class Startup
             .UseForwardedHeaders()
             .UseRouting()
             .UseOptions()
-            .UseSerilogRequestLogging()
+            .UseSerilogRequestLogging(opts =>
+            {
+                opts.GetLevel = LogHelper.ExcludeHealthChecks;
+            })
             .UseCors("CorsPolicy")
             .UseAuthorization()
             .UseEndpoints(endpoints =>
