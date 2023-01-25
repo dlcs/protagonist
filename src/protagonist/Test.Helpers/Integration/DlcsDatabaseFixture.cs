@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
-using DLCS.Model.Assets;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
 using DLCS.Model.Policies;
@@ -9,9 +7,9 @@ using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
-using DotNet.Testcontainers.Containers.Builders;
-using DotNet.Testcontainers.Containers.Configurations.Databases;
-using DotNet.Testcontainers.Containers.Modules.Databases;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Configurations;
+using DotNet.Testcontainers.Containers;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -25,9 +23,9 @@ public class DlcsDatabaseFixture : IAsyncLifetime
 {
     private readonly PostgreSqlTestcontainer postgresContainer;
 
-    public DlcsContext DbContext { get; }
-    public string ConnectionString { get; }
-    
+    public DlcsContext DbContext { get; private set; }
+    public string ConnectionString { get; private set; }
+
     public DlcsDatabaseFixture()
     {
         var postgresBuilder = new TestcontainersBuilder<PostgreSqlTestcontainer>()
@@ -41,16 +39,8 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             .WithLabel("protagonist_test", "True");
 
         postgresContainer = postgresBuilder.Build();
-        ConnectionString = postgresContainer.ConnectionString;
-
-        // Create new DlcsContext using connection string for Postgres container
-        DbContext = new DlcsContext(
-            new DbContextOptionsBuilder<DlcsContext>()
-                .UseNpgsql(postgresContainer.ConnectionString).Options
-        );
-        DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
     }
-    
+
     /// <summary>
     /// Delete any standing data - leaves data set in Seed method
     /// </summary>
@@ -164,6 +154,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         try
         {
             await postgresContainer.StartAsync();
+            SetPropertiesFromContainer();
             await DbContext.Database.MigrateAsync();
             await SeedCustomer();
         }
@@ -175,4 +166,16 @@ public class DlcsDatabaseFixture : IAsyncLifetime
     }
 
     public Task DisposeAsync() => postgresContainer.StopAsync();
+    
+    private void SetPropertiesFromContainer()
+    {
+        ConnectionString = postgresContainer.ConnectionString;
+
+        // Create new DlcsContext using connection string for Postgres container
+        DbContext = new DlcsContext(
+            new DbContextOptionsBuilder<DlcsContext>()
+                .UseNpgsql(postgresContainer.ConnectionString).Options
+        );
+        DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+    }
 }

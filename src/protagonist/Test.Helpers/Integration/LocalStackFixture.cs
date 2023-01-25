@@ -5,8 +5,8 @@ using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.SQS;
-using DotNet.Testcontainers.Containers.Builders;
-using DotNet.Testcontainers.Containers.Modules;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
 using Xunit;
 
 namespace Test.Helpers.Integration;
