@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
 namespace DLCS.Model.Policies;
 
@@ -31,14 +32,10 @@ public static class ImageOptimisationPolicyX
     private const string NoneId = "none";
 
     /// <summary>
-    /// Check if this policy is the special no-op/no-transcode policy
-    /// </summary>
-    public static bool IsNotProcessed(this ImageOptimisationPolicy policy) => policy.Id == NoneId;
-    
-    /// <summary>
     /// Check if specified policy Id is the special no-op/no-transcode policy
     /// </summary>
     /// <param name="policyId"></param>
     /// <returns></returns>
+    [Obsolete]
     public static bool IsNotProcessedIdentifier(string? policyId) => policyId == NoneId;
 }
