@@ -239,3 +239,4 @@ Would result in Engine calling ElasticTranscoder and copying asset to DLCS origi
 * Is "no-transcode" policy required? Implemented in [#424](https://github.com/dlcs/protagonist/pull/424) but can be used synonomously with "file" delivery-channel.
 * Do we want to require `d,w,h` dimensions for `"file"` delivery-channel, as details above? `"file"` delivery-channel indicates you want to serve the bytes as you know the origin is in an appropriate format. Does that then mean you must have dimensions? e.g. I don't need to know how many pages are in a PDF for it to be served, should I need to know how long a video is for it to be served?
 * We need to maintain `AssetFamily` for NQ and single-item manifest generation to know what service type(s) to add?
+* Would media-type be a better indicator of what `AssetFamily` is used for, above? Is this too loose?
