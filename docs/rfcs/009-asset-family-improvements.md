@@ -1,15 +1,22 @@
 # Asset Family Improvements
 
-There are currently 3 `AssetFamily` values available in the DLCS, **I**mage, **T**imebased and **F**ile.
+There are currently 3 `AssetFamily` values available in the DLCS, **I**mage (`I`), **T**imebased (`T`) and **F**ile (`F`).
 
 The families dictate both how an asset is delivered and how it is processed.
 
 Driven by the requirements for Wellcome's Born Digital work, we have a need to have more control over how assets are delivered and processed - `AssetFamily` is not granular enough.
 
-## Asset Delivery
+In summary, `AssetFamily` is now:
 
-To accomodate the need to specify how an asset is delivered, we will introduce a new `delivery-channel` concept which specifies _how_ an asset can be requested. Valid values are:
+* A general indication of what the source file is, this will dictate what values are required (affecting validation rules) and what sort of transcoding/conversion can happen.
+* A preset 'delivery-channel'.
+* A preset image-optimisation policy (`iop`).
 
+## Asset Delivery Channel
+
+To accomodate the need to specify how an asset is delivered, we will introduce a new `delivery-channel` concept which specifies _how_ an asset can be requested and _if_ the engine needs to process. 
+
+Valid values are:
 * `file` - asset will be available on the 'file' path, `/file/{customer}/{space}/{asset}`. This means that the original file is available for download (which could be source mp3, mp4, jpeg etc), possibly in addition to derivatives.
 * `iiif-av` - a timebased derivative of the asset can be streamed on path `/iiif-av/{customer}/{space}/{asset}/{timebased-request}` (e.g. `iiif-av/1/2/foo/full/max/default.mp3`).
 * `iiif-img` - a IIIF image service is available on path `/iiif-img/{customer}/{space}/{asset}/{image-request}` (e.g. `iiif-img/1/2/bar/info.json` or `iiif-img/1/2/bar/0,0,1024,2048/!512,512/0/default.jpg`).
@@ -17,57 +24,78 @@ To accomodate the need to specify how an asset is delivered, we will introduce a
 
 This value will be stored in a new column on the `Images` table.
 
-## Image Optimisation Policy
+## Image Optimisation Policy (Engine)
 
-The `imageOptimisationPolicy` (iop) associated with an asset will be used to specify how an asset is transcoded/converted by the engine.
+While `delivery-channel` is primarily used for how the asset is delivered in Orchestrator, the Engine will use it to decide _if_ any processing is required. 
 
-Note that an iop is only "used" if the delivery-channel is relevant. If an image is created with an iop and "file" as the sole delivery-channel then there would be no transcoding carried out. However, as soon as the "iiif-img" or "thumbs" channel is added the iop would be utilised. This delays any unnecessary/potentially costly transcoding operations until required.
+_How_ that processing happens is determined by `AssetFamily`:
+* `T` - AWS ElasticTranscoder
+* `I` - Appetiser
+* `F` - nothing - use source file
+
+_What_ that processing is will be determined by `iop`, each `iop` contains definition used by processor.
+
+e.g. If an `I` asset is created with only `"file"` delivery-channel then there would be no transcoding carried out. However, as soon as the "iiif-img" or "thumbs" channel is added the iop would be utilised. This delays any unnecessary/potentially costly transcoding operations until required.
 
 ### No Transcode Policy
 
-PR [#424](https://github.com/dlcs/protagonist/pull/424) introduced an explicit "no-transcode" policy (key of `"none"`) which signified that the source image does not need to be transcoded - it is web-friendly already. 
+PR [#424](https://github.com/dlcs/protagonist/pull/424) introduced an explicit "no-transcode" policy (key of `"none"`) which signified that the source image does not need to be transcoded - it is web-friendly already.
 
-Requirements have superseded the need for this and it should be removed.
+This is an explicit policy for when we won't transcode a file and the default for `"file"` delivery-channel assets.
 
-> It may be used internally to indicate a `null`, as opposed to missing, iop if required.
+## Validation Requirements
 
-## Asset Family Repurposed
+The `AssetFamily` will affect the general validation rules when creating an asset. 
 
-`AssetFamily` values of `I`, `T` and `F` will be retained but rather than dictating how things are processed/delivered these will represent a set of defaults for delivery-channel and imageOptimisationPolicy.
+These will be:
+
+| Family | MediaType | Delivery Channel   | Rules                                           |
+| ------ | --------- | ------------------ | ----------------------------------------------- |
+| `T`    | `audio/*` | `file` only        | duration is required                            |
+| `T`    | `audio/*` | includes `iiif-av` | duration must not be provided                   |
+| `T`    | `video/*` | `file` only        | duration, width and height are required         |
+| `T`    | `video/*` | includes `iiif-av` | duration, width and height must not be provided |
+| `I`    | `image/*` | `file` only        | width and height are required                   |
+| `I`    | `image/*` | includes `iiif-av` | width and height must not be provided           |
+| `F`    | `*`       | `file`             | no dimensions are valid                         |
+
+## Asset Family Presets
+
+`AssetFamily` values of `I`, `T` and `F` serve as both a general grouping for items and a set of presets for delivery-channel and imageOptimisationPolicy, which can be overridden.
 
 To replicate the behaviour of the current DLCS the defaults for each family would be:
 
 * `I` is (delivery-channel: "iiif-img,thumbs") and (iop: "fast-higher")
-* `T` is (delivery-channel: "iiif-av") and (iop: "video-max" or "audio-max")
+* `T` is (delivery-channel: "iiif-av") and (iop: "video-max" or "audio-max" depending on media-type)
 * `F` is (delivery-channel: "file") and (iop: "none")
 
 ## Required Changes
 
 The possible outcomes are now:
 
-| Old Asset Family | MediaType | Delivery Channel | IOP              | Thumbs Policy | Engine Behaviour                                            | Asset Delivery (Orchestrator/Thumbs)                        |
-| ---------------- | --------- | ---------------- | ---------------- | ------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
-| I                | image/*   | file             |                  |               | Copy from Origin to storage bucket                          | Stream from storage bucket                                  |
-| I                | image/*   | iiif-img         | {image-specific} |               | Download + convert to JP2. Upload JP2 to storage bucket     | Proxy to thumbs/special-server/cantaloupe                   |
-| I                | image/*   | iiif-av          |                  |               | **invalid**                                                 |                                                             |
-| I                | image/*   | thumbs           | {image-specific} | {required}    | Generate thumbnails, upload to thumbs bucket.               | Proxy thumbnail from S3                                     |
-| T                | audio/*   | file             |                  |               | Copy from Origin to storage bucket                          | Stream from storage bucket                                  |
-| T                | audio/*   | iiif-img         |                  |               | **invalid**                                                 |                                                             |
-| T                | audio/*   | iiif-av          | {ET-specific}    |               | Elastic-Transcoder. Move to storage bucket.                 | 302 or pass through proxying depending on Auth requirements |
-| T                | audio/*   | thumbs           |                  |               | **invalid**                                                 |                                                             |
-| T                | video/*   | file             |                  |               | Copy from Origin to storage bucket                          | Stream from storage bucket                                  |
-| T                | video/*   | iiif-img         | _??_             |               | _Not currently supported but could generate key frames_     | _Could work similar to image handling, proxy to Cantaloupe_ |
-| T                | video/*   | iiif-av          | {ET-specific}    |               | Elastic-Transcoder. Move to storage bucket.                 | 302 or pass through proxying depending on Auth requirements |
-| T                | video/*   | thumbs           | _??_             | _required_    | _Not currently supported but could generate from key frame_ | _Could work similar to image - predefined thumbs_           |
-| F                | \*/*      | file             |                  |               | Copy from Origin to storage bucket                          | Stream from storage bucket                                  |
-| F                | \*/*      | iiif-img         | _??_             |               | _Not currently supported but could generate e.g. PDF pages_ | _Could work similar to image handling, proxy to Cantaloupe_ |
-| F                | \*/*      | iiif-av          |                  |               | **invalid**                                                 |                                                             |
-| F                | \*/*      | thumbs           | _??_             | _required_    | _Not currently supported but could generate from key frame_ | _Could work similar to image - predefined thumbs_           |
+| Asset Family | MediaType | Delivery Channel | IOP              | Thumbs Policy | Engine Behaviour                                            | Asset Delivery (Orchestrator/Thumbs)                        |
+| ------------ | --------- | ---------------- | ---------------- | ------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
+| I            | image/*   | file             |                  |               | Copy from Origin to storage bucket                          | Stream from storage bucket                                  |
+| I            | image/*   | iiif-img         | {image-specific} |               | Download + convert to JP2. Upload JP2 to storage bucket     | Proxy to thumbs/special-server/cantaloupe                   |
+| I            | image/*   | iiif-av          |                  |               | **invalid**                                                 |                                                             |
+| I            | image/*   | thumbs           | {image-specific} | {required}    | Generate thumbnails, upload to thumbs bucket.               | Proxy thumbnail from S3                                     |
+| T            | audio/*   | file             |                  |               | Copy from Origin to storage bucket                          | Stream from storage bucket                                  |
+| T            | audio/*   | iiif-img         |                  |               | **invalid**                                                 |                                                             |
+| T            | audio/*   | iiif-av          | {ET-specific}    |               | Elastic-Transcoder. Move to storage bucket.                 | 302 or pass through proxying depending on Auth requirements |
+| T            | audio/*   | thumbs           |                  |               | **invalid**                                                 |                                                             |
+| T            | video/*   | file             |                  |               | Copy from Origin to storage bucket                          | Stream from storage bucket                                  |
+| T            | video/*   | iiif-img         | _??_             |               | _Not currently supported but could generate key frames_     | _Could work similar to image handling, proxy to Cantaloupe_ |
+| T            | video/*   | iiif-av          | {ET-specific}    |               | Elastic-Transcoder. Move to storage bucket.                 | 302 or pass through proxying depending on Auth requirements |
+| T            | video/*   | thumbs           | _??_             | _required_    | _Not currently supported but could generate from key frame_ | _Could work similar to image - predefined thumbs_           |
+| F            | \*/*      | file             |                  |               | Copy from Origin to storage bucket                          | Stream from storage bucket                                  |
+| F            | \*/*      | iiif-img         | _??_             |               | _Not currently supported but could generate e.g. PDF pages_ | _Could work similar to image handling, proxy to Cantaloupe_ |
+| F            | \*/*      | iiif-av          |                  |               | **invalid**                                                 |                                                             |
+| F            | \*/*      | thumbs           | _??_             | _required_    | _Not currently supported but could generate from key frame_ | _Could work similar to image - predefined thumbs_           |
 
 Notes on the above table:
 * _customer-origin-strategy_ logic will be used for fetching from Origin for `file` delivery channels. In the future we could expand the 'optimised-origin' concept for Engine not to copy and Orchestrator to stream from origin.
-* Absence of an iop indicates use default policy, to _not_ transcode we need to use `none` policy.
-* _italicized_ items are possible improvements in the future and suggestions at how it could work.
+* Absence of an `iop` in API payload indicates use default policy.
+* _italicized_ items are possible improvements in the future and hints/suggestions at how it could work.
 
 ### A Note on File Handling
 
@@ -76,13 +104,6 @@ Currently `F` assets are streamed from their Origin when requested. When a `F` a
 This behaviour was written under the assumption that a) the Origin is stable and b) the uploaded binary is relatively small (e.g. a PDF or spreadsheet). However, this may no longer be the case as we could be serving untranscoded Audio or Video files.
 
 The API will be updated to notify the Engine of assets that have `file` delivery-channel and the Engine will copy from Origin to s3 storage.
-
-Validation rules for `file` delivery-channel as dimensions need to be specified as transcoding is unavailable to provide these:
-* require `w,h` if `"file"` delivery-channel only and not an audio file.
-* require `d` if `"file"` delivery-channel and not an audio file (not mutually exclusive with above).
-* prevent `d,w,h` in all other scenarios (as-is).
-
-> See questions at bottom of document around validation rules.
 
 ## Related Tickets
 
@@ -102,6 +123,7 @@ The request:
 PUT /customers/1/spaces/2/images/foo
 {
     "origin": "https://example.com/large-image.tiff,
+    "family": "I",
     "deliveryChannel": "iiif-img,thumbs",
     "imageOptimisationPolicy": "faster-higher",
     "thumbnailPolicy": "default",
@@ -128,6 +150,7 @@ The request:
 PUT /customers/1/spaces/2/images/foo
 {
     "origin": "https://example.com/large-image.tiff,
+    "family": "I",
     "deliveryChannel": "iiif-img",
     "imageOptimisationPolicy": "faster-higher",
     "mediaType": "image/jpeg"
@@ -153,6 +176,7 @@ The request:
 PUT /customers/1/spaces/2/images/foo
 {
     "origin": "https://example.com/large-image.tiff,
+    "family": "I",
     "deliveryChannel": "file,iiif-img,thumbs",
     "imageOptimisationPolicy": "faster-higher",
     "thumbnailPolicy": "default",
@@ -166,7 +190,7 @@ Would result in Engine generating JP2 + thumbs and copying asset to DLCS origin 
 * `/thumbs/1/2/foo/*`
 * `/file/1/2/foo` - would return large-image.tiff, streamed from DLCS origin bucket (_not_ "origin" location)
 
-### Raw source file only
+### Video, raw source file only
 
 The request:
 
@@ -174,6 +198,7 @@ The request:
 PUT /customers/1/spaces/2/images/foo
 {
     "origin": "https://example.com/web-optimised.mp4,
+    "family": "T",
     "deliveryChannel": "file",
     "imageOptimisationPolicy": "none",
     "mediaType": "video/mp4",
@@ -197,6 +222,7 @@ The request:
 PUT /customers/1/spaces/2/images/foo
 {
     "origin": "https://example.com/web-optimised.mp4,
+    "family": "T",
     "deliveryChannel": "file,iiif-av",
     "imageOptimisationPolicy": "none",
     "mediaType": "video/mp4"
@@ -211,6 +237,5 @@ Would result in Engine calling ElasticTranscoder and copying asset to DLCS origi
 ## Questions
 
 * Is "no-transcode" policy required? Implemented in [#424](https://github.com/dlcs/protagonist/pull/424) but can be used synonomously with "file" delivery-channel.
-* If "no-transcode" is required, is it valid to specify alternative delivery-channels (other than "file")? If so the delivery-channel would be ignored. It could be enabled later by specifying a policy.
 * Do we want to require `d,w,h` dimensions for `"file"` delivery-channel, as details above? `"file"` delivery-channel indicates you want to serve the bytes as you know the origin is in an appropriate format. Does that then mean you must have dimensions? e.g. I don't need to know how many pages are in a PDF for it to be served, should I need to know how long a video is for it to be served?
-* What does the above mean for NQ, and single-item manifest generation? Do we need to maintain the general idea of `AssetFamily` - if that's the case it means it is more than a grouping of presets.
+* We need to maintain `AssetFamily` for NQ and single-item manifest generation to know what service type(s) to add?
