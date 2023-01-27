@@ -82,6 +82,8 @@ Validation rules for `file` delivery-channel as dimensions need to be specified 
 * require `d` if `"file"` delivery-channel and not an audio file (not mutually exclusive with above).
 * prevent `d,w,h` in all other scenarios (as-is).
 
+> See questions at bottom of document around validation rules.
+
 ## Related Tickets
 
 * https://github.com/dlcs/protagonist/issues/393
@@ -210,3 +212,5 @@ Would result in Engine calling ElasticTranscoder and copying asset to DLCS origi
 
 * Is "no-transcode" policy required? Implemented in [#424](https://github.com/dlcs/protagonist/pull/424) but can be used synonomously with "file" delivery-channel.
 * If "no-transcode" is required, is it valid to specify alternative delivery-channels (other than "file")? If so the delivery-channel would be ignored. It could be enabled later by specifying a policy.
+* Do we want to require `d,w,h` dimensions for `"file"` delivery-channel, as details above? `"file"` delivery-channel indicates you want to serve the bytes as you know the origin is in an appropriate format. Does that then mean you must have dimensions? e.g. I don't need to know how many pages are in a PDF for it to be served, should I need to know how long a video is for it to be served?
+* What does the above mean for NQ, and single-item manifest generation? Do we need to maintain the general idea of `AssetFamily` - if that's the case it means it is more than a grouping of presets.
