@@ -1,5 +1,6 @@
 ﻿using System;
 using API.Features.Image.Validation;
+using DLCS.Model.Policies;
 using FluentValidation.TestHelper;
 using AssetFamily = DLCS.HydraModel.AssetFamily;
 
@@ -162,5 +163,27 @@ public class HydraImageValidatorTests
         result
             .ShouldHaveValidationErrorFor(a => a.MediaType)
             .WithErrorMessage("Timebased assets must have mediaType starting video/ or audio/");
+    }
+    
+    [Theory]
+    [InlineData(AssetFamily.Timebased)]
+    [InlineData(AssetFamily.File)]
+    public void UseOriginalPolicy_NotImage(AssetFamily family)
+    {
+        var model = new DLCS.HydraModel.Image
+            { Family = family, ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId };
+        var result = sut.TestValidate(model);
+        result
+            .ShouldHaveValidationErrorFor(a => a.Family)
+            .WithErrorMessage("ImageOptimisationPolicy 'use-original' only valid for Image family");
+    }
+    
+    [Fact]
+    public void UseOriginalPolicy_Image()
+    {
+        var model = new DLCS.HydraModel.Image
+            { Family = AssetFamily.Image, ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId };
+        var result = sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.Family);
     }
 }

@@ -177,7 +177,7 @@ public static class AssetPreparer
         // If we have an existing Asset and we are not allowed nonApiUpdates
         if (existingAsset != null && allowNonApiUpdates == false)
         {
-            bool isNoOpPolicy = ImageOptimisationPolicyX.IsNoOpIdentifier(existingAsset.ImageOptimisationPolicy);
+            bool isNoOpPolicy = KnownImageOptimisationPolicy.IsNoOpIdentifier(existingAsset.ImageOptimisationPolicy);
             
             if (updateAsset.Width.HasValue && updateAsset.Width != 0 && updateAsset.Width != existingAsset.Width)
             {
