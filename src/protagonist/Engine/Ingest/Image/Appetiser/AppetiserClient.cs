@@ -258,4 +258,41 @@ public class AppetiserClient : IImageProcessor
             ThumbnailSize = thumbSizes
         };
     }
+    
+    public class ImageProcessorFlags
+    {
+        /// <summary>
+        /// Should we generate thumbnails only? Source image must be a JP2
+        /// </summary>
+        public bool GenerateDerivativesOnly { get; }
+        
+        /// <summary>
+        /// Should we copy the image from Origin to DLCS Storage?
+        /// </summary>
+        public bool OriginToDlcs { get; }
+        
+        /// <summary>
+        /// Should we copy the newly generated JP2 to DLCS Storage?
+        /// </summary>
+        public bool GeneratedToDlcs { get; }
+
+        public ImageProcessorFlags(IngestionContext ingestionContext)
+        {
+            var assetFromOrigin =
+                ingestionContext.AssetFromOrigin.ThrowIfNull(nameof(ingestionContext.AssetFromOrigin))!;
+            
+            var useOriginal = ingestionContext.Asset.FullImageOptimisationPolicy.IsUseOriginal();
+            var isJp2 = assetFromOrigin.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
+            var isOptimised = assetFromOrigin.CustomerOriginStrategy.Optimised;
+            
+            // If image iop 'use-original' and we have a JPEG2000 then don't
+            GenerateDerivativesOnly = useOriginal && isJp2;
+
+            // If image iop is 'use-original' but the customerOriginStrategy is not optimised we copy the original
+            OriginToDlcs = !isOptimised && useOriginal;
+            
+            // If image iop is NOT 'use-original' then we've generated an image
+            GeneratedToDlcs = !useOriginal;
+        }
+    }
 }
