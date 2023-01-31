@@ -87,18 +87,23 @@ public class CustomerOriginStrategyRepositoryTests
     public async Task GetCustomerOriginStrategy_ReturnsStrategyForOrigin()
     {
         // Arrange
-        var expected = new CustomerOriginStrategy()
+        var expected = new CustomerOriginStrategy
         {
             Customer = 5, Id = "matching", Regex = "http[s]?://matching.io/(.*)",
-            Strategy = OriginStrategyType.S3Ambient
+            Strategy = OriginStrategyType.S3Ambient, Order = 10
         };
         var originStrategies = new List<CustomerOriginStrategy>
         {
-            expected,
             new()
             {
                 Customer = 5, Id = "not_matching", Regex = "http[s]?://(.*).test.example",
-                Strategy = OriginStrategyType.S3Ambient
+                Strategy = OriginStrategyType.S3Ambient, Order = 5
+            },
+            expected,
+            new()
+            {
+                Customer = 5, Id = "matching_but_lower_priority", Regex = "https://matching.io/(.*)",
+                Strategy = OriginStrategyType.S3Ambient, Order = 15
             }
         };
         await dbContext.CustomerOriginStrategies.AddRangeAsync(originStrategies);

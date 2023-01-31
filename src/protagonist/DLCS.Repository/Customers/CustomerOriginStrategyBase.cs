@@ -88,6 +88,7 @@ public class CustomerOriginStrategyRepository : ICustomerOriginStrategyRepositor
     private Task<List<CustomerOriginStrategy>> GetCustomerOriginStrategiesFromDb(int customer)
         => dbContext.CustomerOriginStrategies.AsNoTracking()
             .Where(cos => cos.Customer == customer)
+            .OrderBy(cos => cos.Order)
             .ToListAsync();
 
     // NOTE(DG): This CustomerOriginStrategy is for assets uploaded directly via the portal
@@ -97,7 +98,9 @@ public class CustomerOriginStrategyRepository : ICustomerOriginStrategyRepositor
             Customer = customer,
             Id = "_default_portal_",
             Regex = s3OriginRegex,
-            Strategy = OriginStrategyType.S3Ambient
+            Strategy = OriginStrategyType.S3Ambient,
+            Order = 999,
+            Optimised = true,
         };
 
     private static CustomerOriginStrategy? FindMatchingStrategy(

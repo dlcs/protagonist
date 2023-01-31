@@ -39,4 +39,10 @@ public class CustomerOriginStrategy
     /// Signifies that this is fast and stable enough to be treated like DLCS' own storage
     /// </summary>
     public bool Optimised { get; set; }
+    
+    /// <summary>
+    /// Allows control over the order in which CustomerOriginStrategies are checked.
+    /// Lower numbers are checked first, first matching record is chosen. 
+    /// </summary>
+    public int Order { get; set; }
 }
