@@ -2,10 +2,11 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core;
 using DLCS.Core.FileSystem;
+using DLCS.Core.Guard;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Customers;
+using DLCS.Model.Policies;
 using DLCS.Model.Templates;
 using DLCS.Web.Requests;
 using Engine.Ingest.Persistence;
@@ -51,9 +52,9 @@ public class AppetiserClient : IImageProcessor
 
         try
         {
-            var derivativesOnly = IsDerivativesOnly(context.AssetFromOrigin);
-            var responseModel = await CallImageProcessor(context, derivativesOnly);
-            await ProcessResponse(context, responseModel, derivativesOnly);
+            var flags = new ImageProcessorFlags(context);
+            var responseModel = await CallImageProcessor(context, flags);
+            await ProcessResponse(context, responseModel, flags);
             return true;
         }
         catch (Exception e)
@@ -79,15 +80,16 @@ public class AppetiserClient : IImageProcessor
         fileSystem.CreateDirectory(thumb);
     }
 
-    // If image is already a JPEG2000, only generate derivatives
-    private static bool IsDerivativesOnly(AssetFromOrigin assetFromOrigin)
-        => assetFromOrigin.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
+    // If image is 'use-original' AND a JPEG2000, only generate derivatives (ie thumbs)
+    private static bool IsDerivativesOnly(AssetFromOrigin? assetFromOrigin, Asset asset)
+        => asset.FullImageOptimisationPolicy.IsUseOriginal() &&
+           assetFromOrigin?.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
 
     private async Task<AppetiserResponseModel> CallImageProcessor(IngestionContext context,
-        bool derivativesOnly)
+        ImageProcessorFlags processorFlags)
     {
         // call tizer/appetiser
-        var requestModel = CreateModel(context, derivativesOnly);
+        var requestModel = CreateModel(context, processorFlags);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "convert");
         request.SetJsonContent(requestModel);
@@ -105,7 +107,7 @@ public class AppetiserClient : IImageProcessor
         return responseModel;
     }
 
-    private AppetiserRequestModel CreateModel(IngestionContext context, bool derivativesOnly)
+    private AppetiserRequestModel CreateModel(IngestionContext context, ImageProcessorFlags processorFlags)
     {
         var asset = context.Asset;
         var imageOptimisationPolicy = asset.FullImageOptimisationPolicy;
@@ -118,8 +120,8 @@ public class AppetiserClient : IImageProcessor
 
         var requestModel = new AppetiserRequestModel
         {
-            Destination = GetJP2File(context.AssetId, true),
-            Operation = derivativesOnly ? "derivatives-only" : "ingest",
+            Destination = GetJP2FilePath(context.AssetId, true),
+            Operation = processorFlags.GenerateDerivativesOnly ? "derivatives-only" : "ingest",
             Optimisation = imageOptimisationPolicy.TechnicalDetails.FirstOrDefault() ?? string.Empty,
             Origin = asset.Origin,
             Source = GetRelativeLocationOnDisk(context),
@@ -133,7 +135,7 @@ public class AppetiserClient : IImageProcessor
         return requestModel;
     }
 
-    private string GetJP2File(AssetId assetId, bool forImageProcessor)
+    private string GetJP2FilePath(AssetId assetId, bool forImageProcessor)
     {
         // Appetiser/Tizer want unix paths relative to mount share.
         // This logic allows handling when running locally on win/unix and when deployed to unix
@@ -161,11 +163,11 @@ public class AppetiserClient : IImageProcessor
     }
 
     private async Task ProcessResponse(IngestionContext context, AppetiserResponseModel responseModel, 
-        bool derivativesOnly)
+        ImageProcessorFlags processorFlags)
     {
         UpdateImageSize(context.Asset, responseModel);
 
-        var imageLocation = await ProcessOriginImage(context, derivativesOnly);
+        var imageLocation = await ProcessOriginImage(context, processorFlags);
 
         await CreateNewThumbs(context, responseModel);
 
@@ -180,35 +182,29 @@ public class AppetiserClient : IImageProcessor
         asset.Width = responseModel.Width;
     }
 
-    private async Task<ImageLocation> ProcessOriginImage(IngestionContext context, bool derivativesOnly)
+    private async Task<ImageLocation> ProcessOriginImage(IngestionContext context, ImageProcessorFlags processorFlags)
     {
         var asset = context.Asset;
-        var imageLocation = new ImageLocation { Id = asset.Id, Nas = string.Empty};
+        var imageLocation = new ImageLocation { Id = asset.Id, Nas = string.Empty };
 
-        var originStrategy = context.AssetFromOrigin.CustomerOriginStrategy;
         var imageIngestSettings = engineSettings.ImageIngest;
-
-        if (originStrategy.Optimised && originStrategy.Strategy == OriginStrategyType.S3Ambient)
+        
+        if (!processorFlags.SaveInDlcsStorage)
         {
-            logger.LogDebug("Asset {AssetId} is optimised s3Ambient strategy", context.AssetId);
-            // Optimised strategy - we don't want to store as we've not created a new version - just set imageLocation
+            // Optimised - we don't want to store as we've not created a new version - just set imageLocation
+            logger.LogDebug("Asset {AssetId} can be served from origin", context.AssetId);
             var originObject = RegionalisedObjectInBucket.Parse(asset.Origin);
             imageLocation.S3 =
                 storageKeyGenerator.GetS3Uri(originObject, imageIngestSettings.IncludeRegionInS3Uri).ToString();
             return imageLocation;
         }
-
-        if (originStrategy.Optimised)
-        {
-            logger.LogWarning(
-                "Asset {AssetId} has originStrategy '{OriginStrategy}' ({OriginStrategyId}), which is optimised but not S3",
-                context.AssetId, originStrategy.Strategy, originStrategy.Id);
-        }
-
+        
         var jp2BucketObject = storageKeyGenerator.GetStorageLocation(context.AssetId);
 
-        // if derivatives-only, no new JP2 will have been generated so use the 'origin' file
-        var jp2File = derivativesOnly ? context.AssetFromOrigin.Location : GetJP2File(context.AssetId, false);
+        // if original is image-server compat., use the 'origin' file to upload. Else upload generated JP2
+        var jp2File = processorFlags.OriginIsImageServerReady
+            ? context.AssetFromOrigin.Location
+            : GetJP2FilePath(context.AssetId, false);
 
         // Not optimised - upload JP2 to S3 and set ImageLocation to new bucket location
         if (!await bucketWriter.WriteFileToBucket(jp2BucketObject, jp2File, MIMEHelper.JP2))
@@ -245,7 +241,7 @@ public class AppetiserClient : IImageProcessor
     {
         var asset = context.Asset;
 
-        var jp2Size = fileSystem.GetFileSize(GetJP2File(context.AssetId, false));
+        var jp2Size = fileSystem.GetFileSize(GetJP2FilePath(context.AssetId, false));
         var thumbSizes = responseModel.Thumbs.Sum(t => fileSystem.GetFileSize(t.Path));
 
         return new ImageStorage
@@ -262,37 +258,37 @@ public class AppetiserClient : IImageProcessor
     public class ImageProcessorFlags
     {
         /// <summary>
-        /// Should we generate thumbnails only? Source image must be a JP2
+        /// Should we generate thumbnails only?
         /// </summary>
+        /// <remarks>
+        /// This differs from OriginIsImageServerReady because the image must be image-server ready AND also be a
+        /// JPEG2000 or appetiser will reject
+        /// </remarks>
         public bool GenerateDerivativesOnly { get; }
+
+        /// <summary>
+        /// Indicates that either the original, or a derivative, is to be saved in DLCS storage
+        /// </summary>
+        public bool SaveInDlcsStorage { get; }
         
         /// <summary>
-        /// Should we copy the image from Origin to DLCS Storage?
+        /// Indicates that the Origin file is suitable for use as image-server source
         /// </summary>
-        public bool OriginToDlcs { get; }
-        
-        /// <summary>
-        /// Should we copy the newly generated JP2 to DLCS Storage?
-        /// </summary>
-        public bool GeneratedToDlcs { get; }
+        public bool OriginIsImageServerReady { get; }
 
         public ImageProcessorFlags(IngestionContext ingestionContext)
         {
             var assetFromOrigin =
                 ingestionContext.AssetFromOrigin.ThrowIfNull(nameof(ingestionContext.AssetFromOrigin))!;
             
-            var useOriginal = ingestionContext.Asset.FullImageOptimisationPolicy.IsUseOriginal();
+            OriginIsImageServerReady = ingestionContext.Asset.FullImageOptimisationPolicy.IsUseOriginal();
             var isJp2 = assetFromOrigin.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
-            var isOptimised = assetFromOrigin.CustomerOriginStrategy.Optimised;
             
-            // If image iop 'use-original' and we have a JPEG2000 then don't
-            GenerateDerivativesOnly = useOriginal && isJp2;
+            // If image iop 'use-original' and we have a JPEG2000 then only thumbnails are required
+            GenerateDerivativesOnly = OriginIsImageServerReady && isJp2;
 
-            // If image iop is 'use-original' but the customerOriginStrategy is not optimised we copy the original
-            OriginToDlcs = !isOptimised && useOriginal;
-            
-            // If image iop is NOT 'use-original' then we've generated an image
-            GeneratedToDlcs = !useOriginal;
+            // Save in DLCS unless the image is image-server ready AND the strategy is optimised
+            SaveInDlcsStorage = !(OriginIsImageServerReady && assetFromOrigin.CustomerOriginStrategy.Optimised);
         }
     }
 }

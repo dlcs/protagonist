@@ -37,8 +37,8 @@ public class ImageProcessorFlagsTests
         
         // Asset
         flags.GenerateDerivativesOnly.Should().BeFalse();
-        flags.GeneratedToDlcs.Should().BeTrue();
-        flags.OriginToDlcs.Should().BeFalse();
+        flags.OriginIsImageServerReady.Should().BeFalse();
+        flags.SaveInDlcsStorage.Should().BeTrue();
     }
 
     [Theory]
@@ -55,8 +55,8 @@ public class ImageProcessorFlagsTests
         
         // Asset
         flags.GenerateDerivativesOnly.Should().BeFalse();
-        flags.GeneratedToDlcs.Should().BeTrue();
-        flags.OriginToDlcs.Should().BeFalse();
+        flags.OriginIsImageServerReady.Should().BeFalse();
+        flags.SaveInDlcsStorage.Should().BeTrue();
     }
 
     [Theory]
@@ -72,8 +72,8 @@ public class ImageProcessorFlagsTests
         
         // Asset
         flags.GenerateDerivativesOnly.Should().BeTrue();
-        flags.GeneratedToDlcs.Should().BeFalse();
-        flags.OriginToDlcs.Should().BeTrue();
+        flags.OriginIsImageServerReady.Should().BeTrue();
+        flags.SaveInDlcsStorage.Should().BeTrue();
     }
     
     [Theory]
@@ -88,8 +88,8 @@ public class ImageProcessorFlagsTests
         
         // Asset
         flags.GenerateDerivativesOnly.Should().BeFalse();
-        flags.GeneratedToDlcs.Should().BeFalse();
-        flags.OriginToDlcs.Should().BeTrue();
+        flags.OriginIsImageServerReady.Should().BeTrue();
+        flags.SaveInDlcsStorage.Should().BeTrue();
     }
 
     [Theory]
@@ -105,8 +105,8 @@ public class ImageProcessorFlagsTests
         
         // Asset
         flags.GenerateDerivativesOnly.Should().BeTrue();
-        flags.GeneratedToDlcs.Should().BeFalse();
-        flags.OriginToDlcs.Should().BeFalse();
+        flags.OriginIsImageServerReady.Should().BeTrue();
+        flags.SaveInDlcsStorage.Should().BeFalse();
     }
     
     [Theory]
@@ -121,8 +121,8 @@ public class ImageProcessorFlagsTests
         
         // Asset
         flags.GenerateDerivativesOnly.Should().BeFalse();
-        flags.GeneratedToDlcs.Should().BeFalse();
-        flags.OriginToDlcs.Should().BeFalse();
+        flags.OriginIsImageServerReady.Should().BeTrue();
+        flags.SaveInDlcsStorage.Should().BeFalse();
     }
     
     private IngestionContext GetContext(bool useOriginal, bool isOptimised, string mediaType = "image/jpeg")
