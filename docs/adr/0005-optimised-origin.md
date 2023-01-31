@@ -35,7 +35,7 @@ The "optimised" column on the CustomerOriginStrategy now only indicates that the
 ### Tile-Ready
 To indicate that an asset is image-server ready (could be a small jpeg, a tile-optimsed JPEG2000 or a Pyramidal TIFF) we will introduce a new imageOptimisationPolicy with a key of `use-original`. `use-original` is only valid for image assets. We may want to restrict use of `use-original` by customer.
 
-The below shows the combinations of "Optimised" + imageOptimisationPolicy and the affects in various parts of system (`fast-higher` iop is used to represents anything other than `not-original`).
+The below shows the combinations of "Optimised" + imageOptimisationPolicy and the affects in various parts of system (`fast-higher` iop is used to represents anything other than `use-original`).
 
 | Optimised | IOP            | Engine                                                                  | `/iiif-img/`                  | `/file/`                 |
 | --------- | -------------- | ----------------------------------------------------------------------- | ----------------------------- | ------------------------ |
