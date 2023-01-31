@@ -44,10 +44,10 @@ The below shows combinations of Optimised + imageOptimisationPolicy and the affe
 #### Positive Consequences
 
 * Easier to understand.
-* More control over which assets are "tile-ready".
+* More control over which assets are "tile-ready", allows customers to use their own profiles etc.
 
 #### Negative Consequences
 
-* Leaks some of the internal implementation out of DLCS to API consumer.
-* Accidentally using `use-original` for huge image could put unnecessary load on Cantaloupe.
+* Leaks some of the internal implementation details of DLCS to API consumer.
+* Incorrectly using `use-original` for huge image could put unnecessary load on Cantaloupe.
 * Changing meaning of DB field so will need to run a DB update on deployment. Depending on usage we may need to check customerOriginStrategy Regex against Origin's to determine imageOptimisationPolicy (ie may not fit as a single migration).
