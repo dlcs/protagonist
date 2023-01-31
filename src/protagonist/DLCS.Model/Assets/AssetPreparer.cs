@@ -226,13 +226,11 @@ public static class AssetPreparer
             if (updateAsset.ImageOptimisationPolicy != null &&
                 updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
             {
-                // I think it should be editable though, and doing so should trigger a re-ingest.
                 return AssetPreparationResult.Failure("ImageOptimisationPolicy cannot be edited.");
             }
 
             if (updateAsset.ThumbnailPolicy != null && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
             {
-                // And this one DEFINITELY should be editable!
                 return AssetPreparationResult.Failure("ThumbnailPolicy cannot be edited.");
             }
 
