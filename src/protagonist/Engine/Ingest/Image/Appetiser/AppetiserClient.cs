@@ -53,6 +53,7 @@ public class AppetiserClient : IImageProcessor
         try
         {
             var flags = new ImageProcessorFlags(context);
+            logger.LogDebug("Got flags '{Flags}' for {AssetId}", flags, context.AssetId);
             var responseModel = await CallImageProcessor(context, flags);
             await ProcessResponse(context, responseModel, flags);
             return true;
@@ -275,6 +276,9 @@ public class AppetiserClient : IImageProcessor
         /// Indicates that the Origin file is suitable for use as image-server source
         /// </summary>
         public bool OriginIsImageServerReady { get; }
+
+        public override string ToString() =>
+            $"derivative-only:{GenerateDerivativesOnly},save:{SaveInDlcsStorage},image-server-ready:{OriginIsImageServerReady}";
 
         public ImageProcessorFlags(IngestionContext ingestionContext)
         {

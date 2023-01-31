@@ -93,11 +93,11 @@ public class AppetiserClientTests
     [Theory]
     [InlineData("image/jp2")]
     [InlineData("image/jpx")]
-    public async Task ProcessImage_SetsOperation_DerivatesOnly_IfJp2(string contentType)
+    public async Task ProcessImage_SetsOperation_DerivatesOnly_IfJp2_AndUseOriginal(string contentType)
     {
         // Arrange
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
-        var context = GetIngestionContext(contentType: contentType);
+        var context = GetIngestionContext(contentType: contentType, imageOptimisationPolicy: "use-original");
         context.AssetFromOrigin.Location = "/file/on/disk";
 
         AppetiserRequestModel requestModel = null;
@@ -114,12 +114,15 @@ public class AppetiserClientTests
         requestModel.Operation.Should().Be("derivatives-only");
     }
 
-    [Fact]
-    public async Task ProcessImage_SetsOperation_Ingest_IfNotJp2()
+    [Theory]
+    [InlineData("image/jp2", "fastest")]
+    [InlineData("image/jpx", "fastest")]
+    [InlineData("image/jpeg", "use-original")]
+    public async Task ProcessImage_SetsOperation_Ingest_IfNotJp2AndUseOriginal(string contentType, string iop)
     {
         // Arrange
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
-        var context = GetIngestionContext();
+        var context = GetIngestionContext(contentType: contentType, imageOptimisationPolicy: iop);
         AppetiserRequestModel requestModel = null;
         httpHandler.RegisterCallback(async message =>
         {
@@ -165,7 +168,7 @@ public class AppetiserClientTests
     [InlineData(true, OriginStrategyType.BasicHttp)]
     [InlineData(true, OriginStrategyType.SFTP)]
     [InlineData(false, OriginStrategyType.S3Ambient)]
-    public async Task ProcessImage_UploadsFileToBucket_AndSetsImageLocation_IfNotS3OptimisedStrategy(bool optimised,
+    public async Task ProcessImage_UploadsGeneratedFileToDlcsBucket_AndSetsImageLocation_IfNotS3OptimisedStrategy(bool optimised,
         OriginStrategyType strategy)
     {
         // Arrange
@@ -196,7 +199,7 @@ public class AppetiserClientTests
     }
 
     [Fact]
-    public async Task ProcessImage_UploadsFileToBucket_UsingLocationOnDisk_IfJp2()
+    public async Task ProcessImage_UploadsFileToBucket_UsingLocationOnDisk_IfUseOriginal_AndNotOptimised()
     {
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel { Thumbs = Array.Empty<ImageOnDisk>() };
@@ -207,12 +210,8 @@ public class AppetiserClientTests
         httpHandler.SetResponse(response);
 
         const string locationOnDisk = "/file/on/disk";
-        var context = GetIngestionContext("/1/2/test", "image/jp2");
+        var context = GetIngestionContext("/1/2/test", "image/jp2", imageOptimisationPolicy: "use-original");
         context.AssetFromOrigin.Location = locationOnDisk;
-        context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy
-        {
-            Strategy = OriginStrategyType.Default
-        };
 
         // Act
         await sut.ProcessImage(context);
@@ -232,14 +231,10 @@ public class AppetiserClientTests
         response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         httpHandler.SetResponse(response);
 
-        var context = GetIngestionContext();
+        var context = GetIngestionContext(imageOptimisationPolicy: "use-original", optimised: true);
         context.Asset.Origin = "https://s3.amazonaws.com/dlcs-storage/2/1/foo-bar";
         context.Asset.InitialOrigin = "https://s3.amazonaws.com/dlcs-storage-ignored/2/1/foo-bar";
-        context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy
-        {
-            Optimised = true,
-            Strategy = OriginStrategyType.S3Ambient
-        };
+        
         const string expected = "s3://dlcs-storage/2/1/foo-bar";
 
         A.CallTo(() => storageKeyGenerator.GetS3Uri(A<ObjectInBucket>._, A<bool>._))
@@ -249,7 +244,7 @@ public class AppetiserClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        bucketWriter.ShouldNotHaveKey("0/0/something");
+        bucketWriter.Operations.Should().BeEmpty();
         context.ImageLocation.S3.Should().Be(expected);
     }
 
@@ -312,15 +307,22 @@ public class AppetiserClientTests
     }
 
     private static IngestionContext GetIngestionContext(string assetId = "/1/2/something",
-        string contentType = "image/jpg")
+        string contentType = "image/jpg", string imageOptimisationPolicy = "fast-high", bool optimised = false)
     {
         var asset = new Asset { Id = AssetId.FromString(assetId), Customer = 1, Space = 2 };
         asset
-            .WithImageOptimisationPolicy(new ImageOptimisationPolicy { TechnicalDetails = Array.Empty<string>() })
+            .WithImageOptimisationPolicy(new ImageOptimisationPolicy
+            {
+                Id = imageOptimisationPolicy,
+                TechnicalDetails = Array.Empty<string>()
+            })
             .WithThumbnailPolicy(new ThumbnailPolicy());
 
         var context = new IngestionContext(asset);
-        return context.WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "./scratch/here.jpg",
-            contentType));
+        return context
+            .WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "./scratch/here.jpg", contentType)
+            {
+                CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = optimised }
+            });
     }
 }
