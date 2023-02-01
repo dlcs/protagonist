@@ -107,6 +107,14 @@ public static class AssetPreparer
             {
                 requiresReingest = true; // YES, because we've changed the way this image should be processed
             }
+
+            // This is ONLY true if we need engine to set the permissions on S3 for redirects.
+            // It is not true if orchestrator proxies requests for open AV.
+            // See https://github.com/dlcs/protagonist/issues/452
+            if (updateAsset.MaxUnauthorised.HasValue && updateAsset.MaxUnauthorised != existingAsset.MaxUnauthorised)
+            {
+                requiresReingest = true;
+            }
         }
 
         var workingAsset = existingAsset ?? updateAsset;
