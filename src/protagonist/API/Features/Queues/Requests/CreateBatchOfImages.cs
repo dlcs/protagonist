@@ -141,10 +141,18 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         }
         else
         {
-            // Raise notifications
-            logger.LogDebug("Batch {BatchId} created - sending engine notifications", batch.Id);
-            await assetNotificationSender.SendIngestAssetsRequest(assetNotificationList, request.IsPriority,
-                cancellationToken);
+            if (assetNotificationList.Count > 0)
+            {
+                // Raise notifications
+                logger.LogDebug("Batch {BatchId} created - sending engine notifications", batch.Id);
+                await assetNotificationSender.SendIngestAssetsRequest(assetNotificationList, request.IsPriority,
+                    cancellationToken);
+            }
+            else
+            {
+                logger.LogDebug("There are no assets to ingest (was this batch all File?)");
+            }
+            await dlcsContext.SaveChangesAsync(cancellationToken);
         }
         
         return ModifyEntityResult<Batch>.Success(batch, WriteResult.Created);
