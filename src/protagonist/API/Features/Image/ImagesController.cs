@@ -178,7 +178,8 @@ public class ImagesController : HydraController
         // any existing assets yet.
         return images.Members.Any(image => 
             image.Origin.HasText() || 
-            image.ImageOptimisationPolicy.HasText()
+            image.ImageOptimisationPolicy.HasText() ||
+            image.MaxUnauthorised.HasValue
             );
     }
 }
