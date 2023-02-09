@@ -73,20 +73,4 @@ public static class ServiceCollectionX
 
         return services;
     }
-
-    /// <summary>
-    /// Parse OverridesAsJson appSetting to strongly typed dictionary
-    /// </summary>
-    public static IServiceCollection HandlePathTemplates(this IServiceCollection services)
-        => services.PostConfigure<PathTemplateOptions>(opts =>
-        {
-            if (!string.IsNullOrEmpty(opts.OverridesAsJson))
-            {
-                var overridesDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(opts.OverridesAsJson);
-                foreach (var (key, value) in overridesDict)
-                {
-                    opts.Overrides.Add(key, value);
-                }
-            }
-        });
 }

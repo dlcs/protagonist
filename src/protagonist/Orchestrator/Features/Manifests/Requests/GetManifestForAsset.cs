@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests.AssetDelivery;
@@ -10,14 +9,11 @@ using IIIF;
 using IIIF.Presentation;
 using IIIF.Presentation.V2.Strings;
 using IIIF.Presentation.V3.Strings;
-using IIIF.Serialisation;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
-using Orchestrator.Settings;
 using IIIF2 = IIIF.Presentation.V2;
 using IIIF3 = IIIF.Presentation.V3;
 using Version = IIIF.Presentation.Version;
@@ -122,17 +118,6 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
     }
 
     private string GetFullyQualifiedId(BaseAssetRequest baseAssetRequest)
-        => assetPathGenerator.GetFullPathForRequest(
-            baseAssetRequest,
-            (assetRequest, template) =>
-            {
-                var request = assetRequest as BaseAssetRequest;
-                return DlcsPathHelpers.GeneratePathFromTemplate(
-                    template,
-                    request.VersionedRoutePrefix,
-                    request.CustomerPathValue,
-                    request.Space.ToString(),
-                    request.AssetId);
-            });
+        => assetPathGenerator.GetFullPathForRequest(baseAssetRequest, true);
 
 }

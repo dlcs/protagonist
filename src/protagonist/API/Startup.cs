@@ -15,6 +15,7 @@ using DLCS.Repository.NamedQueries.Infrastructure;
 using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
 using DLCS.Web.Handlers;
+using DLCS.Web.Logging;
 using FluentValidation;
 using Hydra;
 using Microsoft.AspNetCore.Builder;
@@ -135,7 +136,10 @@ public class Startup
             .HandlePathBase(pathBase, logger)
             .UseSwaggerWithUI("DLCS API", pathBase, "v2")
             .UseRouting()
-            .UseSerilogRequestLogging()
+            .UseSerilogRequestLogging(opts =>
+            {
+                opts.GetLevel = LogHelper.ExcludeHealthChecks;
+            })
             .UseCors("CorsPolicy")
             .UseAuthentication()
             .UseAuthorization()

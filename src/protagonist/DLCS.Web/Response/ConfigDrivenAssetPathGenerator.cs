@@ -2,8 +2,6 @@
 using DLCS.Web.Requests;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace DLCS.Web.Response;
@@ -21,44 +19,52 @@ public class ConfigDrivenAssetPathGenerator : IAssetPathGenerator
     private readonly IHttpContextAccessor httpContextAccessor;
     private readonly PathTemplateOptions pathTemplateOptions;
 
-    public ConfigDrivenAssetPathGenerator(IOptions<PathTemplateOptions> pathTemplateOptions,
+    public ConfigDrivenAssetPathGenerator(
+        IOptions<PathTemplateOptions> pathTemplateOptions,
         IHttpContextAccessor httpContextAccessor)
     {
         this.httpContextAccessor = httpContextAccessor;
         this.pathTemplateOptions = pathTemplateOptions.Value;
     }
+    
+    public string GetRelativePathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false)
+        => GetForPath(assetRequest, false, useNativeFormat);
 
-    public string GetPathForRequest(IBasicPathElements assetRequest)
-        => GetForPath(assetRequest, false);
+    public string GetFullPathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false)
+        => GetForPath(assetRequest, true, useNativeFormat);
 
-    public string GetFullPathForRequest(IBasicPathElements assetRequest)
-        => GetForPath(assetRequest, true);
+    public string GetFullPathForRequest(IBasicPathElements assetRequest, PathGenerator pathGenerator,
+        bool useNativeFormat = false)
+        => GetPathForRequestInternal(assetRequest, pathGenerator, true, useNativeFormat);
 
-    public string GetFullPathForRequest(IBasicPathElements assetRequest, PathGenerator pathGenerator)
-        => GetPathForRequestInternal(assetRequest, pathGenerator, true);
-
-    private string GetForPath(IBasicPathElements assetRequest, bool fullRequest)
+    private string GetForPath(IBasicPathElements assetRequest, bool fullRequest, bool useNativeFormat)
         => GetPathForRequestInternal(
             assetRequest, 
             (request, template) => GeneratePathFromTemplate(request, template),
-            fullRequest);
+            fullRequest,
+            useNativeFormat);
     
     private string GetPathForRequestInternal(IBasicPathElements assetRequest, PathGenerator pathGenerator,
-        bool fullRequest)
+        bool fullRequest, bool useNativeFormat)
     {
         var request = httpContextAccessor.HttpContext.Request;
         var host = request.Host.Value ?? string.Empty;
-        var template = pathTemplateOptions.GetPathTemplateForHost(host);
+        var template = useNativeFormat
+            ? PathTemplateOptions.DefaultPathFormat
+            : pathTemplateOptions.GetPathTemplateForHost(host);
 
         var path = pathGenerator(assetRequest, template);
 
         return fullRequest ? request.GetDisplayUrl(path) : path;
     }
 
-    private string GeneratePathFromTemplate(IBasicPathElements assetRequest, string template) 
+    // Default path replacements
+    private string GeneratePathFromTemplate(IBasicPathElements assetRequest, string template)
         => DlcsPathHelpers.GeneratePathFromTemplate(template,
             prefix: assetRequest.RoutePrefix,
             customer: assetRequest.CustomerPathValue,
+            version: assetRequest.VersionPathValue,
             space: assetRequest.Space.ToString(),
             assetPath: assetRequest.AssetPath);
 }
+

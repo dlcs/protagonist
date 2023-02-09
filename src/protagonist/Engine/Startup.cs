@@ -1,5 +1,6 @@
 ﻿using DLCS.Core.Caching;
 using DLCS.Web.Configuration;
+using DLCS.Web.Logging;
 using Engine.Infrastructure;
 using Engine.Settings;
 using Serilog;
@@ -43,7 +44,10 @@ public class Startup
         }
 
         app.UseRouting()
-            .UseSerilogRequestLogging()
+            .UseSerilogRequestLogging(opts =>
+            {
+                opts.GetLevel = LogHelper.ExcludeHealthChecks;
+            })
             .UseCors()
             .UseEndpoints(endpoints =>
             {

@@ -1,7 +1,4 @@
-﻿using FluentAssertions;
-using Xunit;
-
-namespace DLCS.Core.Tests;
+﻿namespace DLCS.Core.Tests;
 
 public class DlcsPathHelpersTests
 {
@@ -26,7 +23,30 @@ public class DlcsPathHelpersTests
         const string expected = "dlcs.digirati.io/images/18/first-space/path/200.jpg";
         
         // Act
-        var replaced = DlcsPathHelpers.GeneratePathFromTemplate(template, "images", "18", "first-space", "200.jpg");
+        var replaced = DlcsPathHelpers.GeneratePathFromTemplate(template,
+            prefix: "images",
+            customer: "18",
+            space: "first-space",
+            assetPath: "200.jpg");
+        
+        // Assert
+        replaced.Should().Be(expected);
+    }
+    
+    [Fact]
+    public void GeneratePathFromTemplate_ReplacesExpectedElements_Versioned()
+    {
+        // Arrange
+        const string template = "dlcs.digirati.io/{prefix}/{version}/{customer}/{space}/path/{assetPath}";
+        const string expected = "dlcs.digirati.io/images/v99/18/first-space/path/200.jpg";
+        
+        // Act
+        var replaced = DlcsPathHelpers.GeneratePathFromTemplate(template,
+            prefix: "images",
+            customer: "18",
+            space: "first-space",
+            version: "v99",
+            assetPath: "200.jpg");
         
         // Assert
         replaced.Should().Be(expected);

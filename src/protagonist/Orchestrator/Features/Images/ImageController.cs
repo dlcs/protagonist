@@ -2,6 +2,8 @@
 using System.Threading.Tasks;
 using DLCS.Core.Caching;
 using DLCS.Web.IIIF;
+using DLCS.Web.Requests.AssetDelivery;
+using DLCS.Web.Response;
 using IIIF.ImageApi;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +19,7 @@ namespace Orchestrator.Features.Images;
 [ApiController]
 public class ImageController : IIIFAssetControllerBase
 {
+    private readonly IAssetPathGenerator assetPathGenerator;
     private const string CanonicalInfoJsonRoute = "info_json_canonical";
     private readonly OrchestratorSettings orchestratorSettings;
 
@@ -24,8 +27,10 @@ public class ImageController : IIIFAssetControllerBase
         IMediator mediator, 
         IOptions<CacheSettings> cacheSettings,
         ILogger<ImageController> logger,
+        IAssetPathGenerator assetPathGenerator,
         IOptions<OrchestratorSettings> orchestratorSettings) : base(mediator, cacheSettings, logger)
     {
+        this.assetPathGenerator = assetPathGenerator;
         this.orchestratorSettings = orchestratorSettings.Value;
     }
 
@@ -35,8 +40,11 @@ public class ImageController : IIIFAssetControllerBase
     /// <returns></returns>
     [Route("{customer}/{space}/{image}", Name = "image_only")]
     [HttpGet]
-    public IActionResult ImageOnly()
-        => RedirectToInfoJson();
+    public IActionResult ImageOnly(
+        [FromRoute] string customer,
+        [FromRoute] int space,
+        [FromRoute] string image)
+        => ImageOnlyVersioned(customer, space, image);
     
     /// <summary>
     /// Index request for image root, redirects to info.json.
@@ -45,23 +53,30 @@ public class ImageController : IIIFAssetControllerBase
     /// <returns></returns>
     [Route("{version:regex(^v2|v3$)}/{customer}/{space}/{image}", Name = "image_only_versioned")]
     [HttpGet]
-    public IActionResult ImageOnlyVersioned()
+    public IActionResult ImageOnlyVersioned(
+        [FromRoute] string customer,
+        [FromRoute] int space,
+        [FromRoute] string image)
     {
         var requestedVersion = Request.GetIIIFImageApiVersionFromRoute();
+        
+        var basicPathElements = new BasicPathElements
+        {
+            RoutePrefix = "iiif-img",
+            Space = space,
+            VersionPathValue = requestedVersion?.ToString().ToLower(),
+            CustomerPathValue = customer,
+            AssetPath = $"{image}/info.json",
+        };
 
         // Requesting image-only for canonical version, redirect to canonical info.json
         if (IsCanonicalRequest(requestedVersion))
         {
-            var routeUrl = Url.RouteUrl(CanonicalInfoJsonRoute, new
-            {
-                customer = Request.RouteValues["customer"],
-                space = Request.RouteValues["space"],
-                image = Request.RouteValues["image"]
-            })!;
-            return this.SeeAlsoResult(routeUrl);
+            basicPathElements.VersionPathValue = null;
         }
-        
-        return RedirectToInfoJson();
+
+        var infoJson = assetPathGenerator.GetRelativePathForRequest(basicPathElements);
+        return this.SeeAlsoResult(infoJson);
     }
 
     /// <summary>
@@ -92,18 +107,25 @@ public class ImageController : IIIFAssetControllerBase
     /// <returns>IIIF info.json for specified manifest.</returns>
     [Route("{version:regex(^v2|v3$)}/{customer}/{space}/{image}/info.json", Name = "info_json_versioned")]
     [HttpGet]
-    public async Task<IActionResult> InfoJsonVersioned([FromQuery] bool noOrchestrate = false,
+    public async Task<IActionResult> InfoJsonVersioned(
+        [FromRoute] string customer,
+        [FromRoute] int space,
+        [FromRoute] string image,
+        [FromQuery] bool noOrchestrate = false,
         CancellationToken cancellationToken = default)
     {
         var requestedVersion = Request.GetIIIFImageApiVersionFromRoute();
         if (IsCanonicalRequest(requestedVersion))
         {
-            return RedirectToRoute(CanonicalInfoJsonRoute, new
+            var basicPathElements = new BasicPathElements
             {
-                customer = Request.RouteValues["customer"],
-                space = Request.RouteValues["space"],
-                image = Request.RouteValues["image"]
-            });
+                RoutePrefix = "iiif-img",
+                Space = space,
+                CustomerPathValue = customer,
+                AssetPath = $"{image}/info.json",
+            };
+            var canonicalRoute = assetPathGenerator.GetRelativePathForRequest(basicPathElements);
+            return Redirect(canonicalRoute);
         }
 
         if (!requestedVersion.HasValue)
