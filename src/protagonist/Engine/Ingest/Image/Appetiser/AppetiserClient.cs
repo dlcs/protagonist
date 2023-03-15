@@ -166,7 +166,7 @@ public class AppetiserClient : IImageProcessor
     private async Task ProcessResponse(IngestionContext context, AppetiserResponseModel responseModel, 
         ImageProcessorFlags processorFlags)
     {
-        UpdateImageSize(context.Asset, responseModel);
+        UpdateImageDimensions(context.Asset, responseModel);
 
         var imageLocation = await ProcessOriginImage(context, processorFlags);
 
@@ -177,7 +177,7 @@ public class AppetiserClient : IImageProcessor
         context.WithLocation(imageLocation).WithStorage(imageStorage);
     }
 
-    private static void UpdateImageSize(Asset asset, AppetiserResponseModel responseModel)
+    private static void UpdateImageDimensions(Asset asset, AppetiserResponseModel responseModel)
     {
         asset.Height = responseModel.Height;
         asset.Width = responseModel.Width;
