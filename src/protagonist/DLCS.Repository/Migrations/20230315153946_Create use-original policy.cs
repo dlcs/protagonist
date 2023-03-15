@@ -4,7 +4,7 @@
 
 namespace DLCS.Repository.Migrations
 {
-    public partial class Createnotranscodepolicy : Migration
+    public partial class Createuseoriginalpolicy : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -13,7 +13,7 @@ namespace DLCS.Repository.Migrations
                 columns: new[] { "Customer", "Id", "Global", "Name", "TechnicalDetails" },
                 values: new object[,]
                 {
-                    { 1, "none", true, "No optimisation/transcoding", "no-op" },
+                    { 1, "use-original", true, "Use original for image-server", "use-original" }
                 });
         }
 
@@ -22,7 +22,7 @@ namespace DLCS.Repository.Migrations
             migrationBuilder.DeleteData(
                 table: "ImageOptimisationPolicies",
                 keyColumns: new[] { "Customer", "Id" },
-                keyValues: new object[] { 1, "none" });
+                keyValues: new object[] { 1, "use-original" });
         }
     }
 }
