@@ -45,7 +45,7 @@ services:
       - .env
 
   fireball:
-    image: fractos/fireball:1304a21459c2b6157abc46d3808512b578bd78b5
+    image: ghcr.io/dlcs/fireball:03f76e5893ae95ee22c307e2dadec1ab033cdb79
     ports:
       - "5030:80"
     environment:
@@ -57,15 +57,15 @@ services:
     env_file:
       - .env
 
-  # appetiser:
-  #   image: digirati/appetiser:latest
-  #   ports:
-  #     - "5031:80"
-  #   volumes:
-  #     - $HOME\Docker\scratch:/scratch
-  #     - $HOME\.aws:/root/.aws
-  #   env_file:
-  #     - .env
+  appetiser:
+    image: digirati/appetiser:latest
+    ports:
+      - "5031:80"
+    volumes:
+      - $HOME\Docker\scratch:/scratch
+      - $HOME\.aws:/root/.aws
+    env_file:
+      - .env
 
   thumbs:
     build:
