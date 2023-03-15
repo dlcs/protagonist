@@ -17,7 +17,7 @@ public class ImageProcessorFlagsTests
         var context = new IngestionContext(new Asset());
         
         // Act
-        Action action = () => new AppetiserClient.ImageProcessorFlags(context);
+        Action action = () => new AppetiserClient.ImageProcessorFlags(context, "");
         
         // Asset
         action.Should().Throw<ArgumentNullException>();
@@ -33,12 +33,13 @@ public class ImageProcessorFlagsTests
         var context = GetContext(false, false, mediaType);
         
         // Act
-        var flags = new AppetiserClient.ImageProcessorFlags(context);
+        var flags = new AppetiserClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
         flags.GenerateDerivativesOnly.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeTrue();
+        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
 
     [Theory]
@@ -51,12 +52,13 @@ public class ImageProcessorFlagsTests
         var context = GetContext(false, true, mediaType);
         
         // Act
-        var flags = new AppetiserClient.ImageProcessorFlags(context);
+        var flags = new AppetiserClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
         flags.GenerateDerivativesOnly.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeTrue();
+        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
 
     [Theory]
@@ -68,12 +70,13 @@ public class ImageProcessorFlagsTests
         var context = GetContext(true, false, mediaType);
         
         // Act
-        var flags = new AppetiserClient.ImageProcessorFlags(context);
+        var flags = new AppetiserClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
         flags.GenerateDerivativesOnly.Should().BeTrue();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeTrue();
+        flags.ImageServerFilePath.Should().Be("/path/to/original");
     }
     
     [Theory]
@@ -84,12 +87,13 @@ public class ImageProcessorFlagsTests
         var context = GetContext(true, false, mediaType);
         
         // Act
-        var flags = new AppetiserClient.ImageProcessorFlags(context);
+        var flags = new AppetiserClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
         flags.GenerateDerivativesOnly.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeTrue();
+        flags.ImageServerFilePath.Should().Be("/path/to/original");
     }
 
     [Theory]
@@ -101,12 +105,13 @@ public class ImageProcessorFlagsTests
         var context = GetContext(true, true, mediaType);
         
         // Act
-        var flags = new AppetiserClient.ImageProcessorFlags(context);
+        var flags = new AppetiserClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
         flags.GenerateDerivativesOnly.Should().BeTrue();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.ImageServerFilePath.Should().Be("/path/to/original");
     }
     
     [Theory]
@@ -117,12 +122,13 @@ public class ImageProcessorFlagsTests
         var context = GetContext(true, true, mediaType);
         
         // Act
-        var flags = new AppetiserClient.ImageProcessorFlags(context);
+        var flags = new AppetiserClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
         flags.GenerateDerivativesOnly.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.ImageServerFilePath.Should().Be("/path/to/original");
     }
     
     private IngestionContext GetContext(bool useOriginal, bool isOptimised, string mediaType = "image/jpeg")
@@ -133,7 +139,8 @@ public class ImageProcessorFlagsTests
 
         var assetFromOrigin = new AssetFromOrigin(asset.Id, 123, "wherever", mediaType)
         {
-            CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = isOptimised }
+            CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = isOptimised },
+            Location = "/path/to/original"
         };
         
         return new IngestionContext(asset).WithAssetFromOrigin(assetFromOrigin);

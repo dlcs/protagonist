@@ -52,7 +52,7 @@ public class AppetiserClient : IImageProcessor
 
         try
         {
-            var flags = new ImageProcessorFlags(context);
+            var flags = new ImageProcessorFlags(context, GetJP2FilePath(context.AssetId, false));
             logger.LogDebug("Got flags '{Flags}' for {AssetId}", flags, context.AssetId);
             var responseModel = await CallImageProcessor(context, flags);
             await ProcessResponse(context, responseModel, flags);
@@ -172,7 +172,7 @@ public class AppetiserClient : IImageProcessor
 
         await CreateNewThumbs(context, responseModel);
 
-        ImageStorage imageStorage = GetImageStorage(context, responseModel);
+        ImageStorage imageStorage = GetImageStorage(context, processorFlags, responseModel);
 
         context.WithLocation(imageLocation).WithStorage(imageStorage);
     }
@@ -200,21 +200,21 @@ public class AppetiserClient : IImageProcessor
             return imageLocation;
         }
         
-        var jp2BucketObject = storageKeyGenerator.GetStorageLocation(context.AssetId);
+        var targetStorageLocation = storageKeyGenerator.GetStorageLocation(context.AssetId);
 
         // if original is image-server compat., use the 'origin' file to upload. Else upload generated JP2
-        var jp2File = processorFlags.OriginIsImageServerReady
-            ? context.AssetFromOrigin.Location
-            : GetJP2FilePath(context.AssetId, false);
+        var imageServerFile = processorFlags.ImageServerFilePath;
 
-        // Not optimised - upload JP2 to S3 and set ImageLocation to new bucket location
-        if (!await bucketWriter.WriteFileToBucket(jp2BucketObject, jp2File, MIMEHelper.JP2))
+        // Not optimised - upload JP2 to S3 and set ImageLocation to new bucket 
+        var contentType = MIMEHelper.GetContentTypeForExtension(imageServerFile.EverythingAfterLast('.'));
+        if (!await bucketWriter.WriteFileToBucket(targetStorageLocation, imageServerFile, contentType))
         {
-            throw new ApplicationException($"Failed to write jp2 {jp2File} to storage bucket");
+            throw new ApplicationException(
+                $"Failed to write image-server file {imageServerFile} to storage bucket with content-type {contentType}");
         }
 
         imageLocation.S3 = storageKeyGenerator
-            .GetS3Uri(jp2BucketObject, imageIngestSettings.IncludeRegionInS3Uri)
+            .GetS3Uri(targetStorageLocation, imageIngestSettings.IncludeRegionInS3Uri)
             .ToString();
         return imageLocation;
     }
@@ -238,11 +238,15 @@ public class AppetiserClient : IImageProcessor
         }
     }
     
-    private ImageStorage GetImageStorage(IngestionContext context, AppetiserResponseModel responseModel)
+    private ImageStorage GetImageStorage(IngestionContext context, ImageProcessorFlags processorFlags, AppetiserResponseModel responseModel)
     {
         var asset = context.Asset;
 
-        var jp2Size = fileSystem.GetFileSize(GetJP2FilePath(context.AssetId, false));
+        // If we are not storing file then size = 0
+        var storedImageSize = processorFlags.SaveInDlcsStorage
+            ? fileSystem.GetFileSize(processorFlags.ImageServerFilePath)
+            : 0L;
+
         var thumbSizes = responseModel.Thumbs.Sum(t => fileSystem.GetFileSize(t.Path));
 
         return new ImageStorage
@@ -251,7 +255,7 @@ public class AppetiserClient : IImageProcessor
             Customer = asset.Customer,
             Space = asset.Space,
             LastChecked = DateTime.UtcNow,
-            Size = jp2Size,
+            Size = storedImageSize,
             ThumbnailSize = thumbSizes
         };
     }
@@ -276,19 +280,27 @@ public class AppetiserClient : IImageProcessor
         /// Indicates that the Origin file is suitable for use as image-server source
         /// </summary>
         public bool OriginIsImageServerReady { get; }
+        
+        /// <summary>
+        /// Path on disk where image-server ready file will be located.
+        /// This can be the Origin file, or the generated JP2. 
+        /// </summary>
+        /// <remarks>Used for calculating size and uploading (if required)</remarks>
+        public string ImageServerFilePath { get; }
 
         public override string ToString() =>
             $"derivative-only:{GenerateDerivativesOnly},save:{SaveInDlcsStorage},image-server-ready:{OriginIsImageServerReady}";
 
-        public ImageProcessorFlags(IngestionContext ingestionContext)
+        public ImageProcessorFlags(IngestionContext ingestionContext, string jp2OutputPath)
         {
             var assetFromOrigin =
                 ingestionContext.AssetFromOrigin.ThrowIfNull(nameof(ingestionContext.AssetFromOrigin))!;
             
             OriginIsImageServerReady = ingestionContext.Asset.FullImageOptimisationPolicy.IsUseOriginal();
-            var isJp2 = assetFromOrigin.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
+            ImageServerFilePath = OriginIsImageServerReady ? ingestionContext.AssetFromOrigin.Location : jp2OutputPath;
             
             // If image iop 'use-original' and we have a JPEG2000 then only thumbnails are required
+            var isJp2 = assetFromOrigin.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
             GenerateDerivativesOnly = OriginIsImageServerReady && isJp2;
 
             // Save in DLCS unless the image is image-server ready AND the strategy is optimised
