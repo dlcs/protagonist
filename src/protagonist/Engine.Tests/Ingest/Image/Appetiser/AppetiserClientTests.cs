@@ -194,7 +194,7 @@ public class AppetiserClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        bucketWriter.ShouldHaveKey("1/2/test").WithFilePath("dest/test.jp2");
+        bucketWriter.ShouldHaveKey("1/2/test").WithFilePath("dest/test.jp2").WithContentType("image/jp2");
         context.ImageLocation.S3.Should().Be(expected);
     }
 
@@ -210,14 +210,14 @@ public class AppetiserClientTests
         httpHandler.SetResponse(response);
 
         const string locationOnDisk = "/file/on/disk";
-        var context = GetIngestionContext("/1/2/test", "image/jp2", imageOptimisationPolicy: "use-original");
+        var context = GetIngestionContext("/1/2/test", "image/jpg", imageOptimisationPolicy: "use-original");
         context.AssetFromOrigin.Location = locationOnDisk;
 
         // Act
         await sut.ProcessImage(context);
 
         // Assert
-        bucketWriter.ShouldHaveKey("1/2/test").WithFilePath(locationOnDisk);
+        bucketWriter.ShouldHaveKey("1/2/test").WithFilePath(locationOnDisk).WithContentType("image/jpg");
     }
 
     [Fact]
@@ -309,7 +309,7 @@ public class AppetiserClientTests
     private static IngestionContext GetIngestionContext(string assetId = "/1/2/something",
         string contentType = "image/jpg", string imageOptimisationPolicy = "fast-high", bool optimised = false)
     {
-        var asset = new Asset { Id = AssetId.FromString(assetId), Customer = 1, Space = 2 };
+        var asset = new Asset { Id = AssetId.FromString(assetId), Customer = 1, Space = 2, MediaType = contentType};
         asset
             .WithImageOptimisationPolicy(new ImageOptimisationPolicy
             {

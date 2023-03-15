@@ -128,7 +128,7 @@ public class TestBucketWriter : IBucketWriter
         if (forBucket.HasText() && dest.Bucket != forBucket)
             throw new InvalidOperationException("Operation for different bucket");
 
-        Operations[dest.Key] = new BucketObject { Contents = content, Bucket = dest.Bucket };
+        Operations[dest.Key] = new BucketObject { Contents = content, Bucket = dest.Bucket, ContentType = contentType };
         return Task.FromResult(true);
     }
 
@@ -137,7 +137,8 @@ public class TestBucketWriter : IBucketWriter
         if (forBucket.HasText() && dest.Bucket != forBucket)
             throw new InvalidOperationException("Operation for different bucket");
 
-        Operations[dest.Key] = new BucketObject { ContentStream = content, Bucket = dest.Bucket };
+        Operations[dest.Key] = new BucketObject
+            { ContentStream = content, Bucket = dest.Bucket, ContentType = contentType };
         return Task.FromResult(true);
     }
 
@@ -147,7 +148,8 @@ public class TestBucketWriter : IBucketWriter
         if (forBucket.HasText() && dest.Bucket != forBucket)
             throw new InvalidOperationException("Operation for different bucket");
 
-        Operations[dest.Key] = new BucketObject { FilePath = filePath, Bucket = dest.Bucket };
+        Operations[dest.Key] = new BucketObject
+            { FilePath = filePath, Bucket = dest.Bucket, ContentType = contentType };
         return Task.FromResult(true);
     }
 
@@ -181,6 +183,7 @@ public class BucketObject
     public string Bucket { get; set; }
 
     public Stream ContentStream { get; set; }
+    public string ContentType { get; set; }
 
     /// <summary>
     /// Assert object has expected file path.
@@ -202,7 +205,20 @@ public class BucketObject
     {
         if (Contents != contents)
         {
-            throw new AssertionFailedException($"FilePath expected {contents} but was {Contents}");
+            throw new AssertionFailedException($"Contents expected {contents} but was {Contents}");
+        }
+
+        return this;
+    }
+    
+    /// <summary>
+    /// Assert object has expected contents.
+    /// </summary>
+    public BucketObject WithContentType(string contentType)
+    {
+        if (ContentType != contentType)
+        {
+            throw new AssertionFailedException($"ContentType expected {contentType} but was {ContentType}");
         }
 
         return this;

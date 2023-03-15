@@ -206,7 +206,7 @@ public class AppetiserClient : IImageProcessor
         var imageServerFile = processorFlags.ImageServerFilePath;
 
         // Not optimised - upload JP2 to S3 and set ImageLocation to new bucket 
-        var contentType = MIMEHelper.GetContentTypeForExtension(imageServerFile.EverythingAfterLast('.'));
+        var contentType = processorFlags.OriginIsImageServerReady ? context.Asset.MediaType : MIMEHelper.JP2;
         if (!await bucketWriter.WriteFileToBucket(targetStorageLocation, imageServerFile, contentType))
         {
             throw new ApplicationException(
