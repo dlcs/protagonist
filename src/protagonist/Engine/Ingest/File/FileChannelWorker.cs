@@ -21,6 +21,9 @@ public class FileChannelWorker : IAssetIngesterWorker
             // S3 to S3 copy
             // Check storage limits
             // method like - assetToS3.CopyAssetToTranscodeInput()
+            // May need to be called last of all executors, and aware of whether Image was uploaded to S3.
+            // Update ImageStorage value if storing
+            // Also, aware of Optimised origin.
         }
         else
         {
