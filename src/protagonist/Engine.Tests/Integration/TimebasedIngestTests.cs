@@ -33,6 +33,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     private static readonly TestBucketWriter BucketWriter = new();
     private static readonly IElasticTranscoderWrapper ElasticTranscoderWrapper = A.Fake<IElasticTranscoderWrapper>();
     private readonly ApiStub apiStub;
+    private readonly string[] timebasedDeliveryChannels = {AssetDeliveryChannels.Timebased};
 
     public TimebasedIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
     {
@@ -80,7 +81,8 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         
         var origin = $"{apiStub.Address}/{type}";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
-            imageOptimisationPolicy: $"{type}-max", mediaType: $"{type}/mpeg", family: AssetFamily.Timebased);
+            imageOptimisationPolicy: $"{type}-max", mediaType: $"{type}/mpeg", family: AssetFamily.Timebased,
+            deliveryChannels: timebasedDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
         var message = new IngestAssetRequest(asset, DateTime.UtcNow);
@@ -133,7 +135,8 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         
         var origin = $"{apiStub.Address}/{type}";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
-            imageOptimisationPolicy: $"{type}-max", mediaType: $"{type}/mpeg", family: AssetFamily.Timebased);
+            imageOptimisationPolicy: $"{type}-max", mediaType: $"{type}/mpeg", family: AssetFamily.Timebased,
+            deliveryChannels: timebasedDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
         var message = new IngestAssetRequest(asset, DateTime.UtcNow);

@@ -3,6 +3,7 @@ using System;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    partial class DlcsContextModelSnapshot : ModelSnapshot
+    [Migration("20221124122150_Image gains delivery-channel")]
+    partial class Imagegainsdeliverychannel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -493,9 +495,6 @@ namespace DLCS.Repository.Migrations
                     b.Property<bool>("Optimised")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Regex")
                         .IsRequired()
                         .HasMaxLength(1000)
@@ -593,24 +592,6 @@ namespace DLCS.Repository.Migrations
                     b.HasKey("Id", "Customer");
 
                     b.ToTable("ImageOptimisationPolicies");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "none",
-                            Customer = 1,
-                            Global = true,
-                            Name = "No optimisation/transcoding",
-                            TechnicalDetails = "no-op"
-                        },
-                        new
-                        {
-                            Id = "use-original",
-                            Customer = 1,
-                            Global = true,
-                            Name = "Use original for image-server",
-                            TechnicalDetails = "use-original"
-                        });
                 });
 
             modelBuilder.Entity("DLCS.Model.Policies.OriginStrategy", b =>

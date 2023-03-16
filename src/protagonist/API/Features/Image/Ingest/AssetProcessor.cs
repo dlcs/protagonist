@@ -1,6 +1,7 @@
 ﻿using API.Features.Assets;
 using API.Infrastructure.Requests;
 using DLCS.Core;
+using DLCS.Core.Collections;
 using DLCS.Core.Settings;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
@@ -92,12 +93,21 @@ public class AssetProcessor
             }
 
             var updatedAsset = assetPreparationResult.UpdatedAsset!;
-            var requiresEngineNotification =
+            var (requiresEngineNotification, neverCallEngine) =
                 RequiresEngineNotification(updatedAsset, alwaysReingest, assetPreparationResult);
 
+            var preset =
+                settings.IngestDefaults.GetPresets((char)updatedAsset.Family!, updatedAsset.MediaType ?? string.Empty);
+            
             if (existingAsset == null)
             {
-                var imagePolicyChanged = await SelectImageOptimisationPolicy(updatedAsset);
+                var deliveryChannelChanged = SetDeliveryChannel(updatedAsset, preset);
+                if (deliveryChannelChanged)
+                {
+                    requiresEngineNotification = true;
+                }
+                
+                var imagePolicyChanged = await SelectImageOptimisationPolicy(updatedAsset, preset);
                 if (imagePolicyChanged)
                 {
                     // NB the AssetPreparer has already inspected image policy, but this will pick up
@@ -105,7 +115,7 @@ public class AssetProcessor
                     requiresEngineNotification = true;
                 }
 
-                var thumbnailPolicyChanged = await SelectThumbnailPolicy(updatedAsset);
+                var thumbnailPolicyChanged = await SelectThumbnailPolicy(updatedAsset, preset);
                 if (thumbnailPolicyChanged)
                 {
                     // We won't alter the value of requiresEngineNotification
@@ -113,6 +123,9 @@ public class AssetProcessor
                     // This could be a config setting.
                 }
             }
+
+            // If engine is never to be called reset value here regardless of what it was 
+            if (neverCallEngine) requiresEngineNotification = false;
 
             if (requiresEngineNotification)
             {
@@ -153,53 +166,57 @@ public class AssetProcessor
         }
     }
 
-    private static bool RequiresEngineNotification(Asset asset, bool alwaysReingest,
-        AssetPreparationResult assetPreparationResult)
+    private bool SetDeliveryChannel(Asset updatedAsset, IngestPresets preset)
+    {
+        // Creation, set DeliveryChannel to default value for Family, if not already set
+        if (updatedAsset.DeliveryChannel == null)
+        {
+            updatedAsset.DeliveryChannel = preset.DeliveryChannel;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static (bool requiresReingest, bool neverReingest) RequiresEngineNotification(Asset asset, 
+        bool alwaysReingest, AssetPreparationResult assetPreparationResult)
     {
         // A 'File' never results in the engine being called
-        if (asset.Family == AssetFamily.File) return false;
+        if (asset.Family == AssetFamily.File) return (false, true);
         
-        return assetPreparationResult.RequiresReingest || alwaysReingest;
+        return (assetPreparationResult.RequiresReingest || alwaysReingest, false);
     }
 
-    private async Task<bool> SelectThumbnailPolicy(Asset asset)
+    private async Task<bool> SelectThumbnailPolicy(Asset asset, IngestPresets ingestPresets)
     {
-        bool changed = false;
-        if (asset.Family == AssetFamily.Image)
+        bool changed = false; 
+        if (MIMEHelper.IsImage(asset.MediaType) && asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbs))
         {
-            changed = await SetThumbnailPolicy(settings.IngestDefaults.ThumbnailPolicies.Graphics, asset);
-        }
-        else if (asset.Family == AssetFamily.Timebased && asset.MediaType.HasText() && asset.MediaType.Contains("video/"))
-        {
-            changed = await SetThumbnailPolicy(settings.IngestDefaults.ThumbnailPolicies.Video, asset);
+            changed = await SetThumbnailPolicy(ingestPresets.ThumbnailPolicy, asset);
         }
 
         return changed;
     }
 
-    private async Task<bool> SelectImageOptimisationPolicy(Asset asset)
+    private async Task<bool> SelectImageOptimisationPolicy(Asset asset, IngestPresets ingestPresets)
     {
-        bool changed = false;
-        if (asset.Family == AssetFamily.Image)
+        bool changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);;
+
+        if (MIMEHelper.IsImage(asset.MediaType) && (asset.HasDeliveryChannel(AssetDeliveryChannels.Image) ||
+                                                    asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbs)))
         {
-            changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Graphics, asset);
+            changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
         }
-        else if (asset.Family == AssetFamily.Timebased && asset.MediaType.HasText())
+        else if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased) && (MIMEHelper.IsAudio(asset.MediaType) || 
+                                                                               MIMEHelper.IsVideo(asset.MediaType)))
         {
-            if (MIMEHelper.IsVideo(asset.MediaType))
-            {
-                changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Video, asset);
-            }
-            else if (MIMEHelper.IsAudio(asset.MediaType))
-            {
-                changed = await SetImagePolicy(settings.IngestDefaults.ImageOptimisationPolicies.Audio, asset);
-            }
+            changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
         }
 
         return changed;
     }
 
-    private async Task<bool> SetImagePolicy(string key, Asset asset)
+    private async Task<bool> SetImagePolicy(string? defaultKey, Asset asset)
     {
         string? incomingPolicy = asset.ImageOptimisationPolicy;
         ImageOptimisationPolicy? policy = null;
@@ -208,12 +225,12 @@ public class AssetProcessor
             policy = await policyRepository.GetImageOptimisationPolicy(incomingPolicy, asset.Customer);
         }
 
-        if (policy == null)
+        if (policy == null && defaultKey.HasText())
         {
             // The asset doesn't have a valid ImageOptimisationPolicy
             // This is adapted from Deliverator, but there wasn't a way of 
             // taking the policy from the incoming PUT. There now is.
-            var imagePolicy = await policyRepository.GetImageOptimisationPolicy(key, asset.Customer);
+            var imagePolicy = await policyRepository.GetImageOptimisationPolicy(defaultKey, asset.Customer);
             if (imagePolicy != null)
             {
                 asset.ImageOptimisationPolicy = imagePolicy.Id;

@@ -106,4 +106,6 @@ public class MIMEHelper
     public static bool IsAudio(string? mediaType) => mediaType?.StartsWith("audio/") ?? false;
     
     public static bool IsVideo(string? mediaType) => mediaType?.StartsWith("video/") ?? false;
+    
+    public static bool IsImage(string? mediaType) => mediaType?.StartsWith("image/") ?? false;
 }

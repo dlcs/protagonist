@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
@@ -95,6 +96,13 @@ public static class AssetPreparer
             {
                 requiresReingest = true;
             }
+
+            if (updateAsset.DeliveryChannel != null &&
+                !updateAsset.DeliveryChannel.SequenceEqual(existingAsset.DeliveryChannel))
+            {
+                // Changing DeliveryChannel can alter how the image should be processed
+                requiresReingest = true;
+            }
             
             if (updateAsset.ThumbnailPolicy.HasText() && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
             {
@@ -102,8 +110,9 @@ public static class AssetPreparer
                 // However, we can treat a PUT as always triggering reingest, whereas a PATCH does not,
                 // even if they are otherwise equivalent - see CreateOrUpdateImage
             }
-            
-            if (updateAsset.ImageOptimisationPolicy.HasText() && updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
+
+            if (updateAsset.ImageOptimisationPolicy.HasText() &&
+                updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
             {
                 requiresReingest = true; // YES, because we've changed the way this image should be processed
             }
@@ -145,6 +154,18 @@ public static class AssetPreparer
             // to modify an asset marked NotForDelivery.
             return AssetPreparationResult.Failure("Cannot use API to modify a NotForDelivery asset.");
             // However, this DOES allow the *creation* of a NotForDelivery asset.
+        }
+
+        if (!updateAsset.DeliveryChannel.IsNullOrEmpty())
+        {
+            foreach (var dc in updateAsset.DeliveryChannel)
+            {
+                if (!AssetDeliveryChannels.All.Contains(dc))
+                {
+                    return AssetPreparationResult.Failure(
+                        $"'{dc}' is an invalid deliveryChannel. Valid values are: {AssetDeliveryChannels.AllString}.");
+                }
+            }
         }
         
         if (allowNonApiUpdates == false)
@@ -280,6 +301,7 @@ public static class AssetPreparer
             ThumbnailPolicy = string.Empty,
             InitialOrigin = string.Empty,
             Family = AssetFamily.Image,
+            DeliveryChannel = null,
             MediaType = "unknown"
         };
     }

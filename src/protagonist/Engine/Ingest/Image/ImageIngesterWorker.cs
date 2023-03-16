@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
+using DLCS.Core.FileSystem;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
-using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
 using Engine.Ingest.Image.Completion;
 using Engine.Ingest.Persistence;
@@ -10,80 +10,77 @@ using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest.Image;
 
-public class ImageIngesterWorker : IAssetIngesterWorker
+public class ImageIngesterWorker : IAssetIngesterWorker, IAssetIngesterPostProcess
 {
     private readonly EngineSettings engineSettings;
     private readonly IImageProcessor imageProcessor;
-    private readonly IImageIngestorCompletion imageCompletion;
+    private readonly IOrchestratorClient orchestratorClient;
+    private readonly IFileSystem fileSystem;
     private readonly ILogger<ImageIngesterWorker> logger;
     private readonly IAssetToDisk assetToDisk;
 
     public ImageIngesterWorker(
         IAssetToDisk assetToDisk,
         IImageProcessor imageProcessor,
-        IImageIngestorCompletion imageCompletion,
+        IOrchestratorClient orchestratorClient,
+        IFileSystem fileSystem,
         IOptionsMonitor<EngineSettings> engineOptions,
         ILogger<ImageIngesterWorker> logger)
     {
         this.assetToDisk = assetToDisk;
         engineSettings = engineOptions.CurrentValue;
         this.imageProcessor = imageProcessor;
-        this.imageCompletion = imageCompletion;
+        this.orchestratorClient = orchestratorClient;
+        this.fileSystem = fileSystem;
         this.logger = logger;
     }
 
     /// <summary>
-    /// <see cref="IAssetIngesterWorker"/> for ingesting Image assets (Family = I).
+    /// <see cref="IAssetIngesterWorker"/> for ingesting Image assets, with mediaType = image/* + channel iiif-img or
+    /// thumbs
     /// </summary>
-    public async Task<IngestResultStatus> Ingest(IngestAssetRequest ingestAssetRequest,
+    public async Task<IngestResultStatus> Ingest(IngestionContext ingestionContext,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
         bool ingestSuccess;
-        string? sourceTemplate = null;
-        var context = new IngestionContext(ingestAssetRequest.Asset);
-        
+        var asset = ingestionContext.Asset;
+        var sourceTemplate = GetSourceTemplate(asset);
+
         try
         {
-            sourceTemplate = GetSourceTemplate(ingestAssetRequest.Asset);
             var stopwatch = Stopwatch.StartNew();
             var assetOnDisk = await assetToDisk.CopyAssetToLocalDisk(
-                ingestAssetRequest.Asset, 
-                sourceTemplate, 
-                !SkipStoragePolicyCheck(ingestAssetRequest.Asset.Customer),
+                asset,
+                sourceTemplate,
+                !SkipStoragePolicyCheck(asset.Customer),
                 customerOriginStrategy,
                 cancellationToken);
             stopwatch.Stop();
-            logger.LogDebug("Copied image asset {AssetId} in {Elapsed}ms using {OriginStrategy}", 
-                ingestAssetRequest.Asset.Id, stopwatch.ElapsedMilliseconds, customerOriginStrategy.Strategy);
-            
+            logger.LogDebug("Copied image asset {AssetId} in {Elapsed}ms using {OriginStrategy}",
+                asset.Id, stopwatch.ElapsedMilliseconds, customerOriginStrategy.Strategy);
+
             if (assetOnDisk.FileExceedsAllowance)
             {
-                ingestAssetRequest.Asset.Error = "StoragePolicy size limit exceeded";
-                await imageCompletion.CompleteIngestion(context, false, sourceTemplate);
+                asset.Error = "StoragePolicy size limit exceeded";
                 return IngestResultStatus.StorageLimitExceeded;
             }
 
-            context.WithAssetFromOrigin(assetOnDisk);
+            ingestionContext.WithAssetFromOrigin(assetOnDisk);
 
-            ingestSuccess = await imageProcessor.ProcessImage(context);
+            ingestSuccess = await imageProcessor.ProcessImage(ingestionContext);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error ingesting image {AssetId}", ingestAssetRequest.Asset.Id);
+            logger.LogError(ex, "Error ingesting image {AssetId}", asset.Id);
             ingestSuccess = false;
-            context.Asset.Error = ex.Message;
+            asset.Error = ex.Message;
+        }
+        finally
+        {
+            fileSystem.DeleteDirectory(sourceTemplate, true);
         }
 
-        try
-        {
-            var completionSuccess = await imageCompletion.CompleteIngestion(context, ingestSuccess, sourceTemplate);
-            return ingestSuccess && completionSuccess ? IngestResultStatus.Success : IngestResultStatus.Failed;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error completing {AssetId}", ingestAssetRequest.Asset.Id);
-            return IngestResultStatus.Failed;
-        }
+        return ingestSuccess ? IngestResultStatus.Success : IngestResultStatus.Failed;
     }
 
     private string GetSourceTemplate(Asset asset)
@@ -101,5 +98,27 @@ public class ImageIngesterWorker : IAssetIngesterWorker
     {
         var customerSpecific = engineSettings.GetCustomerSettings(customerId);
         return customerSpecific.NoStoragePolicyCheck;
+    }
+
+    public async Task PostIngest(IngestionContext ingestionContext, bool ingestSuccessful)
+    {
+        try
+        {
+            if (!ingestSuccessful) return;
+
+            if (!ShouldOrchestrate(ingestionContext.Asset.Customer)) return;
+
+            await orchestratorClient.TriggerOrchestration(ingestionContext.AssetId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error completing {AssetId}", ingestionContext.Asset.Id);
+        }
+    }
+
+    private bool ShouldOrchestrate(int customerId)
+    {
+        var customerSpecific = engineSettings.GetCustomerSettings(customerId);
+        return customerSpecific.OrchestrateImageAfterIngest ?? engineSettings.ImageIngest.OrchestrateImageAfterIngest;
     }
 }

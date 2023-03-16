@@ -14,7 +14,7 @@ namespace Engine.Ingest.Persistence;
 public interface IAssetToS3
 {
     /// <summary>
-    /// Copy asset from Origin to S3 bucket.
+    /// Copy asset from Origin to S3 for ingest by media transcoder.
     /// Configuration determines if this is a direct S3-S3 copy, or S3-disk-S3.
     /// </summary>
     /// <param name="asset"><see cref="Asset"/> to be copied</param>

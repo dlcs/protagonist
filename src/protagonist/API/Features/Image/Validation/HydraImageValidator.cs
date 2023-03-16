@@ -1,7 +1,8 @@
 ﻿using DLCS.Core;
-using DLCS.HydraModel;
+using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using FluentValidation;
+using AssetFamily = DLCS.HydraModel.AssetFamily;
 
 namespace API.Features.Image.Validation;
 
@@ -63,5 +64,8 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .Must(mediaType => MIMEHelper.IsVideo(mediaType) || MIMEHelper.IsAudio(mediaType))
             .When(a => a.Family == AssetFamily.Timebased)
             .WithMessage("Timebased assets must have mediaType starting video/ or audio/");
+        RuleForEach(a => a.DeliveryChannel)
+            .Must(dc => AssetDeliveryChannels.All.Contains(dc))
+            .WithMessage($"DeliveryChannel must be one of {AssetDeliveryChannels.AllString}");
     }
 }

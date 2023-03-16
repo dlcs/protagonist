@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using DLCS.Model.Assets;
 using FluentAssertions;
 using Xunit;
@@ -218,4 +219,60 @@ public class AssetPreparerTests
         // Assert
         result.RequiresReingest.Should().Be(requiresReingest);
     }
+
+    [Theory]
+    [MemberData(nameof(DeliveryChannels))]
+    public void PrepareAssetForUpsert_RequiresReingest_IfDeliveryChannelChanged(string[] existing, string[] update,
+        string reason)
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "https://whatever", DeliveryChannel = update };
+        var existingAsset = new Asset { Origin = "https://whatever", DeliveryChannel = existing };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+
+        // Assert
+        result.RequiresReingest.Should().BeTrue(reason);
+    }
+    
+    [Theory]
+    [MemberData(nameof(DeliveryChannels))]
+    public void PrepareAssetForUpsert_DoesNotRequiresReingest_IfDeliveryChannelUnchanged(string[] existing, string[] _,
+        string __)
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "https://whatever", DeliveryChannel = existing };
+        var existingAsset = new Asset { Origin = "https://whatever", DeliveryChannel = existing };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+
+        // Assert
+        result.RequiresReingest.Should().BeFalse();
+    }
+
+    public static IEnumerable<object[]> DeliveryChannels => new List<object[]>
+    {
+        new object[]
+        {
+            Array.Empty<string>(), new[] { "iiif-img" }, "set"
+        },
+        new object[]
+        {
+            new[] { "iiif-av" }, Array.Empty<string>(), "unset"
+        },
+        new object[]
+        {
+            new[] { "file" }, new[] { "iiif-img" }, "single change"
+        },
+        new object[]
+        {
+            new[] { "iiif-img" }, new[] { "file", "iiif-img" }, "add new channel"
+        },
+        new object[]
+        {
+            new[] { "file", "iiif-av" }, new[] { "iiif-av" }, "remove channel"
+        }
+    };
 }

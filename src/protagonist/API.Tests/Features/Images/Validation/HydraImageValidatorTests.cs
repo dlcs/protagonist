@@ -186,4 +186,32 @@ public class HydraImageValidatorTests
         var result = sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.Family);
     }
+    
+    [Fact]
+    public void DeliveryChannel_CanBeEmpty()
+    {
+        var model = new DLCS.HydraModel.Image();
+        var result = sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannel);
+    }
+    
+    [Theory]
+    [InlineData("file")]
+    [InlineData("iiif-av")]
+    [InlineData("iiif-img")]
+    [InlineData("file,iiif-av,iiif-img")]
+    public void DeliveryChannel_CanContainKnownValues(string knownValues)
+    {
+        var model = new DLCS.HydraModel.Image { DeliveryChannel = knownValues.Split(',') };
+        var result = sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannel);
+    }
+    
+    [Fact]
+    public void DeliveryChannel_UnkonwValue()
+    {
+        var model = new DLCS.HydraModel.Image { DeliveryChannel = new[] { "foo" } };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.DeliveryChannel);
+    }
 }
