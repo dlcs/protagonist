@@ -59,7 +59,7 @@ public class AssetToS3Tests
         };
 
         A.CallTo(() => bucketWriter.CopyLargeObject(A<ObjectInBucket>._, A<ObjectInBucket>._,
-                A<Func<long, Task<bool>>>._, false, A<CancellationToken>._))
+                A<Func<long, Task<bool>>>._, false, A<string?>._, A<CancellationToken>._))
             .Returns(new LargeObjectCopyResult(LargeObjectStatus.Success, 100));
 
         var ct = new CancellationToken();
@@ -71,7 +71,7 @@ public class AssetToS3Tests
         A.CallTo(() => bucketWriter.CopyLargeObject(
                 A<ObjectInBucket>.That.Matches(o => o.ToString() == "origin:::large_file.mov"),
                 A<ObjectInBucket>.That.Matches(o => o.ToString() == "fantasy:::test-key"),
-                A<Func<long, Task<bool>>>._, false, ct))
+                A<Func<long, Task<bool>>>._, false, A<string?>._, ct))
             .MustHaveHappened();
     }
 
@@ -93,7 +93,7 @@ public class AssetToS3Tests
         };
 
         A.CallTo(() => bucketWriter.CopyLargeObject(A<ObjectInBucket>._, A<ObjectInBucket>._,
-                A<Func<long, Task<bool>>>._, false, A<CancellationToken>._))
+                A<Func<long, Task<bool>>>._, false, A<string?>._, A<CancellationToken>._))
             .Returns(new LargeObjectCopyResult(LargeObjectStatus.Success, assetSize));
 
         var expected = new AssetFromOrigin(asset.Id, assetSize, "s3://fantasy/test-key", mediaType);
@@ -125,7 +125,7 @@ public class AssetToS3Tests
         };
 
         A.CallTo(() => bucketWriter.CopyLargeObject(A<ObjectInBucket>._, A<ObjectInBucket>._,
-                A<Func<long, Task<bool>>>._, false, A<CancellationToken>._))
+                A<Func<long, Task<bool>>>._, false, A<string?>._, A<CancellationToken>._))
             .Returns(new LargeObjectCopyResult(LargeObjectStatus.FileTooLarge, assetSize));
 
         var expected = new AssetFromOrigin(asset.Id, assetSize, "s3://fantasy/test-key", mediaType);
@@ -159,7 +159,7 @@ public class AssetToS3Tests
         };
 
         A.CallTo(() => bucketWriter.CopyLargeObject(A<ObjectInBucket>._, A<ObjectInBucket>._,
-                A<Func<long, Task<bool>>>._, false, A<CancellationToken>._))
+                A<Func<long, Task<bool>>>._, false, A<string?>._, A<CancellationToken>._))
             .Returns(new LargeObjectCopyResult(status));
 
         var ct = new CancellationToken();
