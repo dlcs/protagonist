@@ -7,7 +7,7 @@ namespace DLCS.Core;
 /// </summary>
 public static class DlcsPathHelpers
 {
-    private static readonly Regex DoubleSlashRegex = new(@"\/\/+", RegexOptions.Compiled);
+    private static readonly Regex DoubleSlashRegex = new(@"(?<!http[s]?:)\/\/+", RegexOptions.Compiled);
 
     /// <summary>
     /// Replace known slugs in DLCS path template.
