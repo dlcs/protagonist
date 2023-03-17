@@ -36,11 +36,6 @@ public class WorkerBuilder : IWorkerBuilder
             workers.Add(worker);
         }
 
-        if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
-        {
-            AddProcessor(serviceProvider.GetRequiredService<FileChannelWorker>());
-        }
-
         if (MIMEHelper.IsImage(asset.MediaType))
         {
             if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
@@ -54,6 +49,11 @@ public class WorkerBuilder : IWorkerBuilder
             {
                 AddProcessor(serviceProvider.GetRequiredService<TimebasedIngesterWorker>());
             }
+        }
+        
+        if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
+        {
+            AddProcessor(serviceProvider.GetRequiredService<FileChannelWorker>());
         }
 
         if (logger.IsEnabled(LogLevel.Trace))

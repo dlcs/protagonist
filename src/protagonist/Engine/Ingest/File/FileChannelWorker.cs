@@ -1,35 +1,108 @@
-﻿using DLCS.Model.Assets;
+﻿using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using Engine.Ingest.Persistence;
+using Engine.Settings;
+using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest.File;
 
+/// <summary>
+/// <see cref="IAssetIngester"/> implementation for handling "file" delivery-channel
+/// </summary>
 public class FileChannelWorker : IAssetIngesterWorker
 {
     private readonly IAssetToS3 assetToS3;
+    private readonly IStorageKeyGenerator storageKeyGenerator;
+    private readonly ILogger<FileChannelWorker> logger;
+    private readonly EngineSettings engineSettings;
 
-    public FileChannelWorker(IAssetToS3 assetToS3)
+    public FileChannelWorker(
+        IAssetToS3 assetToS3,
+        IOptionsMonitor<EngineSettings> engineOptions,
+        IStorageKeyGenerator storageKeyGenerator,
+        ILogger<FileChannelWorker> logger)
     {
         this.assetToS3 = assetToS3;
+        engineSettings = engineOptions.CurrentValue;
+        this.storageKeyGenerator = storageKeyGenerator;
+        this.logger = logger;
     }
     
     public async Task<IngestResultStatus> Ingest(IngestionContext ingestionContext,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
-        if (ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.File))
+        var asset = ingestionContext.Asset;
+
+        try
         {
-            // S3 to S3 copy
-            // Check storage limits
-            // method like - assetToS3.CopyAssetToTranscodeInput()
-            // May need to be called last of all executors, and aware of whether Image was uploaded to S3.
-            // Update ImageStorage value if storing
-            // Also, aware of Optimised origin.
+            if (customerOriginStrategy.Optimised)
+            {
+                logger.LogDebug("Asset {Asset} is at optimised origin, no 'file' handling required",
+                    ingestionContext.AssetId);
+                return IngestResultStatus.Success;
+            }
+
+            if (HasFileAlreadyBeenCopied(ingestionContext, out var targetStorageLocation))
+            {
+                logger.LogDebug("Asset {Asset} has already been uploaded to {S3Location}, no 'file' handling required",
+                    ingestionContext.AssetId, targetStorageLocation);
+                return IngestResultStatus.Success;
+            }
+
+            var assetInBucket = await assetToS3.CopyOriginToStorage(targetStorageLocation,
+                asset,
+                !SkipStoragePolicyCheck(asset.Customer),
+                customerOriginStrategy,
+                cancellationToken);
+            ingestionContext.WithAssetFromOrigin(assetInBucket);
+            
+            if (assetInBucket.FileExceedsAllowance)
+            {
+                asset.Error = "StoragePolicy size limit exceeded";
+                return IngestResultStatus.StorageLimitExceeded;
+            }
+
+            UpdateImageStorage(ingestionContext, asset, assetInBucket);
+            return IngestResultStatus.Success;
         }
-        else
+        catch (Exception ex)
         {
-            // Delete the possible S3 location, knowing it might be a noop
+            logger.LogError(ex, "Error ingesting asset {AssetId} for file channel", asset.Id);
+            asset.Error = ex.Message;
+            return IngestResultStatus.Failed;
+        }
+    }
+
+    private static void UpdateImageStorage(IngestionContext ingestionContext, Asset asset, AssetFromOrigin assetInBucket)
+    {
+        if (ingestionContext.ImageStorage == null)
+        {
+            var imageStorage = new ImageStorage
+            {
+                Id = asset.Id,
+                Customer = asset.Customer,
+                Space = asset.Space,
+            };
+
+            ingestionContext.WithStorage(imageStorage);
         }
 
-        throw new NotImplementedException();
+        ingestionContext.ImageStorage!.Size += assetInBucket.AssetSize;
+        ingestionContext.ImageStorage.LastChecked = DateTime.UtcNow;
+    }
+
+    private bool HasFileAlreadyBeenCopied(IngestionContext ingestionContext, out RegionalisedObjectInBucket targetStorageLocation)
+    {
+        targetStorageLocation = storageKeyGenerator.GetStoredOriginalLocation(ingestionContext.AssetId);
+        var exists = ingestionContext.UploadedKeys.Contains(targetStorageLocation);
+        return exists;
+    }
+    
+    private bool SkipStoragePolicyCheck(int customerId)
+    {
+        var customerSpecific = engineSettings.GetCustomerSettings(customerId);
+        return customerSpecific.NoStoragePolicyCheck;
     }
 }

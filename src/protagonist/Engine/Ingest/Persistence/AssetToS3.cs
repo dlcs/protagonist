@@ -22,7 +22,21 @@ public interface IAssetToS3
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
+    [Obsolete("Use CopyAssetToStorage and provide destination key")]
     Task<AssetFromOrigin> CopyAssetToTranscodeInput(Asset asset, bool verifySize,
+        CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Copy asset from Origin to DLCS storage.
+    /// Configuration determines if this is a direct S3-S3 copy, or S3-disk-S3.
+    /// </summary>
+    /// <param name="destination"><see cref="ObjectInBucket"/> where file is to copied to</param>
+    /// <param name="asset"><see cref="Asset"/> to be copied</param>
+    /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
+    /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
+    Task<AssetFromOrigin> CopyOriginToStorage(ObjectInBucket destination, Asset asset, bool verifySize,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default);
 }
 
@@ -64,11 +78,16 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    public async Task<AssetFromOrigin> CopyAssetToTranscodeInput(Asset asset, bool verifySize,
+    public Task<AssetFromOrigin> CopyAssetToTranscodeInput(Asset asset, bool verifySize,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
         var destination = storageKeyGenerator.GetTimebasedInputLocation(asset.Id);
-
+        return CopyOriginToStorage(destination, asset, verifySize, customerOriginStrategy, cancellationToken);
+    }
+    
+    public async Task<AssetFromOrigin> CopyOriginToStorage(ObjectInBucket destination, Asset asset, bool verifySize,
+        CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
+    {
         if (ShouldCopyBucketToBucket(asset, customerOriginStrategy))
         {
             // We have direct bucket access so can copy directly using SDK
@@ -79,7 +98,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
         return await IndirectCopyBucketToBucket(asset, destination, verifySize, customerOriginStrategy,
             cancellationToken);
     }
-    
+
     private bool ShouldCopyBucketToBucket(Asset asset, CustomerOriginStrategy customerOriginStrategy)
     {
         // TODO - FullBucketAccess for entire customer isn't granular enough

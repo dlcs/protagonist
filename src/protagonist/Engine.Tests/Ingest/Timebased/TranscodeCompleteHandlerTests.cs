@@ -44,7 +44,7 @@ public class TranscodeCompleteHandlerTests
         const string fileName = "ElasticTranscoderNotification.json";
         var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Samples", fileName);
 
-        var json = await File.ReadAllTextAsync(filePath);
+        var json = await System.IO.File.ReadAllTextAsync(filePath);
         json = json.Replace("dlcsId", "__");
         var queueMessage = new QueueMessage
         {
@@ -67,7 +67,7 @@ public class TranscodeCompleteHandlerTests
 
         var queueMessage = new QueueMessage
         {
-            Body = JsonObject.Parse(File.OpenRead(filePath)).AsObject()
+            Body = JsonObject.Parse(System.IO.File.OpenRead(filePath)).AsObject()
         };
         var cancellationToken = CancellationToken.None;
 
@@ -96,7 +96,7 @@ public class TranscodeCompleteHandlerTests
 
         var queueMessage = new QueueMessage
         {
-            Body = JsonObject.Parse(File.OpenRead(filePath)).AsObject()
+            Body = JsonObject.Parse(System.IO.File.OpenRead(filePath)).AsObject()
         };
         var cancellationToken = CancellationToken.None;
 
