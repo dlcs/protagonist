@@ -1,4 +1,5 @@
-﻿using DLCS.AWS.S3;
+﻿using System.Diagnostics;
+using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
@@ -13,19 +14,6 @@ namespace Engine.Ingest.Persistence;
 
 public interface IAssetToS3
 {
-    /// <summary>
-    /// Copy asset from Origin to S3 for ingest by media transcoder.
-    /// Configuration determines if this is a direct S3-S3 copy, or S3-disk-S3.
-    /// </summary>
-    /// <param name="asset"><see cref="Asset"/> to be copied</param>
-    /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
-    /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
-    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
-    /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    [Obsolete("Use CopyAssetToStorage and provide destination key")]
-    Task<AssetFromOrigin> CopyAssetToTranscodeInput(Asset asset, bool verifySize,
-        CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default);
-
     /// <summary>
     /// Copy asset from Origin to DLCS storage.
     /// Configuration determines if this is a direct S3-S3 copy, or S3-disk-S3.
@@ -47,7 +35,6 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
 {
     private readonly IAssetToDisk assetToDisk;
     private readonly IBucketWriter bucketWriter;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IFileSystem fileSystem;
     private readonly EngineSettings engineSettings;
     private readonly ILogger<AssetToS3> logger;
@@ -57,7 +44,6 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
         IOptionsMonitor<EngineSettings> engineSettings,
         IStorageRepository storageRepository,
         IBucketWriter bucketWriter, 
-        IStorageKeyGenerator storageKeyGenerator,
         IFileSystem fileSystem,
         ILogger<AssetToS3> logger) : base(storageRepository)
     {
@@ -65,30 +51,25 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
         this.engineSettings = engineSettings.CurrentValue;
         this.logger = logger;
         this.bucketWriter = bucketWriter;
-        this.storageKeyGenerator = storageKeyGenerator;
         this.fileSystem = fileSystem;
-    }
-    
-    /// <summary>
-    /// Copy asset from Origin to S3 bucket.
-    /// Configuration determines if this is a direct S3-S3 copy, or S3-disk-S3.
-    /// </summary>
-    /// <param name="asset"><see cref="Asset"/> to be copied</param>
-    /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
-    /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
-    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
-    /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    public Task<AssetFromOrigin> CopyAssetToTranscodeInput(Asset asset, bool verifySize,
-        CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
-    {
-        var destination = storageKeyGenerator.GetTimebasedInputLocation(asset.Id);
-        return CopyOriginToStorage(destination, asset, verifySize, customerOriginStrategy, cancellationToken);
     }
     
     public async Task<AssetFromOrigin> CopyOriginToStorage(ObjectInBucket destination, Asset asset, bool verifySize,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
-        if (ShouldCopyBucketToBucket(asset, customerOriginStrategy))
+        var stopwatch = Stopwatch.StartNew();
+        var copyResult = await DoCopy(destination, asset, verifySize, customerOriginStrategy, cancellationToken);
+        stopwatch.Stop();
+        logger.LogDebug("Copied asset {AssetId} in {Elapsed}ms using {OriginStrategy}", 
+            asset.Id, stopwatch.ElapsedMilliseconds, customerOriginStrategy.Strategy);
+        
+        return copyResult;
+    }
+
+    private async Task<AssetFromOrigin> DoCopy(ObjectInBucket destination, Asset asset, bool verifySize,
+        CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken)
+    {
+        if (ShouldCopyBucketToBucket(customerOriginStrategy))
         {
             // We have direct bucket access so can copy directly using SDK
             return await CopyBucketToBucket(asset, destination, verifySize, cancellationToken);
@@ -99,12 +80,8 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
             cancellationToken);
     }
 
-    private bool ShouldCopyBucketToBucket(Asset asset, CustomerOriginStrategy customerOriginStrategy)
-    {
-        // TODO - FullBucketAccess for entire customer isn't granular enough
-        var customerOverride =  engineSettings.GetCustomerSettings(asset.Customer);
-        return customerOverride.FullBucketAccess && customerOriginStrategy.Strategy == OriginStrategyType.S3Ambient;
-    }
+    private bool ShouldCopyBucketToBucket(CustomerOriginStrategy customerOriginStrategy)
+        => customerOriginStrategy is { Strategy: OriginStrategyType.S3Ambient, Optimised: true };
 
     private async Task<AssetFromOrigin> CopyBucketToBucket(Asset asset, ObjectInBucket destination, bool verifySize,
         CancellationToken cancellationToken)

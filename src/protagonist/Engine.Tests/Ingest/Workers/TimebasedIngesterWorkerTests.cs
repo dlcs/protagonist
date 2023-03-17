@@ -1,4 +1,6 @@
-﻿using DLCS.Core.Types;
+﻿using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using Engine.Ingest;
@@ -16,6 +18,7 @@ public class TimebasedIngesterWorkerTests
 {
     private readonly IAssetToS3 assetToS3;
     private readonly IMediaTranscoder mediaTranscoder;
+    private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly EngineSettings engineSettings;
     private readonly TimebasedIngesterWorker sut;
 
@@ -23,11 +26,12 @@ public class TimebasedIngesterWorkerTests
     {
         assetToS3 = A.Fake<IAssetToS3>();
         mediaTranscoder = A.Fake<IMediaTranscoder>();
+        storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
         engineSettings = new EngineSettings();
         
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
 
-        sut = new TimebasedIngesterWorker(assetToS3, optionsMonitor, mediaTranscoder,
+        sut = new TimebasedIngesterWorker(assetToS3, optionsMonitor, mediaTranscoder, storageKeyGenerator,
             NullLogger<TimebasedIngesterWorker>.Instance);
     }
 
@@ -37,7 +41,7 @@ public class TimebasedIngesterWorkerTests
         // Arrange
         var asset = new Asset(AssetId.FromString("2/1/shallow"));
         A.CallTo(() =>
-                assetToS3.CopyAssetToTranscodeInput(A<Asset>._, true, A<CustomerOriginStrategy>._,
+                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, true, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
             .ThrowsAsync(new Exception());
 
@@ -61,17 +65,16 @@ public class TimebasedIngesterWorkerTests
             NoStoragePolicyCheck = noStoragePolicyCheck
         });
         var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
-        A.CallTo(() => assetToS3.CopyAssetToTranscodeInput(A<Asset>._, A<bool>._, A<CustomerOriginStrategy>._,
-                A<CancellationToken>._))
-            .Returns(assetFromOrigin);
+        A.CallTo(() => assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, A<bool>._,
+            A<CustomerOriginStrategy>._, A<CancellationToken>._)).Returns(assetFromOrigin);
 
         // Act
         await sut.Ingest(new IngestionContext(asset), new CustomerOriginStrategy());
 
         // Assert
         A.CallTo(() =>
-                assetToS3.CopyAssetToTranscodeInput(A<Asset>._, !noStoragePolicyCheck, A<CustomerOriginStrategy>._,
-                    A<CancellationToken>._))
+            assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, !noStoragePolicyCheck,
+                A<CustomerOriginStrategy>._, A<CancellationToken>._))
             .MustHaveHappened();
     }
     
@@ -83,7 +86,7 @@ public class TimebasedIngesterWorkerTests
         var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
         assetFromOrigin.FileTooLarge();
         A.CallTo(() =>
-            assetToS3.CopyAssetToTranscodeInput(A<Asset>._, A<bool>._, A<CustomerOriginStrategy>._,
+            assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, A<bool>._, A<CustomerOriginStrategy>._,
                 A<CancellationToken>._))
             .Returns(assetFromOrigin);
 
@@ -101,7 +104,7 @@ public class TimebasedIngesterWorkerTests
         var asset = new Asset(AssetId.FromString("2/1/remurdered"));
 
         A.CallTo(() =>
-                assetToS3.CopyAssetToTranscodeInput(A<Asset>._, A<bool>._, A<CustomerOriginStrategy>._,
+                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, A<bool>._, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
             .Returns(new AssetFromOrigin(asset.Id, 13, "target", "application/json"));
 

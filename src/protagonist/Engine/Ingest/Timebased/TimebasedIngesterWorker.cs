@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+﻿using DLCS.AWS.S3;
 using DLCS.Model.Customers;
 using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased.Transcode;
@@ -14,6 +14,7 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
 {
     private readonly IAssetToS3 assetToS3;
     private readonly IMediaTranscoder mediaTranscoder;
+    private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly EngineSettings engineSettings;
     private readonly ILogger<TimebasedIngesterWorker> logger;
 
@@ -21,9 +22,11 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
         IAssetToS3 assetToS3,
         IOptionsMonitor<EngineSettings> engineOptions,
         IMediaTranscoder mediaTranscoder,
+        IStorageKeyGenerator storageKeyGenerator,
         ILogger<TimebasedIngesterWorker> logger)
     {
         this.mediaTranscoder = mediaTranscoder;
+        this.storageKeyGenerator = storageKeyGenerator;
         this.assetToS3 = assetToS3;
         engineSettings = engineOptions.CurrentValue;
         this.logger = logger;
@@ -36,14 +39,12 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
         
         try
         {
-            var stopwatch = Stopwatch.StartNew();
-            var assetInBucket = await assetToS3.CopyAssetToTranscodeInput(asset,
+            var targetStorageLocation = storageKeyGenerator.GetTimebasedInputLocation(asset.Id);
+            var assetInBucket = await assetToS3.CopyOriginToStorage(
+                targetStorageLocation,
+                asset,
                 !SkipStoragePolicyCheck(asset.Customer),
                 customerOriginStrategy, cancellationToken);
-            stopwatch.Stop();
-            logger.LogDebug("Copied timebased asset {AssetId} in {Elapsed}ms using {OriginStrategy}", 
-                asset.Id, stopwatch.ElapsedMilliseconds, customerOriginStrategy.Strategy);
-            
             ingestionContext.WithAssetFromOrigin(assetInBucket);
 
             if (assetInBucket.FileExceedsAllowance)
