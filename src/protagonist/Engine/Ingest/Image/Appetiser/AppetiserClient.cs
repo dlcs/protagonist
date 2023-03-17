@@ -90,13 +90,6 @@ public class AppetiserClient : IImageProcessor
     private async Task<AppetiserResponseModel> CallImageProcessor(IngestionContext context,
         ImageProcessorFlags processorFlags)
     {
-        if (processorFlags is { NeedThumbs: false, OriginIsImageServerReady: true })
-        {
-            logger.LogDebug("Asset {AssetId} does not need thumbs and is image-server ready, no processing to do",
-                context.AssetId);
-            return new AppetiserResponseModel();
-        }
-        
         // call tizer/appetiser
         var requestModel = CreateModel(context, processorFlags);
 
@@ -138,8 +131,7 @@ public class AppetiserClient : IImageProcessor
             JobId = Guid.NewGuid().ToString(),
             ThumbDir = TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.ThumbsTemplate,
                 context.AssetId, root: engineSettings.ImageIngest.GetRoot(true)),
-            // HACK - Appetiser expects to generate thumbs so default to a single 100px thumb
-            ThumbSizes = processorFlags.NeedThumbs ? asset.FullThumbnailPolicy.SizeList : new[] { 100 }
+            ThumbSizes = asset.FullThumbnailPolicy.SizeList
         };
 
         return requestModel;
@@ -197,14 +189,6 @@ public class AppetiserClient : IImageProcessor
         var asset = context.Asset;
         var imageLocation = new ImageLocation { Id = asset.Id, Nas = string.Empty };
         
-        if (!processorFlags.NeedTileOptimised)
-        {
-            logger.LogDebug("Asset {AssetId} not available on image channel, no further image processing required",
-                asset.Id);
-            imageLocation.S3 = string.Empty;
-            return imageLocation;
-        }
-
         var imageIngestSettings = engineSettings.ImageIngest!;
         
         if (!processorFlags.SaveInDlcsStorage)
@@ -244,8 +228,6 @@ public class AppetiserClient : IImageProcessor
     private async Task CreateNewThumbs(IngestionContext context, AppetiserResponseModel responseModel,
         ImageProcessorFlags processorFlags)
     {
-        if (!processorFlags.NeedThumbs) return;
-        
         SetThumbsOnDiskLocation(context, responseModel);
 
         await thumbCreator.CreateNewThumbs(context.Asset, responseModel.Thumbs.ToList());
@@ -272,11 +254,8 @@ public class AppetiserClient : IImageProcessor
         var storedImageSize = processorFlags.SaveInDlcsStorage
             ? fileSystem.GetFileSize(processorFlags.ImageServerFilePath)
             : 0L;
-
-        // If thumbs are not required, size = 0
-        var thumbSizes = processorFlags.NeedThumbs
-            ? responseModel.Thumbs.Sum(t => fileSystem.GetFileSize(t.Path))
-            : 0L;
+        
+        var thumbSizes = responseModel.Thumbs.Sum(t => fileSystem.GetFileSize(t.Path));
 
         return new ImageStorage
         {
@@ -292,18 +271,8 @@ public class AppetiserClient : IImageProcessor
     public class ImageProcessorFlags
     {
         /// <summary>
-        /// Flag for whether we have to generate thumbs. For /thumbs/ delivery channel
-        /// </summary>
-        public bool NeedThumbs { get; }
-
-        /// <summary>
-        /// Flag for whether we have to generate tile-optimised JP2. For /iiif-img/ delivery channel
-        /// </summary>
-        public bool NeedTileOptimised { get; }
-        
-        /// <summary>
-        /// Flag for whether we have to generate derivatives only.
-        /// Requires a tile-optimised source image - doesn't mean "generate thumbs only". 
+        /// Flag for whether we have to generate derivatives (ie thumbs) only.
+        /// Requires a tile-optimised source image.
         /// </summary>
         /// <remarks>
         /// This differs from OriginIsImageServerReady because the image must be image-server ready AND also be a
@@ -336,9 +305,6 @@ public class AppetiserClient : IImageProcessor
             var assetFromOrigin =
                 ingestionContext.AssetFromOrigin.ThrowIfNull(nameof(ingestionContext.AssetFromOrigin))!;
 
-            NeedThumbs = ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbs);
-            NeedTileOptimised = ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image);
-
             OriginIsImageServerReady = ingestionContext.Asset.FullImageOptimisationPolicy.IsUseOriginal();
             ImageServerFilePath = OriginIsImageServerReady ? ingestionContext.AssetFromOrigin.Location : jp2OutputPath;
             
@@ -346,10 +312,8 @@ public class AppetiserClient : IImageProcessor
             var isJp2 = assetFromOrigin.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
             GenerateDerivativesOnly = OriginIsImageServerReady && isJp2;
 
-            // Save in DLCS unless the image is image-server ready AND the strategy is optimised. Will only happen
-            // if image delivery-channel available 
-            SaveInDlcsStorage = NeedTileOptimised &&
-                                !(OriginIsImageServerReady && assetFromOrigin.CustomerOriginStrategy.Optimised);
+            // Save in DLCS unless the image is image-server ready AND the strategy is optimised 
+            SaveInDlcsStorage = !(OriginIsImageServerReady && assetFromOrigin.CustomerOriginStrategy.Optimised);
         }
     }
 }

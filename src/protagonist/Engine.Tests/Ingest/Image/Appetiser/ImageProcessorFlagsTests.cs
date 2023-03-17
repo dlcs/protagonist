@@ -39,8 +39,6 @@ public class ImageProcessorFlagsTests
         flags.GenerateDerivativesOnly.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeTrue();
-        flags.NeedThumbs.Should().BeTrue();
-        flags.NeedTileOptimised.Should().BeTrue();
         flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
 
@@ -60,50 +58,6 @@ public class ImageProcessorFlagsTests
         flags.GenerateDerivativesOnly.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeTrue();
-        flags.NeedThumbs.Should().BeTrue();
-        flags.NeedTileOptimised.Should().BeTrue();
-        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
-    }
-    
-    [Theory]
-    [InlineData("image/jpeg")]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    public void Ctor_DoNotUseOriginal_Optimised_ThumbsOnly(string mediaType)
-    {
-        // Arrange
-        var context = GetContext(false, true, mediaType, new[] { "thumbs" });
-        
-        // Act
-        var flags = new AppetiserClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
-        
-        // Asset
-        flags.GenerateDerivativesOnly.Should().BeFalse();
-        flags.OriginIsImageServerReady.Should().BeFalse();
-        flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.NeedThumbs.Should().BeTrue();
-        flags.NeedTileOptimised.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
-    }
-    
-    [Theory]
-    [InlineData("image/jpeg")]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    public void Ctor_DoNotUseOriginal_Optimised_ImageOnly(string mediaType)
-    {
-        // Arrange
-        var context = GetContext(false, true, mediaType, new[] { "iiif-img" });
-        
-        // Act
-        var flags = new AppetiserClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
-        
-        // Asset
-        flags.GenerateDerivativesOnly.Should().BeFalse();
-        flags.OriginIsImageServerReady.Should().BeFalse();
-        flags.SaveInDlcsStorage.Should().BeTrue();
-        flags.NeedThumbs.Should().BeFalse();
-        flags.NeedTileOptimised.Should().BeTrue();
         flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
 
@@ -122,47 +76,7 @@ public class ImageProcessorFlagsTests
         flags.GenerateDerivativesOnly.Should().BeTrue();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeTrue();
-        flags.NeedThumbs.Should().BeTrue();
-        flags.NeedTileOptimised.Should().BeTrue();
         flags.ImageServerFilePath.Should().Be("/path/to/original");
-    }
-    
-    [Theory]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    [InlineData("image/jpeg")]
-    public void Ctor_UseOriginal_NotOptimised_ThumbsOnly(string mediaType)
-    {
-        // Arrange
-        var context = GetContext(true, false, mediaType, new[] { "thumbs" });
-        
-        // Act
-        var flags = new AppetiserClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
-        
-        // Asset
-        flags.OriginIsImageServerReady.Should().BeTrue();
-        flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.NeedThumbs.Should().BeTrue();
-        flags.NeedTileOptimised.Should().BeFalse();
-    }
-    
-    [Theory]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    [InlineData("image/jpeg")]
-    public void Ctor_UseOriginal_NotOptimised_ImageOnly(string mediaType)
-    {
-        // Arrange
-        var context = GetContext(true, false, mediaType, new[] { "iiif-img" });
-        
-        // Act
-        var flags = new AppetiserClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
-        
-        // Asset
-        flags.OriginIsImageServerReady.Should().BeTrue();
-        flags.SaveInDlcsStorage.Should().BeTrue();
-        flags.NeedThumbs.Should().BeFalse();
-        flags.NeedTileOptimised.Should().BeTrue();
     }
     
     [Theory]
@@ -179,8 +93,6 @@ public class ImageProcessorFlagsTests
         flags.GenerateDerivativesOnly.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeTrue();
-        flags.NeedThumbs.Should().BeTrue();
-        flags.NeedTileOptimised.Should().BeTrue();
         flags.ImageServerFilePath.Should().Be("/path/to/original");
     }
 
@@ -199,8 +111,6 @@ public class ImageProcessorFlagsTests
         flags.GenerateDerivativesOnly.Should().BeTrue();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.NeedThumbs.Should().BeTrue();
-        flags.NeedTileOptimised.Should().BeTrue();
         flags.ImageServerFilePath.Should().Be("/path/to/original");
     }
     
@@ -218,57 +128,14 @@ public class ImageProcessorFlagsTests
         flags.GenerateDerivativesOnly.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.NeedThumbs.Should().BeTrue();
-        flags.NeedTileOptimised.Should().BeTrue();
         flags.ImageServerFilePath.Should().Be("/path/to/original");
     }
     
-    [Theory]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    [InlineData("image/jpeg")]
-    public void Ctor_UseOriginal_Optimised_ThumbsOnly(string mediaType)
+    private IngestionContext GetContext(bool useOriginal, bool isOptimised, string mediaType = "image/jpeg")
     {
-        // Arrange
-        var context = GetContext(true, true, mediaType, new[] { "thumbs" });
-        
-        // Act
-        var flags = new AppetiserClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
-        
-        // Asset
-        flags.OriginIsImageServerReady.Should().BeTrue();
-        flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.NeedThumbs.Should().BeTrue();
-        flags.NeedTileOptimised.Should().BeFalse();
-    }
-    
-    [Theory]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    [InlineData("image/jpeg")]
-    public void Ctor_UseOriginal_Optimised_ImageOnly(string mediaType)
-    {
-        // Arrange
-        var context = GetContext(true, true, mediaType, new[] { "iiif-img" });
-        
-        // Act
-        var flags = new AppetiserClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
-        
-        // Asset
-        flags.OriginIsImageServerReady.Should().BeTrue();
-        flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.NeedThumbs.Should().BeFalse();
-        flags.NeedTileOptimised.Should().BeTrue();
-    }
-
-    private IngestionContext GetContext(bool useOriginal, bool isOptimised, string mediaType = "image/jpeg",
-        string[]? deliveryChannels = null)
-    {
-        deliveryChannels ??= new[] { "iiif-img", "thumbs" };
-
         var asset = new Asset(new AssetId(1, 2, "foo"))
             {
-                DeliveryChannel = deliveryChannels
+                DeliveryChannel = new[] { "iiif-img" }
             }
             .WithImageOptimisationPolicy(new ImageOptimisationPolicy
             {

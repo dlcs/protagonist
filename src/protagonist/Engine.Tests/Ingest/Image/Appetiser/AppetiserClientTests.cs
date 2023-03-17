@@ -94,32 +94,6 @@ public class AppetiserClientTests
         result.Should().BeFalse();
         context.Asset.Should().NotBeNull();
     }
-    
-    [Fact]
-    public async Task ProcessImage_ThumbsChannelOnly()
-    {
-        // Arrange
-        var imageProcessorResponse = new AppetiserResponseModel
-        {
-            Height = 1000,
-            Width = 5000,
-            Thumbs = new ImageOnDisk[] { new() { Path = "foo" }, new() { Path = "bar" } }
-        };
-        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
-            HttpStatusCode.OK);
-        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-        httpHandler.SetResponse(response);
-        
-        var context = GetIngestionContext(deliveryChannel: new[] { AssetDeliveryChannels.Thumbs });
-        context.AssetFromOrigin.Location = "/file/on/disk";
-
-        AppetiserRequestModel? requestModel = null;
-        httpHandler.RegisterCallback(async message =>
-        {
-            requestModel = await message.Content.ReadAsAsync<AppetiserRequestModel>();
-        });
-        A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(100);
-    }
 
     [Theory]
     [InlineData("image/jp2")]
@@ -192,44 +166,6 @@ public class AppetiserClientTests
         // Assert
         context.Asset.Height.Should().Be(imageProcessorResponse.Height);
         context.Asset.Width.Should().Be(imageProcessorResponse.Width);
-    }
-
-    [Fact]
-    public async Task ProcessImage_ImageChannelOnly()
-    {
-        // Arrange
-        var imageProcessorResponse = new AppetiserResponseModel
-        {
-            Height = 1000,
-            Width = 5000,
-            Thumbs = new ImageOnDisk[] { new() { Path = "foo" }, new() { Path = "bar" } }
-        };
-        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
-            HttpStatusCode.OK);
-        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-        httpHandler.SetResponse(response);
-        
-        var context = GetIngestionContext(deliveryChannel: new[] { AssetDeliveryChannels.Image });
-        context.AssetFromOrigin.Location = "/file/on/disk";
-
-        AppetiserRequestModel? requestModel = null;
-        httpHandler.RegisterCallback(async message =>
-        {
-            requestModel = await message.Content.ReadAsAsync<AppetiserRequestModel>();
-        });
-        A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(100);
-
-        // Act
-        await sut.ProcessImage(context);
-
-        // Assert
-        requestModel.Operation.Should().Be("ingest");
-        A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
-            .MustNotHaveHappened();
-        context.ImageStorage.ThumbnailSize.Should().Be(0, "Thumbs not saved");
-        context.ImageStorage.Size.Should().Be(100, "JP2 written to S3");
-        context.Asset.Height.Should().Be(imageProcessorResponse.Height, "JP2 generated");
-        context.Asset.Width.Should().Be(imageProcessorResponse.Width, "JP2 generated");
     }
 
     [Theory]
@@ -353,7 +289,7 @@ public class AppetiserClientTests
     [Theory]
     [InlineData("image/jp2")]
     [InlineData("image/jpx")]
-    public async Task ProcessImage_BothChannels_UseOriginal(string originContentType)
+    public async Task ProcessImage_UseOriginal(string originContentType)
     {
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel
@@ -395,49 +331,10 @@ public class AppetiserClientTests
     }
     
     [Theory]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    public async Task ProcessImage_ImageChannelOnly_UseOriginal_OptimisedOrigin(string originContentType)
-    {
-        // Arrange
-        var imageProcessorResponse = new AppetiserResponseModel
-        {
-            Height = 1000,
-            Width = 5000,
-            Thumbs = new ImageOnDisk[] { new() { Path = "foo" }, new() { Path = "bar" } }
-        };
-        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
-            HttpStatusCode.OK);
-        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-        httpHandler.SetResponse(response);
-
-        var context = GetIngestionContext(contentType: originContentType,
-            deliveryChannel: new[] { AssetDeliveryChannels.Image },
-            cos: new CustomerOriginStrategy { Optimised = true, Strategy = OriginStrategyType.S3Ambient },
-            imageOptimisationPolicy: "use-original");
-        context.AssetFromOrigin.Location = "/file/on/disk";
-        context.Asset.Origin = "s3://origin/2/1/foo-bar";
-        A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(100);
-
-        // Act
-        await sut.ProcessImage(context);
-
-        // Assert
-        httpHandler.CallsMade.Should().BeEmpty("Thumbs not required, origin already tile-optimised");
-        A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
-            .MustNotHaveHappened();
-        context.ImageStorage.ThumbnailSize.Should().Be(0, "Thumbs not saved");
-        context.ImageStorage.Size.Should().Be(0, "JP2 not written to S3");
-        bucketWriter.Operations.Should().BeEmpty("JP2 not written to S3");
-        context.Asset.Height.Should().NotBe(imageProcessorResponse.Height, "JP2 not generated");
-        context.Asset.Width.Should().NotBe(imageProcessorResponse.Width, "JP2 not generated");
-    }
-
-    [Theory]
     [InlineData("image/jp2", true, OriginStrategyType.BasicHttp)]
     [InlineData("image/jp2", false, OriginStrategyType.S3Ambient)]
     [InlineData("image/tiff", true, OriginStrategyType.S3Ambient)]
-    public async Task ProcessImage_BothChannels_AndNotJp2OptimisedOrigin(string originContentType, bool optimised,
+    public async Task ProcessImage_NotJp2_OptimisedOrigin(string originContentType, bool optimised,
         OriginStrategyType strategyType)
     {
         // Arrange
@@ -479,14 +376,14 @@ public class AppetiserClientTests
     }    
 
     private static IngestionContext GetIngestionContext(string assetId = "/1/2/something",
-        string contentType = "image/jpg", string[]? deliveryChannel = null, CustomerOriginStrategy? cos = null,
+        string contentType = "image/jpg", CustomerOriginStrategy? cos = null,
         string imageOptimisationPolicy = "fast-high", bool optimised = false)
     {
-        deliveryChannel ??= new[] { AssetDeliveryChannels.Image, AssetDeliveryChannels.Thumbs };
         cos ??= new CustomerOriginStrategy { Strategy = OriginStrategyType.Default, Optimised = optimised };
         var asset = new Asset
         {
-            Id = AssetId.FromString(assetId), Customer = 1, Space = 2, DeliveryChannel = deliveryChannel, MediaType = contentType
+            Id = AssetId.FromString(assetId), Customer = 1, Space = 2,
+            DeliveryChannel = new[] { AssetDeliveryChannels.Image }, MediaType = contentType
         };
 
         asset

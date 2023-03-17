@@ -37,7 +37,6 @@ public class AssetDeliveryChannelsTests
     [InlineData(AssetDeliveryChannels.File)]
     [InlineData(AssetDeliveryChannels.Image)]
     [InlineData(AssetDeliveryChannels.Timebased)]
-    [InlineData(AssetDeliveryChannels.Thumbs)]
     public void HasDeliveryChannel_True(string channel)
     {
         var asset = new Asset { DeliveryChannel = AssetDeliveryChannels.All };
@@ -75,7 +74,6 @@ public class AssetDeliveryChannelsTests
     [InlineData(AssetDeliveryChannels.File)]
     [InlineData(AssetDeliveryChannels.Image)]
     [InlineData(AssetDeliveryChannels.Timebased)]
-    [InlineData(AssetDeliveryChannels.Thumbs)]
     public void HasSingleDeliveryChannel_False_IfContainsButNotSingle(string channel)
     {
         var asset = new Asset { DeliveryChannel = AssetDeliveryChannels.All };
@@ -87,7 +85,6 @@ public class AssetDeliveryChannelsTests
     [InlineData(AssetDeliveryChannels.File)]
     [InlineData(AssetDeliveryChannels.Image)]
     [InlineData(AssetDeliveryChannels.Timebased)]
-    [InlineData(AssetDeliveryChannels.Thumbs)]
     public void HasSingleDeliveryChannel_True(string channel)
     {
         var asset = new Asset { DeliveryChannel = new[]{channel} };

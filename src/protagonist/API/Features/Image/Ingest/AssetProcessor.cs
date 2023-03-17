@@ -190,7 +190,7 @@ public class AssetProcessor
     private async Task<bool> SelectThumbnailPolicy(Asset asset, IngestPresets ingestPresets)
     {
         bool changed = false; 
-        if (MIMEHelper.IsImage(asset.MediaType) && asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbs))
+        if (MIMEHelper.IsImage(asset.MediaType))
         {
             changed = await SetThumbnailPolicy(ingestPresets.ThumbnailPolicy, asset);
         }
@@ -202,8 +202,7 @@ public class AssetProcessor
     {
         bool changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);;
 
-        if (MIMEHelper.IsImage(asset.MediaType) && (asset.HasDeliveryChannel(AssetDeliveryChannels.Image) ||
-                                                    asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbs)))
+        if (MIMEHelper.IsImage(asset.MediaType) && asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
         {
             changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
         }

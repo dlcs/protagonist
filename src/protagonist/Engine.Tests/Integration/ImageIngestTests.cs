@@ -33,7 +33,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsContext dbContext;
     private static readonly TestBucketWriter BucketWriter = new();
     private readonly ApiStub apiStub;
-    private readonly string[] imageDeliveryChannels = {AssetDeliveryChannels.Image, AssetDeliveryChannels.Thumbs};
+    private readonly string[] imageDeliveryChannels = { AssetDeliveryChannels.Image };
 
     public ImageIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
     {
