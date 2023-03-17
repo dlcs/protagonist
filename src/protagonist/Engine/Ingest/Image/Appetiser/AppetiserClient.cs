@@ -218,6 +218,7 @@ public class AppetiserClient : IImageProcessor
             throw new ApplicationException(
                 $"Failed to write image-server file {imageServerFile} to storage bucket with content-type {contentType}");
         }
+        context.UploadedKeys.Add(targetStorageLocation);
 
         imageLocation.S3 = storageKeyGenerator
             .GetS3Uri(targetStorageLocation, imageIngestSettings.IncludeRegionInS3Uri)

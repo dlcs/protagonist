@@ -1,3 +1,4 @@
+using DLCS.AWS.S3.Models;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -13,11 +14,14 @@ public class IngestionContext
     public Asset Asset { get; }
     
     public AssetId AssetId { get; }
+    
     public AssetFromOrigin? AssetFromOrigin { get; private set; }
         
     public ImageLocation? ImageLocation { get; private set; }
         
     public ImageStorage? ImageStorage { get; private set; }
+
+    public List<ObjectInBucket> UploadedKeys { get; } = new();
     
     public IngestionContext(Asset asset)
     {
