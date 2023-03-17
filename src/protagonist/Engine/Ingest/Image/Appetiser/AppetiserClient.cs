@@ -9,7 +9,6 @@ using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using DLCS.Model.Templates;
 using DLCS.Web.Requests;
-using Engine.Ingest.Persistence;
 using Engine.Settings;
 using Microsoft.Extensions.Options;
 
@@ -88,14 +87,16 @@ public class AppetiserClient : IImageProcessor
         return (dest, thumb);
     }
 
-    // If image is 'use-original' AND a JPEG2000, only generate derivatives (ie thumbs)
-    private static bool IsDerivativesOnly(AssetFromOrigin? assetFromOrigin, Asset asset)
-        => asset.FullImageOptimisationPolicy.IsUseOriginal() &&
-           assetFromOrigin?.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
-
     private async Task<AppetiserResponseModel> CallImageProcessor(IngestionContext context,
         ImageProcessorFlags processorFlags)
     {
+        if (processorFlags is { NeedThumbs: false, OriginIsImageServerReady: true })
+        {
+            logger.LogDebug("Asset {AssetId} does not need thumbs and is image-server ready, no processing to do",
+                context.AssetId);
+            return new AppetiserResponseModel();
+        }
+        
         // call tizer/appetiser
         var requestModel = CreateModel(context, processorFlags);
 

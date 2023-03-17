@@ -52,6 +52,9 @@ public class AppetiserClientTests
         A.CallTo(() => storageKeyGenerator.GetStorageLocation(A<AssetId>._))
             .ReturnsLazily((AssetId assetId) =>
                 new RegionalisedObjectInBucket("appetiser-test", assetId.ToString(), "Fake-Region"));
+        A.CallTo(() => storageKeyGenerator.GetStoredOriginalLocation(A<AssetId>._))
+            .ReturnsLazily((AssetId assetId) =>
+                new RegionalisedObjectInBucket("appetiser-test", $"{assetId}/original", "Fake-Region"));
 
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
 
@@ -283,7 +286,10 @@ public class AppetiserClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        bucketWriter.ShouldHaveKey("1/2/test").WithFilePath(locationOnDisk).WithContentType("image/jpg");
+        bucketWriter
+            .ShouldHaveKey("1/2/test/original")
+            .WithFilePath(locationOnDisk)
+            .WithContentType("image/jpg");
     }
 
     [Fact]
@@ -347,7 +353,7 @@ public class AppetiserClientTests
     [Theory]
     [InlineData("image/jp2")]
     [InlineData("image/jpx")]
-    public async Task ProcessImage_BothChannels_JP2OptimisedOrigin(string originContentType)
+    public async Task ProcessImage_BothChannels_UseOriginal(string originContentType)
     {
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel
@@ -362,7 +368,8 @@ public class AppetiserClientTests
         httpHandler.SetResponse(response);
 
         var context = GetIngestionContext(contentType: originContentType,
-            cos: new CustomerOriginStrategy { Optimised = true, Strategy = OriginStrategyType.S3Ambient });
+            cos: new CustomerOriginStrategy { Optimised = true, Strategy = OriginStrategyType.S3Ambient },
+            imageOptimisationPolicy: "use-original");
         context.AssetFromOrigin.Location = "/file/on/disk";
         context.Asset.Origin = "s3://origin/2/1/foo-bar";
 
@@ -390,7 +397,7 @@ public class AppetiserClientTests
     [Theory]
     [InlineData("image/jp2")]
     [InlineData("image/jpx")]
-    public async Task ProcessImage_ImageChannelOnly_JP2OptimisedOrigin(string originContentType)
+    public async Task ProcessImage_ImageChannelOnly_UseOriginal_OptimisedOrigin(string originContentType)
     {
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel
@@ -406,7 +413,8 @@ public class AppetiserClientTests
 
         var context = GetIngestionContext(contentType: originContentType,
             deliveryChannel: new[] { AssetDeliveryChannels.Image },
-            cos: new CustomerOriginStrategy { Optimised = true, Strategy = OriginStrategyType.S3Ambient });
+            cos: new CustomerOriginStrategy { Optimised = true, Strategy = OriginStrategyType.S3Ambient },
+            imageOptimisationPolicy: "use-original");
         context.AssetFromOrigin.Location = "/file/on/disk";
         context.Asset.Origin = "s3://origin/2/1/foo-bar";
         A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(100);
