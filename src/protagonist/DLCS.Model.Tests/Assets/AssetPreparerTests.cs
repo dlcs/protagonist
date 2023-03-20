@@ -237,6 +237,42 @@ public class AssetPreparerTests
         // Assert
         result.RequiresReingest.Should().BeTrue(reason);
     }
+
+    [Theory]
+    [InlineData("file", AssetFamily.File)]
+    [InlineData("file,iiif-img", AssetFamily.Image)]
+    [InlineData("iiif-img", AssetFamily.Image)]
+    [InlineData("file,iiif-av", AssetFamily.Timebased)]
+    [InlineData("iiif-av", AssetFamily.Timebased)]
+    public void PrepareAssetForUpsert_SetsAssetFamilyIfNotSet(string dc, AssetFamily expected)
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "required", DeliveryChannel = dc.Split(",") };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
+
+        // Assert
+        result.UpdatedAsset.Family.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData("file", AssetFamily.Timebased)]
+    [InlineData("file,iiif-img", AssetFamily.Timebased)]
+    [InlineData("iiif-img", AssetFamily.Timebased)]
+    [InlineData("file,iiif-av", AssetFamily.Image)]
+    [InlineData("iiif-av", AssetFamily.Image)]
+    public void PrepareAssetForUpsert_DoesNotChangeAssetFamilyIfSet(string dc, AssetFamily current)
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "required", DeliveryChannel = dc.Split(","), Family = current};
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
+
+        // Assert
+        result.UpdatedAsset.Family.Should().Be(current);
+    }
     
     [Theory]
     [MemberData(nameof(DeliveryChannels))]

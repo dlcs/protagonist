@@ -124,6 +124,7 @@ public static class AssetPreparer
         {
             // Creation of new asset - the DB record is what's been submitted with any NULLs replaced by default
             workingAsset.DefaultNullProperties(DefaultAsset);
+            EnsureAssetFamily(workingAsset);
         }
         else
         {
@@ -134,12 +135,6 @@ public static class AssetPreparer
         if (requiresReingest && workingAsset.Origin.IsNullOrEmpty())
         {
             return AssetPreparationResult.Failure("Asset Origin must be supplied.");
-        }
-
-        // 'File' family assets are never ingested so default back to false regardless of value
-        if (workingAsset.Family == AssetFamily.File)
-        {
-            requiresReingest = false;
         }
 
         return AssetPreparationResult.Succeed(workingAsset, requiresReingest);
@@ -271,6 +266,28 @@ public static class AssetPreparer
         return null;
     }
 
+    private static void EnsureAssetFamily(Asset workingAsset)
+    {
+        if (workingAsset.Family != null) return;
+
+        if (workingAsset.HasSingleDeliveryChannel(AssetDeliveryChannels.File))
+        {
+            workingAsset.Family = AssetFamily.File;
+            return;
+        }
+
+        if (workingAsset.HasDeliveryChannel(AssetDeliveryChannels.Image))
+        {
+            workingAsset.Family = AssetFamily.Image;
+            return;
+        }
+
+        if (workingAsset.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
+        {
+            workingAsset.Family = AssetFamily.Timebased;
+        }
+    }
+
     static AssetPreparer()
     {
         // While our Asset object allows nulls, the DB Image row does not (apart from Finished).
@@ -302,7 +319,6 @@ public static class AssetPreparer
             ImageOptimisationPolicy = string.Empty,
             ThumbnailPolicy = string.Empty,
             InitialOrigin = string.Empty,
-            Family = AssetFamily.Image,
             DeliveryChannel = null,
             MediaType = "unknown"
         };
