@@ -198,12 +198,14 @@ public static class AssetPreparer
         // If we have an existing Asset and we are not allowed nonApiUpdates
         if (existingAsset != null && allowNonApiUpdates == false)
         {
-            bool isNoOpPolicy = KnownImageOptimisationPolicy.IsNoOpIdentifier(existingAsset.ImageOptimisationPolicy);
+            // Allow updating dimensions if _existing_ channel is "file" only as these won't have been set by
+            // an automated process
+            var isFileOnly = existingAsset.DeliveryChannel.ContainsOnly(AssetDeliveryChannels.File);
             
             if (updateAsset.Width.HasValue && updateAsset.Width != 0 && updateAsset.Width != existingAsset.Width)
             {
-                // if it's a policy other than "none" or it is an audio asset then this isn't valid
-                if (!isNoOpPolicy || MIMEHelper.IsAudio(existingAsset.MediaType))
+                // if it's a delivery-channel "file" or it is an audio asset then this isn't valid
+                if (!isFileOnly || MIMEHelper.IsAudio(existingAsset.MediaType))
                 {
                     return AssetPreparationResult.Failure("Width cannot be edited.");
                 }
@@ -211,8 +213,8 @@ public static class AssetPreparer
 
             if (updateAsset.Height.HasValue && updateAsset.Height != 0 && updateAsset.Height != existingAsset.Height)
             {
-                // if it's a policy other than "none" or it is an audio asset then this isn't valid
-                if (!isNoOpPolicy || MIMEHelper.IsAudio(existingAsset.MediaType))
+                // if it's a delivery-channel "file" or it is an audio asset then this isn't valid
+                if (!isFileOnly || MIMEHelper.IsAudio(existingAsset.MediaType))
                 {
                     return AssetPreparationResult.Failure("Height cannot be edited.");
                 }
@@ -221,8 +223,8 @@ public static class AssetPreparer
             if (updateAsset.Duration.HasValue && updateAsset.Duration != 0 &&
                 updateAsset.Duration != existingAsset.Duration)
             {
-                // if it's a policy other than "none" or family other than Timebased then isn't valid
-                if (!isNoOpPolicy || existingAsset.Family != AssetFamily.Timebased)
+                // if it's a delivery-channel "file" or non audio or video mediaType then isn't valid
+                if (!isFileOnly || !(MIMEHelper.IsAudio(existingAsset.MediaType) || MIMEHelper.IsVideo(existingAsset.MediaType)))
                 {
                     return AssetPreparationResult.Failure("Duration cannot be edited.");
                 }

@@ -48,14 +48,16 @@ public class AssetPreparerTests
     }
 
     [Theory]
-    [InlineData(AssetFamily.File, "none")]
-    [InlineData(AssetFamily.Timebased, "foo")]
-    [InlineData(AssetFamily.Image, "none")]
-    public void PrepareAssetForUpsert_CannotUpdateDuration_IfNotTimebased_AndNonePolicy(AssetFamily family, string iop)
+    [InlineData("file,iiif-av", "audio/mp4")]
+    [InlineData("iiif-av", "audio/mp4")]
+    [InlineData("file,iiif-av", "video/mp4")]
+    [InlineData("iiif-av", "video/mp4")]
+    [InlineData("file", "image/jpeg")]
+    public void PrepareAssetForUpsert_CannotUpdateDuration_IfNotFileChannel_AndNotAudioOrVideo(string dc, string mediaType)
     {
         // Arrange
         var updateAsset = new Asset { Duration = 100 };
-        var existingAsset = new Asset { ImageOptimisationPolicy = iop, Family = family, Duration = 99 };
+        var existingAsset = new Asset { MediaType = mediaType, DeliveryChannel = dc.Split(","), Duration = 99 };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
@@ -65,15 +67,14 @@ public class AssetPreparerTests
         result.ErrorMessage.Should().Be("Duration cannot be edited.");
     }
     
-    [Fact]
-    public void PrepareAssetForUpsert_CanUpdateDuration_IfNonePolicy_AndTimebased()
+    [Theory]
+    [InlineData("audio/mp4")]
+    [InlineData("video/mp4")]
+    public void PrepareAssetForUpsert_CanUpdateDuration_IfFileChannel_AndAudioOrVideo(string mediaType)
     {
         // Arrange
         var updateAsset = new Asset { Duration = 100 };
-        var existingAsset = new Asset
-        {
-            ImageOptimisationPolicy = "none", Family = AssetFamily.Timebased, Duration = 99
-        };
+        var existingAsset = new Asset { MediaType = mediaType, DeliveryChannel = new[] { "file" }, Duration = 99 };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
@@ -83,15 +84,19 @@ public class AssetPreparerTests
     }
     
     [Theory]
-    [InlineData("application/pdf", "foo")]
-    [InlineData("audio/mp4", "none")]
-    [InlineData("image/tiff", "foo")]
-    [InlineData("video/mp4", "foo")]
-    public void PrepareAssetForUpsert_CannotUpdateWidth_IfAudio_OrNonePolicy(string mediaType, string iop)
+    [InlineData("audio/mp4", "file")]
+    [InlineData("image/tiff", "file,iiif-img")]
+    [InlineData("image/tiff", "iiif-img")]
+    [InlineData("video/mp4", "file,iiif-av")]
+    [InlineData("video/mp4", "iiif-av")]
+    public void PrepareAssetForUpsert_CannotUpdateWidth_IfNotFileChannel_AndAudio(string mediaType, string dc)
     {
         // Arrange
         var updateAsset = new Asset { Width = 100 };
-        var existingAsset = new Asset { ImageOptimisationPolicy = iop, MediaType = mediaType, Width = 99 };
+        var existingAsset = new Asset
+        {
+            DeliveryChannel = dc.Split(","), MediaType = mediaType, Width = 99
+        };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
@@ -102,14 +107,14 @@ public class AssetPreparerTests
     }
     
     [Theory]
-    [InlineData("application/pdf")]
-    [InlineData("video/mp4")]
-    [InlineData("image/tiff")]
-    public void PrepareAssetForUpsert_CanUpdateWidth_IfNonePolicy_AndNotAudio(string mediaType)
+    [InlineData("application/pdf", "file")]
+    [InlineData("video/mp4", "file")]
+    [InlineData("image/tiff", "file")]
+    public void PrepareAssetForUpsert_CanUpdateWidth_IfFileChannel_AndNotAudio(string mediaType, string dc)
     {
         // Arrange
         var updateAsset = new Asset { Width = 100 };
-        var existingAsset = new Asset { ImageOptimisationPolicy = "none", MediaType = mediaType, Width = 99 };
+        var existingAsset = new Asset { DeliveryChannel = dc.Split(","), MediaType = mediaType, Width = 99 };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
@@ -119,15 +124,19 @@ public class AssetPreparerTests
     }
     
     [Theory]
-    [InlineData("application/pdf", "foo")]
-    [InlineData("audio/mp4", "none")]
-    [InlineData("image/tiff", "foo")]
-    [InlineData("video/mp4", "foo")]
-    public void PrepareAssetForUpsert_CannotUpdateHeight_IfAudio_OrNonePolicy(string mediaType, string iop)
+    [InlineData("audio/mp4", "file")]
+    [InlineData("image/tiff", "file,iiif-img")]
+    [InlineData("image/tiff", "iiif-img")]
+    [InlineData("video/mp4", "file,iiif-av")]
+    [InlineData("video/mp4", "iiif-av")]
+    public void PrepareAssetForUpsert_CannotUpdateHeight_IfNotFileChannel_AndAudio(string mediaType, string dc)
     {
         // Arrange
         var updateAsset = new Asset { Height = 100 };
-        var existingAsset = new Asset { ImageOptimisationPolicy = iop, MediaType = mediaType, Height = 99 };
+        var existingAsset = new Asset
+        {
+            DeliveryChannel = dc.Split(","), MediaType = mediaType, Height = 99
+        };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
@@ -138,14 +147,14 @@ public class AssetPreparerTests
     }
     
     [Theory]
-    [InlineData("application/pdf")]
-    [InlineData("video/mp4")]
-    [InlineData("image/tiff")]
-    public void PrepareAssetForUpsert_CanUpdateHeight_IfNonePolicy_AndNotAudio(string mediaType)
+    [InlineData("application/pdf", "file")]
+    [InlineData("video/mp4", "file")]
+    [InlineData("image/tiff", "file")]
+    public void PrepareAssetForUpsert_CanUpdateHeight_IfFileChannel_AndNotAudio(string mediaType, string dc)
     {
         // Arrange
         var updateAsset = new Asset { Height = 100 };
-        var existingAsset = new Asset { ImageOptimisationPolicy = "none", MediaType = mediaType, Height = 99 };
+        var existingAsset = new Asset { DeliveryChannel = dc.Split(","), MediaType = mediaType, Height = 99 };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
@@ -154,21 +163,17 @@ public class AssetPreparerTests
         result.Success.Should().BeTrue();
     }
 
-    [Theory]
-    [InlineData(AssetFamily.File, false)]
-    [InlineData(AssetFamily.Image, true)]
-    [InlineData(AssetFamily.Timebased, true)]
-    public void PrepareAssetForUpsert_CorrectRequiresReingestValue_IfExistingAssetNull_DependingOnFamily(
-        AssetFamily family, bool requiresReingest)
+    [Fact]
+    public void PrepareAssetForUpsert_RequiresReingestTrue_IfExistingAssetNull()
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "https://whatever", Family = family};
+        var updateAsset = new Asset { Origin = "https://whatever" };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
 
         // Assert
-        result.RequiresReingest.Should().Be(requiresReingest);
+        result.RequiresReingest.Should().BeTrue();
     }
 
     [Theory]
@@ -203,21 +208,18 @@ public class AssetPreparerTests
         result.Success.Should().Be(expectedSuccess);
     }
     
-    [Theory]
-    [InlineData(AssetFamily.File, false)]
-    [InlineData(AssetFamily.Image, true)]
-    [InlineData(AssetFamily.Timebased, true)]
-    public void PrepareAssetForUpsert_RequiresReingest_IfOriginUpdated(AssetFamily family, bool requiresReingest)
+    [Fact]
+    public void PrepareAssetForUpsert_RequiresReingest_IfOriginUpdated()
     {
         // Arrange
         var updateAsset = new Asset { Origin = "https://whatever" };
-        var existingAsset = new Asset { Origin = "https://wherever", Family = family };
+        var existingAsset = new Asset { Origin = "https://wherever" };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
         
         // Assert
-        result.RequiresReingest.Should().Be(requiresReingest);
+        result.RequiresReingest.Should().BeTrue();
     }
 
     [Theory]

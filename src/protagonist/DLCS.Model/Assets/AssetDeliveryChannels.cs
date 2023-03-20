@@ -39,5 +39,5 @@ public static class AssetDeliveryChannels
     /// Checks if asset has specified deliveryChannel only (e.g. 1 channel and it matches specified value
     /// </summary>
     public static bool HasSingleDeliveryChannel(this Asset asset, string deliveryChannel) 
-        => asset.HasDeliveryChannel(deliveryChannel) && asset.DeliveryChannel.Length == 1;
+        => asset.DeliveryChannel.ContainsOnly(deliveryChannel);
 }

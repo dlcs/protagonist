@@ -22,6 +22,13 @@ public static class CollectionX
         => collection == null || collection.Count == 0;
 
     /// <summary>
+    /// Check if list contains single specified item
+    /// </summary>
+    /// <returns>true if collection contains only item specified, else false</returns>
+    public static bool ContainsOnly<T>(this IReadOnlyCollection<T>? collection, T item) 
+        => collection is { Count: 1 } && collection.Contains(item);
+
+    /// <summary>
     /// Return a List{T} containing single item.
     /// </summary>
     /// <param name="item">Item to add to list</param>

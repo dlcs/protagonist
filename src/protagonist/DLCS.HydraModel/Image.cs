@@ -199,10 +199,9 @@ public class Image : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 140, PropertyName = "deliveryChannel")]
     public string[]? DeliveryChannel { get; set; }
-   
 
     [RdfProperty(Description = "The role or roles that a user must possess to view this image above maxUnauthorised. " +
-                             "These are URIs of roles e.g., https://api.dlcs.io/customers/1/roles/requiresRegistration",
+                               "These are URIs of roles e.g., https://api.dlcs.io/customers/1/roles/requiresRegistration",
         Range = "vocab:Role", ReadOnly = false, WriteOnly = false, SetManually = true)]
     [JsonProperty(Order = 70, PropertyName = "roles")]
     public string[]? Roles { get; set; }
