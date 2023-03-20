@@ -3,8 +3,6 @@ using DLCS.AWS.S3.Models;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using Engine.Ingest.Persistence;
-using Engine.Settings;
-using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest.File;
 
@@ -14,18 +12,18 @@ namespace Engine.Ingest.File;
 public class FileChannelWorker : IAssetIngesterWorker
 {
     private readonly IAssetToS3 assetToS3;
+    private readonly IAssetIngestorSizeCheck assetIngestorSizeCheck;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly ILogger<FileChannelWorker> logger;
-    private readonly EngineSettings engineSettings;
 
     public FileChannelWorker(
         IAssetToS3 assetToS3,
-        IOptionsMonitor<EngineSettings> engineOptions,
+        IAssetIngestorSizeCheck assetIngestorSizeCheck,
         IStorageKeyGenerator storageKeyGenerator,
         ILogger<FileChannelWorker> logger)
     {
         this.assetToS3 = assetToS3;
-        engineSettings = engineOptions.CurrentValue;
+        this.assetIngestorSizeCheck = assetIngestorSizeCheck;
         this.storageKeyGenerator = storageKeyGenerator;
         this.logger = logger;
     }
@@ -53,14 +51,13 @@ public class FileChannelWorker : IAssetIngesterWorker
 
             var assetInBucket = await assetToS3.CopyOriginToStorage(targetStorageLocation,
                 asset,
-                !SkipStoragePolicyCheck(asset.Customer),
+                !assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer),
                 customerOriginStrategy,
                 cancellationToken);
             ingestionContext.WithAssetFromOrigin(assetInBucket);
             
-            if (assetInBucket.FileExceedsAllowance)
+            if (assetIngestorSizeCheck.DoesAssetFromOriginExceedAllowance(assetInBucket, asset))
             {
-                asset.Error = "StoragePolicy size limit exceeded";
                 return IngestResultStatus.StorageLimitExceeded;
             }
 
@@ -98,11 +95,5 @@ public class FileChannelWorker : IAssetIngesterWorker
         targetStorageLocation = storageKeyGenerator.GetStoredOriginalLocation(ingestionContext.AssetId);
         var exists = ingestionContext.UploadedKeys.Contains(targetStorageLocation);
         return exists;
-    }
-    
-    private bool SkipStoragePolicyCheck(int customerId)
-    {
-        var customerSpecific = engineSettings.GetCustomerSettings(customerId);
-        return customerSpecific.NoStoragePolicyCheck;
     }
 }

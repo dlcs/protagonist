@@ -77,6 +77,7 @@ public static class ServiceCollectionX
     public static IServiceCollection AddAssetIngestion(this IServiceCollection services, EngineSettings engineSettings)
     {
         services
+            .AddSingleton<IAssetIngestorSizeCheck, AppSettingsAssetIngestorSizeCheck>()
             .AddScoped<IAssetIngester, AssetIngester>()
             .AddScoped<TimebasedIngesterWorker>()
             .AddScoped<FileChannelWorker>()

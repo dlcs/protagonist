@@ -6,6 +6,7 @@ using Engine.Ingest.Image;
 using Engine.Ingest.Image.Completion;
 using Engine.Ingest.Persistence;
 using Engine.Settings;
+using Engine.Tests.Ingest.File;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers;
@@ -23,6 +24,7 @@ public class ImageIngesterWorkerTests
 
     public ImageIngesterWorkerTests()
     {
+        var assetIngestorSizeCheck = new HardcodedAssetIngestorSizeCheckBase(54);
         engineSettings = new EngineSettings
         {
             ImageIngest = new ImageIngestSettings
@@ -38,7 +40,7 @@ public class ImageIngesterWorkerTests
         orchestratorClient = A.Fake<IOrchestratorClient>();
 
         sut = new ImageIngesterWorker(assetToDisk, imageProcessor, orchestratorClient, new FakeFileSystem(),
-            optionsMonitor, new NullLogger<ImageIngesterWorker>());
+            optionsMonitor, assetIngestorSizeCheck, new NullLogger<ImageIngesterWorker>());
     }
 
     [Fact]
@@ -59,17 +61,12 @@ public class ImageIngesterWorkerTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Ingest_SetsVerifySizeFlag_DependingOnCustomerOverride(bool noStoragePolicyCheck)
+    [InlineData(54, true)]
+    [InlineData(10, false)]
+    public async Task Ingest_SetsVerifySizeFlag_DependingOnCustomerOverride(int customerId, bool noStoragePolicyCheck)
     {
         // Arrange
-        const int customerId = 54;
         var asset = new Asset(AssetId.FromString($"{customerId}/1/shallow"));
-        engineSettings.CustomerOverrides.Add(customerId.ToString(), new CustomerOverridesSettings
-        {
-            NoStoragePolicyCheck = noStoragePolicyCheck
-        });
         var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
         A.CallTo(() => assetToDisk.CopyAssetToLocalDisk(A<Asset>._, A<string>._, A<bool>._, A<CustomerOriginStrategy>._,
                 A<CancellationToken>._))

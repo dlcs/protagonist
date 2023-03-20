@@ -7,10 +7,9 @@ using Engine.Ingest;
 using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased;
 using Engine.Ingest.Timebased.Transcode;
-using Engine.Settings;
+using Engine.Tests.Ingest.File;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
-using Test.Helpers.Settings;
 
 namespace Engine.Tests.Ingest.Workers;
 
@@ -19,7 +18,6 @@ public class TimebasedIngesterWorkerTests
     private readonly IAssetToS3 assetToS3;
     private readonly IMediaTranscoder mediaTranscoder;
     private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly EngineSettings engineSettings;
     private readonly TimebasedIngesterWorker sut;
 
     public TimebasedIngesterWorkerTests()
@@ -27,11 +25,9 @@ public class TimebasedIngesterWorkerTests
         assetToS3 = A.Fake<IAssetToS3>();
         mediaTranscoder = A.Fake<IMediaTranscoder>();
         storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
-        engineSettings = new EngineSettings();
-        
-        var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
+        var assetIngestorSizeCheck = new HardcodedAssetIngestorSizeCheckBase(54);
 
-        sut = new TimebasedIngesterWorker(assetToS3, optionsMonitor, mediaTranscoder, storageKeyGenerator,
+        sut = new TimebasedIngesterWorker(assetToS3, mediaTranscoder, storageKeyGenerator, assetIngestorSizeCheck,
             NullLogger<TimebasedIngesterWorker>.Instance);
     }
 
@@ -53,17 +49,12 @@ public class TimebasedIngesterWorkerTests
     }
     
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Ingest_SetsVerifySizeFlag_DependingOnCustomerOverride(bool noStoragePolicyCheck)
+    [InlineData(54, true)]
+    [InlineData(10, false)]
+    public async Task Ingest_SetsVerifySizeFlagCorrectly(int customerId, bool noStoragePolicyCheck)
     {
         // Arrange
-        const int customerId = 54;
         var asset = new Asset(AssetId.FromString($"{customerId}/1/shallow"));
-        engineSettings.CustomerOverrides.Add(customerId.ToString(), new CustomerOverridesSettings
-        {
-            NoStoragePolicyCheck = noStoragePolicyCheck
-        });
         var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
         A.CallTo(() => assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, A<bool>._,
             A<CustomerOriginStrategy>._, A<CancellationToken>._)).Returns(assetFromOrigin);

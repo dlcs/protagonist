@@ -16,6 +16,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker, IAssetIngesterPostProce
     private readonly IImageProcessor imageProcessor;
     private readonly IOrchestratorClient orchestratorClient;
     private readonly IFileSystem fileSystem;
+    private readonly IAssetIngestorSizeCheck assetIngestorSizeCheck;
     private readonly ILogger<ImageIngesterWorker> logger;
     private readonly IAssetToDisk assetToDisk;
 
@@ -25,6 +26,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker, IAssetIngesterPostProce
         IOrchestratorClient orchestratorClient,
         IFileSystem fileSystem,
         IOptionsMonitor<EngineSettings> engineOptions,
+        IAssetIngestorSizeCheck assetIngestorSizeCheck,
         ILogger<ImageIngesterWorker> logger)
     {
         this.assetToDisk = assetToDisk;
@@ -32,6 +34,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker, IAssetIngesterPostProce
         this.imageProcessor = imageProcessor;
         this.orchestratorClient = orchestratorClient;
         this.fileSystem = fileSystem;
+        this.assetIngestorSizeCheck = assetIngestorSizeCheck;
         this.logger = logger;
     }
 
@@ -52,16 +55,15 @@ public class ImageIngesterWorker : IAssetIngesterWorker, IAssetIngesterPostProce
             var assetOnDisk = await assetToDisk.CopyAssetToLocalDisk(
                 asset,
                 sourceTemplate,
-                !SkipStoragePolicyCheck(asset.Customer),
+                !assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer),
                 customerOriginStrategy,
                 cancellationToken);
             stopwatch.Stop();
             logger.LogDebug("Copied image asset {AssetId} in {Elapsed}ms using {OriginStrategy}",
                 asset.Id, stopwatch.ElapsedMilliseconds, customerOriginStrategy.Strategy);
 
-            if (assetOnDisk.FileExceedsAllowance)
+            if (assetIngestorSizeCheck.DoesAssetFromOriginExceedAllowance(assetOnDisk, asset))
             {
-                asset.Error = "StoragePolicy size limit exceeded";
                 return IngestResultStatus.StorageLimitExceeded;
             }
 
@@ -92,12 +94,6 @@ public class ImageIngesterWorker : IAssetIngesterWorker, IAssetIngesterPostProce
         var assetId = asset.Id;
         var source = TemplatedFolders.GenerateFolderTemplate(imageIngest.SourceTemplate, assetId, root: root);
         return source;
-    }
-    
-    private bool SkipStoragePolicyCheck(int customerId)
-    {
-        var customerSpecific = engineSettings.GetCustomerSettings(customerId);
-        return customerSpecific.NoStoragePolicyCheck;
     }
 
     public async Task PostIngest(IngestionContext ingestionContext, bool ingestSuccessful)

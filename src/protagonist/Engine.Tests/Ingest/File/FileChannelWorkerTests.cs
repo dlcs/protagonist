@@ -6,10 +6,8 @@ using DLCS.Model.Customers;
 using Engine.Ingest;
 using Engine.Ingest.File;
 using Engine.Ingest.Persistence;
-using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
-using Test.Helpers.Settings;
 
 namespace Engine.Tests.Ingest.File;
 
@@ -21,17 +19,11 @@ public class FileChannelWorkerTests
 
     public FileChannelWorkerTests()
     {
-        var optionsMonitor = OptionsHelpers.GetOptionsMonitor(new EngineSettings
-        {
-            CustomerOverrides = new Dictionary<string, CustomerOverridesSettings>
-            {
-                ["10"] = new() { NoStoragePolicyCheck = true }
-            }
-        });
+        var assetIngestorSizeCheck = new HardcodedAssetIngestorSizeCheckBase(10);
         assetToS3 = A.Fake<IAssetToS3>();
         storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
 
-        sut = new FileChannelWorker(assetToS3, optionsMonitor, storageKeyGenerator,
+        sut = new FileChannelWorker(assetToS3, assetIngestorSizeCheck, storageKeyGenerator,
             new NullLogger<FileChannelWorker>());
     }
 
