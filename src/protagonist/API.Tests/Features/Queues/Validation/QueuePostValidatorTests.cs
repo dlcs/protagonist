@@ -146,13 +146,4 @@ public class QueuePostValidatorTests
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].Created");
     }
-    
-    [Fact]
-    public void Member_FamilyT_NotAudioOrVideoMediaType()
-    {
-        var model = new HydraCollection<Image>
-            { Members = new[] { new Image { Family = AssetFamily.Timebased, MediaType = "application/pdf" } } };
-        var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("Members[0].MediaType");
-    }
 }

@@ -33,10 +33,7 @@ public class AssetToS3Tests
 
         engineSettings = new EngineSettings
         {
-            TimebasedIngest = new TimebasedIngestSettings
-            {
-                SourceTemplate = "{customer}",
-            }
+            DownloadTemplate = "{customer}"
         };
         
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);

@@ -141,6 +141,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
                 return assetOnDisk;
             }
 
+            logger.LogDebug("Copied asset '{AssetId}' to disk, copying to bucket..", asset.Id);
             var success = await bucketWriter.WriteFileToBucket(destination, assetOnDisk.Location,
                 assetOnDisk.ContentType, cancellationToken);
             downloadedFile = assetOnDisk.Location;
@@ -165,8 +166,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
     
     private string GetDestination(AssetId assetId)
     {
-        var diskDestination = TemplatedFolders.GenerateFolderTemplate(engineSettings.TimebasedIngest.SourceTemplate,
-            assetId, root: engineSettings.TimebasedIngest.ProcessingFolder);
+        var diskDestination = TemplatedFolders.GenerateFolderTemplate(engineSettings.DownloadTemplate, assetId);
         fileSystem.CreateDirectory(diskDestination);
         return diskDestination;
     }
