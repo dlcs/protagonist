@@ -222,6 +222,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
   ""family"": ""F"",
   ""mediaType"": ""application/pdf""
 }}";
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
 
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
 
@@ -229,7 +235,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
         
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
         var asset = await dbContext.Images.FindAsync(assetId);
         asset.Id.Should().Be(assetId);
@@ -237,7 +243,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageOptimisationPolicy.Should().BeEmpty();
     }
-
+    
     [Fact]
     public async Task Put_NewTimebasedAsset_Returns500_IfEnqueueFails()
     {

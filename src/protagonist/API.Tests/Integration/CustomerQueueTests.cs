@@ -599,7 +599,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
                 A<IReadOnlyCollection<IngestAssetRequest>>._, false,
-                A<CancellationToken>._)).Returns(2);
+                A<CancellationToken>._)).Returns(3);
         
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var path = $"/customers/{customerId}/queue";
@@ -613,7 +613,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Hydra batch received
         var hydraBatch = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.Batch>();
-        hydraBatch.Completed.Should().Be(1, "File family are automatically completed");
+        hydraBatch.Completed.Should().Be(0);
         hydraBatch.Count.Should().Be(3);
         var batchId = hydraBatch.GetLastPathElementAsInt()!.Value;
         
@@ -624,19 +624,16 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Images exist with Batch set + File marked as complete
         var images = dbContext.Images.Where(i => i.Customer == customerId && i.Space == 2).ToList();
         images.Count.Should().Be(3);
-        images.Should().AllSatisfy(a => a.Batch.Should().Be(batchId));
-        images.Where(i => i.Family != AssetFamily.File).Should().AllSatisfy(a =>
+        images.Should().AllSatisfy(a =>
         {
             a.Finished.Should().BeNull();
             a.Ingesting.Should().BeTrue();
+            a.Batch.Should().Be(batchId);
         });
-        var file = images.Single(i => i.Family == AssetFamily.File);
-        file.Ingesting.Should().BeFalse();
-        file.Finished.Should().NotBeNull();
         
         // Queue incremented
         var queue = await dbContext.Queues.SingleAsync(q => q.Customer == customerId && q.Name == "default");
-        queue.Size.Should().Be(2);
+        queue.Size.Should().Be(3);
         
         // Customer Storage incremented
         var storage = await dbContext.CustomerStorages.SingleAsync(q => q.Customer == customerId && q.Space == 0);
@@ -645,7 +642,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Items queued for processing
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 2), false,
+                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 3), false,
                 A<CancellationToken>._)).MustHaveHappened();
     }
     

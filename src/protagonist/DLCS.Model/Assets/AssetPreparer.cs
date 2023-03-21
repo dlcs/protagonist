@@ -3,7 +3,6 @@ using System.Linq;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
-using DLCS.Model.Policies;
 
 namespace DLCS.Model.Assets;
 

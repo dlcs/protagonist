@@ -93,14 +93,12 @@ public class AssetProcessor
             }
 
             var updatedAsset = assetPreparationResult.UpdatedAsset!;
-            var (requiresEngineNotification, neverCallEngine) =
-                RequiresEngineNotification(updatedAsset, alwaysReingest, assetPreparationResult);
+            var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
 
-            var preset =
-                settings.IngestDefaults.GetPresets((char)updatedAsset.Family!, updatedAsset.MediaType ?? string.Empty);
-            
             if (existingAsset == null)
             {
+                var preset = settings.IngestDefaults.GetPresets((char)updatedAsset.Family!,
+                    updatedAsset.MediaType ?? string.Empty);
                 var deliveryChannelChanged = SetDeliveryChannel(updatedAsset, preset);
                 if (deliveryChannelChanged)
                 {
@@ -123,9 +121,6 @@ public class AssetProcessor
                     // This could be a config setting.
                 }
             }
-
-            // If engine is never to be called reset value here regardless of what it was 
-            if (neverCallEngine) requiresEngineNotification = false;
 
             if (requiresEngineNotification)
             {
@@ -169,7 +164,7 @@ public class AssetProcessor
     private bool SetDeliveryChannel(Asset updatedAsset, IngestPresets preset)
     {
         // Creation, set DeliveryChannel to default value for Family, if not already set
-        if (updatedAsset.DeliveryChannel == null)
+        if (updatedAsset.DeliveryChannel.IsNullOrEmpty())
         {
             updatedAsset.DeliveryChannel = preset.DeliveryChannel;
             return true;
@@ -177,16 +172,7 @@ public class AssetProcessor
 
         return false;
     }
-
-    private static (bool requiresReingest, bool neverReingest) RequiresEngineNotification(Asset asset, 
-        bool alwaysReingest, AssetPreparationResult assetPreparationResult)
-    {
-        // A 'File' never results in the engine being called
-        if (asset.Family == AssetFamily.File) return (false, true);
-        
-        return (assetPreparationResult.RequiresReingest || alwaysReingest, false);
-    }
-
+    
     private async Task<bool> SelectThumbnailPolicy(Asset asset, IngestPresets ingestPresets)
     {
         bool changed = false; 

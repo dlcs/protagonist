@@ -59,17 +59,7 @@ public class AssetDeliveryChannelsTests
 
         asset.HasSingleDeliveryChannel("anything").Should().BeFalse();
     }
-    
-    [Fact]
-    public void HasSingleDeliveryChannel_Throws_IfUnknown()
-    {
-        var asset = new Asset { DeliveryChannel = new[] { "iiif-img" } };
 
-        Action action = () => asset.HasSingleDeliveryChannel("anything");
-
-        action.Should().Throw<ArgumentOutOfRangeException>();
-    }
-    
     [Theory]
     [InlineData(AssetDeliveryChannels.File)]
     [InlineData(AssetDeliveryChannels.Image)]
