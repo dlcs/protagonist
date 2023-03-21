@@ -78,6 +78,12 @@ public class ImageRequestHandler
             return new StatusCodeResult(HttpStatusCode.NotFound);
         }
         
+        if (!orchestrationImage.Channels.HasFlag(AvailableDeliveryChannel.Image))
+        {
+            logger.LogDebug("Request for {Path}: asset not available in 'image' channel", httpContext.Request.Path);
+            return new StatusCodeResult(HttpStatusCode.NotFound);
+        }
+
         var proxyActionResult = await HandleRequestInternal(httpContext, orchestrationImage, assetRequest);
         if (proxyActionResult is StatusCodeResult) return proxyActionResult;
 
