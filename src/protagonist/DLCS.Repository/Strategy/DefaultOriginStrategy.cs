@@ -22,7 +22,7 @@ public class DefaultOriginStrategy : IOriginStrategy
         this.logger = logger;
     }
 
-    public async Task<OriginResponse?> LoadAssetFromOrigin(AssetId assetId, string origin,
+    public async Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
         // NOTE(DG): This will follow up to 8 redirections, as per deliverator.
