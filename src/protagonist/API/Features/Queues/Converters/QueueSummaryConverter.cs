@@ -17,6 +17,7 @@ public static class QueueSummaryConverter
         hydra.Incoming = queueCounts.Incoming;
         hydra.Priority = queueCounts.Priority;
         hydra.Timebased = queueCounts.Timebased;
+        hydra.File = queueCounts.File;
         hydra.TranscodeComplete = queueCounts.TranscodeComplete;
 
         return hydra;
