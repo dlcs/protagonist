@@ -17,6 +17,15 @@ public class OrchestratorSettings
     /// Regex for S3-origin, for objects uploaded directly to DLCS.
     /// </summary>
     public string S3OriginRegex { get; set; }
+    
+    /// <summary>
+    /// If true, 'file' assets that are NOT found in DLCS storage will be streamed from their origin, regardless of
+    /// whether the origin is optimised. If false, a 404 would be returned.
+    /// </summary>
+    /// <remarks>
+    /// This enables backwards compatibility for deliverator logic where files were always  streamed from origin
+    /// </remarks>
+    public bool StreamMissingFileFromOrigin { get; set; }
 
     /// <summary>
     /// Timeout for critical orchestration path. How long to wait to achieve lock when orchestrating asset.

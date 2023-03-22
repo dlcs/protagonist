@@ -36,15 +36,6 @@ public class OrchestrationAsset
     public AvailableDeliveryChannel Channels { get; set; } = AvailableDeliveryChannel.NotSet;
 }
 
-[Obsolete("Use OrchestrationAsset.Origin instead")]
-public class OrchestrationFile : OrchestrationAsset
-{
-    /// <summary>
-    /// Get or set Asset origin 
-    /// </summary>
-    public string Origin { get; set; }
-}
-
 public class OrchestrationImage : OrchestrationAsset
 {
     /// <summary>
