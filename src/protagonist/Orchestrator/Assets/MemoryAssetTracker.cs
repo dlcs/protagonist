@@ -107,7 +107,11 @@ public class MemoryAssetTracker : IAssetTracker
             where T : OrchestrationAsset
         {
             if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
+            {
                 orchestrationAsset.Channels |= AvailableDeliveryChannel.File;
+                orchestrationAsset.Origin = asset.Origin;
+            }
+
             if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
                 orchestrationAsset.Channels |= AvailableDeliveryChannel.Image;
             if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
@@ -138,7 +142,7 @@ public class MemoryAssetTracker : IAssetTracker
 
         if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
         {
-            return SetDefaults(new OrchestrationAsset { Origin = asset.Origin, });
+            return SetDefaults(new OrchestrationAsset());
         }
         
         return SetDefaults(new OrchestrationAsset());

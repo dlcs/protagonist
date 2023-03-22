@@ -129,6 +129,28 @@ public class MemoryAssetTrackerTests
     }
     
     [Theory]
+    [InlineData("iiif-img", null)]
+    [InlineData("iiif-img,file", "my-origin")]
+    public async Task GetOrchestrationAssetT_ReturnsOrchestrationAsset_IfImage(string deliveryChannel, string expectedOrigin)
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, "go!");
+        A.CallTo(() => assetRepository.GetAsset(assetId))
+            .Returns(new Asset
+            {
+                DeliveryChannel = deliveryChannel.Split(","), Origin = "my-origin"
+            });
+        
+        // Act
+        var result = await sut.GetOrchestrationAsset<OrchestrationAsset>(assetId);
+        
+        // Assert
+        result.AssetId.Should().Be(assetId);
+        result.Origin.Should().Be(expectedOrigin);
+        A.CallTo(() => thumbRepository.GetOpenSizes(A<AssetId>._)).MustHaveHappened();
+    }
+    
+    [Theory]
     [InlineData("iiif-av", null)]
     [InlineData("file", "my-origin")]
     [InlineData("iiif-av,file", "my-origin")]
