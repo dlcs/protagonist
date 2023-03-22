@@ -92,17 +92,17 @@ public class GetFileHandler : IRequestHandler<GetFile, OriginResponse>
             logger.LogDebug("Asset {AssetId} not found, or not available for delivery", assetId);
             return false;
         }
+        
+        if (!asset.Channels.HasFlag(AvailableDeliveryChannel.File))
+        {
+            logger.LogDebug("Asset {AssetId} not available for file delivery-channel", assetId);
+            return false;
+        }
 
         if (string.IsNullOrEmpty(asset.Origin))
         {
             // Note - this shouldn't ever happen but the property is nullable
             logger.LogDebug("Asset {AssetId} has no origin set", assetId);
-            return false;
-        }
-
-        if (!asset.Channels.HasFlag(AvailableDeliveryChannel.File))
-        {
-            logger.LogDebug("Asset {AssetId} not available for file delivery-channel", assetId);
             return false;
         }
 
