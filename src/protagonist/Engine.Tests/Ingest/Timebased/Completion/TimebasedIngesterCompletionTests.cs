@@ -42,7 +42,7 @@ public class TimebasedIngesterCompletionTests
         await sut.CompleteAssetInDatabase(asset, cancellationToken: token);
 
         // Assert
-        A.CallTo(() => engineAssetRepository.UpdateIngestedAsset(asset, null, null, token))
+        A.CallTo(() => engineAssetRepository.UpdateIngestedAsset(asset, null, null, true, token))
             .MustHaveHappened();
     }
     
@@ -55,7 +55,7 @@ public class TimebasedIngesterCompletionTests
         var asset = new Asset(AssetId.FromString("10/20/foo"));
         var token = new CancellationToken();
 
-        A.CallTo(() => engineAssetRepository.UpdateIngestedAsset(asset, null, null, token)).Returns(result);
+        A.CallTo(() => engineAssetRepository.UpdateIngestedAsset(asset, null, null, true, token)).Returns(result);
 
         // Act
         var sut = GetSut();
@@ -84,6 +84,7 @@ public class TimebasedIngesterCompletionTests
                     al.Id == assetId && al.Nas == string.Empty && al.S3 == string.Empty),
                 A<ImageStorage>.That.Matches(
                     s => s.Id == assetId && s.Size == size && s.Customer == 10 && s.Space == 20),
+                true,
                 token))
             .MustHaveHappened();
     }

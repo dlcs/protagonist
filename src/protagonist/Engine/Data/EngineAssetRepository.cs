@@ -19,14 +19,14 @@ public class EngineAssetRepository : IEngineAssetRepository
     }
 
     public async Task<bool> UpdateIngestedAsset(Asset asset, ImageLocation? imageLocation, ImageStorage? imageStorage,
-        CancellationToken cancellationToken = default)
+        bool ingestFinished, CancellationToken cancellationToken = default)
     {
         var hasBatch = (asset.Batch ?? 0) != 0;
 
         try
         {
             // Update Batch first as this might set the Error property on Asset
-            if (hasBatch)
+            if (hasBatch && ingestFinished) 
             {
                 await UpdateBatch(asset, cancellationToken);
             }

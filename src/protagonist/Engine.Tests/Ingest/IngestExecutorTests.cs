@@ -31,7 +31,8 @@ public class IngestExecutorTests
         await sut.IngestAsset(asset, customerOriginStrategy);
         
         // Assert
-        A.CallTo(() => repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<CancellationToken>._))
+        A.CallTo(() =>
+                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, true, A<CancellationToken>._))
             .MustHaveHappened();
     }
 
@@ -41,6 +42,8 @@ public class IngestExecutorTests
         IngestResultStatus.QueuedForProcessing)]
     [InlineData(IngestResultStatus.QueuedForProcessing, IngestResultStatus.Success,
         IngestResultStatus.QueuedForProcessing)]
+    [InlineData(IngestResultStatus.QueuedForProcessing, IngestResultStatus.QueuedForProcessing,
+        IngestResultStatus.QueuedForProcessing)]
     public async Task IngestAsset_Success_ReturnsCorrectStatus(IngestResultStatus first, IngestResultStatus second,
         IngestResultStatus overall)
     {
@@ -49,7 +52,9 @@ public class IngestExecutorTests
         A.CallTo(() => workerBuilder.GetWorkers(asset))
             .Returns(new[] { new FakeWorker(first), new FakeWorker(second) });
 
-        A.CallTo(() => repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<CancellationToken>._))
+        A.CallTo(() =>
+                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
+                    A<CancellationToken>._))
             .Returns(true);
 
         // Act
@@ -57,6 +62,28 @@ public class IngestExecutorTests
 
         // Assert
         result.Status.Should().Be(overall);
+    }
+    
+    [Theory]
+    [InlineData(IngestResultStatus.Failed, true)]
+    [InlineData(IngestResultStatus.Success, true)]
+    [InlineData(IngestResultStatus.QueuedForProcessing, false)]
+    [InlineData(IngestResultStatus.StorageLimitExceeded, true)]
+    public async Task IngestAsset_PassesCorrectIngestFinishedValueWhenSaving(IngestResultStatus status, bool ingestFinished)
+    {
+        // Arrange
+        var asset = new Asset();
+        A.CallTo(() => workerBuilder.GetWorkers(asset))
+            .Returns(new[] { new FakeWorker(status) });
+        
+        // Act
+        await sut.IngestAsset(asset, customerOriginStrategy);
+
+        // Assert
+        A.CallTo(() => 
+                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, ingestFinished, 
+                    A<CancellationToken>._))
+            .MustHaveHappened();
     }
     
     [Theory]
@@ -71,14 +98,18 @@ public class IngestExecutorTests
         A.CallTo(() => workerBuilder.GetWorkers(asset))
             .Returns(new[] { new FakeWorker(status) });
 
-        A.CallTo(() => repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<CancellationToken>._))
+        A.CallTo(() =>
+                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
+                    A<CancellationToken>._))
             .Returns(false);
 
         // Act
         var result = await sut.IngestAsset(asset, customerOriginStrategy);
 
         // Assert
-        A.CallTo(() => repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<CancellationToken>._))
+        A.CallTo(() => 
+                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._, 
+                    A<CancellationToken>._))
             .MustHaveHappened();
         result.Status.Should().Be(IngestResultStatus.Failed);
     }
@@ -94,14 +125,18 @@ public class IngestExecutorTests
         A.CallTo(() => workerBuilder.GetWorkers(asset))
             .Returns(new[] { first, second, third });
 
-        A.CallTo(() => repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<CancellationToken>._))
+        A.CallTo(() =>
+                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
+                    A<CancellationToken>._))
             .Returns(false);
 
         // Act
         var result = await sut.IngestAsset(asset, customerOriginStrategy);
 
         // Assert
-        A.CallTo(() => repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<CancellationToken>._))
+        A.CallTo(() => 
+                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
+                    A<CancellationToken>._))
             .MustHaveHappened();
         result.Status.Should().Be(IngestResultStatus.Failed);
         first.Called.Should().BeTrue();
@@ -124,7 +159,9 @@ public class IngestExecutorTests
         
         A.CallTo(() => workerBuilder.GetWorkers(asset)).Returns(new[] { new FakeWorker(status), secondWorker });
 
-        A.CallTo(() => repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<CancellationToken>._))
+        A.CallTo(() =>
+                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
+                    A<CancellationToken>._))
             .Returns(true);
 
         // Act

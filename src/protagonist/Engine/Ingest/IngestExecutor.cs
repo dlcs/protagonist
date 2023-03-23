@@ -46,13 +46,15 @@ public class IngestExecutor
                 break;
             }
 
+            // Don't overwrite a QueuedForProcessing result - this wins
             if (overallStatus != IngestResultStatus.QueuedForProcessing)
             {
                 overallStatus = result;
             }
         }
 
-        var dbSuccess = await CompleteAssetInDatabase(context, cancellationToken);
+        var dbSuccess = await CompleteAssetInDatabase(context, overallStatus != IngestResultStatus.QueuedForProcessing,
+            cancellationToken);
         
         foreach (var postProcessor in postProcessors)
         {
@@ -63,10 +65,10 @@ public class IngestExecutor
         return new IngestResult(asset, dbSuccess ? overallStatus : IngestResultStatus.Failed);
     }
 
-    private async Task<bool> CompleteAssetInDatabase(IngestionContext context, CancellationToken cancellationToken)
+    private async Task<bool> CompleteAssetInDatabase(IngestionContext context, bool ingestFinished, CancellationToken cancellationToken)
     {
         var dbUpdateSuccess = await assetRepository.UpdateIngestedAsset(context.Asset, context.ImageLocation,
-            context.ImageStorage, cancellationToken);
+            context.ImageStorage, ingestFinished, cancellationToken);
         return dbUpdateSuccess;
     }
 }

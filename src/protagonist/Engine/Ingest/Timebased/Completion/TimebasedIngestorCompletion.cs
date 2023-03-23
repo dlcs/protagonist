@@ -130,7 +130,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
             }
 
             var success =
-                await assetRepository.UpdateIngestedAsset(asset, imageLocation, imageStore, cancellationToken);
+                await assetRepository.UpdateIngestedAsset(asset, imageLocation, imageStore, true, cancellationToken);
             return success;
         }
         catch (Exception e)
