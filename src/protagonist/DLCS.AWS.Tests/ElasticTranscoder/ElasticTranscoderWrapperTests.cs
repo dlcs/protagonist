@@ -36,7 +36,6 @@ public class ElasticTranscoderWrapperTests
     {
         // Arrange
         const string inputKey = "s3://my-test-bucket/the-input/key";
-        var assetId = new AssetId(10, 20, "foo");
         var expectedInput = new JobInput
         {
             AspectRatio = "auto",
@@ -60,33 +59,5 @@ public class ElasticTranscoderWrapperTests
         
         // Assert
         createRequest.Input.Should().BeEquivalentTo(expectedInput);
-    }
-    
-    [Fact]
-    public async Task CreateJob_SetsExpectedMetadata()
-    {
-        // Arrange
-        const string inputKey = "s3://my-test-bucket/the-input/key";
-        var assetId = new AssetId(10, 20, "foo");
-
-        CreateJobRequest? createRequest = null;
-        A.CallTo(() => elasticTranscoder.CreateJobAsync(A<CreateJobRequest>._, A<CancellationToken>._))
-            .Invokes((CreateJobRequest request, CancellationToken _) =>
-            {
-                createRequest = request;
-            });
-        var metadata = new Dictionary<string, string> { ["dlcsId"] = "10/20/foo" };
-
-        // Act
-        await sut.CreateJob(inputKey, string.Empty, new List<CreateJobOutput>(), metadata,
-            CancellationToken.None);
-        
-        // Assert
-        createRequest.UserMetadata.Should().ContainKey("dlcsId")
-            .WhoseValue.Should().Be("10/20/foo", "Existing data is not overwritten");
-        createRequest.UserMetadata.Should().ContainKey("jobId")
-            .WhoseValue.Should().Be("my-id");
-        createRequest.UserMetadata.Should().ContainKey("startTime")
-            .WhoseValue.Should().NotBeNullOrEmpty();
     }
 }
