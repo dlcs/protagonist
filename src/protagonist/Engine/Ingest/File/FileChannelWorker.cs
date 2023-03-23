@@ -1,6 +1,5 @@
 ﻿using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
-using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using Engine.Ingest.Persistence;
 
@@ -42,13 +41,7 @@ public class FileChannelWorker : IAssetIngesterWorker
                 return IngestResultStatus.Success;
             }
 
-            if (HasFileAlreadyBeenCopied(ingestionContext, out var targetStorageLocation))
-            {
-                logger.LogDebug("Asset {Asset} has already been uploaded to {S3Location}, no 'file' handling required",
-                    ingestionContext.AssetId, targetStorageLocation);
-                return IngestResultStatus.Success;
-            }
-
+            var targetStorageLocation = storageKeyGenerator.GetStoredOriginalLocation(ingestionContext.AssetId);
             var assetInBucket = await assetToS3.CopyOriginToStorage(targetStorageLocation,
                 asset,
                 !assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer),
@@ -61,7 +54,7 @@ public class FileChannelWorker : IAssetIngesterWorker
                 return IngestResultStatus.StorageLimitExceeded;
             }
 
-            UpdateImageStorage(ingestionContext, asset, assetInBucket);
+            UpdateIngestionContext(ingestionContext, assetInBucket, targetStorageLocation);
             return IngestResultStatus.Success;
         }
         catch (Exception ex)
@@ -72,22 +65,11 @@ public class FileChannelWorker : IAssetIngesterWorker
         }
     }
 
-    private static void UpdateImageStorage(IngestionContext ingestionContext, Asset asset, AssetFromOrigin assetInBucket)
+    private static void UpdateIngestionContext(IngestionContext ingestionContext, AssetFromOrigin assetInBucket,
+        RegionalisedObjectInBucket targetStorageLocation)
     {
-        if (ingestionContext.ImageStorage == null)
-        {
-            var imageStorage = new ImageStorage
-            {
-                Id = asset.Id,
-                Customer = asset.Customer,
-                Space = asset.Space,
-            };
-
-            ingestionContext.WithStorage(imageStorage);
-        }
-
-        ingestionContext.ImageStorage!.Size += assetInBucket.AssetSize;
-        ingestionContext.ImageStorage.LastChecked = DateTime.UtcNow;
+        ingestionContext.StoredObjects[targetStorageLocation] = assetInBucket.AssetSize;
+        ingestionContext.WithStorage(assetSize: assetInBucket.AssetSize);
     }
 
     private bool HasFileAlreadyBeenCopied(IngestionContext ingestionContext, out RegionalisedObjectInBucket targetStorageLocation)

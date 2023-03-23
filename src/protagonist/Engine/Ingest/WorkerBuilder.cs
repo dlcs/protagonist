@@ -36,6 +36,19 @@ public class WorkerBuilder : IWorkerBuilder
             workers.Add(worker);
         }
 
+        /*
+         * NOTE: Ordering of handlers is important - File should run first.
+         * 
+         * - "file" may upload origin to DLCS. If that's the case then further handlers may not need to, or can use
+         * that info in their processing
+         * - "images" can need to store origin file, but this may have been done by File so results in no-op
+         * - "timebased" will source file size in ET user-metadata if known, this will ahve been set by "file"
+         */
+        if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
+        {
+            AddProcessor(serviceProvider.GetRequiredService<FileChannelWorker>());
+        }
+        
         if (MIMEHelper.IsImage(asset.MediaType))
         {
             if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
@@ -43,17 +56,13 @@ public class WorkerBuilder : IWorkerBuilder
                 AddProcessor(serviceProvider.GetRequiredService<ImageIngesterWorker>());
             }
         }
-        else if (MIMEHelper.IsVideo(asset.MediaType) || MIMEHelper.IsAudio(asset.MediaType))
+
+        if (MIMEHelper.IsVideo(asset.MediaType) || MIMEHelper.IsAudio(asset.MediaType))
         {
             if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
             {
                 AddProcessor(serviceProvider.GetRequiredService<TimebasedIngesterWorker>());
             }
-        }
-        
-        if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
-        {
-            AddProcessor(serviceProvider.GetRequiredService<FileChannelWorker>());
         }
 
         if (logger.IsEnabled(LogLevel.Trace))

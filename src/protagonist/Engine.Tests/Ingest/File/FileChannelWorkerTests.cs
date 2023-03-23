@@ -43,30 +43,9 @@ public class FileChannelWorkerTests
                 assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, A<bool>._, cos, A<CancellationToken>._))
             .MustNotHaveHappened();
     }
-    
-    [Fact]
-    public async Task Ingest_NoOp_IfFileAlreadyCopied()
-    {
-        // Arrange
-        var context = GetIngestionContext();
-        context.UploadedKeys.Add(new RegionalisedObjectInBucket("test-bucket", "origin-key", "eu-west-1"));
-        
-        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = false };
-        A.CallTo(() => storageKeyGenerator.GetStoredOriginalLocation(context.AssetId))
-            .Returns(new RegionalisedObjectInBucket("test-bucket", "origin-key", "eu-west-1"));
 
-        // Act
-        var result = await sut.Ingest(context, cos);
-        
-        // Assert
-        result.Should().Be(IngestResultStatus.Success);
-        A.CallTo(() =>
-                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, A<bool>._, cos, A<CancellationToken>._))
-            .MustNotHaveHappened();
-    }
-    
     [Fact]
-    public async Task Ingest_CopiesFileToStorage_SetsImageStorage()
+    public async Task Ingest_CopiesFileToStorage_SetsImageStorage_AndStoredObject()
     {
         // Arrange
         var context = GetIngestionContext();
@@ -85,15 +64,16 @@ public class FileChannelWorkerTests
         
         // Assert
         context.ImageStorage!.Size.Should().Be(1234L);
+        context.StoredObjects.Should().ContainKey(destination).WhoseValue.Should().Be(1234L);
         result.Should().Be(IngestResultStatus.Success);
     }
     
     [Fact]
-    public async Task Ingest_CopiesFileToStorage_IncrementsImageStorage()
+    public async Task Ingest_CopiesFileToStorage_IncrementsImageStorage_AndStoredObject()
     {
         // Arrange
         var context = GetIngestionContext();
-        context.WithStorage(new ImageStorage { Size = 1000L });
+        context.WithStorage(assetSize: 1000L);
         
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = false };
         var destination = new RegionalisedObjectInBucket("test-bucket", "origin-key", "eu-west-1");
@@ -109,6 +89,7 @@ public class FileChannelWorkerTests
         
         // Assert
         context.ImageStorage!.Size.Should().Be(2234L, "Was 1000 from previous operation");
+        context.StoredObjects.Should().ContainKey(destination).WhoseValue.Should().Be(1234L);
         result.Should().Be(IngestResultStatus.Success);
     }
     
