@@ -89,6 +89,7 @@ public static class AssetPreparer
         var prepareAssetForUpsert = ValidateRequests(existingAsset, updateAsset, allowNonApiUpdates, isBatchUpdate);
         if (prepareAssetForUpsert != null) return prepareAssetForUpsert;
 
+        bool reCalculateFamily = false;
         if (existingAsset != null)
         {
             if (updateAsset.Origin.HasText() && updateAsset.Origin != existingAsset.Origin)
@@ -101,6 +102,7 @@ public static class AssetPreparer
             {
                 // Changing DeliveryChannel can alter how the image should be processed
                 requiresReingest = true;
+                reCalculateFamily = true;
             }
             
             if (updateAsset.ThumbnailPolicy.HasText() && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
@@ -123,12 +125,17 @@ public static class AssetPreparer
         {
             // Creation of new asset - the DB record is what's been submitted with any NULLs replaced by default
             workingAsset.DefaultNullProperties(DefaultAsset);
-            EnsureAssetFamily(workingAsset);
+            SetAssetFamily(workingAsset);
         }
         else
         {
             // Update existing asset - the DB record is what was in DB with any submitted changes applied
             workingAsset.ApplyChanges(updateAsset);
+            
+            if (reCalculateFamily)
+            {
+                SetAssetFamily(workingAsset);
+            }
         }
         
         if (requiresReingest && workingAsset.Origin.IsNullOrEmpty())
@@ -265,10 +272,8 @@ public static class AssetPreparer
         return null;
     }
 
-    private static void EnsureAssetFamily(Asset workingAsset)
+    private static void SetAssetFamily(Asset workingAsset)
     {
-        if (workingAsset.Family != null) return;
-
         if (workingAsset.HasSingleDeliveryChannel(AssetDeliveryChannels.File))
         {
             workingAsset.Family = AssetFamily.File;

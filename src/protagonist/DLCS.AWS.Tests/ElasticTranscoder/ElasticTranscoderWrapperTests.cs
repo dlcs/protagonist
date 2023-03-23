@@ -3,7 +3,6 @@ using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
 using DLCS.Core.Caching;
-using DLCS.Core.Types;
 using FakeItEasy;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;

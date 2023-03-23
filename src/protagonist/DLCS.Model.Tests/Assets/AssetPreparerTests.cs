@@ -257,12 +257,12 @@ public class AssetPreparerTests
     }
     
     [Theory]
-    [InlineData("file", AssetFamily.Timebased)]
-    [InlineData("file,iiif-img", AssetFamily.Timebased)]
-    [InlineData("iiif-img", AssetFamily.Timebased)]
-    [InlineData("file,iiif-av", AssetFamily.Image)]
-    [InlineData("iiif-av", AssetFamily.Image)]
-    public void PrepareAssetForUpsert_DoesNotChangeAssetFamilyIfSet(string dc, AssetFamily current)
+    [InlineData("file", AssetFamily.Timebased, AssetFamily.File)]
+    [InlineData("file,iiif-img", AssetFamily.Timebased, AssetFamily.Image)]
+    [InlineData("iiif-img", AssetFamily.Timebased, AssetFamily.Image)]
+    [InlineData("file,iiif-av", AssetFamily.Image, AssetFamily.Timebased)]
+    [InlineData("iiif-av", AssetFamily.Image,AssetFamily.Timebased)]
+    public void PrepareAssetForUpsert_ChangesAssetFamilyIfSet_New(string dc, AssetFamily current, AssetFamily expected)
     {
         // Arrange
         var updateAsset = new Asset { Origin = "required", DeliveryChannel = dc.Split(","), Family = current};
@@ -271,9 +271,29 @@ public class AssetPreparerTests
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
 
         // Assert
-        result.UpdatedAsset.Family.Should().Be(current);
+        result.UpdatedAsset.Family.Should().Be(expected);
     }
-    
+
+    [Theory]
+    [InlineData("file", AssetFamily.Timebased, AssetFamily.File)]
+    [InlineData("file,iiif-img", AssetFamily.Timebased, AssetFamily.Image)]
+    [InlineData("iiif-img", AssetFamily.Timebased, AssetFamily.Image)]
+    [InlineData("file,iiif-av", AssetFamily.Image, AssetFamily.Timebased)]
+    [InlineData("iiif-av", AssetFamily.Image, AssetFamily.Timebased)]
+    public void PrepareAssetForUpsert_ChangesAssetFamilyIfSet_Update(string dc, AssetFamily current,
+        AssetFamily expected)
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "required", DeliveryChannel = dc.Split(",") };
+        var existingAsset = new Asset { Family = current, DeliveryChannel = new[] { "fake" } };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+
+        // Assert
+        result.UpdatedAsset.Family.Should().Be(expected);
+    }
+
     [Theory]
     [MemberData(nameof(DeliveryChannels))]
     public void PrepareAssetForUpsert_DoesNotRequiresReingest_IfDeliveryChannelUnchanged(string[] existing, string[] _,
