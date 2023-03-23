@@ -143,7 +143,7 @@ public class AppetiserClientTests
     }
 
     [Fact]
-    public async Task ProcessImage_UpdatesAssetSize()
+    public async Task ProcessImage_UpdatesAssetDimensions()
     {
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel
@@ -199,8 +199,12 @@ public class AppetiserClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        bucketWriter.ShouldHaveKey("1/2/test").WithFilePath("dest/test.jp2").WithContentType("image/jp2");
+        bucketWriter
+            .ShouldHaveKey("1/2/test")
+            .WithFilePath("dest/test.jp2")
+            .WithContentType("image/jp2");
         context.ImageLocation.S3.Should().Be(expected);
+        context.StoredObjects.Should().NotBeEmpty();
     }
 
     [Fact]
@@ -226,6 +230,7 @@ public class AppetiserClientTests
             .ShouldHaveKey("1/2/test/original")
             .WithFilePath(locationOnDisk)
             .WithContentType("image/jpg");
+        context.StoredObjects.Should().NotBeEmpty();
     }
 
     [Fact]
@@ -254,6 +259,7 @@ public class AppetiserClientTests
         // Assert
         bucketWriter.Operations.Should().BeEmpty();
         context.ImageLocation.S3.Should().Be(expected);
+        context.StoredObjects.Should().BeEmpty();
     }
 
     [Fact]
@@ -328,6 +334,7 @@ public class AppetiserClientTests
         bucketWriter.Operations.Should().BeEmpty("JP2 not written to S3");
         context.Asset.Height.Should().Be(imageProcessorResponse.Height);
         context.Asset.Width.Should().Be(imageProcessorResponse.Width);
+        context.StoredObjects.Should().BeEmpty();
     }
     
     [Theory]
@@ -373,7 +380,53 @@ public class AppetiserClientTests
         bucketWriter.ShouldHaveKey("1/2/something");
         context.Asset.Height.Should().Be(imageProcessorResponse.Height, "JP2 Generated");
         context.Asset.Width.Should().Be(imageProcessorResponse.Width, "JP2 Generated");
-    }    
+        context.StoredObjects.Should().NotBeEmpty();
+    }
+    
+    [Fact]
+    public async Task ProcessImage_UseOriginal_AlreadyUploaded()
+    {
+        // Arrange
+        var imageProcessorResponse = new AppetiserResponseModel
+        {
+            Height = 1000,
+            Width = 5000,
+            Thumbs = new ImageOnDisk[] { new() { Path = "foo" }, new() { Path = "bar" } }
+        };
+        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
+            HttpStatusCode.OK);
+        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        httpHandler.SetResponse(response);
+
+        var context = GetIngestionContext(
+            cos: new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient },
+            imageOptimisationPolicy: "use-original");
+        context.AssetFromOrigin.Location = "/file/on/disk";
+        context.Asset.Origin = "s3://origin/2/1/foo-bar";
+        var alreadyUploadedFile = new RegionalisedObjectInBucket("appetiser-test", $"{context.Asset.Id}/original", "Fake-Region");
+        context.StoredObjects.Add(alreadyUploadedFile, -999);
+
+        AppetiserRequestModel? requestModel = null;
+        httpHandler.RegisterCallback(async message =>
+        {
+            requestModel = await message.Content.ReadAsAsync<AppetiserRequestModel>();
+        });
+        A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(100);
+
+        // Act
+        await sut.ProcessImage(context);
+
+        // Assert
+        A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
+            .MustHaveHappened();
+        context.ImageStorage.ThumbnailSize.Should().Be(200, "Thumbs saved");
+        context.ImageStorage.Size.Should().Be(0, "JP2 not written to S3");
+        bucketWriter.Operations.Should().BeEmpty("JP2 not written to S3");
+        context.Asset.Height.Should().Be(imageProcessorResponse.Height);
+        context.Asset.Width.Should().Be(imageProcessorResponse.Width);
+        context.StoredObjects.Should().ContainKey(alreadyUploadedFile).WhoseValue.Should()
+            .Be(-999, "Value should not have changed");
+    }
 
     private static IngestionContext GetIngestionContext(string assetId = "/1/2/something",
         string contentType = "image/jpg", CustomerOriginStrategy? cos = null,

@@ -167,15 +167,14 @@ public class AppetiserClient : IImageProcessor
     private async Task ProcessResponse(IngestionContext context, AppetiserResponseModel responseModel, 
         ImageProcessorFlags processorFlags)
     {
+        // Update dimensions on Asset
         UpdateImageDimensions(context.Asset, responseModel);
 
-        var imageLocation = await ProcessOriginImage(context, processorFlags);
+        // Process output: upload derivative/original to DLCS storage if required and set Location + Storage on context 
+        await ProcessOriginImage(context, processorFlags);
 
-        await CreateNewThumbs(context, responseModel, processorFlags);
-
-        ImageStorage imageStorage = GetImageStorage(context, processorFlags, responseModel);
-
-        context.WithLocation(imageLocation).WithStorage(imageStorage);
+        // Create new thumbnails + update Storage on context
+        await CreateNewThumbs(context, responseModel);
     }
 
     private static void UpdateImageDimensions(Asset asset, AppetiserResponseModel responseModel)
@@ -184,31 +183,50 @@ public class AppetiserClient : IImageProcessor
         asset.Width = responseModel.Width;
     }
 
-    private async Task<ImageLocation> ProcessOriginImage(IngestionContext context, ImageProcessorFlags processorFlags)
+    private async Task ProcessOriginImage(IngestionContext context, ImageProcessorFlags processorFlags)
     {
         var asset = context.Asset;
-        var imageLocation = new ImageLocation { Id = asset.Id, Nas = string.Empty };
-        
         var imageIngestSettings = engineSettings.ImageIngest!;
-        
+
+        void SetAssetLocation(ObjectInBucket objectInBucket)
+        {
+            var s3Location = storageKeyGenerator
+                .GetS3Uri(objectInBucket, imageIngestSettings.IncludeRegionInS3Uri)
+                .ToString();
+            context.WithLocation(new ImageLocation { Id = asset.Id, Nas = string.Empty, S3 = s3Location });
+        }
+
         if (!processorFlags.SaveInDlcsStorage)
         {
-            // Optimised - we don't want to store as we've not created a new version - just set imageLocation
-            logger.LogDebug("Asset {AssetId} can be served from origin", context.AssetId);
+            // Optimised + image-server ready. No need to store - set imageLocation to origin and stop
+            logger.LogDebug("Asset {AssetId} can be served from origin. No file to save", context.AssetId);
             var originObject = RegionalisedObjectInBucket.Parse(asset.Origin, true)!;
-            imageLocation.S3 =
-                storageKeyGenerator.GetS3Uri(originObject, imageIngestSettings.IncludeRegionInS3Uri).ToString();
-            return imageLocation;
+            SetAssetLocation(originObject);
+            return;
         }
-        
-        var targetStorageLocation = processorFlags.OriginIsImageServerReady
-            ? storageKeyGenerator.GetStoredOriginalLocation(context.AssetId)
-            : storageKeyGenerator.GetStorageLocation(context.AssetId);
 
-        // if original is image-server compat., use the 'origin' file to upload. Else upload generated JP2
+        RegionalisedObjectInBucket targetStorageLocation;
+        if (processorFlags.OriginIsImageServerReady)
+        {
+            targetStorageLocation = storageKeyGenerator.GetStoredOriginalLocation(context.AssetId);
+            if (context.StoredObjects.ContainsKey(targetStorageLocation))
+            {
+                // Target is image-server ready and should be stored in DLCS but it has already been copied (as part of  
+                // "file" delivery-channel handling).
+                logger.LogDebug("Asset {AssetId} image-server ready and already uploaded to DLCS storage",
+                    context.AssetId);
+                SetAssetLocation(targetStorageLocation);
+                return;
+            }
+        }
+        else
+        {
+            // Location for derivative
+            targetStorageLocation = storageKeyGenerator.GetStorageLocation(context.AssetId);
+            logger.LogDebug("Asset {AssetId} derivative will be stored in DLCS storage", context.AssetId);
+        }
+
         var imageServerFile = processorFlags.ImageServerFilePath;
-
-        // Not optimised - upload to DLCS storage and set ImageLocation to new bucket 
         var contentType = processorFlags.OriginIsImageServerReady ? context.Asset.MediaType : MIMEHelper.JP2;
 
         logger.LogDebug("Asset {Asset} will be stored to {S3Location} with content-type {ContentType}", context.AssetId,
@@ -218,20 +236,22 @@ public class AppetiserClient : IImageProcessor
             throw new ApplicationException(
                 $"Failed to write image-server file {imageServerFile} to storage bucket with content-type {contentType}");
         }
-        context.UploadedKeys.Add(targetStorageLocation);
 
-        imageLocation.S3 = storageKeyGenerator
-            .GetS3Uri(targetStorageLocation, imageIngestSettings.IncludeRegionInS3Uri)
-            .ToString();
-        return imageLocation;
+        var storedImageSize = fileSystem.GetFileSize(processorFlags.ImageServerFilePath);
+        context.StoredObjects[targetStorageLocation] = storedImageSize;
+        context.WithStorage(assetSize: storedImageSize);
+
+        SetAssetLocation(targetStorageLocation);
     }
 
-    private async Task CreateNewThumbs(IngestionContext context, AppetiserResponseModel responseModel,
-        ImageProcessorFlags processorFlags)
+    private async Task CreateNewThumbs(IngestionContext context, AppetiserResponseModel responseModel)
     {
         SetThumbsOnDiskLocation(context, responseModel);
 
         await thumbCreator.CreateNewThumbs(context.Asset, responseModel.Thumbs.ToList());
+
+        var thumbSize = responseModel.Thumbs.Sum(t => fileSystem.GetFileSize(t.Path));
+        context.WithStorage(thumbnailSize: thumbSize);
     }
 
     private void SetThumbsOnDiskLocation(IngestionContext context, AppetiserResponseModel responseModel)
@@ -244,29 +264,6 @@ public class AppetiserClient : IImageProcessor
             var key = thumb.Path.EverythingAfterLast('/');
             thumb.Path = string.Concat(partialTemplate, key);
         }
-    }
-
-    private ImageStorage GetImageStorage(IngestionContext context, ImageProcessorFlags processorFlags,
-        AppetiserResponseModel responseModel)
-    {
-        var asset = context.Asset;
-
-        // If we are not storing file then size = 0
-        var storedImageSize = processorFlags.SaveInDlcsStorage
-            ? fileSystem.GetFileSize(processorFlags.ImageServerFilePath)
-            : 0L;
-        
-        var thumbSizes = responseModel.Thumbs.Sum(t => fileSystem.GetFileSize(t.Path));
-
-        return new ImageStorage
-        {
-            Id = asset.Id,
-            Customer = asset.Customer,
-            Space = asset.Space,
-            LastChecked = DateTime.UtcNow,
-            Size = storedImageSize,
-            ThumbnailSize = thumbSizes
-        };
     }
 
     public class ImageProcessorFlags

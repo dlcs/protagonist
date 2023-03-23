@@ -46,13 +46,6 @@ public class IngestionContext
         ImageLocation = imageLocation.ThrowIfNull(nameof(imageLocation));
         return this;
     }
-        
-    [Obsolete("Use overload that takes values")]
-    public IngestionContext WithStorage(ImageStorage imageStorage)
-    {
-        ImageStorage = imageStorage.ThrowIfNull(nameof(imageStorage));
-        return this;
-    }
     
     public IngestionContext WithStorage(long? assetSize = null, long? thumbnailSize = null)
     {
