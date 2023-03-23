@@ -55,7 +55,8 @@ public class ElasticTranscoderWrapperTests
             });
 
         // Act
-        await sut.CreateJob(assetId, inputKey, string.Empty, new List<CreateJobOutput>(), "id", CancellationToken.None);
+        await sut.CreateJob(inputKey, string.Empty, new List<CreateJobOutput>(), new Dictionary<string, string>(),
+            CancellationToken.None);
         
         // Assert
         createRequest.Input.Should().BeEquivalentTo(expectedInput);
@@ -74,14 +75,18 @@ public class ElasticTranscoderWrapperTests
             {
                 createRequest = request;
             });
+        var metadata = new Dictionary<string, string> { ["dlcsId"] = "10/20/foo" };
 
         // Act
-        await sut.CreateJob(assetId, inputKey, string.Empty, new List<CreateJobOutput>(), "my-id",
+        await sut.CreateJob(inputKey, string.Empty, new List<CreateJobOutput>(), metadata,
             CancellationToken.None);
         
         // Assert
-        createRequest.UserMetadata.Should().ContainKey("dlcsId").WhoseValue.Should().Be("10/20/foo");
-        createRequest.UserMetadata.Should().ContainKey("jobId").WhoseValue.Should().Be("my-id");
-        createRequest.UserMetadata.Should().ContainKey("startTime").WhoseValue.Should().NotBeNullOrEmpty();
+        createRequest.UserMetadata.Should().ContainKey("dlcsId")
+            .WhoseValue.Should().Be("10/20/foo", "Existing data is not overwritten");
+        createRequest.UserMetadata.Should().ContainKey("jobId")
+            .WhoseValue.Should().Be("my-id");
+        createRequest.UserMetadata.Should().ContainKey("startTime")
+            .WhoseValue.Should().NotBeNullOrEmpty();
     }
 }

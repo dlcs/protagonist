@@ -50,35 +50,12 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
                 $"Transcode failed with status: {transcodeResult.State}. Error: {transcodeResult.ErrorCode ?? "unknown"}.");
         }
 
-        bool dimensionsUpdated = false;
-        var transcodeOutputs = transcodeResult.Outputs;
-        var copyTasks = new List<Task<LargeObjectCopyResult>>(transcodeOutputs.Count);
-        if (transcodeSuccess)
-        {
-            foreach (var transcodeOutput in transcodeOutputs)
-            {
-                if (!transcodeOutput.IsComplete())
-                {
-                    logger.LogWarning("Received incomplete {Status} for ElasticTranscoder output for {OutputKey}",
-                        transcodeOutput.Status, transcodeOutput.Key);
-                    errors.AppendLine(
-                        $"Transcode output for {transcodeOutput.Key} has status {transcodeOutput.Status}");
-                    continue;
-                    ;
-                }
-
-                SetAssetDimensions(asset, dimensionsUpdated, transcodeOutput);
-                dimensionsUpdated = true;
-
-                // Move assets from elastic transcoder-output bucket to main bucket
-                copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, assetIsOpen, cancellationToken));
-            }
-        }
+        var copyTasks = CopyTranscodeOutputs(transcodeResult, cancellationToken, transcodeSuccess, errors, asset, assetIsOpen);
 
         await DeleteInputFile(transcodeResult);
         
         var copyResults = await Task.WhenAll(copyTasks);
-        var size = copyResults.Sum(result => result.Size ?? 0);
+        var size = GetAssetStorageSize(transcodeResult, copyResults);
 
         foreach (var cr in copyResults)
         {
@@ -107,7 +84,45 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         return transcodeSuccess && dbUpdateSuccess;
     }
 
-    public async Task<bool> CompleteAssetInDatabase(Asset asset, long? assetSize = null,
+    private List<Task<LargeObjectCopyResult>> CopyTranscodeOutputs(TranscodeResult transcodeResult, CancellationToken cancellationToken,
+        bool transcodeSuccess, StringBuilder errors, Asset asset, bool assetIsOpen)
+    {
+        bool dimensionsUpdated = false;
+        var transcodeOutputs = transcodeResult.Outputs;
+        var copyTasks = new List<Task<LargeObjectCopyResult>>(transcodeOutputs.Count);
+        if (transcodeSuccess)
+        {
+            foreach (var transcodeOutput in transcodeOutputs)
+            {
+                if (!transcodeOutput.IsComplete())
+                {
+                    logger.LogWarning("Received incomplete {Status} for ElasticTranscoder output for {OutputKey}",
+                        transcodeOutput.Status, transcodeOutput.Key);
+                    errors.AppendLine(
+                        $"Transcode output for {transcodeOutput.Key} has status {transcodeOutput.Status}");
+                    continue;
+                    ;
+                }
+
+                SetAssetDimensions(asset, dimensionsUpdated, transcodeOutput);
+                dimensionsUpdated = true;
+
+                // Move assets from elastic transcoder-output bucket to main bucket
+                copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, assetIsOpen, cancellationToken));
+            }
+        }
+
+        return copyTasks;
+    }
+
+    private static long GetAssetStorageSize(TranscodeResult transcodeResult, LargeObjectCopyResult[] copyResults)
+    {
+        var derivativeSizes = copyResults.Sum(result => result.Size ?? 0);
+        var totalSize = derivativeSizes + transcodeResult.GetStoredOriginalAssetSize();
+        return totalSize;
+    }
+
+    private async Task<bool> CompleteAssetInDatabase(Asset asset, long? assetSize = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -116,7 +131,6 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
             ImageLocation? imageLocation = null;
             if (assetSize.HasValue)
             {
-                // TODO - we may already have a Storage record if it's "File" too
                 imageStore = new ImageStorage
                 {
                     Id = asset.Id,
