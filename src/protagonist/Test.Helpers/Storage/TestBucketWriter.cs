@@ -49,7 +49,7 @@ public class TestBucketWriter : IBucketWriter
         {
             if (k.EndsWith(key))
             {
-                verifiedPaths.Add(key);
+                verifiedPaths.Add(k);
                 return v;
             }
         }
@@ -60,13 +60,15 @@ public class TestBucketWriter : IBucketWriter
     /// <summary>
     /// Assert key exists that starts with provided string.
     /// </summary>
-    public BucketObject ShouldHaveKeyThatStartsWith(string key)
+    public BucketObject ShouldHaveKeyThatStartsWith(string key, bool ignorePreviouslyVerified = false)
     {
         foreach (var (k,v) in Operations)
         {
             if (k.StartsWith(key))
             {
-                verifiedPaths.Add(key);
+                if (ignorePreviouslyVerified && verifiedPaths.Contains(k)) continue;
+                
+                verifiedPaths.Add(k);
                 return v;
             }
         }

@@ -2,22 +2,18 @@
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
-using Xunit;
 using Yarp.ReverseProxy.Forwarder;
 
 namespace Orchestrator.Tests.Integration;
 
 /// <summary>
-/// Test of all requests handled by custom iiif-img handling
+/// Test of all requests handled by custom iiif-av handling
 /// </summary>
 [Trait("Category", "Integration")]
 [Collection(DatabaseCollection.CollectionName)]
@@ -47,6 +43,10 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Options_Returns200_WithCorsHeaders()
     {
         // Arrange
+        var corsHeaders = new[]
+        {
+            "Access-Control-Allow-Origin", "Access-Control-Allow-Headers", "Access-Control-Allow-Methods"
+        };
         const string path = "iiif-av/1/1/my-timebased/full/full/max/max/0/default.mp4";
 
         // Act
@@ -55,9 +55,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Headers.Should().ContainKey("Access-Control-Allow-Origin");
-        response.Headers.Should().ContainKey("Access-Control-Allow-Headers");
-        response.Headers.Should().ContainKey("Access-Control-Allow-Methods");
+        response.Headers.Should().ContainKeys(corsHeaders);
     }
     
     [Fact]
@@ -104,7 +102,22 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNotForDelivery)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true);
+        await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true, deliveryChannels: new[] { "iiif-av" });
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-av/{id}/full/full/max/max/0/default.mp4");
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_Returns404_IfNoTimebasedChannel()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNoTimebasedChannel)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "file" });
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
@@ -119,8 +132,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     {
         // Arrange
         var id = AssetId.FromString("99/1/test-noauth");
-        await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
-            maxUnauthorised: -1, origin: "/test/space");
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: -1,
+            origin: "/test/space", deliveryChannels: new[] { "iiif-av" });
         await dbFixture.DbContext.SaveChangesAsync();
         var expectedPath =
             new Uri(
@@ -139,8 +152,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     {
         // Arrange
         var id = AssetId.FromString("99/1/test-auth");
-        await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
-            maxUnauthorised: 100, origin: "/test/space", roles: "basic");
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+            origin: "/test/space", roles: "basic", deliveryChannels: new[] { "iiif-av" });
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
@@ -155,8 +168,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     {
         // Arrange
         var id = AssetId.FromString("99/1/bearer-fail");
-        await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
-            maxUnauthorised: 100, origin: "/test/space", roles: "basic");
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+            origin: "/test/space", roles: "basic", deliveryChannels: new[] { "iiif-av" });
         await dbFixture.DbContext.SaveChangesAsync();
         const string bearerToken = "ababababab";
 
@@ -175,8 +188,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     {
         // Arrange
         var id = AssetId.FromString("99/1/bearer-pass");
-        await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
-            maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+            origin: "/test/space", roles: "clickthrough", deliveryChannels: new[] { "iiif-av" });
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
                 DlcsDatabaseFixture.ClickThroughAuthService.AsList());
@@ -199,8 +212,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     {
         // Arrange
         var id = AssetId.FromString("99/1/bearer-head");
-        await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
-            maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+            origin: "/test/space", roles: "clickthrough", deliveryChannels: new[] { "iiif-av" });
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
                 DlcsDatabaseFixture.ClickThroughAuthService.AsList());
@@ -223,8 +236,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     {
         // Arrange
         var id = AssetId.FromString("99/1/bearer-head-invalid");
-        await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
-            maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+            origin: "/test/space", roles: "clickthrough", deliveryChannels: new[] { "iiif-av" });
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
                 DlcsDatabaseFixture.ClickThroughAuthService.AsList());
@@ -246,8 +259,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     {
         // Arrange
         var id = AssetId.FromString("99/1/cookie-fail");
-        await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
-            maxUnauthorised: 100, origin: "/test/space", roles: "basic");
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+            origin: "/test/space", roles: "basic", deliveryChannels: new[] { "iiif-av" });
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
@@ -265,8 +278,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     {
         // Arrange
         var id = AssetId.FromString("99/1/cookie-pass");
-        await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
-            maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+            origin: "/test/space", roles: "clickthrough", deliveryChannels: new[] { "iiif-av" });
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
                 DlcsDatabaseFixture.ClickThroughAuthService.AsList());
@@ -294,8 +307,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     {
         // Arrange
         var id = AssetId.FromString("99/1/cookie-head");
-        await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
-            maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+            origin: "/test/space", roles: "clickthrough", deliveryChannels: new[] { "iiif-av" });
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
                 DlcsDatabaseFixture.ClickThroughAuthService.AsList());
@@ -318,8 +331,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     {
         // Arrange
         var id = AssetId.FromString("99/1/cookie-head-invalid");
-        await dbFixture.DbContext.Images.AddTestAsset(id, family: AssetFamily.Timebased, mediaType: "video/mpeg",
-            maxUnauthorised: 100, origin: "/test/space", roles: "clickthrough");
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+            origin: "/test/space", roles: "clickthrough", deliveryChannels: new[] { "iiif-av" });
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
                 DlcsDatabaseFixture.ClickThroughAuthService.AsList());

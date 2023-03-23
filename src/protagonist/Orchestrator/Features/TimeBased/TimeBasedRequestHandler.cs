@@ -58,6 +58,12 @@ public class TimeBasedRequestHandler
             logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
             return new StatusCodeResult(HttpStatusCode.NotFound);
         }
+        
+        if (!orchestrationAsset.Channels.HasFlag(AvailableDeliveryChannel.Timebased))
+        {
+            logger.LogDebug("Request for {Path}: asset not available in 'timebased' channel", httpContext.Request.Path);
+            return new StatusCodeResult(HttpStatusCode.NotFound);
+        }
 
         var s3Path = GetRequestedAssetHttpUri(assetRequest);
         if (!orchestrationAsset.RequiresAuth)

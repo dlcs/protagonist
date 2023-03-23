@@ -106,8 +106,8 @@ public class ElasticTranscoderWrapper : IElasticTranscoderWrapper
         return pipelineId == nullObject ? null : pipelineId;
     }
 
-    public Task<CreateJobResponse> CreateJob(AssetId assetId, string inputKey, string pipelineId,
-        List<CreateJobOutput> outputs, string jobId, CancellationToken token)
+    public Task<CreateJobResponse> CreateJob(string inputKey, string pipelineId, List<CreateJobOutput> outputs,
+        Dictionary<string, string> jobMetadata, CancellationToken token)
     {
         var objectInBucket = RegionalisedObjectInBucket.Parse(inputKey, true)!;
 
@@ -123,19 +123,13 @@ public class ElasticTranscoderWrapper : IElasticTranscoderWrapper
                 Key = objectInBucket.Key,
             },
             PipelineId = pipelineId,
-            UserMetadata = new Dictionary<string, string>
-            {
-                [UserMetadataKeys.DlcsId] = assetId.ToString(),
-                [UserMetadataKeys.StartTime] = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
-                [UserMetadataKeys.JobId] = jobId
-            },
+            UserMetadata = jobMetadata,
             Outputs = outputs
         };
         return elasticTranscoder.CreateJobAsync(createJobRequest, token);
     }
-    
-    public async Task PersistJobId(AssetId assetId, string elasticTranscoderJobId,
-        CancellationToken cancellationToken)
+
+    public async Task PersistJobId(AssetId assetId, string elasticTranscoderJobId, CancellationToken cancellationToken)
     {
         // NOTE - this is XML to copy Deliverator implementation
         var metadataKey = storageKeyGenerator.GetTimebasedMetadataLocation(assetId);

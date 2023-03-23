@@ -54,7 +54,7 @@ public class ElasticTranscoderTests
             .Returns<string?>(null);
 
         // Act
-        var result = await sut.InitiateTranscodeOperation(context);
+        var result = await sut.InitiateTranscodeOperation(context, new Dictionary<string, string>());
 
         // Assert
         asset.Error.Should().Be("Could not find ElasticTranscoder pipeline");
@@ -77,7 +77,7 @@ public class ElasticTranscoderTests
             .Returns("1234567890123-abcdef");
         
         // Act
-        var result = await sut.InitiateTranscodeOperation(context);
+        var result = await sut.InitiateTranscodeOperation(context, new Dictionary<string, string>());
 
         // Assert
         asset.Error.Should().Be("Unable to generate ElasticTranscoder outputs");
@@ -105,30 +105,34 @@ public class ElasticTranscoderTests
                 ["my-custom-preset"] = "1111111111111-aaaaaa",
                 ["auto-preset"] = "9999999999999-bbbbbb"
             });
-        
+
+        Dictionary<string, string>? metadata = null;
         List<CreateJobOutput>? outputs = null;
         string pipeLineId = string.Empty;
         string inputKey = string.Empty;
-        A.CallTo(() => elasticTranscoderWrapper.CreateJob(A<AssetId>._, A<string>._, A<string>._,
-                A<List<CreateJobOutput>>._, A<string>._, A<CancellationToken>._))
-            .Invokes((AssetId _, string key, string pipeline, List<CreateJobOutput> outs, string _,
+        A.CallTo(() => elasticTranscoderWrapper.CreateJob(A<string>._, A<string>._, A<List<CreateJobOutput>>._, A<Dictionary<string, string>>._, A<CancellationToken>._))
+            .Invokes((string key, string pipeline, List<CreateJobOutput> outs, Dictionary<string, string> md,
                 CancellationToken _) =>
             {
                 outputs = outs;
                 pipeLineId = pipeline;
                 inputKey = key;
+                metadata = md;
             })
             .Returns(new CreateJobResponse
                 { HttpStatusCode = HttpStatusCode.Accepted, Job = new Job { Id = "1234567890123-abcdef" } });
 
         // Act
-        await sut.InitiateTranscodeOperation(context);
+        await sut.InitiateTranscodeOperation(context, new Dictionary<string, string> { ["test"] = "anything" });
 
         // Assert
         pipeLineId.Should().Be("1234567890123-abcdef");
         inputKey.Should().Be("s3://loc/ation");
         outputs[0].Key.Should().EndWith("20/10/asset-id/full/full/max/max/0/default.webm");
         outputs[1].Key.Should().EndWith("20/10/asset-id/full/full/max/max/0/default.mp4");
+        metadata.Should()
+            .ContainKeys(new[] { "jobId", "startTime", "test" }, "jobId + startTime added, rest persisted");
+
     }
     
     [Theory]
@@ -155,12 +159,12 @@ public class ElasticTranscoderTests
                 ["auto-preset"] = "9999999999999-bbbbbb"
             });
 
-        A.CallTo(() => elasticTranscoderWrapper.CreateJob(A<AssetId>._, A<string>._, A<string>._,
-                A<List<CreateJobOutput>>._, A<string>._, A<CancellationToken>._))
+        A.CallTo(() => elasticTranscoderWrapper.CreateJob(A<string>._, A<string>._,
+                A<List<CreateJobOutput>>._, A<Dictionary<string, string>>._, A<CancellationToken>._))
             .Returns(new CreateJobResponse { HttpStatusCode = statusCode, Job = new Job() });
 
         // Act
-        var result = await sut.InitiateTranscodeOperation(context);
+        var result = await sut.InitiateTranscodeOperation(context, new Dictionary<string, string>());
 
         // Assert
         result.Should().BeFalse();
@@ -195,13 +199,13 @@ public class ElasticTranscoderTests
                 ["auto-preset"] = "9999999999999-bbbbbb"
             });
 
-        A.CallTo(() => elasticTranscoderWrapper.CreateJob(A<AssetId>._, A<string>._, A<string>._,
-                A<List<CreateJobOutput>>._, A<string>._, A<CancellationToken>._))
+        A.CallTo(() => elasticTranscoderWrapper.CreateJob(A<string>._, A<string>._,
+                A<List<CreateJobOutput>>._, A<Dictionary<string, string>>._, A<CancellationToken>._))
             .Returns(new CreateJobResponse
                 { HttpStatusCode = statusCode, Job = new Job { Id = elasticTranscoderJobId } });
 
         // Act
-        var result = await sut.InitiateTranscodeOperation(context);
+        var result = await sut.InitiateTranscodeOperation(context, new Dictionary<string, string>());
 
         // Assert
         result.Should().BeTrue();

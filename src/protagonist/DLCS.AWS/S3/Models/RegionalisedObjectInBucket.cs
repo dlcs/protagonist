@@ -80,7 +80,6 @@ public class RegionalisedObjectInBucket : ObjectInBucket
         }
         return null;
     }
-    
 
     /// <summary>
     /// Attempt to match string to regex

@@ -91,7 +91,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
              *  message being a retry
              */ 
             if (cr.Result == LargeObjectStatus.Success) continue;
-            if (cr.Result == LargeObjectStatus.SourceNotFound && cr.DestinationExists == true) continue;
+            if (cr is { Result: LargeObjectStatus.SourceNotFound, DestinationExists: true }) continue;
             
             errors.AppendLine($"Copying ElasticTranscoder output failed with reason: {cr.Result}");
             transcodeSuccess = false;
@@ -116,6 +116,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
             ImageLocation? imageLocation = null;
             if (assetSize.HasValue)
             {
+                // TODO - we may already have a Storage record if it's "File" too
                 imageStore = new ImageStorage
                 {
                     Id = asset.Id,

@@ -71,11 +71,4 @@ public class FileChannelWorker : IAssetIngesterWorker
         ingestionContext.StoredObjects[targetStorageLocation] = assetInBucket.AssetSize;
         ingestionContext.WithStorage(assetSize: assetInBucket.AssetSize);
     }
-
-    private bool HasFileAlreadyBeenCopied(IngestionContext ingestionContext, out RegionalisedObjectInBucket targetStorageLocation)
-    {
-        targetStorageLocation = storageKeyGenerator.GetStoredOriginalLocation(ingestionContext.AssetId);
-        var exists = ingestionContext.UploadedKeys.Contains(targetStorageLocation);
-        return exists;
-    }
 }

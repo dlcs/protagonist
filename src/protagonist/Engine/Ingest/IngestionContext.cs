@@ -21,9 +21,6 @@ public class IngestionContext
         
     public ImageStorage? ImageStorage { get; private set; }
     
-    [Obsolete("Use StoredObjects")]
-    public List<ObjectInBucket> UploadedKeys { get; } = new();
-    
     /// <summary>
     /// Any objects, and their size, uploaded to DLCS storage
     /// </summary>
