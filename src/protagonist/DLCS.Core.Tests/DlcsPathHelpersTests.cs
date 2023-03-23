@@ -51,4 +51,23 @@ public class DlcsPathHelpersTests
         // Assert
         replaced.Should().Be(expected);
     }
+
+    [Theory]
+    [InlineData("https://dlcs.digirati.io/{prefix}/{version}/{customer}/{space}/path/{assetPath}",
+        "https://dlcs.digirati.io/images/first-space/path/200.jpg")]
+    [InlineData("http://dlcs.digirati.io/{prefix}/{version}/{customer}/{space}/path/{assetPath}",
+        "http://dlcs.digirati.io/images/first-space/path/200.jpg")]
+    [InlineData("http://dlcs.digirati.io//{prefix}/{version}/{customer}/{space}/path/{assetPath}",
+        "http://dlcs.digirati.io/images/first-space/path/200.jpg")]
+    public void GeneratePathFromTemplate_RemovesDoubleSlashes(string template, string expected)
+    {
+        // Act
+        var replaced = DlcsPathHelpers.GeneratePathFromTemplate(template,
+            prefix: "images",
+            space: "first-space",
+            assetPath: "200.jpg");
+
+        // Assert
+        replaced.Should().Be(expected);
+    }
 }
