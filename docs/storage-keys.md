@@ -32,8 +32,8 @@ Note that for `Output Location` the exact key is determined by the NamedQuery pr
 
 These can differ per projection type, but the defaults are:
 
-* PDF: `"{customer}/pdf/{queryname}/{args}"`, e.g. `10/pdf/pdf-named-query/10/5/.pdf
-* Zip: `"{customer}/zip/{queryname}/{args}"`, e.g. `10/pdf/zip-named-query/10/5/.zip
+* PDF: `"{customer}/pdf/{queryname}/{args}"`, e.g. `10/pdf/pdf-named-query/10/5/a-string.pdf
+* Zip: `"{customer}/zip/{queryname}/{args}"`, e.g. `10/zip/zip-named-query/10/5/a-string.zip
 
  `args` are all NQ arguments delimited by a `/`.
 
