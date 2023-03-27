@@ -72,8 +72,10 @@ public class AssetToS3Tests
             .MustHaveHappened();
     }
 
-    [Fact]
-    public async Task CopyAsset_ReturnsExpected_AfterDirectS3ToS3()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CopyAsset_ReturnsExpected_AfterDirectS3ToS3(bool optimised)
     {
         // Arrange
         const string mediaType = "video/quicktime";
@@ -86,7 +88,7 @@ public class AssetToS3Tests
         };
         var originStrategy = new CustomerOriginStrategy
         {
-            Strategy = OriginStrategyType.S3Ambient, Optimised = true
+            Strategy = OriginStrategyType.S3Ambient, Optimised = optimised
         };
 
         A.CallTo(() => bucketWriter.CopyLargeObject(A<ObjectInBucket>._, A<ObjectInBucket>._,
@@ -172,8 +174,7 @@ public class AssetToS3Tests
     [InlineData(OriginStrategyType.Default, 99)]
     [InlineData(OriginStrategyType.BasicHttp, 99)]
     [InlineData(OriginStrategyType.SFTP, 99)]
-    [InlineData(OriginStrategyType.S3Ambient, 90)]
-    public async Task CopyAsset_CopiesToDisk_IfNotS3AmbientAndFullBucketAccess(OriginStrategyType strategy,
+    public async Task CopyAsset_CopiesToDisk_IfNotS3Ambient(OriginStrategyType strategy,
         int customerId)
     {
         // Arrange
@@ -283,7 +284,7 @@ public class AssetToS3Tests
         };
         var originStrategy = new CustomerOriginStrategy
         {
-            Strategy = OriginStrategyType.S3Ambient
+            Strategy = OriginStrategyType.Default
         };
 
         var expected = new AssetFromOrigin(asset.Id, assetSize, "s3://fantasy/test-key", mediaType);

@@ -81,7 +81,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
     }
 
     private bool ShouldCopyBucketToBucket(CustomerOriginStrategy customerOriginStrategy)
-        => customerOriginStrategy is { Strategy: OriginStrategyType.S3Ambient, Optimised: true };
+        => customerOriginStrategy is { Strategy: OriginStrategyType.S3Ambient };
 
     private async Task<AssetFromOrigin> CopyBucketToBucket(Asset asset, ObjectInBucket destination, bool verifySize,
         CancellationToken cancellationToken)
