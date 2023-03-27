@@ -139,11 +139,6 @@ public class MemoryAssetTracker : IAssetTracker
                 OpenThumbs = getOpenThumbs.Result, // TODO - reorganise thumb layout + create missing eventually
             });
         }
-
-        if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
-        {
-            return SetDefaults(new OrchestrationAsset());
-        }
         
         return SetDefaults(new OrchestrationAsset());
     }

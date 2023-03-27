@@ -101,7 +101,6 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
                     errors.AppendLine(
                         $"Transcode output for {transcodeOutput.Key} has status {transcodeOutput.Status}");
                     continue;
-                    ;
                 }
 
                 SetAssetDimensions(asset, dimensionsUpdated, transcodeOutput);
