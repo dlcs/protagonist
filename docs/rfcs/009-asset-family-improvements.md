@@ -19,8 +19,7 @@ To accomodate the need to specify how an asset is delivered, we will introduce a
 Valid values are:
 * `file` - asset will be available on the 'file' path, `/file/{customer}/{space}/{asset}`. This means that the original file is available for download (which could be source mp3, mp4, jpeg etc), possibly in addition to derivatives.
 * `iiif-img` - a IIIF image service is available on path `/iiif-img/{customer}/{space}/{asset}/{image-request}` (e.g. `iiif-img/1/2/bar/info.json` or `iiif-img/1/2/bar/0,0,1024,2048/!512,512/0/default.jpg`).
-* `timebased` - a timebased derivative of the asset can be streamed on path `/iiif-av/{customer}/{space}/{asset}/{timebased-request}` (e.g. `iiif-av/1/2/foo/full/max/default.mp3`).
-* `thumbs` - a Level 0 IIIF image service is available on path `/iiif-img/{customer}/{space}/{asset}/{image-request}` (e.g. `iiif-img/1/2/bar/info.json` or `iiif-img/1/2/bar/0,0,1024,2048/!512,512/0/default.jpg`).
+* `iiif-av` - a timebased derivative of the asset can be streamed on path `/iiif-av/{customer}/{space}/{asset}/{timebased-request}` (e.g. `iiif-av/1/2/foo/full/max/default.mp3`).
 
 This value will be stored in a new column on the `Images` table.
 
@@ -41,9 +40,7 @@ e.g. If an `image/jpeg` asset is created with only `"file"` delivery-channel the
 
 PR [#424](https://github.com/dlcs/protagonist/pull/424) introduced an explicit "no-transcode" policy (key of `"none"`) which signified that the source image does not need to be transcoded - it is web-friendly already.
 
-This is an explicit policy for when we won't transcode an asset and the default for `"file"` delivery-channel assets.
-
-It can be used to register an asset where we don't know the policy yet - we could register a video with `{ "delivery-channel": "timebased", "imageOptimisationPolicy": "none" }` which is valid and means the video won't be available on either `/file/` or `/iiif-av/` paths.
+This is a placeholder policy for the `"file"` delivery-channel - it is only valid for `"file"` delivery-channel.
 
 ## Validation Requirements
 
