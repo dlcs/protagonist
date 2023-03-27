@@ -17,7 +17,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleFor(a => a.Family).NotEmpty().WithMessage("Family must be specified");
 
         // ImageOptimisationPolicy dependant validation
-        When(a => ImageOptimisationPolicyX.IsNoOpIdentifier(a.ImageOptimisationPolicy) && a.Family != AssetFamily.File,
+        When(a => KnownImageOptimisationPolicy.IsNoOpIdentifier(a.ImageOptimisationPolicy) && a.Family != AssetFamily.File,
                 () =>
                 {
                     When(a => !MIMEHelper.IsAudio(a.MediaType), () =>
@@ -46,6 +46,12 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
                 RuleFor(a => a.Height).Empty().WithMessage("Should not include height");
                 RuleFor(a => a.Duration).Empty().WithMessage("Should not include duration");
             });
+
+        RuleFor(a => a.Family)
+            .Must(family => family == AssetFamily.Image)
+            .When(a => KnownImageOptimisationPolicy.IsUseOriginalIdentifier(a.ImageOptimisationPolicy))
+            .WithMessage(
+                $"ImageOptimisationPolicy '{KnownImageOptimisationPolicy.UseOriginalId}' only valid for Image family");
 
         // System edited fields
         RuleFor(a => a.Batch).Empty().WithMessage("Should not include batch");

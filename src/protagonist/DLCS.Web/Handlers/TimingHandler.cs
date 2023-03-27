@@ -22,13 +22,13 @@ public class TimingHandler : DelegatingHandler
         CancellationToken cancellationToken)
     {
         var sw = Stopwatch.StartNew();
-        logger.LogDebug("Calling {Uri}..", request.RequestUri);
+        logger.LogDebug("Calling {HttpMethod} {Uri}..", request.Method, request.RequestUri);
         
         var result = await base.SendAsync(request, cancellationToken);
         
         sw.Stop();
-        logger.LogDebug("Request to {Uri} completed with status {StatusCode} in {Elapsed}ms", request.RequestUri,
-            result.StatusCode, sw.ElapsedMilliseconds);
+        logger.LogDebug("Request to {HttpMethod} {Uri} completed with status {StatusCode} in {Elapsed}ms",
+            request.Method, request.RequestUri, result.StatusCode, sw.ElapsedMilliseconds);
         return result;
     }
 }

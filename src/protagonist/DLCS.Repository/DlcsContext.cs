@@ -609,6 +609,19 @@ public partial class DlcsContext : DbContext
                 .IsRequired()
                 .HasMaxLength(1000);
         });
+
+        modelBuilder.Entity<ImageOptimisationPolicy>().HasData(
+            new ImageOptimisationPolicy
+            {
+                Id = "none", Customer = 1, Global = true, Name = "No optimisation/transcoding",
+                TechnicalDetails = new[] { "no-op" }
+            },
+            new ImageOptimisationPolicy
+            {
+                Id = "use-original", Customer = 1, Global = true, Name = "Use original for image-server",
+                TechnicalDetails = new[] { "use-original" }
+            }
+        );
         
         OnModelCreatingPartial(modelBuilder);
     }

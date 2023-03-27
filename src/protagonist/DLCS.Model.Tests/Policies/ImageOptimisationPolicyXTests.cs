@@ -32,12 +32,47 @@ public class ImageOptimisationPolicyXTests
     [InlineData(null)]
     public void IsNoOpIdentifier_False(string id)
     {
-        ImageOptimisationPolicyX.IsNoOpIdentifier(id).Should().BeFalse();
+        KnownImageOptimisationPolicy.IsNoOpIdentifier(id).Should().BeFalse();
     }
     
     [Fact]
     public void IsNoOpIdentifier_True()
     {
-        ImageOptimisationPolicyX.IsNoOpIdentifier("none").Should().BeTrue();
+        KnownImageOptimisationPolicy.IsNoOpIdentifier("none").Should().BeTrue();
+    }
+    
+    [Theory]
+    [InlineData("video-max")]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void IsUseOriginal_False(string id)
+    {
+        var policy = new ImageOptimisationPolicy { Id = id };
+
+        policy.IsUseOriginal().Should().BeFalse();
+    }
+    
+    [Fact]
+    public void IsUseOriginal_True()
+    {
+        var policy = new ImageOptimisationPolicy { Id = "use-original" };
+
+        policy.IsUseOriginal().Should().BeTrue();
+    }
+    
+    [Theory]
+    [InlineData("video-max")]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData(null)]
+    public void IsUseOriginalIdentifier_False(string id)
+    {
+        KnownImageOptimisationPolicy.IsUseOriginalIdentifier(id).Should().BeFalse();
+    }
+    
+    [Fact]
+    public void IsUseOriginalIdentifier_True()
+    {
+        KnownImageOptimisationPolicy.IsUseOriginalIdentifier("use-original").Should().BeTrue();
     }
 }

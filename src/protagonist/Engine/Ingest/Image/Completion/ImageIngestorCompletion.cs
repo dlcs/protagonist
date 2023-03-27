@@ -33,11 +33,6 @@ public class ImageIngestorCompletion : IImageIngestorCompletion
     /// </summary>
     public async Task<bool> CompleteIngestion(IngestionContext context, bool ingestSuccessful, string? sourceTemplate)
     {
-        if (context.AssetFromOrigin != null && context.AssetFromOrigin.ContentType.HasText())
-        {
-            context.Asset.MediaType = context.AssetFromOrigin.ContentType;
-        }
-        
         var dbUpdateSuccess =
             await assetRepository.UpdateIngestedAsset(context.Asset, context.ImageLocation, context.ImageStorage);
         

@@ -108,7 +108,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         updatedAsset.Height.Should().Be(200);
         updatedAsset.Ingesting.Should().BeFalse();
         updatedAsset.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
-        updatedAsset.MediaType.Should().Be("application/jpeg");
+        updatedAsset.MediaType.Should().Be("application/tiff");
         updatedAsset.Error.Should().BeEmpty();
 
         var location = await dbContext.ImageLocations.SingleAsync(a => a.Id == assetId);
@@ -157,7 +157,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         updatedAsset.Height.Should().Be(200);
         updatedAsset.Ingesting.Should().BeFalse();
         updatedAsset.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
-        updatedAsset.MediaType.Should().Be("application/jpeg");
+        updatedAsset.MediaType.Should().Be("application/tiff");
         updatedAsset.Error.Should().BeEmpty();
 
         var location = await dbContext.ImageLocations.SingleAsync(a => a.Id == assetId);
