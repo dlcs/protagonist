@@ -6,12 +6,6 @@ using Engine.Ingest.Models;
 
 namespace Engine.Ingest;
 
-/// <summary>
-/// Delegate for getting the correct <see cref="IAssetIngesterWorker"/> for specified Family.
-/// </summary>
-/// <param name="family">The type of ingester worker.</param>
-public delegate IAssetIngesterWorker IngestorResolver(AssetFamily family);
-
 public interface IAssetIngester
 {
     /// <summary>
@@ -33,7 +27,7 @@ public interface IAssetIngester
 /// </summary>
 public class AssetIngester : IAssetIngester
 {
-    private readonly IngestorResolver resolver;
+    private readonly IngestExecutor executor;
     private readonly ILogger<AssetIngester> logger;
     private readonly ICustomerOriginStrategyRepository customerOriginRepository;
     private readonly IPolicyRepository policyRepository;
@@ -42,12 +36,12 @@ public class AssetIngester : IAssetIngester
         IPolicyRepository policyRepository, 
         ICustomerOriginStrategyRepository customerOriginRepository,
         ILogger<AssetIngester> logger,
-        IngestorResolver resolver)
+        IngestExecutor executor)
     {
         this.policyRepository = policyRepository;
         this.customerOriginRepository = customerOriginRepository;
         this.logger = logger;
-        this.resolver = resolver;
+        this.executor = executor;
     }
 
     /// <summary>
@@ -81,12 +75,10 @@ public class AssetIngester : IAssetIngester
             
         // set Thumbnail and ImageOptimisation policies on Asset
         await HydrateAssetPolicies(request.Asset);
-            
-        // get the relevant resolver (Image or Timebased)
-        var ingestor = resolver(request.Asset.Family ?? AssetFamily.Image);
 
-        var status = await ingestor.Ingest(request, customerOriginStrategy, cancellationToken);
-        return new IngestResult(request.Asset, status);
+        // now ingest the asset
+        var status = await executor.IngestAsset(request.Asset, customerOriginStrategy, cancellationToken);
+        return status;
     }
 
     private async Task HydrateAssetPolicies(Asset asset)

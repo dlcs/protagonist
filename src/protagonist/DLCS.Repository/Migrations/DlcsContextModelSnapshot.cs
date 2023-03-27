@@ -46,6 +46,11 @@ namespace DLCS.Repository.Migrations
                     b.Property<int>("Customer")
                         .HasColumnType("integer");
 
+                    b.Property<string>("DeliveryChannel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<long?>("Duration")
                         .IsRequired()
                         .ValueGeneratedOnAdd()

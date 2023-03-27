@@ -15,7 +15,7 @@ public interface IOriginStrategy
     /// Loads specified <see cref="Asset"/> from origin, using details in specified <see cref="CustomerOriginStrategy"/>
     /// </summary>
     /// <returns>Asset as response</returns>
-    public Task<OriginResponse?> LoadAssetFromOrigin(AssetId assetId, string origin,
+    public Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default);
 }
 

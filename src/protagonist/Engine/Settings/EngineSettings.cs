@@ -10,6 +10,12 @@ public class EngineSettings
     /// A collection of customer-specific overrides, keyed by customerId.
     /// </summary> 
     public Dictionary<string, CustomerOverridesSettings> CustomerOverrides { get; set; } = new();
+    
+    /// <summary>
+    /// Template for location to download any temporary assets to disk. Supports standard replacements
+    /// {customer}, {space}, {image}
+    /// </summary>
+    public string DownloadTemplate { get; set; }
 
     /// <summary>
     /// Get CustomerSpecificSettings, if found. 
@@ -112,17 +118,7 @@ public class TimebasedIngestSettings
     /// The name of the ElasticTranscoder pipeline to use for transcoding AV files
     /// </summary>
     public string PipelineName { get; set; }
-        
-    /// <summary>
-    /// The root processing folder where temporary files are placed.
-    /// </summary>
-    public string ProcessingFolder { get; set; }
-        
-    /// <summary>
-    /// Template for location to download any assets to disk.
-    /// </summary>
-    public string SourceTemplate { get; set; }
-        
+
     /// <summary>
     /// Mapping of 'friendly' to 'real' transcoder names
     /// </summary>

@@ -12,7 +12,7 @@ namespace DLCS.Repository.Strategy;
 /// </summary>
 public class SftpOriginStrategy : IOriginStrategy
 {
-    public Task<OriginResponse?> LoadAssetFromOrigin(AssetId assetId, string origin,
+    public Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
         customerOriginStrategy.ThrowIfNull(nameof(customerOriginStrategy));

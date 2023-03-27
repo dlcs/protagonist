@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.FileSystem;
@@ -14,7 +15,6 @@ using Engine.Ingest.Persistence;
 using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
-using Newtonsoft.Json;
 using Test.Helpers.Http;
 using Test.Helpers.Settings;
 using Test.Helpers.Storage;
@@ -27,9 +27,10 @@ public class AppetiserClientTests
     private readonly TestBucketWriter bucketWriter;
     private readonly IThumbCreator thumbnailCreator;
     private readonly EngineSettings engineSettings;
-    private readonly AppetiserClient sut;
     private readonly IStorageKeyGenerator storageKeyGenerator;
+    private readonly AppetiserClient sut;
     private readonly IFileSystem fileSystem;
+    private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
 
     public AppetiserClientTests()
     {
@@ -51,6 +52,9 @@ public class AppetiserClientTests
         A.CallTo(() => storageKeyGenerator.GetStorageLocation(A<AssetId>._))
             .ReturnsLazily((AssetId assetId) =>
                 new RegionalisedObjectInBucket("appetiser-test", assetId.ToString(), "Fake-Region"));
+        A.CallTo(() => storageKeyGenerator.GetStoredOriginalLocation(A<AssetId>._))
+            .ReturnsLazily((AssetId assetId) =>
+                new RegionalisedObjectInBucket("appetiser-test", $"{assetId}/original", "Fake-Region"));
 
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
 
@@ -61,7 +65,7 @@ public class AppetiserClientTests
     }
     
     [Fact]
-    public async Task ProcessImage_CreatesRequiredDirectories()
+    public async Task ProcessImage_CreatesAndRemovesRequiredDirectories()
     {
         // Arrange
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
@@ -72,6 +76,7 @@ public class AppetiserClientTests
 
         // Assert
         A.CallTo(() => fileSystem.CreateDirectory(A<string>._)).MustHaveHappenedTwiceExactly();
+        A.CallTo(() => fileSystem.DeleteDirectory(A<string>._, true, true)).MustHaveHappenedTwiceExactly();
     }
 
     [Fact]
@@ -138,7 +143,7 @@ public class AppetiserClientTests
     }
 
     [Fact]
-    public async Task ProcessImage_UpdatesAssetSize()
+    public async Task ProcessImage_UpdatesAssetDimensions()
     {
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel
@@ -148,7 +153,7 @@ public class AppetiserClientTests
             Thumbs = Array.Empty<ImageOnDisk>()
         };
 
-        var response = httpHandler.GetResponseMessage(JsonConvert.SerializeObject(imageProcessorResponse),
+        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
             HttpStatusCode.OK);
         response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         httpHandler.SetResponse(response);
@@ -174,7 +179,7 @@ public class AppetiserClientTests
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel { Thumbs = Array.Empty<ImageOnDisk>() };
 
-        var response = httpHandler.GetResponseMessage(JsonConvert.SerializeObject(imageProcessorResponse),
+        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
             HttpStatusCode.OK);
         response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         httpHandler.SetResponse(response);
@@ -194,8 +199,12 @@ public class AppetiserClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        bucketWriter.ShouldHaveKey("1/2/test").WithFilePath("dest/test.jp2").WithContentType("image/jp2");
+        bucketWriter
+            .ShouldHaveKey("1/2/test")
+            .WithFilePath("dest/test.jp2")
+            .WithContentType("image/jp2");
         context.ImageLocation.S3.Should().Be(expected);
+        context.StoredObjects.Should().NotBeEmpty();
     }
 
     [Fact]
@@ -204,7 +213,7 @@ public class AppetiserClientTests
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel { Thumbs = Array.Empty<ImageOnDisk>() };
 
-        var response = httpHandler.GetResponseMessage(JsonConvert.SerializeObject(imageProcessorResponse),
+        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
             HttpStatusCode.OK);
         response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         httpHandler.SetResponse(response);
@@ -217,7 +226,11 @@ public class AppetiserClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        bucketWriter.ShouldHaveKey("1/2/test").WithFilePath(locationOnDisk).WithContentType("image/jpg");
+        bucketWriter
+            .ShouldHaveKey("1/2/test/original")
+            .WithFilePath(locationOnDisk)
+            .WithContentType("image/jpg");
+        context.StoredObjects.Should().NotBeEmpty();
     }
 
     [Fact]
@@ -226,7 +239,7 @@ public class AppetiserClientTests
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel { Thumbs = Array.Empty<ImageOnDisk>() };
 
-        var response = httpHandler.GetResponseMessage(JsonConvert.SerializeObject(imageProcessorResponse),
+        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
             HttpStatusCode.OK);
         response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         httpHandler.SetResponse(response);
@@ -246,6 +259,7 @@ public class AppetiserClientTests
         // Assert
         bucketWriter.Operations.Should().BeEmpty();
         context.ImageLocation.S3.Should().Be(expected);
+        context.StoredObjects.Should().BeEmpty();
     }
 
     [Fact]
@@ -260,7 +274,7 @@ public class AppetiserClientTests
             },
         };
 
-        var response = httpHandler.GetResponseMessage(JsonConvert.SerializeObject(imageProcessorResponse),
+        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
             HttpStatusCode.OK);
         response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         httpHandler.SetResponse(response);
@@ -277,39 +291,154 @@ public class AppetiserClientTests
             ))
             .MustHaveHappened();
     }
-
-    [Fact]
-    public async Task ProcessImage_ReturnsImageStorageObject()
+    
+    [Theory]
+    [InlineData("image/jp2")]
+    [InlineData("image/jpx")]
+    public async Task ProcessImage_UseOriginal(string originContentType)
     {
         // Arrange
-        var imageProcessorResponse = new AppetiserResponseModel { Thumbs = Array.Empty<ImageOnDisk>() };
-
-        var response = httpHandler.GetResponseMessage(JsonConvert.SerializeObject(imageProcessorResponse),
+        var imageProcessorResponse = new AppetiserResponseModel
+        {
+            Height = 1000,
+            Width = 5000,
+            Thumbs = new ImageOnDisk[] { new() { Path = "foo" }, new() { Path = "bar" } }
+        };
+        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
             HttpStatusCode.OK);
         response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         httpHandler.SetResponse(response);
 
-        var context = GetIngestionContext();
-        context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = false };
+        var context = GetIngestionContext(contentType: originContentType,
+            cos: new CustomerOriginStrategy { Optimised = true, Strategy = OriginStrategyType.S3Ambient },
+            imageOptimisationPolicy: "use-original");
+        context.AssetFromOrigin.Location = "/file/on/disk";
+        context.Asset.Origin = "s3://origin/2/1/foo-bar";
 
-        A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(123L);
+        AppetiserRequestModel? requestModel = null;
+        httpHandler.RegisterCallback(async message =>
+        {
+            requestModel = await message.Content.ReadAsAsync<AppetiserRequestModel>();
+        });
+        A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(100);
 
         // Act
         await sut.ProcessImage(context);
 
         // Assert
-        var storage = context.ImageStorage;
-        storage.Id.Should().Be(AssetId.FromString("/1/2/something"));
-        storage.Customer.Should().Be(1);
-        storage.Space.Should().Be(2);
-        storage.LastChecked.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(30));
-        storage.Size.Should().Be(123);
+        requestModel.Operation.Should().Be("derivatives-only");
+        A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
+            .MustHaveHappened();
+        context.ImageStorage.ThumbnailSize.Should().Be(200, "Thumbs saved");
+        context.ImageStorage.Size.Should().Be(0, "JP2 not written to S3");
+        bucketWriter.Operations.Should().BeEmpty("JP2 not written to S3");
+        context.Asset.Height.Should().Be(imageProcessorResponse.Height);
+        context.Asset.Width.Should().Be(imageProcessorResponse.Width);
+        context.StoredObjects.Should().BeEmpty();
+    }
+    
+    [Theory]
+    [InlineData("image/jp2", true, OriginStrategyType.BasicHttp)]
+    [InlineData("image/jp2", false, OriginStrategyType.S3Ambient)]
+    [InlineData("image/tiff", true, OriginStrategyType.S3Ambient)]
+    public async Task ProcessImage_NotJp2_OptimisedOrigin(string originContentType, bool optimised,
+        OriginStrategyType strategyType)
+    {
+        // Arrange
+        var imageProcessorResponse = new AppetiserResponseModel
+        {
+            Height = 1000,
+            Width = 5000,
+            Thumbs = new ImageOnDisk[] { new() { Path = "foo" }, new() { Path = "bar" } }
+        };
+        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
+            HttpStatusCode.OK);
+        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        httpHandler.SetResponse(response);
+
+        var context = GetIngestionContext(contentType: originContentType,
+            cos: new CustomerOriginStrategy { Optimised = optimised, Strategy = strategyType });
+        context.AssetFromOrigin.Location = "/file/on/disk";
+        context.Asset.Origin = "s3://origin/2/1/foo-bar";
+
+        AppetiserRequestModel? requestModel = null;
+        httpHandler.RegisterCallback(async message =>
+        {
+            requestModel = await message.Content.ReadAsAsync<AppetiserRequestModel>();
+        });
+        A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(100);
+
+        // Act
+        await sut.ProcessImage(context);
+
+        // Assert
+        requestModel.Operation.Should().Be("ingest");
+        A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
+            .MustHaveHappened();
+        context.ImageStorage.ThumbnailSize.Should().Be(200, "Thumbs saved");
+        context.ImageStorage.Size.Should().Be(100, "JP2 written to S3");
+        bucketWriter.ShouldHaveKey("1/2/something");
+        context.Asset.Height.Should().Be(imageProcessorResponse.Height, "JP2 Generated");
+        context.Asset.Width.Should().Be(imageProcessorResponse.Width, "JP2 Generated");
+        context.StoredObjects.Should().NotBeEmpty();
+    }
+    
+    [Fact]
+    public async Task ProcessImage_UseOriginal_AlreadyUploaded()
+    {
+        // Arrange
+        var imageProcessorResponse = new AppetiserResponseModel
+        {
+            Height = 1000,
+            Width = 5000,
+            Thumbs = new ImageOnDisk[] { new() { Path = "foo" }, new() { Path = "bar" } }
+        };
+        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
+            HttpStatusCode.OK);
+        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        httpHandler.SetResponse(response);
+
+        var context = GetIngestionContext(
+            cos: new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient },
+            imageOptimisationPolicy: "use-original");
+        context.AssetFromOrigin.Location = "/file/on/disk";
+        context.Asset.Origin = "s3://origin/2/1/foo-bar";
+        var alreadyUploadedFile = new RegionalisedObjectInBucket("appetiser-test", $"{context.Asset.Id}/original", "Fake-Region");
+        context.StoredObjects.Add(alreadyUploadedFile, -999);
+
+        AppetiserRequestModel? requestModel = null;
+        httpHandler.RegisterCallback(async message =>
+        {
+            requestModel = await message.Content.ReadAsAsync<AppetiserRequestModel>();
+        });
+        A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(100);
+
+        // Act
+        await sut.ProcessImage(context);
+
+        // Assert
+        A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
+            .MustHaveHappened();
+        context.ImageStorage.ThumbnailSize.Should().Be(200, "Thumbs saved");
+        context.ImageStorage.Size.Should().Be(0, "JP2 not written to S3");
+        bucketWriter.Operations.Should().BeEmpty("JP2 not written to S3");
+        context.Asset.Height.Should().Be(imageProcessorResponse.Height);
+        context.Asset.Width.Should().Be(imageProcessorResponse.Width);
+        context.StoredObjects.Should().ContainKey(alreadyUploadedFile).WhoseValue.Should()
+            .Be(-999, "Value should not have changed");
     }
 
     private static IngestionContext GetIngestionContext(string assetId = "/1/2/something",
-        string contentType = "image/jpg", string imageOptimisationPolicy = "fast-high", bool optimised = false)
+        string contentType = "image/jpg", CustomerOriginStrategy? cos = null,
+        string imageOptimisationPolicy = "fast-high", bool optimised = false)
     {
-        var asset = new Asset { Id = AssetId.FromString(assetId), Customer = 1, Space = 2, MediaType = contentType};
+        cos ??= new CustomerOriginStrategy { Strategy = OriginStrategyType.Default, Optimised = optimised };
+        var asset = new Asset
+        {
+            Id = AssetId.FromString(assetId), Customer = 1, Space = 2,
+            DeliveryChannel = new[] { AssetDeliveryChannels.Image }, MediaType = contentType
+        };
+
         asset
             .WithImageOptimisationPolicy(new ImageOptimisationPolicy
             {
@@ -319,10 +448,11 @@ public class AppetiserClientTests
             .WithThumbnailPolicy(new ThumbnailPolicy());
 
         var context = new IngestionContext(asset);
-        return context
-            .WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "./scratch/here.jpg", contentType)
-            {
-                CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = optimised }
-            });
+        var assetFromOrigin = new AssetFromOrigin(asset.Id, 123, "./scratch/here.jpg", contentType)
+        {
+            CustomerOriginStrategy = cos
+        };
+        
+        return context.WithAssetFromOrigin(assetFromOrigin);
     }
 }

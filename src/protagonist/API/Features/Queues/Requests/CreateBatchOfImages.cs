@@ -107,7 +107,6 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 }
                 else
                 {
-                    logger.LogDebug("Asset {AssetId} is file, marking as complete", asset.Id);
                     batch.Completed += 1;
                 }
             }

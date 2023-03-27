@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
@@ -23,7 +24,7 @@ public class S3AmbientOriginStrategy : IOriginStrategy
         this.logger = logger;
     }
     
-    public async Task<OriginResponse?> LoadAssetFromOrigin(AssetId assetId, string origin,
+    public async Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Fetching {Asset} from Origin: {Origin}", assetId, origin);
@@ -43,7 +44,7 @@ public class S3AmbientOriginStrategy : IOriginStrategy
     }
 
     private static OriginResponse CreateOriginResponse(ObjectFromBucket response)
-        => new OriginResponse(response.Stream)
-            .WithContentLength(response.Headers.ContentLength)
-            .WithContentType(response.Headers.ContentType);
+        => new OriginResponse(response.Stream ?? Stream.Null)
+            .WithContentLength(response.Headers?.ContentLength)
+            .WithContentType(response.Headers?.ContentType);
 }

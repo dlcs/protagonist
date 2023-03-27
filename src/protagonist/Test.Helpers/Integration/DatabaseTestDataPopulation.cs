@@ -40,7 +40,8 @@ public static class DatabaseTestDataPopulation
         bool ingesting = false,
         string error = "",
         string imageOptimisationPolicy = "",
-        DateTime? finished = null)
+        DateTime? finished = null,
+        string[] deliveryChannels = null)
         => assets.AddAsync(new Asset
         {
             Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
@@ -50,7 +51,7 @@ public static class DatabaseTestDataPopulation
             NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
             NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = error,
             ImageOptimisationPolicy = imageOptimisationPolicy, Batch = batch, Ingesting = ingesting,
-            Duration = duration, Finished = finished
+            Duration = duration, Finished = finished, DeliveryChannel = deliveryChannels ?? Array.Empty<string>()
         });
 
     public static ValueTask<EntityEntry<AuthToken>> AddTestToken(this DbSet<AuthToken> authTokens,

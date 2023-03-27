@@ -22,8 +22,9 @@ public class ElasticTranscoder : IMediaTranscoder
         engineSettings.CurrentValue.TimebasedIngest.ThrowIfNull(nameof(engineSettings.CurrentValue.TimebasedIngest));
         this.logger = logger;
     }
-    
-    public async Task<bool> InitiateTranscodeOperation(IngestionContext context, CancellationToken token = default)
+
+    public async Task<bool> InitiateTranscodeOperation(IngestionContext context, Dictionary<string ,string> jobMetadata,
+        CancellationToken token = default)
     {
         var settings = engineSettings.CurrentValue.TimebasedIngest!;
         var pipelineId = await elasticTranscoderWrapper.GetPipelineId(settings.PipelineName, token);
@@ -35,7 +36,7 @@ public class ElasticTranscoder : IMediaTranscoder
             context.Asset.Error = "Could not find ElasticTranscoder pipeline";
             return false;
         }
-        
+
         var presets = await elasticTranscoderWrapper.GetPresetIdLookup(token);
 
         // Create a guid to uniquely identify this job - this is added to ET output path to avoid overwriting by
@@ -49,10 +50,13 @@ public class ElasticTranscoder : IMediaTranscoder
             return false;
         }
 
-        var elasticTranscoderJob = await elasticTranscoderWrapper.CreateJob(context.AssetId,
-            context.AssetFromOrigin.Location, pipelineId, outputs, jobId, token);
+        jobMetadata[UserMetadataKeys.JobId] = jobId;
+        jobMetadata[UserMetadataKeys.StartTime] = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
         
-        var statusCode = (int) elasticTranscoderJob.HttpStatusCode;
+        var elasticTranscoderJob = await elasticTranscoderWrapper.CreateJob(context.AssetFromOrigin.Location,
+            pipelineId, outputs, jobMetadata, token);
+
+        var statusCode = (int)elasticTranscoderJob.HttpStatusCode;
 
         logger.LogDebug("Created ET job {ETJobId}, got response {StatusCode}", elasticTranscoderJob.Job?.Id,
             elasticTranscoderJob.HttpStatusCode);

@@ -2,7 +2,6 @@
 using API.Features.Image.Validation;
 using DLCS.Model.Policies;
 using FluentValidation.TestHelper;
-using AssetFamily = DLCS.HydraModel.AssetFamily;
 
 namespace API.Tests.Features.Images.Validation;
 
@@ -27,14 +26,6 @@ public class HydraImageValidatorTests
     }
     
     [Fact]
-    public void Family_NotSet()
-    {
-        var model = new DLCS.HydraModel.Image { Family = null };
-        var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(a => a.Family);
-    }
-
-    [Fact]
     public void Batch_Provided()
     {
         var model = new DLCS.HydraModel.Image { Batch = "10" };
@@ -52,31 +43,36 @@ public class HydraImageValidatorTests
             .WithErrorMessage("Should not include width");
     }
     
-    [Fact]
-    public void Width_NotSet_NoTranscodePolicy()
-    {
-        var model = new DLCS.HydraModel.Image { ImageOptimisationPolicy = "none" };
-        var result = sut.TestValidate(model);
-        result
-            .ShouldHaveValidationErrorFor(a => a.Width)
-            .WithErrorMessage("Width cannot be empty if 'none' imageOptimisationPolicy specified");
-    }
-    
     [Theory]
-    [InlineData("audio/mp4", AssetFamily.Timebased)]
-    [InlineData("audio/mp4", AssetFamily.File)]
-    [InlineData("application/pdf", AssetFamily.File)]
-    public void WidthHeight_NotSet_NoTranscodePolicy_AllowedForFileOrAudio(string mediaType, AssetFamily assetFamily)
+    [InlineData("image/jpeg", "file,iiif-img")]
+    [InlineData("video/mp4", "file,iiif-av")]
+    [InlineData("audio/mp4", "file")]
+    public void Width_Provided_NotFileOnly_OrAudio(string mediaType, string dc)
     {
         var model = new DLCS.HydraModel.Image
         {
-            ImageOptimisationPolicy = "none", Family = assetFamily, MediaType = mediaType
+            Width = 10, DeliveryChannel = dc.Split(","), MediaType = mediaType
+        };
+        var result = sut.TestValidate(model);
+        result
+            .ShouldHaveValidationErrorFor(a => a.Width)
+            .WithErrorMessage("Should not include width");
+    }
+    
+    [Theory]
+    [InlineData("image/jpeg")]
+    [InlineData("video/mp4")]
+    [InlineData("application/pdf")]
+    public void Width_Allowed_IfFileOnly_AndVideoOrImage(string mediaType)
+    {
+        var model = new DLCS.HydraModel.Image
+        {
+            MediaType = mediaType, DeliveryChannel = new[] { "file" }, Width = 10
         };
         var result = sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.Width);
-        result.ShouldNotHaveValidationErrorFor(a => a.Height);
     }
-    
+
     [Fact]
     public void Height_Provided()
     {
@@ -87,14 +83,34 @@ public class HydraImageValidatorTests
             .WithErrorMessage("Should not include height");
     }
     
-    [Fact]
-    public void Height_NotSet_NoTranscodePolicy()
+    [Theory]
+    [InlineData("image/jpeg", "file,iiif-img")]
+    [InlineData("video/mp4", "file,iiif-av")]
+    [InlineData("audio/mp4", "file")]
+    public void Height_Provided_NotFileOnly_OrAudio(string mediaType, string dc)
     {
-        var model = new DLCS.HydraModel.Image { ImageOptimisationPolicy = "none" };
+        var model = new DLCS.HydraModel.Image
+        {
+            Height = 10, DeliveryChannel = dc.Split(","), MediaType = mediaType
+        };
         var result = sut.TestValidate(model);
         result
             .ShouldHaveValidationErrorFor(a => a.Height)
-            .WithErrorMessage("Height cannot be empty if 'none' imageOptimisationPolicy specified");
+            .WithErrorMessage("Should not include height");
+    }
+    
+    [Theory]
+    [InlineData("image/jpeg")]
+    [InlineData("video/mp4")]
+    [InlineData("application/pdf")]
+    public void Height_Allowed_IfFileOnly_AndVideoOrImage(string mediaType)
+    {
+        var model = new DLCS.HydraModel.Image
+        {
+            MediaType = mediaType, DeliveryChannel = new[] { "file" }, Height = 10
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.Height);
     }
     
     [Fact]
@@ -106,39 +122,37 @@ public class HydraImageValidatorTests
             .ShouldHaveValidationErrorFor(a => a.Duration)
             .WithErrorMessage("Should not include duration");
     }
-    
-    [Fact]
-    public void Duration_Provided_NoTranscode_ButImage()
+   
+    [Theory]
+    [InlineData("image/jpeg", "file")]
+    [InlineData("video/mp4", "file,iiif-av")]
+    [InlineData("audio/mp4", "file,iiif-av")]
+    public void Duration_Provided_NotFileOnly_OrImage(string mediaType, string dc)
     {
         var model = new DLCS.HydraModel.Image
-            { Duration = 10, ImageOptimisationPolicy = "none", Family = AssetFamily.Image };
+        {
+            Duration = 10, DeliveryChannel = dc.Split(","), MediaType = mediaType
+        };
         var result = sut.TestValidate(model);
         result
             .ShouldHaveValidationErrorFor(a => a.Duration)
             .WithErrorMessage("Should not include duration");
     }
     
-    [Fact]
-    public void Duration_NotSetForTimebased_NoTranscodePolicy()
-    {
-        var model = new DLCS.HydraModel.Image { ImageOptimisationPolicy = "none", Family = AssetFamily.Timebased };
-        var result = sut.TestValidate(model);
-        result
-            .ShouldHaveValidationErrorFor(a => a.Duration)
-            .WithErrorMessage(
-                "Duration cannot be empty if 'none' imageOptimisationPolicy specified for timebased asset");
-    }
-    
     [Theory]
-    [InlineData(AssetFamily.File)]
-    [InlineData(AssetFamily.Image)]
-    public void Duration_NotSet_NoTranscodePolicy_AllowedForFileOrImageFamily(AssetFamily family)
+    [InlineData("audio/mp4")]
+    [InlineData("video/mp4")]
+    [InlineData("application/pdf")]
+    public void Duration_Allowed_IfFileOnly_AndVideoOrAudio(string mediaType)
     {
-        var model = new DLCS.HydraModel.Image { ImageOptimisationPolicy = "none", Family = family };
+        var model = new DLCS.HydraModel.Image
+        {
+            MediaType = mediaType, DeliveryChannel = new[] { "file" }, Duration = 10
+        };
         var result = sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.Duration);
     }
-    
+
     [Fact]
     public void Finished_Provided()
     {
@@ -154,36 +168,65 @@ public class HydraImageValidatorTests
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Created);
     }
-    
-    [Fact]
-    public void FamilyT_NotAudioOrVideoMediaType()
+
+    [Theory]
+    [InlineData("file")]
+    [InlineData("file,iiif-av")]
+    [InlineData("iiif-av")]
+    public void UseOriginalPolicy_NotImage(string dc)
     {
-        var model = new DLCS.HydraModel.Image { Family = AssetFamily.Timebased, MediaType = "application/pdf" };
+        var model = new DLCS.HydraModel.Image
+        {
+            DeliveryChannel = dc.Split(","),
+            MediaType = "image/jpeg",
+            ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId
+        };
         var result = sut.TestValidate(model);
         result
-            .ShouldHaveValidationErrorFor(a => a.MediaType)
-            .WithErrorMessage("Timebased assets must have mediaType starting video/ or audio/");
+            .ShouldHaveValidationErrorFor(a => a.ImageOptimisationPolicy)
+            .WithErrorMessage("ImageOptimisationPolicy 'use-original' only valid for image delivery-channel");
     }
     
     [Theory]
-    [InlineData(AssetFamily.Timebased)]
-    [InlineData(AssetFamily.File)]
-    public void UseOriginalPolicy_NotImage(AssetFamily family)
+    [InlineData("iiif-img")]
+    [InlineData("file,iiif-img")]
+    public void UseOriginalPolicy_Image(string dc)
     {
         var model = new DLCS.HydraModel.Image
-            { Family = family, ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId };
+        {
+            DeliveryChannel = dc.Split(","),
+            MediaType = "image/jpeg",
+            ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId
+        };
         var result = sut.TestValidate(model);
-        result
-            .ShouldHaveValidationErrorFor(a => a.Family)
-            .WithErrorMessage("ImageOptimisationPolicy 'use-original' only valid for Image family");
+        result.ShouldNotHaveValidationErrorFor(a => a.ImageOptimisationPolicy);
     }
     
     [Fact]
-    public void UseOriginalPolicy_Image()
+    public void DeliveryChannel_CanBeEmpty()
     {
-        var model = new DLCS.HydraModel.Image
-            { Family = AssetFamily.Image, ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId };
+        var model = new DLCS.HydraModel.Image();
         var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(a => a.Family);
+        result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannel);
+    }
+    
+    [Theory]
+    [InlineData("file")]
+    [InlineData("iiif-av")]
+    [InlineData("iiif-img")]
+    [InlineData("file,iiif-av,iiif-img")]
+    public void DeliveryChannel_CanContainKnownValues(string knownValues)
+    {
+        var model = new DLCS.HydraModel.Image { DeliveryChannel = knownValues.Split(',') };
+        var result = sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannel);
+    }
+    
+    [Fact]
+    public void DeliveryChannel_UnkonwValue()
+    {
+        var model = new DLCS.HydraModel.Image { DeliveryChannel = new[] { "foo" } };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.DeliveryChannel);
     }
 }

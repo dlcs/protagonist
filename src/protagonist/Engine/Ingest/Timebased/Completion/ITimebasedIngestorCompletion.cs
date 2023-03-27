@@ -1,6 +1,5 @@
 ﻿using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
 
 namespace Engine.Ingest.Timebased.Completion;
 
@@ -13,14 +12,5 @@ public interface ITimebasedIngestorCompletion
     /// <param name="transcodeResult">Result of transcode operation</param>
     /// <returns>Value representing success</returns>
     Task<bool> CompleteSuccessfulIngest(AssetId assetId, TranscodeResult transcodeResult,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Mark Asset as completed in database, creating ImageLocation + ImageStorage record where appropriate.
-    /// </summary>
-    /// <param name="asset">Asset to finalise</param>
-    /// <param name="assetSize">Size of asset, if completed successfully</param>
-    /// <returns>Value representing success</returns>
-    Task<bool> CompleteAssetInDatabase(Asset asset, long? assetSize = null,
         CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
 namespace DLCS.Model.Policies;
 
@@ -44,11 +45,6 @@ public static class KnownImageOptimisationPolicy
     // Id of imageOptimisationPolicy for use-original. Signifies source image is tile-ready
     public const string UseOriginalId = "use-original";
 
-    /// <summary>
-    /// Check if this policy is the special no-op/no-transcode policy
-    /// </summary>
-    public static bool IsNoOp(this ImageOptimisationPolicy policy) => policy.Id == NoneId;
-    
     /// <summary>
     /// Check if specified policy Id is the special no-op/no-transcode policy
     /// </summary>

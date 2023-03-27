@@ -105,4 +105,44 @@ public class CollectionXTests
 
         duplicates.Should().BeEquivalentTo(expected);
     }
+    
+    [Fact]
+    public void ContainsOnly_False_IfNull()
+    {
+        int[] coll = null;
+
+        coll.ContainsOnly(123).Should().BeFalse();
+    }
+    
+    [Fact]
+    public void ContainsOnly_False_IfEmpty()
+    {
+        int[] coll = Array.Empty<int>();
+
+        coll.ContainsOnly(123).Should().BeFalse();
+    }
+    
+    [Fact]
+    public void ContainsOnly_False_IfDoesNotContain()
+    {
+        int[] coll = { 757 };
+
+        coll.ContainsOnly(123).Should().BeFalse();
+    }
+    
+    [Fact]
+    public void ContainsOnly_False_IfContainsMultiple()
+    {
+        int[] coll = { 123, 123 };
+
+        coll.ContainsOnly(123).Should().BeFalse();
+    }
+    
+    [Fact]
+    public void ContainsOnly_True_IfOnlyContainsSpecified()
+    {
+        int[] coll = { 123 };
+
+        coll.ContainsOnly(123).Should().BeTrue();
+    }
 }

@@ -31,7 +31,7 @@ public class OriginFetcher
     /// <param name="location">Location to load asset from</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns><see cref="OriginResponse"/></returns>
-    public async Task<OriginResponse?> LoadAssetFromLocation(AssetId assetId, string location,
+    public async Task<OriginResponse> LoadAssetFromLocation(AssetId assetId, string location,
         CancellationToken cancellationToken)
     {
         var customerOriginStrategy =
@@ -48,7 +48,7 @@ public class OriginFetcher
     /// <param name="customerOriginStrategy">OriginStrategy to use</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns><see cref="OriginResponse"/></returns>
-    public async Task<OriginResponse?> LoadAssetFromLocation(AssetId assetId, string location,
+    public async Task<OriginResponse> LoadAssetFromLocation(AssetId assetId, string location,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken)
     {
         var originStrategy = originStrategyResolver(customerOriginStrategy.Strategy);

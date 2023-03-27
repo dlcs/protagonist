@@ -3,7 +3,6 @@ using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
 using DLCS.Core.Caching;
-using DLCS.Core.Types;
 using FakeItEasy;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -36,7 +35,6 @@ public class ElasticTranscoderWrapperTests
     {
         // Arrange
         const string inputKey = "s3://my-test-bucket/the-input/key";
-        var assetId = new AssetId(10, 20, "foo");
         var expectedInput = new JobInput
         {
             AspectRatio = "auto",
@@ -55,33 +53,10 @@ public class ElasticTranscoderWrapperTests
             });
 
         // Act
-        await sut.CreateJob(assetId, inputKey, string.Empty, new List<CreateJobOutput>(), "id", CancellationToken.None);
-        
-        // Assert
-        createRequest.Input.Should().BeEquivalentTo(expectedInput);
-    }
-    
-    [Fact]
-    public async Task CreateJob_SetsExpectedMetadata()
-    {
-        // Arrange
-        const string inputKey = "s3://my-test-bucket/the-input/key";
-        var assetId = new AssetId(10, 20, "foo");
-
-        CreateJobRequest? createRequest = null;
-        A.CallTo(() => elasticTranscoder.CreateJobAsync(A<CreateJobRequest>._, A<CancellationToken>._))
-            .Invokes((CreateJobRequest request, CancellationToken _) =>
-            {
-                createRequest = request;
-            });
-
-        // Act
-        await sut.CreateJob(assetId, inputKey, string.Empty, new List<CreateJobOutput>(), "my-id",
+        await sut.CreateJob(inputKey, string.Empty, new List<CreateJobOutput>(), new Dictionary<string, string>(),
             CancellationToken.None);
         
         // Assert
-        createRequest.UserMetadata.Should().ContainKey("dlcsId").WhoseValue.Should().Be("10/20/foo");
-        createRequest.UserMetadata.Should().ContainKey("jobId").WhoseValue.Should().Be("my-id");
-        createRequest.UserMetadata.Should().ContainKey("startTime").WhoseValue.Should().NotBeNullOrEmpty();
+        createRequest.Input.Should().BeEquivalentTo(expectedInput);
     }
 }

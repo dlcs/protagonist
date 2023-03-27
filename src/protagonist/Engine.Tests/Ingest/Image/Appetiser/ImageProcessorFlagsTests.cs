@@ -134,15 +134,20 @@ public class ImageProcessorFlagsTests
     private IngestionContext GetContext(bool useOriginal, bool isOptimised, string mediaType = "image/jpeg")
     {
         var asset = new Asset(new AssetId(1, 2, "foo"))
+            {
+                DeliveryChannel = new[] { "iiif-img" }
+            }
             .WithImageOptimisationPolicy(new ImageOptimisationPolicy
-                { Id = useOriginal ? "use-original" : "fast-higher" });
+            {
+                Id = useOriginal ? "use-original" : "fast-higher"
+            });
 
         var assetFromOrigin = new AssetFromOrigin(asset.Id, 123, "wherever", mediaType)
         {
             CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = isOptimised },
             Location = "/path/to/original"
         };
-        
+
         return new IngestionContext(asset).WithAssetFromOrigin(assetFromOrigin);
     }
 }

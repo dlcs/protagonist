@@ -20,34 +20,24 @@ public class AssetToS3Tests
     private readonly IAssetToDisk assetToDisk;
     private readonly IBucketWriter bucketWriter;
     private readonly IStorageRepository storageRepository;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IFileSystem fileSystem = new FakeFileSystem();
     private readonly EngineSettings engineSettings;
     private readonly AssetToS3 sut;
+    private readonly ObjectInBucket destination = new("fantasy", "test-key");
 
     public AssetToS3Tests()
     {
         assetToDisk = A.Fake<IAssetToDisk>();
         storageRepository = A.Fake<IStorageRepository>();
-        storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
         bucketWriter = A.Fake<IBucketWriter>();
 
         engineSettings = new EngineSettings
         {
-            CustomerOverrides = new Dictionary<string, CustomerOverridesSettings>
-            {
-                ["99"] = new() { FullBucketAccess = true },
-            },
-            TimebasedIngest = new TimebasedIngestSettings
-            {
-                SourceTemplate = "{customer}",
-            }
+            DownloadTemplate = "{customer}"
         };
         
-        A.CallTo(() => storageKeyGenerator.GetTimebasedInputLocation(A<AssetId>._))
-            .Returns(new ObjectInBucket("fantasy", "test-key"));
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
-        sut = new AssetToS3(assetToDisk, optionsMonitor, storageRepository, bucketWriter, storageKeyGenerator,
+        sut = new AssetToS3(assetToDisk, optionsMonitor, storageRepository, bucketWriter,
             fileSystem, new NullLogger<AssetToS3>());
     }
 
@@ -62,30 +52,30 @@ public class AssetToS3Tests
         };
         var originStrategy = new CustomerOriginStrategy
         {
-            Strategy = OriginStrategyType.S3Ambient
+            Strategy = OriginStrategyType.S3Ambient, Optimised = true
         };
 
         A.CallTo(() => bucketWriter.CopyLargeObject(A<ObjectInBucket>._, A<ObjectInBucket>._,
-                A<Func<long, Task<bool>>>._, false, A<CancellationToken>._))
+                A<Func<long, Task<bool>>>._, false, A<string?>._, A<CancellationToken>._))
             .Returns(new LargeObjectCopyResult(LargeObjectStatus.Success, 100));
-        A.CallTo(() => storageKeyGenerator.GetTimebasedInputLocation(asset.Id))
-            .Returns(new ObjectInBucket("fantasy", "99/1/balrog/1234"));
 
         var ct = new CancellationToken();
 
         // Act
-        await sut.CopyAssetToTranscodeInput(asset, true, originStrategy, ct);
+        await sut.CopyOriginToStorage(destination, asset, true, originStrategy, ct);
 
         // Assert
         A.CallTo(() => bucketWriter.CopyLargeObject(
                 A<ObjectInBucket>.That.Matches(o => o.ToString() == "origin:::large_file.mov"),
-                A<ObjectInBucket>.That.Matches(o => o.ToString() == "fantasy:::99/1/balrog/1234"),
-                A<Func<long, Task<bool>>>._, false, ct))
+                A<ObjectInBucket>.That.Matches(o => o.ToString() == "fantasy:::test-key"),
+                A<Func<long, Task<bool>>>._, false, A<string?>._, ct))
             .MustHaveHappened();
     }
 
-    [Fact]
-    public async Task CopyAsset_ReturnsExpected_AfterDirectS3ToS3()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CopyAsset_ReturnsExpected_AfterDirectS3ToS3(bool optimised)
     {
         // Arrange
         const string mediaType = "video/quicktime";
@@ -98,11 +88,11 @@ public class AssetToS3Tests
         };
         var originStrategy = new CustomerOriginStrategy
         {
-            Strategy = OriginStrategyType.S3Ambient
+            Strategy = OriginStrategyType.S3Ambient, Optimised = optimised
         };
 
         A.CallTo(() => bucketWriter.CopyLargeObject(A<ObjectInBucket>._, A<ObjectInBucket>._,
-                A<Func<long, Task<bool>>>._, false, A<CancellationToken>._))
+                A<Func<long, Task<bool>>>._, false, A<string?>._, A<CancellationToken>._))
             .Returns(new LargeObjectCopyResult(LargeObjectStatus.Success, assetSize));
 
         var expected = new AssetFromOrigin(asset.Id, assetSize, "s3://fantasy/test-key", mediaType);
@@ -110,7 +100,7 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
 
         // Act
-        var actual = await sut.CopyAssetToTranscodeInput(asset, true, originStrategy, ct);
+        var actual = await sut.CopyOriginToStorage(destination, asset, true, originStrategy, ct);
 
         // Assert
         actual.Should().BeEquivalentTo(expected);
@@ -130,11 +120,11 @@ public class AssetToS3Tests
         };
         var originStrategy = new CustomerOriginStrategy
         {
-            Strategy = OriginStrategyType.S3Ambient
+            Strategy = OriginStrategyType.S3Ambient, Optimised = true
         };
 
         A.CallTo(() => bucketWriter.CopyLargeObject(A<ObjectInBucket>._, A<ObjectInBucket>._,
-                A<Func<long, Task<bool>>>._, false, A<CancellationToken>._))
+                A<Func<long, Task<bool>>>._, false, A<string?>._, A<CancellationToken>._))
             .Returns(new LargeObjectCopyResult(LargeObjectStatus.FileTooLarge, assetSize));
 
         var expected = new AssetFromOrigin(asset.Id, assetSize, "s3://fantasy/test-key", mediaType);
@@ -143,7 +133,7 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
 
         // Act
-        var actual = await sut.CopyAssetToTranscodeInput(asset, true, originStrategy, ct);
+        var actual = await sut.CopyOriginToStorage(destination, asset, true, originStrategy, ct);
 
         // Assert
         actual.Should().BeEquivalentTo(expected);
@@ -168,13 +158,13 @@ public class AssetToS3Tests
         };
 
         A.CallTo(() => bucketWriter.CopyLargeObject(A<ObjectInBucket>._, A<ObjectInBucket>._,
-                A<Func<long, Task<bool>>>._, false, A<CancellationToken>._))
+                A<Func<long, Task<bool>>>._, false, A<string?>._, A<CancellationToken>._))
             .Returns(new LargeObjectCopyResult(status));
 
         var ct = new CancellationToken();
 
         // Act
-        Func<Task> action = () => sut.CopyAssetToTranscodeInput(asset, true, originStrategy, ct);
+        Func<Task> action = () => sut.CopyOriginToStorage(destination, asset, true, originStrategy, ct);
 
         // Assert
         action.Should().ThrowAsync<ApplicationException>();
@@ -184,8 +174,7 @@ public class AssetToS3Tests
     [InlineData(OriginStrategyType.Default, 99)]
     [InlineData(OriginStrategyType.BasicHttp, 99)]
     [InlineData(OriginStrategyType.SFTP, 99)]
-    [InlineData(OriginStrategyType.S3Ambient, 90)]
-    public async Task CopyAsset_CopiesToDisk_IfNotS3AmbientAndFullBucketAccess(OriginStrategyType strategy,
+    public async Task CopyAsset_CopiesToDisk_IfNotS3Ambient(OriginStrategyType strategy,
         int customerId)
     {
         // Arrange
@@ -207,7 +196,7 @@ public class AssetToS3Tests
             .Returns(assetFromOrigin);
 
         // Act
-        await sut.CopyAssetToTranscodeInput(asset, true, originStrategy, ct);
+        await sut.CopyOriginToStorage(destination, asset, true, originStrategy, ct);
 
         // Assert
         A.CallTo(() =>
@@ -237,7 +226,7 @@ public class AssetToS3Tests
             .Returns(assetOnDisk);
 
         // Act
-        var response = await sut.CopyAssetToTranscodeInput(asset, true, originStrategy, ct);
+        var response = await sut.CopyOriginToStorage(destination, asset, true, originStrategy, ct);
 
         // Assert
         A.CallTo(() => bucketWriter.WriteFileToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, ct))
@@ -269,7 +258,7 @@ public class AssetToS3Tests
             .Returns(true);
 
         // Act
-        await sut.CopyAssetToTranscodeInput(asset, true, originStrategy, ct);
+        await sut.CopyOriginToStorage(destination, asset, true, originStrategy, ct);
 
         // Assert
         A.CallTo(() => bucketWriter.WriteFileToBucket(
@@ -295,7 +284,7 @@ public class AssetToS3Tests
         };
         var originStrategy = new CustomerOriginStrategy
         {
-            Strategy = OriginStrategyType.S3Ambient
+            Strategy = OriginStrategyType.Default
         };
 
         var expected = new AssetFromOrigin(asset.Id, assetSize, "s3://fantasy/test-key", mediaType);
@@ -310,7 +299,7 @@ public class AssetToS3Tests
             .Returns(true);
 
         // Act
-        var actual = await sut.CopyAssetToTranscodeInput(asset, true, originStrategy, ct);
+        var actual = await sut.CopyOriginToStorage(destination, asset, true, originStrategy, ct);
 
         // Assert
         actual.Should().BeEquivalentTo(expected);
@@ -337,7 +326,7 @@ public class AssetToS3Tests
             .Returns(assetOnDisk);
 
         // Act
-        Func<Task> action = () => sut.CopyAssetToTranscodeInput(asset, true, originStrategy, ct);
+        Func<Task> action = () => sut.CopyOriginToStorage(destination, asset, true, originStrategy, ct);
 
         // Assert
         action.Should().ThrowAsync<ApplicationException>();

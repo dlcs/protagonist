@@ -31,7 +31,7 @@ public class BasicHttpAuthOriginStrategy : IOriginStrategy
         this.logger = logger;
     }
 
-    public async Task<OriginResponse?> LoadAssetFromOrigin(AssetId assetId, string origin,
+    public async Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Fetching {Asset} from Origin: {Url}", assetId, origin);

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Caching;
-using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using LazyCache;
@@ -81,9 +79,11 @@ public class MemoryAssetTracker : IAssetTracker
             {
                 return orchestrationAsset;
             }
+            
+            // TODO - do we really care about caching non-images?
 
             logger.LogDebug("Asset {AssetId} not found, caching null object", assetId);
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings .GetTtl(CacheDuration.Short));
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
             return NullOrchestrationAsset;
         }, cacheSettings.GetMemoryCacheOptions());
     }
@@ -106,32 +106,40 @@ public class MemoryAssetTracker : IAssetTracker
         T SetDefaults<T>(T orchestrationAsset)
             where T : OrchestrationAsset
         {
+            if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
+            {
+                orchestrationAsset.Channels |= AvailableDeliveryChannel.File;
+                orchestrationAsset.Origin = asset.Origin;
+            }
+
+            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
+                orchestrationAsset.Channels |= AvailableDeliveryChannel.Image;
+            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
+                orchestrationAsset.Channels |= AvailableDeliveryChannel.Timebased;
+            
             orchestrationAsset.AssetId = assetId;
             orchestrationAsset.Roles = asset.RolesList.ToList();
             orchestrationAsset.RequiresAuth = asset.RequiresAuth;
             return orchestrationAsset;
         }
 
-        switch (asset.Family)
+        if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
         {
-            case AssetFamily.Image:
-                var getImageLocation = assetRepository.GetImageLocation(assetId);
-                var getOpenThumbs = thumbRepository.GetOpenSizes(assetId);
+            var getImageLocation = assetRepository.GetImageLocation(assetId);
+            var getOpenThumbs = thumbRepository.GetOpenSizes(assetId);
 
-                await Task.WhenAll(getImageLocation, getOpenThumbs);
+            await Task.WhenAll(getImageLocation, getOpenThumbs);
                 
-                return SetDefaults(new OrchestrationImage
-                {
-                    S3Location = getImageLocation.Result?.S3, // TODO - error handling
-                    Width = asset.Width ?? 0,
-                    Height = asset.Height ?? 0,
-                    MaxUnauthorised = asset.MaxUnauthorised ?? 0,
-                    OpenThumbs = getOpenThumbs.Result, // TODO - reorganise thumb layout + create missing eventually
-                });
-            case AssetFamily.File:
-                return SetDefaults(new OrchestrationFile { Origin = asset.Origin, });
-            default:
-                return SetDefaults(new OrchestrationAsset());
+            return SetDefaults(new OrchestrationImage
+            {
+                S3Location = getImageLocation.Result?.S3, // TODO - error handling
+                Width = asset.Width ?? 0,
+                Height = asset.Height ?? 0,
+                MaxUnauthorised = asset.MaxUnauthorised ?? 0,
+                OpenThumbs = getOpenThumbs.Result, // TODO - reorganise thumb layout + create missing eventually
+            });
         }
+        
+        return SetDefaults(new OrchestrationAsset());
     }
 }

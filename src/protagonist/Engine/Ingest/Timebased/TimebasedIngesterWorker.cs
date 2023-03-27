@@ -1,95 +1,91 @@
-﻿using System.Diagnostics;
+﻿using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.S3;
 using DLCS.Model.Customers;
-using DLCS.Model.Messaging;
 using Engine.Ingest.Persistence;
-using Engine.Ingest.Timebased.Completion;
 using Engine.Ingest.Timebased.Transcode;
-using Engine.Settings;
-using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest.Timebased;
 
 /// <summary>
-/// <see cref="IAssetIngesterWorker"/> responsible for ingesting timebased assets ('T' family).
+/// <see cref="IAssetIngesterWorker"/> responsible for ingesting timebased assets ('iiif-av' delivery channel).
 /// </summary>
 public class TimebasedIngesterWorker : IAssetIngesterWorker
 {
     private readonly IAssetToS3 assetToS3;
     private readonly IMediaTranscoder mediaTranscoder;
-    private readonly ITimebasedIngestorCompletion completion;
-    private readonly EngineSettings engineSettings;
+    private readonly IStorageKeyGenerator storageKeyGenerator;
+    private readonly IAssetIngestorSizeCheck assetIngestorSizeCheck;
     private readonly ILogger<TimebasedIngesterWorker> logger;
 
     public TimebasedIngesterWorker(
         IAssetToS3 assetToS3,
-        IOptionsMonitor<EngineSettings> engineOptions,
         IMediaTranscoder mediaTranscoder,
-        ITimebasedIngestorCompletion completion,
+        IStorageKeyGenerator storageKeyGenerator,
+        IAssetIngestorSizeCheck assetIngestorSizeCheck,
         ILogger<TimebasedIngesterWorker> logger)
     {
         this.mediaTranscoder = mediaTranscoder;
-        this.completion = completion;
+        this.storageKeyGenerator = storageKeyGenerator;
+        this.assetIngestorSizeCheck = assetIngestorSizeCheck;
         this.assetToS3 = assetToS3;
-        engineSettings = engineOptions.CurrentValue;
         this.logger = logger;
     }
     
-    public async Task<IngestResultStatus> Ingest(IngestAssetRequest ingestAssetRequest,
+    public async Task<IngestResultStatus> Ingest(IngestionContext ingestionContext,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
-        var context = new IngestionContext(ingestAssetRequest.Asset);
+        var asset = ingestionContext.Asset;
         
         try
         {
-            var stopwatch = Stopwatch.StartNew();
-            var assetInBucket = await assetToS3.CopyAssetToTranscodeInput(ingestAssetRequest.Asset,
-                !SkipStoragePolicyCheck(ingestAssetRequest.Asset.Customer),
+            var targetStorageLocation = storageKeyGenerator.GetTimebasedInputLocation(asset.Id);
+            var assetInBucket = await assetToS3.CopyOriginToStorage(
+                targetStorageLocation,
+                asset,
+                !assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer),
                 customerOriginStrategy, cancellationToken);
-            stopwatch.Stop();
-            logger.LogDebug("Copied timebased asset {AssetId} in {Elapsed}ms using {OriginStrategy}", 
-                ingestAssetRequest.Asset.Id, stopwatch.ElapsedMilliseconds, customerOriginStrategy.Strategy);
-            
-            context.WithAssetFromOrigin(assetInBucket);
+            ingestionContext.WithAssetFromOrigin(assetInBucket);
 
-            if (assetInBucket.FileExceedsAllowance)
+            if (assetIngestorSizeCheck.DoesAssetFromOriginExceedAllowance(assetInBucket, asset))
             {
-                ingestAssetRequest.Asset.Error = "StoragePolicy size limit exceeded";
-                await completion.CompleteAssetInDatabase(ingestAssetRequest.Asset,
-                    cancellationToken: cancellationToken);
                 return IngestResultStatus.StorageLimitExceeded;
             }
-
-            var success = await mediaTranscoder.InitiateTranscodeOperation(context, cancellationToken);
+            
+            var jobMetadata = GetJobMetadata(ingestionContext);
+            var success =
+                await mediaTranscoder.InitiateTranscodeOperation(ingestionContext, jobMetadata, cancellationToken);
             if (success)
             {
-                logger.LogDebug("Timebased asset {AssetId} successfully queued for processing", context.AssetId);
+                logger.LogDebug("Timebased asset {AssetId} successfully queued for processing", asset.Id);
                 return IngestResultStatus.QueuedForProcessing;
             }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error ingesting timebased asset {AssetId}", ingestAssetRequest.Asset.Id);
-            context.Asset.Error = ex.Message;
+            logger.LogError(ex, "Error ingesting timebased asset {AssetId}", asset.Id);
+            asset.Error = ex.Message;
         }
-        
-        try
-        {
-            await completion.CompleteAssetInDatabase(ingestAssetRequest.Asset, cancellationToken: cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            // TODO - mark Asset Error here? and call completion
-            logger.LogError(ex, "Error completing {AssetId}", ingestAssetRequest.Asset.Id);
-        }
-        
+
         // If we reach here then it's failed, if successful then we would have aborted after initiating transcode
-        logger.LogDebug("Failed to ingest timebased asset {AssetId}", context.AssetId);
+        logger.LogDebug("Failed to ingest timebased asset {AssetId}", asset.Id);
         return IngestResultStatus.Failed;
     }
-    
-    private bool SkipStoragePolicyCheck(int customerId)
+
+    private Dictionary<string, string> GetJobMetadata(IngestionContext ingestionContext)
     {
-        var customerSpecific = engineSettings.GetCustomerSettings(customerId);
-        return customerSpecific.NoStoragePolicyCheck;
+        var jobMetadata = new Dictionary<string, string>
+        {
+            [UserMetadataKeys.DlcsId] = ingestionContext.AssetId.ToString(),
+            [UserMetadataKeys.OriginSize] = (TryGetStoredOriginFileSize(ingestionContext) ?? 0).ToString()
+        };
+        return jobMetadata;
+    }
+
+    private long? TryGetStoredOriginFileSize(IngestionContext ingestionContext)
+    {
+        var originLocation = storageKeyGenerator.GetStoredOriginalLocation(ingestionContext.AssetId);
+        return ingestionContext.StoredObjects.TryGetValue(originLocation, out var fileSize)
+            ? fileSize
+            : null;
     }
 }

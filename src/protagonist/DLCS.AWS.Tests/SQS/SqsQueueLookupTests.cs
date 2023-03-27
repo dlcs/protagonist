@@ -18,7 +18,8 @@ public class SqsQueueLookupTests
             {
                 PriorityImageQueueName = "test-priority",
                 ImageQueueName = "test-image",
-                TimebasedQueueName = "test-timebased"
+                TimebasedQueueName = "test-timebased",
+                FileQueueName = "test-file"
             }
         }));
     }
@@ -55,13 +56,15 @@ public class SqsQueueLookupTests
         result.Should().Be("test-timebased");
     }
 
-    [Fact]
-    public void GetQueueNameForFamily_File_Throws()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void GetQueueNameForFamily_File_Correct_IgnoresPriority(bool priority)
     {
-        // Arrange
-        Action action = () => sut.GetQueueNameForFamily(AssetFamily.File);
+        // Act
+        var result = sut.GetQueueNameForFamily(AssetFamily.File, priority);
         
         // Assert
-        action.Should().Throw<InvalidOperationException>();
+        result.Should().Be("test-file");
     }
 }

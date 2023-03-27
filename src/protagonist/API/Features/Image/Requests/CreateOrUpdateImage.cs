@@ -142,6 +142,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
         switch (asset.Family)
         {
             case AssetFamily.Image:
+            case AssetFamily.File:
             {
                 // await call to engine, which processes synchronously (not a queue)
                 var statusCode =

@@ -5,5 +5,6 @@ public interface IMediaTranscoder
     /// <summary>
     /// Initiate a request to start transcoding asset.
     /// </summary>
-    Task<bool> InitiateTranscodeOperation(IngestionContext context, CancellationToken token = default);
+    Task<bool> InitiateTranscodeOperation(IngestionContext context, Dictionary<string, string> jobMetadata,
+        CancellationToken token = default);
 }

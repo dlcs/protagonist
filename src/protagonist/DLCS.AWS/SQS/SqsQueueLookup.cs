@@ -18,7 +18,7 @@ public class SqsQueueLookup : IQueueLookup
         {
             AssetFamily.Image => priority ? sqsOptions.PriorityImageQueueName : sqsOptions.ImageQueueName,
             AssetFamily.Timebased => sqsOptions.TimebasedQueueName,
-            AssetFamily.File => throw new InvalidOperationException("'File' assets are not queued"),
+            AssetFamily.File => sqsOptions.FileQueueName,
             _ => throw new ArgumentOutOfRangeException(nameof(family), family, null)
         };
 }

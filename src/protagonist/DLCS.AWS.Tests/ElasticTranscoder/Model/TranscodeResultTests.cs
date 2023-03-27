@@ -1,4 +1,5 @@
 ﻿using Amazon.ElasticTranscoder.Model;
+using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.ElasticTranscoder.Models;
 
 namespace DLCS.AWS.Tests.ElasticTranscoder.Model;
@@ -24,5 +25,44 @@ public class TranscodeResultTests
 
         // Assert
         transcodeResult.IsComplete().Should().Be(expected);
+    }
+    
+    [Fact]
+    public void GetStoredOriginalAssetSize_Correct_IfMissing()
+    {
+        // Arrange
+        var elasticTranscodeMessage = new TranscodedNotification
+        {
+            Input = new JobInput(),
+            UserMetadata = new Dictionary<string, string>()
+        };
+
+        var transcodeResult = new TranscodeResult(elasticTranscodeMessage);
+        
+        // Assert
+        transcodeResult.GetStoredOriginalAssetSize().Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData("", 0)]
+    [InlineData("foo", 0)]
+    [InlineData("0", 0)]
+    [InlineData("990", 990)]
+    public void GetStoredOriginalAssetSize_Correct(string input, long expected)
+    {
+        // Arrange
+        var elasticTranscodeMessage = new TranscodedNotification
+        {
+            Input = new JobInput(),
+            UserMetadata = new Dictionary<string, string>
+            {
+                [UserMetadataKeys.OriginSize] = input
+            }
+        };
+
+        var transcodeResult = new TranscodeResult(elasticTranscodeMessage);
+        
+        // Assert
+        transcodeResult.GetStoredOriginalAssetSize().Should().Be(expected);
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace DLCS.AWS.ElasticTranscoder.Models;
+﻿using DLCS.Core.Collections;
+
+namespace DLCS.AWS.ElasticTranscoder.Models;
 
 /// <summary>
 /// Represents the overall result of a transcode operation.
@@ -29,6 +31,11 @@ public class TranscodeResult
     /// Check if State is "COMPLETED"
     /// </summary>
     public bool IsComplete() => string.Equals(State, "COMPLETED", StringComparison.OrdinalIgnoreCase);
+    
+    /// <summary>
+    /// Any UserMetadata associated with the request. Set when creating job and echoed back.
+    /// </summary>
+    public Dictionary<string, string> UserMetadata { get; }
 
     public TranscodeResult()
     {
@@ -40,5 +47,26 @@ public class TranscodeResult
         InputKey = transcodedNotification.Input.Key;
         State = transcodedNotification.State;
         ErrorCode = transcodedNotification.ErrorCode;
+        UserMetadata = transcodedNotification.UserMetadata;
+    }
+    
+    /// <summary>
+    /// Get the AssetId for this job from user metadata
+    /// </summary>
+    /// <returns>Size if found in metadata, else 0</returns>
+    public long GetStoredOriginalAssetSize()
+    {
+        try
+        {
+            if (UserMetadata.IsNullOrEmpty()) return 0;
+            
+            return UserMetadata.TryGetValue(UserMetadataKeys.OriginSize, out var originSize)
+                ? long.Parse(originSize)
+                : 0;
+        }
+        catch (FormatException)
+        {
+            return 0;
+        }
     }
 }

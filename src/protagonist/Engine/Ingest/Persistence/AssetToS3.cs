@@ -1,4 +1,5 @@
-﻿using DLCS.AWS.S3;
+﻿using System.Diagnostics;
+using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
@@ -14,15 +15,16 @@ namespace Engine.Ingest.Persistence;
 public interface IAssetToS3
 {
     /// <summary>
-    /// Copy asset from Origin to S3 bucket.
+    /// Copy asset from Origin to DLCS storage.
     /// Configuration determines if this is a direct S3-S3 copy, or S3-disk-S3.
     /// </summary>
+    /// <param name="destination"><see cref="ObjectInBucket"/> where file is to copied to</param>
     /// <param name="asset"><see cref="Asset"/> to be copied</param>
     /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    Task<AssetFromOrigin> CopyAssetToTranscodeInput(Asset asset, bool verifySize,
+    Task<AssetFromOrigin> CopyOriginToStorage(ObjectInBucket destination, Asset asset, bool verifySize,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default);
 }
 
@@ -33,7 +35,6 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
 {
     private readonly IAssetToDisk assetToDisk;
     private readonly IBucketWriter bucketWriter;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IFileSystem fileSystem;
     private readonly EngineSettings engineSettings;
     private readonly ILogger<AssetToS3> logger;
@@ -43,7 +44,6 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
         IOptionsMonitor<EngineSettings> engineSettings,
         IStorageRepository storageRepository,
         IBucketWriter bucketWriter, 
-        IStorageKeyGenerator storageKeyGenerator,
         IFileSystem fileSystem,
         ILogger<AssetToS3> logger) : base(storageRepository)
     {
@@ -51,25 +51,25 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
         this.engineSettings = engineSettings.CurrentValue;
         this.logger = logger;
         this.bucketWriter = bucketWriter;
-        this.storageKeyGenerator = storageKeyGenerator;
         this.fileSystem = fileSystem;
     }
     
-    /// <summary>
-    /// Copy asset from Origin to S3 bucket.
-    /// Configuration determines if this is a direct S3-S3 copy, or S3-disk-S3.
-    /// </summary>
-    /// <param name="asset"><see cref="Asset"/> to be copied</param>
-    /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
-    /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
-    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
-    /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    public async Task<AssetFromOrigin> CopyAssetToTranscodeInput(Asset asset, bool verifySize,
+    public async Task<AssetFromOrigin> CopyOriginToStorage(ObjectInBucket destination, Asset asset, bool verifySize,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
-        var destination = storageKeyGenerator.GetTimebasedInputLocation(asset.Id);
+        var stopwatch = Stopwatch.StartNew();
+        var copyResult = await DoCopy(destination, asset, verifySize, customerOriginStrategy, cancellationToken);
+        stopwatch.Stop();
+        logger.LogDebug("Copied asset {AssetId} in {Elapsed}ms using {OriginStrategy}", 
+            asset.Id, stopwatch.ElapsedMilliseconds, customerOriginStrategy.Strategy);
+        
+        return copyResult;
+    }
 
-        if (ShouldCopyBucketToBucket(asset, customerOriginStrategy))
+    private async Task<AssetFromOrigin> DoCopy(ObjectInBucket destination, Asset asset, bool verifySize,
+        CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken)
+    {
+        if (ShouldCopyBucketToBucket(customerOriginStrategy))
         {
             // We have direct bucket access so can copy directly using SDK
             return await CopyBucketToBucket(asset, destination, verifySize, cancellationToken);
@@ -79,13 +79,9 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
         return await IndirectCopyBucketToBucket(asset, destination, verifySize, customerOriginStrategy,
             cancellationToken);
     }
-    
-    private bool ShouldCopyBucketToBucket(Asset asset, CustomerOriginStrategy customerOriginStrategy)
-    {
-        // TODO - FullBucketAccess for entire customer isn't granular enough
-        var customerOverride =  engineSettings.GetCustomerSettings(asset.Customer);
-        return customerOverride.FullBucketAccess && customerOriginStrategy.Strategy == OriginStrategyType.S3Ambient;
-    }
+
+    private bool ShouldCopyBucketToBucket(CustomerOriginStrategy customerOriginStrategy)
+        => customerOriginStrategy is { Strategy: OriginStrategyType.S3Ambient };
 
     private async Task<AssetFromOrigin> CopyBucketToBucket(Asset asset, ObjectInBucket destination, bool verifySize,
         CancellationToken cancellationToken)
@@ -145,6 +141,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
                 return assetOnDisk;
             }
 
+            logger.LogDebug("Copied asset '{AssetId}' to disk, copying to bucket..", asset.Id);
             var success = await bucketWriter.WriteFileToBucket(destination, assetOnDisk.Location,
                 assetOnDisk.ContentType, cancellationToken);
             downloadedFile = assetOnDisk.Location;
@@ -169,8 +166,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
     
     private string GetDestination(AssetId assetId)
     {
-        var diskDestination = TemplatedFolders.GenerateFolderTemplate(engineSettings.TimebasedIngest.SourceTemplate,
-            assetId, root: engineSettings.TimebasedIngest.ProcessingFolder);
+        var diskDestination = TemplatedFolders.GenerateFolderTemplate(engineSettings.DownloadTemplate, assetId);
         fileSystem.CreateDirectory(diskDestination);
         return diskDestination;
     }

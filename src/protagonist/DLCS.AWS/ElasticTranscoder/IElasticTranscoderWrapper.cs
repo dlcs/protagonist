@@ -28,15 +28,16 @@ public interface IElasticTranscoderWrapper
     /// Create an ElasticTranscoder job using specified details. Uses "auto" for framerate, aspectRatio etc.
     /// Adds "dlcsId", "startTime" and "jobId" to user metadata
     /// </summary>
-    /// <param name="assetId">Asset job is for. Added as "dlcsId" metadata</param>
     /// <param name="inputKey">The s3:// URI for item in input bucket</param>
     /// <param name="pipelineId">Id of pipeline to use for transcoding media</param>
-    /// <param name="outputs">A list of outputs for </param>
-    /// <param name="jobId">Unique identifier for job. Added as "jobId" metadata.</param>
+    /// <param name="outputs">A list of outputs for job</param>
+    /// <param name="jobMetadata">
+    /// Collection of metadata key value pairs to add to job, echoed back on completion
+    /// </param>
     /// <param name="token">CancellationToken</param>
     /// <returns><see cref="CreateJobResponse"/> object</returns>
-    Task<CreateJobResponse> CreateJob(AssetId assetId, string inputKey, string pipelineId,
-        List<CreateJobOutput> outputs, string jobId, CancellationToken token = default);
+    Task<CreateJobResponse> CreateJob(string inputKey, string pipelineId, List<CreateJobOutput> outputs,
+        Dictionary<string, string> jobMetadata, CancellationToken token = default);
 
     /// <summary>
     /// Persist ElasticTranscoder metadata to storage for later retrieval 

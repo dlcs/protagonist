@@ -92,14 +92,6 @@ public class QueuePostValidatorTests
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].MediaType");
     }
-    
-    [Fact]
-    public void Member_Family_NotSet()
-    {
-        var model = new HydraCollection<Image> { Members = new[] { new Image { Family = null } } };
-        var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("Members[0].Family");
-    }
 
     [Fact]
     public void Member_Batch_Provided()
@@ -118,32 +110,7 @@ public class QueuePostValidatorTests
             .ShouldHaveValidationErrorFor("Members[0].Width")
             .WithErrorMessage("Should not include width");
     }
-    
-    [Fact]
-    public void Member_Width_NotSet_NoTranscodePolicy()
-    {
-        var model = new HydraCollection<Image> { Members = new[] { new Image { ImageOptimisationPolicy = "none" } } };
-        var result = sut.TestValidate(model);
-        result
-            .ShouldHaveValidationErrorFor("Members[0].Width")
-            .WithErrorMessage("Width cannot be empty if 'none' imageOptimisationPolicy specified");
-    }
-    
-    [Theory]
-    [InlineData("audio/mp4", AssetFamily.Timebased)]
-    [InlineData("audio/mp4", AssetFamily.File)]
-    [InlineData("application/pdf", AssetFamily.File)]
-    public void Member_Width_NotSet_NoTranscodePolicy_AllowedForFileOrAudio(string mediaType, AssetFamily assetFamily)
-    {
-        var model = new HydraCollection<Image> { Members = new[] { new Image
-        {
-            ImageOptimisationPolicy = "none", Family = assetFamily, MediaType = mediaType
-        } } };
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor("Members[0].Width");
-        result.ShouldNotHaveValidationErrorFor("Members[0].Height");
-    }
-    
+
     [Fact]
     public void Member_Height_Provided()
     {
@@ -155,16 +122,6 @@ public class QueuePostValidatorTests
     }
     
     [Fact]
-    public void Member_Height_NotSet_NoTranscodePolicy()
-    {
-        var model = new HydraCollection<Image> { Members = new[] { new Image { ImageOptimisationPolicy = "none" } } };
-        var result = sut.TestValidate(model);
-        result
-            .ShouldHaveValidationErrorFor("Members[0].Height")
-            .WithErrorMessage("Height cannot be empty if 'none' imageOptimisationPolicy specified");
-    }
-    
-    [Fact]
     public void Member_Duration_Provided()
     {
         var model = new HydraCollection<Image> { Members = new[] { new Image { Duration = 10 } } };
@@ -172,29 +129,6 @@ public class QueuePostValidatorTests
         result
             .ShouldHaveValidationErrorFor("Members[0].Duration")
             .WithErrorMessage("Should not include duration");
-    }
-    
-    [Fact]
-    public void Member_Duration_NotSetForTimebased_NoTranscodePolicy()
-    {
-        var model = new HydraCollection<Image>
-            { Members = new[] { new Image { ImageOptimisationPolicy = "none", Family = AssetFamily.Timebased } } };
-        var result = sut.TestValidate(model);
-        result
-            .ShouldHaveValidationErrorFor("Members[0].Duration")
-            .WithErrorMessage(
-                "Duration cannot be empty if 'none' imageOptimisationPolicy specified for timebased asset");
-    }
-    
-    [Theory]
-    [InlineData(AssetFamily.File)]
-    [InlineData(AssetFamily.Image)]
-    public void Member_Duration_NotSet_NoTranscodePolicy_AllowedForFileOrImageFamily(AssetFamily family)
-    {
-        var model = new HydraCollection<Image>
-            { Members = new[] { new Image { ImageOptimisationPolicy = "none", Family = family } } };
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor("Members[0].Duration");
     }
     
     [Fact]
@@ -211,14 +145,5 @@ public class QueuePostValidatorTests
         var model = new HydraCollection<Image> { Members = new[] { new Image { Created = DateTime.Today } } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].Created");
-    }
-    
-    [Fact]
-    public void Member_FamilyT_NotAudioOrVideoMediaType()
-    {
-        var model = new HydraCollection<Image>
-            { Members = new[] { new Image { Family = AssetFamily.Timebased, MediaType = "application/pdf" } } };
-        var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("Members[0].MediaType");
     }
 }
