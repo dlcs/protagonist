@@ -352,10 +352,14 @@ public class EngineAssetRepositoryTests
         // Assert
         success.Should().BeTrue();
         
-        var updatedItem = await dbContext.Batches.SingleAsync(b => b.Id == batchId);
-        updatedItem.Errors.Should().Be(1);
-        updatedItem.Completed.Should().Be(1);
-        updatedItem.Finished.Should().BeNull();
+        var updatedBatch = await dbContext.Batches.SingleAsync(b => b.Id == batchId);
+        updatedBatch.Errors.Should().Be(1);
+        updatedBatch.Completed.Should().Be(1);
+        updatedBatch.Finished.Should().BeNull();
+        
+        var updatedImage = await dbContext.Images.SingleAsync(i => i.Id == assetId);
+        updatedImage.Finished.Should().BeNull();
+        updatedImage.Ingesting.Should().BeTrue();
     }
     
     [Theory]

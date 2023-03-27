@@ -31,7 +31,7 @@ public class EngineAssetRepository : IEngineAssetRepository
                 await UpdateBatch(asset, cancellationToken);
             }
 
-            UpdateAsset(asset);
+            UpdateAsset(asset, ingestFinished);
 
             if (imageLocation != null)
             {
@@ -128,9 +128,12 @@ public class EngineAssetRepository : IEngineAssetRepository
         }
     }
 
-    private void UpdateAsset(Asset asset)
+    private void UpdateAsset(Asset asset, bool ingestFinished)
     {
-        asset.MarkAsFinished();
+        if (ingestFinished)
+        {
+            asset.MarkAsFinished();
+        }
 
         // If the asset is tracked then no need to attach + set modified properties
         // Assets will be tracked when finalising a Timebased ingest as the Asset will have been read from context
