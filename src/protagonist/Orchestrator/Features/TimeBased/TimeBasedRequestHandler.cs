@@ -37,7 +37,7 @@ public class TimeBasedRequestHandler
     }
 
     /// <summary>
-    /// Handle /iiif-img/ request, returning object detailing operation that should be carried out.
+    /// Handle /iiif-av/ request, returning object detailing operation that should be carried out.
     /// </summary>
     /// <param name="httpContext">Incoming <see cref="HttpContext"/> object</param>
     /// <returns><see cref="IProxyActionResult"/> object containing downstream target</returns>
