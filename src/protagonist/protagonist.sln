@@ -69,6 +69,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeleteHandler", "DeleteHand
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeleteHandlerTests", "DeleteHandlerTests\DeleteHandlerTests.csproj", "{E0663AC2-FCCC-4660-999F-53AF37F8C63F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Migrator", "Utils\Migrator\Migrator.csproj", "{AD19E6C6-358C-4835-8431-A62018EA617B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -195,6 +197,10 @@ Global
 		{E0663AC2-FCCC-4660-999F-53AF37F8C63F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E0663AC2-FCCC-4660-999F-53AF37F8C63F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E0663AC2-FCCC-4660-999F-53AF37F8C63F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD19E6C6-358C-4835-8431-A62018EA617B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD19E6C6-358C-4835-8431-A62018EA617B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD19E6C6-358C-4835-8431-A62018EA617B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD19E6C6-358C-4835-8431-A62018EA617B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -223,5 +229,6 @@ Global
 		{EF411F9A-C628-4786-92D4-D40A3EDE7222} = {89603DC1-C3AD-49C8-A412-D556AE6483D6}
 		{A8760A1D-8E1B-4822-954C-41188BD9745F} = {820EE99A-E129-44EF-A7BD-519BCE6167D3}
 		{E0663AC2-FCCC-4660-999F-53AF37F8C63F} = {89603DC1-C3AD-49C8-A412-D556AE6483D6}
+		{AD19E6C6-358C-4835-8431-A62018EA617B} = {EEB2997F-35CD-4666-8E8F-9BF9CB5F46D9}
 	EndGlobalSection
 EndGlobal
