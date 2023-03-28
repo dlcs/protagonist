@@ -43,7 +43,19 @@ public class ReorganisingThumbRepository : IThumbRepository
 
         return await wrappedThumbRepository.GetOpenSizes(assetId);
     }
-        
+
+    public async Task<List<int[]>?> GetAllSizes(AssetId assetId)
+    {
+        var newLayoutResult = await EnsureNewLayout(assetId);
+        if (newLayoutResult == ReorganiseResult.AssetNotFound)
+        {
+            logger.LogDebug("Requested asset not found for asset '{Asset}'", assetId);
+            return null;
+        }
+
+        return await wrappedThumbRepository.GetAllSizes(assetId);
+    }
+
     private Task<ReorganiseResult> EnsureNewLayout(AssetId assetId)
     {
         var currentSettings = settings.CurrentValue;
