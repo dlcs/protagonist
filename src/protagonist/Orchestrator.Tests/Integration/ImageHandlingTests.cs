@@ -188,6 +188,43 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task GetInfoJsonV2_ReturnsImageServerSizes_IfS3GetFails()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_ReturnsImageServerSizes_IfS3GetFails)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.SaveChangesAsync();
+        
+        // Sizes from FakeImageServerClient
+        var expectedSizes = new List<Size> { new(100, 100), new(25, 25), new(1, 1) };
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/v2/{id}/info.json");
+        
+        // Assert
+        // Verify correct info.json returned
+        var jsonResponse = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService2>();
+        jsonResponse.Id.Should().Be($"http://localhost/iiif-img/v2/{id}");
+        jsonResponse.Context.ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+        jsonResponse.Sizes.Should().BeEquivalentTo(expectedSizes);
+
+        // With correct headers/status
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        response.Content.Headers.ContentType.ToString().Should()
+            .Be("application/json", "application/json unless Accept header specified");
+        
+        // And a copy was put in S3 for future requests
+        var s3InfoJsonObject =
+            await amazonS3.GetObjectAsync(LocalStackFixture.StorageBucketName, $"info/Cantaloupe/v2/{id}/info.json");
+        var s3InfoJson = JObject.Parse(s3InfoJsonObject.ResponseStream.GetContentString());
+        s3InfoJson["@id"].ToString().Should()
+            .NotBe($"http://localhost/iiif-img/v2/{id}", "Stored Id is placeholder only");
+        s3InfoJson["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+    }
+    
+    [Fact]
     public async Task GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules()
     {
         // Arrange

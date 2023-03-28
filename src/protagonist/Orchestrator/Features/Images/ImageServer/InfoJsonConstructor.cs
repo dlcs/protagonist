@@ -52,7 +52,11 @@ public class InfoJsonConstructor
                 await imageServerClient.GetInfoJson<ImageService2>(orchestrationImage, version, cancellationToken);
             if (imageServer2 == null) return null;
             await UpdateImageService(imageServer2, orchestrationImage, cancellationToken);
-            imageServer2.Sizes = await getSizesTask;
+            var sizes = await getSizesTask;
+            if (!sizes.IsNullOrEmpty())
+            {
+                imageServer2.Sizes = sizes;
+            }
             return imageServer2;
         }
         else
@@ -61,7 +65,11 @@ public class InfoJsonConstructor
                 await imageServerClient.GetInfoJson<ImageService3>(orchestrationImage, version, cancellationToken);
             if (imageServer3 == null) return null;
             await UpdateImageService(imageServer3, orchestrationImage, cancellationToken);
-            imageServer3.Sizes = await getSizesTask;
+            var sizes = await getSizesTask;
+            if (!sizes.IsNullOrEmpty())
+            {
+                imageServer3.Sizes = sizes;
+            }
             return imageServer3;
         }
     }
@@ -106,14 +114,17 @@ public class InfoJsonConstructor
 
     private async Task<List<Size>> GetSizes(OrchestrationImage orchestrationImage)
     {
-        // TODO - handle thumbs not being fetched. Return the info.json with image-server provided sizes?
         try
         {
             var thumbs = await thumbRepository.GetAllSizes(orchestrationImage.AssetId);
 
-            return thumbs.IsNullOrEmpty()
-                ? Enumerable.Empty<Size>().ToList()
-                : thumbs.Select(s => Size.FromArray(s)).ToList();
+            if (thumbs.IsNullOrEmpty())
+            {
+                logger.LogInformation("No thumbnails found for {Asset}", orchestrationImage.AssetId);
+                return Enumerable.Empty<Size>().ToList();
+            }
+            
+            return thumbs.Select(s => Size.FromArray(s)).ToList();
         }
         catch (Exception ex)
         {
