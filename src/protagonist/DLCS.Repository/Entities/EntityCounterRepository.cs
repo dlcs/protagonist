@@ -63,7 +63,6 @@ public class EntityCounterRepository : IDapperContextRepository, IEntityCounterR
         await Set(customer, entityType, scope, 0);
     }
 
-
     public async Task Remove(int customer, string entityType, string scope)
     {
         var entityCounter = await GetEntityCounter(customer, entityType, scope);

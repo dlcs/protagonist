@@ -3,6 +3,7 @@ using DLCS.Model;
 using DLCS.Model.Auth;
 using DLCS.Model.Processing;
 using DLCS.Repository;
+using DLCS.Repository.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -67,7 +68,7 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         result.Customer = await CreateCustomer(request, cancellationToken, newModelId);
 
         // create an entity counter for space IDs [CreateCustomerSpaceEntityCounterBehaviour]
-        await entityCounterRepository.Create(result.Customer.Id, "space", result.Customer.Id.ToString());
+        await entityCounterRepository.Create(result.Customer.Id, KnownEntityCounters.CustomerSpaces, result.Customer.Id.ToString());
 
         // Create a clickthrough auth service [CreateClickthroughAuthServiceBehaviour]
         var clickThrough = authServicesRepository.CreateAuthService(
@@ -157,7 +158,7 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         DLCS.Model.Customers.Customer existingCustomerWithId;
         do
         {
-            var next = await entityCounterRepository.GetNext(0, "customer", "0");
+            var next = await entityCounterRepository.GetNext(0, KnownEntityCounters.Customers, "0");
             newModelId = Convert.ToInt32(next);
             existingCustomerWithId = await dbContext.Customers.SingleOrDefaultAsync(c => c.Id == newModelId);
         } while (existingCustomerWithId != null);

@@ -93,19 +93,19 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             });
         await DbContext.EntityCounters.AddRangeAsync(new EntityCounter
         {
-            Type = "space",
+            Type = KnownEntityCounters.CustomerSpaces,
             Customer = customer,
             Scope = customer.ToString(),
             Next = 1
         }, new EntityCounter
         {
-            Type = "space-images",
+            Type = KnownEntityCounters.SpaceImages,
             Customer = customer,
             Scope = "1",
             Next = 1
         }, new EntityCounter
         {
-            Type = "customer-images",
+            Type = KnownEntityCounters.CustomerImages,
             Customer = 0,
             Scope = customer.ToString(),
             Next = 1

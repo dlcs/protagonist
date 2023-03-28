@@ -3,8 +3,9 @@ using System.Threading.Tasks;
 namespace DLCS.Model;
 
 /// <summary>
-/// This is identical to IEntityCounterStore in Deliverator
+/// Repo for interacting with EntityCounters
 /// </summary>
+/// <remarks>This is identical to IEntityCounterStore in Deliverator</remarks>
 public interface IEntityCounterRepository
 {
     Task Create(int customer, string entityType, string scope, long initialValue = 1);

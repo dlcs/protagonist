@@ -2,6 +2,7 @@
 using API.Features.Customer.Requests;
 using DLCS.Model;
 using DLCS.Repository;
+using DLCS.Repository.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -51,7 +52,7 @@ public class SetupApplicationHandler : IRequestHandler<SetupApplication, CreateA
         await dbContext.Customers.AddAsync(adminCustomer, cancellationToken);
         var updateCount = await dbContext.SaveChangesAsync(cancellationToken);
 
-        await entityCounterRepository.Create(adminCustomer.Id, "space", adminCustomer.Id.ToString());
+        await entityCounterRepository.Create(adminCustomer.Id, KnownEntityCounters.CustomerSpaces, adminCustomer.Id.ToString());
 
         return updateCount == 1
             ? CreateApiKeyResult.Success(apiKey, apiSecret)

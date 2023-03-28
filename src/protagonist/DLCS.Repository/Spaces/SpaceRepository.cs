@@ -6,6 +6,7 @@ using DLCS.Core.Caching;
 using DLCS.Core.Strings;
 using DLCS.Model;
 using DLCS.Model.Spaces;
+using DLCS.Repository.Entities;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -81,7 +82,7 @@ public class SpaceRepository : ISpaceRepository
         };
 
         await dlcsContext.Spaces.AddAsync(space, cancellationToken);
-        await entityCounterRepository.Create(customer,  "space-images", space.Id.ToString());
+        await entityCounterRepository.Create(customer,  KnownEntityCounters.SpaceImages, space.Id.ToString());
         await dlcsContext.SaveChangesAsync(cancellationToken);
         return space;
     }
@@ -93,7 +94,7 @@ public class SpaceRepository : ISpaceRepository
         do
         {
             var next = await entityCounterRepository
-                .GetNext(requestCustomer, "space", requestCustomer.ToString());
+                .GetNext(requestCustomer, KnownEntityCounters.CustomerSpaces, requestCustomer.ToString());
             newModelId = Convert.ToInt32(next);
             existingSpaceInCustomer = await dlcsContext.Spaces
                 .SingleOrDefaultAsync(s => s.Id == newModelId && s.Customer == requestCustomer);
@@ -133,7 +134,7 @@ public class SpaceRepository : ISpaceRepository
                 return space;
             }
             var counter = await dlcsContext.EntityCounters.AsNoTracking().SingleOrDefaultAsync(ec =>
-                ec.Customer == customerId && ec.Type == "space-images" &&
+                ec.Customer == customerId && ec.Type == KnownEntityCounters.SpaceImages &&
                 ec.Scope == spaceId.ToString(), cancellationToken: cancellationToken);
             if (counter != null)
             {
@@ -161,7 +162,7 @@ public class SpaceRepository : ISpaceRepository
         // In Deliverator the following is a sub-select. But I suspect that this is not significantly slower.
         var scopes = result.Spaces.Select(s => s.Id.ToString());
         var counters = await dlcsContext.EntityCounters.AsNoTracking()
-            .Where(ec => ec.Customer == customerId && ec.Type == "space-images")
+            .Where(ec => ec.Customer == customerId && ec.Type == KnownEntityCounters.SpaceImages)
             .Where(ec => scopes.Contains(ec.Scope))
             .ToDictionaryAsync(ec => ec.Scope, ec => ec.Next, cancellationToken: cancellationToken);
         foreach (var space in result.Spaces)
