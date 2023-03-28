@@ -36,6 +36,7 @@ In addition to the above there are a number of `*.Tests` classes for automated t
 * Portal - administration UI for managing assets (WIP).
 * Thumbs - simplified handling of thumbnail requests.
 * DeleteHandler - monitors queue for notifications + deletes asset derivatives on receipt.
+* Migrator - Applies any pending EF migrations.
 
 ## Technology :robot:
 
