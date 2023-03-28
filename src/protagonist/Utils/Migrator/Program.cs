@@ -17,7 +17,7 @@ try
     var host = Host.CreateDefaultBuilder(args)
         .ConfigureServices(collection => { collection.AddSingleton<Migrator>(); })
         .ConfigureAppConfiguration((context, builder) => { builder.AddSystemsManager(context); })
-        .ConfigureLogging(builder => { builder.AddSerilog(Log.Logger); })
+        .UseSerilog()
         .Build();
 
     Log.Information("Executing Migrator");
@@ -44,5 +44,18 @@ class Migrator
         this.configuration = configuration;
     }
 
-    public void Execute() => DlcsContextConfiguration.TryRunMigrations(configuration, logger);
+    public void Execute()
+    {
+        var connStr = configuration.GetConnectionString("PostgreSQLConnection");
+        foreach (var part in connStr.Split(";"))
+        {
+            var lowered = part.ToLower();
+            if (lowered.StartsWith("server") || lowered.StartsWith("database"))
+            {
+                logger.LogInformation("Got connstr part {StringPart}", lowered);
+            }
+        }
+        
+        DlcsContextConfiguration.TryRunMigrations(configuration, logger);
+    }
 }
