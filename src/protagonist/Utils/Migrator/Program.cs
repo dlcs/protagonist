@@ -23,6 +23,7 @@ try
     Log.Information("Executing Migrator");
     var migrator = host.Services.GetRequiredService<Migrator>();
     migrator.Execute();
+    Log.Information("Migrator Ran");
 }
 catch (Exception ex)
 {
