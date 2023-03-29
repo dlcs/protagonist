@@ -1,8 +1,10 @@
 using DLCS.Core;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
+using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Repository;
+using DLCS.Repository.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Assets;
@@ -13,14 +15,17 @@ namespace API.Features.Assets;
 public class ApiAssetRepository : IApiAssetRepository
 {
     private readonly IAssetRepository assetRepository;
+    private readonly IEntityCounterRepository entityCounterRepository;
     private readonly DlcsContext dlcsContext;
 
     public ApiAssetRepository(
         DlcsContext dlcsContext,
-        IAssetRepository assetRepository)
+        IAssetRepository assetRepository, 
+        IEntityCounterRepository entityCounterRepository)
     {
         this.dlcsContext = dlcsContext;
         this.assetRepository = assetRepository;
+        this.entityCounterRepository = entityCounterRepository;
     }
 
     public Task<Asset?> GetAsset(AssetId id) => assetRepository.GetAsset(id);
@@ -52,7 +57,9 @@ public class ApiAssetRepository : IApiAssetRepository
             }
             else
             {
-                await dlcsContext.Images.AddAsync(asset, cancellationToken);   
+                await dlcsContext.Images.AddAsync(asset, cancellationToken);
+                await entityCounterRepository.Increment(asset.Customer, KnownEntityCounters.SpaceImages, asset.Space.ToString());
+                await entityCounterRepository.Increment(0, KnownEntityCounters.CustomerImages, asset.Customer.ToString());
             }
         }
 

@@ -91,7 +91,7 @@ public class AssetRepository : AssetRepositoryCachingBase
             bool notFound = true;
             foreach (var entry in dbEx.Entries)
             {
-                var databaseValues = entry.GetDatabaseValues();
+                var databaseValues = await entry.GetDatabaseValuesAsync();
                 if (databaseValues != null)
                 {
                     notFound = false;
