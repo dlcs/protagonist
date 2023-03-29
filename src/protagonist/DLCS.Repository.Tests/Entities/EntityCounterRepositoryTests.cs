@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using DLCS.Repository.Entities;
+using Microsoft.EntityFrameworkCore;
 using Test.Helpers.Integration;
 
 namespace DLCS.Repository.Tests.Entities;
@@ -131,5 +132,49 @@ public class EntityCounterRepositoryTests
         
         var dbCounter = dbContext.EntityCounters.Single(ec => ec.Scope == scope);
         dbCounter.Next.Should().Be(0);
+    }
+    
+    // NOTE: These tests verify that repos that use EF and Dapper work nicely with transactions
+    [Fact]
+    public async Task Decrement_Works_WithinCommittedTransaction()
+    {
+        // Arrange
+        const string scope = nameof(Decrement_Works_WithinCommittedTransaction);
+
+        await using (var tran = await dbContext.Database.BeginTransactionAsync())
+        {
+            // Act
+            var next = await sut.Decrement(1, $"{scope}_type", scope);
+
+            await tran.CommitAsync();
+            
+            next.Should().Be(0);
+        }
+
+        // Assert
+        
+        var dbCounter = dbContext.EntityCounters.Single(ec => ec.Scope == scope);
+        dbCounter.Next.Should().Be(0);
+    }
+    
+    [Fact]
+    public async Task Decrement_Works_WithinRolledbackTransaction()
+    {
+        // Arrange
+        const string scope = nameof(Decrement_Works_WithinRolledbackTransaction);
+
+        await using (var tran = await dbContext.Database.BeginTransactionAsync())
+        {
+            // Act
+            var next = await sut.Decrement(1, $"{scope}_type", scope);
+
+            await tran.RollbackAsync();
+            
+            next.Should().Be(0, "This is not the correct behaviour as transaction rolled back");
+        }
+
+        // Assert
+        var dbCounter = await dbContext.EntityCounters.SingleOrDefaultAsync(ec => ec.Scope == scope);
+        dbCounter.Should().BeNull();
     }
 }

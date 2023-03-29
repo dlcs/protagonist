@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Model;
 using Microsoft.EntityFrameworkCore;
@@ -42,7 +43,7 @@ public class EntityCounterRepository : IDapperContextRepository, IEntityCounterR
     }
     
     private Task<bool> Exists(int customer, string entityType, string scope) =>
-        DlcsContext.EntityCounters.AsNoTracking().AnyAsync(ec =>
+        DlcsContext.EntityCounters.AnyAsync(ec =>
             ec.Customer == customer && ec.Type == entityType && ec.Scope == scope);
     
     private async Task EnsureCounter(int customer, string entityType, string scope, long initialValue)
@@ -54,11 +55,10 @@ public class EntityCounterRepository : IDapperContextRepository, IEntityCounterR
         }
     }
     
-    // Dapper section, for queries that return a modified counter in one operation
     private async Task<long> LongUpdate(string sql, int customer, string entityType, string scope, long initialValue = 1)
     {
         await EnsureCounter(customer, entityType, scope, initialValue);
-        return await this.QuerySingleAsync<long>(sql, new {customer, entityType, scope});
+        return await this.QuerySingleAsync<long>(sql, new { customer, entityType, scope });
     }
 
     private const string GetNextSql = @"
