@@ -199,6 +199,26 @@ public class MemoryAssetTrackerTests
     }
     
     [Theory]
+    [InlineData("iiif-img")]
+    [InlineData("iiif-img,file")]
+    public async Task GetOrchestrationAssetT_SetsOpenThumbsToEmpty_IfNullReturned(string deliveryChannel)
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, "otis");
+        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        {
+            DeliveryChannel = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1
+        });
+        A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns<List<int[]>>(null);
+
+        // Act
+        var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
+        
+        // Assert
+        result.OpenThumbs.Should().BeEmpty();
+    }
+    
+    [Theory]
     [InlineData("iiif-av")]
     [InlineData("file")]
     [InlineData("iiif-av,file")]

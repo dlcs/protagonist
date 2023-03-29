@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Caching;
@@ -136,7 +137,7 @@ public class MemoryAssetTracker : IAssetTracker
                 Width = asset.Width ?? 0,
                 Height = asset.Height ?? 0,
                 MaxUnauthorised = asset.MaxUnauthorised ?? 0,
-                OpenThumbs = getOpenThumbs.Result, // TODO - reorganise thumb layout + create missing eventually
+                OpenThumbs = getOpenThumbs.Result ?? new List<int[]>(), // TODO - reorganise thumb layout + create missing eventually
             });
         }
         
