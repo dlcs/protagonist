@@ -39,6 +39,8 @@ public abstract class AssetRepositoryCachingBase : IAssetRepository
         
         return DeleteAssetFromDatabase(assetId);
     }
+    
+    public void FlushCache(AssetId assetId) => AppCache.Remove(GetCacheKey(assetId));
 
     /// <summary>
     /// Delete asset from database

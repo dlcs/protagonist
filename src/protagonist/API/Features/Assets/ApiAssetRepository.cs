@@ -1,9 +1,9 @@
 using DLCS.Core;
-using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Repository;
+using DLCS.Repository.Assets;
 using DLCS.Repository.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -81,8 +81,11 @@ public class ApiAssetRepository : IApiAssetRepository
 
         await dlcsContext.SaveChangesAsync(cancellationToken);
 
-        // Reload the asset from GetAsset to refresh cache
-        var refreshedAsset = await GetAsset(asset.Id, true);
-        return refreshedAsset.ThrowIfNull(nameof(refreshedAsset))!;
+        if (assetRepository is AssetRepositoryCachingBase cachingBase)
+        {
+            cachingBase.FlushCache(asset.Id);
+        }
+
+        return asset;
     }
 }

@@ -31,9 +31,8 @@ public class BatchRepository : IDapperContextRepository, IBatchRepository
             Submitted = DateTime.UtcNow,
             Superseded = false
         };
-
-        // Note - use Dapper to avoid calling .SaveChanges() and commiting any outstanding changes in dbcontext
-        batch.Id = await this.ExecuteScalarAsync<int>(CreateBatchSql, new { Customer = customerId, Count = assets.Count });
+        DlcsContext.Batches.Add(batch);
+        await DlcsContext.SaveChangesAsync(cancellationToken);
 
         foreach (var asset in assets)
         {
@@ -42,10 +41,4 @@ public class BatchRepository : IDapperContextRepository, IBatchRepository
 
         return batch;
     }
-    
-    private const string CreateBatchSql = @"
-INSERT INTO ""Batches"" (""Customer"", ""Submitted"", ""Count"", ""Completed"", ""Errors"", ""Superseded"")
-VALUES (@Customer, now() at time zone 'utc', @Count, 0, 0, false)
-RETURNING ""Id"";
-";
 }

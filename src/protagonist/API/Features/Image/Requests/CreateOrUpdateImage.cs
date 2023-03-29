@@ -1,3 +1,4 @@
+using System.Data;
 using System.Net;
 using API.Exceptions;
 using API.Features.Assets;
@@ -8,7 +9,9 @@ using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Model.Spaces;
+using DLCS.Repository;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Image.Requests;
 
@@ -50,6 +53,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
     private readonly IApiAssetRepository assetRepository;
     private readonly IBatchRepository batchRepository;
     private readonly IAssetNotificationSender assetNotificationSender;
+    private readonly DlcsContext dlcsContext;
     private readonly AssetProcessor assetProcessor;
 
     public CreateOrUpdateImageHandler(
@@ -57,12 +61,14 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
         IApiAssetRepository assetRepository,
         IBatchRepository batchRepository,
         IAssetNotificationSender assetNotificationSender,
+        DlcsContext dlcsContext,
         AssetProcessor assetProcessor)
     {
         this.spaceRepository = spaceRepository;
         this.assetRepository = assetRepository;
         this.batchRepository = batchRepository;
         this.assetNotificationSender = assetNotificationSender;
+        this.dlcsContext = dlcsContext;
         this.assetProcessor = assetProcessor;
     }
     
@@ -81,6 +87,9 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
                 WriteResult.FailedValidation);
         }
 
+        await using var transaction = 
+            await dlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        
         var processAssetResult = await assetProcessor.Process(
             asset,
             request.AssetMustExist,
@@ -98,9 +107,21 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
         );
         
         var modifyEntityResult = processAssetResult.Result;
-        
-        // Processing failed, return failure
-        if (!modifyEntityResult.IsSuccess) return processAssetResult.Result;
+
+        if (modifyEntityResult.IsSuccess)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+        else
+        {
+            // Processing failed, return failure
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+            }
+
+            return processAssetResult.Result;
+        }
 
         var changeType = processAssetResult.ExistingAsset == null ? ChangeType.Create : ChangeType.Update;
         var existingAsset = processAssetResult.ExistingAsset;
