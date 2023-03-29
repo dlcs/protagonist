@@ -13,13 +13,6 @@ public class EntityCounterRepository : IDapperContextRepository, IEntityCounterR
         DlcsContext = dlcsContext;
     }
 
-    private async Task<EntityCounter> GetEntityCounter(int customer, string entityType, string scope)
-    {
-        var entityCounter = await DlcsContext.EntityCounters.SingleAsync(ec =>
-            ec.Customer == customer && ec.Type == entityType && ec.Scope == scope);
-        return entityCounter;
-    }
-    
     public async Task Create(int customer, string entityType, string scope, long initialValue = 1)
     {
         var ec = new EntityCounter
@@ -32,45 +25,13 @@ public class EntityCounterRepository : IDapperContextRepository, IEntityCounterR
         await DlcsContext.EntityCounters.AddAsync(ec);
         await DlcsContext.SaveChangesAsync();
     }
-
-    public async Task<bool> Exists(int customer, string entityType, string scope)
-    {
-        return await DlcsContext.EntityCounters.AnyAsync(ec =>
-            ec.Customer == customer && ec.Type == entityType && ec.Scope == scope);
-    }
-
-    public async Task<long> Get(int customer, string entityType, string scope, long initialValue = 1)
-    {
-        await EnsureCounter(customer, entityType, scope, initialValue);
-        var entityCounter = await GetEntityCounter(customer, entityType, scope);
-        return entityCounter.Next;
-    }
-
+    
     public async Task<long> GetNext(int customer, string entityType, string scope, long initialValue = 1)
     {
         return await LongUpdate(GetNextSql, customer, entityType, scope, initialValue);
     }
-    
-    public async Task Set(int customer, string entityType, string scope, long value)
-    {
-        var entityCounter = await GetEntityCounter(customer, entityType, scope);
-        entityCounter.Next = value;
-        await DlcsContext.SaveChangesAsync();
-    }
 
-    public async Task Reset(int customer, string entityType, string scope)
-    {
-        await Set(customer, entityType, scope, 0);
-    }
-
-    public async Task Remove(int customer, string entityType, string scope)
-    {
-        var entityCounter = await GetEntityCounter(customer, entityType, scope);
-        DlcsContext.EntityCounters.Remove(entityCounter);
-        await DlcsContext.SaveChangesAsync();
-    }
-
-    public async Task<long> Increment(int customer, string entityType, string scope, long initialValue = 1)
+    public async Task<long> Increment(int customer, string entityType, string scope, long initialValue = 0)
     {
         return await LongUpdate(IncrementSql, customer, entityType, scope, initialValue);
     }
@@ -79,7 +40,11 @@ public class EntityCounterRepository : IDapperContextRepository, IEntityCounterR
     {
         return await LongUpdate(DecrementSql, customer, entityType, scope, initialValue);
     }
-
+    
+    private Task<bool> Exists(int customer, string entityType, string scope) =>
+        DlcsContext.EntityCounters.AsNoTracking().AnyAsync(ec =>
+            ec.Customer == customer && ec.Type == entityType && ec.Scope == scope);
+    
     private async Task EnsureCounter(int customer, string entityType, string scope, long initialValue)
     {
         var exists = await Exists(customer, entityType, scope);
@@ -95,7 +60,6 @@ public class EntityCounterRepository : IDapperContextRepository, IEntityCounterR
         await EnsureCounter(customer, entityType, scope, initialValue);
         return await this.QuerySingleAsync<long>(sql, new {customer, entityType, scope});
     }
-
 
     private const string GetNextSql = @"
 UPDATE ""EntityCounters"" SET ""Next"" = ""Next"" + 1
