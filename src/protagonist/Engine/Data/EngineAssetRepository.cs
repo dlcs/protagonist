@@ -115,7 +115,7 @@ public class EngineAssetRepository : IEngineAssetRepository
     {
         int rowsUpdated;
         
-        var queryable = dlcsContext.Batches.Where(b => b.Id == asset.Batch.Value);
+        var queryable = dlcsContext.Batches.Where(b => b.Id == asset.Batch!.Value);
         if (string.IsNullOrEmpty(asset.Error))
         {
             rowsUpdated = await queryable
