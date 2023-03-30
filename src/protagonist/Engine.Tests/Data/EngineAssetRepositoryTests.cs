@@ -414,6 +414,6 @@ public class EngineAssetRepositoryTests
         success.Should().BeTrue();
         
         var updatedItem = await dbContext.Images.AsNoTracking().SingleAsync(a => a.Id == assetId);
-        updatedItem.Error.Should().Be("Unable to find batch associated with image");
+        updatedItem.Error.Should().Be("Unable to update batch associated with image");
     }
 }

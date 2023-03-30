@@ -107,7 +107,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
                 dimensionsUpdated = true;
 
                 // Move assets from elastic transcoder-output bucket to main bucket
-                copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, assetIsOpen, cancellationToken));
+                copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, asset.Id, assetIsOpen, cancellationToken));
             }
         }
 
@@ -166,13 +166,13 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         else if (transcodeDuration != asset.Duration)
         {
             // There may be a very slight difference in outputs
-            logger.LogWarning("Asset {Asset} has outputs with different durations: {Duration1}ms and {Duration2}ms",
+            logger.LogWarning("Asset {AssetId} has outputs with different durations: {Duration1}ms and {Duration2}ms",
                 asset.Id, asset.Duration, transcodeDuration);
         }
     }
 
     private async Task<LargeObjectCopyResult> CopyTranscodeOutputToStorage(TranscodeOutput transcodeOutput,
-        bool assetIsOpen, CancellationToken cancellationToken)
+        AssetId assetId, bool assetIsOpen, CancellationToken cancellationToken)
     {
         var source = storageKeyGenerator.GetTimebasedOutputLocation(transcodeOutput.Key);
         var destination =
@@ -182,24 +182,24 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         var copyResult =
             await bucketWriter.CopyLargeObject(source, destination, destIsPublic: assetIsOpen,
                 token: cancellationToken);
-        
+
         if (copyResult.Result == LargeObjectStatus.Success)
         {
             // delete output file for ElasticTranscoder
             await bucketWriter.DeleteFromBucket(source);
-            logger.LogDebug("Successfully copied transcoder output {OutputKey} to storage {StorageKey}", source,
-                destination);
+            logger.LogDebug("Successfully copied transcoder output {OutputKey} to storage {StorageKey} for {AssetId}",
+                source, destination, assetId);
         }
         else if (copyResult.Result == LargeObjectStatus.SourceNotFound)
         {
             logger.LogInformation(
-                "Unable to find completed transcoded output {OutputKey}, destination exists: {DestinationExists}",
-                source, copyResult.DestinationExists);
+                "Unable to find completed transcoded output {OutputKey} for {AssetId}, destination exists: {DestinationExists}",
+                source, assetId, copyResult.DestinationExists);
         }
 
         return copyResult;
     }
-    
+
     private async Task DeleteInputFile(TranscodeResult transcodeResult)
     {
         if (string.IsNullOrEmpty(transcodeResult.InputKey)) return;
