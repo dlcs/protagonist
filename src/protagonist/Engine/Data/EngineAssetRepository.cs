@@ -5,6 +5,7 @@ using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Engine.Data;
 
@@ -92,22 +93,31 @@ public class EngineAssetRepository : IEngineAssetRepository
 
     private async Task<bool> BatchSave(int batchId, CancellationToken cancellationToken)
     {
-        await using var transaction =
-            await dlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        IDbContextTransaction? transaction = null;
+        if (dlcsContext.Database.CurrentTransaction == null)
+        {
+            transaction =
+                await dlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        }
 
         try
         {
             var updatedRows = await dlcsContext.SaveChangesAsync(cancellationToken);
             updatedRows += await TryFinishBatch(batchId, cancellationToken);
 
-            await transaction.CommitAsync(cancellationToken);
+            if (transaction != null)
+            {
+                await transaction.CommitAsync(cancellationToken);
+            }
 
             return updatedRows > 0;
         }
-        catch (Exception)
+        finally
         {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
+            if (transaction != null)
+            {
+                await transaction.DisposeAsync();
+            }
         }
     }
 

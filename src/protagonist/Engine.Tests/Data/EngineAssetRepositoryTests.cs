@@ -14,6 +14,7 @@ namespace Engine.Tests.Data;
 public class EngineAssetRepositoryTests
 {
     private readonly DlcsContext dbContext;
+    private readonly DlcsContext contextForTests;
     private readonly EngineAssetRepository sut;
 
     public EngineAssetRepositoryTests(DlcsDatabaseFixture dbFixture)
@@ -22,7 +23,7 @@ public class EngineAssetRepositoryTests
 
         var optionsBuilder = new DbContextOptionsBuilder<DlcsContext>();
         optionsBuilder.UseNpgsql(dbFixture.ConnectionString);
-        var contextForTests = new DlcsContext(optionsBuilder.Options);
+        contextForTests = new DlcsContext(optionsBuilder.Options);
         sut = new EngineAssetRepository(contextForTests, new NullLogger<EngineAssetRepository>());
     }
     
@@ -296,6 +297,70 @@ public class EngineAssetRepositoryTests
         
         var updatedItem = await dbContext.Batches.SingleAsync(b => b.Id == batchId);
         updatedItem.Errors.Should().Be(2);
+        updatedItem.Completed.Should().Be(1);
+        updatedItem.Finished.Should().BeNull();
+    }
+    
+    [Trait("Category", "Manual")]
+    [Fact]
+    public async Task UpdateIngestedAsset_UpdatesBatch_HandlesExistingTransaction()
+    {
+        // Arrange
+        var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_UpdatesBatch_HandlesExistingTransaction)}");
+        const int batchId = -10;
+        await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 1);
+        await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        await dbContext.SaveChangesAsync();
+
+        var newAsset = new Asset
+        {
+            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
+            Duration = 99, Batch = batchId, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
+            Error = "broken state"
+        };
+
+        // Act
+        await using var transaction = await contextForTests.Database.BeginTransactionAsync();
+        var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
+        await transaction.CommitAsync();
+        
+        // Assert
+        success.Should().BeTrue();
+        
+        var updatedItem = await dbContext.Batches.SingleAsync(b => b.Id == batchId);
+        updatedItem.Errors.Should().Be(2);
+        updatedItem.Completed.Should().Be(1);
+        updatedItem.Finished.Should().BeNull();
+    }
+    
+    [Trait("Category", "Manual")]
+    [Fact]
+    public async Task UpdateIngestedAsset_UpdatesBatch_HandlesExistingTransactionRollback()
+    {
+        // Arrange
+        var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_UpdatesBatch_HandlesExistingTransactionRollback)}");
+        const int batchId = -10;
+        await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 1);
+        await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        await dbContext.SaveChangesAsync();
+
+        var newAsset = new Asset
+        {
+            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
+            Duration = 99, Batch = batchId, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
+            Error = "broken state"
+        };
+
+        // Act
+        await using var transaction = await contextForTests.Database.BeginTransactionAsync();
+        var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
+        await transaction.RollbackAsync();
+        
+        // Assert
+        success.Should().BeTrue();
+        
+        var updatedItem = await dbContext.Batches.SingleAsync(b => b.Id == batchId);
+        updatedItem.Errors.Should().Be(1);
         updatedItem.Completed.Should().Be(1);
         updatedItem.Finished.Should().BeNull();
     }
