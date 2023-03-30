@@ -54,32 +54,25 @@ q.""Customer"", q.""Size"", q.""Name"", b.""BatchesWaiting"", b.""ImagesWaiting"
 
     private async Task ChangeQueueSize(int customer, string name, int amount, CancellationToken cancellationToken)
     {
-        await using var transaction =
-            await DlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
-
         try
         {
-            var queue = await DlcsContext.Queues.SingleOrDefaultAsync(q => q.Customer == customer && q.Name == name,
-                cancellationToken: cancellationToken);
+            var updateCount = await DlcsContext.Queues
+                .Where(q => q.Customer == customer && q.Name == name)
+                .UpdateFromQueryAsync(q => new Queue { Size = Math.Max(0, q.Size + amount) }, cancellationToken);
 
-            if (queue == null)
+            if (updateCount == 0)
             {
+                logger.LogInformation("Updating queue {QueueName} for {Customer} customer returned 0 results. Creating",
+                    name, customer);
                 await DlcsContext.Queues.AddAsync(
                     new Queue { Customer = customer, Name = name, Size = Math.Max(0, amount) }, cancellationToken);
+                await DlcsContext.SaveChangesAsync(cancellationToken);
             }
-            else
-            {
-                queue.Size += amount;
-                if (queue.Size < 0) queue.Size = 0;
-            }
-
-            await DlcsContext.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error incrementing customer {Customer}, queue {QueueName}", customer, name);
-            await transaction.RollbackAsync(cancellationToken);
+            logger.LogError(ex, "Error updating customer {Customer}, queue {QueueName} by {Amount}", customer, name,
+                amount);
         }
     }
 }
