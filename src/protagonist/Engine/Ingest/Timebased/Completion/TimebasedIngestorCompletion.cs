@@ -40,17 +40,17 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
 
         var assetIsOpen = !asset.RequiresAuth;
 
-        var errors = new StringBuilder();
+        var errors = new List<string>();
         var transcodeSuccess = true;
         
         if (!transcodeResult.IsComplete())
         {
             transcodeSuccess = false;
-            errors.AppendLine(
-                $"Transcode failed with status: {transcodeResult.State}. Error: {transcodeResult.ErrorCode ?? "unknown"}.");
+            errors.Add(
+                $"Transcode failed with status: {transcodeResult.State}. Error: {transcodeResult.ErrorCode ?? "unknown"}");
         }
 
-        var copyTasks = CopyTranscodeOutputs(transcodeResult, cancellationToken, transcodeSuccess, errors, asset, assetIsOpen);
+        var copyTasks = CopyTranscodeOutputs(transcodeResult, errors, asset, assetIsOpen, cancellationToken);
 
         await DeleteInputFile(transcodeResult);
         
@@ -70,13 +70,13 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
             if (cr.Result == LargeObjectStatus.Success) continue;
             if (cr is { Result: LargeObjectStatus.SourceNotFound, DestinationExists: true }) continue;
             
-            errors.AppendLine($"Copying ElasticTranscoder output failed with reason: {cr.Result}");
+            errors.Add($"Copying ElasticTranscoder output failed with reason: {cr.Result}");
             transcodeSuccess = false;
         }
         
-        if (errors.Length > 0)
+        if (errors.Count > 0)
         {
-            asset.Error = errors.ToString();
+            asset.Error = string.Join("|", errors);
         }
         
         var dbUpdateSuccess = await CompleteAssetInDatabase(asset, size, cancellationToken);
@@ -84,31 +84,30 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         return transcodeSuccess && dbUpdateSuccess;
     }
 
-    private List<Task<LargeObjectCopyResult>> CopyTranscodeOutputs(TranscodeResult transcodeResult, CancellationToken cancellationToken,
-        bool transcodeSuccess, StringBuilder errors, Asset asset, bool assetIsOpen)
+    private List<Task<LargeObjectCopyResult>> CopyTranscodeOutputs(TranscodeResult transcodeResult,
+        List<string> errors, Asset asset, bool assetIsOpen,
+        CancellationToken cancellationToken)
     {
         bool dimensionsUpdated = false;
         var transcodeOutputs = transcodeResult.Outputs;
         var copyTasks = new List<Task<LargeObjectCopyResult>>(transcodeOutputs.Count);
-        if (transcodeSuccess)
+
+        foreach (var transcodeOutput in transcodeOutputs)
         {
-            foreach (var transcodeOutput in transcodeOutputs)
+            if (!transcodeOutput.IsComplete())
             {
-                if (!transcodeOutput.IsComplete())
-                {
-                    logger.LogWarning("Received incomplete {Status} for ElasticTranscoder output for {OutputKey}",
-                        transcodeOutput.Status, transcodeOutput.Key);
-                    errors.AppendLine(
-                        $"Transcode output for {transcodeOutput.Key} has status {transcodeOutput.Status}");
-                    continue;
-                }
-
-                SetAssetDimensions(asset, dimensionsUpdated, transcodeOutput);
-                dimensionsUpdated = true;
-
-                // Move assets from elastic transcoder-output bucket to main bucket
-                copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, asset.Id, assetIsOpen, cancellationToken));
+                logger.LogWarning("Received incomplete {Status} for ElasticTranscoder output for {OutputKey}",
+                    transcodeOutput.Status, transcodeOutput.Key);
+                errors.Add(
+                    $"Transcode output for {transcodeOutput.Key} has status {transcodeOutput.Status} with detail {transcodeOutput.StatusDetail}");
+                continue;
             }
+
+            SetAssetDimensions(asset, dimensionsUpdated, transcodeOutput);
+            dimensionsUpdated = true;
+
+            // Move assets from elastic transcoder-output bucket to main bucket
+            copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, asset.Id, assetIsOpen, cancellationToken));
         }
 
         return copyTasks;
