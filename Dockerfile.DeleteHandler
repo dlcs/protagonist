@@ -15,7 +15,7 @@ RUN dotnet build "DeleteHandler.csproj" -c Release -o /app/build
 FROM build AS publish
 RUN dotnet publish "DeleteHandler.csproj" -c Release -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:6.0-bullseye-slim AS base
+FROM mcr.microsoft.com/dotnet/aspnet:7.0-bullseye-slim AS base
 
 LABEL maintainer="Donald Gray <donald.gray@digirati.com>,Tom Crane <tom.crane@digirati.com>"
 LABEL org.opencontainers.image.source=https://github.com/dlcs/protagonist
