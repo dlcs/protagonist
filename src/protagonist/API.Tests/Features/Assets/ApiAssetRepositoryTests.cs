@@ -64,7 +64,7 @@ public class ApiAssetRepositoryTests
         var newAsset = new Asset(assetId)
         {
             Reference1 = "I am new", Origin = "https://example.org/image1.tiff",
-            DeliveryChannel = Array.Empty<string>()
+            DeliveryChannels = Array.Empty<string>()
         };
     
         var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false);
@@ -85,7 +85,7 @@ public class ApiAssetRepositoryTests
         var newAsset = new Asset(assetId)
         {
             Reference1 = "I am new", Origin = "https://example.org/image1.tiff",
-            DeliveryChannel = Array.Empty<string>()
+            DeliveryChannels = Array.Empty<string>()
         };
     
         var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false);
@@ -115,7 +115,7 @@ public class ApiAssetRepositoryTests
         var newAsset = new Asset(assetId)
         {
             Reference1 = "I am new", Origin = "https://example.org/image1.tiff",
-            DeliveryChannel = Array.Empty<string>()
+            DeliveryChannels = Array.Empty<string>()
         };
         var customerCounter = await contextForTests.EntityCounters.AddAsync(
             new EntityCounter { Customer = 0, Scope = "10120", Next = 100, Type = "customer-images" });
@@ -148,7 +148,7 @@ public class ApiAssetRepositoryTests
         var assetId = AssetId.FromString($"100/10/{nameof(AssetRepository_Saves_New_Asset_UsingResultFromPreparer)}");
         var newAsset = new Asset(assetId)
         {
-            Reference1 = "I am new", Origin = "https://example.org/image1.tiff", DeliveryChannel = Array.Empty<string>()
+            Reference1 = "I am new", Origin = "https://example.org/image1.tiff", DeliveryChannels = Array.Empty<string>()
         };
     
         var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false);

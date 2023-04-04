@@ -34,8 +34,8 @@ public static class AssetConverter
         
         var image = new Image(urlRoots.BaseUrl, dbAsset.Customer, dbAsset.Space, modelId)
         {
-            InfoJson = $"{urlRoots.ResourceRoot}iiif-img/{dbAsset.Id}/info.json",
-            ThumbnailInfoJson = $"{urlRoots.ResourceRoot}thumbs/{dbAsset.Id}/info.json",
+            ImageService = $"{urlRoots.ResourceRoot}iiif-img/{dbAsset.Id}",
+            ThumbnailImageService = $"{urlRoots.ResourceRoot}thumbs/{dbAsset.Id}",
             Created = dbAsset.Created,
             Origin = dbAsset.Origin,
             InitialOrigin = dbAsset.InitialOrigin,
@@ -56,7 +56,7 @@ public static class AssetConverter
             MediaType = dbAsset.MediaType,
             Family = (AssetFamily)dbAsset.Family,
             Roles = dbAsset.RolesList.ToArray(),
-            DeliveryChannel = dbAsset.DeliveryChannel,
+            DeliveryChannels = dbAsset.DeliveryChannels
         };
         
         if (dbAsset.Batch > 0)
@@ -270,9 +270,9 @@ public static class AssetConverter
             asset.MediaType = hydraImage.MediaType;
         }
         
-        if (hydraImage.DeliveryChannel != null)
+        if (hydraImage.DeliveryChannels != null)
         {
-            asset.DeliveryChannel = hydraImage.DeliveryChannel.OrderBy(dc => dc).Select(dc => dc.ToLower()).ToArray();
+            asset.DeliveryChannels = hydraImage.DeliveryChannels.OrderBy(dc => dc).Select(dc => dc.ToLower()).ToArray();
         }
 
         var thumbnailPolicy = hydraImage.ThumbnailPolicy.GetLastPathElement("thumbnailPolicies/");

@@ -54,7 +54,7 @@ public class Asset
     /// <summary>
     /// A list of 1:n delivery channels for asset. Dictates which asset-delivery channels are available
     /// </summary>
-    public string[] DeliveryChannel { get; set; }
+    public string[] DeliveryChannels { get; set; }
 
     private IEnumerable<string>? rolesList;
     
