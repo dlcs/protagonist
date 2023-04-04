@@ -97,8 +97,8 @@ public static class AssetPreparer
                 requiresReingest = true;
             }
 
-            if (updateAsset.DeliveryChannel != null &&
-                !updateAsset.DeliveryChannel.SequenceEqual(existingAsset.DeliveryChannel))
+            if (updateAsset.DeliveryChannels != null &&
+                !updateAsset.DeliveryChannels.SequenceEqual(existingAsset.DeliveryChannels))
             {
                 // Changing DeliveryChannel can alter how the image should be processed
                 requiresReingest = true;
@@ -162,9 +162,9 @@ public static class AssetPreparer
             // However, this DOES allow the *creation* of a NotForDelivery asset.
         }
 
-        if (!updateAsset.DeliveryChannel.IsNullOrEmpty())
+        if (!updateAsset.DeliveryChannels.IsNullOrEmpty())
         {
-            foreach (var dc in updateAsset.DeliveryChannel)
+            foreach (var dc in updateAsset.DeliveryChannels)
             {
                 if (!AssetDeliveryChannels.All.Contains(dc))
                 {
@@ -206,7 +206,7 @@ public static class AssetPreparer
         {
             // Allow updating dimensions if _existing_ channel is "file" only as these won't have been set by
             // an automated process
-            var isFileOnly = existingAsset.DeliveryChannel.ContainsOnly(AssetDeliveryChannels.File);
+            var isFileOnly = existingAsset.DeliveryChannels.ContainsOnly(AssetDeliveryChannels.File);
             
             if (updateAsset.Width.HasValue && updateAsset.Width != 0 && updateAsset.Width != existingAsset.Width)
             {
@@ -328,7 +328,7 @@ public static class AssetPreparer
             ImageOptimisationPolicy = string.Empty,
             ThumbnailPolicy = string.Empty,
             InitialOrigin = string.Empty,
-            DeliveryChannel = null,
+            DeliveryChannels = null,
             MediaType = "unknown"
         };
     }

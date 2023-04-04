@@ -164,9 +164,9 @@ public class AssetProcessor
     private bool SetDeliveryChannel(Asset updatedAsset, IngestPresets preset)
     {
         // Creation, set DeliveryChannel to default value for Family, if not already set
-        if (updatedAsset.DeliveryChannel.IsNullOrEmpty())
+        if (updatedAsset.DeliveryChannels.IsNullOrEmpty())
         {
-            updatedAsset.DeliveryChannel = preset.DeliveryChannel;
+            updatedAsset.DeliveryChannels = preset.DeliveryChannel;
             return true;
         }
 

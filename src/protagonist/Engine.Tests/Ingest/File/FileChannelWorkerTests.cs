@@ -164,7 +164,7 @@ public class FileChannelWorkerTests
         var asset = new Asset
         {
             Id = id, Customer = id.Customer, Space = id.Space,
-            DeliveryChannel = new[] { AssetDeliveryChannels.File }
+            DeliveryChannels = new[] { AssetDeliveryChannels.File }
         };
         
         var context = new IngestionContext(asset);

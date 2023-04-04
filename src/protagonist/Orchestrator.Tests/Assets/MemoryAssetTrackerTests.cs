@@ -55,7 +55,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset { DeliveryChannel = deliveryChannel.Split(",") });
+            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(",") });
 
         // Act
         var result = await sut.GetOrchestrationAsset(assetId);
@@ -77,7 +77,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset { DeliveryChannel = deliveryChannel.Split(","), NotForDelivery = true });
+            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(","), NotForDelivery = true });
         
         // Act
         var result = await sut.GetOrchestrationAsset(assetId);
@@ -138,7 +138,7 @@ public class MemoryAssetTrackerTests
         A.CallTo(() => assetRepository.GetAsset(assetId))
             .Returns(new Asset
             {
-                DeliveryChannel = deliveryChannel.Split(","), Origin = "my-origin"
+                DeliveryChannels = deliveryChannel.Split(","), Origin = "my-origin"
             });
         
         // Act
@@ -161,7 +161,7 @@ public class MemoryAssetTrackerTests
         A.CallTo(() => assetRepository.GetAsset(assetId))
             .Returns(new Asset
             {
-                DeliveryChannel = deliveryChannel.Split(","), Origin = "my-origin"
+                DeliveryChannels = deliveryChannel.Split(","), Origin = "my-origin"
             });
         
         // Act
@@ -183,7 +183,7 @@ public class MemoryAssetTrackerTests
         var sizes = new List<int[]> { new[] { 100, 200 } };
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-            DeliveryChannel = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1
+            DeliveryChannels = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
 
@@ -207,7 +207,7 @@ public class MemoryAssetTrackerTests
         var assetId = new AssetId(1, 1, "otis");
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-            DeliveryChannel = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1
+            DeliveryChannels = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns<List<int[]>>(null);
 
@@ -227,7 +227,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset { DeliveryChannel = deliveryChannel.Split(",") });
+            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(",") });
         
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
@@ -249,7 +249,7 @@ public class MemoryAssetTrackerTests
         var assetId = new AssetId(1, 1, "go!");
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-            DeliveryChannel = new[] { "iiif-img" }, MaxUnauthorised = maxUnauth, Roles = roles
+            DeliveryChannels = new[] { "iiif-img" }, MaxUnauthorised = maxUnauth, Roles = roles
         });
         
         // Act

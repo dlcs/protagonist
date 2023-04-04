@@ -133,7 +133,7 @@ public class AssetConverterTests
             MaxUnauthorised = 400,
             MediaType = mediaType,
             ThumbnailPolicy = thumbnailPolicy,
-            DeliveryChannel = deliveryChannel
+            DeliveryChannels = deliveryChannel
         };
 
         var asset = hydraImage.ToDlcsModel(1);
@@ -158,7 +158,7 @@ public class AssetConverterTests
         asset.Reference3.Should().Be("3");
         asset.Roles.Split(',').Should().BeEquivalentTo(roles);
         asset.Tags.Split(',').Should().BeEquivalentTo(tags);
-        asset.DeliveryChannel.Should().BeEquivalentTo(deliveryChannel);
+        asset.DeliveryChannels.Should().BeEquivalentTo(deliveryChannel);
         asset.MaxUnauthorised.Should().Be(400);
         asset.MediaType.Should().Be(mediaType);
         asset.ThumbnailPolicy.Should().Be("thumb100");
@@ -174,13 +174,13 @@ public class AssetConverterTests
         {
             Id = AssetApiId,
             Space = 99,
-            DeliveryChannel = deliveryChannel
+            DeliveryChannels = deliveryChannel
         };
         
         // Act
         var asset = hydraImage.ToDlcsModel(1);
         
         // Assert
-        asset.DeliveryChannel.Should().BeInAscendingOrder();
+        asset.DeliveryChannels.Should().BeInAscendingOrder();
     }
 }

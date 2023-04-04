@@ -436,7 +436,7 @@ public class AppetiserClientTests
         var asset = new Asset
         {
             Id = AssetId.FromString(assetId), Customer = 1, Space = 2,
-            DeliveryChannel = new[] { AssetDeliveryChannels.Image }, MediaType = contentType
+            DeliveryChannels = new[] { AssetDeliveryChannels.Image }, MediaType = contentType
         };
 
         asset
