@@ -38,10 +38,10 @@ public class Image : DlcsResource
     [JsonProperty(Order = 10, PropertyName = "space")]
     public int Space { get; set; }
 
-    [RdfProperty(Description = "info.json URI - where the IIIF Image API is exposed for this image",
+    [RdfProperty(Description = "image service URI - where the IIIF Image API is exposed for this image",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 11, PropertyName = "infoJson")]
-    public string? InfoJson { get; set; }
+    [JsonProperty(Order = 11, PropertyName = "imageService")]
+    public string? ImageService  { get; set; }
     
 
     [RdfProperty(Description = "Degraded info.json URI - if a user does not have permission to view the full image, " +
@@ -50,10 +50,10 @@ public class Image : DlcsResource
     [JsonProperty(Order = 12, PropertyName = "degradedInfoJson")]
     public string? DegradedInfoJson { get; set; }
     
-    [RdfProperty(Description = "Thumbnail info.json URI",
+    [RdfProperty(Description = "Thumbnail image service URI",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 13, PropertyName = "thumbnailInfoJson")]
-    public string? ThumbnailInfoJson { get; set; }
+    [JsonProperty(Order = 13, PropertyName = "thumbnailImageService")]
+    public string? ThumbnailImageService { get; set; }
 
     [RdfProperty(Description = "Direct URI of the 400 pixel thumbnail",
         Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
