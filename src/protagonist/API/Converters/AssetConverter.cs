@@ -34,8 +34,8 @@ public static class AssetConverter
         
         var image = new Image(urlRoots.BaseUrl, dbAsset.Customer, dbAsset.Space, modelId)
         {
-            InfoJson = $"{urlRoots.ResourceRoot}iiif-img/{dbAsset.Id}/info.json",
-            ThumbnailInfoJson = $"{urlRoots.ResourceRoot}thumbs/{dbAsset.Id}/info.json",
+            ImageService = $"{urlRoots.ResourceRoot}iiif-img/{dbAsset.Id}",
+            ThumbnailImageService = $"{urlRoots.ResourceRoot}thumbs/{dbAsset.Id}",
             Created = dbAsset.Created,
             Origin = dbAsset.Origin,
             InitialOrigin = dbAsset.InitialOrigin,
