@@ -375,7 +375,7 @@ public partial class DlcsContext : DbContext
             entity.Property(e => e.NumberReference3).IsRequired();
             entity.Property(e => e.Ingesting).IsRequired();
             entity.Property(e => e.Batch).IsRequired();
-            entity.Property(e => e.DeliveryChannel)
+            entity.Property(e => e.DeliveryChannels)
                 .IsRequired()
                 .HasMaxLength(100)
                 .HasConversion(

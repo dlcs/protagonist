@@ -135,7 +135,7 @@ public class ImageProcessorFlagsTests
     {
         var asset = new Asset(new AssetId(1, 2, "foo"))
             {
-                DeliveryChannel = new[] { "iiif-img" }
+                DeliveryChannels = new[] { "iiif-img" }
             }
             .WithImageOptimisationPolicy(new ImageOptimisationPolicy
             {

@@ -57,7 +57,7 @@ public class AssetPreparerTests
     {
         // Arrange
         var updateAsset = new Asset { Duration = 100 };
-        var existingAsset = new Asset { MediaType = mediaType, DeliveryChannel = dc.Split(","), Duration = 99 };
+        var existingAsset = new Asset { MediaType = mediaType, DeliveryChannels = dc.Split(","), Duration = 99 };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
@@ -74,7 +74,7 @@ public class AssetPreparerTests
     {
         // Arrange
         var updateAsset = new Asset { Duration = 100 };
-        var existingAsset = new Asset { MediaType = mediaType, DeliveryChannel = new[] { "file" }, Duration = 99 };
+        var existingAsset = new Asset { MediaType = mediaType, DeliveryChannels = new[] { "file" }, Duration = 99 };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
@@ -95,7 +95,7 @@ public class AssetPreparerTests
         var updateAsset = new Asset { Width = 100 };
         var existingAsset = new Asset
         {
-            DeliveryChannel = dc.Split(","), MediaType = mediaType, Width = 99
+            DeliveryChannels = dc.Split(","), MediaType = mediaType, Width = 99
         };
         
         // Act
@@ -114,7 +114,7 @@ public class AssetPreparerTests
     {
         // Arrange
         var updateAsset = new Asset { Width = 100 };
-        var existingAsset = new Asset { DeliveryChannel = dc.Split(","), MediaType = mediaType, Width = 99 };
+        var existingAsset = new Asset { DeliveryChannels = dc.Split(","), MediaType = mediaType, Width = 99 };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
@@ -135,7 +135,7 @@ public class AssetPreparerTests
         var updateAsset = new Asset { Height = 100 };
         var existingAsset = new Asset
         {
-            DeliveryChannel = dc.Split(","), MediaType = mediaType, Height = 99
+            DeliveryChannels = dc.Split(","), MediaType = mediaType, Height = 99
         };
         
         // Act
@@ -154,7 +154,7 @@ public class AssetPreparerTests
     {
         // Arrange
         var updateAsset = new Asset { Height = 100 };
-        var existingAsset = new Asset { DeliveryChannel = dc.Split(","), MediaType = mediaType, Height = 99 };
+        var existingAsset = new Asset { DeliveryChannels = dc.Split(","), MediaType = mediaType, Height = 99 };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
@@ -228,8 +228,8 @@ public class AssetPreparerTests
         string reason)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "https://whatever", DeliveryChannel = update };
-        var existingAsset = new Asset { Origin = "https://whatever", DeliveryChannel = existing };
+        var updateAsset = new Asset { Origin = "https://whatever", DeliveryChannels = update };
+        var existingAsset = new Asset { Origin = "https://whatever", DeliveryChannels = existing };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
@@ -247,7 +247,7 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_SetsAssetFamilyIfNotSet(string dc, AssetFamily expected)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "required", DeliveryChannel = dc.Split(",") };
+        var updateAsset = new Asset { Origin = "required", DeliveryChannels = dc.Split(",") };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
@@ -265,7 +265,7 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_ChangesAssetFamilyIfSet_New(string dc, AssetFamily current, AssetFamily expected)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "required", DeliveryChannel = dc.Split(","), Family = current};
+        var updateAsset = new Asset { Origin = "required", DeliveryChannels = dc.Split(","), Family = current};
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
@@ -284,8 +284,8 @@ public class AssetPreparerTests
         AssetFamily expected)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "required", DeliveryChannel = dc.Split(",") };
-        var existingAsset = new Asset { Family = current, DeliveryChannel = new[] { "fake" } };
+        var updateAsset = new Asset { Origin = "required", DeliveryChannels = dc.Split(",") };
+        var existingAsset = new Asset { Family = current, DeliveryChannels = new[] { "fake" } };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
@@ -300,8 +300,8 @@ public class AssetPreparerTests
         string __)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "https://whatever", DeliveryChannel = existing };
-        var existingAsset = new Asset { Origin = "https://whatever", DeliveryChannel = existing };
+        var updateAsset = new Asset { Origin = "https://whatever", DeliveryChannels = existing };
+        var existingAsset = new Asset { Origin = "https://whatever", DeliveryChannels = existing };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
