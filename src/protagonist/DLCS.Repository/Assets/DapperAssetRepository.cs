@@ -73,7 +73,7 @@ public class DapperAssetRepository : AssetRepositoryCachingBase, IDapperConfigRe
             ThumbnailPolicy = rawAsset.ThumbnailPolicy,
             ImageOptimisationPolicy = rawAsset.ImageOptimisationPolicy,
             NotForDelivery = rawAsset.NotForDelivery,
-            DeliveryChannels = rawAsset.DeliveryChannel.ToString().Split(",")
+            DeliveryChannels = rawAsset.DeliveryChannels.ToString().Split(",")
         };
     }
 
