@@ -56,13 +56,26 @@ public static class AssetConverter
             MediaType = dbAsset.MediaType,
             Family = (AssetFamily)dbAsset.Family,
             Roles = dbAsset.RolesList.ToArray(),
-            DeliveryChannel = dbAsset.DeliveryChannel
+            DeliveryChannel = dbAsset.DeliveryChannel,
         };
+        
         if (dbAsset.Batch > 0)
         {
             // TODO - this should be set by HydraProperty - but where does the template come from?
             image.Batch = $"{urlRoots.BaseUrl}/customers/{dbAsset.Customer}/queue/batches/{dbAsset.Batch}";
         }
+
+        if (!string.IsNullOrEmpty(dbAsset.ThumbnailPolicy))
+        {
+            image.ThumbnailPolicy = $"{urlRoots.BaseUrl}/thumbnailPolicies/{dbAsset.ThumbnailPolicy}";
+        }
+
+        if (!string.IsNullOrEmpty(dbAsset.ImageOptimisationPolicy))
+        {
+            image.ImageOptimisationPolicy =
+                $"{urlRoots.BaseUrl}/imageOptimisationPolicies/{dbAsset.ImageOptimisationPolicy}";
+        }
+
         return image;
     }
 
