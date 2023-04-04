@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Data;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
@@ -37,8 +38,8 @@ public static class DatabaseConnectionManager
     /// <returns>Open <see cref="NpgsqlConnection"/> connection.</returns>
     public static async Task<NpgsqlConnection> GetOpenNpgSqlConnection(this DlcsContext dlcsContext)
     {
-        var connection = new NpgsqlConnection(dlcsContext.Database.GetConnectionString());
-        await connection.OpenAsync();
-        return connection;
+        var connection = dlcsContext.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open) await connection.OpenAsync();
+        return (NpgsqlConnection)connection;
     }
 }

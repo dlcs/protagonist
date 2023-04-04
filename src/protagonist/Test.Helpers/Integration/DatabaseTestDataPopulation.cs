@@ -149,11 +149,12 @@ public static class DatabaseTestDataPopulation
         });
 
     public static ValueTask<EntityEntry<Batch>> AddTestBatch(this DbSet<Batch> batch, int id, int customer = 99,
-        int count = 1, int completed = 0, int errors = 0, DateTime? submitted = null, bool superseded = false)
+        int count = 1, int completed = 0, int errors = 0, DateTime? submitted = null, bool superseded = false,
+        DateTime? finished = null)
         => batch.AddAsync(new Batch
         {
             Id = id, Customer = customer, Submitted = submitted ?? DateTime.UtcNow, Completed = completed,
-            Count = count, Errors = errors, Superseded = superseded
+            Count = count, Errors = errors, Superseded = superseded, Finished = finished
         });
 
     public static ValueTask<EntityEntry<CustomerStorage>> AddTestCustomerStorage(

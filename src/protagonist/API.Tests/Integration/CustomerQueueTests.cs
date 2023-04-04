@@ -812,7 +812,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Post_TestBatch_MarksBatchAsComplete_IfImagesFoundAndAllFinished()
+    public async Task Post_TestBatch_MarksBatchAsComplete_IfImagesFoundAndAllFinished_AndBatchNotFinished()
     {
         // Arrange
         const int batch = 202;
@@ -833,10 +833,10 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == batch);
         dbBatch.Superseded.Should().BeFalse();
-        dbBatch.Finished.Should().NotBeNull();
+        dbBatch.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
         dbBatch.Count.Should().Be(3);
     }
-    
+
     [Fact]
     public async Task Post_TestBatch_ReturnsFalse_IfNotSupersededOrFinished()
     {
@@ -861,5 +861,32 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbBatch.Superseded.Should().BeFalse();
         dbBatch.Finished.Should().BeNull();
         dbBatch.Count.Should().Be(100);
+    }
+    
+    [Fact]
+    public async Task Post_TestBatch_DoesNotChangeBatchFinished_IfImagesFoundAndAllFinished_ButBatchHasFinishedDate()
+    {
+        // Arrange
+        const int batch = 205;
+        var finished = DateTime.UtcNow.AddDays(-3);
+        await dbContext.Batches.AddTestBatch(batch, count: 13, finished: finished);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/donuts"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/workinonit"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/waves"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.SaveChangesAsync();
+        const string path = "customers/99/queue/batches/205/test";
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync(path, null!);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jsonDoc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
+
+        var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == batch);
+        dbBatch.Superseded.Should().BeFalse();
+        dbBatch.Finished.Should().BeCloseTo(finished, TimeSpan.FromMinutes((1)));
+        dbBatch.Count.Should().Be(3);
     }
 }

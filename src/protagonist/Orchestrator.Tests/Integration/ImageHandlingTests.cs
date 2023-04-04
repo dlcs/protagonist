@@ -39,6 +39,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly HttpClient httpClient;
     private readonly IAmazonS3 amazonS3;
     private readonly FakeImageOrchestrator orchestrator = new();
+    private string sizesJsonContent = "{\"o\":[[800,800],[400,400],[200,200]],\"a\":[]}";
 
     public ImageHandlingTests(ProtagonistAppFactory<Startup> factory, StorageFixture storageFixture)
     {
@@ -60,8 +61,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         dbFixture.CleanUp();
     }
-
-    #region InfoJson
+    
     [Theory]
     [InlineData("/iiif-img/1/1")]
     [InlineData("/iiif-img/1/1/info.json")]
@@ -156,18 +156,57 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
+        var expectedSizes = new List<Size> { new(800, 800), new(400, 400), new(200, 200) };
 
         // Act
         var response = await httpClient.GetAsync($"iiif-img/v2/{id}/info.json");
         
         // Assert
         // Verify correct info.json returned
-        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-img/v2/{id}");
-        jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+        var jsonResponse = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService2>();
+        jsonResponse.Id.Should().Be($"http://localhost/iiif-img/v2/{id}");
+        jsonResponse.Context.ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+        jsonResponse.Sizes.Should().BeEquivalentTo(expectedSizes);
+
+        // With correct headers/status
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        response.Content.Headers.ContentType.ToString().Should()
+            .Be("application/json", "application/json unless Accept header specified");
+        
+        // And a copy was put in S3 for future requests
+        var s3InfoJsonObject =
+            await amazonS3.GetObjectAsync(LocalStackFixture.StorageBucketName, $"info/Cantaloupe/v2/{id}/info.json");
+        var s3InfoJson = JObject.Parse(s3InfoJsonObject.ResponseStream.GetContentString());
+        s3InfoJson["@id"].ToString().Should()
+            .NotBe($"http://localhost/iiif-img/v2/{id}", "Stored Id is placeholder only");
+        s3InfoJson["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+    }
+    
+    [Fact]
+    public async Task GetInfoJsonV2_ReturnsImageServerSizes_IfS3GetFails()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_ReturnsImageServerSizes_IfS3GetFails)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.SaveChangesAsync();
+        
+        // Sizes from FakeImageServerClient
+        var expectedSizes = new List<Size> { new(100, 100), new(25, 25), new(1, 1) };
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/v2/{id}/info.json");
+        
+        // Assert
+        // Verify correct info.json returned
+        var jsonResponse = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService2>();
+        jsonResponse.Id.Should().Be($"http://localhost/iiif-img/v2/{id}");
+        jsonResponse.Context.ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+        jsonResponse.Sizes.Should().BeEquivalentTo(expectedSizes);
 
         // With correct headers/status
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -196,9 +235,10 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
+        var expectedSizes = new List<Size> { new(800, 800), new(400, 400), new(200, 200) };
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, $"iiif-img/v2/{id}/info.json");
@@ -207,10 +247,11 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         // Verify correct info.json returned
-        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["@id"].ToString().Should()
+        var jsonResponse = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService2>();
+        jsonResponse.Id.Should()
             .Be($"http://my-proxy.com/const_value/v2/99/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules)}");
-        jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+        jsonResponse.Context.ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+        jsonResponse.Sizes.Should().BeEquivalentTo(expectedSizes);
 
         // With correct headers/status
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -241,7 +282,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -279,7 +320,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -321,7 +362,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -367,9 +408,10 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
+        var expectedSizes = new List<Size> { new(800, 800), new(400, 400), new(200, 200) };
         
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, $"iiif-img/{id}/info.json");
@@ -378,10 +420,12 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.SendAsync(request);
 
         // Assert
-        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["id"].ToString().Should()
+        var jsonResponse = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService3>();
+        jsonResponse.Id.Should()
             .Be($"http://my-proxy.com/const_value/99/{nameof(GetInfoJsonV3_Correct_ViaConneg_CustomPathRules)}");
-        jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/3/context.json");
+        jsonResponse.Context.ToString().Should().Be("http://iiif.io/api/image/3/context.json");
+        jsonResponse.Sizes.Should().BeEquivalentTo(expectedSizes);
+        
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
@@ -400,7 +444,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -430,7 +474,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -456,7 +500,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -487,7 +531,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -509,7 +553,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -531,7 +575,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -709,7 +753,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         
         // Act
@@ -737,7 +781,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         
         // Act
@@ -772,7 +816,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         
         // Act
@@ -807,7 +851,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+            ContentBody = sizesJsonContent
         });
         
         var bearerToken = authToken.Entity.BearerToken;
@@ -827,7 +871,6 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbFixture.DbContext.AuthTokens.Single(t => t.BearerToken == bearerToken)
             .Expires.Should().BeAfter(DateTime.UtcNow.AddMinutes(5));
     }
-    #endregion
 
     [Fact]
     public async Task Get_UnknownCustomer_Returns404()
@@ -1329,7 +1372,8 @@ public class FakeImageServerClient : IImageServerClient
                 Protocol = ImageService2.Image2Protocol,
                 Context = ImageService2.Image2Context,
                 Width = 100,
-                Height = 100
+                Height = 100,
+                Sizes = new List<Size> { new(100, 100), new(25, 25), new(1, 1) },
             } as TImageService;
         }
 
@@ -1339,7 +1383,8 @@ public class FakeImageServerClient : IImageServerClient
             Protocol = ImageService3.ImageProtocol,
             Context = ImageService3.Image3Context,
             Width = 100,
-            Height = 100
+            Height = 100,
+            Sizes = new List<Size> { new(100, 100), new(25, 25), new(1, 1) },
         } as TImageService;
     }
 }

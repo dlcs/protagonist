@@ -53,7 +53,6 @@ public class CustomerStorageRepository : IStorageRepository
         await dlcsContext.SaveChangesAsync(cancellationToken);
 
         return storageForSpace;
-
     }
 
     public async Task<CustomerStorageSummary> GetCustomerStorageSummary(

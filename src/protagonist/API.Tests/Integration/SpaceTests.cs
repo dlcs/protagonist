@@ -7,14 +7,13 @@ using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
 using DLCS.Repository;
-using FluentAssertions;
+using DLCS.Repository.Entities;
 using Hydra;
 using Hydra.Collections;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
-using Xunit;
 
 namespace API.Tests.Integration;
 
@@ -96,7 +95,6 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         }
     }
 
-
     [Fact]
     public async Task Create_Space_Updates_EntityCounters()
     {
@@ -134,7 +132,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         currentCounter.Next.Should().Be(next + 1);
         var spaceImageCounter = await dbContext.EntityCounters.SingleOrDefaultAsync(
             ec => 
-                ec.Type == "space-images" && 
+                ec.Type == KnownEntityCounters.SpaceImages && 
                 ec.Customer == customerId.Value && 
                 ec.Scope == next.ToString());
         spaceImageCounter.Should().NotBeNull();

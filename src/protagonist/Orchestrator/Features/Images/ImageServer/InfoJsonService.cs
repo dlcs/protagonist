@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Streams;
-using DLCS.Model.Storage;
 using IIIF;
 using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
@@ -57,7 +56,7 @@ public class InfoJsonService
             JsonLdBase deserialisedInfoJson = version == Version.V2
                 ? infoJson.FromJsonStream<ImageService2>()
                 : infoJson.FromJsonStream<ImageService3>();
-            logger.LogDebug("Found info.json version {Version} for {AssetId}", version, orchestrationImage.AssetId);
+            logger.LogTrace("Found info.json version {Version} for {AssetId}", version, orchestrationImage.AssetId);
             return new InfoJsonResponse(deserialisedInfoJson, false);
         }
 

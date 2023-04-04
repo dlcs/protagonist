@@ -3,18 +3,28 @@ using System.Threading.Tasks;
 namespace DLCS.Model;
 
 /// <summary>
-/// This is identical to IEntityCounterStore in Deliverator
+/// Repo for interacting with EntityCounters
 /// </summary>
+/// <remarks>This is identical to IEntityCounterStore in Deliverator</remarks>
 public interface IEntityCounterRepository
 {
+    /// <summary>
+    /// Create a new EntityCounter record with specified value.
+    /// </summary>
     Task Create(int customer, string entityType, string scope, long initialValue = 1);
-    Task<bool> Exists(int customer, string entityType, string scope);
-    Task<long> Get(int customer, string entityType, string scope, long initialValue = 1);
+    
+    /// <summary>
+    /// Increment stored EntityCounter, and return 'next' value (stored/new value + 1)
+    /// </summary>
     Task<long> GetNext(int customer, string entityType, string scope, long initialValue = 1);
-    Task Reset(int customer, string entityType, string scope);
-    Task Set(int customer, string entityType, string scope, long value);
-    Task Remove(int customer, string entityType, string scope);
-
-    Task<long> Increment(int customer, string entityType, string scope, long initialValue = 1);
+    
+    /// <summary>
+    /// Increment stored EntityCounter, and return new value
+    /// </summary>
+    Task<long> Increment(int customer, string entityType, string scope, long initialValue = 0);
+    
+    /// <summary>
+    /// Decrement stored EntityCounter, and return new value
+    /// </summary>
     Task<long> Decrement(int customer, string entityType, string scope, long initialValue = 1);
 }
