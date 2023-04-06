@@ -93,6 +93,21 @@ public class OrchestratorSettings
     /// </summary>
     public int TargetThumbnailSize { get; set; } = 200;
 
+    /// <summary>
+    /// If true, Yarp will proxy to S3 presigned URLs.
+    /// Else, Yarp will proxy to the S3 https URL directly. 
+    /// </summary>
+    /// <remarks>
+    /// Direct URL access requires the object to be publicly available, or for a bucket policy to be configured to allow
+    /// access, e.g. with aws:sourceVpce or aws:sourceVpc access allowed.
+    /// </remarks>
+    public bool UsePresignedUrlsForProxy { get; set; } = false;
+
+    /// <summary>
+    /// Number of seconds for which PresignedUrls are valid. Only used if UsePresignedUrlsForProxy = true
+    /// </summary>
+    public int PresignedUrlExpirySecs { get; set; } = 600;
+
     public ProxySettings Proxy { get; set; }
 
     public CacheSettings Caching { get; set; }
