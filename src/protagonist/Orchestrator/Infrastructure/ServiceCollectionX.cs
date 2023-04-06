@@ -44,7 +44,7 @@ public static class ServiceCollectionX
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
             .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
             .AddSingleton<ICustomHeaderRepository, DapperCustomHeaderRepository>()
-            .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
+            .AddSingleton<ICustomerOriginStrategyRepository, DapperCustomerOriginStrategyRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>
