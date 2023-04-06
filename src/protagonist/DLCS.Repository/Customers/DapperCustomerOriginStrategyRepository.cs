@@ -11,6 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Customers;
 
+/// <summary>
+/// Implementation of <see cref="ICustomerOriginStrategyRepository"/> using dapper for data access 
+/// </summary>
 public class DapperCustomerOriginStrategyRepository : CustomerOriginStrategyBase, IDapperConfigRepository
 {
     public IConfiguration Configuration { get; }
@@ -30,7 +33,6 @@ public class DapperCustomerOriginStrategyRepository : CustomerOriginStrategyBase
         const string query =
             "SELECT \"Id\", \"Customer\", \"Regex\", \"Strategy\", \"Credentials\", \"Optimised\", \"Order\" FROM \"CustomerOriginStrategies\" WHERE \"Customer\" = @customer;";
 
-        //var rawStrategies = await this.QueryAsync(query, new { Customer = customer });
         var rawStrategies = (await this.QueryAsync(query, new { Customer = customer })).ToList();
         var strategies = new List<CustomerOriginStrategy>(rawStrategies.Count);
         foreach (dynamic s in rawStrategies)

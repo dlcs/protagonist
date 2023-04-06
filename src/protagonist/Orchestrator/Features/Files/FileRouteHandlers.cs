@@ -12,7 +12,7 @@ using Yarp.ReverseProxy.Forwarder;
 namespace Orchestrator.Features.Files;
 
 /// <summary>
-/// Route-to-code handlers for /iiif-av/ paths
+/// Route-to-code handlers for /file/ paths
 /// </summary>
 public static class FileRouteHandlers
 {

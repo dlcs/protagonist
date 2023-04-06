@@ -11,6 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Customers;
 
+/// <summary>
+/// Implementation of <see cref="ICustomerOriginStrategyRepository"/> using EF for data access 
+/// </summary>
 public class CustomerOriginStrategyRepository : CustomerOriginStrategyBase
 {
     private readonly DlcsContext dbContext;
