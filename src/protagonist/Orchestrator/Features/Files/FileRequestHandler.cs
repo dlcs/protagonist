@@ -89,7 +89,7 @@ public class FileRequestHandler
             return new StatusCodeResult(HttpStatusCode.OK);
         }
 
-        var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget);
+        var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget, !orchestrationAsset.OptimisedOrigin ?? true);
         return new ProxyActionResult(ProxyDestination.S3, orchestrationAsset.RequiresAuth, proxyPath);
     }
     

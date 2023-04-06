@@ -88,7 +88,7 @@ public class TimeBasedRequestHandler
             return new StatusCodeResult(HttpStatusCode.OK);
         }
         
-        var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget);
+        var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget, true);
         return new ProxyActionResult(ProxyDestination.S3, orchestrationAsset.RequiresAuth, proxyPath);
     }
 

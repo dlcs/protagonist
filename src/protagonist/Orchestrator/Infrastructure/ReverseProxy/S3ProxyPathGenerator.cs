@@ -28,15 +28,21 @@ public class S3ProxyPathGenerator
     /// If UsePresignedUrlsForProxy=true then a PresignedUrl will be generated.
     /// Else this will return a https url direct to  
     /// </summary>
-    /// <param name="proxyTarget"></param>
-    /// <returns></returns>
-    public string GetProxyPath(ObjectInBucket proxyTarget)
+    /// <param name="proxyTarget"><see cref="ObjectInBucket"/> representing proxy target</param>
+    /// <param name="isDlcsStorage">true if object is in a DLCS bucket, else false</param>
+    /// <returns>String representing URI to redirect to</returns>
+    public string GetProxyPath(ObjectInBucket proxyTarget, bool isDlcsStorage)
     {
-        if (orchestratorOptionsMonitor.CurrentValue.UsePresignedUrlsForProxy)
+        var proxySettings = orchestratorOptionsMonitor.CurrentValue.Proxy;
+        bool usePresigned = isDlcsStorage
+            ? proxySettings.UsePresignedUrlsForDlcs
+            : proxySettings.UsePresignedUrlsForOptimised;
+        
+        if (usePresigned)
         {
             var presignedUrl = s3Client.GetPreSignedURL(new GetPreSignedUrlRequest
             {
-                Expires = DateTime.UtcNow.AddSeconds(orchestratorOptionsMonitor.CurrentValue.PresignedUrlExpirySecs),
+                Expires = DateTime.UtcNow.AddSeconds(proxySettings.PresignedUrlExpirySecs),
                 BucketName = proxyTarget.Bucket,
                 Key = proxyTarget.Key,
                 Verb = HttpVerb.GET,

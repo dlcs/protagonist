@@ -83,22 +83,7 @@ public class OrchestratorSettings
     /// render a thumbnail of this size but will aim to get as close as possible.
     /// </summary>
     public int TargetThumbnailSize { get; set; } = 200;
-
-    /// <summary>
-    /// If true, Yarp will proxy to S3 presigned URLs.
-    /// Else, Yarp will proxy to the S3 https URL directly. 
-    /// </summary>
-    /// <remarks>
-    /// Direct URL access requires the object to be publicly available, or for a bucket policy to be configured to allow
-    /// access, e.g. with aws:sourceVpce or aws:sourceVpc access allowed.
-    /// </remarks>
-    public bool UsePresignedUrlsForProxy { get; set; } = false;
-
-    /// <summary>
-    /// Number of seconds for which PresignedUrls are valid. Only used if UsePresignedUrlsForProxy = true
-    /// </summary>
-    public int PresignedUrlExpirySecs { get; set; } = 600;
-
+    
     public ProxySettings Proxy { get; set; }
 
     public CacheSettings Caching { get; set; }
@@ -139,6 +124,31 @@ public class ProxySettings
     /// If true details of proxied location are added as x-proxy-* headers. Intended for debug use only.
     /// </summary>
     public bool AddProxyDebugHeaders { get; set; } = false;
+    
+    /// <summary>
+    /// If true, Yarp will proxy to S3 optimised origins using presigned URLs.
+    /// Else, Yarp will proxy to the S3 https URL directly. 
+    /// </summary>
+    /// <remarks>
+    /// Direct URL access requires the object to be publicly available, or for a bucket policy to be configured to allow
+    /// access, e.g. with aws:sourceVpce or aws:sourceVpc access allowed.
+    /// </remarks>
+    public bool UsePresignedUrlsForOptimised { get; set; } = false;
+    
+    /// <summary>
+    /// If true, Yarp will proxy to S3 optimised origins using presigned URLs.
+    /// Else, Yarp will proxy to the S3 https URL directly. 
+    /// </summary>
+    /// <remarks>
+    /// Direct URL access requires the object to be publicly available, or for a bucket policy to be configured to allow
+    /// access, e.g. with aws:sourceVpce or aws:sourceVpc access allowed.
+    /// </remarks>
+    public bool UsePresignedUrlsForDlcs { get; set; } = false;
+
+    /// <summary>
+    /// Number of seconds for which PresignedUrls are valid. Only used if UsePresignedUrlsForProxy = true
+    /// </summary>
+    public int PresignedUrlExpirySecs { get; set; } = 600;
 }
 
 /// <summary>
