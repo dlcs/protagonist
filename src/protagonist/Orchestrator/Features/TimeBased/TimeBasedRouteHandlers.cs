@@ -87,9 +87,7 @@ public static class TimeBasedRouteHandlers
         // Check if the proxy operation was successful
         if (error != ForwarderError.None)
         {
-            var errorFeature = httpContext.Features.Get<IForwarderErrorFeature>();
-            logger.LogError(errorFeature.Exception!, "Error in iiif-av direct handler for {Path}",
-                httpContext.Request.Path);
+            error.HandleProxyError(httpContext, logger);
         }
     }
 }

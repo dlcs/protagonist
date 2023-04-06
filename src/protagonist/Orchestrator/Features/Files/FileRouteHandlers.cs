@@ -21,7 +21,6 @@ public static class FileRouteHandlers
 
     static FileRouteHandlers()
     {
-        // TODO - should this be shared by AV + Image handling?
         HttpClient = new HttpMessageInvoker(new SocketsHttpHandler
         {
             UseProxy = false,
@@ -86,12 +85,9 @@ public static class FileRouteHandlers
         var error = await forwarder.SendAsync(httpContext, proxyAction.Path!, HttpClient, RequestOptions,
             transformer);
 
-        // Check if the proxy operation was successful
         if (error != ForwarderError.None)
         {
-            var errorFeature = httpContext.Features.Get<IForwarderErrorFeature>();
-            logger.LogError(errorFeature.Exception!, "Error in iiif-av direct handler for {Path}",
-                httpContext.Request.Path);
+            error.HandleProxyError(httpContext, logger);
         }
     }
 }

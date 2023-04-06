@@ -114,13 +114,9 @@ public static class ImageRouteHandlers
         var transformer = new PathRewriteTransformer(proxyAction);
         var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions, transformer);
 
-        // TODO - spruce up this logging, store startTime.ticks 
-        // Check if the proxy operation was successful
         if (error != ForwarderError.None)
         {
-            var errorFeature = httpContext.Features.Get<IForwarderErrorFeature>();
-            logger.LogError(errorFeature.Exception!, "Error in iiif-img direct handler for {Path}",
-                httpContext.Request.Path);
+            error.HandleProxyError(httpContext, logger);
         }
     }
 }

@@ -1,8 +1,5 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Threading.Tasks;
-using Amazon.S3;
-using Amazon.S3.Model;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Web.Requests.AssetDelivery;
