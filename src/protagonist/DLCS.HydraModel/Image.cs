@@ -38,10 +38,10 @@ public class Image : DlcsResource
     [JsonProperty(Order = 10, PropertyName = "space")]
     public int Space { get; set; }
 
-    [RdfProperty(Description = "info.json URI - where the IIIF Image API is exposed for this image",
+    [RdfProperty(Description = "image service URI - where the IIIF Image API is exposed for this image",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 11, PropertyName = "infoJson")]
-    public string? InfoJson { get; set; }
+    [JsonProperty(Order = 11, PropertyName = "imageService")]
+    public string? ImageService  { get; set; }
     
 
     [RdfProperty(Description = "Degraded info.json URI - if a user does not have permission to view the full image, " +
@@ -50,10 +50,10 @@ public class Image : DlcsResource
     [JsonProperty(Order = 12, PropertyName = "degradedInfoJson")]
     public string? DegradedInfoJson { get; set; }
     
-    [RdfProperty(Description = "Thumbnail info.json URI",
+    [RdfProperty(Description = "Thumbnail image service URI",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 13, PropertyName = "thumbnailInfoJson")]
-    public string? ThumbnailInfoJson { get; set; }
+    [JsonProperty(Order = 13, PropertyName = "thumbnailImageService")]
+    public string? ThumbnailImageService { get; set; }
 
     [RdfProperty(Description = "Direct URI of the 400 pixel thumbnail",
         Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
@@ -194,10 +194,14 @@ public class Image : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 130, PropertyName = "textType")]
     public string? TextType { get; set; } // e.g., METS-ALTO, hOCR, TEI, text/plain etc
-   
+    
+    [RdfProperty(Description = "Delivery channel specifying how the asset will be available.",
+        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 140, PropertyName = "deliveryChannels")]
+    public string[]? DeliveryChannels { get; set; }
 
     [RdfProperty(Description = "The role or roles that a user must possess to view this image above maxUnauthorised. " +
-                             "These are URIs of roles e.g., https://api.dlcs.io/customers/1/roles/requiresRegistration",
+                               "These are URIs of roles e.g., https://api.dlcs.io/customers/1/roles/requiresRegistration",
         Range = "vocab:Role", ReadOnly = false, WriteOnly = false, SetManually = true)]
     [JsonProperty(Order = 70, PropertyName = "roles")]
     public string[]? Roles { get; set; }

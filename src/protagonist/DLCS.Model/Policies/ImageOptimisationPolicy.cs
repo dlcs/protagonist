@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
 namespace DLCS.Model.Policies;
 
@@ -10,8 +11,19 @@ namespace DLCS.Model.Policies;
 [DebuggerDisplay("{Name}")]
 public class ImageOptimisationPolicy
 {
+    /// <summary>
+    /// Unique identifier for policy, e.g. "fast-higher", "video-max" etc
+    /// </summary>
     public string Id { get; set; }
+    
+    /// <summary>
+    /// Friendly name for policy
+    /// </summary>
     public string Name { get; set; }
+    
+    /// <summary>
+    /// A collection of strings, contents are relevant to target technology
+    /// </summary>
     public string[] TechnicalDetails { get; set; }
     
     /// <summary>
@@ -25,20 +37,26 @@ public class ImageOptimisationPolicy
     public bool Global { get; set; }
 }
 
-public static class ImageOptimisationPolicyX
+public static class KnownImageOptimisationPolicy
 {
     // Id of imageOptimisationPolicy for no-op
-    private const string NoneId = "none";
-
-    /// <summary>
-    /// Check if this policy is the special no-op/no-transcode policy
-    /// </summary>
-    public static bool IsNoOp(this ImageOptimisationPolicy policy) => policy.Id == NoneId;
+    public const string NoneId = "none";
     
+    // Id of imageOptimisationPolicy for use-original. Signifies source image is tile-ready
+    public const string UseOriginalId = "use-original";
+
     /// <summary>
     /// Check if specified policy Id is the special no-op/no-transcode policy
     /// </summary>
-    /// <param name="policyId"></param>
-    /// <returns></returns>
     public static bool IsNoOpIdentifier(string? policyId) => policyId == NoneId;
+    
+    /// <summary>
+    /// Check if this policy is the special 'use-original' policy
+    /// </summary>
+    public static bool IsUseOriginal(this ImageOptimisationPolicy policy) => policy.Id == UseOriginalId;
+    
+    /// <summary>
+    /// Check if specified policy Id is the special 'use-original' policy
+    /// </summary>
+    public static bool IsUseOriginalIdentifier(string? policyId) => policyId == UseOriginalId;
 }

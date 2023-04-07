@@ -84,14 +84,10 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsAdmin().PostAsync("/customers", content);
 
         // assert
-        // Need to demonstrate that
-        // - this does what we think it should do
-        // - it does what Deliverator does.
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var newCustomer = await response.ReadAsHydraResponseAsync<Customer>();
         
         // The entity counter should allocate the next available ID.
-        // The DB has 1 customer 99 initially... is that going to change things?
         newCustomer.Id.Should().EndWith("customers/" + expectedNewCustomerId);
 
         var newDbCustomer = await dbContext.Customers.SingleOrDefaultAsync(c => c.Id == expectedNewCustomerId);
@@ -100,14 +96,12 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         newDbCustomer.DisplayName.Should().Be("My New Customer");
         newDbCustomer.AcceptedAgreement.Should().BeTrue();
         newDbCustomer.Administrator.Should().BeFalse();
-        // what else to check?
-        // Customer Does NOT have keys
 
         // The global customer entity counter should be incremented
         customerCounter = await dbContext.EntityCounters.SingleAsync(ec
             => ec.Customer == 0 && ec.Scope == "0" && ec.Type == "customer");
 
-        customerCounter.Should().NotBeNull(); // it would have been created on demand
+        customerCounter.Should().NotBeNull("created on demand");
         customerCounter.Next.Should().Be(expectedNewCustomerId + 1);
 
         // There should be a space entity counter for the new customer
@@ -117,14 +111,9 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         spaceCounter.Should().NotBeNull();
         spaceCounter.Next.Should().Be(1);
 
-        // There are two new row in Auth Services table (this example for cust 21)
-        // | Id | Customer | Name | Profile | Label | Description | PageLabel | PageDescription | CallToAction | TTL | RoleProvider | ChildAuthService |
-        // | 79b20327-5d55-4a7f-b95d-02cb94737bcd | 21 | clickthrough |  |  |  |  |  |  | 600 | NULL | d87d1619-e357-49c5-a45e-757407af7638 |
-        // | d87d1619-e357-49c5-a45e-757407af7638 | 21 | logout | http://iiif.io/api/auth/0/logout |  |  |  |  |  | 600 | NULL | NULL |
-
         var customerAuthServices = await dbContext.AuthServices.Where(svc
             => svc.Customer == expectedNewCustomerId).ToListAsync();
-        customerAuthServices.Should().HaveCount(2); // two new services
+        customerAuthServices.Should().HaveCount(2, "two new services created");
 
         var clickthroughService = customerAuthServices.SingleOrDefault(svc => svc.Name == "clickthrough");
         var logoutService = customerAuthServices.SingleOrDefault(svc => svc.Name == "logout");

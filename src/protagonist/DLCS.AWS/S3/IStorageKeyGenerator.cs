@@ -12,6 +12,14 @@ public interface IStorageKeyGenerator
     /// <param name="assetId">Unique identifier for Asset</param>
     /// <returns><see cref="ObjectInBucket"/> for tile-ready asset</returns>
     RegionalisedObjectInBucket GetStorageLocation(AssetId assetId);
+    
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> for stored original file.
+    /// This is for assets for "file" delivery, or images where origin is tile-optimised
+    /// </summary>
+    /// <param name="assetId">Unique identifier for Asset</param>
+    /// <returns><see cref="ObjectInBucket"/> for stored original asset</returns>
+    RegionalisedObjectInBucket GetStoredOriginalLocation(AssetId assetId);
 
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> for pre-generated thumbnail

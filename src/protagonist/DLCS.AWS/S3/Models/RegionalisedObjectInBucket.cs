@@ -124,4 +124,35 @@ public class RegionalisedObjectInBucket : ObjectInBucket
             match.Groups[2].Value);
         return true;
     }
+    
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != this.GetType()) return false;
+        return Equals((RegionalisedObjectInBucket)obj);
+    }
+    
+    public override int GetHashCode() => HashCode.Combine(Bucket, Key);
+    
+    public static bool operator ==(RegionalisedObjectInBucket? objectInBucket1, RegionalisedObjectInBucket? objectInBucket2)
+    {
+        if (objectInBucket1 is null)
+        {
+            return objectInBucket2 is null;
+        }
+        
+        if (objectInBucket2 is null)
+        {
+            return false;
+        }
+        
+        return objectInBucket1.Equals(objectInBucket2);
+    }
+
+    public static bool operator !=(RegionalisedObjectInBucket objectInBucket1, RegionalisedObjectInBucket objectInBucket2) 
+        => !(objectInBucket1 == objectInBucket2);
+
+    private bool Equals(RegionalisedObjectInBucket other)
+        => Region == other.Region && base.Equals(other);
 }

@@ -72,7 +72,8 @@ public class DapperAssetRepository : AssetRepositoryCachingBase, IDapperConfigRe
             PreservedUri = rawAsset.PreservedUri,
             ThumbnailPolicy = rawAsset.ThumbnailPolicy,
             ImageOptimisationPolicy = rawAsset.ImageOptimisationPolicy,
-            NotForDelivery = rawAsset.NotForDelivery
+            NotForDelivery = rawAsset.NotForDelivery,
+            DeliveryChannels = rawAsset.DeliveryChannels.ToString().Split(",")
         };
     }
 
@@ -81,7 +82,7 @@ SELECT ""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Rol
 ""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", 
 ""NumberReference1"", ""NumberReference2"", ""NumberReference3"", ""Width"", 
 ""Height"", ""Error"", ""Batch"", ""Finished"", ""Ingesting"", ""ImageOptimisationPolicy"", 
-""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery""
+""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery"", ""DeliveryChannels""
   FROM public.""Images""
   WHERE ""Id""=@Id;";
 

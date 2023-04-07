@@ -1,15 +1,12 @@
 using System;
-using API;
 using API.Converters;
 using API.Exceptions;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
-using FluentAssertions;
-using Xunit;
 
-namespace DLCS.Model.Tests.Assets;
+namespace API.Tests.Converters;
 
-public class ConverterTests
+public class AssetConverterTests
 {
     private const string AssetApiId = "https://dlcs.io/customers/1/spaces/99/images/asset";
     
@@ -106,6 +103,7 @@ public class ConverterTests
         var origin = "https://example.org/origin";
         var roles = new[] { "role1", "role2" };
         var tags = new[] { "tag1", "tag2" };
+        var deliveryChannel = new[] { "iiif-av", "iiif-img" };
         var mediaType = "image/jpeg";
         var thumbnailPolicy = "https://dlcs.io/thumbnailPolicies/thumb100";
         
@@ -134,7 +132,8 @@ public class ConverterTests
             Tags = tags,
             MaxUnauthorised = 400,
             MediaType = mediaType,
-            ThumbnailPolicy = thumbnailPolicy
+            ThumbnailPolicy = thumbnailPolicy,
+            DeliveryChannels = deliveryChannel
         };
 
         var asset = hydraImage.ToDlcsModel(1);
@@ -159,9 +158,29 @@ public class ConverterTests
         asset.Reference3.Should().Be("3");
         asset.Roles.Split(',').Should().BeEquivalentTo(roles);
         asset.Tags.Split(',').Should().BeEquivalentTo(tags);
+        asset.DeliveryChannels.Should().BeEquivalentTo(deliveryChannel);
         asset.MaxUnauthorised.Should().Be(400);
         asset.MediaType.Should().Be(mediaType);
         asset.ThumbnailPolicy.Should().Be("thumb100");
+    }
 
+    [Fact]
+    public void ToDlcsModel_ReordersDeliveryChannel()
+    {
+        // Arrange
+        var deliveryChannel = new[] { "iiif-img", "file", "iiif-av" };
+
+        var hydraImage = new Image
+        {
+            Id = AssetApiId,
+            Space = 99,
+            DeliveryChannels = deliveryChannel
+        };
+        
+        // Act
+        var asset = hydraImage.ToDlcsModel(1);
+        
+        // Assert
+        asset.DeliveryChannels.Should().BeInAscendingOrder();
     }
 }

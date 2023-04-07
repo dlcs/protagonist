@@ -15,6 +15,7 @@ using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
+using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
 using FakeItEasy;
 using Hydra.Collections;
@@ -94,6 +95,44 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ThumbnailPolicy.Should().Be("default");
         asset.ImageOptimisationPolicy.Should().Be("fast-higher");
+    }
+    
+    [Fact]
+    public async Task Put_NewImageAsset_Creates_Asset_SetsCounters()
+    {
+        const int customer = 99239;
+        const int space = 991;
+        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_Creates_Asset_SetsCounters));
+        await dbContext.Customers.AddTestCustomer(customer);
+        await dbContext.Spaces.AddTestSpace(customer, space);
+        await dbContext.SaveChangesAsync();
+
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff""
+}}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        
+        var customerCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 0 && ec.Type == "customer-images" && ec.Scope == customer.ToString());
+        customerCounter.Next.Should().Be(1);
+        var spaceCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == customer && ec.Type == "space-images" && ec.Scope == space.ToString());
+        spaceCounter.Next.Should().Be(1);
     }
 
     [Fact]
@@ -222,6 +261,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
   ""family"": ""F"",
   ""mediaType"": ""application/pdf""
 }}";
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
 
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
 
@@ -229,7 +274,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
         
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
         var asset = await dbContext.Images.FindAsync(assetId);
         asset.Id.Should().Be(assetId);
@@ -237,7 +282,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageOptimisationPolicy.Should().BeEmpty();
     }
-
+    
     [Fact]
     public async Task Put_NewTimebasedAsset_Returns500_IfEnqueueFails()
     {
@@ -722,10 +767,10 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
             sizeOfStored: 2000L, sizeOfThumbs: 2000L);
         var customerImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
-            ec.Customer == 0 && ec.Scope == "99" && ec.Type == "customer-images");
+            ec.Customer == 0 && ec.Scope == "99" && ec.Type == KnownEntityCounters.CustomerImages);
         var currentCustomerImageCount = customerImagesCounter.Next;
         var spaceImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
-            ec.Customer == 99 && ec.Scope == "1" && ec.Type == "space-images");
+            ec.Customer == 99 && ec.Scope == "1" && ec.Type == KnownEntityCounters.SpaceImages);
         var currentSpaceImagesCounter = spaceImagesCounter.Next;
         await dbContext.SaveChangesAsync();
         
@@ -757,12 +802,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // EntityCounter for customer images reduced
         var dbCustomerCounter = await dbContext.EntityCounters.SingleAsync(ec =>
-            ec.Customer == 0 && ec.Scope == "99" && ec.Type == "customer-images");
+            ec.Customer == 0 && ec.Scope == "99" && ec.Type == KnownEntityCounters.CustomerImages);
         dbCustomerCounter.Next.Should().Be(currentCustomerImageCount - 1);
         
         // EntityCounter for space images reduced
         var dbSpaceCounter = await dbContext.EntityCounters.SingleAsync(ec =>
-            ec.Customer == 99 && ec.Scope == "1" && ec.Type == "space-images");
+            ec.Customer == 99 && ec.Scope == "1" && ec.Type == KnownEntityCounters.SpaceImages);
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
         
         // TODO - test for notification raised once implemented

@@ -60,9 +60,9 @@ public static class MockHelp
     {
         var image = new Image(baseUrl, customerId, space, modelId);
         string mockDlcsPathTemplate = string.Format("/{0}/{1}/{2}", customerId, space, modelId);
-        image.InfoJson = "https://mock.dlcs.io" + mockDlcsPathTemplate;
+        image.ImageService = "https://mock.dlcs.io" + mockDlcsPathTemplate;
         image.DegradedInfoJson = "https://mock.degraded.dlcs.io" + mockDlcsPathTemplate;
-        image.ThumbnailInfoJson = "https://mock.thumbs.dlcs.io" + mockDlcsPathTemplate;
+        image.ThumbnailImageService = "https://mock.thumbs.dlcs.io" + mockDlcsPathTemplate;
         image.Thumbnail400 = "https://mock.thumbs.dlcs.io" + mockDlcsPathTemplate + "/full/400,/0/default.jpg";
         image.Created = created;
         image.Origin = origin;

@@ -7,6 +7,7 @@ using DLCS.Core.Types;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
+using DLCS.Repository.Entities;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -81,8 +82,8 @@ public class AssetRepository : AssetRepositoryCachingBase
                 return ResultStatus<DeleteResult>.Unsuccessful(DeleteResult.NotFound);
             }
             
-            await entityCounterRepository.Decrement(customer, "space-images", space.ToString());
-            await entityCounterRepository.Decrement(0, "customer-images", customer.ToString());
+            await entityCounterRepository.Decrement(customer, KnownEntityCounters.SpaceImages, space.ToString());
+            await entityCounterRepository.Decrement(0, KnownEntityCounters.CustomerImages, customer.ToString());
             return ResultStatus<DeleteResult>.Successful(DeleteResult.Deleted);
         }
         catch (DbUpdateConcurrencyException dbEx)
@@ -90,7 +91,7 @@ public class AssetRepository : AssetRepositoryCachingBase
             bool notFound = true;
             foreach (var entry in dbEx.Entries)
             {
-                var databaseValues = entry.GetDatabaseValues();
+                var databaseValues = await entry.GetDatabaseValuesAsync();
                 if (databaseValues != null)
                 {
                     notFound = false;

@@ -1,6 +1,4 @@
 ﻿using DLCS.Model.Customers;
-using DLCS.Model.Messaging;
-
 namespace Engine.Ingest;
 
 /// <summary>
@@ -12,7 +10,19 @@ public interface IAssetIngesterWorker
     /// <summary>
     /// Ingest provided asset using given CustomerOriginStrategy
     /// </summary>
-    Task<IngestResultStatus> Ingest(IngestAssetRequest ingestAssetRequest,
+    Task<IngestResultStatus> Ingest(IngestionContext ingestionContext,
         CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Interface for operations related to ingesting assets.
+/// This is an interface to allow post-processing work to be done, after asset has been saved to database.
+/// </summary>
+public interface IAssetIngesterPostProcess
+{
+    /// <summary>
+    /// Carry out post-ingest operations
+    /// </summary>
+    Task PostIngest(IngestionContext ingestionContext, bool ingestSuccessful);
 }

@@ -32,6 +32,7 @@ public class LocalStackFixture : IAsyncLifetime
     public const string PriorityImageQueueName = "protagonist-priority-image";
     public const string TimebasedQueueName = "protagonist-timebased";
     public const string TranscodeCompleteQueueName = "protagonist-transcode-complete";
+    public const string FileQueueName = "protagonist-file";
 
     public Func<IAmazonS3> AWSS3ClientFactory { get; private set; }
     public Func<IAmazonSQS> AWSSQSClientFactory { get; private set; }
@@ -107,6 +108,7 @@ public class LocalStackFixture : IAsyncLifetime
         await CreateQueue(amazonSQSClient, PriorityImageQueueName);
         await CreateQueue(amazonSQSClient, TimebasedQueueName);
         await CreateQueue(amazonSQSClient, TranscodeCompleteQueueName);
+        await CreateQueue(amazonSQSClient, FileQueueName);
     }
 
     private async Task CreateQueue(IAmazonSQS amazonSQSClient, string queueName)

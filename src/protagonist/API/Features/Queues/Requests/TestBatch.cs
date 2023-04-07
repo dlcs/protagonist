@@ -48,7 +48,7 @@ public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
         var batchImages = await GetImagesForBatch(request, cancellationToken);
 
         bool changesMade = false;
-        if (IsBatchSuperseded(batchImages))
+        if (!batch.Superseded && IsBatchSuperseded(batchImages))
         {
             logger.LogDebug("Batch {BatchId} for Customer {Customer} superseded", request.BatchId, request.CustomerId);
             batch.Superseded = true;
@@ -58,9 +58,17 @@ public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
         if (IsBatchComplete(batchImages))
         {
             logger.LogDebug("Batch {BatchId} for Customer {Customer} complete", request.BatchId, request.CustomerId);
-            batch.Finished = DateTime.UtcNow;
-            batch.Count = batchImages.Count;
-            changesMade = true;
+            if (batch.Finished == null)
+            {
+                changesMade = true;
+                batch.Finished = DateTime.UtcNow;
+            }
+
+            if (batch.Count != batchImages.Count)
+            {
+                changesMade = true;
+                batch.Count = batchImages.Count;
+            }
         }
 
         if (changesMade)
@@ -69,7 +77,7 @@ public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
             return true;
         }
 
-        logger.LogDebug("Batch {BatchId} for Customer {Customer} tested but not changes made", request.BatchId,
+        logger.LogTrace("Batch {BatchId} for Customer {Customer} tested but no changes made", request.BatchId,
             request.CustomerId);
         return false;
     }

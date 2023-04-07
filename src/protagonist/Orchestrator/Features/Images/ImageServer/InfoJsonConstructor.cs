@@ -1,13 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
+using DLCS.Model.Assets;
 using IIIF;
-using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
+using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure.IIIF;
+using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Features.Images.ImageServer;
 
@@ -19,33 +23,53 @@ public class InfoJsonConstructor
 {
     private readonly IIIFAuthBuilder iiifAuthBuilder;
     private readonly IImageServerClient imageServerClient;
+    private readonly IThumbRepository thumbRepository;
+    private readonly ILogger<InfoJsonConstructor> logger;
 
     public InfoJsonConstructor(
         IIIFAuthBuilder iiifAuthBuilder,
-        IImageServerClient imageServerClient)
+        IImageServerClient imageServerClient,
+        IThumbRepository thumbRepository,
+        ILogger<InfoJsonConstructor> logger)
     {
         this.iiifAuthBuilder = iiifAuthBuilder;
         this.imageServerClient = imageServerClient;
+        this.thumbRepository = thumbRepository;
+        this.logger = logger;
     }
 
     public async Task<JsonLdBase?> BuildInfoJsonFromImageServer(OrchestrationImage orchestrationImage,
         IIIF.ImageApi.Version version,
         CancellationToken cancellationToken = default)
     {
-        // Get info.json from downstream image server and add related services to it
+        var getSizesTask = GetSizes(orchestrationImage);
+
+        // Get info.json from downstream image server and add dlcs-known elements (services, thumbs) to it
         // TODO - handle 501 etc from downstream image-server
         if (version == Version.V2)
         {
             var imageServer2 =
                 await imageServerClient.GetInfoJson<ImageService2>(orchestrationImage, version, cancellationToken);
+            if (imageServer2 == null) return null;
             await UpdateImageService(imageServer2, orchestrationImage, cancellationToken);
+            var sizes = await getSizesTask;
+            if (!sizes.IsNullOrEmpty())
+            {
+                imageServer2.Sizes = sizes;
+            }
             return imageServer2;
         }
         else
         {
             var imageServer3 =
                 await imageServerClient.GetInfoJson<ImageService3>(orchestrationImage, version, cancellationToken);
+            if (imageServer3 == null) return null;
             await UpdateImageService(imageServer3, orchestrationImage, cancellationToken);
+            var sizes = await getSizesTask;
+            if (!sizes.IsNullOrEmpty())
+            {
+                imageServer3.Sizes = sizes;
+            }
             return imageServer3;
         }
     }
@@ -85,6 +109,27 @@ public class InfoJsonConstructor
             
             imageService.Service ??= new List<IService>(1);
             imageService.Service.Add(authCookieServiceForAsset);
+        }
+    }
+
+    private async Task<List<Size>> GetSizes(OrchestrationImage orchestrationImage)
+    {
+        try
+        {
+            var thumbs = await thumbRepository.GetAllSizes(orchestrationImage.AssetId);
+
+            if (thumbs.IsNullOrEmpty())
+            {
+                logger.LogInformation("No thumbnails found for {Asset}", orchestrationImage.AssetId);
+                return Enumerable.Empty<Size>().ToList();
+            }
+            
+            return thumbs.Select(s => Size.FromArray(s)).ToList();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting size for info.json for {Asset}", orchestrationImage.AssetId);
+            return Enumerable.Empty<Size>().ToList();
         }
     }
 }

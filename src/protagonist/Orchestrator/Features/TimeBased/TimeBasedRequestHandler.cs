@@ -37,7 +37,7 @@ public class TimeBasedRequestHandler
     }
 
     /// <summary>
-    /// Handle /iiif-img/ request, returning object detailing operation that should be carried out.
+    /// Handle /iiif-av/ request, returning object detailing operation that should be carried out.
     /// </summary>
     /// <param name="httpContext">Incoming <see cref="HttpContext"/> object</param>
     /// <returns><see cref="IProxyActionResult"/> object containing downstream target</returns>
@@ -56,6 +56,12 @@ public class TimeBasedRequestHandler
         if (orchestrationAsset == null)
         {
             logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);
+            return new StatusCodeResult(HttpStatusCode.NotFound);
+        }
+        
+        if (!orchestrationAsset.Channels.HasFlag(AvailableDeliveryChannel.Timebased))
+        {
+            logger.LogDebug("Request for {Path}: asset not available in 'timebased' channel", httpContext.Request.Path);
             return new StatusCodeResult(HttpStatusCode.NotFound);
         }
 

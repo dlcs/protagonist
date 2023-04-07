@@ -4,7 +4,6 @@ using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
-using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Model.Policies;
@@ -17,8 +16,10 @@ using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;
 using DLCS.Repository.Storage;
 using DLCS.Repository.Strategy.DependencyInjection;
+using DLCS.Web.Handlers;
 using Engine.Data;
 using Engine.Ingest;
+using Engine.Ingest.File;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.Appetiser;
 using Engine.Ingest.Image.Completion;
@@ -76,38 +77,35 @@ public static class ServiceCollectionX
     public static IServiceCollection AddAssetIngestion(this IServiceCollection services, EngineSettings engineSettings)
     {
         services
+            .AddSingleton<IAssetIngestorSizeCheck, AppSettingsAssetIngestorSizeCheck>()
             .AddScoped<IAssetIngester, AssetIngester>()
             .AddScoped<TimebasedIngesterWorker>()
+            .AddScoped<FileChannelWorker>()
             .AddScoped<ImageIngesterWorker>()
+            .AddScoped<IngestExecutor>()
             .AddSingleton<IThumbCreator, ThumbCreator>()
-            .AddTransient<IngestorResolver>(provider => family => family switch
-            {
-                AssetFamily.Image => provider.GetRequiredService<ImageIngesterWorker>(),
-                AssetFamily.Timebased => provider.GetRequiredService<TimebasedIngesterWorker>(),
-                AssetFamily.File => throw new NotImplementedException("File shouldn't be here"),
-                _ => throw new KeyNotFoundException("Attempt to resolve ingestor handler for unknown family")
-            })
+            .AddScoped<IWorkerBuilder, WorkerBuilder>()
             .AddSingleton<IFileSystem, FileSystem>()
             .AddSingleton<IMediaTranscoder, ElasticTranscoder>()
             .AddScoped<IAssetToDisk, AssetToDisk>()
-            .AddScoped<IImageIngestorCompletion, ImageIngestorCompletion>()
             .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
             .AddScoped<IAssetToS3, AssetToS3>()
             .AddOriginStrategies();
 
         if (engineSettings.ImageIngest != null)
         {
-            services.AddHttpClient<IImageProcessor, AppetiserClient>(client =>
-            {
-                client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
-                client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
-            });
+            services.AddTransient<TimingHandler>()
+                .AddHttpClient<IImageProcessor, AppetiserClient>(client =>
+                {
+                    client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
+                    client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+                }).AddHttpMessageHandler<TimingHandler>();
 
-            services.AddHttpClient<OrchestratorClient>(client =>
+            services.AddHttpClient<IOrchestratorClient, InfoJsonOrchestratorClient>(client =>
             {
                 client.BaseAddress = engineSettings.ImageIngest.OrchestratorBaseUrl;
                 client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.OrchestratorTimeoutMs);
-            });
+            }).AddHttpMessageHandler<TimingHandler>();
         }
 
         return services;

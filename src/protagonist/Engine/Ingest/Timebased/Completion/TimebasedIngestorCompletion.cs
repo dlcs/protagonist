@@ -40,45 +40,22 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
 
         var assetIsOpen = !asset.RequiresAuth;
 
-        var errors = new StringBuilder();
+        var errors = new List<string>();
         var transcodeSuccess = true;
         
         if (!transcodeResult.IsComplete())
         {
             transcodeSuccess = false;
-            errors.AppendLine(
-                $"Transcode failed with status: {transcodeResult.State}. Error: {transcodeResult.ErrorCode ?? "unknown"}.");
+            errors.Add(
+                $"Transcode failed with status: {transcodeResult.State}. Error: {transcodeResult.ErrorCode ?? "unknown"}");
         }
 
-        bool dimensionsUpdated = false;
-        var transcodeOutputs = transcodeResult.Outputs;
-        var copyTasks = new List<Task<LargeObjectCopyResult>>(transcodeOutputs.Count);
-        if (transcodeSuccess)
-        {
-            foreach (var transcodeOutput in transcodeOutputs)
-            {
-                if (!transcodeOutput.IsComplete())
-                {
-                    logger.LogWarning("Received incomplete {Status} for ElasticTranscoder output for {OutputKey}",
-                        transcodeOutput.Status, transcodeOutput.Key);
-                    errors.AppendLine(
-                        $"Transcode output for {transcodeOutput.Key} has status {transcodeOutput.Status}");
-                    continue;
-                    ;
-                }
-
-                SetAssetDimensions(asset, dimensionsUpdated, transcodeOutput);
-                dimensionsUpdated = true;
-
-                // Move assets from elastic transcoder-output bucket to main bucket
-                copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, assetIsOpen, cancellationToken));
-            }
-        }
+        var copyTasks = CopyTranscodeOutputs(transcodeResult, errors, asset, assetIsOpen, cancellationToken);
 
         await DeleteInputFile(transcodeResult);
         
         var copyResults = await Task.WhenAll(copyTasks);
-        var size = copyResults.Sum(result => result.Size ?? 0);
+        var size = GetAssetStorageSize(transcodeResult, copyResults);
 
         foreach (var cr in copyResults)
         {
@@ -91,15 +68,15 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
              *  message being a retry
              */ 
             if (cr.Result == LargeObjectStatus.Success) continue;
-            if (cr.Result == LargeObjectStatus.SourceNotFound && cr.DestinationExists == true) continue;
+            if (cr is { Result: LargeObjectStatus.SourceNotFound, DestinationExists: true }) continue;
             
-            errors.AppendLine($"Copying ElasticTranscoder output failed with reason: {cr.Result}");
+            errors.Add($"Copying ElasticTranscoder output failed with reason: {cr.Result}");
             transcodeSuccess = false;
         }
         
-        if (errors.Length > 0)
+        if (errors.Count > 0)
         {
-            asset.Error = errors.ToString();
+            asset.Error = string.Join("|", errors);
         }
         
         var dbUpdateSuccess = await CompleteAssetInDatabase(asset, size, cancellationToken);
@@ -107,7 +84,43 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         return transcodeSuccess && dbUpdateSuccess;
     }
 
-    public async Task<bool> CompleteAssetInDatabase(Asset asset, long? assetSize = null,
+    private List<Task<LargeObjectCopyResult>> CopyTranscodeOutputs(TranscodeResult transcodeResult,
+        List<string> errors, Asset asset, bool assetIsOpen,
+        CancellationToken cancellationToken)
+    {
+        bool dimensionsUpdated = false;
+        var transcodeOutputs = transcodeResult.Outputs;
+        var copyTasks = new List<Task<LargeObjectCopyResult>>(transcodeOutputs.Count);
+
+        foreach (var transcodeOutput in transcodeOutputs)
+        {
+            if (!transcodeOutput.IsComplete())
+            {
+                logger.LogWarning("Received incomplete {Status} for ElasticTranscoder output for {OutputKey}",
+                    transcodeOutput.Status, transcodeOutput.Key);
+                errors.Add(
+                    $"Transcode output for {transcodeOutput.Key} has status {transcodeOutput.Status} with detail {transcodeOutput.StatusDetail}");
+                continue;
+            }
+
+            SetAssetDimensions(asset, dimensionsUpdated, transcodeOutput);
+            dimensionsUpdated = true;
+
+            // Move assets from elastic transcoder-output bucket to main bucket
+            copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, asset.Id, assetIsOpen, cancellationToken));
+        }
+
+        return copyTasks;
+    }
+
+    private static long GetAssetStorageSize(TranscodeResult transcodeResult, LargeObjectCopyResult[] copyResults)
+    {
+        var derivativeSizes = copyResults.Sum(result => result.Size ?? 0);
+        var totalSize = derivativeSizes + transcodeResult.GetStoredOriginalAssetSize();
+        return totalSize;
+    }
+
+    private async Task<bool> CompleteAssetInDatabase(Asset asset, long? assetSize = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -130,7 +143,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
             }
 
             var success =
-                await assetRepository.UpdateIngestedAsset(asset, imageLocation, imageStore, cancellationToken);
+                await assetRepository.UpdateIngestedAsset(asset, imageLocation, imageStore, true, cancellationToken);
             return success;
         }
         catch (Exception e)
@@ -152,13 +165,13 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         else if (transcodeDuration != asset.Duration)
         {
             // There may be a very slight difference in outputs
-            logger.LogWarning("Asset {Asset} has outputs with different durations: {Duration1}ms and {Duration2}ms",
+            logger.LogWarning("Asset {AssetId} has outputs with different durations: {Duration1}ms and {Duration2}ms",
                 asset.Id, asset.Duration, transcodeDuration);
         }
     }
 
     private async Task<LargeObjectCopyResult> CopyTranscodeOutputToStorage(TranscodeOutput transcodeOutput,
-        bool assetIsOpen, CancellationToken cancellationToken)
+        AssetId assetId, bool assetIsOpen, CancellationToken cancellationToken)
     {
         var source = storageKeyGenerator.GetTimebasedOutputLocation(transcodeOutput.Key);
         var destination =
@@ -168,24 +181,24 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         var copyResult =
             await bucketWriter.CopyLargeObject(source, destination, destIsPublic: assetIsOpen,
                 token: cancellationToken);
-        
+
         if (copyResult.Result == LargeObjectStatus.Success)
         {
             // delete output file for ElasticTranscoder
             await bucketWriter.DeleteFromBucket(source);
-            logger.LogDebug("Successfully copied transcoder output {OutputKey} to storage {StorageKey}", source,
-                destination);
+            logger.LogDebug("Successfully copied transcoder output {OutputKey} to storage {StorageKey} for {AssetId}",
+                source, destination, assetId);
         }
         else if (copyResult.Result == LargeObjectStatus.SourceNotFound)
         {
             logger.LogInformation(
-                "Unable to find completed transcoded output {OutputKey}, destination exists: {DestinationExists}",
-                source, copyResult.DestinationExists);
+                "Unable to find completed transcoded output {OutputKey} for {AssetId}, destination exists: {DestinationExists}",
+                source, assetId, copyResult.DestinationExists);
         }
 
         return copyResult;
     }
-    
+
     private async Task DeleteInputFile(TranscodeResult transcodeResult)
     {
         if (string.IsNullOrEmpty(transcodeResult.InputKey)) return;

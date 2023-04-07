@@ -13,6 +13,8 @@ public class TranscodeOutput
     /// Status of output (Progressing|Complete|Warning|Error)
     /// </summary>
     public string Status { get; set; }
+    
+    public string StatusDetail { get; set; }
     public long Duration { get; set; }
     public long? DurationMillis { get; set; }
     public int Width { get; set; }

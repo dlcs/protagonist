@@ -46,6 +46,11 @@ namespace DLCS.Repository.Migrations
                     b.Property<int>("Customer")
                         .HasColumnType("integer");
 
+                    b.Property<string>("DeliveryChannels")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<long?>("Duration")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -488,6 +493,9 @@ namespace DLCS.Repository.Migrations
                     b.Property<bool>("Optimised")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Regex")
                         .IsRequired()
                         .HasMaxLength(1000)
@@ -585,6 +593,24 @@ namespace DLCS.Repository.Migrations
                     b.HasKey("Id", "Customer");
 
                     b.ToTable("ImageOptimisationPolicies");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "none",
+                            Customer = 1,
+                            Global = true,
+                            Name = "No optimisation/transcoding",
+                            TechnicalDetails = "no-op"
+                        },
+                        new
+                        {
+                            Id = "use-original",
+                            Customer = 1,
+                            Global = true,
+                            Name = "Use original for image-server",
+                            TechnicalDetails = "use-original"
+                        });
                 });
 
             modelBuilder.Entity("DLCS.Model.Policies.OriginStrategy", b =>

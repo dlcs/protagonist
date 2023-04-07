@@ -40,7 +40,8 @@ public static class DatabaseTestDataPopulation
         bool ingesting = false,
         string error = "",
         string imageOptimisationPolicy = "",
-        DateTime? finished = null)
+        DateTime? finished = null,
+        string[] deliveryChannels = null)
         => assets.AddAsync(new Asset
         {
             Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
@@ -50,7 +51,7 @@ public static class DatabaseTestDataPopulation
             NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
             NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = error,
             ImageOptimisationPolicy = imageOptimisationPolicy, Batch = batch, Ingesting = ingesting,
-            Duration = duration, Finished = finished
+            Duration = duration, Finished = finished, DeliveryChannels = deliveryChannels ?? Array.Empty<string>()
         });
 
     public static ValueTask<EntityEntry<AuthToken>> AddTestToken(this DbSet<AuthToken> authTokens,
@@ -148,11 +149,12 @@ public static class DatabaseTestDataPopulation
         });
 
     public static ValueTask<EntityEntry<Batch>> AddTestBatch(this DbSet<Batch> batch, int id, int customer = 99,
-        int count = 1, int completed = 0, int errors = 0, DateTime? submitted = null, bool superseded = false)
+        int count = 1, int completed = 0, int errors = 0, DateTime? submitted = null, bool superseded = false,
+        DateTime? finished = null)
         => batch.AddAsync(new Batch
         {
             Id = id, Customer = customer, Submitted = submitted ?? DateTime.UtcNow, Completed = completed,
-            Count = count, Errors = errors, Superseded = superseded
+            Count = count, Errors = errors, Superseded = superseded, Finished = finished
         });
 
     public static ValueTask<EntityEntry<CustomerStorage>> AddTestCustomerStorage(

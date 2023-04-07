@@ -8,15 +8,21 @@ namespace DLCS.Repository.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql(@"
-INSERT INTO ""ImageOptimisationPolicies"" (""Id"", ""Name"", ""TechnicalDetails"", ""Customer"", ""Global"")
-VALUES ('none', 'No optimisation/transcoding', 'no-op', 1, true) ON CONFLICT DO NOTHING;
-");
+            migrationBuilder.InsertData(
+                table: "ImageOptimisationPolicies",
+                columns: new[] { "Customer", "Id", "Global", "Name", "TechnicalDetails" },
+                values: new object[,]
+                {
+                    { 1, "none", true, "No optimisation/transcoding", "no-op" },
+                });
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" = 'none';");
+            migrationBuilder.DeleteData(
+                table: "ImageOptimisationPolicies",
+                keyColumns: new[] { "Customer", "Id" },
+                keyValues: new object[] { 1, "none" });
         }
     }
 }

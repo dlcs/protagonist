@@ -49,7 +49,7 @@ public class TestBucketWriter : IBucketWriter
         {
             if (k.EndsWith(key))
             {
-                verifiedPaths.Add(key);
+                verifiedPaths.Add(k);
                 return v;
             }
         }
@@ -60,13 +60,15 @@ public class TestBucketWriter : IBucketWriter
     /// <summary>
     /// Assert key exists that starts with provided string.
     /// </summary>
-    public BucketObject ShouldHaveKeyThatStartsWith(string key)
+    public BucketObject ShouldHaveKeyThatStartsWith(string key, bool ignorePreviouslyVerified = false)
     {
         foreach (var (k,v) in Operations)
         {
             if (k.StartsWith(key))
             {
-                verifiedPaths.Add(key);
+                if (ignorePreviouslyVerified && verifiedPaths.Contains(k)) continue;
+                
+                verifiedPaths.Add(k);
                 return v;
             }
         }
@@ -106,16 +108,17 @@ public class TestBucketWriter : IBucketWriter
     }
 
     public async Task<LargeObjectCopyResult> CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
-        Func<long, Task<bool>> verifySize = null, bool destIsPublic = false, CancellationToken token = default)
+        Func<long, Task<bool>> verifySize = null, bool destIsPublic = false, string? contentType = null,
+        CancellationToken token = default)
     {
-        Operations[destination.Key] = new BucketObject { Bucket = destination.Bucket };
+        Operations[destination.Key] = new BucketObject { Bucket = destination.Bucket, ContentType = contentType };
 
         const long size = 100;
         if (verifySize != null)
         {
             if (!await verifySize(size))
             {
-                return new LargeObjectCopyResult(LargeObjectStatus.FileTooLarge, size);        
+                return new LargeObjectCopyResult(LargeObjectStatus.FileTooLarge, size);
             }
         }
 
@@ -128,7 +131,7 @@ public class TestBucketWriter : IBucketWriter
         if (forBucket.HasText() && dest.Bucket != forBucket)
             throw new InvalidOperationException("Operation for different bucket");
 
-        Operations[dest.Key] = new BucketObject { Contents = content, Bucket = dest.Bucket };
+        Operations[dest.Key] = new BucketObject { Contents = content, Bucket = dest.Bucket, ContentType = contentType };
         return Task.FromResult(true);
     }
 
@@ -137,7 +140,8 @@ public class TestBucketWriter : IBucketWriter
         if (forBucket.HasText() && dest.Bucket != forBucket)
             throw new InvalidOperationException("Operation for different bucket");
 
-        Operations[dest.Key] = new BucketObject { ContentStream = content, Bucket = dest.Bucket };
+        Operations[dest.Key] = new BucketObject
+            { ContentStream = content, Bucket = dest.Bucket, ContentType = contentType };
         return Task.FromResult(true);
     }
 
@@ -147,7 +151,8 @@ public class TestBucketWriter : IBucketWriter
         if (forBucket.HasText() && dest.Bucket != forBucket)
             throw new InvalidOperationException("Operation for different bucket");
 
-        Operations[dest.Key] = new BucketObject { FilePath = filePath, Bucket = dest.Bucket };
+        Operations[dest.Key] = new BucketObject
+            { FilePath = filePath, Bucket = dest.Bucket, ContentType = contentType };
         return Task.FromResult(true);
     }
 
@@ -181,6 +186,7 @@ public class BucketObject
     public string Bucket { get; set; }
 
     public Stream ContentStream { get; set; }
+    public string ContentType { get; set; }
 
     /// <summary>
     /// Assert object has expected file path.
@@ -202,7 +208,20 @@ public class BucketObject
     {
         if (Contents != contents)
         {
-            throw new AssertionFailedException($"FilePath expected {contents} but was {Contents}");
+            throw new AssertionFailedException($"Contents expected {contents} but was {Contents}");
+        }
+
+        return this;
+    }
+    
+    /// <summary>
+    /// Assert object has expected contents.
+    /// </summary>
+    public BucketObject WithContentType(string contentType)
+    {
+        if (ContentType != contentType)
+        {
+            throw new AssertionFailedException($"ContentType expected {contentType} but was {ContentType}");
         }
 
         return this;

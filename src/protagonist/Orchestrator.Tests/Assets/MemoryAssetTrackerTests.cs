@@ -44,33 +44,40 @@ public class MemoryAssetTrackerTests
     }
 
     [Theory]
-    [InlineData(AssetFamily.Image, typeof(OrchestrationImage))]
-    [InlineData(AssetFamily.Timebased, typeof(OrchestrationAsset))]
-    [InlineData(AssetFamily.File, typeof(OrchestrationFile))]
-    public async Task GetOrchestrationAsset_ReturnsCorrectType(AssetFamily family, Type expectedType)
-    {
-        // Arrange
-        var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset { Family = family });
-        
-        // Act
-        var result = await sut.GetOrchestrationAsset(assetId);
-        
-        // Assert
-        result.AssetId.Should().Be(assetId);
-        result.Should().BeOfType(expectedType);
-    }
-    
-    [Theory]
-    [InlineData(AssetFamily.Image)]
-    [InlineData(AssetFamily.Timebased)]
-    [InlineData(AssetFamily.File)]
-    public async Task GetOrchestrationAsset_Null_IfAssetFoundButNotForDelivery(AssetFamily family)
+    [InlineData("iiif-img", typeof(OrchestrationImage), AvailableDeliveryChannel.Image)]
+    [InlineData("iiif-av", typeof(OrchestrationAsset), AvailableDeliveryChannel.Timebased)]
+    [InlineData("file", typeof(OrchestrationAsset), AvailableDeliveryChannel.File)]
+    [InlineData("iiif-img,file", typeof(OrchestrationImage), AvailableDeliveryChannel.Image | AvailableDeliveryChannel.File)]
+    [InlineData("iiif-av,file", typeof(OrchestrationAsset), AvailableDeliveryChannel.Timebased | AvailableDeliveryChannel.File)]
+    public async Task GetOrchestrationAsset_ReturnsCorrectType(string deliveryChannel, Type expectedType,
+        AvailableDeliveryChannel channel)
     {
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset { Family = family, NotForDelivery = true });
+            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(",") });
+
+        // Act
+        var result = await sut.GetOrchestrationAsset(assetId);
+
+        // Assert
+        result.AssetId.Should().Be(assetId);
+        result.Channels.Should().Be(channel);
+        result.Should().BeOfType(expectedType);
+    }
+
+    [Theory]
+    [InlineData("iiif-img")]
+    [InlineData("iiif-av")]
+    [InlineData("file")]
+    [InlineData("iiif-img,file")]
+    [InlineData("iiif-av,file")]
+    public async Task GetOrchestrationAsset_Null_IfAssetFoundButNotForDelivery(string deliveryChannel)
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, "go!");
+        A.CallTo(() => assetRepository.GetAsset(assetId))
+            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(","), NotForDelivery = true });
         
         // Act
         var result = await sut.GetOrchestrationAsset(assetId);
@@ -122,31 +129,61 @@ public class MemoryAssetTrackerTests
     }
     
     [Theory]
-    [InlineData(AssetFamily.Timebased)]
-    [InlineData(AssetFamily.File)]
-    public async Task GetOrchestrationAssetT_ReturnsOrchestrationAsset(AssetFamily family)
+    [InlineData("iiif-img", null)]
+    [InlineData("iiif-img,file", "my-origin")]
+    public async Task GetOrchestrationAssetT_ReturnsOrchestrationAsset_IfImage(string deliveryChannel, string expectedOrigin)
     {
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset { Family = family });
+        A.CallTo(() => assetRepository.GetAsset(assetId))
+            .Returns(new Asset
+            {
+                DeliveryChannels = deliveryChannel.Split(","), Origin = "my-origin"
+            });
         
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationAsset>(assetId);
         
         // Assert
         result.AssetId.Should().Be(assetId);
+        result.Origin.Should().Be(expectedOrigin);
+        A.CallTo(() => thumbRepository.GetOpenSizes(A<AssetId>._)).MustHaveHappened();
+    }
+    
+    [Theory]
+    [InlineData("iiif-av", null)]
+    [InlineData("file", "my-origin")]
+    [InlineData("iiif-av,file", "my-origin")]
+    public async Task GetOrchestrationAssetT_ReturnsOrchestrationAsset(string deliveryChannel, string expectedOrigin)
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, "go!");
+        A.CallTo(() => assetRepository.GetAsset(assetId))
+            .Returns(new Asset
+            {
+                DeliveryChannels = deliveryChannel.Split(","), Origin = "my-origin"
+            });
+        
+        // Act
+        var result = await sut.GetOrchestrationAsset<OrchestrationAsset>(assetId);
+        
+        // Assert
+        result.AssetId.Should().Be(assetId);
+        result.Origin.Should().Be(expectedOrigin);
         A.CallTo(() => thumbRepository.GetOpenSizes(A<AssetId>._)).MustNotHaveHappened();
     }
     
-    [Fact]
-    public async Task GetOrchestrationAssetT_ReturnsOrchestrationImage()
+    [Theory]
+    [InlineData("iiif-img")]
+    [InlineData("iiif-img,file")]
+    public async Task GetOrchestrationAssetT_ReturnsOrchestrationImage(string deliveryChannel)
     {
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
         var sizes = new List<int[]> { new[] { 100, 200 } };
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-            Family = AssetFamily.Image, Height = 10, Width = 50, MaxUnauthorised = -1
+            DeliveryChannels = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
 
@@ -162,13 +199,35 @@ public class MemoryAssetTrackerTests
     }
     
     [Theory]
-    [InlineData(AssetFamily.Timebased)]
-    [InlineData(AssetFamily.File)]
-    public async Task GetOrchestrationAssetT_Null_IfWrongTypeAskedFor(AssetFamily family)
+    [InlineData("iiif-img")]
+    [InlineData("iiif-img,file")]
+    public async Task GetOrchestrationAssetT_SetsOpenThumbsToEmpty_IfNullReturned(string deliveryChannel)
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, "otis");
+        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        {
+            DeliveryChannels = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1
+        });
+        A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns<List<int[]>>(null);
+
+        // Act
+        var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
+        
+        // Assert
+        result.OpenThumbs.Should().BeEmpty();
+    }
+    
+    [Theory]
+    [InlineData("iiif-av")]
+    [InlineData("file")]
+    [InlineData("iiif-av,file")]
+    public async Task GetOrchestrationAssetT_Null_IfWrongTypeAskedFor(string deliveryChannel)
     {
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset { Family = family });
+        A.CallTo(() => assetRepository.GetAsset(assetId))
+            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(",") });
         
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
@@ -190,7 +249,7 @@ public class MemoryAssetTrackerTests
         var assetId = new AssetId(1, 1, "go!");
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-            Family = AssetFamily.Image, MaxUnauthorised = maxUnauth, Roles = roles
+            DeliveryChannels = new[] { "iiif-img" }, MaxUnauthorised = maxUnauth, Roles = roles
         });
         
         // Act

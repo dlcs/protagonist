@@ -34,14 +34,12 @@ public static class AssetConverter
         
         var image = new Image(urlRoots.BaseUrl, dbAsset.Customer, dbAsset.Space, modelId)
         {
-            InfoJson = $"{urlRoots.ResourceRoot}iiif-img/{dbAsset.Id}",
-            ThumbnailInfoJson = $"{urlRoots.ResourceRoot}thumbs/{dbAsset.Id}",
+            ImageService = $"{urlRoots.ResourceRoot}iiif-img/{dbAsset.Id}",
+            ThumbnailImageService = $"{urlRoots.ResourceRoot}thumbs/{dbAsset.Id}",
             Created = dbAsset.Created,
             Origin = dbAsset.Origin,
             InitialOrigin = dbAsset.InitialOrigin,
             MaxUnauthorised = dbAsset.MaxUnauthorised,
-            // Queued     -- not directly available on just a dbAsset, needs more info
-            // Dequeued
             Finished = dbAsset.Finished,
             Ingesting = dbAsset.Ingesting,
             Error = dbAsset.Error,
@@ -57,15 +55,27 @@ public static class AssetConverter
             Height = dbAsset.Height,
             MediaType = dbAsset.MediaType,
             Family = (AssetFamily)dbAsset.Family,
-            // Text (to replace with https://github.com/dlcs/protagonist/issues/148)
-            // TextType
-            Roles = dbAsset.RolesList.ToArray()
+            Roles = dbAsset.RolesList.ToArray(),
+            DeliveryChannels = dbAsset.DeliveryChannels
         };
+        
         if (dbAsset.Batch > 0)
         {
             // TODO - this should be set by HydraProperty - but where does the template come from?
             image.Batch = $"{urlRoots.BaseUrl}/customers/{dbAsset.Customer}/queue/batches/{dbAsset.Batch}";
         }
+
+        if (!string.IsNullOrEmpty(dbAsset.ThumbnailPolicy))
+        {
+            image.ThumbnailPolicy = $"{urlRoots.BaseUrl}/thumbnailPolicies/{dbAsset.ThumbnailPolicy}";
+        }
+
+        if (!string.IsNullOrEmpty(dbAsset.ImageOptimisationPolicy))
+        {
+            image.ImageOptimisationPolicy =
+                $"{urlRoots.BaseUrl}/imageOptimisationPolicies/{dbAsset.ImageOptimisationPolicy}";
+        }
+
         return image;
     }
 
@@ -258,6 +268,11 @@ public static class AssetConverter
         if (hydraImage.MediaType != null)
         {
             asset.MediaType = hydraImage.MediaType;
+        }
+        
+        if (hydraImage.DeliveryChannels != null)
+        {
+            asset.DeliveryChannels = hydraImage.DeliveryChannels.OrderBy(dc => dc).Select(dc => dc.ToLower()).ToArray();
         }
 
         var thumbnailPolicy = hydraImage.ThumbnailPolicy.GetLastPathElement("thumbnailPolicies/");

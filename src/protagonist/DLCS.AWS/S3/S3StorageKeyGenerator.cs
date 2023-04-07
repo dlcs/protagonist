@@ -74,6 +74,12 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         return new RegionalisedObjectInBucket(s3Options.StorageBucket, key, awsSettings.Region);
     }
 
+    public RegionalisedObjectInBucket GetStoredOriginalLocation(AssetId assetId)
+    {
+        var key = $"{GetStorageKey(assetId)}/original";
+        return new RegionalisedObjectInBucket(s3Options.StorageBucket, key, awsSettings.Region);
+    }
+
     public ObjectInBucket GetThumbnailLocation(AssetId assetId, int longestEdge, bool open = true)
     {
         var accessPrefix = open ? OpenSlug : AuthorisedSlug;

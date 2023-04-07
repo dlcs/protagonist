@@ -68,6 +68,22 @@ public class S3StorageKeyGeneratorTests
         actual.Bucket.Should().Be("test-storage");
         actual.Region.Should().Be("eu-west-1");
     }
+    
+    [Fact]
+    public void GetStoredOriginalLocation_ReturnsExpected()
+    {
+        // Arrange
+        const string expected = "10/20/foo-bar/original";
+        var asset = new AssetId(10, 20, "foo-bar");
+
+        // Act
+        var actual = sut.GetStoredOriginalLocation(asset);
+        
+        // Assert
+        actual.Key.Should().Be(expected);
+        actual.Bucket.Should().Be("test-storage");
+        actual.Region.Should().Be("eu-west-1");
+    }
 
     [Fact]
     public void GetThumbnailLocation_ReturnsExpected_Open()

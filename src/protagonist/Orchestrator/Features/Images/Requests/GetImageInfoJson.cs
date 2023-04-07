@@ -85,11 +85,11 @@ public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, Descrip
         }
 
         var asset = await assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId);
-        if (asset == null)
+        if (asset == null || !asset.Channels.HasFlag(AvailableDeliveryChannel.Image))
         {
             return DescriptionResourceResponse.Empty;
         }
-        
+
         var infoJsonResponse =
             await infoJsonService.GetInfoJson(asset, request.Version, CancellationToken.None);
         if (infoJsonResponse == null)

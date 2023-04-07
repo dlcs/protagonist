@@ -25,6 +25,11 @@ public class SQSSettings
     public string? TimebasedQueueName { get; set; }
     
     /// <summary>
+    /// Name of queue for ingesting file assets
+    /// </summary>
+    public string? FileQueueName { get; set; }
+    
+    /// <summary>
     /// Name of queue for handling callbacks when Timebased assets have been transcoded
     /// </summary>
     public string? TranscodeCompleteQueueName { get; set; }

@@ -375,6 +375,13 @@ public partial class DlcsContext : DbContext
             entity.Property(e => e.NumberReference3).IsRequired();
             entity.Property(e => e.Ingesting).IsRequired();
             entity.Property(e => e.Batch).IsRequired();
+            entity.Property(e => e.DeliveryChannels)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasConversion(
+                    dc => string.Join(',', dc.OrderBy(v => v)),
+                    dc => dc.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray(),
+                    stringArrayComparer);
 
             entity.Ignore(e => e.InitialOrigin);
         });
@@ -609,6 +616,19 @@ public partial class DlcsContext : DbContext
                 .IsRequired()
                 .HasMaxLength(1000);
         });
+
+        modelBuilder.Entity<ImageOptimisationPolicy>().HasData(
+            new ImageOptimisationPolicy
+            {
+                Id = "none", Customer = 1, Global = true, Name = "No optimisation/transcoding",
+                TechnicalDetails = new[] { "no-op" }
+            },
+            new ImageOptimisationPolicy
+            {
+                Id = "use-original", Customer = 1, Global = true, Name = "Use original for image-server",
+                TechnicalDetails = new[] { "use-original" }
+            }
+        );
         
         OnModelCreatingPartial(modelBuilder);
     }

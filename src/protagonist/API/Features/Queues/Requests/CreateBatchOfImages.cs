@@ -75,10 +75,11 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
 
         bool updateFailed = false;
         var failureMessage = string.Empty;
-        var batch = await batchRepository.CreateBatch(request.CustomerId, request.Assets, cancellationToken);
-        
+
         await using var transaction = 
             await dlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        
+        var batch = await batchRepository.CreateBatch(request.CustomerId, request.Assets, cancellationToken);
 
         var assetNotificationList = new List<Asset>(request.Assets.Count);
         try
@@ -107,15 +108,16 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 }
                 else
                 {
-                    logger.LogDebug("Asset {AssetId} is file, marking as complete", asset.Id);
+                    logger.LogDebug(
+                        "Asset {AssetId} of Batch {BatchId} does not require engine notification. Marking as complete",
+                        asset.Id, batch.Id);
                     batch.Completed += 1;
                 }
             }
-
+            
             if (batch.Completed > 0)
             {
-                dlcsContext.Batches.Attach(batch);
-                dlcsContext.Entry(batch).State = EntityState.Modified;
+                await dlcsContext.SaveChangesAsync(cancellationToken);
             }
 
             if (!updateFailed)
@@ -132,11 +134,13 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
 
         if (updateFailed)
         {
-            await transaction.RollbackAsync(cancellationToken);
-            
-            dlcsContext.Batches.Remove(batch);
-            await dlcsContext.SaveChangesAsync(cancellationToken);
-            
+            // If the token is already cancelled don't use it - we want these to succeed regardless. Will be rolled
+            // back when disposed
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+            }
+
             return ModifyEntityResult<Batch>.Failure(failureMessage, WriteResult.Error);
         }
         else

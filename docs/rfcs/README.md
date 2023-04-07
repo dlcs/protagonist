@@ -8,4 +8,5 @@
 6. [Design Principles](006-Design-Principles.md)
 7. [Cantaloupe Image Server](007-cantaloupe-image-server.md)
 8. [More Access Control - OIDC/OAuth2](008-more-access-control-oidc-oauth.md)
-9. [PDFs and other documents as input](011-pdfs-as-input.md)
+9. [Asset Family Improvements](009-asset-family-improvements.md)
+10. [PDFs and other documents as input](011-pdfs-as-input.md)

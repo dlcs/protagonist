@@ -35,12 +35,17 @@ public class QueueSummary : DlcsResource
     [JsonProperty(Order = 14, PropertyName = "transcodeComplete")]
     public int TranscodeComplete { get; set; }
     
+    [RdfProperty(Description = "Number of total file assets waiting to be processed.",
+        Range = Names.XmlSchema.NonNegativeInteger, ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 15, PropertyName = "file")]
+    public int File { get; set; }
+    
     [Obsolete("For backwards compat with Deliverator but not used")]
-    [JsonProperty(Order = 15, PropertyName = "failed")]
+    [JsonProperty(Order = 20, PropertyName = "failed")]
     public int Failed { get; set; }
     
     [Obsolete("For backwards compat with Deliverator but not used")]
-    [JsonProperty(Order = 16, PropertyName = "success")]
+    [JsonProperty(Order = 21, PropertyName = "success")]
     public int Success { get; set; }
 }
 

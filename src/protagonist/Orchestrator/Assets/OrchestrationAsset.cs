@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DLCS.Core.Types;
 
 namespace Orchestrator.Assets;
@@ -22,14 +23,17 @@ public class OrchestrationAsset
     /// Gets list of roles associated with Asset
     /// </summary>
     public List<string> Roles { get; set; } = new();
-}
-
-public class OrchestrationFile : OrchestrationAsset
-{
+    
     /// <summary>
     /// Get or set Asset origin 
     /// </summary>
-    public string Origin { get; set; }
+    /// <remarks>This is currently only used when "File" channel is available</remarks>
+    public string? Origin { get; set; }
+
+    /// <summary>
+    /// A list of which delivery channels this asset is available on
+    /// </summary>
+    public AvailableDeliveryChannel Channels { get; set; } = AvailableDeliveryChannel.NotSet;
 }
 
 public class OrchestrationImage : OrchestrationAsset
@@ -58,4 +62,14 @@ public class OrchestrationImage : OrchestrationAsset
     /// Get or set Asset location in S3 
     /// </summary>
     public string? S3Location { get; set; }
+}
+
+[Flags]
+public enum AvailableDeliveryChannel
+{
+    NotSet = 0,
+    None = 1,
+    File = 2,
+    Image = 4,
+    Timebased = 8
 }

@@ -37,12 +37,15 @@ public class TranscodeCompleteHandler : IMessageHandler
             return false;
         }
 
+        logger.LogTrace("Received Message {MessageId} for {AssetId}", message.MessageId, assetId);
+
         var transcodeResult = new TranscodeResult(elasticTranscoderMessage);
 
         var success =
             await timebasedIngestorCompletion.CompleteSuccessfulIngest(assetId, transcodeResult, cancellationToken);
-        
-        logger.LogInformation("Message {MessageId} handled with result {IngestResult}", message.MessageId, success);
+
+        logger.LogInformation("Message {MessageId} handled for {AssetId} with result {IngestResult}", message.MessageId,
+            assetId, success);
         
         // TODO - return false so that the message is deleted from the queue in all instances.
         // This shouldn't be the case and can be revisited at a later date as it will need logic of how Batch.Errors is

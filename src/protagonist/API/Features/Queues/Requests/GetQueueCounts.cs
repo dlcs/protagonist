@@ -19,6 +19,7 @@ public class QueueCount
     public int Incoming { get; set; }
     public int Priority { get; set; }
     public int Timebased { get; set; }
+    public int File { get; set; }
     public int TranscodeComplete { get; set; }
 }
 
@@ -42,6 +43,7 @@ public class GetQueueCountsHandler : IRequestHandler<GetQueueCounts, FetchEntity
         results.Incoming = await GetApproximateQueueCounts(awsSettingsSQS.ImageQueueName, cancellationToken);
         results.Priority = await GetApproximateQueueCounts(awsSettingsSQS.PriorityImageQueueName, cancellationToken);
         results.Timebased = await GetApproximateQueueCounts(awsSettingsSQS.TimebasedQueueName, cancellationToken);
+        results.File = await GetApproximateQueueCounts(awsSettingsSQS.FileQueueName, cancellationToken);
         results.TranscodeComplete =
             await GetApproximateQueueCounts(awsSettingsSQS.TranscodeCompleteQueueName, cancellationToken);
 

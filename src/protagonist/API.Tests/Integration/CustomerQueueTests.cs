@@ -599,7 +599,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
                 A<IReadOnlyCollection<IngestAssetRequest>>._, false,
-                A<CancellationToken>._)).Returns(2);
+                A<CancellationToken>._)).Returns(3);
         
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var path = $"/customers/{customerId}/queue";
@@ -613,7 +613,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Hydra batch received
         var hydraBatch = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.Batch>();
-        hydraBatch.Completed.Should().Be(1, "File family are automatically completed");
+        hydraBatch.Completed.Should().Be(0);
         hydraBatch.Count.Should().Be(3);
         var batchId = hydraBatch.GetLastPathElementAsInt()!.Value;
         
@@ -624,19 +624,16 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Images exist with Batch set + File marked as complete
         var images = dbContext.Images.Where(i => i.Customer == customerId && i.Space == 2).ToList();
         images.Count.Should().Be(3);
-        images.Should().AllSatisfy(a => a.Batch.Should().Be(batchId));
-        images.Where(i => i.Family != AssetFamily.File).Should().AllSatisfy(a =>
+        images.Should().AllSatisfy(a =>
         {
             a.Finished.Should().BeNull();
             a.Ingesting.Should().BeTrue();
+            a.Batch.Should().Be(batchId);
         });
-        var file = images.Single(i => i.Family == AssetFamily.File);
-        file.Ingesting.Should().BeFalse();
-        file.Finished.Should().NotBeNull();
         
         // Queue incremented
         var queue = await dbContext.Queues.SingleAsync(q => q.Customer == customerId && q.Name == "default");
-        queue.Size.Should().Be(2);
+        queue.Size.Should().Be(3);
         
         // Customer Storage incremented
         var storage = await dbContext.CustomerStorages.SingleAsync(q => q.Customer == customerId && q.Space == 0);
@@ -645,7 +642,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Items queued for processing
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 2), false,
+                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 3), false,
                 A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -815,7 +812,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Post_TestBatch_MarksBatchAsComplete_IfImagesFoundAndAllFinished()
+    public async Task Post_TestBatch_MarksBatchAsComplete_IfImagesFoundAndAllFinished_AndBatchNotFinished()
     {
         // Arrange
         const int batch = 202;
@@ -836,10 +833,10 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == batch);
         dbBatch.Superseded.Should().BeFalse();
-        dbBatch.Finished.Should().NotBeNull();
+        dbBatch.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
         dbBatch.Count.Should().Be(3);
     }
-    
+
     [Fact]
     public async Task Post_TestBatch_ReturnsFalse_IfNotSupersededOrFinished()
     {
@@ -864,5 +861,32 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbBatch.Superseded.Should().BeFalse();
         dbBatch.Finished.Should().BeNull();
         dbBatch.Count.Should().Be(100);
+    }
+    
+    [Fact]
+    public async Task Post_TestBatch_DoesNotChangeBatchFinished_IfImagesFoundAndAllFinished_ButBatchHasFinishedDate()
+    {
+        // Arrange
+        const int batch = 205;
+        var finished = DateTime.UtcNow.AddDays(-3);
+        await dbContext.Batches.AddTestBatch(batch, count: 13, finished: finished);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/donuts"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/workinonit"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/waves"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.SaveChangesAsync();
+        const string path = "customers/99/queue/batches/205/test";
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync(path, null!);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jsonDoc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
+
+        var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == batch);
+        dbBatch.Superseded.Should().BeFalse();
+        dbBatch.Finished.Should().BeCloseTo(finished, TimeSpan.FromMinutes((1)));
+        dbBatch.Count.Should().Be(3);
     }
 }

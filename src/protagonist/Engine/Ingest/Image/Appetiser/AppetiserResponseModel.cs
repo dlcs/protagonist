@@ -1,5 +1,3 @@
-using DLCS.Model.Assets;
-
 namespace Engine.Ingest.Image.Appetiser;
 
 /// <summary>

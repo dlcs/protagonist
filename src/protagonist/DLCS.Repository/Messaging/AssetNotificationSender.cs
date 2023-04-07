@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
@@ -50,6 +51,8 @@ public class AssetNotificationSender : IAssetNotificationSender
     public async Task<int> SendIngestAssetsRequest(IReadOnlyList<Asset> assets, bool isPriority,
         CancellationToken cancellationToken = default)
     {
+        if (assets.IsNullOrEmpty()) return 0;
+        
         // Preemptively increment the queue size - if there's a particularly large batch the engine could have picked
         // up a few prior to this returning
         var queue = isPriority ? QueueNames.Priority : QueueNames.Default;

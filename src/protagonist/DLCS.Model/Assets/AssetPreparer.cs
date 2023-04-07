@@ -1,8 +1,8 @@
 using System;
+using System.Linq;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
-using DLCS.Model.Policies;
 
 namespace DLCS.Model.Assets;
 
@@ -89,11 +89,20 @@ public static class AssetPreparer
         var prepareAssetForUpsert = ValidateRequests(existingAsset, updateAsset, allowNonApiUpdates, isBatchUpdate);
         if (prepareAssetForUpsert != null) return prepareAssetForUpsert;
 
+        bool reCalculateFamily = false;
         if (existingAsset != null)
         {
             if (updateAsset.Origin.HasText() && updateAsset.Origin != existingAsset.Origin)
             {
                 requiresReingest = true;
+            }
+
+            if (updateAsset.DeliveryChannels != null &&
+                !updateAsset.DeliveryChannels.SequenceEqual(existingAsset.DeliveryChannels))
+            {
+                // Changing DeliveryChannel can alter how the image should be processed
+                requiresReingest = true;
+                reCalculateFamily = true;
             }
             
             if (updateAsset.ThumbnailPolicy.HasText() && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
@@ -102,15 +111,13 @@ public static class AssetPreparer
                 // However, we can treat a PUT as always triggering reingest, whereas a PATCH does not,
                 // even if they are otherwise equivalent - see CreateOrUpdateImage
             }
-            
-            if (updateAsset.ImageOptimisationPolicy.HasText() && updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
+
+            if (updateAsset.ImageOptimisationPolicy.HasText() &&
+                updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
             {
                 requiresReingest = true; // YES, because we've changed the way this image should be processed
             }
 
-            // This is ONLY true if we need engine to set the permissions on S3 for redirects.
-            // It is not true if orchestrator proxies requests for open AV.
-            // See https://github.com/dlcs/protagonist/issues/452
             if (updateAsset.MaxUnauthorised.HasValue && updateAsset.MaxUnauthorised != existingAsset.MaxUnauthorised)
             {
                 requiresReingest = true;
@@ -123,22 +130,22 @@ public static class AssetPreparer
         {
             // Creation of new asset - the DB record is what's been submitted with any NULLs replaced by default
             workingAsset.DefaultNullProperties(DefaultAsset);
+            SetAssetFamily(workingAsset);
         }
         else
         {
             // Update existing asset - the DB record is what was in DB with any submitted changes applied
             workingAsset.ApplyChanges(updateAsset);
+            
+            if (reCalculateFamily)
+            {
+                SetAssetFamily(workingAsset);
+            }
         }
         
         if (requiresReingest && workingAsset.Origin.IsNullOrEmpty())
         {
             return AssetPreparationResult.Failure("Asset Origin must be supplied.");
-        }
-
-        // 'File' family assets are never ingested so default back to false regardless of value
-        if (workingAsset.Family == AssetFamily.File)
-        {
-            requiresReingest = false;
         }
 
         return AssetPreparationResult.Succeed(workingAsset, requiresReingest);
@@ -153,6 +160,18 @@ public static class AssetPreparer
             // to modify an asset marked NotForDelivery.
             return AssetPreparationResult.Failure("Cannot use API to modify a NotForDelivery asset.");
             // However, this DOES allow the *creation* of a NotForDelivery asset.
+        }
+
+        if (!updateAsset.DeliveryChannels.IsNullOrEmpty())
+        {
+            foreach (var dc in updateAsset.DeliveryChannels)
+            {
+                if (!AssetDeliveryChannels.All.Contains(dc))
+                {
+                    return AssetPreparationResult.Failure(
+                        $"'{dc}' is an invalid deliveryChannel. Valid values are: {AssetDeliveryChannels.AllString}.");
+                }
+            }
         }
         
         if (allowNonApiUpdates == false)
@@ -185,12 +204,14 @@ public static class AssetPreparer
         // If we have an existing Asset and we are not allowed nonApiUpdates
         if (existingAsset != null && allowNonApiUpdates == false)
         {
-            bool isNoOpPolicy = ImageOptimisationPolicyX.IsNoOpIdentifier(existingAsset.ImageOptimisationPolicy);
+            // Allow updating dimensions if _existing_ channel is "file" only as these won't have been set by
+            // an automated process
+            var isFileOnly = existingAsset.DeliveryChannels.ContainsOnly(AssetDeliveryChannels.File);
             
             if (updateAsset.Width.HasValue && updateAsset.Width != 0 && updateAsset.Width != existingAsset.Width)
             {
-                // if it's a policy other than "none" or it is an audio asset then this isn't valid
-                if (!isNoOpPolicy || MIMEHelper.IsAudio(existingAsset.MediaType))
+                // if it's a delivery-channel "file" or it is an audio asset then this isn't valid
+                if (!isFileOnly || MIMEHelper.IsAudio(existingAsset.MediaType))
                 {
                     return AssetPreparationResult.Failure("Width cannot be edited.");
                 }
@@ -198,8 +219,8 @@ public static class AssetPreparer
 
             if (updateAsset.Height.HasValue && updateAsset.Height != 0 && updateAsset.Height != existingAsset.Height)
             {
-                // if it's a policy other than "none" or it is an audio asset then this isn't valid
-                if (!isNoOpPolicy || MIMEHelper.IsAudio(existingAsset.MediaType))
+                // if it's a delivery-channel "file" or it is an audio asset then this isn't valid
+                if (!isFileOnly || MIMEHelper.IsAudio(existingAsset.MediaType))
                 {
                     return AssetPreparationResult.Failure("Height cannot be edited.");
                 }
@@ -208,8 +229,8 @@ public static class AssetPreparer
             if (updateAsset.Duration.HasValue && updateAsset.Duration != 0 &&
                 updateAsset.Duration != existingAsset.Duration)
             {
-                // if it's a policy other than "none" or family other than Timebased then isn't valid
-                if (!isNoOpPolicy || existingAsset.Family != AssetFamily.Timebased)
+                // if it's a delivery-channel "file" or non audio or video mediaType then isn't valid
+                if (!isFileOnly || !(MIMEHelper.IsAudio(existingAsset.MediaType) || MIMEHelper.IsVideo(existingAsset.MediaType)))
                 {
                     return AssetPreparationResult.Failure("Duration cannot be edited.");
                 }
@@ -234,13 +255,11 @@ public static class AssetPreparer
             if (updateAsset.ImageOptimisationPolicy != null &&
                 updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
             {
-                // I think it should be editable though, and doing so should trigger a re-ingest.
                 return AssetPreparationResult.Failure("ImageOptimisationPolicy cannot be edited.");
             }
 
             if (updateAsset.ThumbnailPolicy != null && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
             {
-                // And this one DEFINITELY should be editable!
                 return AssetPreparationResult.Failure("ThumbnailPolicy cannot be edited.");
             }
 
@@ -256,6 +275,26 @@ public static class AssetPreparer
         }
 
         return null;
+    }
+
+    private static void SetAssetFamily(Asset workingAsset)
+    {
+        if (workingAsset.HasSingleDeliveryChannel(AssetDeliveryChannels.File))
+        {
+            workingAsset.Family = AssetFamily.File;
+            return;
+        }
+
+        if (workingAsset.HasDeliveryChannel(AssetDeliveryChannels.Image))
+        {
+            workingAsset.Family = AssetFamily.Image;
+            return;
+        }
+
+        if (workingAsset.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
+        {
+            workingAsset.Family = AssetFamily.Timebased;
+        }
     }
 
     static AssetPreparer()
@@ -289,7 +328,7 @@ public static class AssetPreparer
             ImageOptimisationPolicy = string.Empty,
             ThumbnailPolicy = string.Empty,
             InitialOrigin = string.Empty,
-            Family = AssetFamily.Image,
+            DeliveryChannels = null,
             MediaType = "unknown"
         };
     }
