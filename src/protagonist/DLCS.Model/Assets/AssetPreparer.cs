@@ -252,12 +252,6 @@ public static class AssetPreparer
                 return AssetPreparationResult.Failure("Batch cannot be edited.");
             }
 
-            if (updateAsset.ImageOptimisationPolicy != null &&
-                updateAsset.ImageOptimisationPolicy != existingAsset.ImageOptimisationPolicy)
-            {
-                return AssetPreparationResult.Failure("ImageOptimisationPolicy cannot be edited.");
-            }
-
             if (updateAsset.ThumbnailPolicy != null && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
             {
                 return AssetPreparationResult.Failure("ThumbnailPolicy cannot be edited.");

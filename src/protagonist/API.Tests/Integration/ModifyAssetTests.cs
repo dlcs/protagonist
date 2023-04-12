@@ -549,13 +549,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Patch_Asset_Change_ImageOptimisationPolicy_Not_Allowed()
+    public async Task Patch_Asset_Change_ImageOptimisationPolicy_Allowed()
     {
-        // This test is really here ready for when this IS allowed! I think it should be.
-        var assetId = new AssetId(99, 1, nameof(Patch_Asset_Change_ImageOptimisationPolicy_Not_Allowed));
+        var assetId = new AssetId(99, 1, nameof(Patch_Asset_Change_ImageOptimisationPolicy_Allowed));
 
-        await dbContext.Images.AddTestAsset(assetId, ref1: "I am string 1",
-            origin: "https://images.org/image1.tiff");
+        var asset = (await dbContext.Images.AddTestAsset(assetId, origin: "https://images.org/image1.tiff")).Entity;
         var testPolicy = new ImageOptimisationPolicy
         {
             Id = "test-policy",
@@ -567,28 +565,30 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
-  ""imageOptimisationPolicy"": ""http://localhost/imageOptimisationPolicies/test-policy"",
-  ""string1"": ""I am edited""
+  ""imageOptimisationPolicy"": ""http://localhost/imageOptimisationPolicies/test-policy""
 }}";
-
-        // act
-        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
-        
-        // assert CURRENT DELIVERATOR
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
                     A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
                     A<CancellationToken>._))
-            .MustNotHaveHappened();
+            .Returns(HttpStatusCode.OK);
+
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
         
-        // assert THIS IS WHAT IT SHOULD BE!
-        // response.StatusCode.Should().Be(HttpStatusCode.OK);
-        // engineMessage.Should().NotBeNull();
-        // var asset = await dbContext.Images.FindAsync(assetId);
-        // asset.Reference1.Should().Be("I am edited");
+        // assert
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<CancellationToken>._))
+            .MustHaveHappened();
+        
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        await dbContext.Entry(asset).ReloadAsync();
+        asset.ImageOptimisationPolicy.Should().Be("test-policy");
     }
 
     [Fact]
