@@ -412,16 +412,23 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task GetPdfControlFile_Returns404_IfNQValidButNoControlFile()
+    public async Task GetPdfControlFile_Returns200_WithEmptyControlFile_IfNQValidButNoControlFile()
     {
         // Arrange
         const string path = "pdf-control/99/test-pdf/any-ref/1/2";
+        var pdfControlFile = new PdfControlFile(new ControlFile
+        {
+            Created = DateTime.MinValue, InProcess = false, Exists = false, Key = string.Empty, ItemCount = 0,
+            SizeBytes = 0, Roles = new List<string>(0)
+        });
+        var pdfControlFileJson = JsonConvert.SerializeObject(pdfControlFile);
             
         // Act
         var response = await httpClient.GetAsync(path);
             
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await response.Content.ReadAsStringAsync()).Should().Be(pdfControlFileJson);
     }
 
     [Fact]

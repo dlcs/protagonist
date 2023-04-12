@@ -51,6 +51,18 @@ public class ControlFile
     /// </summary>
     [JsonProperty("roles")]
     public List<string>? Roles { get; set; }
+    
+    /// <summary>
+    /// Null object control file
+    /// </summary>
+    public static readonly ControlFile Empty = new()
+    {
+        Created = DateTime.MinValue,
+        SizeBytes = 0,
+        ItemCount = 0,
+        Key = string.Empty,
+        Roles = new List<string>(0)
+    };
 
     /// <summary>
     /// Check if this is control file is stale (in process for longer than X secs)
