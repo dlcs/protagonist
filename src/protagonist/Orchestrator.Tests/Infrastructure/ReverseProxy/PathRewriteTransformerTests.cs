@@ -95,6 +95,22 @@ public class PathRewriteTransformerTests
     }
 
     [Fact]
+    public async Task TransformRequestAsync_RemovesCloudfrontIdHeaderIfPresent()
+    {
+        // Arrange
+        var request = new HttpRequestMessage();
+        request.Headers.Add("x-amz-cf-id", "foo");
+        var actionResult = new ProxyActionResult(ProxyDestination.S3, true, "new/path");
+        var sut = new PathRewriteTransformer(actionResult, false);
+
+        // Act
+        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com");
+        
+        // Assert
+        request.Headers.Should().NotContainKey("x-amz-cf-id");
+    }
+
+    [Fact]
     public async Task TransformResponseAsync_AddsCORSHeader_IfMissing()
     {
         // Arrange
