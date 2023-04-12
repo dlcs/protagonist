@@ -68,20 +68,17 @@ public class TimeBasedRequestHandler
         }
 
         var proxyTarget = GetRequestedAssetHttpUri(assetRequest);
-        if (!orchestrationAsset.RequiresAuth)
+        if (orchestrationAsset.RequiresAuth)
         {
-            logger.LogDebug("No auth for {Path}, 302 to S3 object {S3}", httpContext.Request.Path, proxyTarget);
-            return new StatusCodeResult(HttpStatusCode.Redirect)
-                .WithHeader("Location", proxyTarget.GetHttpUri().ToString());
+            if (!await IsAuthenticated(assetRequest, orchestrationAsset, httpContext.Request))
+            {
+                logger.LogDebug("User not authenticated for {Method} {Path}", httpContext.Request.Method,
+                    httpContext.Request.Path);
+                return new StatusCodeResult(HttpStatusCode.Unauthorized);
+            }
         }
-
-        if (!await IsAuthenticated(assetRequest, orchestrationAsset, httpContext.Request))
-        {
-            logger.LogDebug("User not authenticated for {Method} {Path}", httpContext.Request.Method,
-                httpContext.Request.Path);
-            return new StatusCodeResult(HttpStatusCode.Unauthorized);
-        }
-
+        
+        // By here it's either open, or user is authenticated
         if (httpContext.Request.Method == "HEAD")
         {
             // quit with success as we've done all we need to

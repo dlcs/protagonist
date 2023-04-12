@@ -128,7 +128,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     }
 
     [Fact]
-    public async Task Get_AssetDoesNotRequireAuth_Returns302ToS3Location()
+    public async Task Get_AssetDoesNotRequireAuth_ProxiesToS3Location()
     {
         // Arrange
         var id = AssetId.FromString("99/1/test-noauth");
@@ -141,10 +141,11 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
         
         // Act
         var response = await httpClient.GetAsync("/iiif-av/99/1/test-noauth/full/full/max/max/0/default.mp4");
+        var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
-        response.Headers.Location.Should().Be(expectedPath);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        proxyResponse.Uri.Should().Be(expectedPath);
     }
     
     [Fact]
