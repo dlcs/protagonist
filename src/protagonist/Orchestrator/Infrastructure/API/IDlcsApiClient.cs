@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 
-namespace Orchestrator.Infrastructure.Deliverator;
+namespace Orchestrator.Infrastructure.API;
 
 public interface IDlcsApiClient
 {

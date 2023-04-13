@@ -12,20 +12,20 @@ using FakeItEasy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Orchestrator.Infrastructure.Deliverator;
+using Orchestrator.Infrastructure.API;
 using Orchestrator.Settings;
 using Test.Helpers.Http;
 using Xunit;
 
-namespace Orchestrator.Tests.Infrastructure.Deliverator;
+namespace Orchestrator.Tests.Infrastructure.API;
 
-public class DeliveratorApiClientTests
+public class ApiClientTests
 {
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly ICustomerRepository customerRepository;
-    private readonly DeliveratorApiClient sut;
+    private readonly ApiClient sut;
 
-    public DeliveratorApiClientTests()
+    public ApiClientTests()
     {
         httpHandler = new ControllableHttpMessageHandler();
         var httpClient = new HttpClient(httpHandler);
@@ -36,8 +36,8 @@ public class DeliveratorApiClientTests
         A.CallTo(() => encryption.Encrypt(A<string>._)).Returns("encrypted");
         customerRepository = A.Fake<ICustomerRepository>();
 
-        sut = new DeliveratorApiClient(httpClient, new DlcsApiAuth(encryption), customerRepository, options,
-            new NullLogger<DeliveratorApiClient>());
+        sut = new ApiClient(httpClient, new DlcsApiAuth(encryption), customerRepository, options,
+            new NullLogger<ApiClient>());
     }
     
     [Fact]
