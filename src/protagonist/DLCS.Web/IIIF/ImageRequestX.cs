@@ -6,7 +6,7 @@ namespace DLCS.Web.IIIF;
 public static class ImageRequestX
 {
     private const string DefaultQuality = "default";
-    public const string ColorQuality = "color";
+    private const string ColorQuality = "color";
     private const string JpgFormat = "jpg";
 
     /// <summary>
@@ -34,7 +34,13 @@ public static class ImageRequestX
 
         if (request.Rotation is not { Angle: 0, Mirror: not true })
         {
-            invalidMessage = $"Requested rotation value not supported, use '0'";
+            invalidMessage = "Requested rotation value not supported, use '0'";
+            return false;
+        }
+
+        if (request.Size.PercentScale.HasValue)
+        {
+            invalidMessage = "Requested pct: size value not supported";
             return false;
         }
 
