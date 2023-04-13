@@ -6,7 +6,10 @@ namespace Engine.Ingest.Image;
 
 internal static class ImageIngestionHelpers
 {
-    public static string GetSourceTemplate(Asset asset, EngineSettings engineSettings)
+    /// <summary>
+    /// Get folder location where working assets are to be saved to
+    /// </summary>
+    public static string GetSourceFolder(Asset asset, EngineSettings engineSettings)
     {
         var imageIngest = engineSettings.ImageIngest;
         var root = imageIngest.GetRoot();
