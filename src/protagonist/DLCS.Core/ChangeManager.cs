@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 
 namespace DLCS.Core;
 
@@ -53,7 +54,12 @@ public static class ChangeManager
             if (candidateValue == null) continue;
             
             var existingValue = prop.GetValue(toUpdate);
-            if (existingValue != candidateValue)
+
+            var valuesAreEqual = prop.PropertyType.IsValueType
+                ? existingValue?.Equals(candidateValue) ?? false
+                : existingValue == candidateValue;
+            
+            if (!valuesAreEqual)
             {
                 changesApplied++;
                 prop.SetValue(toUpdate, candidateValue);
