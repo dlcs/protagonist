@@ -215,11 +215,25 @@ public class S3StorageKeyGeneratorTests
         result.Bucket.Should().Be("test-storage");
         result.Key.Should().Be(key);
     }
+    
+    [Fact]
+    public void GetInfoJsonRoot_WithKey_Correct()
+    {
+        // Arrange
+        var asset = new AssetId(10, 20, "foo-bar");
+        
+        // Act
+        var result = sut.GetInfoJsonRoot(asset);
+        
+        // Assert
+        result.Bucket.Should().Be("test-storage");
+        result.Key.Should().Be("10/20/foo-bar/info/");
+    }
 
     [Theory]
-    [InlineData("Cantaloupe", IIIF.ImageApi.Version.V2, "info/Cantaloupe/v2/10/20/foo-bar/info.json")]
-    [InlineData("Cantaloupe", IIIF.ImageApi.Version.V3, "info/Cantaloupe/v3/10/20/foo-bar/info.json")]
-    [InlineData("IIPImage", IIIF.ImageApi.Version.V2, "info/IIPImage/v2/10/20/foo-bar/info.json")]
+    [InlineData("Cantaloupe", IIIF.ImageApi.Version.V2, "10/20/foo-bar/info/Cantaloupe/v2/info.json")]
+    [InlineData("Cantaloupe", IIIF.ImageApi.Version.V3, "10/20/foo-bar/info/Cantaloupe/v3/info.json")]
+    [InlineData("IIPImage", IIIF.ImageApi.Version.V2, "10/20/foo-bar/info/IIPImage/v2/info.json")]
     public void GetInfoJsonLocation_ReturnsExpected(string imageServer, IIIF.ImageApi.Version version,
         string expected)
     {

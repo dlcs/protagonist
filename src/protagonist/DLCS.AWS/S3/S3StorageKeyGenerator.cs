@@ -123,10 +123,16 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
     public ObjectInBucket GetTimebasedAssetLocation(string fullAssetPath)
         => new(s3Options.StorageBucket, fullAssetPath);
 
+    public ObjectInBucket GetInfoJsonRoot(AssetId assetId)
+    {
+        var key = $"{GetStorageKey(assetId)}/info/";
+        return new ObjectInBucket(s3Options.StorageBucket, key);
+    }
+
     public ObjectInBucket GetInfoJsonLocation(AssetId assetId, string imageServer, IIIF.ImageApi.Version imageApiVersion)
     {
         var versionSlug = imageApiVersion == IIIF.ImageApi.Version.V2 ? "v2" : "v3";
-        var key = $"info/{imageServer}/{versionSlug}/{GetStorageKey(assetId)}/info.json";
+        var key = $"{GetStorageKey(assetId)}/info/{imageServer}/{versionSlug}/info.json";
         return new ObjectInBucket(s3Options.StorageBucket, key);
     }
 

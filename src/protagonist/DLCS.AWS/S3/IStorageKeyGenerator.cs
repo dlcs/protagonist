@@ -82,6 +82,13 @@ public interface IStorageKeyGenerator
     /// <param name="fullAssetPath">Full asset path, including AssetId</param>
     /// <returns><see cref="RegionalisedObjectInBucket"/> for AV file</returns>
     ObjectInBucket GetTimebasedAssetLocation(string fullAssetPath);
+    
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> for root location of info.json for asset, rather than individual info.json file
+    /// </summary>
+    /// <param name="assetId">AssetId request is for</param>
+    /// <returns><see cref="ObjectInBucket"/> for specified key in output bucket</returns>
+    ObjectInBucket GetInfoJsonRoot(AssetId assetId);
 
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> item for info.json object
