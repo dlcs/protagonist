@@ -1,8 +1,5 @@
 ﻿using System.Diagnostics;
-using DLCS.Core.FileSystem;
-using DLCS.Model.Assets;
 using DLCS.Model.Customers;
-using DLCS.Model.Templates;
 using Engine.Ingest.Image.Completion;
 using Engine.Ingest.Persistence;
 using Engine.Settings;
@@ -10,31 +7,31 @@ using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest.Image;
 
+/// <summary>
+/// Class that contains logic for ingesting image asset - copies from origin and sends to image processor
+/// </summary>
 public class ImageIngesterWorker : IAssetIngesterWorker, IAssetIngesterPostProcess
 {
     private readonly EngineSettings engineSettings;
     private readonly IImageProcessor imageProcessor;
-    private readonly IOrchestratorClient orchestratorClient;
-    private readonly IFileSystem fileSystem;
     private readonly IAssetIngestorSizeCheck assetIngestorSizeCheck;
+    private readonly IImageIngestPostProcessing imageCompletion;
     private readonly ILogger<ImageIngesterWorker> logger;
     private readonly IAssetToDisk assetToDisk;
 
     public ImageIngesterWorker(
         IAssetToDisk assetToDisk,
         IImageProcessor imageProcessor,
-        IOrchestratorClient orchestratorClient,
-        IFileSystem fileSystem,
         IOptionsMonitor<EngineSettings> engineOptions,
         IAssetIngestorSizeCheck assetIngestorSizeCheck,
+        IImageIngestPostProcessing imageCompletion,
         ILogger<ImageIngesterWorker> logger)
     {
         this.assetToDisk = assetToDisk;
         engineSettings = engineOptions.CurrentValue;
         this.imageProcessor = imageProcessor;
-        this.orchestratorClient = orchestratorClient;
-        this.fileSystem = fileSystem;
         this.assetIngestorSizeCheck = assetIngestorSizeCheck;
+        this.imageCompletion = imageCompletion;
         this.logger = logger;
     }
 
@@ -47,7 +44,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker, IAssetIngesterPostProce
     {
         bool ingestSuccess;
         var asset = ingestionContext.Asset;
-        var sourceTemplate = GetSourceTemplate(asset);
+        var sourceTemplate = ImageIngestionHelpers.GetSourceTemplate(asset, engineSettings);
 
         try
         {
@@ -77,44 +74,10 @@ public class ImageIngesterWorker : IAssetIngesterWorker, IAssetIngesterPostProce
             ingestSuccess = false;
             asset.Error = ex.Message;
         }
-        finally
-        {
-            fileSystem.DeleteDirectory(sourceTemplate, true);
-        }
 
         return ingestSuccess ? IngestResultStatus.Success : IngestResultStatus.Failed;
     }
 
-    private string GetSourceTemplate(Asset asset)
-    {
-        var imageIngest = engineSettings.ImageIngest;
-        var root = imageIngest.GetRoot();
-            
-        // source is the main folder for storing downloaded image
-        var assetId = asset.Id;
-        var source = TemplatedFolders.GenerateFolderTemplate(imageIngest.SourceTemplate, assetId, root: root);
-        return source;
-    }
-
-    public async Task PostIngest(IngestionContext ingestionContext, bool ingestSuccessful)
-    {
-        try
-        {
-            if (!ingestSuccessful) return;
-
-            if (!ShouldOrchestrate(ingestionContext.Asset.Customer)) return;
-
-            await orchestratorClient.TriggerOrchestration(ingestionContext.AssetId);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error completing {AssetId}", ingestionContext.Asset.Id);
-        }
-    }
-
-    private bool ShouldOrchestrate(int customerId)
-    {
-        var customerSpecific = engineSettings.GetCustomerSettings(customerId);
-        return customerSpecific.OrchestrateImageAfterIngest ?? engineSettings.ImageIngest.OrchestrateImageAfterIngest;
-    }
+    public Task PostIngest(IngestionContext ingestionContext, bool ingestSuccessful)
+        => imageCompletion.CompleteIngestion(ingestionContext, ingestSuccessful);
 }
