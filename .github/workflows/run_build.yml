@@ -20,7 +20,7 @@ jobs:
       SOLUTION: "protagonist.sln"
     steps:
       - id: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - id: setup-dotnet
         uses: actions/setup-dotnet@v1
         with:
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - id: setup-python
         uses: actions/setup-python@v4
         with:
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-dotnet
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/docker-build-and-push
         name: build and push
         with:
@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-dotnet
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/docker-build-and-push
         with:
           image-name: "thumbs"
@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-dotnet
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/docker-build-and-push
         with:
           image-name: "engine"
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-dotnet
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/docker-build-and-push
         with:
           image-name: "portal"
@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-dotnet
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/docker-build-and-push
         with:
           image-name: "api"
@@ -109,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-dotnet
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/docker-build-and-push
         with:
           image-name: "deletehandler"
@@ -121,7 +121,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-dotnet
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/docker-build-and-push
         with:
           image-name: "migrator"
@@ -133,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-compositehandler
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/docker-build-and-push
         with:
           image-name: "composite-handler"
