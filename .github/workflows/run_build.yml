@@ -42,7 +42,7 @@ jobs:
         with:
           python-version: '3.9'
       - id: pre-commit
-        uses: pre-commit/action@v2.0.3
+        uses: pre-commit/action@v3.0.0
 
   build-push-orchestrator:
     runs-on: ubuntu-latest
