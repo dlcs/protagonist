@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.11
 LABEL maintainer="Daniel Grant <daniel.grant@digirati.com>"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
