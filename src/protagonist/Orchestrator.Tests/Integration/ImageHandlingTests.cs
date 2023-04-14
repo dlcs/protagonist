@@ -47,6 +47,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         amazonS3 = storageFixture.LocalStackFixture.AWSS3ClientFactory();
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
+            .WithConfigValue("OrchestrateOnInfoJson", "true")
             .WithLocalStack(storageFixture.LocalStackFixture)    
             .WithTestServices(services =>
             {
@@ -180,7 +181,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // And a copy was put in S3 for future requests
         var s3InfoJsonObject =
-            await amazonS3.GetObjectAsync(LocalStackFixture.StorageBucketName, $"info/Cantaloupe/v2/{id}/info.json");
+            await amazonS3.GetObjectAsync(LocalStackFixture.StorageBucketName, $"{id}/info/Cantaloupe/v2/info.json");
         var s3InfoJson = JObject.Parse(s3InfoJsonObject.ResponseStream.GetContentString());
         s3InfoJson["@id"].ToString().Should()
             .NotBe($"http://localhost/iiif-img/v2/{id}", "Stored Id is placeholder only");
@@ -217,7 +218,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // And a copy was put in S3 for future requests
         var s3InfoJsonObject =
-            await amazonS3.GetObjectAsync(LocalStackFixture.StorageBucketName, $"info/Cantaloupe/v2/{id}/info.json");
+            await amazonS3.GetObjectAsync(LocalStackFixture.StorageBucketName, $"{id}/info/Cantaloupe/v2/info.json");
         var s3InfoJson = JObject.Parse(s3InfoJsonObject.ResponseStream.GetContentString());
         s3InfoJson["@id"].ToString().Should()
             .NotBe($"http://localhost/iiif-img/v2/{id}", "Stored Id is placeholder only");
@@ -262,7 +263,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // And a copy was put in S3 for future requests
         var s3InfoJsonObject =
-            await amazonS3.GetObjectAsync(LocalStackFixture.StorageBucketName, $"info/Cantaloupe/v2/{id}/info.json");
+            await amazonS3.GetObjectAsync(LocalStackFixture.StorageBucketName, $"{id}/info/Cantaloupe/v2/info.json");
         var s3InfoJson = JObject.Parse(s3InfoJsonObject.ResponseStream.GetContentString());
         s3InfoJson["@id"].ToString().Should()
             .NotBe(
@@ -286,7 +287,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         });
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
-            Key = $"info/Cantaloupe/v2/{id}/info.json",
+            Key = $"{id}/info/Cantaloupe/v2/info.json",
             BucketName = LocalStackFixture.StorageBucketName,
             ContentBody = "{\"@context\": \"_this_proves_s3_origin_\"}"
         });
@@ -324,7 +325,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         });
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
-            Key = $"info/Cantaloupe/v2/{id}/info.json",
+            Key = $"{id}/info/Cantaloupe/v2/info.json",
             BucketName = LocalStackFixture.StorageBucketName,
             ContentBody = "{\"@context\": \"_this_proves_s3_origin_\"}"
         });
@@ -504,7 +505,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         });
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
-            Key = $"info/Cantaloupe/v3/{id}/info.json",
+            Key = $"{id}/info/Cantaloupe/v3/info.json",
             BucketName = LocalStackFixture.StorageBucketName,
             ContentBody = "{\"id\": \"whatever\", \"type\": \"ImageService3\", \"context\": \"_this_proves_s3_origin_\"}"
         });
