@@ -22,7 +22,7 @@ public static class DatabaseTestDataPopulation
         AssetFamily family = AssetFamily.Image,
         int customer = 99,
         int space = 1,
-        string origin = "",
+        string origin = "http://test",
         string roles = "",
         string mediaType = "image/jpeg",
         int maxUnauthorised = -1,

@@ -22,6 +22,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Features.Auth;
 using Orchestrator.Features.Auth.Paths;
+using Orchestrator.Features.Files;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
@@ -67,6 +68,8 @@ public class Startup
             .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
             .AddSingleton<ImageRequestHandler>()
             .AddSingleton<TimeBasedRequestHandler>()
+            .AddSingleton<FileRequestHandler>()
+            .AddSingleton<S3ProxyPathGenerator>()
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
             .AddScoped<AccessChecker>()
             .AddScoped<IIIFCanvasFactory>()
@@ -162,6 +165,7 @@ public class Startup
                 endpoints.MapReverseProxy();
                 endpoints.MapImageHandling();
                 endpoints.MapTimeBasedHandling();
+                endpoints.MapFileHandling();
                 endpoints.MapConfiguredHealthChecks();
             });
     }

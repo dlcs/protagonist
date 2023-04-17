@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
@@ -8,16 +7,17 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
+using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.ReverseProxy;
 
-namespace Orchestrator.Features.TimeBased;
+namespace Orchestrator.Features.Files;
 
 /// <summary>
-/// Reverse-proxy routing logic for /iiif-av/ requests 
+/// Handling logic for /file/ requests 
 /// </summary>
-public class TimeBasedRequestHandler
+public class FileRequestHandler
 {
     private readonly ILogger<TimeBasedRequestHandler> logger;
     private readonly AssetRequestProcessor assetRequestProcessor;
@@ -25,11 +25,11 @@ public class TimeBasedRequestHandler
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly S3ProxyPathGenerator proxyPathGenerator;
 
-    public TimeBasedRequestHandler(
+    public FileRequestHandler(
         ILogger<TimeBasedRequestHandler> logger,
         AssetRequestProcessor assetRequestProcessor,
         IServiceScopeFactory scopeFactory,
-        IStorageKeyGenerator storageKeyGenerator,
+        IStorageKeyGenerator storageKeyGenerator, 
         S3ProxyPathGenerator proxyPathGenerator)
     {
         this.logger = logger;
@@ -38,22 +38,21 @@ public class TimeBasedRequestHandler
         this.storageKeyGenerator = storageKeyGenerator;
         this.proxyPathGenerator = proxyPathGenerator;
     }
-
+    
     /// <summary>
-    /// Handle /iiif-av/ request, returning object detailing operation that should be carried out.
+    /// Handle /file/ request, returning object detailing operation that should be carried out.
     /// </summary>
     /// <param name="httpContext">Incoming <see cref="HttpContext"/> object</param>
     /// <returns><see cref="IProxyActionResult"/> object containing downstream target</returns>
     public async Task<IProxyActionResult> HandleRequest(HttpContext httpContext)
     {
         var (assetRequest, statusCode) =
-            await assetRequestProcessor.TryGetAssetDeliveryRequest<TimeBasedAssetDeliveryRequest>(httpContext);
+            await assetRequestProcessor.TryGetAssetDeliveryRequest<FileAssetDeliveryRequest>(httpContext);
         if (statusCode.HasValue || assetRequest == null)
         {
             return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
         }
-
-        // If "HEAD" then add CORS - is this required here?
+        
         var orchestrationAsset = await assetRequestProcessor.GetAsset(assetRequest);
         if (orchestrationAsset == null)
         {
@@ -61,13 +60,18 @@ public class TimeBasedRequestHandler
             return new StatusCodeResult(HttpStatusCode.NotFound);
         }
         
-        if (!orchestrationAsset.Channels.HasFlag(AvailableDeliveryChannel.Timebased))
+        if (!orchestrationAsset.Channels.HasFlag(AvailableDeliveryChannel.File))
         {
-            logger.LogDebug("Request for {Path}: asset not available in 'timebased' channel", httpContext.Request.Path);
+            logger.LogDebug("Request for {Path}: asset not available in 'file' channel", httpContext.Request.Path);
             return new StatusCodeResult(HttpStatusCode.NotFound);
         }
-
-        var proxyTarget = GetRequestedAssetHttpUri(assetRequest);
+        
+        var proxyTarget = GetRequestedAssetLocation(assetRequest, orchestrationAsset);
+        if (proxyTarget == null)
+        {
+            return new StatusCodeResult(HttpStatusCode.NotFound);
+        }
+        
         if (orchestrationAsset.RequiresAuth)
         {
             if (!await IsAuthenticated(assetRequest, orchestrationAsset, httpContext.Request))
@@ -84,19 +88,12 @@ public class TimeBasedRequestHandler
             // quit with success as we've done all we need to
             return new StatusCodeResult(HttpStatusCode.OK);
         }
-        
-        var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget, true);
+
+        var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget, !orchestrationAsset.OptimisedOrigin ?? true);
         return new ProxyActionResult(ProxyDestination.S3, orchestrationAsset.RequiresAuth, proxyPath);
     }
-
-    private ObjectInBucket GetRequestedAssetHttpUri(TimeBasedAssetDeliveryRequest assetRequest)
-    {
-        var location =
-            storageKeyGenerator.GetTimebasedAssetLocation(assetRequest.GetAssetId(), assetRequest.TimeBasedRequest);
-        return location;
-    }
-
-    private async Task<bool> IsAuthenticated(TimeBasedAssetDeliveryRequest assetRequest, OrchestrationAsset asset,
+    
+    private async Task<bool> IsAuthenticated(FileAssetDeliveryRequest assetRequest, OrchestrationAsset asset,
         HttpRequest httpRequest)
     {
         // IAssetAccessValidator is in container with a Lifetime.Scope
@@ -111,5 +108,29 @@ public class TimeBasedRequestHandler
             await assetAccessValidator.TryValidate(assetRequest.Customer.Id, asset.Roles, authMechanism);
 
         return authResult is AssetAccessResult.Open or AssetAccessResult.Authorized;
+    }
+    
+    private ObjectInBucket? GetRequestedAssetLocation(FileAssetDeliveryRequest assetRequest, OrchestrationAsset orchestrationAsset)
+    {
+        ObjectInBucket fileLocation;
+        if (orchestrationAsset.OptimisedOrigin == true)
+        {
+            var parsedLocation = RegionalisedObjectInBucket.Parse(orchestrationAsset.Origin!);
+
+            if (parsedLocation == null)
+            {
+                logger.LogWarning("Could not parse '{Origin}' to serve file for {AssetId}", orchestrationAsset.Origin,
+                    orchestrationAsset.AssetId);
+                return null;
+            }
+
+            fileLocation = parsedLocation;
+        }
+        else
+        {
+            fileLocation = storageKeyGenerator.GetStoredOriginalLocation(assetRequest.GetAssetId());
+        }
+        
+        return fileLocation;
     }
 }

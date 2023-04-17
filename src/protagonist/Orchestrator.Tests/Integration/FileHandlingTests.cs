@@ -1,15 +1,19 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using Amazon.S3;
-using Amazon.S3.Model;
+using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
+using Yarp.ReverseProxy.Forwarder;
 
 namespace Orchestrator.Tests.Integration;
 
@@ -39,7 +43,13 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithLocalStack(orchestratorFixture.LocalStackFixture)
-            .WithConfigValue("StreamMissingFileFromOrigin", "true")
+            .WithTestServices(services =>
+            {
+                services
+                    .AddSingleton<IForwarderHttpClientFactory, TestProxyHttpClientFactory>()
+                    .AddSingleton<IHttpForwarder, TestProxyForwarder>()
+                    .AddSingleton<TestProxyHandler>();
+            })
             .CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
         dbFixture.CleanUp();
@@ -103,21 +113,6 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-    
-    [Fact]
-    public async Task Get_Returns404_IfNoOrigin()
-    {
-        // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNotForDelivery)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "", deliveryChannels: new[] { "file" });
-        await dbFixture.DbContext.SaveChangesAsync();
-
-        // Act
-        var response = await httpClient.GetAsync($"file/{id}");
-        
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
 
     [Fact]
     public async Task Get_Returns404_IfNotForDelivery()
@@ -160,24 +155,17 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             origin: $"{stubAddress}/testfile", deliveryChannels: new[] { "file" });
         await dbFixture.DbContext.SaveChangesAsync();
 
-        await amazonS3.PutObjectAsync(new PutObjectRequest
-        {
-            BucketName = LocalStackFixture.StorageBucketName,
-            Key = $"{id}/original",
-            ContentBody = nameof(Get_NotOptimisedOrigin_ReturnsFileFromDLCSStorage),
-            ContentType = "text/plain"
-        });
+        var expectedPath = new Uri($"https://protagonist-storage.s3.eu-west-1.amazonaws.com/{id}/original");
 
         // Act
         var response = await httpClient.GetAsync($"file/{id}");
         
         // Assert
-        response.Content.Headers.ContentType.MediaType.Should().Be("text/plain");
-        (await response.Content.ReadAsStringAsync()).Should().Be(nameof(Get_NotOptimisedOrigin_ReturnsFileFromDLCSStorage));
-        response.Content.Headers.ContentLength.Should().BeGreaterThan(0);
+        var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+        proxyResponse.Uri.Should().Be(expectedPath);
     }
     
-    [Fact]
+    [Fact(Skip = "'not in dlcs storage' handling removed when switch to Yarp handling")]
     public async Task Get_NotInDlcsStorage_NotAtOrigin_Returns404()
     {
         // Arrange
@@ -193,7 +181,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
     
-    [Fact]
+    [Fact(Skip = "'not in dlcs storage' handling removed when switch to Yarp handling")]
     public async Task Get_NotInDlcsStorage_FallsbackToHttpOrigin_ReturnsFile()
     {
         // Note - this is for backwards compat and depends on appropriate appSetting being set
@@ -212,7 +200,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Content.Headers.ContentLength.Should().BeGreaterThan(0);
     }
     
-    [Fact]
+    [Fact(Skip = "'not in dlcs storage' handling removed when switch to Yarp handling")]
     public async Task Get_NotInDlcsStorage_FallsbackToBasicAuthHttpOrigin_ReturnsFile()
     {
         // Note - this is for backwards compat and depends on appropriate appSetting being set
@@ -236,7 +224,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Content.Headers.ContentLength.Should().BeGreaterThan(0);
     }
     
-    [Fact]
+    [Fact(Skip = "'not in dlcs storage' handling removed when switch to Yarp handling")]
     public async Task Get_NotInDlcsStorage_BasicAuthHttpOrigin_BadCredentials_Returns404()
     {
         // Arrange
@@ -268,23 +256,100 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             origin: $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{s3Key}", 
             deliveryChannels: new[] { "file" });
         await dbFixture.DbContext.SaveChangesAsync();
-        
-        // As this is the origin-bucket it will be hardoded origin so no need to add
-        await amazonS3.PutObjectAsync(new PutObjectRequest
-        {
-            BucketName = LocalStackFixture.OriginBucketName,
-            Key = s3Key,
-            ContentBody = nameof(Get_OptimisedOrigin_ReturnsFile),
-            ContentType = "text/plain"
-        });
 
+        var expectedPath = new Uri($"https://s3.amazonaws.com/{LocalStackFixture.OriginBucketName}/{s3Key}");
+
+        // Act
+        var response = await httpClient.GetAsync($"file/{id}");
+        var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+        
+        // Assert
+        proxyResponse.Uri.Should().Be(expectedPath);
+    }
+    
+    [Fact]
+    public async Task Get_RequiresAuth_Returns401_IfNoCookie()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_OptimisedOrigin_ReturnsFile)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", deliveryChannels: new[] { "file" });
+        await dbFixture.DbContext.SaveChangesAsync();
+        
         // Act
         var response = await httpClient.GetAsync($"file/{id}");
         
         // Assert
-        response.Content.Headers.ContentType.MediaType.Should().Be("text/plain");
-        (await response.Content.ReadAsStringAsync()).Should().Be(nameof(Get_OptimisedOrigin_ReturnsFile));
-        response.Content.Headers.ContentLength.Should().BeGreaterThan(0);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+    
+    [Fact]
+    public async Task Get_RequiresAuth_Returns401_IfInvalidNoCookie()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_RequiresAuth_Returns401_IfInvalidNoCookie)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", deliveryChannels: new[] { "file" });
+        await dbFixture.DbContext.SaveChangesAsync();
+        
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"file/{id}");
+        request.Headers.Add("Cookie", "dlcs-token-99=blabla;");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+    
+    [Fact]
+    public async Task Get_RequiresAuth_Returns401_IfExpiredCookie()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_RequiresAuth_Returns401_IfExpiredCookie)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", deliveryChannels: new[] { "file" });
+        var userSession =
+            await dbFixture.DbContext.SessionUsers.AddTestSession(
+                DlcsDatabaseFixture.ClickThroughAuthService.AsList());
+        var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddMinutes(-1),
+            sessionUserId: userSession.Entity.Id);
+        await dbFixture.DbContext.SaveChangesAsync();
+        
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"file/{id}");
+        request.Headers.Add("Cookie", $"dlcs-token-99=id={authToken.Entity.CookieId};");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+    
+    [Fact]
+    public async Task Get_RequiresAuth_RedirectsToFile_IfCookieProvided()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_RequiresAuth_RedirectsToFile_IfCookieProvided)}");
+        var s3Key = $"{id}/this-is-where";
+        await dbFixture.DbContext.Images.AddTestAsset(id, 
+            roles: "clickthrough",
+            origin: $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{s3Key}", 
+            deliveryChannels: new[] { "file" });
+        var userSession =
+            await dbFixture.DbContext.SessionUsers.AddTestSession(
+                DlcsDatabaseFixture.ClickThroughAuthService.AsList());
+        var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddMinutes(15),
+            sessionUserId: userSession.Entity.Id);
+        await dbFixture.DbContext.SaveChangesAsync();
+        
+        var expectedPath = new Uri($"https://s3.amazonaws.com/{LocalStackFixture.OriginBucketName}/{s3Key}");
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"file/{id}");
+        request.Headers.Add("Cookie", $"dlcs-token-99=id={authToken.Entity.CookieId};");
+        var response = await httpClient.SendAsync(request);
+        var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("Set-Cookie");
+        proxyResponse.Uri.Should().Be(expectedPath);
     }
 
     private static void ConfigureStubbery(OrchestratorFixture orchestratorFixture)

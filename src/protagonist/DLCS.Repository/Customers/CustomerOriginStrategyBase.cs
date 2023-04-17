@@ -8,14 +8,16 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using LazyCache;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Customers;
 
-public class CustomerOriginStrategyRepository : ICustomerOriginStrategyRepository
+/// <summary>
+/// Base class that manages finding correct customer origin strategy for specified origin
+/// </summary>
+public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyRepository
 {
     private const string OriginRegexAppSettings = "S3OriginRegex";
 
@@ -23,23 +25,20 @@ public class CustomerOriginStrategyRepository : ICustomerOriginStrategyRepositor
         { Id = "_default_", Strategy = OriginStrategyType.Default };
     
     private readonly IAppCache appCache;
-    private readonly DlcsContext dbContext;
-    private readonly CacheSettings cacheSettings;
+    private readonly IOptionsMonitor<CacheSettings> cacheSettings;
     private readonly string s3OriginRegex;
-    private readonly ILogger<CustomerOriginStrategyRepository> logger;
+    private readonly ILogger logger;
 
-    public CustomerOriginStrategyRepository(
+    protected CustomerOriginStrategyBase(
         IAppCache appCache,
-        DlcsContext dbContext,
         IConfiguration configuration,
-        IOptions<CacheSettings> cacheOptions,
-        ILogger<CustomerOriginStrategyRepository> logger
+        IOptionsMonitor<CacheSettings> cacheOptions,
+        ILogger logger
     )
     {
         this.appCache = appCache;
-        this.dbContext = dbContext;
         this.logger = logger;
-        cacheSettings = cacheOptions.Value;
+        cacheSettings = cacheOptions;
 
         s3OriginRegex = configuration[OriginRegexAppSettings]
             .ThrowIfNullOrWhiteSpace($"appsetting:{OriginRegexAppSettings}");
@@ -70,6 +69,8 @@ public class CustomerOriginStrategyRepository : ICustomerOriginStrategyRepositor
         
         return matching;
     }
+    
+    protected abstract Task<List<CustomerOriginStrategy>> GetCustomerOriginStrategiesFromDb(int customer);
 
     private async Task<IEnumerable<CustomerOriginStrategy>> GetStrategiesForCustomer(int customer)
     {
@@ -82,14 +83,8 @@ public class CustomerOriginStrategyRepository : ICustomerOriginStrategyRepositor
             var origins = await GetCustomerOriginStrategiesFromDb(customer);
             origins.Add(GetPortalOriginStrategy(customer));
             return origins;
-        }, cacheSettings.GetMemoryCacheOptions());
+        }, cacheSettings.CurrentValue.GetMemoryCacheOptions());
     }
-
-    private Task<List<CustomerOriginStrategy>> GetCustomerOriginStrategiesFromDb(int customer)
-        => dbContext.CustomerOriginStrategies.AsNoTracking()
-            .Where(cos => cos.Customer == customer)
-            .OrderBy(cos => cos.Order)
-            .ToListAsync();
 
     // NOTE(DG): This CustomerOriginStrategy is for assets uploaded directly via the portal
     private CustomerOriginStrategy GetPortalOriginStrategy(int customer) 

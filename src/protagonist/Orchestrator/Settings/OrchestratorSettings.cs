@@ -17,15 +17,6 @@ public class OrchestratorSettings
     /// Regex for S3-origin, for objects uploaded directly to DLCS.
     /// </summary>
     public string S3OriginRegex { get; set; }
-    
-    /// <summary>
-    /// If true, 'file' assets that are NOT found in DLCS storage will be streamed from their origin, regardless of
-    /// whether the origin is optimised. If false, a 404 would be returned.
-    /// </summary>
-    /// <remarks>
-    /// This enables backwards compatibility for deliverator logic where files were always  streamed from origin
-    /// </remarks>
-    public bool StreamMissingFileFromOrigin { get; set; }
 
     /// <summary>
     /// Timeout for critical orchestration path. How long to wait to achieve lock when orchestrating asset.
@@ -92,7 +83,7 @@ public class OrchestratorSettings
     /// render a thumbnail of this size but will aim to get as close as possible.
     /// </summary>
     public int TargetThumbnailSize { get; set; } = 200;
-
+    
     public ProxySettings Proxy { get; set; }
 
     public CacheSettings Caching { get; set; }
@@ -133,6 +124,31 @@ public class ProxySettings
     /// If true details of proxied location are added as x-proxy-* headers. Intended for debug use only.
     /// </summary>
     public bool AddProxyDebugHeaders { get; set; } = false;
+    
+    /// <summary>
+    /// If true, Yarp will proxy to S3 optimised origins using presigned URLs.
+    /// Else, Yarp will proxy to the S3 https URL directly. 
+    /// </summary>
+    /// <remarks>
+    /// Direct URL access requires the object to be publicly available, or for a bucket policy to be configured to allow
+    /// access, e.g. with aws:sourceVpce or aws:sourceVpc access allowed.
+    /// </remarks>
+    public bool UsePresignedUrlsForOptimised { get; set; } = false;
+    
+    /// <summary>
+    /// If true, Yarp will proxy to S3 optimised origins using presigned URLs.
+    /// Else, Yarp will proxy to the S3 https URL directly. 
+    /// </summary>
+    /// <remarks>
+    /// Direct URL access requires the object to be publicly available, or for a bucket policy to be configured to allow
+    /// access, e.g. with aws:sourceVpce or aws:sourceVpc access allowed.
+    /// </remarks>
+    public bool UsePresignedUrlsForDlcs { get; set; } = false;
+
+    /// <summary>
+    /// Number of seconds for which PresignedUrls are valid. Only used if UsePresignedUrlsForProxy = true
+    /// </summary>
+    public int PresignedUrlExpirySecs { get; set; } = 600;
 }
 
 /// <summary>

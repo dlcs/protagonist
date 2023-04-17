@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Caching;
+using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Customers;
 using LazyCache;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,6 +22,7 @@ public class MemoryAssetTracker : IAssetTracker
     private readonly IAppCache appCache;
     private readonly CacheSettings cacheSettings;
     private readonly IThumbRepository thumbRepository;
+    private readonly ICustomerOriginStrategyRepository customerOriginStrategyRepository;
     private readonly ILogger<MemoryAssetTracker> logger;
 
     // Null object to store in cache for short duration
@@ -30,12 +33,14 @@ public class MemoryAssetTracker : IAssetTracker
         IAssetRepository assetRepository,
         IAppCache appCache,
         IThumbRepository thumbRepository,
+        ICustomerOriginStrategyRepository customerOriginStrategyRepository,
         IOptions<CacheSettings> cacheOptions,
         ILogger<MemoryAssetTracker> logger)
     {
         this.assetRepository = assetRepository;
         this.appCache = appCache;
         this.thumbRepository = thumbRepository;
+        this.customerOriginStrategyRepository = customerOriginStrategyRepository;
         this.logger = logger;
         cacheSettings = cacheOptions.Value;
     }
@@ -108,11 +113,7 @@ public class MemoryAssetTracker : IAssetTracker
             where T : OrchestrationAsset
         {
             if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
-            {
                 orchestrationAsset.Channels |= AvailableDeliveryChannel.File;
-                orchestrationAsset.Origin = asset.Origin;
-            }
-
             if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
                 orchestrationAsset.Channels |= AvailableDeliveryChannel.Image;
             if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
@@ -124,23 +125,37 @@ public class MemoryAssetTracker : IAssetTracker
             return orchestrationAsset;
         }
 
+        OrchestrationAsset orchestrationAsset;
+        
         if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
         {
             var getImageLocation = assetRepository.GetImageLocation(assetId);
             var getOpenThumbs = thumbRepository.GetOpenSizes(assetId);
 
             await Task.WhenAll(getImageLocation, getOpenThumbs);
-                
-            return SetDefaults(new OrchestrationImage
+            
+            orchestrationAsset = new OrchestrationImage
             {
                 S3Location = getImageLocation.Result?.S3, // TODO - error handling
                 Width = asset.Width ?? 0,
                 Height = asset.Height ?? 0,
                 MaxUnauthorised = asset.MaxUnauthorised ?? 0,
                 OpenThumbs = getOpenThumbs.Result ?? new List<int[]>(), // TODO - reorganise thumb layout + create missing eventually
-            });
+            };
+        }
+        else
+        {
+            orchestrationAsset = new OrchestrationAsset();
+        }
+
+        if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
+        {
+            var origin = asset.Origin.ThrowIfNullOrEmpty(nameof(asset.Origin));
+            var cos = await customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, origin);
+            orchestrationAsset.Origin = origin;
+            orchestrationAsset.OptimisedOrigin = cos.Optimised;
         }
         
-        return SetDefaults(new OrchestrationAsset());
+        return SetDefaults(orchestrationAsset);
     }
 }

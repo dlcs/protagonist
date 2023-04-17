@@ -29,6 +29,12 @@ public class OrchestrationAsset
     /// </summary>
     /// <remarks>This is currently only used when "File" channel is available</remarks>
     public string? Origin { get; set; }
+    
+    /// <summary>
+    /// Get or set whether this asset has an optimised origin 
+    /// </summary>
+    /// <remarks>This is currently only used when "File" channel is available</remarks>
+    public bool? OptimisedOrigin { get; set; }
 
     /// <summary>
     /// A list of which delivery channels this asset is available on

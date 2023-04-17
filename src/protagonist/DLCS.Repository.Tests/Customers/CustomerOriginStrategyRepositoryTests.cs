@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Test.Helpers.Integration;
+using Test.Helpers.Settings;
 
 namespace DLCS.Repository.Tests.Customers;
 
@@ -25,9 +26,9 @@ public class CustomerOriginStrategyRepositoryTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new KeyValuePair<string, string>[] { new("S3OriginRegex", "http\\:\\/\\/s3-/.*") })
             .Build();
-        
+
         sut = new CustomerOriginStrategyRepository(new MockCachingService(), dbFixture.DbContext, configuration,
-            Options.Create(new CacheSettings()), new NullLogger<CustomerOriginStrategyRepository>());
+            OptionsHelpers.GetOptionsMonitor(new CacheSettings()), new NullLogger<CustomerOriginStrategyRepository>());
         
         dbFixture.CleanUp();
     }
@@ -50,8 +51,8 @@ public class CustomerOriginStrategyRepositoryTests
 
         // Act
         Action action = () =>
-            new CustomerOriginStrategyRepository(null, null, configuration, Options.Create(new CacheSettings()),
-                null);
+            new CustomerOriginStrategyRepository(null, null, configuration,
+                OptionsHelpers.GetOptionsMonitor(new CacheSettings()), null);
         
         // Assert
         action.Should().Throw<ArgumentNullException>()

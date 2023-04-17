@@ -50,7 +50,7 @@ public static class GuardX
     /// <param name="argName">Argument name for exception.</param>
     /// <returns>Provided value if not null.</returns>
     /// <exception cref="ArgumentNullException">Thrown if val is null or empty.</exception>
-    public static string ThrowIfNullOrEmpty(this string val, string argName = "argument")
+    public static string ThrowIfNullOrEmpty(this string? val, string argName = "argument")
     {
         if (string.IsNullOrEmpty(val))
         {

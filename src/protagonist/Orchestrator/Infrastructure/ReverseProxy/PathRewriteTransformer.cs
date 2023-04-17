@@ -35,6 +35,13 @@ public class PathRewriteTransformer : HttpTransformer
         // TODO - handle x-forwarded-* headers?
         proxyRequest.Headers.Host = proxyRequest.RequestUri.Authority;
         proxyRequest.Headers.WithRequestedBy();
+
+        // NOTE(DG) - this is a hardcoded list for now but we may want to make this config driven later
+        if (proxyAction.Target == ProxyDestination.S3)
+        {
+            // Added by CloudFront, can cause issues proxying to S3
+            proxyRequest.Headers.Remove("x-amz-cf-id");
+        }
     }
 
     public override ValueTask<bool> TransformResponseAsync(

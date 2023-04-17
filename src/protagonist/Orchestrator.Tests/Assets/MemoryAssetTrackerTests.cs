@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Customers;
 using FakeItEasy;
 using FluentAssertions;
 using LazyCache.Mocks;
@@ -18,15 +19,20 @@ public class MemoryAssetTrackerTests
 {
     private readonly IAssetRepository assetRepository;
     private readonly IThumbRepository thumbRepository;
+    private readonly ICustomerOriginStrategyRepository customerOriginStrategyRepository;
     private readonly MemoryAssetTracker sut;
 
     public MemoryAssetTrackerTests()
     {
         assetRepository = A.Fake<IAssetRepository>();
         thumbRepository = A.Fake<IThumbRepository>();
+        customerOriginStrategyRepository = A.Fake<ICustomerOriginStrategyRepository>();
+        A.CallTo(() => customerOriginStrategyRepository.GetCustomerOriginStrategy(A<AssetId>._, A<string>._))
+            .Returns(Task.FromResult(new CustomerOriginStrategy { Id = "_default_", Strategy = OriginStrategyType.Default }));
 
         sut = new MemoryAssetTracker(assetRepository, new MockCachingService(), thumbRepository,
-            Options.Create(new CacheSettings()), new NullLogger<MemoryAssetTracker>());
+            customerOriginStrategyRepository, Options.Create(new CacheSettings()),
+            new NullLogger<MemoryAssetTracker>());
     }
 
     [Fact]
@@ -55,7 +61,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(",") });
+            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(","), Origin = "test" });
 
         // Act
         var result = await sut.GetOrchestrationAsset(assetId);
@@ -183,7 +189,8 @@ public class MemoryAssetTrackerTests
         var sizes = new List<int[]> { new[] { 100, 200 } };
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-            DeliveryChannels = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1
+            DeliveryChannels = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1, 
+            Origin = "test"
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
 
@@ -207,7 +214,8 @@ public class MemoryAssetTrackerTests
         var assetId = new AssetId(1, 1, "otis");
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-            DeliveryChannels = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1
+            DeliveryChannels = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1,
+            Origin = "test"
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns<List<int[]>>(null);
 
@@ -227,7 +235,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(",") });
+            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(","), Origin = "test" });
         
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
@@ -258,4 +266,49 @@ public class MemoryAssetTrackerTests
         // Assert
         result.RequiresAuth.Should().Be(requiresAuth);
     }
+    
+    [Theory]
+    [InlineData("file")]
+    [InlineData("iiif-av,file")]
+    [InlineData("iiif-img,file")]
+    public async Task GetOrchestrationAssetT_Throws_IfFileDeliveryChannel_AndNoOrigin(string deliveryChannel)
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, "go!");
+
+        A.CallTo(() => assetRepository.GetAsset(assetId))
+            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(",") });
+        
+        // Act
+        Func<Task> action = () => sut.GetOrchestrationAsset<OrchestrationAsset>(assetId);
+        
+        // Assert
+        await action.Should().ThrowAsync<ArgumentNullException>();
+    }
+    
+    [Theory]
+    [InlineData("file", true)]
+    [InlineData("file", false)]
+    [InlineData("iiif-av,file", true)]
+    [InlineData("iiif-av,file", false)]
+    [InlineData("iiif-img,file", true)]
+    [InlineData("iiif-img,file", false)]
+    public async Task GetOrchestrationAssetT_SetsOptimised_IfFileDeliveryChannel(string deliveryChannel, bool optimised)
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, "go!");
+        A.CallTo(() => customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, A<string>._))
+            .Returns(Task.FromResult(new CustomerOriginStrategy
+                { Id = "_default_", Strategy = OriginStrategyType.Default, Optimised = optimised }));
+        
+        A.CallTo(() => assetRepository.GetAsset(assetId))
+            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(","), Origin = "test" });
+        
+        // Act
+        var result = await sut.GetOrchestrationAsset<OrchestrationAsset>(assetId);
+        
+        // Assert
+        result.OptimisedOrigin.Should().Be(optimised);
+    }
+
 }
