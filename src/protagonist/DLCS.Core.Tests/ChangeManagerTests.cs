@@ -143,7 +143,7 @@ public class ChangeManagerTests
     }
     
     [Fact]
-    public void ApplyChanges_ReplacesChanges()
+    public void ApplyChanges_IgnoresMatchingValues()
     {
         // Arrange
         var existingObject = new ChangeTest
@@ -151,14 +151,50 @@ public class ChangeManagerTests
             StringVal = "default string",
             NullableStringVal = "default nullable string",
             NullableLongVal = 123,
+            NullableDateTimeVal = DateTime.Today
+        };
+
+        var candidateChanges = new ChangeTest
+        {
+            StringVal = "default string",
+            NullableStringVal = "default nullable string",
+            NullableLongVal = 123,
+            NullableDateTimeVal = DateTime.Today
+        };
+        
+        var expected = new ChangeTest
+        {
+            StringVal = "default string",
+            NullableStringVal = "default nullable string",
+            NullableLongVal = 123,
+            NullableDateTimeVal = DateTime.Today
+        };
+        
+        // Act
+        var changeCount = existingObject.ApplyChanges(candidateChanges);
+        
+        // Assert
+        existingObject.Should().BeEquivalentTo(expected);
+        changeCount.Should().Be(0);
+    }
+    
+    [Fact]
+    public void ApplyChanges_ReplacesChanges()
+    {
+        // Arrange
+        var existingObject = new ChangeTest
+        {
+            StringVal = "default string",
+            NullableStringVal = "default nullable string",
+            NullableLongVal = null,
             NullableDateTimeVal = DateTime.Today.AddDays(2)
         };
 
         var candidateChanges = new ChangeTest
         {
             StringVal = "default string",
-            NullableLongVal = 0,
             NullableStringVal = "",
+            NullableLongVal = 0,
             NullableDateTimeVal = DateTime.Today,
         };
         
