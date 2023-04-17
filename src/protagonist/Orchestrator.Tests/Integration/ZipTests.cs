@@ -342,16 +342,18 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task GetZipControlFile_Returns404_IfNQValidButNoControlFile()
+    public async Task GetZipControlFile_Returns200_WithEmptyControlFile_IfNQValidButNoControlFile()
     {
         // Arrange
         const string path = "zip-control/99/test-zip/any-ref/1/2";
+        var controlFileJson = JsonConvert.SerializeObject(ControlFile.Empty);
         
         // Act
         var response = await httpClient.GetAsync(path);
         
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await response.Content.ReadAsStringAsync()).Should().Be(controlFileJson);
     }
 
     [Fact]

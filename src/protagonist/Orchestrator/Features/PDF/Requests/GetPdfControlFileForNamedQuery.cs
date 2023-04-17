@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.NamedQueries;
@@ -50,7 +52,7 @@ public class GetPdfControlFileForNamedQueryHandler : IRequestHandler<GetPdfContr
 
         var controlFile =
             await namedQueryStorageService.GetControlFile(namedQueryResult.ParsedQuery, cancellationToken);
-        return controlFile == null ? null : new PdfControlFile(controlFile);
+        return new PdfControlFile(controlFile ?? ControlFile.Empty);
     }
 }
 

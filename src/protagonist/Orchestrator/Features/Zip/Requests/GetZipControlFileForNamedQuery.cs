@@ -48,6 +48,6 @@ public class GetZipControlFileForNamedQueryHandler : IRequestHandler<GetZipContr
         if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
 
         var controlFile = await namedQueryStorageService.GetControlFile(namedQueryResult.ParsedQuery, cancellationToken);
-        return controlFile;
+        return controlFile ?? ControlFile.Empty;
     }
 }
