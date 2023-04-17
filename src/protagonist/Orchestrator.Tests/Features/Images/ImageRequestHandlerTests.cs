@@ -156,7 +156,7 @@ public class ImageRequestHandlerTests
         context.Request.Path = "/iiif-img/2/2/test-image/full/!200,200/0/default.jpg";
 
         var roles = new List<string> { "role" };
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
             .Returns(new OrchestrationImage
                 { Roles = roles, RequiresAuth = true, Channels = AvailableDeliveryChannel.Image });
@@ -186,7 +186,7 @@ public class ImageRequestHandlerTests
 
         var roles = new List<string> { "role" };
         var assetId = new AssetId(2, 2, "test-image");
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
             .Returns(new OrchestrationImage
             {
@@ -214,7 +214,7 @@ public class ImageRequestHandlerTests
 
         var roles = new List<string> { "role" };
         var assetId = new AssetId(2, 2, "test-image");
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
             .Returns(new OrchestrationImage
             {
@@ -247,7 +247,7 @@ public class ImageRequestHandlerTests
         context.Request.Path = $"/iiif-img/2/2/test-image{iiifRequest}0/default.jpg";
 
         var roles = new List<string> { "role" };
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
             .Returns(new OrchestrationImage
             {
@@ -272,7 +272,7 @@ public class ImageRequestHandlerTests
         var context = new DefaultHttpContext();
         context.Request.Path = "/iiif-img/2/2/test-image/full/!100,150/0/default.jpg";
 
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         var assetId = new AssetId(2, 2, "test-image");
         A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
             .Returns(new OrchestrationImage
@@ -298,7 +298,7 @@ public class ImageRequestHandlerTests
         var context = new DefaultHttpContext();
         context.Request.Path = "/iiif-img/2/2/test-image/full/!100,150/0/default.jpg";
 
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         var assetId = new AssetId(2, 2, "test-image");
         A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
             .Returns(new OrchestrationImage
@@ -328,7 +328,7 @@ public class ImageRequestHandlerTests
 
         var roles = new List<string> { "role" };
         var assetId = new AssetId(2, 2, "test-image");
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
             .Returns(new OrchestrationImage
             {
@@ -363,7 +363,7 @@ public class ImageRequestHandlerTests
         var context = new DefaultHttpContext();
         context.Request.Path = path;
 
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         var assetId = new AssetId(2, 2, "test-image");
             
         var sut = GetImageRequestHandlerWithMockPathParser();
@@ -403,7 +403,7 @@ public class ImageRequestHandlerTests
         var context = new DefaultHttpContext();
         context.Request.Path = path;
 
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         var assetId = new AssetId(2, 2, "test-image");
             
         var sut = GetImageRequestHandlerWithMockPathParser();
@@ -443,7 +443,7 @@ public class ImageRequestHandlerTests
         var context = new DefaultHttpContext();
         context.Request.Path = path;
 
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         var assetId = new AssetId(2, 2, "test-image");
 
         var settings = CreateOrchestratorSettings();
@@ -474,7 +474,7 @@ public class ImageRequestHandlerTests
         var context = new DefaultHttpContext();
         context.Request.Path = path;
 
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         var assetId = new AssetId(2, 2, "test-image");
 
         var settings = CreateOrchestratorSettings();
@@ -501,7 +501,7 @@ public class ImageRequestHandlerTests
         var context = new DefaultHttpContext();
         context.Request.Path = "/iiif-img/v10/2/2/test-image/full/90,/0/default.jpg";
 
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         var assetId = new AssetId(2, 2, "test-image");
 
         var settings = CreateOrchestratorSettings();
@@ -530,7 +530,7 @@ public class ImageRequestHandlerTests
         var context = new DefaultHttpContext();
         context.Request.Path = path;
 
-        A.CallTo(() => customerRepository.GetCustomer("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         A.CallTo(() => customHeaderRepository.GetForCustomer(2)).Returns(new List<CustomHeader>
         {
             new() { Space = 2, Role = null, Key = "x-test-header", Value = "test" },

@@ -24,7 +24,7 @@ public class NamedQueryResultGenerator
     public async Task<PathElementNamedQueryResultContainer<T>> GetNamedQueryResult<T>(IBaseNamedQueryRequest request)
         where T : ParsedNamedQuery
     {
-        var customerPathElement = await pathCustomerRepository.GetCustomer(request.CustomerPathValue);
+        var customerPathElement = await pathCustomerRepository.GetCustomerPathElement(request.CustomerPathValue);
 
         var namedQueryResult =
             await namedQueryConductor.GetNamedQueryResult<T>(request.NamedQuery,

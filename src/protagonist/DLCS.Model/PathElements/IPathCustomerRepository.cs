@@ -4,5 +4,5 @@ namespace DLCS.Model.PathElements;
 
 public interface IPathCustomerRepository
 {
-    Task<CustomerPathElement> GetCustomer(string customerPart);
+    Task<CustomerPathElement> GetCustomerPathElement(string customerPart);
 }
