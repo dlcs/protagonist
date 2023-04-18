@@ -18,7 +18,7 @@ public class ImageRequestXTests
     {
         // Arrange
         var imageRequest = new ImageRequest
-            { Format = format, Quality = "default", Rotation = new RotationParameter() };
+            { Format = format, Quality = "default", Rotation = new RotationParameter(), Size = new SizeParameter() };
 
         // Act
         var canHandle = imageRequest.IsCandidateForThumbHandling(out var message);
@@ -34,7 +34,8 @@ public class ImageRequestXTests
     public void IsCandidateForThumbHandling_False_IfNonDefaultQuality(string quality)
     {
         // Arrange
-        var imageRequest = new ImageRequest { Format = "jpg", Quality = quality, Rotation = new RotationParameter() };
+        var imageRequest = new ImageRequest
+            { Format = "jpg", Quality = quality, Rotation = new RotationParameter(), Size = new SizeParameter() };
 
         // Act
         var canHandle = imageRequest.IsCandidateForThumbHandling(out var message);
@@ -54,7 +55,10 @@ public class ImageRequestXTests
     {
         // Arrange
         var imageRequest = new ImageRequest
-            { Format = "jpg", Quality = "default", Rotation = RotationParameter.Parse(rotation) };
+        {
+            Format = "jpg", Quality = "default", Rotation = RotationParameter.Parse(rotation),
+            Size = new SizeParameter()
+        };
 
         // Act
         var canHandle = imageRequest.IsCandidateForThumbHandling(out var message);
@@ -67,11 +71,11 @@ public class ImageRequestXTests
     [Theory]
     [InlineData("default")]
     [InlineData("color")]
-    public void IsCandidateForThumbHandling_True_IfJpg_Default_NoRotation(string quality)
+    public void IsCandidateForThumbHandling_True_IfJpg_Default_NoRotation_NotPctSize(string quality)
     {
         // Arrange
         var imageRequest = new ImageRequest
-            { Format = "jpg", Quality = quality, Rotation = new RotationParameter() };
+            { Format = "jpg", Quality = quality, Rotation = new RotationParameter(), Size = new SizeParameter() };
 
         // Act
         var canHandle = imageRequest.IsCandidateForThumbHandling(out var message);
@@ -79,5 +83,23 @@ public class ImageRequestXTests
         // Assert
         canHandle.Should().BeTrue();
         message.Should().BeNull();
+    }
+    
+    [Fact]
+    public void IsCandidateForThumbHandling_False_IfPercentSize()
+    {
+        // Arrange
+        var imageRequest = new ImageRequest
+        {
+            Format = "jpg", Quality = "default", Rotation = new RotationParameter(),
+            Size = SizeParameter.Parse("pct:24")
+        };
+
+        // Act
+        var canHandle = imageRequest.IsCandidateForThumbHandling(out var message);
+
+        // Assert
+        canHandle.Should().BeFalse();
+        message.Should().Be("Requested pct: size value not supported");
     }
 }
