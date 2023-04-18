@@ -547,4 +547,64 @@ public class ThumbReorganiserTests
                     "application/json", A<CancellationToken>._))
             .MustHaveHappened();
     }
+
+    [Fact]
+    public async Task EnsureNewLayout_CreatesExpectedResources_MixedAuthAndOpen_ImageSmallerThanThumbnail()
+    {
+        var assetId = new AssetId(2, 1, "the-astronaut");
+        A.CallTo(() => bucketReader.GetMatchingKeys(
+                A<ObjectInBucket>.That.Matches(o => o.Key.StartsWith(assetId.ToString()))))
+            .Returns(new[]
+            {
+                "2/1/the-astronaut/full/200,/0/default.jpg",
+                "2/1/the-astronaut/full/200,400/0/default.jpg",
+                "2/1/the-astronaut/full/100,/0/default.jpg",
+                "2/1/the-astronaut/full/100,200/0/default.jpg",
+                "2/1/the-astronaut/full/50,/0/default.jpg",
+                "2/1/the-astronaut/full/50,100/0/default.jpg"
+            });
+
+        A.CallTo(() => assetRepository.GetAsset(assetId))
+            .Returns(new Asset
+                { Width = 300, Height = 600, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin" });
+        A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
+            .Returns(new ThumbnailPolicy { Sizes = "1024,400,200,100" });
+
+        // Act
+        var response = await sut.EnsureNewLayout(assetId);
+
+        // Assert
+        response.Should().Be(ReorganiseResult.Reorganised);
+
+        // move jpg per thumbnail size
+        A.CallTo(() =>
+                bucketWriter.CopyObject(
+                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/low.jpg"),
+                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/auth/600.jpg")))
+            .MustHaveHappened();
+        A.CallTo(() =>
+                bucketWriter.CopyObject(
+                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/full/200,400/0/default.jpg"),
+                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/auth/400.jpg")))
+            .MustHaveHappened();
+        A.CallTo(() =>
+                bucketWriter.CopyObject(
+                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/full/100,200/0/default.jpg"),
+                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/open/200.jpg")))
+            .MustHaveHappened();
+        A.CallTo(() =>
+                bucketWriter.CopyObject(
+                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/full/50,100/0/default.jpg"),
+                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/open/100.jpg")))
+            .MustHaveHappened();
+
+        // create sizes.json
+        const string expected = "{\"o\":[[100,200],[50,100]],\"a\":[[300,600],[200,400]]}";
+        A.CallTo(() =>
+                bucketWriter.WriteToBucket(
+                    A<ObjectInBucket>.That.Matches(o =>
+                        o.Bucket == "the-bucket" && o.Key == "2/1/the-astronaut/s.json"), expected,
+                    "application/json", A<CancellationToken>._))
+            .MustHaveHappened();
+    }
 }
