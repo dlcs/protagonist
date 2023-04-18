@@ -3,8 +3,6 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using API.Client;
-using DLCS.Core.Encryption;
 using DLCS.Core.Types;
 using DLCS.Model.Customers;
 using DLCS.Web.Auth;
@@ -14,25 +12,25 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Settings;
 
-namespace Orchestrator.Infrastructure.Deliverator;
+namespace Orchestrator.Infrastructure.API;
 
 /// <summary>
-/// Implementation of IDlcsApiClient using Deliverator API
+/// Implementation of IDlcsApiClient
 /// </summary>
-public class DeliveratorApiClient : IDlcsApiClient
+public class ApiClient : IDlcsApiClient
 {
     private readonly HttpClient httpClient;
     private readonly DlcsApiAuth dlcsApiAuth;
     private readonly ICustomerRepository customerRepository;
     private readonly OrchestratorSettings orchestratorSettings;
-    private readonly ILogger<DeliveratorApiClient> logger;
+    private readonly ILogger<ApiClient> logger;
 
-    public DeliveratorApiClient(
+    public ApiClient(
         HttpClient httpClient, 
         DlcsApiAuth dlcsApiAuth,
         ICustomerRepository customerRepository,
         IOptions<OrchestratorSettings> orchestratorSettings,
-        ILogger<DeliveratorApiClient> logger)
+        ILogger<ApiClient> logger)
     {
         this.httpClient = httpClient;
         this.dlcsApiAuth = dlcsApiAuth;
@@ -43,13 +41,11 @@ public class DeliveratorApiClient : IDlcsApiClient
 
     public async Task<bool> ReingestAsset(AssetId assetId, CancellationToken cancellationToken = default)
     {
-        // TODO - alter this to use Protagonist API
         try
         {
             var url = $"/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/reingest";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             
-            // TODO - need to post something, but not an empty body
             request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
 
             if (!await SetApiAuth(assetId.Customer, request)) return false;

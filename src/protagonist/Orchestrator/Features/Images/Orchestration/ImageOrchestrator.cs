@@ -12,7 +12,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Orchestrator.Infrastructure.Deliverator;
+using Orchestrator.Infrastructure.API;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images.Orchestration;
@@ -110,7 +110,6 @@ public class ImageOrchestrator : IImageOrchestrator
             throw new ApplicationException($"Unable to reingest Asset '{assetId}' from origin");
         }
 
-        // TODO - does this want to be a 'get' with an extra param to refresh?
         var orchestrationImage = await assetTracker.RefreshCachedAsset<OrchestrationImage>(assetId);
 
         if (orchestrationImage == null)

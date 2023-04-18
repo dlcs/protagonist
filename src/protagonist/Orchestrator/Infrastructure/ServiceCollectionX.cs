@@ -23,7 +23,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images.ImageServer;
 using Orchestrator.Features.Images.Orchestration;
-using Orchestrator.Infrastructure.Deliverator;
+using Orchestrator.Infrastructure.API;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 
@@ -70,7 +70,7 @@ public static class ServiceCollectionX
         services
             .AddSingleton<DlcsApiAuth>()
             .AddSingleton<IEncryption, SHA256>()
-            .AddHttpClient<IDlcsApiClient, DeliveratorApiClient>(client =>
+            .AddHttpClient<IDlcsApiClient, ApiClient>(client =>
             {
                 client.DefaultRequestHeaders.WithRequestedBy();
                 client.BaseAddress = apiRoot;

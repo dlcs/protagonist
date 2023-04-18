@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images.Orchestration;
-using Orchestrator.Infrastructure.Deliverator;
+using Orchestrator.Infrastructure.API;
 using Orchestrator.Settings;
 using Test.Helpers;
 using Test.Helpers.Settings;
