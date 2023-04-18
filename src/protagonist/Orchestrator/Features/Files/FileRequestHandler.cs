@@ -90,7 +90,9 @@ public class FileRequestHandler
         }
 
         var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget, !orchestrationAsset.OptimisedOrigin ?? true);
-        return new ProxyActionResult(ProxyDestination.S3, orchestrationAsset.RequiresAuth, proxyPath);
+        var proxyActionResult = new ProxyActionResult(ProxyDestination.S3, orchestrationAsset.RequiresAuth, proxyPath);
+        proxyActionResult.Headers.Add("Content-Type", orchestrationAsset.MediaType!.Value);
+        return proxyActionResult;
     }
     
     private async Task<bool> IsAuthenticated(FileAssetDeliveryRequest assetRequest, OrchestrationAsset asset,

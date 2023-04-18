@@ -293,7 +293,7 @@ public class MemoryAssetTrackerTests
     [InlineData("iiif-av,file", false)]
     [InlineData("iiif-img,file", true)]
     [InlineData("iiif-img,file", false)]
-    public async Task GetOrchestrationAssetT_SetsOptimised_IfFileDeliveryChannel(string deliveryChannel, bool optimised)
+    public async Task GetOrchestrationAssetT_SetsOptimisedAndMediaType_IfFileDeliveryChannel(string deliveryChannel, bool optimised)
     {
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
@@ -302,13 +302,16 @@ public class MemoryAssetTrackerTests
                 { Id = "_default_", Strategy = OriginStrategyType.Default, Optimised = optimised }));
         
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset { DeliveryChannels = deliveryChannel.Split(","), Origin = "test" });
+            .Returns(new Asset
+            {
+                DeliveryChannels = deliveryChannel.Split(","), Origin = "test", MediaType = "audio/mpeg"
+            });
         
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationAsset>(assetId);
         
         // Assert
         result.OptimisedOrigin.Should().Be(optimised);
+        result.MediaType.ToString().Should().Be("audio/mpeg");
     }
-
 }

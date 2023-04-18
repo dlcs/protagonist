@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Core.Types;
+using Microsoft.Extensions.Primitives;
 
 namespace Orchestrator.Assets;
 
@@ -40,6 +41,11 @@ public class OrchestrationAsset
     /// A list of which delivery channels this asset is available on
     /// </summary>
     public AvailableDeliveryChannel Channels { get; set; } = AvailableDeliveryChannel.NotSet;
+    
+    /// <summary>
+    /// Get or set the asset media-type
+    /// </summary>
+    public StringValues? MediaType { get; set; }
 }
 
 public class OrchestrationImage : OrchestrationAsset
