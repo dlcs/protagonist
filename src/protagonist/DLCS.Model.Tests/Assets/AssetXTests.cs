@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using FluentAssertions;
@@ -174,6 +173,34 @@ public class AssetXTests
         maxDimensions.maxBoundedSize.Should().Be(200);
         maxDimensions.maxAvailableWidth.Should().Be(100);
         maxDimensions.maxAvailableHeight.Should().Be(200);
+    }
+    
+    [Fact]
+    public void GetAvailableThumbSizes_HandlesImageBeingSmallerThanThumbnail()
+    {
+        // Arrange
+        var thumbnailPolicy = new ThumbnailPolicy
+        {
+            Id = "TestPolicy",
+            Name = "TestPolicy",
+            Sizes = "800,400,200,100"
+        };
+
+        var asset = new Asset { Width = 300, Height = 150 };
+        
+        // Act
+        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, true);
+        
+        // Assert
+        sizes.Should().BeEquivalentTo(new List<Size>
+        {
+            new(300, 150),
+            new(200, 100),
+            new(100, 50),
+        });
+        maxDimensions.maxBoundedSize.Should().Be(300);
+        maxDimensions.maxAvailableWidth.Should().Be(300);
+        maxDimensions.maxAvailableHeight.Should().Be(150);
     }
     
     [Fact]

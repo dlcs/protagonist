@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Policies;
@@ -27,9 +28,11 @@ public static class AssetX
         asset.ThrowIfNull(nameof(asset));
         thumbnailPolicy.ThrowIfNull(nameof(thumbnailPolicy));
 
-        var availableSizes = new List<Size>();
+        var availableSizes = new List<Size>(thumbnailPolicy.SizeList.Count);
+        var generatedMax = new List<int>(thumbnailPolicy.SizeList.Count);
 
-        var size = new Size(asset.Width.Value, asset.Height.Value);
+        var size = new Size(asset.Width.ThrowIfNull(nameof(asset.Width)),
+            asset.Height.ThrowIfNull(nameof(asset.Height)));
 
         int maxBoundedSize = 0;
         int maxAvailableWidth = 0;
@@ -38,16 +41,20 @@ public static class AssetX
         foreach (int boundingSize in thumbnailPolicy.SizeList)
         {
             var assetIsUnavailableForSize = AssetIsUnavailableForSize(asset, boundingSize);
-            if (!includeUnavailable && assetIsUnavailableForSize)
-            {
-                continue;
-            }
+            if (!includeUnavailable && assetIsUnavailableForSize) continue;
 
             Size bounded = Size.Confine(boundingSize, size);
+
+            var boundedMaxDimension = bounded.MaxDimension;
+            
+            // If image < thumb-size then boundedMax may already have been processed (it'll be the same as imageMax)
+            if (generatedMax.Contains(boundedMaxDimension)) continue;
+            
+            generatedMax.Add(boundedMaxDimension);
             availableSizes.Add(bounded);
             if (boundingSize > maxBoundedSize && !assetIsUnavailableForSize)
             {
-                maxBoundedSize = boundingSize;
+                maxBoundedSize = Math.Min(boundingSize, boundedMaxDimension); // handles image being smaller than thumb
                 maxAvailableWidth = bounded.Width;
                 maxAvailableHeight = bounded.Height;
             }
