@@ -89,7 +89,7 @@ public class AssetDeliveryPathParser : IAssetDeliveryPathParser
             GenerateBasePath(request.RoutePrefix, request.CustomerPathValue, space, isVersioned, versionCandidate);
 
         // TODO - should we verify Space exists here?
-        request.Customer = await pathCustomerRepository.GetCustomer(request.CustomerPathValue);
+        request.Customer = await pathCustomerRepository.GetCustomerPathElement(request.CustomerPathValue);
 
         request.NormalisedBasePath =
             GenerateBasePath(request.RoutePrefix, request.Customer.Id.ToString(), space, isVersioned,

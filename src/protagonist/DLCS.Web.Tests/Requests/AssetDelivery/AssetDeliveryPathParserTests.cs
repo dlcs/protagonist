@@ -25,7 +25,7 @@ public class AssetDeliveryPathParserTests
         // Arrange
         const string path = "/thumbs/99/1/the-astronaut";
         var customer = new CustomerPathElement(99, "Test-Customer");
-        A.CallTo(() => pathCustomerRepository.GetCustomer("99"))
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement("99"))
             .Returns(customer);
 
         // Act
@@ -49,7 +49,7 @@ public class AssetDeliveryPathParserTests
         // Arrange
         const string path = "/thumbs/test-customer/1/the-astronaut";
         var customer = new CustomerPathElement(99, "test-customer");
-        A.CallTo(() => pathCustomerRepository.GetCustomer("test-customer"))
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement("test-customer"))
             .Returns(customer);
 
         // Act
@@ -73,7 +73,7 @@ public class AssetDeliveryPathParserTests
         // Arrange
         const string path = "/iiif-img/test-customer/1/the-astronaut/full/!800,400/0/default.jpg";
         var customer = new CustomerPathElement(99, "test-customer");
-        A.CallTo(() => pathCustomerRepository.GetCustomer("test-customer"))
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement("test-customer"))
             .Returns(customer);
 
         // Act
@@ -98,7 +98,7 @@ public class AssetDeliveryPathParserTests
         // Arrange
         const string path = "/iiif-img/test-customer/1/the-astronaut/full/%5E!800,400/0/default.jpg";
         var customer = new CustomerPathElement(99, "test-customer");
-        A.CallTo(() => pathCustomerRepository.GetCustomer("test-customer"))
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement("test-customer"))
             .Returns(customer);
 
         // Act
@@ -123,7 +123,7 @@ public class AssetDeliveryPathParserTests
         // Arrange
         const string path = "/iiif-img/v33/1/the-astronaut/full/!800,400/0/default.jpg";
         var customer = new CustomerPathElement(99, "v33");
-        A.CallTo(() => pathCustomerRepository.GetCustomer("v33"))
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement("v33"))
             .Returns(customer);
 
         // Act
@@ -150,7 +150,7 @@ public class AssetDeliveryPathParserTests
         // Arrange
         var path = $"/iiif-img/{customerPathValue}/1/the-astronaut/full/!800,400/0/default.jpg";
         var customer = new CustomerPathElement(99, "test-customer");
-        A.CallTo(() => pathCustomerRepository.GetCustomer(A<string>._)).Returns(customer);
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement(A<string>._)).Returns(customer);
 
         // Act
         var imageRequest = await sut.Parse<ImageAssetDeliveryRequest>(path);
@@ -178,7 +178,7 @@ public class AssetDeliveryPathParserTests
         // Arrange
         var path = $"/iiif-img/{version}/{customerPathValue}/1/the-astronaut/full/!800,400/0/default.jpg";
         var customer = new CustomerPathElement(99, "test-customer");
-        A.CallTo(() => pathCustomerRepository.GetCustomer(A<string>._)).Returns(customer);
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement(A<string>._)).Returns(customer);
 
         // Act
         var imageRequest = await sut.Parse<ImageAssetDeliveryRequest>(path);
@@ -217,7 +217,7 @@ public class AssetDeliveryPathParserTests
         // Arrange
         const string path = "/iiif-av/test-customer/1/the-astronaut/full/full/max/max/0/default.mp4";
         var customer = new CustomerPathElement(99, "test-customer");
-        A.CallTo(() => pathCustomerRepository.GetCustomer("test-customer"))
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement("test-customer"))
             .Returns(customer);
 
         // Act
@@ -244,7 +244,7 @@ public class AssetDeliveryPathParserTests
         // Arrange
         var path = $"/iiif-av/{customerPathValue}/1/the-astronaut/full/full/max/max/0/default.mp4";
         var customer = new CustomerPathElement(99, "test-customer");
-        A.CallTo(() => pathCustomerRepository.GetCustomer(A<string>._)).Returns(customer);
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement(A<string>._)).Returns(customer);
 
         // Act
         var imageRequest = await sut.Parse<TimeBasedAssetDeliveryRequest>(path);
@@ -270,7 +270,7 @@ public class AssetDeliveryPathParserTests
         // Arrange
         const string path = "/file/test-customer/1/the-astronaut";
         var customer = new CustomerPathElement(99, "test-customer");
-        A.CallTo(() => pathCustomerRepository.GetCustomer("test-customer"))
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement("test-customer"))
             .Returns(customer);
 
         // Act
@@ -296,7 +296,7 @@ public class AssetDeliveryPathParserTests
         // Arrange
         var path = $"/file/{customerPathValue}/1/the-astronaut";
         var customer = new CustomerPathElement(99, "test-customer");
-        A.CallTo(() => pathCustomerRepository.GetCustomer(A<string>._)).Returns(customer);
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement(A<string>._)).Returns(customer);
 
         // Act
         var imageRequest = await sut.Parse<FileAssetDeliveryRequest>(path);
