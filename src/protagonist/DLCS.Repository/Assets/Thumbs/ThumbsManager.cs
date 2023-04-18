@@ -24,6 +24,7 @@ public abstract class ThumbsManager
         BucketWriter = bucketWriter;
         StorageKeyGenerator = storageKeyGenerator;
     }
+    
     protected static Size GetMaxAvailableThumb(Asset asset, ThumbnailPolicy policy)
     {
         var _ = asset.GetAvailableThumbSizes(policy, out var maxDimensions);
