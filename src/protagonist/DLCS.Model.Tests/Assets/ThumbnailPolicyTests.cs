@@ -20,7 +20,22 @@ public class ThumbnailPolicyTests
         };
         
         // Assert
-        thumbnailPolicy.SizeList.Should().BeEquivalentTo(new List<int> {800, 400, 200, 100});
+        thumbnailPolicy.SizeList.Should().BeEquivalentTo(new List<int> { 800, 400, 200, 100 });
+    }
+    
+    [Fact]
+    public void SizesList_ReturnsCommaDelimitedSizes_InOrder_IfHasSizes()
+    {
+        // Arrange
+        var thumbnailPolicy = new ThumbnailPolicy
+        {
+            Id = "TestPolicy",
+            Name = "TestPolicy",
+            Sizes = "800,200,100,400"
+        };
+        
+        // Assert
+        thumbnailPolicy.SizeList.Should().BeEquivalentTo(new List<int> { 800, 400, 200, 100 });
     }
     
     [Theory]
@@ -37,6 +52,6 @@ public class ThumbnailPolicyTests
         };
         
         // Assert
-        thumbnailPolicy.SizeList.Should().BeNull();
+        thumbnailPolicy.SizeList.Should().BeEmpty();
     }
 }
