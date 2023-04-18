@@ -92,7 +92,7 @@ public class ImageIngestSettings
     /// <summary>
     /// Default value of whether to orchestrate an image upon ingestion
     /// </summary>
-    public bool OrchestrateImageAfterIngest { get; set; } = true;
+    public bool OrchestrateImageAfterIngest { get; set; }
 
     /// <summary>
     /// Get the root folder, if forImageProcessor will ensure that it is compatible with needs of image-processor

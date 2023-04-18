@@ -82,6 +82,7 @@ public static class ServiceCollectionX
             .AddScoped<TimebasedIngesterWorker>()
             .AddScoped<FileChannelWorker>()
             .AddScoped<ImageIngesterWorker>()
+            .AddScoped<IImageIngestPostProcessing, ImageIngestPostProcessing>()
             .AddScoped<IngestExecutor>()
             .AddSingleton<IThumbCreator, ThumbCreator>()
             .AddScoped<IWorkerBuilder, WorkerBuilder>()

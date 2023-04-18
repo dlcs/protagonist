@@ -50,6 +50,7 @@ public class PathRewriteTransformer : HttpTransformer
     {
         base.TransformResponseAsync(httpContext, proxyResponse);
         
+        CleanResponseHeaders(httpContext);
         EnsureCorsHeaders(httpContext);
         EnsureCacheHeaders(httpContext);
         SetCustomHeaders(httpContext);
@@ -81,6 +82,15 @@ public class PathRewriteTransformer : HttpTransformer
         foreach (var (key, value) in proxyAction.Headers)
         {
             httpContext.Response.Headers[key] = value;
+        }
+    }
+    
+    private void CleanResponseHeaders(HttpContext httpContext)
+    {
+        if (proxyAction.Target is ProxyDestination.ImageServer or ProxyDestination.SpecialServer)
+        {
+            httpContext.Response.Headers.Remove("link");
+            httpContext.Response.Headers.Remove("server");
         }
     }
 

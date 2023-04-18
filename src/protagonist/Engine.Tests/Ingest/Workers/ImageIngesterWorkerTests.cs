@@ -19,13 +19,12 @@ public class ImageIngesterWorkerTests
     private readonly IAssetToDisk assetToDisk;
     private readonly FakeImageProcessor imageProcessor;
     private readonly ImageIngesterWorker sut;
-    private readonly EngineSettings engineSettings;
-    private readonly IOrchestratorClient orchestratorClient;
+    private readonly IImageIngestPostProcessing imageIngestPostProcessing;
 
     public ImageIngesterWorkerTests()
     {
         var assetIngestorSizeCheck = new HardcodedAssetIngestorSizeCheckBase(54);
-        engineSettings = new EngineSettings
+        var engineSettings = new EngineSettings
         {
             ImageIngest = new ImageIngestSettings
             {
@@ -37,10 +36,10 @@ public class ImageIngesterWorkerTests
 
         assetToDisk = A.Fake<IAssetToDisk>();
         imageProcessor = new FakeImageProcessor();
-        orchestratorClient = A.Fake<IOrchestratorClient>();
+        imageIngestPostProcessing = A.Fake<IImageIngestPostProcessing>();
 
-        sut = new ImageIngesterWorker(assetToDisk, imageProcessor, orchestratorClient, new FakeFileSystem(),
-            optionsMonitor, assetIngestorSizeCheck, new NullLogger<ImageIngesterWorker>());
+        sut = new ImageIngesterWorker(assetToDisk, imageProcessor, optionsMonitor, assetIngestorSizeCheck,
+            imageIngestPostProcessing, new NullLogger<ImageIngesterWorker>());
     }
 
     [Fact]
@@ -124,33 +123,25 @@ public class ImageIngesterWorkerTests
         result.Should().Be(expected);
     }
 
-    [Fact]
-    public async Task PostIngest_CallsOrchestrator_IfSuccessfulIngest()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PostIngest_CallsImageIngestorCompletion(bool success)
     {
         // Arrange
         var assetId = AssetId.FromString("/2/1/faithless");
         var asset = new Asset(assetId);
-
+        var ingestionContext = new IngestionContext(asset);
+        
         // Act
-        await sut.PostIngest(new IngestionContext(asset), true);
+        await sut.PostIngest(ingestionContext, success);
         
         // Assert
-        A.CallTo(() => orchestratorClient.TriggerOrchestration(assetId)).MustHaveHappened();
+        A.CallTo(() => imageIngestPostProcessing.CompleteIngestion(ingestionContext, success))
+            .MustHaveHappened();
     }
+
     
-    [Fact]
-    public async Task PostIngest_DoesNotCallOrchestrator_IfIngestFailed()
-    {
-        // Arrange
-        var assetId = AssetId.FromString("/2/1/faithless");
-        var asset = new Asset(assetId);
-
-        // Act
-        await sut.PostIngest(new IngestionContext(asset), false);
-        
-        // Assert
-        A.CallTo(() => orchestratorClient.TriggerOrchestration(assetId)).MustNotHaveHappened();
-    }
 
     public class FakeImageProcessor : IImageProcessor
     {
