@@ -699,7 +699,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
         await dbContext.SaveChangesAsync();
 
-        // a batch of 3 images
+        // a batch of 3 images - 1 with Family, 1 with DC and 1 with both
         var hydraImageBody = @"{
     ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
     ""@type"": ""Collection"",
@@ -708,13 +708,14 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""id"": ""one"",
           ""origin"": ""https://example.org/foo.jpg"",
           ""space"": 2,
+          ""deliveryChannels"": [""iiif-img""],
           ""family"": ""I"",
           ""mediaType"": ""image/jpeg""
         },
         {
           ""id"": ""two"",
           ""origin"": ""https://example.org/foo.png"",
-          ""family"": ""I"",
+          ""deliveryChannels"": [""iiif-img""],
           ""space"": 2,
           ""mediaType"": ""image/png""
         },
