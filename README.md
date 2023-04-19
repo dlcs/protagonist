@@ -1,6 +1,6 @@
 # Protagonist
 
-(WIP) A collection of separate dotnet core applications that together form the basis of the new DLCS platform.
+A collection of separate dotnet core applications that together form the basis of the new DLCS platform.
 
 ## About
 
@@ -23,17 +23,19 @@ There are a number of shared projects and entry point applications that use thes
 * DLCS.HydraModel - [Hydra](https://www.hydra-cg.com/) models for DLCS API.
 * DLCS.Mediatr - shared classes for projects using [Mediatr](https://github.com/jbogard/MediatR).
 * DLCS.Model - DLCS models and repository interfaces.
+* DLCS.Mock - Mock version of API serving pre-canned responses from memory.
 * DLCS.Repository - Repository implementations and `DbContext` for database.
 * DLCS.Web - Classes that are aware of HTTP pipeline (e.g. request/response classes)
+* Hydra - Base classes for Hydra objects (not DLCS specific).
 
 In addition to the above there are a number of `*.Tests` classes for automated tests.
 
 ### Entry Points
 
-* API - HTTP API for interactions (WIP).
-* Engine - asset ingestion/derivative creation (WIP).
-* Orchestrator - reverse proxy that serves user requests (WIP).
-* Portal - administration UI for managing assets (WIP).
+* API - HTTP API for interactions.
+* Engine - asset ingestion/derivative creation.
+* Orchestrator - reverse proxy that serves user requests.
+* Portal - administration UI for managing assets.
 * Thumbs - simplified handling of thumbnail requests.
 * DeleteHandler - monitors queue for notifications + deletes asset derivatives on receipt.
 * Migrator - Applies any pending EF migrations.
@@ -126,9 +128,10 @@ Running the `TestData` app will seed data to database.
 dotnet run ./Utils/TestData/TestData.csproj
 ```
 
-> Note that the seed data added by `TestData` is insufficient to fully run DLCS and will need expanded as Engine and API are ported.
+> Note that the seed data added by `TestData` is insufficient to fully run DLCS and will need expanded.
 
 Migrations are added using:
+
 ```bash
 dotnet ef migrations add "Table gains column" -p DLCS.Repository -s API
 ```

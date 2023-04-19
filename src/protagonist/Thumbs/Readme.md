@@ -17,7 +17,7 @@ Supports requests for the following IIIF Size Parameters:
 
 This app expects the following layout in S3 (can be configured to generate this layout, see [configuration](#configuration)). The `/open` and `/auth` paths are determined by the images `ThumbnailPolicy`. Only thumbnails in the `/open` bucket will be returned.
 
-"Low.jpg" is always created as the largest sized thumbnail as this is used for generating resources like PDFs.
+"Low.jpg" is always created as the largest sized thumbnail as this is used for generating named query projections (like PDF and Zip archives).
 
 ```
 /thumbs-bucket/2/1/image-id

@@ -13,7 +13,7 @@ In addition to standard controller route handling the following YARP configurati
 
 ### Custom Handling
 
-The below routes are handled by custom logic and YARP's [Direct Forwarding](https://microsoft.github.io/reverse-proxy/articles/direct-forwarding.html) behaviour:
+The below routes are handled by custom logic and YARP's [Direct Forwarding](https://microsoft.github.io/reverse-proxy/articles/direct-forwarding.html) behaviour.
 
 #### `/iiif-img/{customer}/{space}/{image}/{**assetRequest}`
 
@@ -36,10 +36,19 @@ Decision logic in `ImageRequestHandler` and routing logic in `ImageRouteHandler`
 Handle requests for TimeBased assets. Will:
 
 * Validate access for restricted assets.
-* Redirect to s3 for open assets.
-* Proxy s3 for restricted assets.
+* Proxy AV from S3
 
 Decision logic in `TimeBasedRequestHandler` and routing logic in `TimeBasedRouteHandlers`.
+
+#### `/file/{customer}/{space}/{image}`
+
+Handle requests for stored binary assets of any type. This logic is very similar to `/iiif-av/` handling.
+
+* Validate access for restricted assets.
+* Proxy file from S3.
+* Response `content-type` header is reset to value stored against asset in DB.
+
+Decision logic in `FileRequestHandler` and routing logic in `FileRouteHandlers`.
 
 ## Clusters
 
