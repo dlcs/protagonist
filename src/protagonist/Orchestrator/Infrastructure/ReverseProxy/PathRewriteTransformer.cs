@@ -92,6 +92,12 @@ public class PathRewriteTransformer : HttpTransformer
             httpContext.Response.Headers.Remove("link");
             httpContext.Response.Headers.Remove("server");
         }
+
+        if (proxyAction.Target == ProxyDestination.S3)
+        {
+            httpContext.Response.Headers.Remove("x-amz-tagging-count");
+            httpContext.Response.Headers.Remove("x-amz-storage-class");
+        }
     }
 
     private Uri GetNewDestination(string destinationPrefix)

@@ -10,6 +10,7 @@ using DLCS.Model.Customers;
 using LazyCache;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 
 namespace Orchestrator.Assets;
 
@@ -154,6 +155,7 @@ public class MemoryAssetTracker : IAssetTracker
             var cos = await customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, origin);
             orchestrationAsset.Origin = origin;
             orchestrationAsset.OptimisedOrigin = cos.Optimised;
+            orchestrationAsset.MediaType = new StringValues(asset.MediaType ?? "application/octet-stream");
         }
         
         return SetDefaults(orchestrationAsset);
