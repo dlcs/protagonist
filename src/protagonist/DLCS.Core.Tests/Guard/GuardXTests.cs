@@ -32,6 +32,31 @@ public class GuardXTests
         actual.Should().Be(val);
     }
     
+    [Fact]
+    public void ThrowIfNull_NullableStruct_Throws_IfArgumentNull()
+    {
+        // Act
+        Action action = () => GuardX.ThrowIfNull<int?>(null, "foo");
+        
+        // Assert
+        action.Should()
+            .Throw<ArgumentNullException>()
+            .WithMessage("Value cannot be null. (Parameter 'foo')");
+    } 
+    
+    [Fact]
+    public void ThrowIfNull_NullableStruct_ReturnsProvidedValue_IfNotNull()
+    {
+        // Arrange
+        int? val = 12345;
+        
+        // Act
+        var actual = val.ThrowIfNull(nameof(val));
+        
+        // Assert
+        actual.Should().Be(val);
+    }
+    
     [Theory]
     [InlineData(null)]
     [InlineData("")]

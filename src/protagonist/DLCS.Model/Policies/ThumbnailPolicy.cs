@@ -8,19 +8,32 @@ namespace DLCS.Model.Policies;
 [DebuggerDisplay("{Name}: {Sizes}")]
 public class ThumbnailPolicy
 {
-    private List<int>? sizeList = null;
+    private IReadOnlyCollection<int>? sizeList;
 
     public string Id { get; set; }
     public string Name { get; set; }
     public string Sizes { get; set; }
 
-    public List<int> SizeList
+    /// <summary>
+    /// Get a list of available sizes, ordered from largest -> smallest
+    /// </summary>
+    public IReadOnlyCollection<int> SizeList
     {
         get
         {
-            if (sizeList == null && !string.IsNullOrEmpty(Sizes))
+            if (sizeList != null) return sizeList;
+            
+            if (string.IsNullOrEmpty(Sizes))
             {
-                sizeList = Sizes.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
+                sizeList = new List<int>();
+            }
+            else
+            {
+                sizeList = Sizes
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(int.Parse)
+                    .OrderByDescending(s => s)
+                    .ToList();
             }
             return sizeList;
         }

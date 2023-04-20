@@ -56,7 +56,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Stubbed appetiser
         var appetiserResponse = new AppetiserResponseModel
         {
-            Height = 200, Width = 340, Thumbs = new[]
+            Height = 1000, Width = 500, Thumbs = new[]
             {
                 new ImageOnDisk { Height = 800, Width = 400, Path = "/path/to/800.jpg" },
                 new ImageOnDisk { Height = 400, Width = 200, Path = "/path/to/400.jpg" },
@@ -107,8 +107,8 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Database records updated
         var updatedAsset = await dbContext.Images.SingleAsync(a => a.Id == assetId);
-        updatedAsset.Width.Should().Be(340);
-        updatedAsset.Height.Should().Be(200);
+        updatedAsset.Width.Should().Be(500);
+        updatedAsset.Height.Should().Be(1000);
         updatedAsset.Ingesting.Should().BeFalse();
         updatedAsset.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
         updatedAsset.MediaType.Should().Be("image/tiff");
@@ -157,8 +157,8 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Database records updated
         var updatedAsset = await dbContext.Images.SingleAsync(a => a.Id == assetId);
-        updatedAsset.Width.Should().Be(340);
-        updatedAsset.Height.Should().Be(200);
+        updatedAsset.Width.Should().Be(500);
+        updatedAsset.Height.Should().Be(1000);
         updatedAsset.Ingesting.Should().BeFalse();
         updatedAsset.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
         updatedAsset.MediaType.Should().Be("image/tiff");

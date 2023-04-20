@@ -94,7 +94,7 @@ public class ThumbReorganiser : ThumbsManager, IThumbReorganiser
         var existingSizes = GetExistingSizesList(thumbnailSizes, keysInTargetBucket);
 
         // All the thumbnail jpgs will already exist and need copied up to root
-        await CreateThumbnails(assetId, boundingSquares, thumbnailSizes, existingSizes);
+        await CreateThumbnails(assetId, thumbnailSizes, existingSizes);
 
         // Create sizes json file last, as this dictates whether this process will be attempted again
         await CreateSizesJson(assetId, thumbnailSizes);
@@ -126,31 +126,33 @@ public class ThumbReorganiser : ThumbsManager, IThumbReorganiser
         return existingSizes;
     }
 
-    private async Task CreateThumbnails(AssetId assetId, List<int> boundingSquares, ThumbnailSizes thumbnailSizes,
+    private async Task CreateThumbnails(AssetId assetId, ThumbnailSizes thumbnailSizes,
         List<Size> existingSizes)
     {
         var copyTasks = new List<Task>(thumbnailSizes.Count);
+        
+        var openSizes = thumbnailSizes.Open.Select(wh => Size.FromArray(wh)).ToList();
+        var authSizes = thumbnailSizes.Auth.Select(wh => Size.FromArray(wh)).ToList();
 
         // low.jpg becomes the first in this list
-        var largestSize = boundingSquares[0];
+        var largestSize = openSizes.Concat(authSizes).Max(sz => sz.MaxDimension);
         var largestIsOpen = thumbnailSizes.Auth.IsNullOrEmpty();
 
         copyTasks.Add(BucketWriter.CopyObject(
             StorageKeyGenerator.GetLargestThumbnailLocation(assetId),
             StorageKeyGenerator.GetThumbnailLocation(assetId, largestSize, largestIsOpen)));
 
-        copyTasks.AddRange(ProcessThumbBatch(assetId, false, thumbnailSizes.Auth, largestSize, existingSizes));
-        copyTasks.AddRange(ProcessThumbBatch(assetId, true, thumbnailSizes.Open, largestSize, existingSizes));
+        copyTasks.AddRange(ProcessThumbBatch(assetId, false, authSizes, largestSize, existingSizes));
+        copyTasks.AddRange(ProcessThumbBatch(assetId, true, openSizes, largestSize, existingSizes));
 
         await Task.WhenAll(copyTasks);
     }
 
-    private IEnumerable<Task> ProcessThumbBatch(AssetId assetId, bool isOpen, IEnumerable<int[]> thumbnailSizes,
-        int largestSize, List<Size> existingSizes)
+    private IEnumerable<Task> ProcessThumbBatch(AssetId assetId, bool isOpen, IEnumerable<Size> thumbnailSizes,
+        int largestSize, IReadOnlyCollection<Size> existingSizes)
     {
-        foreach (var wh in thumbnailSizes)
+        foreach (var currentSize in thumbnailSizes)
         {
-            var currentSize = Size.FromArray(wh);
             var maxDimension = currentSize.MaxDimension;
             if (maxDimension == largestSize) continue;
 

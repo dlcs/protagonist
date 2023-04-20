@@ -256,7 +256,7 @@ public class AppetiserClient : IImageProcessor
 
     private void SetThumbsOnDiskLocation(IngestionContext context, AppetiserResponseModel responseModel)
     {
-        // Update the location of all thumbs to be full path on disk.
+        // Update the location of all thumbs to be full path on disk, relative to orchestrator
         var partialTemplate = TemplatedFolders.GenerateFolderTemplate(engineSettings.ImageIngest.ThumbsTemplate,
             context.AssetId, root: engineSettings.ImageIngest.GetRoot());
         foreach (var thumb in responseModel.Thumbs)

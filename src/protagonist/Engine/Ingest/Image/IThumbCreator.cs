@@ -10,5 +10,5 @@ public interface IThumbCreator
     /// <param name="asset">Asset thumbnails are for</param>
     /// <param name="thumbsToProcess">List of jpgs on disk that are to be copied to S3</param>
     /// <returns></returns>
-    Task CreateNewThumbs(Asset asset, IReadOnlyList<ImageOnDisk> thumbsToProcess);
+    Task<int> CreateNewThumbs(Asset asset, IReadOnlyList<ImageOnDisk> thumbsToProcess);
 }
