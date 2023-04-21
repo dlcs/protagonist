@@ -817,10 +817,12 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         const int batch = 202;
-        await dbContext.Batches.AddTestBatch(batch, count: 100);
+        await dbContext.Batches.AddTestBatch(batch, count: 100, completed: 90, errors: 4);
         await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/clown"), batch: batch, finished: DateTime.UtcNow);
         await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/divine"), batch: batch, finished: DateTime.UtcNow);
         await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/predictable"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/fake"), batch: batch, finished: DateTime.UtcNow,
+            error: "Exception");
         await dbContext.SaveChangesAsync();
         const string path = "customers/99/queue/batches/202/test";
 
@@ -835,7 +837,9 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == batch);
         dbBatch.Superseded.Should().BeFalse();
         dbBatch.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
-        dbBatch.Count.Should().Be(3);
+        dbBatch.Count.Should().Be(4);
+        dbBatch.Errors.Should().Be(1);
+        dbBatch.Completed.Should().Be(3);
     }
 
     [Fact]

@@ -50,24 +50,28 @@ public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
         bool changesMade = false;
         if (!batch.Superseded && IsBatchSuperseded(batchImages))
         {
-            logger.LogDebug("Batch {BatchId} for Customer {Customer} superseded", request.BatchId, request.CustomerId);
+            logger.LogDebug("Batch {BatchId} for superseded", request.BatchId);
             batch.Superseded = true;
             changesMade = true;
         }
 
         if (IsBatchComplete(batchImages))
         {
-            logger.LogDebug("Batch {BatchId} for Customer {Customer} complete", request.BatchId, request.CustomerId);
+            logger.LogDebug("Batch {BatchId} complete.", request.BatchId);
             if (batch.Finished == null)
             {
+                logger.LogInformation("Batch {BatchId} complete but not finished. Setting Finished.", request.BatchId);
                 changesMade = true;
                 batch.Finished = DateTime.UtcNow;
             }
 
             if (batch.Count != batchImages.Count)
             {
+                logger.LogInformation("Batch {BatchId} complete. Resetting counts.", request.BatchId);
                 changesMade = true;
                 batch.Count = batchImages.Count;
+                batch.Errors = batchImages.Count(i => !string.IsNullOrEmpty(i.Error));
+                batch.Completed = batch.Count - batch.Errors;
             }
         }
 
