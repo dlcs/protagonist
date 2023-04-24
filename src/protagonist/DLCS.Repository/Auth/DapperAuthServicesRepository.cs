@@ -118,6 +118,7 @@ public class DapperAuthServicesRepository : IDapperConfigRepository, IAuthServic
         }
         
         // All services have a token service so add to collection
+        // TODO - need to determine if this is a 1 or 0 service
         authServices.Add(new AuthService
         {
             Customer = customer,
@@ -136,11 +137,10 @@ public class DapperAuthServicesRepository : IDapperConfigRepository, IAuthServic
             Customer = customer,
             Name = name,
             AuthService = authServiceId,
-            Aliases = String.Empty
+            Aliases = string.Empty
         };
     }
-    
-    
+
     public AuthService CreateAuthService(int customerId, string profile, string name, int ttl)
     {            
         return new AuthService
@@ -150,13 +150,13 @@ public class DapperAuthServicesRepository : IDapperConfigRepository, IAuthServic
             Profile = profile,
             Name = name,
             Ttl = ttl,
-            CallToAction = String.Empty,
-            ChildAuthService = String.Empty,
-            Description = String.Empty,
-            Label = String.Empty,
-            PageDescription = String.Empty,
-            PageLabel = String.Empty,
-            RoleProvider = String.Empty
+            CallToAction = string.Empty,
+            ChildAuthService = string.Empty,
+            Description = string.Empty,
+            Label = string.Empty,
+            PageDescription = string.Empty,
+            PageLabel = string.Empty,
+            RoleProvider = string.Empty
         };
     }
 
@@ -168,68 +168,6 @@ public class DapperAuthServicesRepository : IDapperConfigRepository, IAuthServic
         return $"{fqRolePrefix}/customers/{customer}/roles/{firstCharLowered.ToCamelCase()}";
     }
 
-    // TODO (DG) - are these required?
-    public void SaveAuthService(AuthService authService)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void SaveRole(Role role)
-    {
-        throw new NotImplementedException();
-    }
-
-    // Interface signature from Deliverator IAuthServiceStore reproduced below
-    public AuthService Get(string id)
-    {
-        throw new NotImplementedException();
-    }
-
-    public AuthService GetChild(string id)
-    {
-        throw new NotImplementedException();
-    }
-
-    public AuthService GetChildByCustomerName(int customer, string name)
-    {
-        throw new NotImplementedException();
-    }
-
-    public AuthService GetByCustomerName(int customer, string name)
-    {
-        throw new NotImplementedException();
-    }
-
-    public IEnumerable<AuthService> GetByCustomerRole(int customer, string role)
-    {
-        throw new NotImplementedException();
-    }
-
-    public IEnumerable<AuthService> GetAll()
-    {
-        throw new NotImplementedException();
-    }
-
-    public int CountByCustomer(int customer)
-    {
-        throw new NotImplementedException();
-    }
-
-    public IEnumerable<AuthService> GetByCustomer(int customer, int skip = -1, int take = -1)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void Put(AuthService authService)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void Remove(string id)
-    {
-        throw new NotImplementedException();
-    }
-    
     private const string AuthServiceSql = @"
 WITH RECURSIVE cte_auth AS (
     SELECT p.""Id"", p.""Customer"", p.""Name"", p.""Profile"", p.""Label"", p.""Description"", p.""PageLabel"", p.""PageDescription"", p.""CallToAction"", p.""TTL"", p.""RoleProvider"", p.""ChildAuthService""

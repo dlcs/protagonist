@@ -39,19 +39,4 @@ public interface IAuthServicesRepository
     
     Role CreateRole(string name, int customer, string authServiceId);
     AuthService CreateAuthService(int customerId, string profile, string name, int ttl);
-    
-    void SaveAuthService(AuthService authService);
-    void SaveRole(Role role);
-    
-    // Below this line reproduces Deliverator IAuthServiceStore
-    AuthService Get(string id);
-    AuthService GetChild(string id);
-    AuthService GetChildByCustomerName(int customer, string name);
-    AuthService GetByCustomerName(int customer, string name);
-    IEnumerable<AuthService> GetByCustomerRole(int customer, string role);
-    IEnumerable<AuthService> GetAll();
-    int CountByCustomer(int customer);
-    IEnumerable<AuthService> GetByCustomer(int customer, int skip = -1, int take = -1);
-    void Put(AuthService authService); // implemented as SaveAuthService
-    void Remove(string id);
 }
