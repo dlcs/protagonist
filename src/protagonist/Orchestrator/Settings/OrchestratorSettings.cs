@@ -188,7 +188,8 @@ public class AuthSettings
     /// <summary>
     /// A list of supported auth profiles for Access Cookie Services that are non-standard.
     /// </summary>
-    public List<string> SupportedAccessCookieProfiles { get; set; } = new();
+    public List<string> SupportedAccessCookieProfiles { get; set; } =
+        new() { "http://iiif.io/api/auth/0/login/clickthrough" };
 
     /// <summary>
     /// A boolean controlling whether to throw an exception if an unsupported auth Profile is encountered, either from
