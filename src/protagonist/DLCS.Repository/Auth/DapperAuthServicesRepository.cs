@@ -118,7 +118,6 @@ public class DapperAuthServicesRepository : IDapperConfigRepository, IAuthServic
         }
         
         // All services have a token service so add to collection
-        // TODO - need to determine if this is a 1 or 0 service
         authServices.Add(new AuthService
         {
             Customer = customer,

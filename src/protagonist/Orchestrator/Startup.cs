@@ -59,6 +59,7 @@ public class Startup
             .Configure<ProxySettings>(proxySection)
             .Configure<NamedQueryTemplateSettings>(configuration)
             .Configure<NamedQuerySettings>(configuration.GetSection("NamedQuery"))
+            .Configure<AuthSettings>(configuration.GetSection("Auth"))
             .Configure<PathTemplateOptions>(configuration.GetSection("PathRules"))
             .Configure<CacheSettings>(cachingSection);
 

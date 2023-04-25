@@ -136,9 +136,9 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             });
         await DbContext.AuthServices.AddAsync(new AuthService
         {
-            Customer = customer, Name = "clickthrough", Id = ClickThroughAuthService,
-            Description = "", Label = "", Profile = "", Ttl = 200, PageDescription = "",
-            PageLabel = "", RoleProvider = "", CallToAction = "", ChildAuthService = ""
+            Customer = customer, Name = "clickthrough", Id = ClickThroughAuthService, Description = "", Label = "",
+            Profile = "http://iiif.io/api/auth/1/clickthrough", Ttl = 200, PageDescription = "", PageLabel = "",
+            RoleProvider = "", CallToAction = "", ChildAuthService = ""
         });
         await DbContext.Roles.AddAsync(new Role
         {

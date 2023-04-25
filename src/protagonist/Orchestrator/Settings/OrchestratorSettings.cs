@@ -83,7 +83,7 @@ public class OrchestratorSettings
     /// render a thumbnail of this size but will aim to get as close as possible.
     /// </summary>
     public int TargetThumbnailSize { get; set; } = 200;
-    
+
     public ProxySettings Proxy { get; set; }
 
     public CacheSettings Caching { get; set; }
@@ -184,6 +184,17 @@ public class AuthSettings
     /// If true the current domain is automatically added to auth token domains.
     /// </summary>
     public bool UseCurrentDomainForCookie { get; set; } = true;
+
+    /// <summary>
+    /// A list of supported auth profiles for Access Cookie Services that are non-standard.
+    /// </summary>
+    public List<string> SupportedAccessCookieProfiles { get; set; } = new();
+
+    /// <summary>
+    /// A boolean controlling whether to throw an exception if an unsupported auth Profile is encountered, either from
+    /// IIIF spec or <see cref="SupportedAccessCookieProfiles"/>. If false then null returned
+    /// </summary>
+    public bool ThrowIfUnsupportedProfile { get; set; } = false;
     
     /// <summary>
     /// URI template configuration for auth paths 
