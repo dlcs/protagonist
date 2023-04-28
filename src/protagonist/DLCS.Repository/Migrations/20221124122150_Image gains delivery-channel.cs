@@ -21,7 +21,7 @@ UPDATE ""Images""
 SET ""DeliveryChannel"" = CASE ""Family""
                             WHEN 'F' THEN 'file'
                             WHEN 'I' THEN 'iiif-img'
-                            WHEN 'T' THEN 'iiif-av' END 
+                            WHEN 'T' THEN 'iiif-av' END; 
 ");
         }
 
