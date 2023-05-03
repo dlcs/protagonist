@@ -602,15 +602,21 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_RestrictedImage_Correct)}");
         const string roleName = "my-test-role";
         const string authServiceName = "my-auth-service";
+        const string logoutServiceName = "my-logout-service";
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: roleName, maxUnauthorised: 500,
             deliveryChannels: new[] { "iiif-img" });
         await dbFixture.DbContext.Roles.AddAsync(new Role
         {
             Customer = 99, Id = roleName, Name = "test-role", AuthService = authServiceName
         });
-        await dbFixture.DbContext.AuthServices.AddAsync(new AuthService
+        await dbFixture.DbContext.AuthServices.AddRangeAsync(new AuthService
         {
-            Name = "test-service", Customer = 99, Id = authServiceName, Profile = "profile"
+            Name = "test-service", Customer = 99, Id = authServiceName, Profile = "http://iiif.io/api/auth/1/login",
+            Label = "the-label", Description = "the-description", ChildAuthService = logoutServiceName
+        }, new AuthService
+        {
+            Name = "test-service-logout", Customer = 99, Id = logoutServiceName,
+            Profile = "http://iiif.io/api/auth/1/logout",
         });
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -643,15 +649,23 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_RestrictedImage_Correct_CustomPathRules)}");
         const string roleName = "my-test-role";
         const string authServiceName = "my-auth-service";
+        const string logoutServiceName = "my-logout-service";
+
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: roleName, maxUnauthorised: 500,
             deliveryChannels: new[] { "iiif-img" });
         await dbFixture.DbContext.Roles.AddAsync(new Role
         {
             Customer = 99, Id = roleName, Name = "test-role", AuthService = authServiceName
         });
-        await dbFixture.DbContext.AuthServices.AddAsync(new AuthService
+
+        await dbFixture.DbContext.AuthServices.AddRangeAsync(new AuthService
         {
-            Name = "test-service", Customer = 99, Id = authServiceName, Profile = "profile"
+            Name = "test-service", Customer = 99, Id = authServiceName, Profile = "http://iiif.io/api/auth/1/login",
+            Label = "the-label", Description = "the-description", ChildAuthService = logoutServiceName
+        }, new AuthService
+        {
+            Name = "test-service-logout", Customer = 99, Id = logoutServiceName,
+            Profile = "http://iiif.io/api/auth/1/logout",
         });
 
         await amazonS3.PutObjectAsync(new PutObjectRequest

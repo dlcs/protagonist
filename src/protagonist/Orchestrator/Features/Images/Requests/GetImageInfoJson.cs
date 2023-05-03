@@ -173,16 +173,22 @@ public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, Descrip
             service.Id =
                 authPathGenerator.GetAuthPathForRequest(assetId.Customer.ToString(), service.Id ?? "_unknown_");
         }
-        
+
         foreach (var service in services ?? Enumerable.Empty<IService>())
         {
             if (service == null) continue;
-            if (service is AuthCookieService cookieService)
+            if (service is AuthCookieService cookieServiceV1)
             {
-                SetAuthId(cookieService);
-                SetServiceIdProperties(assetId, cookieService.Service);
+                SetAuthId(cookieServiceV1);
+                SetServiceIdProperties(assetId, cookieServiceV1.Service);
             }
-            else if (service is AuthLogoutService or AuthTokenService)
+            else if (service is IIIF.Auth.V0.AuthCookieService cookieServiceV0)
+            {
+                SetAuthId(cookieServiceV0);
+                SetServiceIdProperties(assetId, cookieServiceV0.Service);
+            }
+            else if (service is AuthLogoutService or AuthTokenService or IIIF.Auth.V0.AuthLogoutService
+                     or IIIF.Auth.V0.AuthTokenService)
             {
                 SetAuthId(service);
             }

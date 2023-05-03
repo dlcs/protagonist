@@ -86,7 +86,11 @@ public class InfoJsonConstructor
         {
             var authCookieServiceForAsset =
                 await iiifAuthBuilder.GetAuthCookieServiceForAsset(orchestrationImage, cancellationToken);
-            if (authCookieServiceForAsset == null) return;
+            if (authCookieServiceForAsset == null)
+            {
+                logger.LogWarning("{AssetId} requires auth but no auth services generated", orchestrationImage.AssetId);
+                return;
+            }
             
             imageService.Service ??= new List<IService>(1);
             imageService.Service.Add(authCookieServiceForAsset);
@@ -105,7 +109,11 @@ public class InfoJsonConstructor
         {
             var authCookieServiceForAsset =
                 await iiifAuthBuilder.GetAuthCookieServiceForAsset(orchestrationImage, cancellationToken);
-            if (authCookieServiceForAsset == null) return;
+            if (authCookieServiceForAsset == null)
+            {
+                logger.LogWarning("{AssetId} requires auth but no auth services generated", orchestrationImage.AssetId);
+                return;
+            }
             
             imageService.Service ??= new List<IService>(1);
             imageService.Service.Add(authCookieServiceForAsset);

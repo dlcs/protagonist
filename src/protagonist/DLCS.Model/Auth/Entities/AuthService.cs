@@ -2,7 +2,7 @@
 
 namespace DLCS.Model.Auth.Entities;
 
-public partial class AuthService
+public class AuthService
 {
     public string Id { get; set; }
     public int Customer { get; set; }

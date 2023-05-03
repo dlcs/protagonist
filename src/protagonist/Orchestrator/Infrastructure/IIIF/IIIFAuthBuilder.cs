@@ -1,40 +1,43 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
-using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
 using IIIF;
-using IIIF.Auth.V1;
-using IIIF.Presentation.V2;
-using IIIF.Presentation.V2.Strings;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Settings;
+using AuthCookie0 = IIIF.Auth.V0.AuthCookieService;
+using AuthCookie1 = IIIF.Auth.V1.AuthCookieService;
 
 namespace Orchestrator.Infrastructure.IIIF;
 
 public class IIIFAuthBuilder
 {
     private readonly IAuthServicesRepository authServicesRepository;
+    private readonly AuthSettings authSettings;
     private readonly ILogger<IIIFAuthBuilder> logger;
 
-    public IIIFAuthBuilder(IAuthServicesRepository authServicesRepository,
+    public IIIFAuthBuilder(
+        IAuthServicesRepository authServicesRepository,
+        IOptions<AuthSettings> authOptions,
         ILogger<IIIFAuthBuilder> logger)
     {
         this.authServicesRepository = authServicesRepository;
+        authSettings = authOptions.Value;
         this.logger = logger;
     }
 
     /// <summary>
-    /// Generate a IIIF <see cref="AuthCookieService"/> for specified asset.
+    /// Generate a IIIF <see cref="IService"/> for specified asset.
     /// The 'id'/'@id' parameters will the the name of the auth service only
     /// </summary>
-    /// <returns><see cref="AuthCookieService"/> if found, else null</returns>
-    public async Task<AuthCookieService?> GetAuthCookieServiceForAsset(OrchestrationImage asset,
+    /// <returns><see cref="IService"/> if found, else null</returns>
+    public async Task<IService?> GetAuthCookieServiceForAsset(OrchestrationImage asset,
         CancellationToken cancellationToken = default)
     {
         var assetId = asset.AssetId;
@@ -45,20 +48,24 @@ public class IIIFAuthBuilder
             logger.LogWarning("Unable to get auth services for {Asset}", assetId);
             return null;
         }
-
-        var id = authServices[0].Name;
-
-        var parentService = authServices[0];
-        var authCookieService = new AuthCookieService(parentService.Profile)
-        {
-            Id = id,
-            Label = new MetaDataValue(parentService.Label),
-            Description = new MetaDataValue(parentService.Description),
-        };
+        
+        var authCookieService = authServices[0].ConvertToAuthCookieService(authSettings.SupportedAccessCookieProfiles,
+            authSettings.ThrowIfUnsupportedProfile);
+        if (authCookieService == null) return null;
 
         if (authServices.Count == 1) return authCookieService;
-
-        authCookieService.Service = GetChildServices(authServices, id, assetId);
+        
+        var id = authServices[0].Name;
+        var childServices = GetChildServices(authServices, id, assetId);
+        switch (authCookieService)
+        {
+            case AuthCookie1 authCookie1:
+                authCookie1.Service = childServices;
+                break;
+            case AuthCookie0 authCookie0:
+                authCookie0.Service = childServices;
+                break;
+        }
 
         return authCookieService;
     }
@@ -68,37 +75,16 @@ public class IIIFAuthBuilder
         var services = new List<IService>(authServices.Count - 1);
         foreach (var childAuthService in authServices.Skip(1))
         {
-            IService subService;
-            switch (childAuthService.Profile)
+            var subService = childAuthService.ConvertToIIIFChildAuthService(id, authSettings.ThrowIfUnsupportedProfile);
+            if (subService != null)
             {
-                case AuthLogoutService.AuthLogout1Profile:
-                    subService = new AuthLogoutService
-                    {
-                        Id = $"{id}/logout" // hmmm
-                    };
-                    break;
-                case AuthTokenService.AuthToken1Profile:
-                    subService = new AuthTokenService
-                    {
-                        Id = childAuthService.Name
-                    };
-                    break;
-                default:
-                    logger.LogWarning("Encountered unknown auth service for asset {AssetId}", assetId);
-                    throw new ArgumentException($"Unknown AuthService profile type: {childAuthService.Profile}");
+                services.Add(subService);
             }
-
-            if (childAuthService.Label.HasText())
+            else
             {
-                (subService as ResourceBase)!.Label = new MetaDataValue(childAuthService.Label);
+                logger.LogWarning("Encountered unknown auth service profile '{Profile}' for asset {AssetId}",
+                    childAuthService.Profile, assetId);
             }
-
-            if (childAuthService.Description.HasText())
-            {
-                (subService as ResourceBase)!.Description = new MetaDataValue(childAuthService.Description);
-            }
-
-            services.Add(subService);
         }
 
         return services;

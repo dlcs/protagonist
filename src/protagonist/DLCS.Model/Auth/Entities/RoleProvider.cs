@@ -5,7 +5,7 @@ namespace DLCS.Model.Auth.Entities;
 /// <summary>
 /// Configuration of how to obtain Role information for a given auth service
 /// </summary>
-public partial class RoleProvider
+public class RoleProvider
 {
     public string Id { get; set; }
     public int Customer { get; set; }
