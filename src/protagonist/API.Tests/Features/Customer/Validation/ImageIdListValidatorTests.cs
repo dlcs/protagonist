@@ -41,12 +41,30 @@ public class ImageIdListValidatorTests
         {
             Members = new[]
             {
-                new IdentifierOnly(), new IdentifierOnly(), new IdentifierOnly(), new IdentifierOnly(),
-                new IdentifierOnly()
+                new IdentifierOnly { Id = "one" }, new IdentifierOnly { Id = "two" },
+                new IdentifierOnly { Id = "three" }, new IdentifierOnly { Id = "four" },
+                new IdentifierOnly { Id = "five" }
             }
         };
         var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(r => r.Members);
+        result
+            .ShouldHaveValidationErrorFor(r => r.Members)
+            .WithErrorMessage("Maximum assets in single batch is 4");
+    }
+    
+    [Fact]
+    public void Members_EqualToMaxBatchSize_IsValid()
+    {
+        var model = new HydraCollection<IdentifierOnly>
+        {
+            Members = new[]
+            {
+                new IdentifierOnly { Id = "one" }, new IdentifierOnly { Id = "two" },
+                new IdentifierOnly { Id = "three" }, new IdentifierOnly { Id = "four" },
+            }
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(r => r.Members);
     }
 
     [Fact]

@@ -27,7 +27,7 @@ public class ImageIdListValidator : AbstractValidator<HydraCollection<Identifier
         
         var maxBatch = apiSettings.Value.MaxImageListSize;
         RuleFor(c => c.Members)
-            .Must(m => (m?.Length ?? 0) < maxBatch)
+            .Must(m => (m?.Length ?? 0) <= maxBatch)
             .WithMessage($"Maximum assets in single batch is {maxBatch}");
     }
 }
