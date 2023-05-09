@@ -40,9 +40,36 @@ public class QueuePostValidatorTests
     public void Members_GreaterThanMaxBatchSize()
     {
         var model = new HydraCollection<Image>
-            { Members = new[] { new Image(), new Image(), new Image(), new Image(), new Image() } };
+        {
+            Members = new[]
+            {
+                new Image { ModelId = "1/2/f" },
+                new Image { ModelId = "1/2/fo" },
+                new Image { ModelId = "1/2/foo" },
+                new Image { ModelId = "1/2/bar" },
+                new Image { ModelId = "1/2/baz" },
+            }
+        };
         var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(r => r.Members);
+        result.ShouldHaveValidationErrorFor(r => r.Members)
+            .WithErrorMessage("Maximum assets in single batch is 4");
+    }
+    
+    [Fact]
+    public void Members_EqualMaxBatchSize_Valid()
+    {
+        var model = new HydraCollection<Image>
+        {
+            Members = new[]
+            {
+                new Image { ModelId = "1/2/fo" },
+                new Image { ModelId = "1/2/foo" },
+                new Image { ModelId = "1/2/bar" },
+                new Image { ModelId = "1/2/baz" },
+            }
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(r => r.Members);
     }
 
     [Fact]
