@@ -22,8 +22,8 @@ public static class ObjectFromBucketX
             return null;
         }
 
-        using var sr = new StreamReader(stream);
-        using var jsonTextReader = new JsonTextReader(sr);
+        using var sr = new StreamReader(stream!);
+        await using var jsonTextReader = new JsonTextReader(sr);
         var objects = Serializer.Deserialize<T>(jsonTextReader);
         return objects;
     }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
@@ -51,16 +50,32 @@ public class GetPdfControlFileForNamedQueryHandler : IRequestHandler<GetPdfContr
         if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
 
         var controlFile =
-            await namedQueryStorageService.GetControlFile(namedQueryResult.ParsedQuery, cancellationToken);
-        return new PdfControlFile(controlFile ?? ControlFile.Empty);
+            await namedQueryStorageService.GetControlFile<PdfControlFile>(namedQueryResult.ParsedQuery,
+                cancellationToken);
+        return controlFile ?? new PdfControlFile(ControlFile.Empty);
     }
 }
 
-// NOTE - this is for backwards compatibility as "itemCount" property was previously "pageCount"
 public class PdfControlFile : ControlFile
 {
-    [JsonProperty("pageCount")] public int PageCount => ItemCount;
+    /// <summary>
+    /// This is for backwards compatibility as "itemCount" property was previously "pageCount". From when
+    /// Deliverator only supported PDF projections
+    /// </summary>
+    [Obsolete("Use itemCount instead")]
+    [JsonProperty("pageCount")]
+    public int? PageCount
+    {
+        get => pageCount ?? ItemCount;
+        set => pageCount = value;
+    }
 
+    private int? pageCount;
+
+    public PdfControlFile()
+    {
+    }
+    
     public PdfControlFile(ControlFile controlFile)
     {
         Key = controlFile.Key;

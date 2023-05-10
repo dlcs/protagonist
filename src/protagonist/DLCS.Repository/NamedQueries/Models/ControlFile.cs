@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 namespace DLCS.Repository.NamedQueries.Models;
 
 /// <summary>
-/// The PDF control file is a marker to track the progress of a generated PDF.
+/// A control file is a marker to track the progress of a generated NQ projection.
 /// </summary>
 public class ControlFile
 {
@@ -51,7 +51,7 @@ public class ControlFile
     /// </summary>
     [JsonProperty("roles")]
     public List<string>? Roles { get; set; }
-    
+
     /// <summary>
     /// Null object control file
     /// </summary>

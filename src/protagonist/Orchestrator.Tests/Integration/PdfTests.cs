@@ -416,11 +416,11 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         const string path = "pdf-control/99/test-pdf/any-ref/1/2";
-        var pdfControlFile = new PdfControlFile(new ControlFile
+        var pdfControlFile = new PdfControlFile
         {
             Created = DateTime.MinValue, InProcess = false, Exists = false, Key = string.Empty, ItemCount = 0,
-            SizeBytes = 0, Roles = new List<string>(0)
-        });
+            SizeBytes = 0, Roles = new List<string>(0), PageCount = null
+        };
         var pdfControlFileJson = JsonConvert.SerializeObject(pdfControlFile);
             
         // Act
@@ -437,22 +437,58 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         const string path = "pdf-control/99/test-pdf/any-ref/1/5";
 
-        var controlFile = new ControlFile
+        var pdfControlFile = new PdfControlFile
         {
             Created = DateTime.UtcNow, InProcess = false, Exists = true, Key = "the-key", ItemCount = 100,
             SizeBytes = 1024
         };
-        var pdfControlFile = new PdfControlFile(controlFile);
         await AddPdfControlFile("99/pdf/test-pdf/any-ref/1/5/tester.json", pdfControlFile);
-        var pdfControlFileJson = JsonConvert.SerializeObject(pdfControlFile);
             
         // Act
         var response = await httpClient.GetAsync(path);
             
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await response.Content.ReadAsStringAsync()).Should().Be(pdfControlFileJson);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/json"));
+        
+        var deserialized = JsonConvert.DeserializeObject<PdfControlFile>(await response.Content.ReadAsStringAsync());
+        deserialized.Should().BeEquivalentTo(pdfControlFile, opts => opts.Excluding(cf => cf.PageCount));
+        deserialized.PageCount.Should().Be(100, "PageCount defaulted from ItemCount if not in JSON");
+    }
+    
+    [Fact]
+    public async Task GetPdfControlFile_Returns200_AndControlFile_IfFound_AndInLegacyFormat()
+    {
+        // Arrange
+        const string path = "pdf-control/99/test-pdf/any-ref/1/5";
+
+        var controlFile = @"{
+  ""key"": ""the_key.pdf"",
+  ""exists"": true,
+  ""inProcess"": false,
+  ""created"": ""2021-07-11T00:00:00.000000+00:00"",
+  ""roles"": [],
+  ""pageCount"": 172,
+  ""sizeBytes"": 1024
+}";
+
+        await AddPdfControlFile("99/pdf/test-pdf/any-ref/1/5/tester.json", controlFile);
+            
+        // Act
+        var response = await httpClient.GetAsync(path);
+            
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/json"));
+        
+        var deserialized = JsonConvert.DeserializeObject<PdfControlFile>(await response.Content.ReadAsStringAsync());
+        deserialized.Created.Should().BeCloseTo(new DateTime(2021, 7, 11), TimeSpan.FromHours(6));
+        deserialized.InProcess.Should().BeFalse();
+        deserialized.Exists.Should().BeTrue();
+        deserialized.Key.Should().Be("the_key.pdf");
+        deserialized.ItemCount.Should().Be(0);
+        deserialized.SizeBytes.Should().Be(1024);
+        deserialized.PageCount.Should().Be(172);
     }
 
     private Task AddPdfControlFile(string key, ControlFile controlFile) 
@@ -461,6 +497,14 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
             Key = key,
             BucketName = LocalStackFixture.OutputBucketName,
             ContentBody = JsonConvert.SerializeObject(controlFile)
+        });
+    
+    private Task AddPdfControlFile(string key, string controlFile) 
+        => amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = key,
+            BucketName = LocalStackFixture.OutputBucketName,
+            ContentBody = controlFile
         });
         
     private Task AddPdf(string key, string fakeContent) 
