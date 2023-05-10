@@ -40,6 +40,18 @@ public class NamedQueryStorageService
     }
 
     /// <summary>
+    /// Get typed <see cref="ControlFile"/> stored for parsed named query.
+    /// </summary>
+    public async Task<T?> GetControlFile<T>(StoredParsedNamedQuery parsedNamedQuery,
+        CancellationToken cancellationToken)
+        where T : ControlFile
+    {
+        var controlObject = await LoadStoredObject(parsedNamedQuery.ControlFileStorageKey, cancellationToken);
+        if (controlObject.Stream == Stream.Null) return null;
+        return await controlObject.DeserializeFromJson<T>();
+    }
+
+    /// <summary>
     /// Get an <see cref="ObjectFromBucket"/> for stored results of NQ
     /// </summary>
     public async Task<ObjectFromBucket> LoadProjection(StoredParsedNamedQuery parsedNamedQuery, 

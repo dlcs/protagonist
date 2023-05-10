@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.NamedQueries.Models;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Orchestrator.Infrastructure.NamedQueries.Requests;
 
@@ -34,13 +34,16 @@ public class GetPdfControlFileForNamedQueryHandler : IRequestHandler<GetPdfContr
 {
     private readonly NamedQueryStorageService namedQueryStorageService;
     private readonly NamedQueryResultGenerator namedQueryResultGenerator;
+    private readonly ILogger<GetPdfControlFileForNamedQueryHandler> logger;
 
     public GetPdfControlFileForNamedQueryHandler(
         NamedQueryStorageService namedQueryStorageService,
-        NamedQueryResultGenerator namedQueryResultGenerator)
+        NamedQueryResultGenerator namedQueryResultGenerator,
+        ILogger<GetPdfControlFileForNamedQueryHandler> logger)
     {
         this.namedQueryStorageService = namedQueryStorageService;
         this.namedQueryResultGenerator = namedQueryResultGenerator;
+        this.logger = logger;
     }
     
     public async Task<PdfControlFile?> Handle(GetPdfControlFileForNamedQuery request, CancellationToken cancellationToken)
@@ -51,16 +54,44 @@ public class GetPdfControlFileForNamedQueryHandler : IRequestHandler<GetPdfContr
         if (namedQueryResult.ParsedQuery is null or { IsFaulty: true }) return null;
 
         var controlFile =
-            await namedQueryStorageService.GetControlFile(namedQueryResult.ParsedQuery, cancellationToken);
-        return new PdfControlFile(controlFile ?? ControlFile.Empty);
+            await namedQueryStorageService.GetControlFile<PdfControlFile>(namedQueryResult.ParsedQuery,
+                cancellationToken);
+        if (controlFile == null)
+        {
+            return new PdfControlFile(ControlFile.Empty);
+        }
+
+        if (controlFile.PageCount.HasValue && controlFile.ItemCount == 0)
+        {
+            logger.LogDebug("PdfControlFile {Customer}:{ControlFile}:{Args} is in legacy format",
+                request.CustomerPathValue, request.NamedQuery, request.NamedQueryArgs);
+            controlFile.ItemCount = controlFile.PageCount.Value;
+        }
+
+        return controlFile;
     }
 }
 
-// NOTE - this is for backwards compatibility as "itemCount" property was previously "pageCount"
 public class PdfControlFile : ControlFile
 {
-    [JsonProperty("pageCount")] public int PageCount => ItemCount;
+    /// <summary>
+    /// This is for backwards compatibility as "itemCount" property was previously "pageCount". From when
+    /// Deliverator only supported PDF projections
+    /// </summary>
+    [Obsolete("Use itemCount instead")]
+    [JsonProperty("pageCount")]
+    public int? PageCount
+    {
+        get => pageCount ?? ItemCount;
+        set => pageCount = value;
+    }
 
+    private int? pageCount;
+
+    public PdfControlFile()
+    {
+    }
+    
     public PdfControlFile(ControlFile controlFile)
     {
         Key = controlFile.Key;
