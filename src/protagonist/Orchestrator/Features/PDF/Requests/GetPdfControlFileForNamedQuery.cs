@@ -5,6 +5,7 @@ using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.NamedQueries.Models;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Orchestrator.Infrastructure.NamedQueries.Requests;
 
@@ -33,13 +34,16 @@ public class GetPdfControlFileForNamedQueryHandler : IRequestHandler<GetPdfContr
 {
     private readonly NamedQueryStorageService namedQueryStorageService;
     private readonly NamedQueryResultGenerator namedQueryResultGenerator;
+    private readonly ILogger<GetPdfControlFileForNamedQueryHandler> logger;
 
     public GetPdfControlFileForNamedQueryHandler(
         NamedQueryStorageService namedQueryStorageService,
-        NamedQueryResultGenerator namedQueryResultGenerator)
+        NamedQueryResultGenerator namedQueryResultGenerator,
+        ILogger<GetPdfControlFileForNamedQueryHandler> logger)
     {
         this.namedQueryStorageService = namedQueryStorageService;
         this.namedQueryResultGenerator = namedQueryResultGenerator;
+        this.logger = logger;
     }
     
     public async Task<PdfControlFile?> Handle(GetPdfControlFileForNamedQuery request, CancellationToken cancellationToken)
@@ -52,7 +56,19 @@ public class GetPdfControlFileForNamedQueryHandler : IRequestHandler<GetPdfContr
         var controlFile =
             await namedQueryStorageService.GetControlFile<PdfControlFile>(namedQueryResult.ParsedQuery,
                 cancellationToken);
-        return controlFile ?? new PdfControlFile(ControlFile.Empty);
+        if (controlFile == null)
+        {
+            return new PdfControlFile(ControlFile.Empty);
+        }
+
+        if (controlFile.PageCount.HasValue && controlFile.ItemCount == 0)
+        {
+            logger.LogDebug("PdfControlFile {Customer}:{ControlFile}:{Args} is in legacy format",
+                request.CustomerPathValue, request.NamedQuery, request.NamedQueryArgs);
+            controlFile.ItemCount = controlFile.PageCount.Value;
+        }
+
+        return controlFile;
     }
 }
 

@@ -486,7 +486,7 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         deserialized.InProcess.Should().BeFalse();
         deserialized.Exists.Should().BeTrue();
         deserialized.Key.Should().Be("the_key.pdf");
-        deserialized.ItemCount.Should().Be(0);
+        deserialized.ItemCount.Should().Be(172, "ItemCount should be set from PageCount");
         deserialized.SizeBytes.Should().Be(1024);
         deserialized.PageCount.Should().Be(172);
     }
