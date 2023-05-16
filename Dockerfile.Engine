@@ -1,0 +1,29 @@
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+WORKDIR /src
+
+COPY ["Engine/Engine.csproj", "Engine/"]
+COPY ["DLCS.Core/DLCS.Core.csproj", "DLCS.Core/"]
+COPY ["DLCS.Repository/DLCS.Repository.csproj", "DLCS.Repository/"]
+COPY ["DLCS.Model/DLCS.Model.csproj", "DLCS.Model/"]
+COPY ["DLCS.AWS/DLCS.AWS.csproj", "DLCS.AWS/"]
+COPY ["DLCS.Web/DLCS.Web.csproj", "DLCS.Web/"]
+
+RUN dotnet restore "Engine/Engine.csproj"
+
+COPY . .
+WORKDIR "/src/Engine"
+RUN dotnet build "Engine.csproj" --no-restore -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "Engine.csproj" --no-restore -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:6.0-bullseye-slim AS base
+
+LABEL maintainer="Donald Gray <donald.gray@digirati.com>,Tom Crane <tom.crane@digirati.com>"
+LABEL org.opencontainers.image.source=https://github.com/dlcs/protagonist
+LABEL org.opencontainers.image.description="DLCS Engine for ingesting assets and creating derivatives."
+
+WORKDIR /app
+EXPOSE 80
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "Engine.dll"]

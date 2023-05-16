@@ -1,0 +1,28 @@
+@page
+@model Portal.Pages.Admin.Customers.Index
+
+@{
+    ViewData["Title"] = "Customers";
+}
+
+<table class="table">
+    <thead>
+    <tr>
+        <th scope="col">Id</th>
+        <th scope="col">Name</th>
+        <th scope="col">Url part</th>
+        <th scope="col">Created</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var customer in Model.Customers)
+    {
+        <tr>
+            <th scope="row">@customer.Id</th>
+            <td><a asp-page="/Admin/Customers/Details" asp-route-id="@customer.Id">@customer.DisplayName</a></td>
+            <td>@customer.Name</td>
+            <td>@customer.Created</td>
+        </tr>
+    }
+    </tbody>
+</table>

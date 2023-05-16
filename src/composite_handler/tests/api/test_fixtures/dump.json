@@ -1,0 +1,414 @@
+[
+  {
+    "model": "common.collection",
+    "pk": "c6683325-a036-4240-beab-74404bc80894",
+    "fields": {
+      "json_data": {
+        "@type": "Collection",
+        "member": [
+          {
+            "id": "apollo-17-flight-plan-{:03d}",
+            "text": "https://example.org/text/alto/nasa/apollo-17/flight-plan.xml",
+            "@type": "vocab:Composite",
+            "roles": [],
+            "space": 1,
+            "family": "I",
+            "origin": "https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf",
+            "number1": 0,
+            "number2": 0,
+            "number3": 0,
+            "string1": "apollo-17",
+            "string2": "flight-plan",
+            "string3": "{:03d}",
+            "textType": "alto",
+            "originFormat": "application/pdf",
+            "incrementSeed": 0,
+            "maxUnauthorised": -1
+          }
+        ],
+        "@context": "http://www.w3.org/ns/hydra/context.jsonld"
+      },
+      "customer": 17,
+      "created_date": "2022-01-13T16:19:25.160Z",
+      "last_updated_date": "2022-01-13T16:19:25.160Z"
+    }
+  },
+  {
+    "model": "common.member",
+    "pk": "3385e3b3-c6aa-4e26-b418-7a000e55d9f2",
+    "fields": {
+      "collection": "c6683325-a036-4240-beab-74404bc80894",
+      "json_data": {
+        "id": "apollo-17-flight-plan-{:03d}",
+        "text": "https://example.org/text/alto/nasa/apollo-17/flight-plan.xml",
+        "@type": "vocab:Composite",
+        "roles": [],
+        "space": 1,
+        "family": "I",
+        "origin": "https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf",
+        "number1": 0,
+        "number2": 0,
+        "number3": 0,
+        "string1": "apollo-17",
+        "string2": "flight-plan",
+        "string3": "{:03d}",
+        "textType": "alto",
+        "originFormat": "application/pdf",
+        "incrementSeed": 0,
+        "maxUnauthorised": -1
+      },
+      "status": "PENDING",
+      "image_count": null,
+      "error": null,
+      "created_date": "2021-12-02T09:53:40.702000Z",
+      "last_updated_date": "2021-12-02T09:53:40.702000Z"
+    }
+  },
+  {
+    "model": "common.member",
+    "pk": "3c331aa2-4f48-4abb-a8c8-374f57154271",
+    "fields": {
+      "collection": "c6683325-a036-4240-beab-74404bc80894",
+      "json_data": {
+        "id": "apollo-17-flight-plan-{:03d}",
+        "text": "https://example.org/text/alto/nasa/apollo-17/flight-plan.xml",
+        "@type": "vocab:Composite",
+        "roles": [],
+        "space": 1,
+        "family": "I",
+        "origin": "https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf",
+        "number1": 0,
+        "number2": 0,
+        "number3": 0,
+        "string1": "apollo-17",
+        "string2": "flight-plan",
+        "string3": "{:03d}",
+        "textType": "alto",
+        "originFormat": "application/pdf",
+        "incrementSeed": 0,
+        "maxUnauthorised": -1
+      },
+      "status": "FETCHING_ORIGIN",
+      "image_count": null,
+      "error": null,
+      "created_date": "2021-03-10T12:08:58.094000Z",
+      "last_updated_date": "2021-06-25T11:07:27.492000Z"
+    }
+  },
+  {
+    "model": "common.member",
+    "pk": "5a926951-247a-4875-aca1-70ab2134eee9",
+    "fields": {
+      "collection": "c6683325-a036-4240-beab-74404bc80894",
+      "json_data": {
+        "id": "apollo-17-flight-plan-{:03d}",
+        "text": "https://example.org/text/alto/nasa/apollo-17/flight-plan.xml",
+        "@type": "vocab:Composite",
+        "roles": [],
+        "space": 1,
+        "family": "I",
+        "origin": "https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf",
+        "number1": 0,
+        "number2": 0,
+        "number3": 0,
+        "string1": "apollo-17",
+        "string2": "flight-plan",
+        "string3": "{:03d}",
+        "textType": "alto",
+        "originFormat": "application/pdf",
+        "incrementSeed": 0,
+        "maxUnauthorised": -1
+      },
+      "status": "RASTERIZING",
+      "image_count": null,
+      "error": null,
+      "created_date": "2021-04-04T15:00:37.382000Z",
+      "last_updated_date": "2021-10-27T21:31:29.037000Z"
+    }
+  },
+  {
+    "model": "common.member",
+    "pk": "87d0461a-d4a4-4159-bff4-548459bc5312",
+    "fields": {
+      "collection": "c6683325-a036-4240-beab-74404bc80894",
+      "json_data": {
+        "id": "apollo-17-flight-plan-{:03d}",
+        "text": "https://example.org/text/alto/nasa/apollo-17/flight-plan.xml",
+        "@type": "vocab:Composite",
+        "roles": [],
+        "space": 1,
+        "family": "I",
+        "origin": "https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf",
+        "number1": 0,
+        "number2": 0,
+        "number3": 0,
+        "string1": "apollo-17",
+        "string2": "flight-plan",
+        "string3": "{:03d}",
+        "textType": "alto",
+        "originFormat": "application/pdf",
+        "incrementSeed": 0,
+        "maxUnauthorised": -1
+      },
+      "status": "PUSHING_TO_DLCS",
+      "image_count": 783,
+      "error": null,
+      "created_date": "2021-04-04T12:36:35.626000Z",
+      "last_updated_date": "2021-12-03T06:55:33.591000Z"
+    }
+  },
+  {
+    "model": "common.member",
+    "pk": "86c8b2d7-7287-4d6a-9868-2267085eca6d",
+    "fields": {
+      "collection": "c6683325-a036-4240-beab-74404bc80894",
+      "json_data": {
+        "id": "apollo-17-flight-plan-{:03d}",
+        "text": "https://example.org/text/alto/nasa/apollo-17/flight-plan.xml",
+        "@type": "vocab:Composite",
+        "roles": [],
+        "space": 1,
+        "family": "I",
+        "origin": "https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf",
+        "number1": 0,
+        "number2": 0,
+        "number3": 0,
+        "string1": "apollo-17",
+        "string2": "flight-plan",
+        "string3": "{:03d}",
+        "textType": "alto",
+        "originFormat": "application/pdf",
+        "incrementSeed": 0,
+        "maxUnauthorised": -1
+      },
+      "status": "BUILDING_DLCS_REQUEST",
+      "image_count": 633,
+      "error": null,
+      "created_date": "2021-01-26T12:11:32.594000Z",
+      "last_updated_date": "2021-03-07T02:54:11.223000Z"
+    }
+  },
+  {
+    "model": "common.member",
+    "pk": "fd5057bc-aef2-427f-8233-f9174e2f47a7",
+    "fields": {
+      "collection": "c6683325-a036-4240-beab-74404bc80894",
+      "json_data": {
+        "id": "apollo-17-flight-plan-{:03d}",
+        "text": "https://example.org/text/alto/nasa/apollo-17/flight-plan.xml",
+        "@type": "vocab:Composite",
+        "roles": [],
+        "space": 1,
+        "family": "I",
+        "origin": "https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf",
+        "number1": 0,
+        "number2": 0,
+        "number3": 0,
+        "string1": "apollo-17",
+        "string2": "flight-plan",
+        "string3": "{:03d}",
+        "textType": "alto",
+        "originFormat": "application/pdf",
+        "incrementSeed": 0,
+        "maxUnauthorised": -1
+      },
+      "status": "COMPLETED",
+      "image_count": 875,
+      "error": null,
+      "created_date": "2021-10-06T13:46:43.400000Z",
+      "last_updated_date": "2021-11-27T07:25:50.133000Z"
+    }
+  },
+  {
+    "model": "common.dlcsbatch",
+    "pk": "231a7afe-8c44-484a-994c-ab425fb0352b",
+    "fields": {
+      "member": "fd5057bc-aef2-427f-8233-f9174e2f47a7",
+      "json_data": {
+        "@id": "https://api.dlcs.digirati.io/customers/17/queue/batches/570760",
+        "test": "https://api.dlcs.digirati.io/customers/17/queue/batches/570760/test",
+        "@type": "vocab:Batch",
+        "count": 100,
+        "errors": 0,
+        "images": "https://api.dlcs.digirati.io/customers/17/queue/batches/570760/images",
+        "@context": "https://api.dlcs.digirati.io/contexts/Batch.jsonld",
+        "finished": "0001-01-01T00:00:00",
+        "completed": 0,
+        "submitted": "2022-01-13T16:29:23.3062359+00:00",
+        "superseded": false
+      },
+      "uri": "https://api.dlcs.digirati.io/customers/17/queue/batches/570760",
+      "created_date": "2022-01-13T16:29:31.842Z",
+      "last_updated_date": "2022-01-13T16:29:31.842Z"
+    }
+  },
+  {
+    "model": "common.dlcsbatch",
+    "pk": "25c1220c-7cb5-4055-b199-eee8cbed65cd",
+    "fields": {
+      "member": "fd5057bc-aef2-427f-8233-f9174e2f47a7",
+      "json_data": {
+        "@id": "https://api.dlcs.digirati.io/customers/17/queue/batches/570762",
+        "test": "https://api.dlcs.digirati.io/customers/17/queue/batches/570762/test",
+        "@type": "vocab:Batch",
+        "count": 18,
+        "errors": 0,
+        "images": "https://api.dlcs.digirati.io/customers/17/queue/batches/570762/images",
+        "@context": "https://api.dlcs.digirati.io/contexts/Batch.jsonld",
+        "finished": "0001-01-01T00:00:00",
+        "completed": 0,
+        "submitted": "2022-01-13T16:29:31.3118785+00:00",
+        "superseded": false
+      },
+      "uri": "https://api.dlcs.digirati.io/customers/17/queue/batches/570762",
+      "created_date": "2022-01-13T16:29:31.844Z",
+      "last_updated_date": "2022-01-13T16:29:31.844Z"
+    }
+  },
+  {
+    "model": "common.dlcsbatch",
+    "pk": "26ad1f2e-b53c-4262-aedb-acf701de6663",
+    "fields": {
+      "member": "fd5057bc-aef2-427f-8233-f9174e2f47a7",
+      "json_data": {
+        "@id": "https://api.dlcs.digirati.io/customers/17/queue/batches/570761",
+        "test": "https://api.dlcs.digirati.io/customers/17/queue/batches/570761/test",
+        "@type": "vocab:Batch",
+        "count": 100,
+        "errors": 0,
+        "images": "https://api.dlcs.digirati.io/customers/17/queue/batches/570761/images",
+        "@context": "https://api.dlcs.digirati.io/contexts/Batch.jsonld",
+        "finished": "0001-01-01T00:00:00",
+        "completed": 0,
+        "submitted": "2022-01-13T16:29:27.184941+00:00",
+        "superseded": false
+      },
+      "uri": "https://api.dlcs.digirati.io/customers/17/queue/batches/570761",
+      "created_date": "2022-01-13T16:29:31.843Z",
+      "last_updated_date": "2022-01-13T16:29:31.843Z"
+    }
+  },
+  {
+    "model": "common.dlcsbatch",
+    "pk": "373153b7-22cc-4e88-97b6-37bcee7d687e",
+    "fields": {
+      "member": "fd5057bc-aef2-427f-8233-f9174e2f47a7",
+      "json_data": {
+        "@id": "https://api.dlcs.digirati.io/customers/17/queue/batches/570759",
+        "test": "https://api.dlcs.digirati.io/customers/17/queue/batches/570759/test",
+        "@type": "vocab:Batch",
+        "count": 100,
+        "errors": 0,
+        "images": "https://api.dlcs.digirati.io/customers/17/queue/batches/570759/images",
+        "@context": "https://api.dlcs.digirati.io/contexts/Batch.jsonld",
+        "finished": "0001-01-01T00:00:00",
+        "completed": 0,
+        "submitted": "2022-01-13T16:29:19.0501242+00:00",
+        "superseded": false
+      },
+      "uri": "https://api.dlcs.digirati.io/customers/17/queue/batches/570759",
+      "created_date": "2022-01-13T16:29:31.842Z",
+      "last_updated_date": "2022-01-13T16:29:31.842Z"
+    }
+  },
+  {
+    "model": "common.dlcsbatch",
+    "pk": "c6b93809-2cd8-408b-8fd2-f4f6691a783c",
+    "fields": {
+      "member": "fd5057bc-aef2-427f-8233-f9174e2f47a7",
+      "json_data": {
+        "@id": "https://api.dlcs.digirati.io/customers/17/queue/batches/570757",
+        "test": "https://api.dlcs.digirati.io/customers/17/queue/batches/570757/test",
+        "@type": "vocab:Batch",
+        "count": 100,
+        "errors": 0,
+        "images": "https://api.dlcs.digirati.io/customers/17/queue/batches/570757/images",
+        "@context": "https://api.dlcs.digirati.io/contexts/Batch.jsonld",
+        "finished": "0001-01-01T00:00:00",
+        "completed": 0,
+        "submitted": "2022-01-13T16:29:09.7802858+00:00",
+        "superseded": false
+      },
+      "uri": "https://api.dlcs.digirati.io/customers/17/queue/batches/570757",
+      "created_date": "2022-01-13T16:29:31.840Z",
+      "last_updated_date": "2022-01-13T16:29:31.840Z"
+    }
+  },
+  {
+    "model": "common.dlcsbatch",
+    "pk": "e97ecd1c-5e61-41cd-9017-89ecec774314",
+    "fields": {
+      "member": "fd5057bc-aef2-427f-8233-f9174e2f47a7",
+      "json_data": {
+        "@id": "https://api.dlcs.digirati.io/customers/17/queue/batches/570756",
+        "test": "https://api.dlcs.digirati.io/customers/17/queue/batches/570756/test",
+        "@type": "vocab:Batch",
+        "count": 100,
+        "errors": 0,
+        "images": "https://api.dlcs.digirati.io/customers/17/queue/batches/570756/images",
+        "@context": "https://api.dlcs.digirati.io/contexts/Batch.jsonld",
+        "finished": "0001-01-01T00:00:00",
+        "completed": 0,
+        "submitted": "2022-01-13T16:29:03.3866942+00:00",
+        "superseded": false
+      },
+      "uri": "https://api.dlcs.digirati.io/customers/17/queue/batches/570756",
+      "created_date": "2022-01-13T16:29:31.838Z",
+      "last_updated_date": "2022-01-13T16:29:31.838Z"
+    }
+  },
+  {
+    "model": "common.dlcsbatch",
+    "pk": "ea71a719-fd05-4b1a-b2f5-608b70ae3168",
+    "fields": {
+      "member": "fd5057bc-aef2-427f-8233-f9174e2f47a7",
+      "json_data": {
+        "@id": "https://api.dlcs.digirati.io/customers/17/queue/batches/570758",
+        "test": "https://api.dlcs.digirati.io/customers/17/queue/batches/570758/test",
+        "@type": "vocab:Batch",
+        "count": 100,
+        "errors": 0,
+        "images": "https://api.dlcs.digirati.io/customers/17/queue/batches/570758/images",
+        "@context": "https://api.dlcs.digirati.io/contexts/Batch.jsonld",
+        "finished": "0001-01-01T00:00:00",
+        "completed": 0,
+        "submitted": "2022-01-13T16:29:14.7666989+00:00",
+        "superseded": false
+      },
+      "uri": "https://api.dlcs.digirati.io/customers/17/queue/batches/570758",
+      "created_date": "2022-01-13T16:29:31.841Z",
+      "last_updated_date": "2022-01-13T16:29:31.841Z"
+    }
+  },
+  {
+    "model": "common.member",
+    "pk": "1f1f0f9a-c0f2-420e-8ba8-8b445e3f98e2",
+    "fields": {
+      "collection": "c6683325-a036-4240-beab-74404bc80894",
+      "json_data": {
+        "id": "apollo-17-flight-plan-{:03d}",
+        "text": "https://example.org/text/alto/nasa/apollo-17/flight-plan.xml",
+        "@type": "vocab:Composite",
+        "roles": [],
+        "space": 1,
+        "family": "I",
+        "origin": "https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf",
+        "number1": 0,
+        "number2": 0,
+        "number3": 0,
+        "string1": "apollo-17",
+        "string2": "flight-plan",
+        "string3": "{:03d}",
+        "textType": "alto",
+        "originFormat": "application/pdf",
+        "incrementSeed": 0,
+        "maxUnauthorised": -1
+      },
+      "status": "ERROR",
+      "image_count": null,
+      "error": "Exception: something bad happened",
+      "created_date": "2021-12-08T11:40:36.716000Z",
+      "last_updated_date": "2021-11-12T10:55:06.686000Z"
+    }
+  }
+]

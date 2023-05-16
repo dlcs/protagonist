@@ -1,0 +1,60 @@
+﻿@page
+@model Portal.Pages.Spaces.Index
+
+@{
+    ViewData["Title"] = "Spaces";
+}
+
+@if (TempData["new-space-name"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+     <strong>New space created:</strong> @TempData["new-space-name"]
+     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+
+@if (TempData["error-message"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Error:</strong> @TempData["error-message"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+
+<form method="post" class="row row-cols-lg-auto g-3 align-items-center">
+  <div class="col-12">
+    <label class="visually-hidden" for="newSpaceName">New space name</label>
+    <div class="input-group">
+      <input type="text" class="form-control" id="newSpaceName" name="newSpaceName" required>
+    </div>
+  </div>
+    <div class="col-4">
+      <button type="submit" class="btn btn-primary">Create new space</button>
+  </div>
+</form>
+
+@await Component.InvokeAsync("Pager", new { values = Model.PagerValues })
+
+<table class="table">
+    <thead>
+    <tr>
+        <th scope="col">Id</th>
+        <th scope="col">Name</th>
+        <th scope="col">Created</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var space in Model.SpaceModels)
+    {
+        <tr>
+            <th scope="row">@space.SpaceId</th>
+            <td><a asp-page="/Spaces/Details" asp-route-id="@space.SpaceId">@space.Name</a></td>
+            <td>@space.Created</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@await Component.InvokeAsync("Pager", new { values = Model.PagerValues })

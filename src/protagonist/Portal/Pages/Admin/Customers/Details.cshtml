@@ -1,0 +1,64 @@
+@page
+@model Portal.Pages.Admin.Customers.Details
+
+@{
+    ViewData["Title"] = "Customer: " + Model.Customer.DisplayName;
+}
+
+<table class="table">
+    <tr>
+        <th scope="row">Id</th>
+        <td>@Model.Customer.Id</td>
+    </tr>
+    <tr>
+        <th scope="row">Url part</th>
+        <td>@Model.Customer.Name</td>
+    </tr>
+    <tr>
+        <th scope="row">Created</th>
+        <td>@Model.Customer.Created</td>
+    </tr>
+</table>
+
+<h3>Portal users</h3>
+<table class="table">
+    <thead>
+    <tr>
+        <th scope="col">Email</th>
+        <th scope="col">Created</th>
+        <th scope="col">Enabled</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var user in Model.Users)
+    {
+        <tr>
+            <th scope="row">@user.Email</th>
+            <td>@user.Created</td>
+            <td>@user.Enabled</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h3>Spaces</h3>
+<p>Total spaces for customer: @Model.PageOfSpaces.TotalItems</p>
+<table class="table">
+    <thead>
+    <tr>
+        <th scope="col">Id</th>
+        <th scope="col">Name</th>
+        <th scope="col">Created</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var space in Model.PageOfSpaces.Members)
+    {
+        <tr>
+            <th scope="row">@space.ModelId</th>
+            <td>@space.Name</td>
+            <td>@space.Created</td>
+        </tr>
+    }
+    </tbody>
+</table>

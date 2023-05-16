@@ -1,0 +1,47 @@
+Dear {recipients},
+
+We have created a new customer in IIIF Cloud Services for you to test the API with: 
+
+Customer Id = {customerId}, Name = {customerName}. 
+
+We have also created a "Space", which is a way to logically group assets:
+
+Space Id = {spaceId}, Name = {spaceName}.
+
+You will be able to create new spaces as required using the API.
+
+The API key is available using the following link. You’ll need to verify your email address to access it: 
+
+{apiKeyEmail}
+ 
+The username and password are the Basic HTTP Auth credentials for calling the API. 
+
+The root of the API is - https://api.dlc.services/. Using Customer {customerId} and Space {spaceId} you should have the basics that you need to get started.
+
+The simplest test to verify the credentials work is to call GET https://api.dlc.services/customers/{customerId}  with basic auth headers and verify you receive a 200 response.
+
+The API documentation has details on how to ingest assets into IIIF Cloud Services: 
+
+https://dlcs-book.readthedocs.io/en/latest/walkthroughs/sample_requests.html#queue-assets-for-ingest
+
+As part of setup we have ingested a sample image titled "test-setup" to verify everything was okay. You can see the public-facing URLs generated for this:
+
+* IIIF info.json file: https://dlc.services/iiif-img/{customerId}/{spaceId}/test-setup/info.json
+* IIIF Manifest: https://dlc.services/iiif-manifest/{customerId}/{spaceId}/test-setup 
+  (in viewer: https://uv-v4.netlify.app/#?manifest=https://dlc.services/iiif-manifest/{customerId}/{spaceId}/test-setup)
+* Image request: https://dlc.services/iiif-img/{customerId}/{spaceId}/test-setup/full/!400,400/0/default.jpg
+* Thumbnail service: https://dlc.services/thumbs/{customerId}/{spaceId}/test-setup/info.json
+* Thumbnail request: https://dlc.services/thumbs/{customerId}/{spaceId}/test-setup/full/!200,200/0/default.jpg
+
+The Thumbnail service is created for any ingested images and can be used to generate UI that involves many thumbnails on screen at once.
+The thumbnails are much faster than arbitrary requests to the image service, but they are fixed sizes.
+       
+{additionalText}
+
+Many thanks,
+
+{from}
+
+IIIF Cloud Services
+
+{footer}

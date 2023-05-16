@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "collection.schema.json",
+  "type": "object",
+  "properties": {
+    "@context": {
+      "type": "string",
+      "enum": [
+        "http://www.w3.org/ns/hydra/context.jsonld"
+      ]
+    },
+    "@type": {
+      "type": "string",
+      "enum": [
+        "Collection"
+      ]
+    },
+    "member": {
+      "type": "array",
+      "items": {
+        "$ref": "member.schema.json",
+        "minItems": 1
+      }
+    }
+  },
+  "required": [
+    "@context",
+    "@type",
+    "member"
+  ]
+}

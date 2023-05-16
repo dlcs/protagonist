@@ -1,0 +1,205 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+    Layout = null;
+}
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <title>DLCS: Digital Library Cloud Services, from Digirati</title>
+
+
+    <!-- Bootstrap core CSS -->
+    <link href="~/assets/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="~/css/portal.css" rel="stylesheet"/>
+    <style>
+      .feather {
+        width: 24px;
+        height: 24px;
+        }
+    </style>
+
+</head>
+<body>
+
+<main>
+
+    <div class="container py-3">
+        @await Html.PartialAsync("Shared/_GeneralSiteHeader")
+
+
+      
+
+
+        @if (User.Identity.IsAuthenticated)
+        {
+          if (Model.Spaces.Count == 0)
+          {
+            <div class="card">
+              <div class="card-header">
+                Getting started
+              </div>
+              <div class="card-body">
+                <h5 class="card-title">Wellcome to the DLCS!</h5>
+                <p class="card-text">As a new user, you can get started by creating a space to assemble content in.</p>
+                <p>Here's a <a href="https://drive.google.com/file/d/14d-HcbftIt1qMhx-qV1jf29Hkn9e03E2/view">very short video</a> to get a feel for it.</p>
+                <a asp-page="/Spaces/Index" class="btn btn-primary">Go to spaces</a>
+              </div>
+            </div>
+          }
+          
+  <div class="container px-4 py-5" id="icon-grid">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 py-5">
+      <div class="col d-flex align-items-start">
+        <i class="text-muted flex-shrink-0 me-3" data-feather="list"></i>
+        <div>
+          <h4 class="fw-bold mb-0"><a class="text-decoration-none" asp-page="/Queue/Index">Queue</a></h4>
+          <p>Paragraph of text beneath the heading to explain the heading.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <i class="text-muted flex-shrink-0 me-3" data-feather="folder"></i>
+        <div>
+          <h4 class="fw-bold mb-0"><a class="text-decoration-none" asp-page="/Spaces/Index">Spaces</a></h4>
+          <p>Paragraph of text beneath the heading to explain the heading.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <i class="text-muted flex-shrink-0 me-3" data-feather="hard-drive"></i>
+        <div>
+          <h4 class="fw-bold mb-0"><a class="text-decoration-none" asp-page="/Storage/Index">Storage</a></h4>
+          <p>Paragraph of text beneath the heading to explain the heading.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <i class="text-muted flex-shrink-0 me-3" data-feather="globe"></i>
+        <div>
+          <h4 class="fw-bold mb-0"><a class="text-decoration-none" asp-page="/Origins/Index">Origins</a></h4>
+          <p>Paragraph of text beneath the heading to explain the heading.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <i class="text-muted flex-shrink-0 me-3" data-feather="lock"></i>
+        <div>
+          <h4 class="fw-bold mb-0"><a class="text-decoration-none" asp-page="/Auth/Index">Access Control</a></h4>
+          <p>Paragraph of text beneath the heading to explain the heading.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <i class="text-muted flex-shrink-0 me-3" data-feather="search"></i>
+        <div>
+          <h4 class="fw-bold mb-0"><a class="text-decoration-none" asp-page="/Queries/Index">Named queries</a></h4>
+          <p>Paragraph of text beneath the heading to explain the heading.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <i class="text-muted flex-shrink-0 me-3" data-feather="users"></i>
+        <div>
+          <h4 class="fw-bold mb-0"><a class="text-decoration-none" asp-page="/Users/Index">Users</a></h4>
+          <p>Paragraph of text beneath the heading to explain the heading.</p>
+        </div>
+      </div>
+      <div class="col d-flex align-items-start">
+        <i class="text-muted flex-shrink-0 me-3" data-feather="key"></i>
+        <div>
+          <h4 class="fw-bold mb-0"><a class="text-decoration-none" asp-page="/keys/index">API Keys</a></h4>
+          <p>Paragraph of text beneath the heading to explain the heading.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+        }
+    
+        <div class="container px-4 py-5">
+          <div class="row flex-lg-row-reverse align-items-center g-5 py-5">
+            <div class="col-10 col-sm-8 col-lg-6">
+              <img src="~/img/john-dee.gif" class="d-block mx-lg-auto img-fluid" alt="Demonstration of IIIF Image API" width="800" loading="lazy">
+              <!--<video src="~/img/john-dee.mp4" autoplay loop controls class="d-block mx-lg-auto img-fluid"></video>-->
+            </div>
+            <div class="col-lg-6">
+              <h1 class="display-5 fw-bold lh-1 mb-3">Digital Library Cloud Services</h1>
+              <p class="lead">
+                Any image you register with the DLCS platform will be made available as a IIIF Image service. All the features
+                of the specification are supported (and more!).</p>
+              <p class="lead">
+                The DLCS supports tiled (deep zoom) delivery, responsive HTML images, arbitrary cropping and
+                sizing for editorial needs, as well as multiple output image formats, now and in the future.</p>
+              <p class="lead">
+                Open standards like IIIF and Web Annotations allow for a <em>service platform</em> that can manage the
+                heavy lifting for delivering digital objects. The DLCS is that platform.
+              </p>
+              <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <a asp-page="/Signup" class="btn btn-primary btn-lg px-4 me-md-2">Sign up</a>
+                <a asp-page="/Features" class="btn btn-outline-secondary btn-lg px-4">Learn more</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <hr/>
+        
+      <div class="container px-4 py-5">
+        <div class="row flex-lg-row-reverse align-items-center g-5 py-5">
+          <div class="col-10 col-sm-8 col-lg-6">
+            <img src="~/img/portal-upload.png" class="d-block mx-lg-auto img-fluid" alt="Bootstrap Themes" loading="lazy">
+          </div>
+          <div class="col-lg-6">
+            <h1 class="display-5 fw-bold lh-1 mb-3">More than images - audio, video, born-digital too</h1>
+            <p class="lead">
+              Digirati's DLCS platform hosts your media assets for full IIIF support.
+              Any image becomes a IIIF Image Service. AV resources are transcoded to web-friendly delivery formats.
+              Other files like PDFs can also be hosted and benefit from unified access control.
+              Assets can be arranged in IIIF Manifests for use in viewers and other software.
+              PDFs can optionally be converted to IIIF Manifests... and Manifest to PDF!
+            </p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+              <a asp-page="/Signup" class="btn btn-primary btn-lg px-4 me-md-2">Sign up</a>
+              <a asp-page="/Features" class="btn btn-outline-secondary btn-lg px-4">Learn more</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+        
+
+        <div class="container my-5">
+            <div class="row p-4 pb-0 pe-lg-0 pt-lg-5 align-items-center rounded-3 border shadow-lg">
+                <div class="col-lg-7 p-3 p-lg-5 pt-lg-3">
+                    <h1 class="display-4 fw-bold lh-1">One asset?<br/>Or 100 million?</h1>
+                    <p class="lead">
+                        DLCS is a handy tool for ad-hoc IIIF production - just drag images in and create manifests straight away.
+                        But it also scales to collections with 100 million images, through its cost-effective tiered storage and
+                        delivery strategies.
+                    </p>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-4 mb-lg-3">
+              <a asp-page="/Signup" class="btn btn-primary btn-lg px-4 me-md-2">Sign up</a>
+              <a asp-page="/Features" class="btn btn-outline-secondary btn-lg px-4">Learn more</a>
+                    </div>
+                </div>
+                <div class="col-lg-4 offset-lg-1 p-0 overflow-hidden shadow-lg">
+                    <img class="rounded-lg-3" src="~/img/many-images.gif" alt="" width="800">
+                </div>
+            </div>
+        </div>
+
+
+
+        @await Html.PartialAsync("Shared/_GeneralSiteFooter")
+    </div>
+</main>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js" integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>
+<script src="~/assets/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/portal.js" asp-append-version="true"></script>
+
+
+
+</body>
+</html>

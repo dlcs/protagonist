@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  migrate:
+    build:
+      dockerfile: ../Dockerfile.CompositeHandler
+      context: ../
+    command: bash -c "python manage.py migrate && python manage.py createcachetable"
+    environment:
+      - DATABASE_URL=postgresql://dlcs:password@postgres:5432/compositedb
+    depends_on:
+      - postgres
+  load_test_data:
+    build:
+      dockerfile: ../Dockerfile.CompositeHandler
+      context: ../
+    command: bash -c "python manage.py loaddata /srv/dlcs/test_fixtures/dump.json"
+    environment:
+      - DATABASE_URL=postgresql://dlcs:password@postgres:5432/compositedb
+    volumes:
+      - type: bind
+        source: ./api/test_fixtures
+        target: /srv/dlcs/test_fixtures
+    depends_on:
+      - postgres
+      - migrate
+  api:
+    build:
+      dockerfile: ../Dockerfile.CompositeHandler
+      context: ../
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      - DATABASE_URL=postgresql://dlcs:password@postgres:5432/compositedb
+      - DLCS_API_ROOT=http://dlcs:8080/
+    ports:
+      - "8000"
+    depends_on:
+      - migrate
+      - postgres
+      - dlcs
+      - load_test_data
+  postgres:
+    image: postgres:13.3
+    environment:
+      - POSTGRES_USER=dlcs
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=compositedb
+  dlcs:
+    image: mendhak/http-https-echo:22

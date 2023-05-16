@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  init:
+    image: busybox:latest
+    command: chown -R 1000:1000 /data/scratch
+    volumes:
+      - ./scratch:/data/scratch
+  migrate:
+    build:
+      dockerfile: ../../Dockerfile.CompositeHandler
+      context: .
+    command: bash -c "python manage.py migrate && python manage.py createcachetable"
+    env_file: .env
+    depends_on:
+      - postgres
+  api:
+    build:
+      dockerfile: ../../Dockerfile.CompositeHandler
+      context: .
+    command: python manage.py runserver 0.0.0.0:8000
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - migrate
+  engine:
+    build:
+      dockerfile: ../../Dockerfile.CompositeHandler
+      context: .
+    command: python manage.py qcluster
+    deploy:
+      replicas: 3
+    env_file: .env
+    environment:
+      - AWS_PROFILE=${AWS_PROFILE:-default}
+    volumes:
+      - ./scratch:/data/scratch
+      - $HOME/.aws:/srv/dlcs/.aws:ro
+    depends_on:
+      - migrate
+      - init
+  postgres:
+    image: postgres:13.3
+    environment:
+      - POSTGRES_USER=dlcs
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=compositedb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:

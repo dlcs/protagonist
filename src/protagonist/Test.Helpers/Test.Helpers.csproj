@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="AWSSDK.S3" Version="3.7.9.34" />
+      <PackageReference Include="AWSSDK.SQS" Version="3.7.2.84" />
+      <PackageReference Include="FakeItEasy" Version="7.3.1" />
+      <PackageReference Include="FluentAssertions" Version="6.6.0" />
+      <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.5" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.5" />
+      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
+      <PackageReference Include="Testcontainers" Version="2.3.0" />
+      <PackageReference Include="xunit" Version="2.4.1" />
+      <PackageReference Include="Yarp.ReverseProxy" Version="1.1.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
+      <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
+    </ItemGroup>
+
+</Project>

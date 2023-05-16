@@ -1,0 +1,103 @@
+version: '3'
+
+volumes:
+  dlcs_postgres_data: {}
+  dlcs_postgres_data_backups: {}
+  dlcs_localstack_tmp: {}
+
+services:
+  # iip:
+  #   image: ghcr.io/dlcs/iipsrv-openjpeg:2.4.0
+  #   ports:
+  #     - "5025:8080"
+  #   volumes:
+  #     - $HOME\Docker\scratch:/nas
+  #   entrypoint: /operations.sh
+
+  cantaloupe:
+    image: ghcr.io/dlcs/cantaloupe:5.0.5
+    ports:
+      - "5026:8182"
+    environment:
+      - ENDPOINT_ADMIN_ENABLED=true
+      - ENDPOINT_ADMIN_SECRET=admin
+      - PROCESSOR_SELECTION_STRATEGY=ManualSelectionStrategy
+      - PROCESSOR_MANUALSELECTIONSTRATEGY_JP2=GrokProcessor
+      - MAX_SCALE=0
+    volumes:
+      - $HOME\Docker\scratch:/home/cantaloupe/images/
+
+  special-server:
+    image: ghcr.io/dlcs/cantaloupe:5.0.5
+    ports:
+      - "5126:8182"
+    environment:
+      - ENDPOINT_ADMIN_ENABLED=true
+      - ENDPOINT_ADMIN_SECRET=admin
+      - DELEGATE_SCRIPT_ENABLED=true
+      - SOURCE_STATIC=S3Source
+      - DELEGATE_SCRIPT_PATHNAME=/cantaloupe/delegates.rb
+      - S3SOURCE_LOOKUP_STRATEGY=ScriptLookupStrategy
+      - AWS_ACCESS_KEY_ID=${SS_AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${SS_AWS_SECRET_ACCESS_KEY}
+      - MAX_SCALE=0
+    env_file:
+      - .env
+
+  fireball:
+    image: ghcr.io/dlcs/fireball:03f76e5893ae95ee22c307e2dadec1ab033cdb79
+    ports:
+      - "5030:80"
+    environment:
+      - FIREBALL_DOWNLOAD_POOL_SIZE=100
+      - FIREBALL_WORK_FOLDER=/scratch/fireball
+    volumes:
+      - $HOME\Docker\scratch\fireball:/scratch/fireball
+      - $HOME\.aws:/root/.aws
+    env_file:
+      - .env
+
+  appetiser:
+    image: digirati/appetiser:latest
+    ports:
+      - "5031:80"
+    volumes:
+      - $HOME\Docker\scratch:/scratch
+      - $HOME\.aws:/root/.aws
+    env_file:
+      - .env
+
+  thumbs:
+    build:
+      context: ../src/protagonist
+      dockerfile: ..\..\Dockerfile.Thumbs
+    ports:
+      - "5019:80"
+    env_file:
+      - .env
+    volumes:
+      - $HOME\.aws:/root/.aws
+
+  # localstack:
+  #   build:
+  #     context: ./localstack
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "4566:4566"
+  #   environment:
+  #     - SERVICES=s3,sqs
+  #     - HOSTNAME_EXTERNAL=localstack
+  #     - DATA_DIR=/tmp/localstack/data
+  #   volumes:
+  #     - dlcs_localstack_tmp:/tmp/localstack
+
+  # postgres:
+  #   image: postgres:14
+  #   hostname: postgres
+  #   ports:
+  #     - "5452:5432"
+  #   volumes:
+  #     - dlcs_postgres_data:/var/lib/postgresql/data
+  #     - dlcs_postgres_data_backups:/backups
+  #   env_file:
+  #     - .env
