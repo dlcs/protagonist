@@ -29,7 +29,7 @@ public class OrchestratorSettings
     /// </summary>
     /// <remarks>
     /// Ideally the Orchestrator should be agnostic to this but, for now at least, the downstream image server will
-    /// be useful to know for toggling some functionality (for now at least)
+    /// be useful to know for toggling some functionality
     /// </remarks>
     public ImageServer ImageServer { get; set; } = ImageServer.Cantaloupe;
 
@@ -51,7 +51,7 @@ public class OrchestratorSettings
     /// <summary>
     /// If true, requests for info.json will cause image to be orchestrated.
     /// </summary>
-    public bool OrchestrateOnInfoJson { get; set; }
+    public bool OrchestrateOnInfoJson { get; set; } = true;
 
     /// <summary>
     /// If <see cref="OrchestrateOnInfoJson"/> is true, this is the max number of requests that will be honoured
@@ -84,13 +84,15 @@ public class OrchestratorSettings
     /// </summary>
     public int TargetThumbnailSize { get; set; } = 200;
 
-    public ProxySettings Proxy { get; set; }
+    public ReingestOnOrchestrationSettings ReingestOnOrchestration { get; set; } = new();
 
-    public CacheSettings Caching { get; set; }
+    public ProxySettings Proxy { get; set; } = new();
 
-    public AuthSettings Auth { get; set; }
+    public CacheSettings Caching { get; set; } = new();
 
-    public NamedQuerySettings NamedQuery { get; set; }
+    public AuthSettings Auth { get; set; } = new();
+
+    public NamedQuerySettings NamedQuery { get; set; } = new();
 }
 
 public class ProxySettings
@@ -308,4 +310,18 @@ public class ImageServerConfig
             return defaultVersionPathTemplate;
         }
     }
+}
+
+/// <summary>
+/// Settings related to reingesting on orchestration
+/// </summary>
+public class ReingestOnOrchestrationSettings
+{
+    /// <summary>
+    /// This date controls how images without ImageLocation.S3 are handled.
+    /// For Images created after this date, return a 404
+    /// For Images created before this date, reingest  
+    /// </summary>
+    /// <remarks>See https://github.com/dlcs/protagonist/issues/505</remarks>
+    public DateTime? EmptyImageLocationCreatedDate { get; set; }
 }
