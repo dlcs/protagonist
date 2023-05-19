@@ -1365,11 +1365,11 @@ public class FakeImageOrchestrator : IImageOrchestrator
 {
     public static List<AssetId> OrchestratedImages { get; } = new();
 
-    public Task EnsureImageOrchestrated(OrchestrationImage orchestrationImage,
+    public Task<OrchestrationResult> EnsureImageOrchestrated(OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken = default)
     {
         OrchestratedImages.Add(orchestrationImage.AssetId);
-        return Task.CompletedTask;
+        return Task.FromResult(OrchestrationResult.Orchestrated);
     }
 }
 
