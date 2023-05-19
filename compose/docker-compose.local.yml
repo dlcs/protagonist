@@ -6,14 +6,6 @@ volumes:
   dlcs_localstack_tmp: {}
 
 services:
-  # iip:
-  #   image: ghcr.io/dlcs/iipsrv-openjpeg:2.4.0
-  #   ports:
-  #     - "5025:8080"
-  #   volumes:
-  #     - $HOME\Docker\scratch:/nas
-  #   entrypoint: /operations.sh
-
   cantaloupe:
     image: ghcr.io/dlcs/cantaloupe:5.0.5
     ports:
