@@ -875,8 +875,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     A<CancellationToken>._))
             .MustHaveHappened();
 
-        var imageLocation = await dbContext.ImageLocations.SingleAsync(l => l.Id == assetId);
-        imageLocation.Nas.Should().BeNullOrEmpty();
+        var imageLocation = await dbContext.ImageLocations.SingleOrDefaultAsync(l => l.Id == assetId);
+        imageLocation.Should().BeNull("API does not create ImageLocation record");
 
         await dbContext.Entry(asset).ReloadAsync();
         asset.Error.Should().BeNullOrEmpty();
@@ -889,7 +889,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var assetId = new AssetId(99, 1, nameof(Reingest_Success_IfImageLocationExists));
         var asset = (await dbContext.Images.AddTestAsset(assetId, error: "Failed", ingesting: false)).Entity;
-        await dbContext.ImageLocations.AddTestImageLocation(assetId);
+        await dbContext.ImageLocations.AddTestImageLocation(assetId, "s3://foo");
         await dbContext.SaveChangesAsync();
         
         A.CallTo(() =>
@@ -915,6 +915,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var imageLocation = await dbContext.ImageLocations.SingleAsync(l => l.Id == assetId);
         imageLocation.Nas.Should().BeNullOrEmpty();
+        imageLocation.S3.Should().Be("s3://foo", "ImageLocation should not be changed");
 
         await dbContext.Entry(asset).ReloadAsync();
         asset.Error.Should().BeNullOrEmpty();
