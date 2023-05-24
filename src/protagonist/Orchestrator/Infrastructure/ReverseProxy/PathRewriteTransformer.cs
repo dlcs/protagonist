@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DLCS.Core.Strings;
@@ -49,22 +50,41 @@ public class PathRewriteTransformer : HttpTransformer
         HttpResponseMessage? proxyResponse)
     {
         base.TransformResponseAsync(httpContext, proxyResponse);
-        
+
         CleanResponseHeaders(httpContext);
         EnsureCorsHeaders(httpContext);
-        EnsureCacheHeaders(httpContext);
-        SetCustomHeaders(httpContext);
+
+        var isDownstreamError = IsDownstreamError(proxyResponse);
+        EnsureCacheHeaders(httpContext, isDownstreamError);
+        SetCustomHeaders(httpContext, isDownstreamError);
 
         return new ValueTask<bool>(true);
     }
 
-    private void EnsureCacheHeaders(HttpContext httpContext)
+    private bool IsDownstreamError(HttpResponseMessage? proxyResponse)
+    {
+        var downstreamStatus = proxyResponse?.StatusCode ?? HttpStatusCode.InternalServerError;
+        return downstreamStatus is HttpStatusCode.InternalServerError
+            or HttpStatusCode.BadGateway
+            or HttpStatusCode.ServiceUnavailable
+            or HttpStatusCode.GatewayTimeout;
+    }
+
+    private void EnsureCacheHeaders(HttpContext httpContext, bool isDownstreamError)
     {
         const string cacheControlHeader = "Cache-Control";
+
+        if (isDownstreamError)
+        {
+            httpContext.Response.Headers[cacheControlHeader] = "max-age=60";
+            return;
+        }
+        
         if (proxyAction.Target is not ProxyDestination.ImageServer and not ProxyDestination.SpecialServer) return;
+
         var cacheControl = proxyAction.RequiresAuth
             ? "private, max-age=600"
-            : "public, s-maxage=2419200, max-age=2419200";
+            : "public, s-maxage=2419200, max-age=2419200, stale-if-error=86400";
         httpContext.Response.Headers[cacheControlHeader] = cacheControl;
     }
 
@@ -77,8 +97,10 @@ public class PathRewriteTransformer : HttpTransformer
         }
     }
     
-    private void SetCustomHeaders(HttpContext httpContext)
+    private void SetCustomHeaders(HttpContext httpContext, bool isDownstreamError)
     {
+        if (isDownstreamError) return;
+        
         foreach (var (key, value) in proxyAction.Headers)
         {
             httpContext.Response.Headers[key] = value;
