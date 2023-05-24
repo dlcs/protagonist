@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -160,11 +161,33 @@ public class PathRewriteTransformerTests
         
         // Assert
         context.Response.Headers.Should().ContainKey("Cache-Control")
-            .WhoseValue.Single().Should().Be("public, s-maxage=2419200, max-age=2419200");
+            .WhoseValue.Single().Should().Be("public, s-maxage=2419200, max-age=2419200, stale-if-error=86400");
+    }
+    
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.BadGateway)]
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    [InlineData(HttpStatusCode.GatewayTimeout)]
+    public async Task TransformResponseAsync_AddsSmallMaxAge_RegardlessOfDestination_IfError(HttpStatusCode statusCode)
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        var responseMessage = new HttpResponseMessage { StatusCode = statusCode };
+        responseMessage.Headers.Add("Cache-Control", "max-age=200");
+        var actionResult = new ProxyActionResult(ProxyDestination.S3, false, "whatever");
+        var sut = new PathRewriteTransformer(actionResult);
+        
+        // Act
+        await sut.TransformResponseAsync(context, responseMessage);
+        
+        // Assert
+        context.Response.Headers.Should().ContainKey("Cache-Control")
+            .WhoseValue.Single().Should().Be("max-age=60");
     }
     
     [Fact]
-    public async Task TransformResponseAsync_AddsPrivateCacheHeaders_IfImageServer_AndPublic()
+    public async Task TransformResponseAsync_AddsPrivateCacheHeaders_IfImageServer_AndRequiresAuth()
     {
         // Arrange
         var context = new DefaultHttpContext();
@@ -201,5 +224,30 @@ public class PathRewriteTransformerTests
             .WhoseValue.Single().Should().Be("max-age=999");
         context.Response.Headers.Should().ContainKey("x-test-header")
             .WhoseValue.Single().Should().Be("live forever");
+    }
+    
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.BadGateway)]
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    [InlineData(HttpStatusCode.GatewayTimeout)]
+    public async Task TransformResponseAsync_DoesNotSetCustomHeaders_IfError(HttpStatusCode statusCode)
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        var responseMessage = new HttpResponseMessage { StatusCode = statusCode };
+        responseMessage.Headers.Add("Cache-Control", "max-age=200");
+        var actionResult = new ProxyActionResult(ProxyDestination.ImageServer, true, "whatever");
+        actionResult.WithHeader("x-test-header", "live forever")
+            .WithHeader("Cache-Control", "max-age=999");
+        var sut = new PathRewriteTransformer(actionResult);
+        
+        // Act
+        await sut.TransformResponseAsync(context, responseMessage);
+        
+        // Assert
+        context.Response.Headers.Should().ContainKey("Cache-Control")
+            .WhoseValue.Single().Should().Be("max-age=60");
+        context.Response.Headers.Should().NotContainKey("x-test-header");
     }
 }
