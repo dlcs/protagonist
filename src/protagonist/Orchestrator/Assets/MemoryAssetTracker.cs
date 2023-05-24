@@ -85,16 +85,21 @@ public class MemoryAssetTracker : IAssetTracker
         {
             logger.LogTrace("Refreshing cache for {AssetId}", assetId);
             var orchestrationAsset = await GetOrchestrationAssetFromSource(assetId);
-            if (orchestrationAsset != null)
-            {
-                return orchestrationAsset;
-            }
-            
-            // TODO - do we really care about caching non-images?
 
-            logger.LogDebug("Asset {AssetId} not found, caching null object", assetId);
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
-            return NullOrchestrationAsset;
+            if (orchestrationAsset == null)
+            {
+                logger.LogDebug("Asset {AssetId} not found, caching null object", assetId);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+                return NullOrchestrationAsset;
+            }
+
+            if (orchestrationAsset is OrchestrationImage orchestrationImage && orchestrationImage.IsNotFound())
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+            }
+
+            return orchestrationAsset;
+
         }, cacheSettings.GetMemoryCacheOptions());
     }
 
@@ -173,6 +178,6 @@ public class MemoryAssetTracker : IAssetTracker
         if (!string.IsNullOrEmpty(imageLocation?.S3)) return false;
         if (!reingestSettings.EmptyImageLocationCreatedDate.HasValue) return false;
 
-        return (asset.Created ?? DateTime.UtcNow) <= reingestSettings.EmptyImageLocationCreatedDate.Value;
+        return (asset.Created ?? DateTime.UtcNow).Date <= reingestSettings.EmptyImageLocationCreatedDate.Value.Date;
     }
 }

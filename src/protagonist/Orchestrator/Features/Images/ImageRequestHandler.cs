@@ -84,6 +84,12 @@ public class ImageRequestHandler
             return new StatusCodeResult(HttpStatusCode.NotFound);
         }
 
+        if (orchestrationImage.IsNotFound())
+        {
+            logger.LogDebug("Request for {Path}: asset never been processed", httpContext.Request.Path);
+            return new StatusCodeResult(HttpStatusCode.NotFound);
+        }
+
         var proxyActionResult = await HandleRequestInternal(httpContext, orchestrationImage, assetRequest);
         if (proxyActionResult is StatusCodeResult) return proxyActionResult;
 
