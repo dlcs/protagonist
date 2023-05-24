@@ -99,8 +99,10 @@ public class ImageOrchestrator : IImageOrchestrator
 
             return true;
         }, orchestratorSettings.CurrentValue.Caching.GetMemoryCacheOptions(
-            duration: orchestrationResult == OrchestrationResult.Error ? CacheDuration.Short : CacheDuration.Default,
-            priority: orchestrationResult == OrchestrationResult.Error
+            duration: orchestrationResult is OrchestrationResult.Error or OrchestrationResult.NotFound
+                ? CacheDuration.Short
+                : CacheDuration.Default,
+            priority: orchestrationResult is OrchestrationResult.Error or OrchestrationResult.NotFound
                 ? CacheItemPriority.Low
                 : CacheItemPriority.High));
 
