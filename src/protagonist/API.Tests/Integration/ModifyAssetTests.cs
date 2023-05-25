@@ -921,6 +921,46 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Ingesting.Should().BeTrue();
     }
     
+    [Fact]
+    public async Task Reingest_ClearsBatchId_IfSet()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Reingest_ClearsBatchId_IfSet));
+        var asset = (await dbContext.Images.AddTestAsset(assetId, error: "Failed", ingesting: false, batch: 123))
+            .Entity;
+        await dbContext.ImageLocations.AddTestImageLocation(assetId);
+        await dbContext.SaveChangesAsync();
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{assetId.ToApiResourcePath()}/reingest");
+
+        // Act
+        var response = await httpClient.AsCustomer(99).SendAsync(request);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        // Engine called
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<CancellationToken>._))
+            .MustHaveHappened();
+
+        var imageLocation = await dbContext.ImageLocations.SingleAsync(l => l.Id == assetId);
+        imageLocation.Nas.Should().BeNullOrEmpty();
+
+        await dbContext.Entry(asset).ReloadAsync();
+        asset.Error.Should().BeNullOrEmpty();
+        asset.Batch.Should().Be(0);
+        asset.Ingesting.Should().BeTrue();
+    }
+    
     [Theory]
     [InlineData(HttpStatusCode.InternalServerError, HttpStatusCode.InternalServerError)]
     [InlineData(HttpStatusCode.BadRequest, HttpStatusCode.BadRequest)]
