@@ -263,7 +263,7 @@ public class MemoryAssetTrackerTests
     [Theory]
     [InlineData("iiif-img")]
     [InlineData("iiif-img,file")]
-    public async Task GetOrchestrationAssetT_Reingest_True_IfCreatedAfterCutOff(string deliveryChannel)
+    public async Task GetOrchestrationAssetT_Reingest_False_IfCreatedAfterCutOff(string deliveryChannel)
     {
         // Arrange
         var assetId = new AssetId(1, 1, "otis");
