@@ -37,7 +37,7 @@ public class ApiAssetRepository : IApiAssetRepository
     public Task<ResultStatus<DeleteResult>> DeleteAsset(AssetId assetId) => assetRepository.DeleteAsset(assetId);
     
     /// <summary>
-    /// 
+    /// Save changes to Asset, incrementing EntityCounters if required.
     /// </summary>
     /// <param name="asset">
     /// An Asset that is ready to be inserted/updated in the DB, that
@@ -62,22 +62,6 @@ public class ApiAssetRepository : IApiAssetRepository
                 await entityCounterRepository.Increment(0, KnownEntityCounters.CustomerImages, asset.Customer.ToString());
             }
         }
-
-        // In Deliverator, if this is a PATCH, the ImageLocation is simply removed.
-        //  - (DeleteImageLocationBehaviour) - https://github.com/digirati-co-uk/deliverator/blob/87f6cfde97be94d2e9e00c11c4dc0fcfacfdd087/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L554
-        // but if it's a PUT, a new ImageLocation row is created.
-        //  - (CreateSkeletonImageLocationBehaviour, UpdateImageLocationBehaviour) - https://github.com/digirati-co-uk/deliverator/blob/87f6cfde97be94d2e9e00c11c4dc0fcfacfdd087/API/Architecture/Request/API/Entities/CustomerSpaceImage.cs#L303
-
-        // As a common operation, we'll just upsert an Image Location and clear its fields.
-        var imageLocation = await dlcsContext.ImageLocations.FindAsync(new object[] { asset.Id }, cancellationToken);
-        if (imageLocation == null)
-        {
-            imageLocation = new ImageLocation { Id = asset.Id };
-            dlcsContext.ImageLocations.Add(imageLocation);
-        }
-
-        imageLocation.S3 = string.Empty;
-        imageLocation.Nas = string.Empty;
 
         await dlcsContext.SaveChangesAsync(cancellationToken);
 

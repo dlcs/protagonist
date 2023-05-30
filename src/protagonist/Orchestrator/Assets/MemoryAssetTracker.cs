@@ -11,6 +11,7 @@ using LazyCache;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using Orchestrator.Settings;
 
 namespace Orchestrator.Assets;
 
@@ -25,17 +26,18 @@ public class MemoryAssetTracker : IAssetTracker
     private readonly IThumbRepository thumbRepository;
     private readonly ICustomerOriginStrategyRepository customerOriginStrategyRepository;
     private readonly ILogger<MemoryAssetTracker> logger;
+    private readonly ReingestOnOrchestrationSettings reingestSettings;
 
     // Null object to store in cache for short duration
     private static readonly OrchestrationAsset NullOrchestrationAsset =
         new() { AssetId = new AssetId(-1, -1, "__notfound__") };
-
+    
     public MemoryAssetTracker(
         IAssetRepository assetRepository,
         IAppCache appCache,
         IThumbRepository thumbRepository,
         ICustomerOriginStrategyRepository customerOriginStrategyRepository,
-        IOptions<CacheSettings> cacheOptions,
+        IOptions<OrchestratorSettings> orchestratorOptions,
         ILogger<MemoryAssetTracker> logger)
     {
         this.assetRepository = assetRepository;
@@ -43,7 +45,8 @@ public class MemoryAssetTracker : IAssetTracker
         this.thumbRepository = thumbRepository;
         this.customerOriginStrategyRepository = customerOriginStrategyRepository;
         this.logger = logger;
-        cacheSettings = cacheOptions.Value;
+        cacheSettings = orchestratorOptions.Value.Caching;
+        reingestSettings = orchestratorOptions.Value.ReingestOnOrchestration;
     }
 
     public async Task<OrchestrationAsset?> GetOrchestrationAsset(AssetId assetId)
@@ -82,16 +85,21 @@ public class MemoryAssetTracker : IAssetTracker
         {
             logger.LogTrace("Refreshing cache for {AssetId}", assetId);
             var orchestrationAsset = await GetOrchestrationAssetFromSource(assetId);
-            if (orchestrationAsset != null)
-            {
-                return orchestrationAsset;
-            }
-            
-            // TODO - do we really care about caching non-images?
 
-            logger.LogDebug("Asset {AssetId} not found, caching null object", assetId);
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
-            return NullOrchestrationAsset;
+            if (orchestrationAsset == null)
+            {
+                logger.LogDebug("Asset {AssetId} not found, caching null object", assetId);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+                return NullOrchestrationAsset;
+            }
+
+            if (orchestrationAsset is OrchestrationImage orchestrationImage && orchestrationImage.IsNotFound())
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+            }
+
+            return orchestrationAsset;
+
         }, cacheSettings.GetMemoryCacheOptions());
     }
 
@@ -134,14 +142,17 @@ public class MemoryAssetTracker : IAssetTracker
             var getOpenThumbs = thumbRepository.GetOpenSizes(assetId);
 
             await Task.WhenAll(getImageLocation, getOpenThumbs);
+
+            var imageLocation = getImageLocation.Result;
             
             orchestrationAsset = new OrchestrationImage
             {
-                S3Location = getImageLocation.Result?.S3, // TODO - error handling
+                S3Location = imageLocation?.S3,
                 Width = asset.Width ?? 0,
                 Height = asset.Height ?? 0,
                 MaxUnauthorised = asset.MaxUnauthorised ?? 0,
-                OpenThumbs = getOpenThumbs.Result ?? new List<int[]>(), // TODO - reorganise thumb layout + create missing eventually
+                OpenThumbs = getOpenThumbs.Result ?? new List<int[]>(),
+                Reingest = GetReingestFlag(asset, imageLocation),
             };
         }
         else
@@ -159,5 +170,14 @@ public class MemoryAssetTracker : IAssetTracker
         }
         
         return SetDefaults(orchestrationAsset);
+    }
+    
+    private bool GetReingestFlag(Asset asset, ImageLocation? imageLocation)
+    {
+        // Reingest on the fly if no S3Location and image was created prior to EmptyImageLocationCreatedDate
+        if (!string.IsNullOrEmpty(imageLocation?.S3)) return false;
+        if (!reingestSettings.EmptyImageLocationCreatedDate.HasValue) return false;
+
+        return (asset.Created ?? DateTime.UtcNow).Date <= reingestSettings.EmptyImageLocationCreatedDate.Value.Date;
     }
 }

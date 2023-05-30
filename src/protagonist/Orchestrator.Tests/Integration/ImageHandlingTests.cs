@@ -1313,6 +1313,62 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Should().ContainKey("x-test-key").WhoseValue.Should().BeEquivalentTo("foo bar");
     }
     
+    [Fact]
+    public async Task Get_Returns404_IfRedirectsImageServer_ButOrchestratorNotFound()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfRedirectsImageServer_ButOrchestratorNotFound)}");
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": []}",
+        });
+
+        FakeImageOrchestrator.ConfiguredResponse[id] = OrchestrationResult.NotFound;
+
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
+            deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
+        await dbFixture.DbContext.CustomHeaders.AddTestCustomHeader("x-test-key", "foo bar");
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/{id}/0,0,100,100/200,200/0/default.jpg");
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_Returns500_IfRedirectsImageServer_ButOrchestratorError()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_Returns500_IfRedirectsImageServer_ButOrchestratorError)}");
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": []}",
+        });
+
+        FakeImageOrchestrator.ConfiguredResponse[id] = OrchestrationResult.Error;
+
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
+            deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
+        await dbFixture.DbContext.CustomHeaders.AddTestCustomHeader("x-test-key", "foo bar");
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/{id}/0,0,100,100/200,200/0/default.jpg");
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+    }
+    
     [Theory]
     [InlineData("/info.json")]
     [InlineData("/full/max/0/default.jpg")]
@@ -1365,11 +1421,16 @@ public class FakeImageOrchestrator : IImageOrchestrator
 {
     public static List<AssetId> OrchestratedImages { get; } = new();
 
-    public Task EnsureImageOrchestrated(OrchestrationImage orchestrationImage,
+    public static Dictionary<AssetId, OrchestrationResult> ConfiguredResponse { get; } = new();
+
+    public Task<OrchestrationResult> EnsureImageOrchestrated(OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken = default)
     {
         OrchestratedImages.Add(orchestrationImage.AssetId);
-        return Task.CompletedTask;
+        var orchestrationResult = ConfiguredResponse.TryGetValue(orchestrationImage.AssetId, out var res)
+            ? res
+            : OrchestrationResult.Orchestrated;
+        return Task.FromResult(orchestrationResult);
     }
 }
 

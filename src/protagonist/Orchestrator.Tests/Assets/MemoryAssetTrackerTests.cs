@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using FakeItEasy;
-using FluentAssertions;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
-using Xunit;
+using Orchestrator.Settings;
 
 namespace Orchestrator.Tests.Assets;
 
@@ -30,8 +28,21 @@ public class MemoryAssetTrackerTests
         A.CallTo(() => customerOriginStrategyRepository.GetCustomerOriginStrategy(A<AssetId>._, A<string>._))
             .Returns(Task.FromResult(new CustomerOriginStrategy { Id = "_default_", Strategy = OriginStrategyType.Default }));
 
-        sut = new MemoryAssetTracker(assetRepository, new MockCachingService(), thumbRepository,
-            customerOriginStrategyRepository, Options.Create(new CacheSettings()),
+        sut = GetSut();
+    }
+
+    private MemoryAssetTracker GetSut(DateTime? emptyImageLocationCreatedDate = null)
+    {
+        var orchestratorSettings = new OrchestratorSettings
+        {
+            Caching = new CacheSettings(),
+            ReingestOnOrchestration = new ReingestOnOrchestrationSettings
+            {
+                EmptyImageLocationCreatedDate = emptyImageLocationCreatedDate
+            }
+        };
+        return new MemoryAssetTracker(assetRepository, new MockCachingService(), thumbRepository,
+            customerOriginStrategyRepository, Options.Create(orchestratorSettings),
             new NullLogger<MemoryAssetTracker>());
     }
 
@@ -203,6 +214,7 @@ public class MemoryAssetTrackerTests
         result.Width.Should().Be(50);
         result.MaxUnauthorised.Should().Be(-1);
         result.OpenThumbs.Should().BeEquivalentTo(sizes);
+        result.Reingest.Should().BeFalse();
     }
     
     [Theory]
@@ -215,7 +227,7 @@ public class MemoryAssetTrackerTests
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
             DeliveryChannels = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1,
-            Origin = "test"
+            Origin = "test", Created = DateTime.Today
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns<List<int[]>>(null);
 
@@ -224,6 +236,50 @@ public class MemoryAssetTrackerTests
         
         // Assert
         result.OpenThumbs.Should().BeEmpty();
+    }
+    
+    [Theory]
+    [InlineData("iiif-img")]
+    [InlineData("iiif-img,file")]
+    public async Task GetOrchestrationAssetT_Reingest_True_IfCreatedBeforeCutOff(string deliveryChannel)
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, "otis");
+        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        {
+            DeliveryChannels = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1,
+            Origin = "test", Created = DateTime.Today.AddDays(-1)
+        });
+        A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns<List<int[]>>(null);
+
+        // Act
+        var localSut = GetSut(DateTime.Today);
+        var result = await localSut.GetOrchestrationAsset<OrchestrationImage>(assetId);
+        
+        // Assert
+        result.Reingest.Should().BeTrue();
+    }
+    
+    [Theory]
+    [InlineData("iiif-img")]
+    [InlineData("iiif-img,file")]
+    public async Task GetOrchestrationAssetT_Reingest_False_IfCreatedAfterCutOff(string deliveryChannel)
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, "otis");
+        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        {
+            DeliveryChannels = deliveryChannel.Split(","), Height = 10, Width = 50, MaxUnauthorised = -1,
+            Origin = "test", Created = DateTime.Today.AddDays(1)
+        });
+        A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns<List<int[]>>(null);
+
+        // Act
+        var localSut = GetSut(DateTime.Today);
+        var result = await localSut.GetOrchestrationAsset<OrchestrationImage>(assetId);
+        
+        // Assert
+        result.Reingest.Should().BeFalse();
     }
     
     [Theory]

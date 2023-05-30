@@ -159,7 +159,9 @@ public class ImageRequestHandlerTests
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
             .Returns(new OrchestrationImage
-                { Roles = roles, RequiresAuth = true, Channels = AvailableDeliveryChannel.Image });
+            {
+                Roles = roles, RequiresAuth = true, Channels = AvailableDeliveryChannel.Image, S3Location = "s3://"
+            });
         A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie))
             .Returns(AssetAccessResult.Unauthorized);
         var sut = GetImageRequestHandlerWithMockPathParser();
@@ -319,7 +321,7 @@ public class ImageRequestHandlerTests
     [Theory]
     [InlineData(AssetAccessResult.Open)]
     [InlineData(AssetAccessResult.Authorized)]
-    public async Task HandleRequest_ProxiesToImageServer_IfFullRegion_AndNoKnownThumb_ButNoS3Location(
+    public async Task HandleRequest_ProxiesToImageServer_IfFullRegion_AndNoKnownThumb_ButNoS3Location_AndWillReingest(
         AssetAccessResult accessResult)
     {
         // Arrange
@@ -334,7 +336,7 @@ public class ImageRequestHandlerTests
             {
                 AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } },
                 RequiresAuth = true, Height = 1000, Width = 1000, MaxUnauthorised = 300,
-                Channels = AvailableDeliveryChannel.Image
+                Channels = AvailableDeliveryChannel.Image, Reingest = true
             });
         A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie)).Returns(accessResult);
         var sut = GetImageRequestHandlerWithMockPathParser();
@@ -345,6 +347,36 @@ public class ImageRequestHandlerTests
         // Assert
         result.Target.Should().Be(ProxyDestination.ImageServer);
         result.HasPath.Should().BeTrue();
+    }
+    
+    [Theory]
+    [InlineData(AssetAccessResult.Open)]
+    [InlineData(AssetAccessResult.Authorized)]
+    public async Task HandleRequest_ReturnsNotFound_IfFullRegion_AndNoKnownThumb_NoS3Location_AndNotReingest(
+        AssetAccessResult accessResult)
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/iiif-img/2/2/test-image/full/,900/0/default.jpg";
+
+        var roles = new List<string> { "role" };
+        var assetId = new AssetId(2, 2, "test-image");
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } },
+                RequiresAuth = true, Height = 1000, Width = 1000, MaxUnauthorised = 300,
+                Channels = AvailableDeliveryChannel.Image, Reingest = false
+            });
+        A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie)).Returns(accessResult);
+        var sut = GetImageRequestHandlerWithMockPathParser();
+
+        // Act
+        var result = await sut.HandleRequest(context) as StatusCodeResult;
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
     
     [Theory]
@@ -556,6 +588,37 @@ public class ImageRequestHandlerTests
         // Assert
         result.Headers.Should().ContainKeys("x-test-header", "x-test-header-2");
         result.Target.Should().Be(destination);
+    }
+    
+    [Theory]
+    [InlineData("/iiif-img/2/2/test-image/full/90,/0/default.jpg")] // special
+    [InlineData("/iiif-img/2/2/test-image/full/!150,150/0/default.jpg")] // thumbs
+    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.png")] // tile (image-server)
+    public async Task HandleRequest_Returns404_IfNoReingestAndS3LocationEmpty_RegardlessOfDestination(string path)
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = path;
+
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        var assetId = new AssetId(2, 2, "test-image");
+            
+        var sut = GetImageRequestHandlerWithMockPathParser();
+
+        List<int[]> openSizes = new List<int[]> { new[] { 150, 150 } };
+
+        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, OpenThumbs = openSizes, S3Location = "",
+                Channels = AvailableDeliveryChannel.Image, Reingest = false
+            });
+
+        // Act
+        var result = await sut.HandleRequest(context) as StatusCodeResult;
+            
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false,

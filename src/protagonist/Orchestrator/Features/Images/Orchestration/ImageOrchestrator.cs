@@ -19,8 +19,31 @@ namespace Orchestrator.Features.Images.Orchestration;
 
 public interface IImageOrchestrator
 {
-    Task EnsureImageOrchestrated(OrchestrationImage orchestrationImage,
+    Task<OrchestrationResult> EnsureImageOrchestrated(OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken = default);
+}
+
+public enum OrchestrationResult
+{
+    /// <summary>
+    /// Asset was already orchestrated to fask-disk
+    /// </summary>
+    AlreadyOrchestrated,
+    
+    /// <summary>
+    /// Asset was moved from slow storage -> fast-disk
+    /// </summary>
+    Orchestrated,
+    
+    /// <summary>
+    /// Asset could not be found for serving. E.g. could be a new asset queued for ingestion but not yet complete
+    /// </summary>
+    NotFound,
+    
+    /// <summary>
+    /// An error was encountered orchestrating asset
+    /// </summary>
+    Error,
 }
 
 /// <summary>
@@ -55,38 +78,61 @@ public class ImageOrchestrator : IImageOrchestrator
         this.dlcsApiClient = dlcsApiClient;
         this.logger = logger;
     }
-    
-    public async Task EnsureImageOrchestrated(OrchestrationImage orchestrationImage,
+
+    public async Task<OrchestrationResult> EnsureImageOrchestrated(OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken = default)
     {
         var assetId = orchestrationImage.AssetId;
 
+        var orchestrationResult = OrchestrationResult.AlreadyOrchestrated;
+
         await appCache.GetOrAddAsync(CacheKeys.GetOrchestrationCacheKey(assetId), async _ =>
         {
-            await OrchestrateImageInternal(orchestrationImage, assetId, cancellationToken);
-            // TODO - catch exceptions and cache a short lived value??
+            try
+            {
+                orchestrationResult = await OrchestrateImageInternal(orchestrationImage, assetId, cancellationToken);
+            }
+            catch (Exception)
+            {
+                orchestrationResult = OrchestrationResult.Error;
+            }
+
             return true;
-        }, orchestratorSettings.CurrentValue.Caching.GetMemoryCacheOptions(priority: CacheItemPriority.High));
+        }, orchestratorSettings.CurrentValue.Caching.GetMemoryCacheOptions(
+            duration: orchestrationResult is OrchestrationResult.Error or OrchestrationResult.NotFound
+                ? CacheDuration.Short
+                : CacheDuration.Default,
+            priority: orchestrationResult is OrchestrationResult.Error or OrchestrationResult.NotFound
+                ? CacheItemPriority.Low
+                : CacheItemPriority.High));
+
+        return orchestrationResult;
     }
 
-    private async Task OrchestrateImageInternal(OrchestrationImage? orchestrationImage, AssetId assetId, 
+    private async Task<OrchestrationResult> OrchestrateImageInternal(OrchestrationImage orchestrationImage, AssetId assetId, 
         CancellationToken cancellationToken)
     {
-        logger.LogDebug("Populating orchestration cache for '{AssetId}'", assetId);
+        logger.LogTrace("Populating orchestration cache for '{AssetId}'", assetId);
 
         var targetPath = orchestratorSettings.CurrentValue.GetImageLocalPath(assetId);
         if (DoesFileForAssetExist(targetPath))
         {
-            logger.LogDebug("File for '{AssetId}' already on disk. no-op", assetId);
-            return;
+            logger.LogTrace("File for '{AssetId}' already on disk. no-op", assetId);
+            return OrchestrationResult.AlreadyOrchestrated;
         }
-
-        if (string.IsNullOrEmpty(orchestrationImage?.S3Location))
+        
+        if (orchestrationImage.Reingest)
         {
             orchestrationImage = await ReingestImage(assetId, cancellationToken);
         }
+
+        if (string.IsNullOrEmpty(orchestrationImage.S3Location))
+        {
+             return OrchestrationResult.NotFound;
+        }
         
         await SaveImageToFastDisk(orchestrationImage, targetPath, cancellationToken);
+        return OrchestrationResult.Orchestrated;
     }
     
     private bool DoesFileForAssetExist(string targetPath)

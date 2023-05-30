@@ -47,13 +47,21 @@ public class YarpImageServerClient : IImageServerClient
     {
         var imageServerPath = GetInfoJsonPath(orchestrationImage, version);
         if (string.IsNullOrEmpty(imageServerPath)) return null;
+        if (orchestrationImage.IsNotFound()) return null;
         
         // Orchestrate the image to verify that image-server will be able to generate an info.json 
-        await orchestrator.EnsureImageOrchestrated(orchestrationImage, cancellationToken);
+        var orchestrationResult = await orchestrator.EnsureImageOrchestrated(orchestrationImage, cancellationToken);
+
+        if (orchestrationResult == OrchestrationResult.NotFound) return null;
+        if (orchestrationResult == OrchestrationResult.Error)
+        {
+            logger.LogError("Error getting info.json for {AssetId}, error Orchestrating", orchestrationImage.AssetId);
+            return null;
+        }
             
         try
         {
-            logger.LogDebug("Getting info.json for {AssetId} from image-server", orchestrationImage.AssetId);
+            logger.LogTrace("Getting info.json for {AssetId} from image-server", orchestrationImage.AssetId);
             await using var infoJson = await httpClient.GetStreamAsync(imageServerPath, cancellationToken);
             return infoJson.FromJsonStream<TImageService>();
         }

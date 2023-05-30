@@ -61,10 +61,11 @@ public class ImageOrchestratorTests
         var sut = GetSystemUnderTest(true);
 
         // Act
-        await sut.EnsureImageOrchestrated(orchestrationImage, CancellationToken.None);
+        var result = await sut.EnsureImageOrchestrated(orchestrationImage, CancellationToken.None);
 
         // Assert
         A.CallTo(() => fileSystem.FileExists(A<string>._)).MustNotHaveHappened();
+        result.Should().Be(OrchestrationResult.AlreadyOrchestrated);
     }
     
     [Fact]
@@ -75,7 +76,7 @@ public class ImageOrchestratorTests
         var sut = GetSystemUnderTest();
 
         // Act
-        await sut.EnsureImageOrchestrated(orchestrationImage, CancellationToken.None);
+        var result = await sut.EnsureImageOrchestrated(orchestrationImage, CancellationToken.None);
 
         // Assert
         A.CallTo(() => fileSystem.SetLastWriteTimeUtc(A<string>._, A<DateTime>._)).MustHaveHappened();
@@ -83,6 +84,7 @@ public class ImageOrchestratorTests
                 originStrategy.LoadAssetFromOrigin(orchestrationImage.AssetId, A<string>._, null,
                     CancellationToken.None))
             .MustNotHaveHappened();
+        result.Should().Be(OrchestrationResult.AlreadyOrchestrated);
     }
     
     [Fact]
@@ -97,17 +99,18 @@ public class ImageOrchestratorTests
         var sut = GetSystemUnderTest();
 
         // Act
-        await sut.EnsureImageOrchestrated(orchestrationImage, CancellationToken.None);
+        var result = await sut.EnsureImageOrchestrated(orchestrationImage, CancellationToken.None);
 
         // Assert
         A.CallTo(() =>
                 fileSaver.SaveResponseToDisk(orchestrationImage.AssetId, originResponse, A<string>._,
                     CancellationToken.None))
             .MustHaveHappened();
+        result.Should().Be(OrchestrationResult.Orchestrated);
     }
     
     [Fact]
-    public async Task EnsureImageOrchestrated_Throws_IfOrchesetrationReturnsNullStream()
+    public async Task EnsureImageOrchestrated_Throws_ReturnsError_IfOrchesetrationReturnsNullStream()
     {
         // Arrange
         A.CallTo(() =>
@@ -117,17 +120,17 @@ public class ImageOrchestratorTests
         var sut = GetSystemUnderTest();
 
         // Act
-        Func<Task> action = () => sut.EnsureImageOrchestrated(orchestrationImage, CancellationToken.None);
+        var result = await sut.EnsureImageOrchestrated(orchestrationImage, CancellationToken.None);
 
         // Assert
-        await action.Should().ThrowAsync<ApplicationException>();
+        result.Should().Be(OrchestrationResult.Error);
     }
     
     [Fact]
-    public async Task EnsureImageOrchestrated_ReingestsImage_IfS3LocationEmpty()
+    public async Task EnsureImageOrchestrated_ReingestsImage_IfReingestTrue()
     {
         // Arrange
-        var image = new OrchestrationImage { AssetId = new AssetId(1, 10, "test") };
+        var image = new OrchestrationImage { AssetId = new AssetId(1, 10, "test"), Reingest = true };
         A.CallTo(() => dlcsApiClient.ReingestAsset(image.AssetId, CancellationToken.None)).Returns(true);
         var sut = GetSystemUnderTest();
 
@@ -139,22 +142,39 @@ public class ImageOrchestratorTests
     }
     
     [Fact]
-    public async Task EnsureImageOrchestrated_Throws_IfReingestFails()
+    public async Task EnsureImageOrchestrated_ReturnsError_IfReingestFails()
     {
         // Arrange
-        var image = new OrchestrationImage { AssetId = new AssetId(1, 10, "test") };
+        var image = new OrchestrationImage { AssetId = new AssetId(1, 10, "test"), Reingest = true };
         A.CallTo(() => dlcsApiClient.ReingestAsset(image.AssetId, CancellationToken.None)).Returns(false);
         var sut = GetSystemUnderTest();
 
         // Act
-        Func<Task> action = () => sut.EnsureImageOrchestrated(image, CancellationToken.None);
+        var result = await sut.EnsureImageOrchestrated(image, CancellationToken.None);
 
         // Assert
-        await action.Should().ThrowAsync<ApplicationException>();
+        result.Should().Be(OrchestrationResult.Error);
     }
     
     [Fact]
-    public async Task EnsureImageOrchestrated_Throws_IfReingestSuceedButRefreshFails()
+    public async Task EnsureImageOrchestrated_ReturnsError_IfReingestSucceedButRefreshFails()
+    {
+        // Arrange
+        var image = new OrchestrationImage { AssetId = new AssetId(1, 10, "test"), Reingest = true };
+        A.CallTo(() => dlcsApiClient.ReingestAsset(image.AssetId, CancellationToken.None)).Returns(true);
+        A.CallTo(() => assetTracker.RefreshCachedAsset<OrchestrationImage>(image.AssetId))
+            .Returns<OrchestrationImage>(null);
+        var sut = GetSystemUnderTest();
+
+        // Act
+        var result = await sut.EnsureImageOrchestrated(image, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(OrchestrationResult.Error);
+    }
+    
+    [Fact]
+    public async Task EnsureImageOrchestrated_ReturnsNotFound_IfNoS3Location()
     {
         // Arrange
         var image = new OrchestrationImage { AssetId = new AssetId(1, 10, "test") };
@@ -164,10 +184,27 @@ public class ImageOrchestratorTests
         var sut = GetSystemUnderTest();
 
         // Act
-        Func<Task> action = () => sut.EnsureImageOrchestrated(image, CancellationToken.None);
+        var result = await sut.EnsureImageOrchestrated(image, CancellationToken.None);
 
         // Assert
-        await action.Should().ThrowAsync<ApplicationException>();
+        result.Should().Be(OrchestrationResult.NotFound);
+    }
+
+    [Fact]
+    public async Task EnsureImageOrchestrated_ReturnsNotFound_IfReingestSucceedButRefreshReturnsNoS3Location()
+    {
+        // Arrange
+        var image = new OrchestrationImage { AssetId = new AssetId(1, 10, "test"), Reingest = true };
+        A.CallTo(() => dlcsApiClient.ReingestAsset(image.AssetId, CancellationToken.None)).Returns(true);
+        A.CallTo(() => assetTracker.RefreshCachedAsset<OrchestrationImage>(image.AssetId))
+            .Returns(new OrchestrationImage { AssetId = new AssetId(1, 10, "test") });
+        var sut = GetSystemUnderTest();
+
+        // Act
+        var result = await sut.EnsureImageOrchestrated(image, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(OrchestrationResult.NotFound);
     }
 
     // if fakeCache = true then use A.Fake<IAppCache>, else use provided MockCachingService

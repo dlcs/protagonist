@@ -71,9 +71,21 @@ public class OrchestrationImage : OrchestrationAsset
     public List<int[]> OpenThumbs { get; set; } = new();
     
     /// <summary>
-    /// Get or set Asset location in S3 
+    /// Get or set location in S3 where image-server source is located 
     /// </summary>
     public string? S3Location { get; set; }
+    
+    /// <summary>
+    /// Does this image need to be reingested on the fly?
+    /// </summary>
+    /// <remarks>This can only be true for legacy images with missing ImageLocation value</remarks>
+    public bool Reingest { get; set; }
+
+    /// <summary>
+    /// Get value indicating that this item should return a 404 as it has never been successfully processed
+    /// </summary>
+    /// <remarks>If the item has no S3Location AND it won't be reingested on the fly then it is 404</remarks>
+    public bool IsNotFound() => string.IsNullOrEmpty(S3Location) && !Reingest;
 }
 
 [Flags]
