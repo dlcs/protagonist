@@ -32,16 +32,22 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
     [Theory]
     [InlineData("/thumbs/99/1/image", "http://localhost/thumbs/99/1/image/info.json")]
+    [InlineData("/thumbs/99/1/image?x=y", "http://localhost/thumbs/99/1/image/info.json")]
     [InlineData("/thumbs/99/1/image/", "http://localhost/thumbs/99/1/image/info.json")]
     [InlineData("/thumbs/test/1/image", "http://localhost/thumbs/test/1/image/info.json")]
+    [InlineData("/thumbs/test/1/image?x=y", "http://localhost/thumbs/test/1/image/info.json")]
     [InlineData("/thumbs/test/1/image/", "http://localhost/thumbs/test/1/image/info.json")]
     [InlineData("/thumbs/v2/99/1/image", "http://localhost/thumbs/v2/99/1/image/info.json")]
+    [InlineData("/thumbs/v2/99/1/image?x=y", "http://localhost/thumbs/v2/99/1/image/info.json")]
     [InlineData("/thumbs/v2/99/1/image/", "http://localhost/thumbs/v2/99/1/image/info.json")]
     [InlineData("/thumbs/v2/test/1/image", "http://localhost/thumbs/v2/test/1/image/info.json")]
+    [InlineData("/thumbs/v2/test/1/image?x=y", "http://localhost/thumbs/v2/test/1/image/info.json")]
     [InlineData("/thumbs/v2/test/1/image/", "http://localhost/thumbs/v2/test/1/image/info.json")]
     [InlineData("/thumbs/v3/99/1/image", "http://localhost/thumbs/99/1/image/info.json")] // Canonical version goes to canonical url
+    [InlineData("/thumbs/v3/99/1/image?x=y", "http://localhost/thumbs/99/1/image/info.json")]
     [InlineData("/thumbs/v3/99/1/image/", "http://localhost/thumbs/99/1/image/info.json")]
     [InlineData("/thumbs/v3/test/1/image", "http://localhost/thumbs/test/1/image/info.json")]
+    [InlineData("/thumbs/v3/test/1/image?x=y", "http://localhost/thumbs/test/1/image/info.json")]
     [InlineData("/thumbs/v3/test/1/image/", "http://localhost/thumbs/test/1/image/info.json")]
     public async Task Get_ImageRoot_RedirectsToInfoJson(string path, string expected)
     {
