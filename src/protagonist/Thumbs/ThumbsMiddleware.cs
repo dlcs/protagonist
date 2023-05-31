@@ -191,7 +191,7 @@ public class ThumbsMiddleware
             baseRequest.VersionPathValue = null;
         }
         
-        return pathGenerator.GetFullPathForRequest(baseRequest);
+        return pathGenerator.GetFullPathForRequest(baseRequest, includeQueryParams: false);
     }
 
     private bool IsCanonical(Version requestedVersion)

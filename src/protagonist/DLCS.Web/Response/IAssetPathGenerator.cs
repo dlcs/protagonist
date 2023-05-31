@@ -14,40 +14,22 @@ public interface IAssetPathGenerator
 {
     /// <summary>
     /// Generate path for specified <see cref="BaseAssetRequest"/> excluding host.
-    /// Uses default template replacements.
     /// </summary>
-    /// <param name="assetRequest"></param>
-    /// <param name="useNativeFormat"></param>
-    /// <returns></returns>
+    /// <param name="assetRequest"><see cref="IBasicPathElements"/> for current request</param>
+    /// <param name="useNativeFormat">
+    /// If true, native DLCS path /{prefix}/{version}/{customer}/{space}/{assetPath} used. Else path can differ by path.
+    /// </param>
     string GetRelativePathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false);
-    
+
     /// <summary>
     /// Generate full path for specified <see cref="IBasicPathElements"/>, including host.
     /// Uses default template replacements.
     /// </summary>
-    /// <param name="assetRequest"><see cref="IBasicPathElements"/></param>
-    /// <param name="useNativeFormat"></param>
-    /// <returns></returns>
-    string GetFullPathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false);
-    
-    /// <summary>
-    /// Generate full path for specified <see cref="IBasicPathElements"/>, using provided delegate to generate
-    /// path element.
-    /// This can be useful for constructing paths that do not use the default path elements.
-    /// </summary>
-    string GetFullPathForRequest(IBasicPathElements assetRequest, PathGenerator pathGenerator,
-        bool useNativeFormat = false);
+    /// <param name="assetRequest"><see cref="IBasicPathElements"/> for current request</param>
+    /// <param name="useNativeFormat">
+    /// If true, native DLCS path /{prefix}/{version}/{customer}/{space}/{assetPath} used. Else path can differ by path.
+    /// </param>
+    /// <param name="includeQueryParams">If true, query params are included in path. Else they are omitted</param>
+    string GetFullPathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false,
+        bool includeQueryParams = true);
 }
-
-// DONE
-// GetFullyQualifiedId - versioned, always standard path, IIIFCanvasFactory.GetFullyQualifiedId ln 246
-// GetFullQualifiedImagePath - not versioned, always standard path, IIIFCanvasFactory.GetFullQualifiedImagePath ln 233
-// GetFullyQualifiedId - versioned, always standard path, GetManifestForAsset.GetFullyQualifiedId ln 124
-
-// NOT DONE
-// GetImageId - versioned, use replacements, GetImageInfoJson.GetImageId ln 161
-// GetFullImagePath - versioned, use replacements. ThumbsMiddleware.GetFullImagePath ln 183
-
-/*
- * Have I broken Thumbs handling by having 1 generic setting in parameterStore?
- */

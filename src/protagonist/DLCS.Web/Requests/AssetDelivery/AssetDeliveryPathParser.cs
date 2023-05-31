@@ -27,6 +27,9 @@ public class AssetDeliveryPathParser : IAssetDeliveryPathParser
 {
     private readonly IPathCustomerRepository pathCustomerRepository;
     
+    // regex to clean query params and hashmark from asset id
+    private static readonly Regex AssetIdClean = new(@"[\?\#].*$", RegexOptions.Compiled);
+    
     // regex to match v1, v2 etc but not a v23
     private static readonly Regex VersionRegex = new("^(v\\d)$", RegexOptions.Compiled);
 
@@ -83,18 +86,23 @@ public class AssetDeliveryPathParser : IAssetDeliveryPathParser
         request.CustomerPathValue = parts[defaultCustomerIndex + versionOffset];
         var space = parts[defaultSpacesIndex + versionOffset];
         request.Space = int.Parse(space);
-        request.AssetPath = string.Join("/", parts.Skip(3 + versionOffset));
+        request.AssetPath = GetAssetPath(parts, versionOffset);
         request.AssetId = request.AssetPath.Split("/")[0];
         request.BasePath =
             GenerateBasePath(request.RoutePrefix, request.CustomerPathValue, space, isVersioned, versionCandidate);
 
-        // TODO - should we verify Space exists here?
         request.Customer = await pathCustomerRepository.GetCustomerPathElement(request.CustomerPathValue);
 
         request.NormalisedBasePath =
             GenerateBasePath(request.RoutePrefix, request.Customer.Id.ToString(), space, isVersioned,
                 versionCandidate);
         request.NormalisedFullPath = string.Concat(request.NormalisedBasePath, request.AssetPath);
+    }
+
+    private static string GetAssetPath(string[] parts, int versionOffset)
+    {
+         var assetPath = string.Join("/", parts.Skip(3 + versionOffset));
+         return AssetIdClean.Replace(assetPath, string.Empty);
     }
 
     private static string GenerateBasePath(string route, string customer, string space, bool isVersioned,

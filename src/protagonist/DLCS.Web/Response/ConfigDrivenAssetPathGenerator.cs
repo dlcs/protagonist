@@ -28,24 +28,22 @@ public class ConfigDrivenAssetPathGenerator : IAssetPathGenerator
     }
     
     public string GetRelativePathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false)
-        => GetForPath(assetRequest, false, useNativeFormat);
+        => GetForPath(assetRequest, false, useNativeFormat, false);
 
-    public string GetFullPathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false)
-        => GetForPath(assetRequest, true, useNativeFormat);
+    public string GetFullPathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false,
+        bool includeQueryParams = true)
+        => GetForPath(assetRequest, true, useNativeFormat, includeQueryParams);
 
-    public string GetFullPathForRequest(IBasicPathElements assetRequest, PathGenerator pathGenerator,
-        bool useNativeFormat = false)
-        => GetPathForRequestInternal(assetRequest, pathGenerator, true, useNativeFormat);
-
-    private string GetForPath(IBasicPathElements assetRequest, bool fullRequest, bool useNativeFormat)
+    private string GetForPath(IBasicPathElements assetRequest, bool fullRequest, bool useNativeFormat, bool includeQueryParams)
         => GetPathForRequestInternal(
             assetRequest, 
             (request, template) => GeneratePathFromTemplate(request, template),
             fullRequest,
-            useNativeFormat);
+            useNativeFormat,
+            includeQueryParams);
     
     private string GetPathForRequestInternal(IBasicPathElements assetRequest, PathGenerator pathGenerator,
-        bool fullRequest, bool useNativeFormat)
+        bool fullRequest, bool useNativeFormat, bool includeQueryParams)
     {
         var request = httpContextAccessor.HttpContext.Request;
         var host = request.Host.Value ?? string.Empty;
@@ -55,7 +53,7 @@ public class ConfigDrivenAssetPathGenerator : IAssetPathGenerator
 
         var path = pathGenerator(assetRequest, template);
 
-        return fullRequest ? request.GetDisplayUrl(path) : path;
+        return fullRequest ? request.GetDisplayUrl(path, includeQueryParams) : path;
     }
 
     // Default path replacements

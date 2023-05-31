@@ -85,19 +85,24 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
-    [InlineData("/iiif-img/2/1/image")]
-    [InlineData("/iiif-img/2/1/image/")]
-    [InlineData("/iiif-img/display-name/1/image")]
-    [InlineData("/iiif-img/display-name/1/image/")]
-    [InlineData("/iiif-img/v2/2/1/image")]
-    [InlineData("/iiif-img/v2/2/1/image/")]
-    [InlineData("/iiif-img/v2/display-name/1/image")]
-    [InlineData("/iiif-img/v2/display-name/1/image/")]
-    public async Task Get_ImageRoot_RedirectsToInfoJson(string path)
+    [InlineData("/iiif-img/2/1/image", "/iiif-img/2/1/image/info.json")]
+    [InlineData("/iiif-img/2/1/image/", "/iiif-img/2/1/image/info.json")]
+    [InlineData("/iiif-img/2/1/image?x=y", "/iiif-img/2/1/image/info.json")]
+    [InlineData("/iiif-img/2/1/image/?x=y", "/iiif-img/2/1/image/info.json")]
+    [InlineData("/iiif-img/display-name/1/image", "/iiif-img/display-name/1/image/info.json")]
+    [InlineData("/iiif-img/display-name/1/image/", "/iiif-img/display-name/1/image/info.json")]
+    [InlineData("/iiif-img/display-name/1/image?x=y", "/iiif-img/display-name/1/image/info.json")]
+    [InlineData("/iiif-img/display-name/1/image/?x=y", "/iiif-img/display-name/1/image/info.json")]
+    [InlineData("/iiif-img/v2/2/1/image", "/iiif-img/v2/2/1/image/info.json")]
+    [InlineData("/iiif-img/v2/2/1/image/", "/iiif-img/v2/2/1/image/info.json")]
+    [InlineData("/iiif-img/v2/2/1/image?x=y", "/iiif-img/v2/2/1/image/info.json")]
+    [InlineData("/iiif-img/v2/2/1/image/?x=y", "/iiif-img/v2/2/1/image/info.json")]
+    [InlineData("/iiif-img/v2/display-name/1/image", "/iiif-img/v2/display-name/1/image/info.json")]
+    [InlineData("/iiif-img/v2/display-name/1/image/", "/iiif-img/v2/display-name/1/image/info.json")]
+    [InlineData("/iiif-img/v2/display-name/1/image?x=y", "/iiif-img/v2/display-name/1/image/info.json")]
+    [InlineData("/iiif-img/v2/display-name/1/image/?x=y", "/iiif-img/v2/display-name/1/image/info.json")]
+    public async Task Get_ImageRoot_RedirectsToInfoJson(string path, string expected)
     {
-        // Arrange
-        var expected = path[^1] == '/' ? $"{path}info.json" : $"{path}/info.json";
-        
         // Act
         var response = await httpClient.GetAsync(path);
 
@@ -109,16 +114,28 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Theory]
     [InlineData("/iiif-img/2/1/image", "/const_value/2/image/info.json")]
     [InlineData("/iiif-img/2/1/image/", "/const_value/2/image/info.json")]
+    [InlineData("/iiif-img/2/1/image?x=y", "/const_value/2/image/info.json")]
+    [InlineData("/iiif-img/2/1/image/?x=y", "/const_value/2/image/info.json")]
     [InlineData("/iiif-img/display-name/1/image", "/const_value/display-name/image/info.json")]
     [InlineData("/iiif-img/display-name/1/image/", "/const_value/display-name/image/info.json")]
+    [InlineData("/iiif-img/display-name/1/image?x=y", "/const_value/display-name/image/info.json")]
+    [InlineData("/iiif-img/display-name/1/image/?x=y", "/const_value/display-name/image/info.json")]
     [InlineData("/iiif-img/v2/2/1/image", "/const_value/v2/2/image/info.json")]
     [InlineData("/iiif-img/v2/2/1/image/", "/const_value/v2/2/image/info.json")]
+    [InlineData("/iiif-img/v2/2/1/image?x=y", "/const_value/v2/2/image/info.json")]
+    [InlineData("/iiif-img/v2/2/1/image/?x=y", "/const_value/v2/2/image/info.json")]
     [InlineData("/iiif-img/v3/2/1/image", "/const_value/2/image/info.json")]
     [InlineData("/iiif-img/v3/2/1/image/", "/const_value/2/image/info.json")]
+    [InlineData("/iiif-img/v3/2/1/image?x=y", "/const_value/2/image/info.json")]
+    [InlineData("/iiif-img/v3/2/1/image/?x=y", "/const_value/2/image/info.json")]
     [InlineData("/iiif-img/v2/display-name/1/image", "/const_value/v2/display-name/image/info.json")]
     [InlineData("/iiif-img/v2/display-name/1/image/", "/const_value/v2/display-name/image/info.json")]
+    [InlineData("/iiif-img/v2/display-name/1/image?x=y", "/const_value/v2/display-name/image/info.json")]
+    [InlineData("/iiif-img/v2/display-name/1/image/?x=y", "/const_value/v2/display-name/image/info.json")]
     [InlineData("/iiif-img/v3/display-name/1/image", "/const_value/display-name/image/info.json")]
     [InlineData("/iiif-img/v3/display-name/1/image/", "/const_value/display-name/image/info.json")]
+    [InlineData("/iiif-img/v3/display-name/1/image?x=y", "/const_value/display-name/image/info.json")]
+    [InlineData("/iiif-img/v3/display-name/1/image/?x=y", "/const_value/display-name/image/info.json")]
     public async Task Get_ImageRoot_RedirectsToInfoJson_CustomPathValues(string path, string expected)
     {
         // Act
@@ -133,9 +150,13 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     
     [Theory]
     [InlineData("/iiif-img/v3/2/1/image", "/iiif-img/2/1/image/info.json")]
+    [InlineData("/iiif-img/v3/2/1/image?x=y", "/iiif-img/2/1/image/info.json")]
     [InlineData("/iiif-img/v3/2/1/image/", "/iiif-img/2/1/image/info.json")]
+    [InlineData("/iiif-img/v3/2/1/image/?x=y", "/iiif-img/2/1/image/info.json")]
     [InlineData("/iiif-img/v3/display-name/1/image", "/iiif-img/display-name/1/image/info.json")]
+    [InlineData("/iiif-img/v3/display-name/1/image?x=y", "/iiif-img/display-name/1/image/info.json")]
     [InlineData("/iiif-img/v3/display-name/1/image/", "/iiif-img/display-name/1/image/info.json")]
+    [InlineData("/iiif-img/v3/display-name/1/image/?x=y", "/iiif-img/display-name/1/image/info.json")]
     public async Task Get_ImageRoot_RedirectsToCanonicalInfoJson_IfRequestingCanonicalVersion(string path, string expected)
     {
         // Act
