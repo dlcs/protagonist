@@ -42,6 +42,34 @@ public class AssetDeliveryPathParserTests
         thumbnailRequest.AssetPath.Should().Be("the-astronaut");
         thumbnailRequest.AssetId.Should().Be("the-astronaut");
     }
+    
+    [Theory]
+    [InlineData("/thumbs/99/1/the-astronaut?foo=bar")]
+    [InlineData("/thumbs/99/1/the-astronaut?foo=bar&baz=qux")]
+    [InlineData("/thumbs/99/1/the-astronaut#test")]
+    [InlineData("/thumbs/99/1/the-astronaut#test?foo=bar")]
+    [InlineData("/thumbs/99/1/the-astronaut?foo=bar#test")]
+    public async Task Parse_ImageRequest_WithAdditionalParams_ReturnsCorrectRequest(string path)
+    {
+        // Arrange
+        var customer = new CustomerPathElement(99, "Test-Customer");
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement("99"))
+            .Returns(customer);
+
+        // Act
+        var thumbnailRequest = await sut.Parse<ImageAssetDeliveryRequest>(path);
+        
+        // Assert
+        thumbnailRequest.RoutePrefix.Should().Be("thumbs");
+        thumbnailRequest.VersionedRoutePrefix.Should().Be("thumbs");
+        thumbnailRequest.VersionPathValue.Should().BeNull();
+        thumbnailRequest.CustomerPathValue.Should().Be("99");
+        thumbnailRequest.Customer.Should().Be(customer);
+        thumbnailRequest.BasePath.Should().Be("/thumbs/99/1/");
+        thumbnailRequest.Space.Should().Be(1);
+        thumbnailRequest.AssetPath.Should().Be("the-astronaut");
+        thumbnailRequest.AssetId.Should().Be("the-astronaut");
+    }
 
     [Fact]
     public async Task Parse_ImageRequest_WithCustomerName_ReturnsCorrectRequest()
