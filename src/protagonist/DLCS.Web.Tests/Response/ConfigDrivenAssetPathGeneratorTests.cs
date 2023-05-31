@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DLCS.Core;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
@@ -94,10 +95,10 @@ public class ConfigDrivenAssetPathGeneratorTests
     [Theory]
     [InlineData("123")]
     [InlineData("test-customer")]
-    public void GetFullPathForRequest_PathGenerator_Default(string customerPathValue)
+    public void GetFullPathForRequest_Default_QueryParam(string customerPathValue)
     {
         // Arrange
-        var sut = GetSut("default.com");
+        var sut = GetSut("default.com", req => req.QueryString = new QueryString("?foo=bar"));
         var request = new BaseAssetRequest
         {
             Customer = new CustomerPathElement(123, "test-customer"),
@@ -108,17 +109,10 @@ public class ConfigDrivenAssetPathGeneratorTests
             RoutePrefix = "thumbs"
         };
 
-        var expected = $"https://default.com/thumbs/{customerPathValue}/2000/not-asset";
+        var expected = $"https://default.com/thumbs/{customerPathValue}/10/path/to/asset?foo=bar";
         
         // Act
-        var actual = sut.GetFullPathForRequest(request,
-            (assetRequest, template) =>
-                DlcsPathHelpers.GeneratePathFromTemplate(
-                    template, 
-                    assetRequest.RoutePrefix, 
-                    assetRequest.CustomerPathValue, 
-                    space: "2000",
-                    assetPath: "not-asset"));
+        var actual = sut.GetFullPathForRequest(request);
         
         // Assert
         actual.Should().Be(expected);
@@ -127,10 +121,10 @@ public class ConfigDrivenAssetPathGeneratorTests
     [Theory]
     [InlineData("123")]
     [InlineData("test-customer")]
-    public void GetFullPathForRequest_PathGenerator_Override(string customerPathValue)
+    public void GetFullPathForRequest_Default_QueryParam_OmittedIfIncludeFalse(string customerPathValue)
     {
         // Arrange
-        var sut = GetSut("test.example.com");
+        var sut = GetSut("default.com", req => req.QueryString = new QueryString("?foo=bar"));
         var request = new BaseAssetRequest
         {
             Customer = new CustomerPathElement(123, "test-customer"),
@@ -141,57 +135,16 @@ public class ConfigDrivenAssetPathGeneratorTests
             RoutePrefix = "thumbs"
         };
 
-        var expected = "https://test.example.com/thumbs/not-asset";
+        var expected = $"https://default.com/thumbs/{customerPathValue}/10/path/to/asset";
         
         // Act
-        var actual = sut.GetFullPathForRequest(request,
-            (assetRequest, template) =>
-                DlcsPathHelpers.GeneratePathFromTemplate(
-                    template, 
-                    assetRequest.RoutePrefix, 
-                    assetRequest.CustomerPathValue, 
-                    space: "2000",
-                    assetPath: "not-asset"));
-        
-        // Assert
-        actual.Should().Be(expected);
-    }
-    
-    [Theory]
-    [InlineData("123")]
-    [InlineData("test-customer")]
-    public void GetFullPathForRequest_PathGenerator_OverrideAvailable_ButIgnoredIfNativeFormatRequested(string customerPathValue)
-    {
-        // Arrange
-        var sut = GetSut("test.example.com");
-        var request = new BaseAssetRequest
-        {
-            Customer = new CustomerPathElement(123, "test-customer"),
-            CustomerPathValue = customerPathValue,
-            Space = 10,
-            AssetPath = "path/to/asset",
-            BasePath = "thumbs/123/10",
-            RoutePrefix = "thumbs"
-        };
-
-        var expected = $"https://test.example.com/thumbs/{customerPathValue}/2000/not-asset";
-
-        // Act
-        var actual = sut.GetFullPathForRequest(request,
-            (assetRequest, template) =>
-                DlcsPathHelpers.GeneratePathFromTemplate(
-                    template, 
-                    assetRequest.RoutePrefix, 
-                    assetRequest.CustomerPathValue, 
-                    space: "2000",
-                    assetPath: "not-asset"),
-            true);
+        var actual = sut.GetFullPathForRequest(request, includeQueryParams: false);
         
         // Assert
         actual.Should().Be(expected);
     }
 
-    private ConfigDrivenAssetPathGenerator GetSut(string host)
+    private ConfigDrivenAssetPathGenerator GetSut(string host, Action<HttpRequest> requestModifier = null)
     {
         var context = new DefaultHttpContext();
         var request = context.Request;
@@ -199,6 +152,7 @@ public class ConfigDrivenAssetPathGeneratorTests
         A.CallTo(() => contextAccessor.HttpContext).Returns(context);
         request.Host = new HostString(host);
         request.Scheme = "https";
+        requestModifier?.Invoke(request);
 
         var options = Options.Create(new PathTemplateOptions
         {
