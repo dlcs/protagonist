@@ -9,4 +9,5 @@
 7. [Cantaloupe Image Server](007-cantaloupe-image-server.md)
 8. [More Access Control - OIDC/OAuth2](008-more-access-control-oidc-oauth.md)
 9. [Asset Family Improvements](009-asset-family-improvements.md)
-10. [PDFs and other documents as input](011-pdfs-as-input.md)
+10. [Special Server Implementation](010-special-server-implementation.md)
+11. [PDFs and other documents as input](011-pdfs-as-input.md)
