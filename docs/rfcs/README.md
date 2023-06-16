@@ -11,3 +11,4 @@
 9. [Asset Family Improvements](009-asset-family-improvements.md)
 10. [Special Server Implementation](010-special-server-implementation.md)
 11. [PDFs and other documents as input](011-pdfs-as-input.md)
+12. [Auth Service](012-auth-service.md)
