@@ -77,6 +77,8 @@ public class IIIFCanvasFactory
                             Id = GetFullQualifiedImagePath(i, customerPathElement,
                                 thumbnailSizes.MaxDerivativeSize, false),
                             Format = "image/jpeg",
+                            Width = thumbnailSizes.MaxDerivativeSize.Width,
+                            Height = thumbnailSizes.MaxDerivativeSize.Height,
                             Service = GetImageServices(i, customerPathElement)
                         }
                     }.AsListOf<IAnnotation>()
@@ -128,8 +130,8 @@ public class IIIFCanvasFactory
                     {
                         Id = GetFullQualifiedImagePath(i, customerPathElement,
                             thumbnailSizes.MaxDerivativeSize, false),
-                        Width = i.Width,
-                        Height = i.Height,
+                        Width = thumbnailSizes.MaxDerivativeSize.Width,
+                        Height = thumbnailSizes.MaxDerivativeSize.Height,
                         Service = GetImageServices(i, customerPathElement)
                     }
                 }.AsList()
