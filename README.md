@@ -9,7 +9,7 @@ A collection of separate dotnet core applications that together form the basis o
 * [Architectural Considerations](docs/architectural-considerations.md)
 * [Design Principles](docs/rfcs/006-Design-Principles.md)
 * [RFCs](docs/rfcs)
-* [Architecture Diagram](https://raw.githubusercontent.com/dlcs/protagonist/master/docs/c4-container-diagrams/DLCS-2021-l2.png)
+* [Architecture Diagram](https://raw.githubusercontent.com/dlcs/protagonist/master/docs/c4-container-diagrams/DLCS-2023-l2.png)
 * [Public API Documentation](https://dlcs-book.readthedocs.io/en/latest/)
 
 ## Projects
