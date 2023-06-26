@@ -123,7 +123,7 @@ Some of the things our customers want to serve up at scale, and maybe enforce ac
 
 ### PDF generation
 
-Example: https://dlcs.io/pdf/wellcome/pdf-item/b22031194/0
+Example: https://dlcs.io/pdf/wellcome/pdf/5/b22031194
 
 This combines the named query functionality with the large thumbnail generation, to create PDFs from sequences of images.
 It knows how to request a title page, whether to redact any pages based on permissions, and whether to enforce access control on the PDF document.
