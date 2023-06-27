@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 using Amazon.S3;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
-using DLCS.AWS.S3;
-using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Messaging;
@@ -97,6 +95,69 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageOptimisationPolicy.Should().Be("fast-higher");
     }
     
+    [Theory]
+    [InlineData("audio/mp3", AssetFamily.Timebased)]
+    [InlineData("video/mp4", AssetFamily.Timebased)]
+    public async Task Put_NewImageAsset_SetsFamilyBasedOnMediaType_IfFamilyAndDeliveryChannelsMissing_Async(string mediaType, AssetFamily expectedFamily)
+    {
+        var urlSafeMediaType = mediaType.Replace("/", "_");
+        var assetId = new AssetId(99, 1,
+            $"{nameof(Put_NewImageAsset_SetsFamilyBasedOnMediaType_IfFamilyAndDeliveryChannelsMissing_Async)}_{urlSafeMediaType}");
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""mediaType"": ""{mediaType}""
+}}";
+        
+        A.CallTo(() =>
+                EngineClient.AsynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(true);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = await dbContext.Images.FindAsync(assetId);
+        asset.Id.Should().Be(assetId);
+        asset.Family.Should().Be(expectedFamily);
+    }
+    
+    [Theory]
+    [InlineData("image/jpeg", AssetFamily.Image)]
+    [InlineData("application/pdf", AssetFamily.File)]
+    public async Task Put_NewImageAsset_SetsFamilyBasedOnMediaType_IfFamilyAndDeliveryChannelsMissing_Sync(string mediaType, AssetFamily expectedFamily)
+    {
+        var urlSafeMediaType = mediaType.Replace("/", "_");
+        var assetId = new AssetId(99, 1,
+            $"{nameof(Put_NewImageAsset_SetsFamilyBasedOnMediaType_IfFamilyAndDeliveryChannelsMissing_Sync)}_{urlSafeMediaType}");
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""mediaType"": ""{mediaType}""
+}}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = await dbContext.Images.FindAsync(assetId);
+        asset.Id.Should().Be(assetId);
+        asset.Family.Should().Be(expectedFamily);
+    }
+
     [Fact]
     public async Task Put_NewImageAsset_Creates_Asset_SetsCounters()
     {

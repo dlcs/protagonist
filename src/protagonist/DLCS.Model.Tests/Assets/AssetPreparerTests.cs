@@ -257,6 +257,23 @@ public class AssetPreparerTests
     }
     
     [Theory]
+    [InlineData("image/jpeg", AssetFamily.Image)]
+    [InlineData("video/mp4", AssetFamily.Timebased)]
+    [InlineData("audio/mp4", AssetFamily.Timebased)]
+    [InlineData("text/plain", AssetFamily.File)]
+    public void PrepareAssetForUpsert_SetsAssetFamily_FromMediaType_IfFamilyAndDeliveryChannelNotSet(string mediaType, AssetFamily expected)
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "required", MediaType = mediaType };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
+
+        // Assert
+        result.UpdatedAsset.Family.Should().Be(expected);
+    }
+    
+    [Theory]
     [InlineData("file", AssetFamily.Timebased, AssetFamily.File)]
     [InlineData("file,iiif-img", AssetFamily.Timebased, AssetFamily.Image)]
     [InlineData("iiif-img", AssetFamily.Timebased, AssetFamily.Image)]
