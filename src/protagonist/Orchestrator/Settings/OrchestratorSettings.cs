@@ -19,12 +19,6 @@ public class OrchestratorSettings
     public string S3OriginRegex { get; set; }
 
     /// <summary>
-    /// Timeout for critical orchestration path. How long to wait to achieve lock when orchestrating asset.
-    /// If timeout breached, multiple orchestrations can happen for same item.
-    /// </summary>
-    public int CriticalPathTimeoutMs { get; set; } = 10000;
-
-    /// <summary>
     /// Which image-server is handling downstream tile requests
     /// </summary>
     /// <remarks>

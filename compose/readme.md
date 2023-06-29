@@ -13,3 +13,11 @@ _There is a limitation with fireball that it will always write to AWS so PDF gen
 ## `docker-compose.local.yml`
 
 This contains external dependencies for running the dotnet apps locally.
+
+## `docker-compose.engine.yml`
+
+This contains external dependencies for debugging the Engine.
+
+## `docker-compose.orchestrator.yml`
+
+This contains external dependencies for debugging Orchestrator.
