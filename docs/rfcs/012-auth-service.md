@@ -1,34 +1,38 @@
-# Separate Auth Service
+# Separate Auth Service / IIIF Auth 2.0
 
-The DLCS currently supports [IIIF Auth 1.0](https://iiif.io/api/auth/1.0/) and, to a lesser extent, [IIIF Auth 0.9](https://iiif.io/api/auth/0.9/). These tables are modelled directly in the main DLCS database.
+The DLCS currently supports [IIIF Auth 1.0](https://iiif.io/api/auth/1.0/) and, to a lesser extent, [IIIF Auth 0.9](https://iiif.io/api/auth/0.9/). 
+
+The tables storing related config (Roles, RoleProviders, AuthServices etc) are modelled directly in the main DLCS database. 
+
+An image links
 
 ## Auth2 Service
 
 This RFC looks at introducing a new, separate auth service for supporting [IIIF Auth 2.0](https://iiif.io/api/auth/2.0/). The main drivers for this are:
 
-* It avoids making migrations to the existing DLCS database by introducing a new datastore. 
-* We need to manage a lot more values for IIIF Auth v2 compared to v1.
-* Will give us more flexibility for introducing new auth services moving forward.
+* Less risk - it avoids making migrations to the existing DLCS database by introducing a new datastore. Existing role configuration can stay as-is.
+* Simplicity - we need to manage a lot more values for IIIF Auth v2 compared to v1.
 * Separation of concerns - auth functionality self contained.
+* Flexibility - in the future IIIF Auth 3.0 can be introduced as a separate service, rather than requiring changes to Orchestrator.
 
-This will be a self contained service with it's own datastore, with the following functionality:
+This will be a self contained service with its own datastore, with the following functionality:
 
-* API supporting CRUD operations on the various auth service properties.
+* API supporting CRUD operations on the various auth service properties (for managing presentation strings, configuration on how to obtain role etc).
 * Handling all IIIF Auth 2.0 interactions (access service, access token service, logout, probe service)
 * User session and auth-token management
-* Validation whether a session has access to a role
+* Validating whether a session has access to a role
 * Generating auth service IIIF Presentation definitions to add to IIIF manifests.
 * Handling OIDC interactions with 3rd customer auth services.
 
 ## Interactions
 
-All auth functionality currently resides in the main DB and these tables are used by Orchestrator to handle all interactions. By moving these to a separate service there'll be some additional service-service interactions.
+All auth functionality currently resides in the main DB and these tables are used directly by Orchestrator (see [RFC 005-Access-Control](005-Access-Control.md)). 
 
-### Orchestrator
+By moving these to a separate service Orchestrator will need to make external calls to the AuthService in the following circumstances:
 
-Orchestrator will need to call the AuthService to generate the IIIF service descriptions, see below for API details. 
-
-These will be appended to info.json, single-asset manifests and named-query projections - with the `"id"` property updated where required (this is already happening for auth 0.9 + 1.0 services). This works in a simiar way to how info.json is fetched from Cantaloupe and updated.
+* `/info.json` - when generating info.json for a restricted item Orchestrator will need to call the AuthService to get the IIIF auth service description. The `"id"` property returned will be updated dynamically as required (updating `"id"` is already happening for auth 0.9 + 1.0 services).
+* IIIF manifest generation (single-item and NamedQuery) - similar to above we will need to call out to get IIIF auth service description for any images that require auth.
+* Answering _"Does the current request have access to requested image"_ - part of the asset-delivery pipeline is to verify that an incoming request is able to view the requested image. It does this by interrogating the cookie/bearer token present in the request. This will need to be proxied to the AuthService. _This will need to be performant enough to not hinder response times_
 
 ## Database
 
@@ -36,11 +40,19 @@ All AccessService configuration and display values will be stored in the AuthSer
 
 We will support languages for property values, with multiple strings per language.
 
+Suggested tables:
+* `AccessService`
+* `ProbeServiceDescription`
+* `UserSession`
+* `LanguageMap` - for shared languages - or we can embed.
+
 ## Backwards Compatibility
 
-Add flag for returning 401 for info.json. 
+Orchestrator still handles auth 1.0 + 0.9. As part of the implementation it will return a 401 or 200 from `/info.json` requests depending on whether the user has access to the resource.
 
-Orchestrator still handles auth 1.0 + 0.9
+For Auth 2.0 we should always return a 200 from `/info.json`, and use the probe service to indicate the status code.
+
+For backwards compatibility we should retain the ability to set 200/401 or always-200 for `/info.json`. This should be configurable per-customer.
 
 ## Implementing Auth Spec
 
@@ -140,7 +152,9 @@ The GET operations for AccessService will IIIF services descriptions that can be
 
 ### Authentication
 
-Delegate auth to DLCS, similar to Composite-Handler (for now!)
+For the CRUD operations, the new AuthService will need to validate that specified API keys are correct.
+
+For now, while using API-keys, we can delegate auth to DLCS - this is similar to how Composite-Handler will work.
 
 ## Questions
 
@@ -148,4 +162,6 @@ Delegate auth to DLCS, similar to Composite-Handler (for now!)
 * Should the `/probe/` endpoint in AuthService be locked down?
 * How do we handle the different paths? Could this be an unnecessary complication?
 * Do Orchestrator and AuthService need be on the same domain? e.g. If Orchestrator is on `dlcs.example` and auth on `auth.dlcs.example` - would that lead to cookie issues? Thumbs service works in this way to may be a non-issue.
-* How do we know if the auth to be added to an image is 1 or 2 (or 3 etc in future)? Would we need something in the main db? Or a setting flag? Or would it be a different role?
+* How do we know if the auth to be added to an image is 1 or 2 (or 3 etc in future)?
+  * The simplest method would be a customer specific setting - each customer would either be Auth1 or 2, not both.
+  * An alternative would be to have different roles - either something in the identifier specifies which Auth version (e.g. `http://dlcs.io/role/{version}/name`) - or some other source that we can lookup to determine which AuthService role X should use.
