@@ -3,6 +3,7 @@ using System.Linq;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
+using Microsoft.Extensions.Logging;
 
 namespace DLCS.Model.Assets;
 
@@ -288,6 +289,23 @@ public static class AssetPreparer
         if (workingAsset.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
         {
             workingAsset.Family = AssetFamily.Timebased;
+            return;
+        }
+
+        if (workingAsset.Family == null)
+        {
+            if (MIMEHelper.IsImage(workingAsset.MediaType))
+            {
+                workingAsset.Family = AssetFamily.Image;
+            }
+            else if (MIMEHelper.IsAudio(workingAsset.MediaType) || MIMEHelper.IsVideo(workingAsset.MediaType))
+            {
+                workingAsset.Family = AssetFamily.Timebased;
+            }
+            else
+            {
+                workingAsset.Family = AssetFamily.File;
+            }
         }
     }
 
