@@ -33,6 +33,8 @@ public class IngestSingleImage : IRequest<Image?>
 
 public class IngestImageFromFileHandler : IRequestHandler<IngestSingleImage, Image?>
 {
+    private const string StandardMediaType = "image/jpeg";
+    
     private readonly ClaimsPrincipal claimsPrincipal;
     private readonly IBucketWriter bucketWriter;
     private readonly IDlcsClient dlcsClient;
@@ -78,6 +80,7 @@ public class IngestImageFromFileHandler : IRequestHandler<IngestSingleImage, Ima
         return new Image
         {
             Origin = objectInBucket.GetHttpUri().ToString(),
+            MediaType = StandardMediaType,
             Number1 = request.ImageIndex,
             String1 = request.ImageIndex.ToString()
         };
