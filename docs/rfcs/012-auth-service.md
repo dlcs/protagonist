@@ -4,8 +4,6 @@ The DLCS currently supports [IIIF Auth 1.0](https://iiif.io/api/auth/1.0/) and, 
 
 The tables storing related config (Roles, RoleProviders, AuthServices etc) are modelled directly in the main DLCS database. 
 
-An image links
-
 ## Auth2 Service
 
 This RFC looks at introducing a new, separate auth service for supporting [IIIF Auth 2.0](https://iiif.io/api/auth/2.0/). The main drivers for this are:
@@ -40,11 +38,9 @@ All AccessService configuration and display values will be stored in the AuthSer
 
 We will support languages for property values, with multiple strings per language.
 
-Suggested tables:
-* `AccessService`
-* `ProbeServiceDescription`
-* `UserSession`
-* `LanguageMap` - for shared languages - or we can embed.
+Suggested ERD:
+
+![AuthService IIIF2 ERD](img/AuthService_2_erd.png "AuthService IIIF2 ERD")
 
 ## Backwards Compatibility
 
@@ -52,13 +48,13 @@ Orchestrator still handles auth 1.0 + 0.9. As part of the implementation it will
 
 For Auth 2.0 we should always return a 200 from `/info.json`, and use the probe service to indicate the status code.
 
-For backwards compatibility we should retain the ability to set 200/401 or always-200 for `/info.json`. This should be configurable per-customer.
+For backwards compatibility we should retain the ability to set 200/401 or always-200 for `/info.json`. This should be configurable per-customer and a simple boolean flag.
 
 ## Implementing Auth Spec
 
-This section addresses the various points in the Auth spec and addresses how we will handle these
+This section addresses the various points in the Auth spec and addresses how we will handle these, either in the new AuthService or in Orchestraotr.
 
-The following endpoints will be required, either in Orchestrator or the new Auth Service
+The following endpoints will be:
 
 ### [Access Service](https://iiif.io/api/auth/2.0/#access-service)
 
@@ -74,7 +70,7 @@ This request will initiate a login request for the specified `{access-service}`.
 The AuthService will render some user interface component for the user to make a gesture on. The contents of this will be driven by values saved in the database. 
 
 The AuthService will render it's own UI for both `clickthrough` and external OAuth provider. The process for each will slightly differ:
-* `clickthrough` - the AuthService will render a message in UI and credentials are not required. Once the user has confirmed/agreed to terms we can create a session, set a access cookie and exit.
+* `clickthrough` - the AuthService will render a message in UI, credentials are not required. Once the user has confirmed/agreed to terms we can create a session, set an access cookie and exit.
 * OAuth - the DLCS will use [`Authorization Code Flow`](https://oauth.net/2/grant-types/authorization-code/) and follow the sequence diagram in [RFC 008](008-more-access-control-oidc-oauth.md). The returned claims will be parsed to a role and a session created for those roles.
   * If the `?origin=` value is the same as the domain where the DLCS is being hosted we won't need to show a confirmation step. However, if they differ we need to get the user to carry out a significant gesture in the DLCS domain, so we will need to render some UI. The text values for this will be stored in database.
 
@@ -83,7 +79,9 @@ The AuthService will render it's own UI for both `clickthrough` and external OAu
 > The access token service is used by the client to obtain an access token, which it then sends to a probe service.
 
 Proposed endpoints:
-* AuthService `GET /auth/v2/{customer}/token`
+* AuthService `GET /auth/v2/{customer}/token?messageId={messageId}&origin={origin}`
+
+AuthService creates a UserSession and related AccessToken, which is returned to the client as part of HTML payload. Provided `messageId` is echoed back to user.
 
 ### [Probe Service](https://iiif.io/api/auth/2.0/#probe-service)
 
@@ -118,7 +116,7 @@ A 'logout' operation will result in the underyling user session being either del
 
 ### Management 
 
-The AuthService will have CRUD operations to manage all stored resources.
+The AuthService will have CRUD operations to manage all stored resources. 
 
 ### Service Description
 
@@ -159,8 +157,10 @@ For now, while using API-keys, we can delegate auth to DLCS - this is similar to
 ## Questions
 
 * When Orchestrator calls the ProbeService - do we want to pass roles in a header, rather than query parameter? The former wouldn't be logged. Is Image:Role relationship sensitive?
-* Should the `/probe/` endpoint in AuthService be locked down?
-* How do we handle the different paths? Could this be an unnecessary complication?
+* Should the `/probe/` endpoint in AuthService be locked down to Orchestrator only?
+* How do we handle the different paths for the DLCS as whole?
+  * Could this be an unnecessary complication?
+  * Using `/auth/v2/` prefix should allow us easily identify requests and direct accordingly.
 * Do Orchestrator and AuthService need be on the same domain? e.g. If Orchestrator is on `dlcs.example` and auth on `auth.dlcs.example` - would that lead to cookie issues? Thumbs service works in this way to may be a non-issue.
 * How do we know if the auth to be added to an image is 1 or 2 (or 3 etc in future)?
   * The simplest method would be a customer specific setting - each customer would either be Auth1 or 2, not both.

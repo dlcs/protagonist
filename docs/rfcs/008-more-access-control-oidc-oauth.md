@@ -49,7 +49,7 @@ An alternative configuration block could be (this example uses values from the W
 {
     "default": {
         "config": "oidc",
-        "provider": "auth0",
+        "provider": "auth0|azureb2c",
         "domain": "<domain>",
         "scopes": "weco:patron_role",
         "claimType": "https://wellcomecollection.org/patron_role",
@@ -59,7 +59,8 @@ An alternative configuration block could be (this example uses values from the W
             "https://api.dlcs.io/customers/2/roles/clickthrough",
             "https://api.dlcs.io/customers/2/roles/clinicalImages",
             "https://api.dlcs.io/customers/2/roles/restrictedFiles"
-          ]
+          ],
+          "Medical": ["https://api.dlcs.io/customers/2/roles/clinicalImages"],
         },
         "unknownValueBehaviour": "Throw|UseClaim|Fallback",
         "fallbackMapping": ["https://api.dlcs.io/customers/2/roles/fallback"]
@@ -90,6 +91,26 @@ _Note: The above values are based on Auth0 implementation, we may need to store 
 Rather than using a specific claim and mapping it to a DLCS specific role, and alternative that could be extended in the future is the use of RBAC in the IAM implementation being used and for the DLCS roles to be returned.
 
 The above suggested configuration might still stand without mappings as the roles coming down would be use as-is.
+
+#### Alternative RoleProviders
+
+Extending on the above, possible other RoleProvider configurations could be Clickthrough:
+
+```json
+"default": {
+  "config": "clickthrough"
+}
+```
+
+Or an `external` provider from IIIF Auth2, where the IP address of incoming request is the authorizing aspect.
+
+```json
+{
+    "default": {
+        "config": "ip",
+        "values": ["10.0.0.16/32"]
+}
+```
 
 ## DLCS Session
 
