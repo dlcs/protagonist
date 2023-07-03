@@ -20,7 +20,7 @@ public class HydraCustomerValidator : AbstractValidator<DLCS.HydraModel.Customer
         
         RuleFor(c => c.DisplayName)
             .NotEmpty()
-            .WithMessage("A new customer must have a Display name (label)..");
+            .WithMessage("A new customer must have a Display name (label).");
         
         RuleFor(c => c.Administrator)
             .NotEqual(true)
