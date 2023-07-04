@@ -30,7 +30,9 @@ By moving these to a separate service Orchestrator will need to make external ca
 
 * `/info.json` - when generating info.json for a restricted item Orchestrator will need to call the AuthService to get the IIIF auth service description. The `"id"` property returned will be updated dynamically as required (updating `"id"` is already happening for auth 0.9 + 1.0 services).
 * IIIF manifest generation (single-item and NamedQuery) - similar to above we will need to call out to get IIIF auth service description for any images that require auth.
-* Answering _"Does the current request have access to requested image"_ - part of the asset-delivery pipeline is to verify that an incoming request is able to view the requested image. It does this by interrogating the cookie/bearer token present in the request. This will need to be proxied to the AuthService. _This will need to be performant enough to not hinder response times_
+* Answering _"Does the current request have access to requested image"_ - part of the asset-delivery pipeline is to verify that an incoming request is able to view the requested image. It does this by interrogating the cookie/bearer token present in the request. This will need to be proxied to the AuthService for auth 2. _This will need to be performant enough to not hinder response times_
+
+> A note on the final bullet, above. The DLCS will need to support 0.9/1.0 and 2.0 at the same time. When making requests for assets a cookie will be provided - the Orchestrator will need to determine which auth service to use. This can be controlled by cookie name, or format of value.
 
 ## Database
 
