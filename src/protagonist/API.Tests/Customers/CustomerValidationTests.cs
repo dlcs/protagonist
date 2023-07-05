@@ -63,4 +63,15 @@ public class CustomerValidationTests
 
         result.ShouldHaveAnyValidationError();
     }
+    
+    [Fact]
+    public void NewCustomer_CannotHaveName_Version()
+    {
+        var customer = GetValidNewCustomer();
+        customer.Name = "v2-customer";
+        
+        var result = sut.TestValidate(customer);
+
+        result.ShouldHaveAnyValidationError();
+    }
 }
