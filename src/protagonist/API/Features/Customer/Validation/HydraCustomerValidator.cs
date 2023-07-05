@@ -39,7 +39,7 @@ public class HydraCustomerValidator : AbstractValidator<DLCS.HydraModel.Customer
         RuleFor(c => c.Name)
             .Must(name => !StartsWithVersion(name!))
             .When(c => !string.IsNullOrEmpty(c.Name))
-            .WithMessage(c=> $"Name field [{c.Name}] cannot start with a version slug");
+            .WithMessage(c=> $"Name field [{c.Name}] cannot start with a version slug.");
     }
     
     private bool IsReservedWord(string customerName)
