@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using DLCS.Core.Strings;
 using FluentValidation;
 
@@ -11,7 +12,8 @@ public class HydraCustomerValidator : AbstractValidator<DLCS.HydraModel.Customer
 {
     public HydraCustomerValidator()
     {
-        RuleFor(c => c.ModelId).Empty()
+        RuleFor(c => c.ModelId)
+            .Empty()
             .WithMessage(c => $"DLCS must allocate customer id, but id {c.ModelId} was supplied.");
         
         RuleFor(c => c.Name)
@@ -31,13 +33,24 @@ public class HydraCustomerValidator : AbstractValidator<DLCS.HydraModel.Customer
             .WithMessage("You can't supply API Keys at customer creation time.");
         
         RuleFor(c => c.Name)
-            .Must(name => !IsReservedWord(name))
+            .Must(name => !IsReservedWord(name!))
             .WithMessage(c=> $"Name field [{c.Name}] cannot be a reserved word.");
+        
+        RuleFor(c => c.Name)
+            .Must(name => !StartsWithVersion(name!))
+            .When(c => !string.IsNullOrEmpty(c.Name))
+            .WithMessage(c=> $"Name field [{c.Name}] cannot start with a version slug");
     }
     
-    private bool IsReservedWord(string? customerName)
+    private bool IsReservedWord(string customerName)
     {
         return Enum.GetNames(typeof(DLCS.HydraModel.Customer.ReservedNames)).Any(n =>
             String.Equals(n, customerName, StringComparison.CurrentCultureIgnoreCase));
+    }
+
+    private bool StartsWithVersion(string customerName)
+    {
+        var versionRegex = @"^(?i:v\d+)";
+        return Regex.Matches(customerName, versionRegex).Any();
     }
 }
