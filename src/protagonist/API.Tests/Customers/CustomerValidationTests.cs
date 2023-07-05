@@ -1,13 +1,18 @@
-using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using DLCS.HydraModel;
-using FluentAssertions;
-using Xunit;
+using FluentValidation.TestHelper;
 
 namespace API.Tests.Customers;
 
 public class CustomerValidationTests
 {
+    private readonly HydraCustomerValidator sut;
+    
+    public CustomerValidationTests()
+    {
+        sut = new HydraCustomerValidator();
+    }
+    
     private Customer GetValidNewCustomer()
     {
         return new Customer
@@ -16,14 +21,15 @@ public class CustomerValidationTests
             DisplayName = "My test customer"
         };
     }
+    
     [Fact]
     public void NewCustomer_RequiresOnly_Names()
     {
         var customer = GetValidNewCustomer();
         
-        var errors = HydraCustomerValidator.GetNewHydraCustomerErrors(customer);
+        var result = sut.TestValidate(customer);
 
-        errors.Length.Should().Be(0);
+        result.ShouldNotHaveAnyValidationErrors();
     }
     
     [Fact]
@@ -31,11 +37,10 @@ public class CustomerValidationTests
     {
         var customer = new Customer();
         
-        var errors = HydraCustomerValidator.GetNewHydraCustomerErrors(customer);
+        var result = sut.TestValidate(customer);
 
-        errors.Length.Should().BeGreaterThan(0);
+        result.ShouldHaveAnyValidationError();
     }
-    
     
     [Fact]
     public void NewCustomer_CannotBe_Admin()
@@ -43,11 +48,10 @@ public class CustomerValidationTests
         var customer = GetValidNewCustomer();
         customer.Administrator = true;
         
-        var errors = HydraCustomerValidator.GetNewHydraCustomerErrors(customer);
+        var result = sut.TestValidate(customer);
 
-        errors.Length.Should().BeGreaterThan(0);
+        result.ShouldHaveAnyValidationError();
     }
-   
     
     [Fact]
     public void NewCustomer_CannotHaveName_Admin()
@@ -55,8 +59,19 @@ public class CustomerValidationTests
         var customer = GetValidNewCustomer();
         customer.Name = "Admin";
         
-        var errors = HydraCustomerValidator.GetNewHydraCustomerErrors(customer);
+        var result = sut.TestValidate(customer);
 
-        errors.Length.Should().BeGreaterThan(0);
+        result.ShouldHaveAnyValidationError();
+    }
+    
+    [Fact]
+    public void NewCustomer_CannotHaveName_Version()
+    {
+        var customer = GetValidNewCustomer();
+        customer.Name = "v2-customer";
+        
+        var result = sut.TestValidate(customer);
+
+        result.ShouldHaveAnyValidationError();
     }
 }

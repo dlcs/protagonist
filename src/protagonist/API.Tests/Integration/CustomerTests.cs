@@ -166,6 +166,42 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
+    
+    [Fact] 
+    public async Task CreateNewCustomer_Returns400_IfNameStartsWithVersion()
+    {
+        // Tests HydraCustomerValidator:StartsWithVersion
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""v2"",
+  ""displayName"": ""TestUser""
+}";
+        
+        // act
+        var content = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsAdmin().PostAsync("/customers", content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact] 
+    public async Task CreateNewCustomer_Returns400_IfNameReserved()
+    {
+        // Tests HydraCustomerValidator:IsReservedWord
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""Admin"",
+  ""displayName"": ""TestUser""
+}";
+        
+        // act
+        var content = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsAdmin().PostAsync("/customers", content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 
     [Fact]
     public async Task Non_Admin_Cant_Create_Customer()

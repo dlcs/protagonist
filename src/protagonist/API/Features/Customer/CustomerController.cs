@@ -76,19 +76,21 @@ public class CustomerController : HydraController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> CreateCustomer([FromBody] DLCS.HydraModel.Customer newCustomer)
+    public async Task<IActionResult> CreateCustomer(
+        [FromBody] DLCS.HydraModel.Customer newCustomer,
+        [FromServices] HydraCustomerValidator validator)
     {
         if (!User.IsAdmin())
         {
             return Forbid();
         }
-            
-        var basicErrors = HydraCustomerValidator.GetNewHydraCustomerErrors(newCustomer);
-        if (basicErrors.Any())
+        
+        var validationResult = await validator.ValidateAsync(newCustomer);
+        if (!validationResult.IsValid)
         {
-            return this.HydraProblem(basicErrors, null, 400, "Invalid Customer");
+            return this.HydraProblem(validationResult.Errors.Select(s => s.ErrorMessage), null, 400, "Invalid Customer");
         }
-
+        
         var command = new CreateCustomer(newCustomer.Name!, newCustomer.DisplayName!);
 
         try
