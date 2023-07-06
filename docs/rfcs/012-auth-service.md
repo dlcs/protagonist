@@ -15,7 +15,8 @@ This RFC looks at introducing a new, separate auth service for supporting [IIIF 
 
 This will be a self contained service with its own datastore, with the following functionality:
 
-* API supporting CRUD operations on the various auth service properties (for managing presentation strings, configuration on how to obtain role etc).
+* API supporting CRUD operations on the various auth service properties (for managing presentation strings, configuration on how to obtain role etc). 
+  * API will be exposed to callers as if it is part of the wider API, using same keys etc. Users will be unaware they accessing a different service for some API calls.
 * Handling all IIIF Auth 2.0 interactions (access service, access token service, logout, probe service)
 * User session and auth-token management
 * Validating whether a session has access to a role
@@ -76,6 +77,8 @@ The AuthService will render it's own UI for both `clickthrough` and external OAu
 * OAuth - the DLCS will use [`Authorization Code Flow`](https://oauth.net/2/grant-types/authorization-code/) and follow the sequence diagram in [RFC 008](008-more-access-control-oidc-oauth.md). The returned claims will be parsed to a role and a session created for those roles.
   * If the `?origin=` value is the same as the domain where the DLCS is being hosted we won't need to show a confirmation step. However, if they differ we need to get the user to carry out a significant gesture in the DLCS domain, so we will need to render some UI. The text values for this will be stored in database.
 
+> Note that the auth-service should run on the same domain as orchestrator to avoid any issues cookies.
+
 ### [Access Token Service](https://iiif.io/api/auth/2.0/#access-token-service)
 
 > The access token service is used by the client to obtain an access token, which it then sends to a probe service.
@@ -96,7 +99,8 @@ Proposed endpoints:
   * If the asset requires auth, Orchestrator delegates to AuthService to generate the [Probe Service Reponse](https://iiif.io/api/auth/2.0/#probe-service-response) and sends it to client unchanged.
 * AuthService `GET /probe/{asset-id}?role={csv-roles}` (e.g. `GET /probe/10/20/foo?role=gold,silver`)
   * The AuthService maintains a list of sessions and can validate that the provided token has access to the requested role. The response can be fully generated as it doesn't have any hostname specific `"id"` values etc.
-  * This is on a different path to avoid any DLCS general routing - we may want to add some restrictions to make it only accessible to Orchestrator (via IP or some other auth mechanism).
+  * This is on a different path to avoid any DLCS general routing - we may want to add some restrictions to make it only accessible to other DLCS services (via IP or some other auth mechanism).
+* Response is still a `AuthProbeResult2` and the HTTP status code will _always_ be 200, even if the client is unauthorised. `"status"` field is used instead.
 
 This is detailed below:
 
@@ -104,7 +108,7 @@ This is detailed below:
 
 An alternative implementation would be to have the above relationship reversed, with AuthService being the entry point and it calling out to Orchestrator, or API, to get a list of roles for an image. This keeps the Auth responsibilities purely in the AuthService _but_ we lose the ability to shortcut responses as we would always need to get a list of roles. Image:Role could be cached but Orchestrator first keeps this cleaner.
 
-`"substitution"` will not be supported at this point.
+`"substitution"` will not be supported at this point. When introduced in the future the Orchestrator would manage substitutions - which asset is used in place of another asset. These details can be appended to the `AuthProbeResult2` returned from the AuthService.
 
 ### [Logout Service](https://iiif.io/api/auth/2.0/#logout-service)
 
@@ -118,7 +122,7 @@ A 'logout' operation will result in the underyling user session being either del
 
 ### Management 
 
-The AuthService will have CRUD operations to manage all stored resources. 
+The AuthService will have CRUD operations to manage all stored resources. As mentioned above, this will be exposed
 
 ### Service Description
 
@@ -155,15 +159,3 @@ The GET operations for AccessService will IIIF services descriptions that can be
 For the CRUD operations, the new AuthService will need to validate that specified API keys are correct.
 
 For now, while using API-keys, we can delegate auth to DLCS - this is similar to how Composite-Handler will work.
-
-## Questions
-
-* When Orchestrator calls the ProbeService - do we want to pass roles in a header, rather than query parameter? The former wouldn't be logged. Is Image:Role relationship sensitive?
-* Should the `/probe/` endpoint in AuthService be locked down to Orchestrator only?
-* How do we handle the different paths for the DLCS as whole?
-  * Could this be an unnecessary complication?
-  * Using `/auth/v2/` prefix should allow us easily identify requests and direct accordingly.
-* Do Orchestrator and AuthService need be on the same domain? e.g. If Orchestrator is on `dlcs.example` and auth on `auth.dlcs.example` - would that lead to cookie issues? Thumbs service works in this way to may be a non-issue.
-* How do we know if the auth to be added to an image is 1 or 2 (or 3 etc in future)?
-  * The simplest method would be a customer specific setting - each customer would either be Auth1 or 2, not both.
-  * An alternative would be to have different roles - either something in the identifier specifies which Auth version (e.g. `http://dlcs.io/role/{version}/name`) - or some other source that we can lookup to determine which AuthService role X should use.
