@@ -1,0 +1,28 @@
+title Probe Service
+
+participant Client
+participant Orchestrator
+participant OrchestratorDB
+participant AuthService
+
+Client->Orchestrator:GET /auth/v2/probe/10/20/foo
+note right of Orchestrator: this would be read\nfrom cached vals
+Orchestrator->+OrchestratorDB: Get Images + Roles
+OrchestratorDB-->-Orchestrator: Images + Roles
+opt Image Open
+Orchestrator-->Client:{"status": 200}
+end
+opt Bearer token missing
+Orchestrator-->Client:{"status": 401}
+end
+Orchestrator->AuthService: GET /probe/10/20/foo?role=role-name\nw/ bearer token
+AuthService->AuthService: Validate access
+AuthService-->Orchestrator: Full Probe Service Response
+note over OrchestratorDB:
+{
+  "@context": "http://iiif.io/api/auth/2/context.json",
+  "type": "AuthProbeResult2",
+  "status": "200|401"
+}
+end note
+Orchestrator-->Client:Probe Service Response\nfrom AuthService
