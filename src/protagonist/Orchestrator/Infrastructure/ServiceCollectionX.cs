@@ -131,8 +131,9 @@ public static class ServiceCollectionX
             .AddHealthChecks()
             .AddNpgSql(configuration.GetPostgresSqlConnection(), name: "Database")
             .AddProxyDestination(ProxyDestination.ImageServer, "Image Server")
+            .AddProxyDestination(ProxyDestination.SpecialServer, "Special Server")
             .AddProxyDestination(ProxyDestination.Thumbs, "Thumbs", tags: tagsList);
-            
+
         if (proxy.CanResizeThumbs)
         {
             healthChecksBuilder.AddProxyDestination(ProxyDestination.ResizeThumbs, "ThumbsResize", tags: tagsList);
