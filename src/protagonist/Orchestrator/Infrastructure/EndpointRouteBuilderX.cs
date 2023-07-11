@@ -19,6 +19,11 @@ public static class EndpointRouteBuilderX
             AllowCachingResponses = false,
             Predicate = registration => registration.Name == "Image Server",
         });
+        endpoints.MapHealthChecks("/health/specialserver", new HealthCheckOptions
+        {
+            AllowCachingResponses = false,
+            Predicate = registration => registration.Name == "Special Server",
+        });
         endpoints.MapHealthChecks("/health/detail", new HealthCheckOptions
         {
             AllowCachingResponses = false,
