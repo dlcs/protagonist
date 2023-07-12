@@ -10,7 +10,7 @@ namespace API.Features.NamedQueries;
 /// <summary>
 /// Controller for handling Named Queries
 /// </summary>
-[Route("/customers/{customer}/namedQueries")]
+[Route("/customers/{customerId}/namedQueries")]
 [ApiController]
 public class NamedQueriesController : HydraController
 {
@@ -23,7 +23,8 @@ public class NamedQueriesController : HydraController
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetNamedQueries()
+    public async Task<IActionResult> GetNamedQueries(
+        [FromRoute] int customerId)
     {
         throw new NotImplementedException();
     }
@@ -31,7 +32,8 @@ public class NamedQueriesController : HydraController
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> PostNamedQuery()
+    public async Task<IActionResult> PostNamedQuery(
+        [FromRoute] int customerId)
     { 
         throw new NotImplementedException();
     }
@@ -41,6 +43,7 @@ public class NamedQueriesController : HydraController
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetNamedQuery(
+        [FromRoute] int customerId,
         [FromRoute] int namedQueryId)
     {
         throw new NotImplementedException();
@@ -52,6 +55,7 @@ public class NamedQueriesController : HydraController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> PutNamedQuery(
+        [FromRoute] int customerId,
         [FromRoute] int namedQueryId)
     {
         throw new NotImplementedException();
@@ -62,6 +66,7 @@ public class NamedQueriesController : HydraController
     [ProducesResponseType(StatusCodes.Status205ResetContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteNamedQuery(
+        [FromRoute] int customerId,
         [FromRoute] int namedQueryId)
     {
         throw new NotImplementedException();
