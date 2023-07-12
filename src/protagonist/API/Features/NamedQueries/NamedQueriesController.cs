@@ -12,9 +12,9 @@ namespace API.Features.NamedQueries;
 /// </summary>
 [Route("/customers/{customer}/namedQueries")]
 [ApiController]
-public class NamedQueryController : HydraController
+public class NamedQueriesController : HydraController
 {
-    public NamedQueryController(
+    public NamedQueriesController(
         IMediator mediator,
         IOptions<ApiSettings> options) : base(options.Value, mediator)
     {
