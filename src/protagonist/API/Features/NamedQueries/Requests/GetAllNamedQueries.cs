@@ -28,7 +28,7 @@ public class GetAllNamedQueriesHandler : IRequestHandler<GetAllNamedQueries, Lis
     {
         return await dbContext.NamedQueries
             .AsNoTracking()
-            .Where(x => x.Customer == request.CustomerId)
-            .ToListAsync(cancellationToken: cancellationToken);
+            .Where(nq => nq.Customer == request.CustomerId)
+            .ToListAsync(cancellationToken);
     }
 }
