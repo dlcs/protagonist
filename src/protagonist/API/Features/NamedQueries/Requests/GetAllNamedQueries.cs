@@ -1,11 +1,13 @@
 ﻿using System.Collections.Generic;
+using API.Infrastructure.Requests;
+using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace API.Features.NamedQueries.Requests; 
+namespace API.Features.NamedQueries.Requests;
 
-public class GetAllNamedQueries : IRequest<List<DLCS.Model.Assets.NamedQueries.NamedQuery>>
+public class GetAllNamedQueries : IRequest<FetchEntityResult<IReadOnlyCollection<NamedQuery>>>
 {
     public int CustomerId { get; }
     
@@ -15,7 +17,7 @@ public class GetAllNamedQueries : IRequest<List<DLCS.Model.Assets.NamedQueries.N
     }
 }
 
-public class GetAllNamedQueriesHandler : IRequestHandler<GetAllNamedQueries, List<DLCS.Model.Assets.NamedQueries.NamedQuery>>
+public class GetAllNamedQueriesHandler : IRequestHandler<GetAllNamedQueries, FetchEntityResult<IReadOnlyCollection<NamedQuery>>>
 {
     private readonly DlcsContext dbContext;
     
@@ -24,11 +26,15 @@ public class GetAllNamedQueriesHandler : IRequestHandler<GetAllNamedQueries, Lis
         this.dbContext = dbContext;
     }
     
-    public async Task<List<DLCS.Model.Assets.NamedQueries.NamedQuery>> Handle(GetAllNamedQueries request, CancellationToken cancellationToken)
+    public async Task<FetchEntityResult<IReadOnlyCollection<NamedQuery>>> Handle(
+        GetAllNamedQueries request, 
+        CancellationToken cancellationToken)
     {
-        return await dbContext.NamedQueries
+        var namedQueries = await dbContext.NamedQueries
             .AsNoTracking()
             .Where(nq => nq.Customer == request.CustomerId)
             .ToListAsync(cancellationToken);
+        
+        return FetchEntityResult<IReadOnlyCollection<NamedQuery>>.Success(namedQueries);
     }
 }
