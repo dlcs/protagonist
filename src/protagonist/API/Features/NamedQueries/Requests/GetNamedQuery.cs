@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
+using API.Infrastructure.Requests;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.NamedQueries.Requests; 
 
-public class GetNamedQuery : IRequest<DLCS.Model.Assets.NamedQueries.NamedQuery?>
+public class GetNamedQuery : IRequest<FetchEntityResult<DLCS.Model.Assets.NamedQueries.NamedQuery>>
 {
     public int CustomerId { get; }
     
@@ -18,7 +19,7 @@ public class GetNamedQuery : IRequest<DLCS.Model.Assets.NamedQueries.NamedQuery?
     }
 }
 
-public class GetNamedQueryHandler : IRequestHandler<GetNamedQuery, DLCS.Model.Assets.NamedQueries.NamedQuery?>
+public class GetNamedQueryHandler : IRequestHandler<GetNamedQuery, FetchEntityResult<DLCS.Model.Assets.NamedQueries.NamedQuery>>
 {
     private readonly DlcsContext dbContext;
     
@@ -27,11 +28,14 @@ public class GetNamedQueryHandler : IRequestHandler<GetNamedQuery, DLCS.Model.As
         this.dbContext = dbContext;
     }
     
-    public async Task<DLCS.Model.Assets.NamedQueries.NamedQuery?> Handle(GetNamedQuery request, CancellationToken cancellationToken)
+    public async Task<FetchEntityResult<DLCS.Model.Assets.NamedQueries.NamedQuery>> Handle(GetNamedQuery request, CancellationToken cancellationToken)
     {
-        return await dbContext.NamedQueries
+        var namedQuery = await dbContext.NamedQueries
             .AsNoTracking()
             .SingleOrDefaultAsync(nq => nq.Customer == request.CustomerId
-                                       && nq.Id == request.NamedQueryId, cancellationToken);
+                                        && nq.Id == request.NamedQueryId, cancellationToken);
+        return namedQuery == null
+            ? FetchEntityResult<DLCS.Model.Assets.NamedQueries.NamedQuery>.NotFound()
+            : FetchEntityResult<DLCS.Model.Assets.NamedQueries.NamedQuery>.Success(namedQuery);
     }
 }
