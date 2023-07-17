@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.NamedQueries.Requests;
 
-public class GetAllNamedQueries : IRequest<FetchEntityResult<IReadOnlyCollection<NamedQuery>>>
+public class GetAllNamedQueries : IRequest<FetchEntityResult<IList<NamedQuery>>>
 {
     public int CustomerId { get; }
     
@@ -17,7 +17,7 @@ public class GetAllNamedQueries : IRequest<FetchEntityResult<IReadOnlyCollection
     }
 }
 
-public class GetAllNamedQueriesHandler : IRequestHandler<GetAllNamedQueries, FetchEntityResult<IReadOnlyCollection<NamedQuery>>>
+public class GetAllNamedQueriesHandler : IRequestHandler<GetAllNamedQueries, FetchEntityResult<IList<NamedQuery>>>
 {
     private readonly DlcsContext dbContext;
     
@@ -26,7 +26,7 @@ public class GetAllNamedQueriesHandler : IRequestHandler<GetAllNamedQueries, Fet
         this.dbContext = dbContext;
     }
     
-    public async Task<FetchEntityResult<IReadOnlyCollection<NamedQuery>>> Handle(
+    public async Task<FetchEntityResult<IList<NamedQuery>>> Handle(
         GetAllNamedQueries request, 
         CancellationToken cancellationToken)
     {
@@ -35,6 +35,6 @@ public class GetAllNamedQueriesHandler : IRequestHandler<GetAllNamedQueries, Fet
             .Where(nq => nq.Customer == request.CustomerId)
             .ToListAsync(cancellationToken);
         
-        return FetchEntityResult<IReadOnlyCollection<NamedQuery>>.Success(namedQueries);
+        return FetchEntityResult<IList<NamedQuery>>.Success(namedQueries);
     }
 }
