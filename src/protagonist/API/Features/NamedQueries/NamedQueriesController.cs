@@ -1,5 +1,8 @@
-﻿using API.Infrastructure;
+﻿using API.Features.NamedQueries.Converters;
+using API.Features.NamedQueries.Requests;
+using API.Infrastructure;
 using API.Settings;
+using DLCS.HydraModel;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -33,20 +36,35 @@ public class NamedQueriesController : HydraController
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> PostNamedQuery(
-        [FromRoute] int customerId)
-    { 
-        throw new NotImplementedException();
+        [FromBody] NamedQuery newNamedQuery,
+        [FromRoute] int customerId,
+        CancellationToken cancellationToken)
+    {
+        var request = new CreateOrUpdateNamedQuery(customerId, newNamedQuery.ToDlcsModel(customerId), Request.Method);
+        
+        return await HandleUpsert(request, 
+            nq => nq.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to create Named Query",
+            cancellationToken: cancellationToken);
     }
-    
+
     [HttpGet]
     [Route("{namedQueryId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetNamedQuery(
         [FromRoute] int customerId,
-        [FromRoute] int namedQueryId)
+        [FromRoute] string namedQueryId,
+        CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var namedQuery = new GetNamedQuery(customerId, namedQueryId);
+        
+        return await HandleFetch(
+            namedQuery,
+            nq => nq.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to get Named Query",
+            cancellationToken: cancellationToken
+        );
     }
     
     [HttpPut]
@@ -56,9 +74,17 @@ public class NamedQueriesController : HydraController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> PutNamedQuery(
         [FromRoute] int customerId,
-        [FromRoute] int namedQueryId)
+        [FromRoute] string namedQueryId,
+        [FromBody] NamedQuery newNamedQuery,
+        CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        newNamedQuery.Id = namedQueryId;
+        var request = new CreateOrUpdateNamedQuery(customerId, newNamedQuery.ToDlcsModel(customerId), Request.Method);
+        
+        return await HandleUpsert(request, 
+            nq => nq.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to update/create Named Query",
+            cancellationToken: cancellationToken);
     }
     
     [HttpDelete]
@@ -67,7 +93,8 @@ public class NamedQueriesController : HydraController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteNamedQuery(
         [FromRoute] int customerId,
-        [FromRoute] int namedQueryId)
+        [FromRoute] int namedQueryId,
+        CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
