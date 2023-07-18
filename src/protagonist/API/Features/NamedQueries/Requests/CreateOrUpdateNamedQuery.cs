@@ -52,7 +52,6 @@ public class CreateOrUpdateNamedQueryHandler : IRequestHandler<CreateOrUpdateNam
                 WriteResult.Conflict);
         }
         existingNamedQuery.Template = request.NamedQuery.Template;
-        existingNamedQuery.Name = request.NamedQuery.Name;
         await dbContext.SaveChangesAsync(cancellationToken); 
         return ModifyEntityResult<NamedQuery>.Success(request.NamedQuery);
     }
