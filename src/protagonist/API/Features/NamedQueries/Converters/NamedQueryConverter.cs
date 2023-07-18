@@ -1,4 +1,6 @@
-﻿namespace API.Features.NamedQueries.Converters;
+﻿using API.Exceptions;
+
+namespace API.Features.NamedQueries.Converters;
 
 public static class NamedQueryConverter
 {
@@ -12,4 +14,19 @@ public static class NamedQueryConverter
         };
         return hydraNamedQuery;
     }
+    
+    public static DLCS.Model.Assets.NamedQueries.NamedQuery ToDlcsModel(this DLCS.HydraModel.NamedQuery hydraNamedQuery, int customerId)
+    {
+        hydraNamedQuery.CustomerId = customerId;
+        
+        var namedQuery = new DLCS.Model.Assets.NamedQueries.NamedQuery()
+        {
+            Id = hydraNamedQuery.Id,
+            Customer = hydraNamedQuery.CustomerId,
+            Name = hydraNamedQuery.Name,
+            Template = hydraNamedQuery.Template,
+        };
+        return namedQuery;
+    }
+    
 }
