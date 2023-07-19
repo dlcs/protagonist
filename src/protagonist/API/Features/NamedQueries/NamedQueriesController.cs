@@ -3,6 +3,7 @@ using API.Features.NamedQueries.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
+using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -29,6 +30,16 @@ public class NamedQueriesController : HydraController
     public async Task<IActionResult> GetNamedQueries(
         [FromRoute] int customerId)
     {
+        /*
+        var namedQueries = new GetAllNamedQueries(customerId);
+        
+        return await HandleListFetch<NamedQuery, GetAllNamedQueries, DLCS.HydraModel.NamedQuery>(
+            namedQueries,
+            nq => nq.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to get Named Query",
+            cancellationToken: cancellationToken
+        );
+        */
         throw new NotImplementedException();
     }
     
@@ -41,6 +52,9 @@ public class NamedQueriesController : HydraController
         CancellationToken cancellationToken)
     {
         var request = new CreateOrUpdateNamedQuery(customerId, newNamedQuery.ToDlcsModel(customerId), Request.Method);
+        
+        if (newNamedQuery.Global == true && !User.IsAdmin()) 
+            return this.HydraProblem("Only admins are allowed to create global Named Queries", null, 400);
         
         return await HandleUpsert(request, 
             nq => nq.ToHydra(GetUrlRoots().BaseUrl),
@@ -80,6 +94,9 @@ public class NamedQueriesController : HydraController
     {
         newNamedQuery.Id = namedQueryId;
         var request = new CreateOrUpdateNamedQuery(customerId, newNamedQuery.ToDlcsModel(customerId), Request.Method);
+       
+        if (newNamedQuery.Global == true && !User.IsAdmin()) 
+            return this.HydraProblem("Only admins are allowed to create global Named Queries", null, 400);
         
         return await HandleUpsert(request, 
             nq => nq.ToHydra(GetUrlRoots().BaseUrl),
