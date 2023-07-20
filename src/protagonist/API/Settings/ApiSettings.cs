@@ -55,4 +55,15 @@ public class ApiSettings
             {
                 LegacySupport = DefaultLegacySupport
             };
+    
+    /// <summary>
+    /// Get whether legacy mode is enabled for the 
+    /// </summary>
+    /// <param name="customerId">CustomerId to get settings for.</param>
+    /// <param name="spaceId">The space to check if legacy mode is disabled</param>
+    /// <returns>Customer specific overrides, or default if not found.</returns>
+    public bool LegacyModeEnabled(int customerId, int spaceId)
+        => CustomerOverrides.TryGetValue(Convert.ToString(customerId), out var settings) 
+            ? settings.LegacySupport && !settings.NovelSpaces.Contains(spaceId.ToString()) 
+            : DefaultLegacySupport;
 }

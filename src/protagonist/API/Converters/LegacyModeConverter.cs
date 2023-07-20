@@ -1,0 +1,40 @@
+﻿using DLCS.Core;
+using DLCS.Core.Collections;
+using DLCS.HydraModel;
+
+namespace API.Converters;
+
+/// <summary>
+/// Converts legacy image API calls
+/// </summary>
+public static class LegacyModeConverter
+{
+    private const string DefaultMediaType = "dlcs/unknown";
+    
+    /// <summary>
+    /// Converts from legacy format to new format
+    /// </summary>
+    /// <param name="image">The image to convert</param>
+    /// <returns>A converted image</returns>
+    public static Image VerifyAndConvertToModernFormat(Image image)
+    {
+        if (image.MediaType is null)
+        {
+            var contentType = image.Origin?.Split('.').Last() ?? string.Empty;
+            
+            image.MediaType = MIMEHelper.GetContentTypeForExtension(contentType) ?? DefaultMediaType;
+            
+            if (image.Origin is not null && image.Family is null && image.DeliveryChannels.IsNullOrEmpty())
+            {
+                  image.Family = AssetFamily.Image;
+            }
+        }
+
+        if (image.MaxUnauthorised is null or 0)
+        {
+            image.MaxUnauthorised = -1;
+        }
+
+        return image;
+    }
+}

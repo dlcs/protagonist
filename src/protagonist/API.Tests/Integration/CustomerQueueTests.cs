@@ -527,6 +527,39 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // status code correct
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
+    
+    [Fact]
+    public async Task Post_CreateBatch_201_IfLegacyModeEnabled()
+    {
+        const int customerId = 15;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, 2);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""id"": ""one"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 2,
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
 
     [Fact]
     public async Task Post_CreateBatch_400_IfSpaceNotFound()

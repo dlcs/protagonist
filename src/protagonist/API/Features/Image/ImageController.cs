@@ -23,10 +23,13 @@ namespace API.Features.Image;
 [ApiController]
 public class ImageController : HydraController
 {
+    private readonly ApiSettings _apiSettings;
+    
     public ImageController(
         IMediator mediator,
         IOptions<ApiSettings> options) : base(options.Value, mediator)
     {
+        _apiSettings = options.Value;
     }
 
     /// <summary>
@@ -85,6 +88,11 @@ public class ImageController : HydraController
         [FromServices] HydraImageValidator validator,
         CancellationToken cancellationToken)
     {
+        if (_apiSettings.LegacyModeEnabled(customerId, spaceId))
+        {
+            hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
+        }
+        
         var validationResult = await validator.ValidateAsync(hydraAsset, cancellationToken);
         if (!validationResult.IsValid)
         {
