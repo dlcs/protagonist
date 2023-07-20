@@ -21,7 +21,7 @@ public static class NamedQueryConverter
         
         var namedQuery = new DLCS.Model.Assets.NamedQueries.NamedQuery()
         {
-            Id = hydraNamedQuery.Id,
+            Id = hydraNamedQuery.ModelId,
             Customer = hydraNamedQuery.CustomerId,
             Name = hydraNamedQuery.Name,
             Template = hydraNamedQuery.Template,
