@@ -58,7 +58,7 @@ public class Startup
 
         var apiSettings = configuration.Get<ApiSettings>();
         var cacheSettings = cachingSection.Get<CacheSettings>();
-        
+
         services
             .AddHttpContextAccessor()
             .AddSingleton<ApiKeyGenerator>()
