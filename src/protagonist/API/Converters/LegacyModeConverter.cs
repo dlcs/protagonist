@@ -9,7 +9,7 @@ namespace API.Converters;
 /// </summary>
 public static class LegacyModeConverter
 {
-    private const string DefaultMediaType = "dlcs/unknown";
+    private const string DefaultMediaType = "image/unknown";
     
     /// <summary>
     /// Converts from legacy format to new format
@@ -18,7 +18,7 @@ public static class LegacyModeConverter
     /// <returns>A converted image</returns>
     public static Image VerifyAndConvertToModernFormat(Image image)
     {
-        if (image.MediaType is null)
+        if (image.MediaType.IsNullOrEmpty())
         {
             var contentType = image.Origin?.Split('.').Last() ?? string.Empty;
             
@@ -30,7 +30,7 @@ public static class LegacyModeConverter
             }
         }
 
-        if (image.MaxUnauthorised is null or 0)
+        if (image.MaxUnauthorised is null or 0 && image.Roles.IsNullOrEmpty())
         {
             image.MaxUnauthorised = -1;
         }

@@ -79,4 +79,19 @@ public class LegacyModeConverterTests
         convertedImage.MaxUnauthorised.Should().Be(-1);
         convertedImage.Family.Should().Be(AssetFamily.Image);
     }
+    
+    [Fact]
+    public void VerifyAndConvertToModernFormat_MaxUnauthorisedUnchanged_WhenRolesSet()
+    {
+        // Arrange
+        var hydraImage = new Image{ Origin = "something.jpg", Roles = new []{ "some role" }};
+        
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+
+        // Assert
+        convertedImage.MediaType.Should().Be("image/jpeg");
+        convertedImage.MaxUnauthorised.Should().Be(null);
+        convertedImage.Family.Should().Be(AssetFamily.Image);
+    }
 }

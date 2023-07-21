@@ -35,7 +35,7 @@ public class ApiSettings
     /// <summary>
     /// Whether legacy support is enabled by default
     /// </summary>
-    public bool DefaultLegacySupport { get; set; } = true;
+    public bool DefaultLegacySupport { get; set; }
     
     /// <summary>
     /// A collection of customer-specific overrides, keyed by customerId.
@@ -57,13 +57,23 @@ public class ApiSettings
             };
     
     /// <summary>
-    /// Get whether legacy mode is enabled for the 
+    /// Get whether legacy mode is enabled for a particular customer and space
     /// </summary>
     /// <param name="customerId">CustomerId to get settings for.</param>
     /// <param name="spaceId">The space to check if legacy mode is disabled</param>
-    /// <returns>Customer specific overrides, or default if not found.</returns>
-    public bool LegacyModeEnabled(int customerId, int spaceId)
+    /// <returns>Whether legacy mode is enabled or not</returns>
+    public bool LegacyModeEnabledForSpace(int customerId, int spaceId)
         => CustomerOverrides.TryGetValue(Convert.ToString(customerId), out var settings) 
             ? settings.LegacySupport && !settings.NovelSpaces.Contains(spaceId.ToString()) 
+            : DefaultLegacySupport;
+    
+    /// <summary>
+    /// Get whether legacy mode is enabled for a particular customer
+    /// </summary>
+    /// <param name="customerId">CustomerId to get settings for.</param>
+    /// <returns>Whether legacy mode is enabled or not</returns>
+    public bool LegacyModeEnabledForCustomer(int customerId)
+        => CustomerOverrides.TryGetValue(Convert.ToString(customerId), out var settings) 
+            ? settings.LegacySupport 
             : DefaultLegacySupport;
 }

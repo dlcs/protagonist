@@ -143,6 +143,48 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var asset = await dbContext.Images.FindAsync(assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MediaType.Should().Be("image/tiff");
+        asset.Family.Should().Be(AssetFamily.Image);
+        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
+        asset.ThumbnailPolicy.Should().Be("default");
+    }
+    
+    [Fact]
+    public async Task Put_NewImageAsset_CreatesAsset_whenInferringOfMediaTypeNotPossibleWithLegacyEnabled()
+    {
+        const int customer = 325665;
+        const int space = 2;
+        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_whenMediaTypeAndFamilyNotSetWithLegacyEnabled));
+        await dbContext.Customers.AddTestCustomer(customer);
+        await dbContext.Spaces.AddTestSpace(customer, space);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}""
+}}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var asset = await dbContext.Images.FindAsync(assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MediaType.Should().Be("image/unknown");
+        asset.Family.Should().Be(AssetFamily.Image);
+        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
+        asset.ThumbnailPolicy.Should().Be("default");
     }
     
     [Theory]

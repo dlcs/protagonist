@@ -6,26 +6,26 @@ namespace API.Tests.Settings;
 public class ApiSettingsTests
 {
     [Fact]
-    public void ApiSettings_LegacySupportEnabledForAllCustomers_byDefault()
+    public void ApiSettings_LegacySupportDisabledForAllCustomers_byDefault()
     {
         // Arrange
         var settings = new ApiSettings();
         
         // Assert
-        settings.GetCustomerSettings(1).LegacySupport.Should().BeTrue();
+        settings.GetCustomerSettings(1).LegacySupport.Should().BeFalse();
     }
     
     [Fact]
-    public void ApiSettings_LegacySupportDisabledForAllCustomers_WhenDefaultLegacyDisabled()
+    public void ApiSettings_LegacySupportEnabledForAllCustomers_WhenDefaultLegacyEnabled()
     {
         // Arrange
         var settings = new ApiSettings
         {
-            DefaultLegacySupport = false
+            DefaultLegacySupport = true
         };
 
         // Assert
-        settings.GetCustomerSettings(1).LegacySupport.Should().BeFalse();
+        settings.GetCustomerSettings(1).LegacySupport.Should().BeTrue();
     }
     
     [Fact]
@@ -53,36 +53,33 @@ public class ApiSettingsTests
     }
     
     [Fact]
-    public void LegacyModeEnabled_LegacySupportEnabledForAllCustomers_byDefault()
+    public void LegacyModeEnabledForSpace_LegacySupportDisabledForAllCustomers_byDefault()
     {
         // Arrange
         var settings = new ApiSettings();
         
         // Assert
-        settings.LegacyModeEnabled(1,1).Should().BeTrue();
+        settings.LegacyModeEnabledForSpace(1,1).Should().BeFalse();
     }
     
     [Fact]
-    public void LegacyModeEnabled_LegacySupportDisabledForAllCustomers_WhenDefaultLegacyDisabled()
+    public void LegacyModeEnabledForSpace_LegacySupportEnabledForAllCustomers_WhenDefaultLegacySupportEnabled()
     {
         // Arrange
-        var settings = new ApiSettings
+        var settings = new ApiSettings()
         {
-            DefaultLegacySupport = false
+            DefaultLegacySupport = true
         };
         
         // Assert
-        settings.LegacyModeEnabled(1,1).Should().BeFalse();
+        settings.LegacyModeEnabledForSpace(1,1).Should().BeTrue();
     }
     
     [Fact]
-    public void LegacyModeEnabled_LegacySupportEnabledForSingleCustomer_WhenDefaultLegacyDisabled()
+    public void LegacyModeEnabledForSpace_LegacySupportEnabledForSingleCustomer_WhenDefaultLegacySupportDisabled()
     {
         // Arrange
-        var settings = new ApiSettings
-        {
-            DefaultLegacySupport = false
-        };
+        var settings = new ApiSettings();
 
         settings.CustomerOverrides.Add("2", new CustomerOverrideSettings()
         {
@@ -94,16 +91,19 @@ public class ApiSettingsTests
         });
         
         // Assert
-        settings.LegacyModeEnabled(1, 1).Should().BeFalse();
-        settings.LegacyModeEnabled(2, 1).Should().BeFalse();
-        settings.LegacyModeEnabled(2, 2).Should().BeTrue();
+        settings.LegacyModeEnabledForSpace(1, 1).Should().BeFalse();
+        settings.LegacyModeEnabledForSpace(2, 1).Should().BeFalse();
+        settings.LegacyModeEnabledForSpace(2, 2).Should().BeTrue();
     }
     
     [Fact]
-    public void LegacyModeEnabled_LegacySupportDisabledForSpace_WhenDefaultLegacyEnabled()
+    public void LegacyModeEnabledForSpace_LegacySupportDisabledForSpace_WhenDefaultLegacyEnabled()
     {
         // Arrange
-        var settings = new ApiSettings();
+        var settings = new ApiSettings()
+        {
+            DefaultLegacySupport = true
+        };
         
         settings.CustomerOverrides.Add("2", new CustomerOverrideSettings()
         {
@@ -120,25 +120,91 @@ public class ApiSettingsTests
         });
         
         // Assert
-        settings.LegacyModeEnabled(1, 1).Should().BeTrue();
-        settings.LegacyModeEnabled(2, 1).Should().BeFalse();
-        settings.LegacyModeEnabled(2, 2).Should().BeTrue();
+        settings.LegacyModeEnabledForSpace(1, 1).Should().BeTrue();
+        settings.LegacyModeEnabledForSpace(2, 1).Should().BeFalse();
+        settings.LegacyModeEnabledForSpace(2, 2).Should().BeTrue();
     }
 
     [Fact]
-    public void LegacyModeEnabled_LegacySupportDisabledForCustomer_WhenDefaultLegacyEnabled()
+    public void LegacyModeEnabledForSpace_LegacySupportDisabledForCustomer_WhenDefaultLegacyEnabled()
+    {
+        // Arrange
+        var settings = new ApiSettings()
+        {
+            DefaultLegacySupport = true
+        };
+        
+        settings.CustomerOverrides.Add("2", new CustomerOverrideSettings()
+        {
+            LegacySupport = false,
+        });
+        
+        // Assert
+        settings.LegacyModeEnabledForSpace(1, 1).Should().BeTrue();
+        settings.LegacyModeEnabledForSpace(2, 1).Should().BeFalse();
+    }
+    
+    [Fact]
+    public void LegacyModeEnabledForCustomer_LegacySupportDisabledForAllCustomers_byDefault()
+    {
+        // Arrange
+        var settings = new ApiSettings();
+        
+        // Assert
+        settings.LegacyModeEnabledForCustomer(1).Should().BeFalse();
+    }
+    
+    [Fact]
+    public void LegacyModeEnabledForCustomer_LegacySupportDisabledForAllCustomers_WhenDefaultLegacySupportDisabled()
+    {
+        // Arrange
+        var settings = new ApiSettings()
+        {
+            DefaultLegacySupport = true
+        };
+        
+        // Assert
+        settings.LegacyModeEnabledForCustomer(1).Should().BeTrue();
+    }
+    
+    [Fact]
+    public void LegacyModeEnabledForCustomer_LegacySupportEnabledForCustomer_WhenDefaultLegacySupportDisabled()
     {
         // Arrange
         var settings = new ApiSettings();
         
         settings.CustomerOverrides.Add("2", new CustomerOverrideSettings()
         {
-            LegacySupport = false,
+            LegacySupport = true,
+            NovelSpaces = new List<string>()
+            {
+                "1"
+            }
         });
-
         
         // Assert
-        settings.LegacyModeEnabled(1, 1).Should().BeTrue();
-        settings.LegacyModeEnabled(2, 1).Should().BeFalse();
+        settings.LegacyModeEnabledForCustomer(2).Should().BeTrue();
+    }
+    
+    [Fact]
+    public void LegacyModeEnabledForCustomer_LegacySupportDisabledForCustomer_WhenDefaultLegacySupportEnabled()
+    {
+        // Arrange
+        var settings = new ApiSettings()
+        {
+            DefaultLegacySupport = true
+        };
+        
+        settings.CustomerOverrides.Add("2", new CustomerOverrideSettings()
+        {
+            LegacySupport = false,
+            NovelSpaces = new List<string>()
+            {
+                "1"
+            }
+        });
+        
+        // Assert
+        settings.LegacyModeEnabledForCustomer(2).Should().BeFalse();
     }
 }

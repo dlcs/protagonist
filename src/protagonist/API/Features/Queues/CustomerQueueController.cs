@@ -23,11 +23,11 @@ namespace API.Features.Queues;
 [ApiController]
 public class CustomerQueueController : HydraController
 {
-    private readonly ApiSettings _apiSettings;
+    private readonly ApiSettings apiSettings;
     
     public CustomerQueueController(IOptions<ApiSettings> settings, IMediator mediator) : base(settings.Value, mediator)
     {
-        _apiSettings = settings.Value;
+        apiSettings = settings.Value;
     }
 
     /// <summary>
@@ -95,11 +95,14 @@ public class CustomerQueueController : HydraController
     {
         if (images.Members != null)
         {
-            for (int i = 0; i < images.Members.Length; i++)
+            if (apiSettings.LegacyModeEnabledForCustomer(customerId))
             {
-                if (_apiSettings.LegacyModeEnabled(customerId, images.Members[i].Space))
+                for (int i = 0; i < images.Members.Length; i++)
                 {
-                    images.Members[i] = LegacyModeConverter.VerifyAndConvertToModernFormat(images.Members[i]);
+                    if (apiSettings.LegacyModeEnabledForSpace(customerId, images.Members[i].Space))
+                    {
+                        images.Members[i] = LegacyModeConverter.VerifyAndConvertToModernFormat(images.Members[i]);
+                    }
                 }
             }
         }
