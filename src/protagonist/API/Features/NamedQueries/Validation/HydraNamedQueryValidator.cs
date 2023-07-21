@@ -6,9 +6,9 @@ public class HydraNamedQueryValidator : AbstractValidator<DLCS.HydraModel.NamedQ
 {
     public HydraNamedQueryValidator()
     {
-        RuleFor(nq => nq.ModelId)
+        RuleFor(nq => nq.Id)
             .Empty()
-            .WithMessage(nq => $"DLCS must allocate named query id, but id {nq.ModelId} was supplied");
+            .WithMessage(nq => $"DLCS must allocate named query id, but id {nq.Id} was supplied");
         RuleFor(nq => nq.CustomerId)
             .Empty()
             .WithMessage("Should not include user id");
