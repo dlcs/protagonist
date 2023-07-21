@@ -37,13 +37,13 @@ public class UpdateNamedQueryHandler : IRequestHandler<UpdateNamedQuery, ModifyE
         
         if (existingNamedQuery == null)
         {
-            return ModifyEntityResult<NamedQuery>.Failure($"Couldn't find a named query with the id '{request.NamedQuery.Id}'",
+            return ModifyEntityResult<NamedQuery>.Failure($"Couldn't find a named query with the id {request.NamedQuery.Id}",
                 WriteResult.NotFound);
         }
         
         existingNamedQuery.Template = request.NamedQuery.Template;
-        await dbContext.SaveChangesAsync(cancellationToken); 
+        await dbContext.SaveChangesAsync(cancellationToken);
         
-        return ModifyEntityResult<NamedQuery>.Success(existingNamedQuery, WriteResult.Updated);
+        return ModifyEntityResult<NamedQuery>.Success(existingNamedQuery);
     }
 }
