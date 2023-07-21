@@ -64,7 +64,7 @@ public class NamedQueriesController : HydraController
         
         return await HandleUpsert(request, 
             nq => nq.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to create Named Query",
+            errorTitle: "Failed to update Named Query",
             cancellationToken: cancellationToken);
     }
 
