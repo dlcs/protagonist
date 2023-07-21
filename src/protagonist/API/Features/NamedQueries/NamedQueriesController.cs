@@ -43,7 +43,8 @@ public class NamedQueriesController : HydraController
     }
     
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> PostNamedQuery(
         [FromRoute] int customerId,
