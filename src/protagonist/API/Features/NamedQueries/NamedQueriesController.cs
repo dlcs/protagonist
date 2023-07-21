@@ -2,6 +2,7 @@
 using API.Features.NamedQueries.Requests;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.Core.Collections;
 using DLCS.HydraModel;
 using DLCS.Web.Auth;
 using MediatR;
@@ -28,19 +29,17 @@ public class NamedQueriesController : HydraController
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetNamedQueries(
-        [FromRoute] int customerId)
+        [FromRoute] int customerId,
+        CancellationToken cancellationToken)
     {
-        /*
         var namedQueries = new GetAllNamedQueries(customerId);
         
-        return await HandleListFetch<NamedQuery, GetAllNamedQueries, DLCS.HydraModel.NamedQuery>(
+        return await HandleListFetch<DLCS.Model.Assets.NamedQueries.NamedQuery, GetAllNamedQueries, NamedQuery>(
             namedQueries,
             nq => nq.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to get Named Query",
             cancellationToken: cancellationToken
         );
-        */
-        throw new NotImplementedException();
     }
     
     [HttpPost]
