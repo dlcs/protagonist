@@ -30,7 +30,7 @@ public class LegacyModeConverterTests
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
-        convertedImage.MediaType.Should().Be("dlcs/unknown");
+        convertedImage.MediaType.Should().Be("image/unknown");
         convertedImage.MaxUnauthorised.Should().Be(hydraImage.MaxUnauthorised);
         convertedImage.Family.Should().Be(hydraImage.Family);
     }
