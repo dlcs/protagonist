@@ -37,7 +37,7 @@ public class NamedQueriesController : HydraController
         return await HandleListFetch<DLCS.Model.Assets.NamedQueries.NamedQuery, GetAllNamedQueries, NamedQuery>(
             namedQueries,
             nq => nq.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to get Named Query",
+            errorTitle: "Failed to get Named Queries",
             cancellationToken: cancellationToken
         );
     }
