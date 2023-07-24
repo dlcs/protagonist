@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core;
 using DLCS.Core.Caching;
 using DLCS.Core.Strings;
 using DLCS.Model;
@@ -206,5 +207,35 @@ public class SpaceRepository : ISpaceRepository
 
         var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken);
         return retrievedSpace;
+    }
+
+    public async Task<(DeleteResult, string)> DeleteSpace(int customerId, int spaceId, CancellationToken cancellationToken)
+    {
+        var deleteResult = DeleteResult.NotFound;
+        var message = string.Empty;
+        
+        var space = await dlcsContext.Spaces.AsNoTracking().SingleOrDefaultAsync(s =>
+            s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
+
+        if (space != null)
+        {
+            if (space.ApproximateNumberOfImages == 0)
+            {
+                dlcsContext.Spaces.Attach(space);
+                dlcsContext.Spaces.Remove(space);
+                await dlcsContext.SaveChangesAsync(cancellationToken);
+
+                var test = await entityCounterRepository.Decrement(customerId, KnownEntityCounters.CustomerSpaces,
+                    spaceId.ToString());
+                deleteResult = DeleteResult.Deleted;
+            }
+            else
+            {
+                deleteResult = DeleteResult.Error;
+                message = "Cannot delete a space with images";
+            }
+        }
+
+        return (deleteResult, message);
     }
 }

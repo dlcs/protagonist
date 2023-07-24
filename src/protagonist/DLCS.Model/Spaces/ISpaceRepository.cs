@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core;
 
 namespace DLCS.Model.Spaces;
 
@@ -21,4 +22,6 @@ public interface ISpaceRepository
 
     Task<Space> PatchSpace(int customerId, int spaceId, string? name, int? maxUnauthorised, string[]? tags,
         string[]? roles, CancellationToken cancellationToken);
+
+    Task<(DeleteResult, string)> DeleteSpace(int customerId, int spaceId, CancellationToken cancellationToken);
 }

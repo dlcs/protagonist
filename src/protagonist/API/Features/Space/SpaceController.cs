@@ -3,6 +3,7 @@ using API.Features.Space.Converters;
 using API.Features.Space.Requests;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.Core;
 using DLCS.Core.Strings;
 using DLCS.Web.Requests;
 using Hydra.Collections;
@@ -117,6 +118,20 @@ public class SpaceController : HydraController
             return this.HydraProblem(badRequestException.Message, 
                 null, badRequestException.StatusCode, "Bad Request");
         }
+    }
+    
+    /// <summary>
+    /// Delete a specified customers space
+    /// </summary>
+    [HttpDelete]
+    [Route("{spaceId}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.Space))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteSpace(int customerId, int spaceId)
+    {
+        var deleteRequest = new DeleteSpace(customerId, spaceId);
+
+        return await HandleDelete<IActionResult>(deleteRequest);
     }
     
     /// <summary>

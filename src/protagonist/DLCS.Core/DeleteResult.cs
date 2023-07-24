@@ -14,7 +14,7 @@ public enum DeleteResult
     /// Item was successfully deleted
     /// </summary>
     Deleted,
-    
+
     /// <summary>
     /// There was an error deleting
     /// </summary>
