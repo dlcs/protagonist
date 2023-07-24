@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
+using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
@@ -378,6 +379,63 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
             apiSpace.Name.Should().Be(spaceName);
         }
 
+    }
+    
+    [Fact]
+    public async Task DeleteSpace_Returns_Ok()
+    {
+        // Arrange
+        int? customerId = await EnsureCustomerForSpaceTests("Patch_Space_Updates_Name");
+        const string spaceJson = @"{
+  ""name"": ""test space""
+}";
+        
+        var content = new StringContent(spaceJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer().PostAsync($"/customers/{customerId}/spaces", content);
+        var space = await response.ReadAsHydraResponseAsync<Space>();
+
+        // Act
+        var deleteResponse = await httpClient.AsCustomer().DeleteAsync($"/customers/{customerId}/spaces/{space.ModelId}");
+        
+        // Assert
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var deletedSpace = await dbContext.Spaces.SingleOrDefaultAsync(s => s.Id == space.ModelId && s.Customer == customerId );
+        deletedSpace.Should().BeNull();
+    }
+    
+    [Fact]
+    public async Task DeleteSpace_NotFound_WhenCalledWithNonExistentSpace()
+    {
+        // Arrange & Act
+        int? customerId = await EnsureCustomerForSpaceTests("Patch_Space_Updates_Name");
+        var deleteResponse = await httpClient.AsCustomer().DeleteAsync($"/customers/{customerId}/spaces/456453");
+        
+        // Assert
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task DeleteSpace_InternalServerError_WhenDeletingSpaceWithImages()
+    {
+        // Arrange
+        int? customerId = await EnsureCustomerForSpaceTests("Patch_Space_Updates_Name");
+        const string spaceJson = @"{
+  ""name"": ""test space""
+}";
+        
+        var content = new StringContent(spaceJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer().PostAsync($"/customers/{customerId}/spaces", content);
+        var space = await response.ReadAsHydraResponseAsync<Space>();
+        
+        var id = AssetId.FromString($"{customerId}/1/{space.ModelId}");
+        await dbContext.Images.AddTestAsset(id, customer: customerId ?? 1, space: space.ModelId ?? 1);
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var deleteResponse = await httpClient.AsCustomer().DeleteAsync($"/customers/{customerId}/spaces/{space.ModelId}");
+        
+        // Assert
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }
 
 }

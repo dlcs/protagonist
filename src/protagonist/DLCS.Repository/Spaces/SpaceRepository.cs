@@ -219,7 +219,10 @@ public class SpaceRepository : ISpaceRepository
 
         if (space != null)
         {
-            if (space.ApproximateNumberOfImages == 0)
+            var images = await dlcsContext.Images.AsNoTracking().Where(i => 
+                i.Customer == customerId && i.Space == spaceId).CountAsync(cancellationToken);
+            
+            if (images == 0)
             {
                 dlcsContext.Spaces.Attach(space);
                 dlcsContext.Spaces.Remove(space);
