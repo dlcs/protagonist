@@ -58,6 +58,8 @@ public class Startup
 
         var apiSettings = configuration.Get<ApiSettings>();
         var cacheSettings = cachingSection.Get<CacheSettings>();
+        
+        Log.Information("settings: {@Settings}", apiSettings);
 
         services
             .AddHttpContextAccessor()

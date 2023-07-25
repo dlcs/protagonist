@@ -5,7 +5,6 @@ using API.Features.Image.Validation;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core;
-using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using Hydra.Model;
@@ -98,6 +97,7 @@ public class ImageController : HydraController
         {
             return this.ValidationFailed(validationResult);
         }
+         
         
         return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset, cancellationToken);
     }
