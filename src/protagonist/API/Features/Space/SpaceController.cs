@@ -3,7 +3,6 @@ using API.Features.Space.Converters;
 using API.Features.Space.Requests;
 using API.Infrastructure;
 using API.Settings;
-using DLCS.Core;
 using DLCS.Core.Strings;
 using DLCS.Web.Requests;
 using Hydra.Collections;

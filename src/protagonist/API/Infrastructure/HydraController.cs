@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using API.Converters;
 using API.Exceptions;
-using API.Features.Image.Requests;
 using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Core;
