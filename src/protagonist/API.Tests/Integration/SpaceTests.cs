@@ -385,7 +385,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task DeleteSpace_Returns_Ok()
     {
         // Arrange
-        int? customerId = await EnsureCustomerForSpaceTests("Patch_Space_Updates_Name");
+        int? customerId = await EnsureCustomerForSpaceTests(nameof(DeleteSpace_Returns_Ok));
         const string spaceJson = @"{
   ""name"": ""test space""
 }";
@@ -393,14 +393,27 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var content = new StringContent(spaceJson, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer().PostAsync($"/customers/{customerId}/spaces", content);
         var space = await response.ReadAsHydraResponseAsync<Space>();
+        var spaceCounterBeforeDeletion = await 
+            dbContext.EntityCounters.FirstOrDefaultAsync(s => 
+                s.Customer == customerId && s.Scope == customerId.ToString() && s.Type == "space");
 
         // Act
-        var deleteResponse = await httpClient.AsCustomer().DeleteAsync($"/customers/{customerId}/spaces/{space.ModelId}");
+        var deleteResponse = await httpClient.AsCustomer()
+            .DeleteAsync($"/customers/{customerId}/spaces/{space.ModelId}");
+        
+        var spaceCounterAfterDeletion = await 
+            dbContext.EntityCounters.FirstOrDefaultAsync(s => 
+                s.Customer == customerId && s.Scope == customerId.ToString() && s.Type == "space");
         
         // Assert
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var deletedSpace = await dbContext.Spaces.SingleOrDefaultAsync(s => s.Id == space.ModelId && s.Customer == customerId );
         deletedSpace.Should().BeNull();
+
+        spaceCounterBeforeDeletion.Should().NotBeNull();
+        spaceCounterAfterDeletion.Should().NotBeNull();
+        spaceCounterAfterDeletion.Next.Should().Be(spaceCounterBeforeDeletion.Next - 1
+                , "because we perform a decrement on the space entity counter on deletion");
     }
     
     [Fact]
@@ -415,10 +428,10 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task DeleteSpace_InternalServerError_WhenDeletingSpaceWithImages()
+    public async Task DeleteSpace_Conflict_WhenDeletingSpaceWithImages()
     {
         // Arrange
-        int? customerId = await EnsureCustomerForSpaceTests("Patch_Space_Updates_Name");
+        int? customerId = await EnsureCustomerForSpaceTests(nameof(DeleteSpace_Conflict_WhenDeletingSpaceWithImages));
         const string spaceJson = @"{
   ""name"": ""test space""
 }";
@@ -435,7 +448,6 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var deleteResponse = await httpClient.AsCustomer().DeleteAsync($"/customers/{customerId}/spaces/{space.ModelId}");
         
         // Assert
-        deleteResponse.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
-
 }

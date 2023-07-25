@@ -23,5 +23,5 @@ public interface ISpaceRepository
     Task<Space> PatchSpace(int customerId, int spaceId, string? name, int? maxUnauthorised, string[]? tags,
         string[]? roles, CancellationToken cancellationToken);
 
-    Task<(DeleteResult, string)> DeleteSpace(int customerId, int spaceId, CancellationToken cancellationToken);
+    Task<ResultMessage<DeleteResult>> DeleteSpace(int customerId, int spaceId, CancellationToken cancellationToken);
 }

@@ -10,7 +10,7 @@ namespace API.Features.Space.Requests;
 /// <summary>
 /// Deletes a specified space for customer
 /// </summary>
-public class DeleteSpace: IRequest<(DeleteResult, string)>
+public class DeleteSpace: IRequest<ResultMessage<DeleteResult>>
 {
     public DeleteSpace(int customerId, int spaceId)
     {
@@ -22,7 +22,7 @@ public class DeleteSpace: IRequest<(DeleteResult, string)>
     public int SpaceId { get; }
 }
 
-public class DeleteSpaceHandler : IRequestHandler<DeleteSpace, (DeleteResult, string)>
+public class DeleteSpaceHandler : IRequestHandler<DeleteSpace, ResultMessage<DeleteResult>>
 {
     private readonly ISpaceRepository spaceRepository;
     private readonly ILogger<DeleteSpaceHandler> logger;
@@ -35,7 +35,7 @@ public class DeleteSpaceHandler : IRequestHandler<DeleteSpace, (DeleteResult, st
         this.logger = logger;
     }
     
-    public async Task<(DeleteResult, string)> Handle(DeleteSpace request, CancellationToken cancellationToken)
+    public async Task<ResultMessage<DeleteResult>> Handle(DeleteSpace request, CancellationToken cancellationToken)
     {
         logger.LogDebug("Deleting Space {SpaceId}", request.SpaceId);
         var deleteResult = await spaceRepository.DeleteSpace(request.CustomerId, request.SpaceId, cancellationToken);

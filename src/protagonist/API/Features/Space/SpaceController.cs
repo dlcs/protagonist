@@ -130,7 +130,7 @@ public class SpaceController : HydraController
     {
         var deleteRequest = new DeleteSpace(customerId, spaceId);
 
-        return await HandleDelete<IActionResult>(deleteRequest);
+        return await HandleDelete(deleteRequest);
     }
     
     /// <summary>

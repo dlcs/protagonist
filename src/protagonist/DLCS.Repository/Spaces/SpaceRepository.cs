@@ -209,12 +209,12 @@ public class SpaceRepository : ISpaceRepository
         return retrievedSpace;
     }
 
-    public async Task<(DeleteResult, string)> DeleteSpace(int customerId, int spaceId, CancellationToken cancellationToken)
+    public async Task<ResultMessage<DeleteResult>> DeleteSpace(int customerId, int spaceId, CancellationToken cancellationToken)
     {
         var deleteResult = DeleteResult.NotFound;
         var message = string.Empty;
         
-        var space = await dlcsContext.Spaces.AsNoTracking().SingleOrDefaultAsync(s =>
+        var space = await dlcsContext.Spaces.SingleOrDefaultAsync(s =>
             s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
 
         if (space != null)
@@ -224,12 +224,11 @@ public class SpaceRepository : ISpaceRepository
             
             if (images == 0)
             {
-                dlcsContext.Spaces.Attach(space);
                 dlcsContext.Spaces.Remove(space);
                 await dlcsContext.SaveChangesAsync(cancellationToken);
 
-                var test = await entityCounterRepository.Decrement(customerId, KnownEntityCounters.CustomerSpaces,
-                    spaceId.ToString());
+                await entityCounterRepository.Decrement(customerId, KnownEntityCounters.CustomerSpaces,
+                    customerId.ToString());
                 deleteResult = DeleteResult.Deleted;
             }
             else
@@ -239,6 +238,8 @@ public class SpaceRepository : ISpaceRepository
             }
         }
 
-        return (deleteResult, message);
+        var resultMessage = new ResultMessage<DeleteResult>(message, deleteResult);
+
+        return resultMessage;
     }
 }
