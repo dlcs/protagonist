@@ -229,6 +229,8 @@ public class SpaceRepository : ISpaceRepository
 
                 await entityCounterRepository.Decrement(customerId, KnownEntityCounters.CustomerSpaces,
                     customerId.ToString());
+                await entityCounterRepository.Remove(customerId, KnownEntityCounters.SpaceImages,
+                    space.Id.ToString(), 1);
                 deleteResult = DeleteResult.Deleted;
             }
             else
