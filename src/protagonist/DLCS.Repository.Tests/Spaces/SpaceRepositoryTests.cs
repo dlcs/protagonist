@@ -10,6 +10,8 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Tests.Spaces;
 
+[Trait("Category", "Database")]
+[Collection(DatabaseCollection.CollectionName)]
 public class SpaceRepositoryTests
 {
     private readonly SpaceRepository sut;
