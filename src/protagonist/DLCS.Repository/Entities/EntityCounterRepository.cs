@@ -27,6 +27,20 @@ public class EntityCounterRepository : IDapperContextRepository, IEntityCounterR
         await DlcsContext.SaveChangesAsync();
     }
     
+    public async Task Remove(int customer, string entityType, string scope, long nextValue)
+    {
+        var ec = new EntityCounter
+        {
+            Customer = customer,
+            Type = entityType,
+            Scope = scope,
+            Next = nextValue
+        };
+        
+        DlcsContext.EntityCounters.Remove(ec);
+        await DlcsContext.SaveChangesAsync();
+    }
+    
     public async Task<long> GetNext(int customer, string entityType, string scope, long initialValue = 1)
     {
         return await LongUpdate(GetNextSql, customer, entityType, scope, initialValue);
@@ -41,7 +55,7 @@ public class EntityCounterRepository : IDapperContextRepository, IEntityCounterR
     {
         return await LongUpdate(DecrementSql, customer, entityType, scope, initialValue);
     }
-    
+
     private Task<bool> Exists(int customer, string entityType, string scope) =>
         DlcsContext.EntityCounters.AnyAsync(ec =>
             ec.Customer == customer && ec.Type == entityType && ec.Scope == scope);

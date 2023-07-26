@@ -120,6 +120,20 @@ public class SpaceController : HydraController
     }
     
     /// <summary>
+    /// Delete a specified customers space
+    /// </summary>
+    [HttpDelete]
+    [Route("{spaceId}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.Space))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteSpace(int customerId, int spaceId)
+    {
+        var deleteRequest = new DeleteSpace(customerId, spaceId);
+
+        return await HandleDelete(deleteRequest);
+    }
+    
+    /// <summary>
     /// Get details of specified customers space
     /// </summary>
     [HttpGet]
