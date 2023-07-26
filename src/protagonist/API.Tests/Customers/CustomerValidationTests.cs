@@ -12,20 +12,15 @@ public class CustomerValidationTests
     {
         sut = new HydraCustomerValidator();
     }
-    
-    private Customer GetValidNewCustomer()
+
+    [Fact]
+    public void NewCustomer_RequiresOnly_Names()
     {
-        return new Customer
+        var customer = new Customer
         {
             Name = "my-test-customer",
             DisplayName = "My test customer"
         };
-    }
-    
-    [Fact]
-    public void NewCustomer_RequiresOnly_Names()
-    {
-        var customer = GetValidNewCustomer();
         
         var result = sut.TestValidate(customer);
 
@@ -39,39 +34,60 @@ public class CustomerValidationTests
         
         var result = sut.TestValidate(customer);
 
-        result.ShouldHaveAnyValidationError();
+        result.ShouldHaveValidationErrorFor(c => c.Name);
+        result.ShouldHaveValidationErrorFor(c => c.DisplayName);
     }
     
     [Fact]
     public void NewCustomer_CannotBe_Admin()
     {
-        var customer = GetValidNewCustomer();
-        customer.Administrator = true;
-        
+        var customer = new Customer
+        {
+            Name = "my-test-customer",
+            DisplayName = "My test customer",
+            Administrator = true,
+        };
+
         var result = sut.TestValidate(customer);
 
-        result.ShouldHaveAnyValidationError();
+        result.ShouldHaveValidationErrorFor(c => c.Administrator);
     }
     
-    [Fact]
-    public void NewCustomer_CannotHaveName_Admin()
+    [Theory]
+    [InlineData("Admin")]
+    [InlineData("admin")]
+    [InlineData("ADMIN")]
+    public void NewCustomer_CannotHaveName_Admin(string invalidName)
     {
-        var customer = GetValidNewCustomer();
-        customer.Name = "Admin";
-        
+        var customer = new Customer
+        {
+            Name = invalidName,
+            DisplayName = "My test customer"
+        };
+
         var result = sut.TestValidate(customer);
 
-        result.ShouldHaveAnyValidationError();
+        result
+            .ShouldHaveValidationErrorFor(c => c.Name)
+            .WithErrorMessage($"Name field [{invalidName}] cannot be a reserved word.");
     }
     
-    [Fact]
-    public void NewCustomer_CannotHaveName_Version()
+    [Theory]
+    [InlineData("v2-customer")]
+    [InlineData("v2")]
+    [InlineData("v3")]
+    public void NewCustomer_CannotHaveName_Version(string invalidName)
     {
-        var customer = GetValidNewCustomer();
-        customer.Name = "v2-customer";
+        var customer = new Customer
+        {
+            Name = invalidName,
+            DisplayName = "My test customer"
+        };
         
         var result = sut.TestValidate(customer);
 
-        result.ShouldHaveAnyValidationError();
+        result
+            .ShouldHaveValidationErrorFor(c => c.Name)
+            .WithErrorMessage($"Name field [{invalidName}] cannot start with a version slug.");
     }
 }
