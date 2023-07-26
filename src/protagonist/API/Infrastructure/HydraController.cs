@@ -103,7 +103,7 @@ public abstract class HydraController : Controller
                 DeleteResult.Conflict => this.HydraProblem(result.Message, null, 409,
                     "Delete failed"),
                 DeleteResult.Error => this.HydraProblem(result.Message, null, 500,
-                    "Error deleting space"),
+                    "Error when deleting"),
                 DeleteResult.Deleted => NoContent(),
                 _ => throw new ArgumentOutOfRangeException(nameof(DeleteResult),$"No deletion value of {result.Value}")
             };
