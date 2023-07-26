@@ -175,6 +175,25 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Put_NamedQuery_404_IfNotFound()
+    {
+        // Arrange
+        const int customerId = 96;
+        var path = $"customers/{customerId}/namedQueries/{Guid.Empty}";
+        const string updatedNamedQueryJson = @"{
+          ""template"": ""test-2"",
+        }";
+        
+        // Act
+        var content = new StringContent(updatedNamedQueryJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    
+    [Fact]
     public async Task Post_NamedQuery_400_IfUserCreatesGlobal()
     {
         // Arrange
