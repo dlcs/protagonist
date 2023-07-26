@@ -121,9 +121,10 @@ public class NamedQueriesController : HydraController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteNamedQuery(
         [FromRoute] int customerId,
-        [FromRoute] int namedQueryId,
-        CancellationToken cancellationToken)
+        [FromRoute] string namedQueryId)
     {
-        throw new NotImplementedException();
+        var deleteRequest = new DeleteNamedQuery(customerId, namedQueryId);
+
+        return await HandleDelete<IActionResult>(deleteRequest);
     }
 }
