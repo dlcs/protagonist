@@ -1,4 +1,5 @@
 using DLCS.AWS.S3.Models;
+using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -57,6 +58,22 @@ public class IngestionContext
         ImageStorage.ThumbnailSize += thumbnailSize ?? 0;
         ImageStorage.LastChecked = DateTime.UtcNow;
         
+        return this;
+    }
+
+    /// <summary>
+    /// Updates the media type if it's been set as something the caller didn't understand
+    /// </summary>
+    /// <returns></returns>
+    public IngestionContext UpdateMediaTypeIfRequired()
+    {
+        if (AssetFromOrigin == null) return this;
+        
+        if (Asset.MediaType == "image/unknown" && !AssetFromOrigin.ContentType.IsNullOrEmpty())
+        {
+            Asset.MediaType = AssetFromOrigin.ContentType;
+        }
+
         return this;
     }
 }

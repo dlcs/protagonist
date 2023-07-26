@@ -67,6 +67,8 @@ public class ImageIngesterWorker : IAssetIngesterWorker, IAssetIngesterPostProce
             ingestionContext.WithAssetFromOrigin(assetOnDisk);
 
             ingestSuccess = await imageProcessor.ProcessImage(ingestionContext);
+
+            ingestionContext.UpdateMediaTypeIfRequired();
         }
         catch (Exception ex)
         {

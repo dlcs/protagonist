@@ -5,7 +5,6 @@ using API.Features.Image.Validation;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core;
-using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using Hydra.Model;
@@ -23,10 +22,13 @@ namespace API.Features.Image;
 [ApiController]
 public class ImageController : HydraController
 {
+    private readonly ApiSettings apiSettings;
+    
     public ImageController(
         IMediator mediator,
         IOptions<ApiSettings> options) : base(options.Value, mediator)
     {
+        apiSettings = options.Value;
     }
 
     /// <summary>
@@ -85,11 +87,17 @@ public class ImageController : HydraController
         [FromServices] HydraImageValidator validator,
         CancellationToken cancellationToken)
     {
+        if (apiSettings.LegacyModeEnabledForSpace(customerId, spaceId))
+        {
+            hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
+        }
+        
         var validationResult = await validator.ValidateAsync(hydraAsset, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
         }
+         
         
         return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset, cancellationToken);
     }

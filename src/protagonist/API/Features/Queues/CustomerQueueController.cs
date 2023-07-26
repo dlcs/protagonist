@@ -23,8 +23,11 @@ namespace API.Features.Queues;
 [ApiController]
 public class CustomerQueueController : HydraController
 {
+    private readonly ApiSettings apiSettings;
+    
     public CustomerQueueController(IOptions<ApiSettings> settings, IMediator mediator) : base(settings.Value, mediator)
     {
+        apiSettings = settings.Value;
     }
 
     /// <summary>
@@ -90,6 +93,20 @@ public class CustomerQueueController : HydraController
         [FromServices] QueuePostValidator validator,
         CancellationToken cancellationToken)
     {
+        if (images.Members != null)
+        {
+            if (apiSettings.LegacyModeEnabledForCustomer(customerId))
+            {
+                for (int i = 0; i < images.Members.Length; i++)
+                {
+                    if (apiSettings.LegacyModeEnabledForSpace(customerId, images.Members[i].Space))
+                    {
+                        images.Members[i] = LegacyModeConverter.VerifyAndConvertToModernFormat(images.Members[i]);
+                    }
+                }
+            }
+        }
+        
         var validationResult = await validator.ValidateAsync(images, cancellationToken);
         if (!validationResult.IsValid)
         {

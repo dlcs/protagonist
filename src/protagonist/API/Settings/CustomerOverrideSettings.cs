@@ -9,8 +9,8 @@ public class CustomerOverrideSettings
     /// <summary>
     /// Whether the customer has legacy support enabled
     /// </summary>
-    public bool LegacySupport { get; init; } = false;
-
+    public bool LegacySupport { get; init; }
+    
     /// <summary>
     /// Spaces which are exempt from legacy support in a customer that has legacy support enabled
     /// </summary>
