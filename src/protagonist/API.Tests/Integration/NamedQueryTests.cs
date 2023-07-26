@@ -92,7 +92,7 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var deletedNamedQuery = await dlcsContext.NamedQueries.SingleOrDefaultAsync(s => s.Id == namedQuery.Id);
+        var deletedNamedQuery = await dlcsContext.NamedQueries.SingleOrDefaultAsync(nq => nq.Id == namedQuery.Id);
         deletedNamedQuery.Should().BeNull();
     }
     
