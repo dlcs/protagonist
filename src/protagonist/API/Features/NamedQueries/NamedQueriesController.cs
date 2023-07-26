@@ -54,7 +54,7 @@ public class NamedQueriesController : HydraController
     ///
     ///     POST: /customers/1/namedQueries
     ///     {
-    ///         "name":"my-named-query"
+    ///         "name":"my-named-query",
     ///         "template":"space=example"
     ///     }
     /// </remarks>
