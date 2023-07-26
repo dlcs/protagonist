@@ -56,6 +56,20 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Get_NamedQuery_404_IfNotFound()
+    {
+        // Arrange
+        const int customerId = 96;
+        var path = $"customers/{customerId}/namedQueries/{Guid.Empty}";
+        
+        // Act
+        var response = await httpClient.AsCustomer(customerId).GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
     public async Task Delete_NamedQuery_201()
     {
         // Arrange
