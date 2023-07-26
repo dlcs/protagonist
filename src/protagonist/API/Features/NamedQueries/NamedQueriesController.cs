@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 namespace API.Features.NamedQueries;
 
 /// <summary>
-/// Controller for handling Named Queries
+/// DLCS REST API Operations for Named Queries
 /// </summary>
 [Route("/customers/{customerId}/namedQueries")]
 [ApiController]
@@ -25,6 +25,10 @@ public class NamedQueriesController : HydraController
     {
     }
     
+    /// <summary>
+    /// Get a list of all available Named Queries, either global or owned by the user
+    /// </summary>
+    /// <returns>HydraCollection of NamedQuery</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -42,6 +46,18 @@ public class NamedQueriesController : HydraController
         );
     }
     
+    /// <summary>
+    /// Create a new Named Query owned by the user - Only administrators may create a global named query
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST: /customers/1/namedQueries
+    ///     {
+    ///         "name":"my-named-query"
+    ///         "template":"space=example"
+    ///     }
+    /// </remarks>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -69,6 +85,9 @@ public class NamedQueriesController : HydraController
             cancellationToken: cancellationToken);
     }
 
+    /// <summary>
+    /// Get a specified Named Query, either global or owned by the user
+    /// </summary>
     [HttpGet]
     [Route("{namedQueryId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -88,6 +107,17 @@ public class NamedQueriesController : HydraController
         );
     }
     
+    /// <summary>
+    /// Update an existing Named Query owned by the user - currently, only the template can be modified
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     PUT: /customers/1/namedQueries/a90d6e44-4cdb-410b-999e-30c2ea3955b2
+    ///     {
+    ///         "template":"space=example-updated"
+    ///     }
+    /// </remarks>
     [HttpPut]
     [Route("{namedQueryId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -118,6 +148,9 @@ public class NamedQueriesController : HydraController
             cancellationToken: cancellationToken);
     }
     
+    /// <summary>
+    /// Delete a specified Named Query owned by the user
+    /// </summary>
     [HttpDelete]
     [Route("{namedQueryId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
