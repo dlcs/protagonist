@@ -142,6 +142,27 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         foundNamedQuery.Customer.Should().Be(customerId);
         foundNamedQuery.Global.Should().BeFalse();
     }
+    
+    [Fact]
+    public async Task Post_NamedQuery_400_IfUserCreatesGlobal()
+    {
+        // Arrange
+        const int customerId = 95;
+        var path = $"customers/{customerId}/namedQueries";
+        
+        const string newNamedQueryJson = @"{
+          ""name"": ""namedQueryTest"",
+          ""template"": ""test"",
+          ""global"": ""true""
+        }";
+
+        // Act
+        var content = new StringContent(newNamedQueryJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 
     [Fact]
     public async Task Put_NamedQuery_200()
@@ -192,25 +213,34 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    
     [Fact]
-    public async Task Post_NamedQuery_400_IfUserCreatesGlobal()
+    public async Task Put_NamedQuery_400_IfUserCreatesGlobal()
     {
         // Arrange
-        const int customerId = 95;
+        const int customerId = 93;
         var path = $"customers/{customerId}/namedQueries";
-        
-        const string newNamedQueryJson = @"{
-          ""name"": ""namedQueryTest"",
-          ""template"": ""test"",
-          ""global"": ""true""
+        var namedQuery = new NamedQuery()
+        {
+            Id = Guid.NewGuid().ToString(),
+            Customer = customerId,
+            Name = "namedQueryTest",
+            Template = "test",
+            Global = false,
+        };
+        const string updatedNamedQueryJson = @"{
+          ""global"": ""false"",
         }";
-
+        
+        await dlcsContext.NamedQueries.AddAsync(namedQuery);
+        await dlcsContext.SaveChangesAsync();
+        
         // Act
-        var content = new StringContent(newNamedQueryJson, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
-
+        var content = new StringContent(updatedNamedQueryJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(Path.Combine(path, namedQuery.Id), content);
+        
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var updatedNamedQuery = await dlcsContext.NamedQueries.SingleOrDefaultAsync(nq => nq.Id == namedQuery.Id);
+        updatedNamedQuery.Global.Should().BeFalse();
     }
 }
