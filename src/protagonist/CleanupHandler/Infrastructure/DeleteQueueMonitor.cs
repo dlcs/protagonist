@@ -4,7 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DeleteHandler.Infrastructure;
+namespace CleanupHandler.Infrastructure;
 
 /// <summary>
 /// Background worker that monitors SQS queue for delete notifications

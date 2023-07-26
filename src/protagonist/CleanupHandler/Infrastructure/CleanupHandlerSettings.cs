@@ -1,8 +1,8 @@
 ﻿using DLCS.AWS.Settings;
 
-namespace DeleteHandler.Infrastructure;
+namespace CleanupHandler.Infrastructure;
 
-public class DeleteHandlerSettings
+public class CleanupHandlerSettings
 {
     /// <summary>
     /// Folder template for where image assets are downloaded to

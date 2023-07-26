@@ -24,7 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DeleteHandler\DeleteHandler.csproj" />
+      <ProjectReference Include="..\CleanupHandler\CleanupHandler.csproj" />
       <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj" />
     </ItemGroup>
 
