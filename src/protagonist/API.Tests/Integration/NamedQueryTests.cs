@@ -144,6 +144,37 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
+    public async Task Put_NamedQuery_200()
+    {
+        // Arrange
+        const int customerId = 94;
+        var path = $"customers/{customerId}/namedQueries";
+        var namedQuery = new NamedQuery()
+        {
+            Id = Guid.NewGuid().ToString(),
+            Customer = customerId,
+            Name = "namedQueryTest",
+            Template = "test",
+            Global = false,
+        };
+        const string updatedNamedQueryJson = @"{
+          ""template"": ""test-2"",
+        }";
+        
+        await dlcsContext.NamedQueries.AddAsync(namedQuery);
+        await dlcsContext.SaveChangesAsync();
+        
+        // Act
+        var content = new StringContent(updatedNamedQueryJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(Path.Combine(path, namedQuery.Id), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updatedNamedQuery = await dlcsContext.NamedQueries.FirstOrDefaultAsync(nq => nq.Id == namedQuery.Id);
+        updatedNamedQuery.Template.Should().Be("test-2");
+    }
+    
+    [Fact]
     public async Task Post_NamedQuery_400_IfUserCreatesGlobal()
     {
         // Arrange
