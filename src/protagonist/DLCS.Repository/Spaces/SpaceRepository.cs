@@ -10,6 +10,7 @@ using DLCS.Model.Spaces;
 using DLCS.Repository.Entities;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Spaces;
@@ -20,17 +21,20 @@ public class SpaceRepository : ISpaceRepository
     private readonly IEntityCounterRepository entityCounterRepository;
     private readonly CacheSettings cacheSettings;
     private readonly IAppCache appCache;
+    private ILogger<SpaceRepository> logger;
 
     public SpaceRepository(
         DlcsContext dlcsContext,
         IOptions<CacheSettings> cacheOptions,
         IAppCache appCache,
+        ILogger<SpaceRepository> logger,
         IEntityCounterRepository entityCounterRepository )
     {
         this.dlcsContext = dlcsContext;
         this.appCache = appCache;
         cacheSettings = cacheOptions.Value;
         this.entityCounterRepository = entityCounterRepository;
+        this.logger = logger;
     }
     
     public async Task<int?> GetImageCountForSpace(int customerId, int spaceId)
@@ -213,31 +217,40 @@ public class SpaceRepository : ISpaceRepository
     {
         var deleteResult = DeleteResult.NotFound;
         var message = string.Empty;
-        
-        var space = await dlcsContext.Spaces.SingleOrDefaultAsync(s =>
-            s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
 
-        if (space != null)
+        try
         {
-            var images = await dlcsContext.Images.AsNoTracking().FirstOrDefaultAsync(i => 
-                i.Customer == customerId && i.Space == spaceId, cancellationToken);
-            
-            if (images == null)
-            {
-                dlcsContext.Spaces.Remove(space);
-                await dlcsContext.SaveChangesAsync(cancellationToken);
+            var space = await dlcsContext.Spaces.SingleOrDefaultAsync(s =>
+                s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
 
-                await entityCounterRepository.Decrement(customerId, KnownEntityCounters.CustomerSpaces,
-                    customerId.ToString());
-                await entityCounterRepository.Remove(customerId, KnownEntityCounters.SpaceImages,
-                    space.Id.ToString(), 1);
-                deleteResult = DeleteResult.Deleted;
-            }
-            else
+            if (space != null)
             {
-                deleteResult = DeleteResult.Error;
-                message = "Cannot delete a space with images";
+                var images = await dlcsContext.Images.AsNoTracking().FirstOrDefaultAsync(i =>
+                    i.Customer == customerId && i.Space == spaceId, cancellationToken);
+
+                if (images == null)
+                {
+                    dlcsContext.Spaces.Remove(space);
+                    await dlcsContext.SaveChangesAsync(cancellationToken);
+
+                    await entityCounterRepository.Decrement(customerId, KnownEntityCounters.CustomerSpaces,
+                        customerId.ToString());
+                    await entityCounterRepository.Remove(customerId, KnownEntityCounters.SpaceImages,
+                        space.Id.ToString(), 1);
+                    deleteResult = DeleteResult.Deleted;
+                }
+                else
+                {
+                    deleteResult = DeleteResult.Conflict;
+                    message = "Cannot delete a space with images";
+                }
             }
+        }
+        catch (Exception exception)
+        {
+            message = "Error deleting space";
+            deleteResult = DeleteResult.Error;
+            logger.LogError(exception, "Failed to delete space");
         }
 
         var resultMessage = new ResultMessage<DeleteResult>(message, deleteResult);

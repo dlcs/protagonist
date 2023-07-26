@@ -14,6 +14,11 @@ public enum DeleteResult
     /// Item was successfully deleted
     /// </summary>
     Deleted,
+    
+    /// <summary>
+    /// There is a user addressable error while deleting
+    /// </summary>
+    Conflict,
 
     /// <summary>
     /// There was an error deleting

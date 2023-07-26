@@ -100,8 +100,10 @@ public abstract class HydraController : Controller
             return result.Value switch
             {
                 DeleteResult.NotFound => this.HydraNotFound(),
-                DeleteResult.Error => this.HydraProblem(result.Message, null, 409,
+                DeleteResult.Conflict => this.HydraProblem(result.Message, null, 409,
                     "Delete failed"),
+                DeleteResult.Error => this.HydraProblem(result.Message, null, 500,
+                    "Error deleting space"),
                 DeleteResult.Deleted => NoContent(),
                 _ => throw new ArgumentOutOfRangeException(nameof(DeleteResult),$"No deletion value of {result.Value}")
             };
