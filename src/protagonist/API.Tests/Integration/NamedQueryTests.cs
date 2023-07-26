@@ -78,7 +78,7 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var namedQuery = new NamedQuery()
         {
             Id = Guid.NewGuid().ToString(),
-            Customer = 97,
+            Customer = customerId,
             Name = "namedQueryTest",
             Template = "test",
             Global = false,
