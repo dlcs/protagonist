@@ -120,7 +120,7 @@ public class NamedQueriesController : HydraController
     
     [HttpDelete]
     [Route("{namedQueryId}")]
-    [ProducesResponseType(StatusCodes.Status205ResetContent)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteNamedQuery(
         [FromRoute] int customerId,
