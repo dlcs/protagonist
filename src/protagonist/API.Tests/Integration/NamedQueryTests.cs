@@ -70,7 +70,7 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Delete_NamedQuery_201()
+    public async Task Delete_NamedQuery_204()
     {
         // Arrange
         const int customerId = 97;
