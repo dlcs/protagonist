@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.NamedQueries.Requests;
 
-public class DeleteNamedQuery: IRequest<(DeleteResult, string)>
+public class DeleteNamedQuery: IRequest<ResultMessage<DeleteResult>>
 {
     public DeleteNamedQuery(int customerId, string namedQueryId)
     {
@@ -20,7 +20,7 @@ public class DeleteNamedQuery: IRequest<(DeleteResult, string)>
     public string NamedQueryId { get; }
 }
 
-public class DeleteNamedQueryHandler : IRequestHandler<DeleteNamedQuery, (DeleteResult, string)>
+public class DeleteNamedQueryHandler : IRequestHandler<DeleteNamedQuery, ResultMessage<DeleteResult>>
 {
     private readonly DlcsContext dbContext;
 
@@ -29,7 +29,7 @@ public class DeleteNamedQueryHandler : IRequestHandler<DeleteNamedQuery, (Delete
         this.dbContext = dbContext;
     }
 
-    public async Task<(DeleteResult, string)> Handle(DeleteNamedQuery request, CancellationToken cancellationToken)
+    public async Task<ResultMessage<DeleteResult>> Handle(DeleteNamedQuery request, CancellationToken cancellationToken)
     {
         var deleteResult = DeleteResult.NotFound;
         var message = string.Empty;
@@ -39,12 +39,12 @@ public class DeleteNamedQueryHandler : IRequestHandler<DeleteNamedQuery, (Delete
                     nq.Id == request.NamedQueryId,
                     cancellationToken: cancellationToken);
 
-        if (namedQuery == null) return (deleteResult, message);
+        if (namedQuery == null) return new ResultMessage<DeleteResult>(message, deleteResult);
 
         dbContext.NamedQueries.Remove(namedQuery);
         await dbContext.SaveChangesAsync(cancellationToken);
         deleteResult = DeleteResult.Deleted;
 
-        return (deleteResult, message);
+        return new ResultMessage<DeleteResult>(message, deleteResult);
     }
 }

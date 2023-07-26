@@ -128,6 +128,6 @@ public class NamedQueriesController : HydraController
     {
         var deleteRequest = new DeleteNamedQuery(customerId, namedQueryId);
 
-        return await HandleDelete<IActionResult>(deleteRequest);
+        return await HandleDelete(deleteRequest);
     }
 }
