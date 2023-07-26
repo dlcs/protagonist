@@ -1,9 +1,9 @@
-﻿using DeleteHandler.Infrastructure;
+﻿using CleanupHandler.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
-namespace DeleteHandler;
+namespace CleanupHandler;
 
 public class Program
 {
@@ -33,7 +33,7 @@ public class Program
             .ConfigureServices((hostContext, services) =>
             {
                 services
-                    .Configure<DeleteHandlerSettings>(hostContext.Configuration)
+                    .Configure<CleanupHandlerSettings>(hostContext.Configuration)
                     .AddAws(hostContext.Configuration, hostContext.HostingEnvironment)
                     .AddQueueMonitoring();
             })

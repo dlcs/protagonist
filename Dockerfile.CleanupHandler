@@ -1,19 +1,19 @@
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 
-COPY ["DeleteHandler/DeleteHandler.csproj", "DeleteHandler/"]
+COPY ["CleanupHandler/CleanupHandler.csproj", "CleanupHandler/"]
 COPY ["DLCS.AWS/DLCS.AWS.csproj", "DLCS.AWS/"]
 COPY ["DLCS.Core/DLCS.Core.csproj", "DLCS.Core/"]
 COPY ["DLCS.Model/DLCS.Model.csproj", "DLCS.Model/"]
 
-RUN dotnet restore "DeleteHandler/DeleteHandler.csproj"
+RUN dotnet restore "CleanupHandler/CleanupHandler.csproj"
 
 COPY . .
-WORKDIR "/src/DeleteHandler"
-RUN dotnet build "DeleteHandler.csproj" -c Release -o /app/build
+WORKDIR "/src/CleanupHandler"
+RUN dotnet build "CleanupHandler.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "DeleteHandler.csproj" -c Release -o /app/publish
+RUN dotnet publish "CleanupHandler.csproj" -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:6.0-bullseye-slim AS base
 
@@ -24,4 +24,4 @@ LABEL org.opencontainers.image.description="Background processor to handle asset
 WORKDIR /app
 EXPOSE 80
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "DeleteHandler.dll"]
+ENTRYPOINT ["dotnet", "CleanupHandler.dll"]

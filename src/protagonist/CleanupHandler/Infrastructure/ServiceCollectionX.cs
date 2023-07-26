@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace DeleteHandler.Infrastructure;
+namespace CleanupHandler.Infrastructure;
 
 public static class ServiceCollectionX
 {
