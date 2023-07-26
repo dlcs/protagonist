@@ -105,6 +105,9 @@ public class NamedQueriesController : HydraController
 
         if (!newNamedQuery.Name.IsNullOrEmpty())
             return this.HydraProblem("The name of a named query cannot be changed", null, 400);
+        
+        if (newNamedQuery.Template.IsNullOrEmpty())
+            return this.HydraProblem("The template cannot be left blank", null, 400);
 
         newNamedQuery.ModelId = namedQueryId;
         var request = new UpdateNamedQuery(customerId, newNamedQuery.ToDlcsModel(customerId));
