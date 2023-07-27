@@ -101,7 +101,7 @@ jobs:
       - uses: ./.github/actions/docker-build-and-push
         with:
           image-name: "cleanuphandler"
-          dockerfile: "Dockerfile.CeanupHandler"
+          dockerfile: "Dockerfile.CleanupHandler"
           context: "./src/protagonist"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
