@@ -126,25 +126,25 @@ public class NamedQueriesController : HydraController
     public async Task<IActionResult> PutNamedQuery(
         [FromRoute] int customerId,
         [FromRoute] string namedQueryId,
-        [FromBody] NamedQuery newNamedQuery,
+        [FromBody] NamedQuery namedQueryChanges,
         [FromServices] HydraNamedQueryValidator validator,
         CancellationToken cancellationToken)
     {
-        if (newNamedQuery.Global == true && !User.IsAdmin()) 
+        if (namedQueryChanges.Global == true && !User.IsAdmin()) 
             return this.HydraProblem("Only admins are allowed to create global named queries", null, 400);
 
-        if (!newNamedQuery.Name.IsNullOrEmpty())
+        if (!namedQueryChanges.Name.IsNullOrEmpty())
             return this.HydraProblem("The name of a named query cannot be changed", null, 400);
         
-        if (newNamedQuery.Template.IsNullOrEmpty())
+        if (namedQueryChanges.Template.IsNullOrEmpty())
             return this.HydraProblem("The template cannot be left blank", null, 400);
 
-        newNamedQuery.ModelId = namedQueryId;
-        var request = new UpdateNamedQuery(customerId, newNamedQuery.ToDlcsModel(customerId));
+        namedQueryChanges.ModelId = namedQueryId;
+        var request = new UpdateNamedQuery(customerId, namedQueryChanges.ToDlcsModel(customerId));
         
         return await HandleUpsert(request, 
             nq => nq.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to create named query",
+            errorTitle: "Failed to update named query",
             cancellationToken: cancellationToken);
     }
     
