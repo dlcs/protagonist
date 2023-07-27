@@ -33,7 +33,7 @@ public class GetNamedQueryHandler : IRequestHandler<GetNamedQuery, FetchEntityRe
     {
         var namedQuery = await dbContext.NamedQueries
             .AsNoTracking()
-            .SingleOrDefaultAsync(nq => nq.Customer == request.CustomerId
+            .SingleOrDefaultAsync(nq => (nq.Customer == request.CustomerId || nq.Global == true)
                                         && nq.Id == request.NamedQueryId, cancellationToken);
         return namedQuery == null
             ? FetchEntityResult<NamedQuery>.NotFound()
