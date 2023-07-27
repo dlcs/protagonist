@@ -31,7 +31,7 @@ public class CreateNamedQueryHandler : IRequestHandler<CreateNamedQuery, ModifyE
     
     public async Task<ModifyEntityResult<NamedQuery>> Handle(CreateNamedQuery request, CancellationToken cancellationToken)
     {
-        var existingNamedQuery = await dbContext.NamedQueries.SingleOrDefaultAsync(
+        var existingNamedQuery = await dbContext.NamedQueries.AsNoTracking().SingleOrDefaultAsync(
             nq => nq.Customer == request.CustomerId && nq.Name == request.NamedQuery.Name, cancellationToken);
         
         if (existingNamedQuery != null)
