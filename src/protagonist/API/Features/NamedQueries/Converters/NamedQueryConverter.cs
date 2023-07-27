@@ -15,10 +15,8 @@ public static class NamedQueryConverter
         return hydraNamedQuery;
     }
     
-    public static DLCS.Model.Assets.NamedQueries.NamedQuery ToDlcsModel(this DLCS.HydraModel.NamedQuery hydraNamedQuery, int customerId)
+    public static DLCS.Model.Assets.NamedQueries.NamedQuery ToDlcsModel(this DLCS.HydraModel.NamedQuery hydraNamedQuery)
     {
-        hydraNamedQuery.CustomerId = customerId;
-        
         var namedQuery = new DLCS.Model.Assets.NamedQueries.NamedQuery()
         {
             Id = hydraNamedQuery.ModelId,
@@ -28,5 +26,4 @@ public static class NamedQueryConverter
         };
         return namedQuery;
     }
-    
 }

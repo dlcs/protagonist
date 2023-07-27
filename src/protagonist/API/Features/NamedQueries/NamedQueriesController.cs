@@ -77,7 +77,7 @@ public class NamedQueriesController : HydraController
             return this.ValidationFailed(validationResult);
         }
         
-        var request = new CreateNamedQuery(customerId, newNamedQuery.ToDlcsModel(customerId));
+        var request = new CreateNamedQuery(customerId, newNamedQuery.ToDlcsModel());
         
         return await HandleUpsert(request, 
             nq => nq.ToHydra(GetUrlRoots().BaseUrl),
@@ -140,7 +140,7 @@ public class NamedQueriesController : HydraController
             return this.HydraProblem("The template cannot be left blank", null, 400);
 
         namedQueryChanges.ModelId = namedQueryId;
-        var request = new UpdateNamedQuery(customerId, namedQueryChanges.ToDlcsModel(customerId));
+        var request = new UpdateNamedQuery(customerId, namedQueryChanges.ToDlcsModel());
         
         return await HandleUpsert(request, 
             nq => nq.ToHydra(GetUrlRoots().BaseUrl),
