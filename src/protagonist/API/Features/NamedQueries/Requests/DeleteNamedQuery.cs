@@ -34,7 +34,7 @@ public class DeleteNamedQueryHandler : IRequestHandler<DeleteNamedQuery, ResultM
         var deleteResult = DeleteResult.NotFound;
         var message = string.Empty;
         
-        var namedQuery = await dbContext.NamedQueries.AsNoTracking().SingleOrDefaultAsync(
+        var namedQuery = await dbContext.NamedQueries.SingleOrDefaultAsync(
             nq => nq.Customer == request.CustomerId && 
                     nq.Id == request.NamedQueryId,
                     cancellationToken: cancellationToken);
