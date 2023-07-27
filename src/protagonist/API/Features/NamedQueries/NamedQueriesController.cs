@@ -1,4 +1,5 @@
-﻿using API.Features.NamedQueries.Converters;
+﻿using System.Text.Json;
+using API.Features.NamedQueries.Converters;
 using API.Features.NamedQueries.Requests;
 using API.Infrastructure;
 using API.Settings;
@@ -76,7 +77,8 @@ public class NamedQueriesController : HydraController
         {
             return this.ValidationFailed(validationResult);
         }
-        
+
+        newNamedQuery.CustomerId = customerId;
         var request = new CreateNamedQuery(customerId, newNamedQuery.ToDlcsModel());
         
         return await HandleUpsert(request, 
