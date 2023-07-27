@@ -6,6 +6,7 @@ using API.Settings;
 using DLCS.Core.Collections;
 using DLCS.HydraModel;
 using DLCS.Web.Auth;
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -71,8 +72,9 @@ public class NamedQueriesController : HydraController
     {
         if (newNamedQuery.Global == true && !User.IsAdmin()) 
             return this.HydraProblem("Only admins are allowed to create global Named Queries", null, 400);
-        
-        var validationResult = await validator.ValidateAsync(newNamedQuery, cancellationToken);
+
+        var validationResult = await validator.ValidateAsync(newNamedQuery,
+            strategy => strategy.IncludeRuleSets("create"), cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
@@ -135,12 +137,13 @@ public class NamedQueriesController : HydraController
         if (namedQueryChanges.Global == true && !User.IsAdmin()) 
             return this.HydraProblem("Only admins are allowed to create global named queries", null, 400);
 
-        if (!namedQueryChanges.Name.IsNullOrEmpty())
-            return this.HydraProblem("The name of a named query cannot be changed", null, 400);
+        var validationResult = await validator.ValidateAsync(namedQueryChanges, 
+            strategy => strategy.IncludeRuleSets("update"), cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
         
-        if (namedQueryChanges.Template.IsNullOrEmpty())
-            return this.HydraProblem("The template cannot be left blank", null, 400);
-
         namedQueryChanges.ModelId = namedQueryId;
         var request = new UpdateNamedQuery(customerId, namedQueryChanges.ToDlcsModel());
         

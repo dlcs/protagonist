@@ -12,11 +12,20 @@ public class HydraNamedQueryValidator : AbstractValidator<DLCS.HydraModel.NamedQ
         RuleFor(nq => nq.CustomerId)
             .Empty()
             .WithMessage("Should not include user id");
-        RuleFor(nq => nq.Name)
-            .NotEmpty()
-            .WithMessage("Name cannot be empty");
         RuleFor(nq => nq.Template)
             .NotEmpty()
-            .WithMessage("Template cannot be empty");
+            .WithMessage("A template is required");
+        RuleSet("create", () =>
+        {
+            RuleFor(nq => nq.Name)
+                .NotEmpty()
+                .WithMessage("A name is required");
+        });
+        RuleSet("update", () =>
+        {
+            RuleFor(nq => nq.Name)
+                .Empty()
+                .WithMessage("You cannot change the name of a named query");
+        });
     }
 }
