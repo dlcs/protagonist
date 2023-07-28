@@ -31,12 +31,6 @@ public class CreateNamedQueryHandler : IRequestHandler<CreateNamedQuery, ModifyE
     
     public async Task<ModifyEntityResult<NamedQuery>> Handle(CreateNamedQuery request, CancellationToken cancellationToken)
     {
-        if (request.CustomerId != request.NamedQuery.Customer)
-        {
-            return ModifyEntityResult<NamedQuery>.Failure("The user id provided in the named query model does not match the calling user's id",
-                WriteResult.FailedValidation);
-        }
-        
         var existingNamedQuery = await dbContext.NamedQueries.AsNoTracking().SingleOrDefaultAsync(
             nq => nq.Customer == request.CustomerId && nq.Name == request.NamedQuery.Name, cancellationToken);
         
