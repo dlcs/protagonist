@@ -30,4 +30,9 @@ public class AWSSettings
     /// SQS Settings
     /// </summary>
     public SQSSettings SQS { get; set; } = new();
+
+    /// <summary>
+    /// SNS Settings
+    /// </summary>
+    public SNSSettings SNS { get; set; } = new();
 }

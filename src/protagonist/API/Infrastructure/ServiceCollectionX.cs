@@ -4,6 +4,7 @@ using API.Features.Assets;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
+using DLCS.AWS.SNS;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Mediatr.Behaviours;
@@ -65,11 +66,13 @@ public static class ServiceCollectionX
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .AddSingleton<IQueueLookup, SqsQueueLookup>()
             .AddSingleton<IQueueSender, SqsQueueSender>()
+            .AddSingleton<ITopicPublisher, TopicPublisher>()
             .AddSingleton<SqsQueueUtilities>()
             .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
             .WithAmazonSQS()
+            .WithAmazonSNS()
             .WithAmazonElasticTranscoder();
 
         return services;
