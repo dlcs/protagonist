@@ -127,7 +127,24 @@ public class AwsBuilder
     /// <returns>Current <see cref="AwsBuilder"/> instance</returns>
     public AwsBuilder WithAmazonElasticTranscoder(ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
-        if (!useLocalStack)
+        if (useLocalStack)
+        {
+            // LocalStack doesn't support ET https://github.com/localstack/localstack/issues/973 but register a dummy
+            // client to allow service to run. Use S3.ServiceUrl as this is for localstack and serves as a placeholder
+            var serviceDescriptor = ServiceDescriptor.Describe(typeof(IAmazonElasticTranscoder), _ =>
+            {
+                var elasticTranscoderConfig = new AmazonElasticTranscoderConfig
+                {
+                    UseHttp = true,
+                    RegionEndpoint = RegionEndpoint.USEast1,
+                    ServiceURL =
+                        awsSettings.S3.ServiceUrl.ThrowIfNullOrWhiteSpace(nameof(awsSettings.S3.ServiceUrl)),
+                };
+                return new AmazonElasticTranscoderClient(new BasicAWSCredentials("foo", "bar"), elasticTranscoderConfig);
+            }, lifetime);
+            services.Add(serviceDescriptor);
+        }
+        else
         {
             services.AddAWSService<IAmazonElasticTranscoder>(lifetime);
         }
