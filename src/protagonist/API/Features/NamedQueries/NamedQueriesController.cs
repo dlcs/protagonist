@@ -75,7 +75,7 @@ public class NamedQueriesController : HydraController
             return this.HydraProblem("Only admins are allowed to create global Named Queries", null, 403);
 
         var validationResult = await validator.ValidateAsync(newNamedQuery,
-            strategy => strategy.IncludeRuleSets("create"), cancellationToken);
+            strategy => strategy.IncludeRuleSets("default", "create"), cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
@@ -139,7 +139,7 @@ public class NamedQueriesController : HydraController
         if (!IsGlobalValid(namedQueryChanges)) 
             return this.HydraProblem("Only admins are allowed to create global named queries", null, 403);
         var validationResult = await validator.ValidateAsync(namedQueryChanges, 
-            strategy => strategy.IncludeRuleSets("update"), cancellationToken);
+            strategy => strategy.IncludeRuleSets("default", "update"), cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
