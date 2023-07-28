@@ -62,16 +62,17 @@ public class NamedQueriesController : HydraController
     /// </remarks>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> PostNamedQuery(
         [FromRoute] int customerId,
         [FromBody] NamedQuery newNamedQuery,
         [FromServices] HydraNamedQueryValidator validator,
         CancellationToken cancellationToken)
     {
-        if (newNamedQuery.Global == true && !User.IsAdmin()) 
-            return this.HydraProblem("Only admins are allowed to create global Named Queries", null, 400);
+        if (!IsGlobalValid(newNamedQuery)) 
+            return this.HydraProblem("Only admins are allowed to create global Named Queries", null, 403);
 
         var validationResult = await validator.ValidateAsync(newNamedQuery,
             strategy => strategy.IncludeRuleSets("create"), cancellationToken);
@@ -126,6 +127,7 @@ public class NamedQueriesController : HydraController
     [Route("{namedQueryId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> PutNamedQuery(
         [FromRoute] int customerId,
@@ -134,9 +136,8 @@ public class NamedQueriesController : HydraController
         [FromServices] HydraNamedQueryValidator validator,
         CancellationToken cancellationToken)
     {
-        if (namedQueryChanges.Global == true && !User.IsAdmin()) 
-            return this.HydraProblem("Only admins are allowed to create global named queries", null, 400);
-
+        if (!IsGlobalValid(namedQueryChanges)) 
+            return this.HydraProblem("Only admins are allowed to create global named queries", null, 403);
         var validationResult = await validator.ValidateAsync(namedQueryChanges, 
             strategy => strategy.IncludeRuleSets("update"), cancellationToken);
         if (!validationResult.IsValid)
@@ -146,7 +147,6 @@ public class NamedQueriesController : HydraController
         
         namedQueryChanges.ModelId = namedQueryId;
         var request = new UpdateNamedQuery(customerId, namedQueryChanges.ToDlcsModel());
-        
         return await HandleUpsert(request, 
             nq => nq.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to update named query",
@@ -168,4 +168,7 @@ public class NamedQueriesController : HydraController
 
         return await HandleDelete(deleteRequest);
     }
+    
+    private bool IsGlobalValid(NamedQuery namedQuery)
+        => !(namedQuery.Global == true && !User.IsAdmin());
 }
