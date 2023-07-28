@@ -22,9 +22,18 @@ public class TopicPublisher : ITopicPublisher
     
     public async Task<bool> PublishToTopicAsync(string messageContents, CancellationToken cancellationToken = default)
     {
-        // Retrieving the ARN of a topic from AWS requires calling CreateTopic
-        var topic = await client.CreateTopicAsync(sNSSettings.DeleteNotificationTopicName, cancellationToken);
-        
+        CreateTopicResponse? topic; 
+        try
+        {
+            // Retrieving the ARN of a topic from AWS requires calling CreateTopic
+            topic = await client.CreateTopicAsync(sNSSettings.DeleteNotificationTopicName, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving topic {Topic}", sNSSettings.DeleteNotificationTopicName);
+            return false;
+        }
+
         var request = new PublishRequest
         {
             TopicArn = topic.TopicArn,
