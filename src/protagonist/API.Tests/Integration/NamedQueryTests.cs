@@ -163,7 +163,7 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
-
+    
     [Fact]
     public async Task Put_NamedQuery_200()
     {
@@ -193,6 +193,7 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updatedNamedQuery = await dlcsContext.NamedQueries.FirstOrDefaultAsync(nq => nq.Id == namedQuery.Id);
         updatedNamedQuery.Template.Should().Be("test-2");
+        updatedNamedQuery.Customer.Should().Be(customerId);
     }
     
     [Fact]
