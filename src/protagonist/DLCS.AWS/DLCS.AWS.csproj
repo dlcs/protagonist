@@ -18,6 +18,7 @@
       <PackageReference Include="AWSSDK.ElasticTranscoder" Version="3.7.0.187" />
       <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.2" />
       <PackageReference Include="AWSSDK.S3" Version="3.7.9.34" />
+      <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.3.87" />
       <PackageReference Include="AWSSDK.SQS" Version="3.7.2.84" />
       <PackageReference Include="LazyCache" Version="2.4.0" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />

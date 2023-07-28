@@ -2,13 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.AWS.SNS;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace DLCS.Repository.Messaging;
 
@@ -17,15 +20,18 @@ public class AssetNotificationSender : IAssetNotificationSender
     private readonly ILogger<AssetNotificationSender> logger;
     private readonly IEngineClient engineClient;
     private readonly ICustomerQueueRepository customerQueueRepository;
+    private readonly ITopicPublisher topicPublisher;
 
     public AssetNotificationSender(
         IEngineClient engineClient,
         ICustomerQueueRepository customerQueueRepository,
-        ILogger<AssetNotificationSender> logger)
+        ILogger<AssetNotificationSender> logger,
+        ITopicPublisher topicPublisher)
     {
         this.engineClient = engineClient;
         this.logger = logger;
         this.customerQueueRepository = customerQueueRepository;
+        this.topicPublisher = topicPublisher;
     }
     
     public async Task<bool> SendIngestAssetRequest(Asset assetToIngest, CancellationToken cancellationToken = default)
@@ -82,6 +88,11 @@ public class AssetNotificationSender : IAssetNotificationSender
         return statusCode;
     }
 
+    private async Task<bool> SendCleanupAssetRequest(Asset assetToCleanup, CancellationToken cancellationToken = default)
+    {
+        return await topicPublisher.PublishToTopicAsync(JsonConvert.SerializeObject(assetToCleanup), cancellationToken);
+    }
+
     public Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after)
     {
         /*
@@ -102,6 +113,9 @@ public class AssetNotificationSender : IAssetNotificationSender
                 throw new ArgumentException("Asset Delete must have a before asset", nameof(before));
             case ChangeType.Delete when after != null:
                 throw new ArgumentException("Asset Delete cannot have an after asset", nameof(after));
+            case ChangeType.Delete:
+                SendCleanupAssetRequest(before);
+                break;
             default:
                 logger.LogDebug("Message Bus: Asset Modified: {AssetId}", after?.Id ?? before.Id);
                 break;
