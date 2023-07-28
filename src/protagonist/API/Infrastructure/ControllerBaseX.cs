@@ -158,7 +158,7 @@ public static class ControllerBaseX
         {
             WriteResult.Updated => controller.Ok(hydraBuilder(entityResult.Entity)),
             WriteResult.Created => controller.HydraCreated(hydraBuilder(entityResult.Entity)),
-            WriteResult.NotFound => controller.HydraNotFound(),
+            WriteResult.NotFound => controller.HydraNotFound(entityResult.Error),
             WriteResult.Error => controller.HydraProblem(entityResult.Error, instance, 500, errorTitle),
             WriteResult.Conflict => controller.HydraProblem(entityResult.Error, instance, 409, 
                 $"{errorTitle}: Conflict"),
