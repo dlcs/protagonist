@@ -40,7 +40,7 @@ public class HydraNamedQueryValidatorTests
     public void NewNamedQuery_Requires_Name()
     {
         var namedQuery = new NamedQuery();
-        var result = sut.TestValidate(namedQuery);
+        var result = sut.TestValidate(namedQuery, strategy => strategy.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(nq => nq.Name);
     }
     
@@ -48,7 +48,7 @@ public class HydraNamedQueryValidatorTests
     public void NewNamedQuery_Requires_Template()
     {
         var namedQuery = new NamedQuery();
-        var result = sut.TestValidate(namedQuery);
+        var result = sut.TestValidate(namedQuery, strategy => strategy.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(nq => nq.Template);
     }
 }
