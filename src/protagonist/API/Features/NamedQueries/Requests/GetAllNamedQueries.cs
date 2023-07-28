@@ -32,7 +32,7 @@ public class GetAllNamedQueriesHandler : IRequestHandler<GetAllNamedQueries, Fet
     {
         var namedQueries = await dbContext.NamedQueries
             .AsNoTracking()
-            .Where(nq => nq.Customer == request.CustomerId || nq.Global == true)
+            .Where(nq => nq.Customer == request.CustomerId || nq.Global)
             .ToListAsync(cancellationToken);
         
         return FetchEntityResult<IReadOnlyCollection<NamedQuery>>.Success(namedQueries);
