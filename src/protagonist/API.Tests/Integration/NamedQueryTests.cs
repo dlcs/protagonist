@@ -144,7 +144,7 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Post_NamedQuery_400_IfUserCreatesGlobal()
+    public async Task Post_NamedQuery_403_IfUserCreatesGlobal()
     {
         // Arrange
         const int customerId = 95;
@@ -161,7 +161,7 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task Put_NamedQuery_400_IfUserCreatesGlobal()
+    public async Task Put_NamedQuery_403_IfUserCreatesGlobal()
     {
         // Arrange
         const int customerId = 93;
@@ -228,18 +228,19 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
             Global = false,
         };
         const string updatedNamedQueryJson = @"{
-          ""global"": ""false"",
+          ""template"": ""test-3"",
+          ""global"": ""true""
         }";
         
         await dlcsContext.NamedQueries.AddAsync(namedQuery);
         await dlcsContext.SaveChangesAsync();
-        
+ 
         // Act
         var content = new StringContent(updatedNamedQueryJson, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(customerId).PutAsync(Path.Combine(path, namedQuery.Id), content);
-        
+    
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         var updatedNamedQuery = await dlcsContext.NamedQueries.SingleOrDefaultAsync(nq => nq.Id == namedQuery.Id);
         updatedNamedQuery.Global.Should().BeFalse();
     }
