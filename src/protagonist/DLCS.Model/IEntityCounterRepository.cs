@@ -14,6 +14,11 @@ public interface IEntityCounterRepository
     Task Create(int customer, string entityType, string scope, long initialValue = 1);
     
     /// <summary>
+    /// Removes an EntityCounter from the database
+    /// </summary>
+    Task Remove(int customer, string entityType, string scope, long nextValue);
+    
+    /// <summary>
     /// Increment stored EntityCounter, and return 'next' value (stored/new value + 1)
     /// </summary>
     Task<long> GetNext(int customer, string entityType, string scope, long initialValue = 1);
@@ -22,7 +27,7 @@ public interface IEntityCounterRepository
     /// Increment stored EntityCounter, and return new value
     /// </summary>
     Task<long> Increment(int customer, string entityType, string scope, long initialValue = 0);
-    
+
     /// <summary>
     /// Decrement stored EntityCounter, and return new value
     /// </summary>

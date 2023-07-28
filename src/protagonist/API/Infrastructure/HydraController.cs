@@ -3,6 +3,7 @@ using API.Converters;
 using API.Exceptions;
 using API.Infrastructure.Requests;
 using API.Settings;
+using DLCS.Core;
 using DLCS.HydraModel;
 using DLCS.Model.Page;
 using DLCS.Web.Requests;
@@ -75,6 +76,37 @@ public abstract class HydraController : Controller
             var result = await Mediator.Send(request, cancellationToken);
 
             return this.ModifyResultToHttpResult(result, hydraBuilder, instance, errorTitle);
+        }, errorTitle);
+    }
+
+    /// <summary>
+    /// Handles a deletion
+    /// </summary>
+    /// <param name="request">The request/response to be sent through Mediatr</param>
+    /// <param name="errorTitle">The title of the error</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the <see cref="DeleteResult"/> is not understood</exception>
+    /// ActionResult generated from DeleteResult. This will be 204 on success. Or a Hydra
+    /// error and appropriate status code if failed.
+    protected async Task<IActionResult> HandleDelete(
+        IRequest<ResultMessage<DeleteResult>> request,
+        string? errorTitle = "Delete failed",
+        CancellationToken cancellationToken = default)
+    {
+        return await HandleHydraRequest(async () =>
+        {
+            var result = await Mediator.Send(request, cancellationToken);
+
+            return result.Value switch
+            {
+                DeleteResult.NotFound => this.HydraNotFound(),
+                DeleteResult.Conflict => this.HydraProblem(result.Message, null, 409,
+                    "Delete failed"),
+                DeleteResult.Error => this.HydraProblem(result.Message, null, 500,
+                    "Error when deleting"),
+                DeleteResult.Deleted => NoContent(),
+                _ => throw new ArgumentOutOfRangeException(nameof(DeleteResult),$"No deletion value of {result.Value}")
+            };
         }, errorTitle);
     }
     
