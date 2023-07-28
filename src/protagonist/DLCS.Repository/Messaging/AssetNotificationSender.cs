@@ -12,6 +12,7 @@ using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace DLCS.Repository.Messaging;
 
@@ -21,6 +22,7 @@ public class AssetNotificationSender : IAssetNotificationSender
     private readonly IEngineClient engineClient;
     private readonly ICustomerQueueRepository customerQueueRepository;
     private readonly ITopicPublisher topicPublisher;
+    private readonly JsonSerializerSettings jsonSerializerSettings;
 
     public AssetNotificationSender(
         IEngineClient engineClient,
@@ -32,6 +34,12 @@ public class AssetNotificationSender : IAssetNotificationSender
         this.logger = logger;
         this.customerQueueRepository = customerQueueRepository;
         this.topicPublisher = topicPublisher;
+        
+        jsonSerializerSettings = new JsonSerializerSettings()
+        {
+            NullValueHandling = NullValueHandling.Ignore,
+            ContractResolver = new CamelCasePropertyNamesContractResolver()
+        };
     }
     
     public async Task<bool> SendIngestAssetRequest(Asset assetToIngest, CancellationToken cancellationToken = default)
@@ -90,10 +98,15 @@ public class AssetNotificationSender : IAssetNotificationSender
 
     private async Task<bool> SendCleanupAssetRequest(Asset assetToCleanup, CancellationToken cancellationToken = default)
     {
-        return await topicPublisher.PublishToTopicAsync(JsonConvert.SerializeObject(assetToCleanup), cancellationToken);
+        var notificationRequest = new
+        {
+            Id = assetToCleanup.Id.ToString()
+        };
+
+        return await topicPublisher.PublishToTopicAsync(JsonConvert.SerializeObject(notificationRequest, Formatting.None, jsonSerializerSettings), cancellationToken);
     }
 
-    public Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after)
+    public async Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after)
     {
         /*
          * TODO - this should probably have a bulk implementation, assuming it handles bulk enqueuing of messages
@@ -114,13 +127,11 @@ public class AssetNotificationSender : IAssetNotificationSender
             case ChangeType.Delete when after != null:
                 throw new ArgumentException("Asset Delete cannot have an after asset", nameof(after));
             case ChangeType.Delete:
-                SendCleanupAssetRequest(before);
+                await SendCleanupAssetRequest(before);
                 break;
             default:
                 logger.LogDebug("Message Bus: Asset Modified: {AssetId}", after?.Id ?? before.Id);
                 break;
         }
-        
-        return Task.CompletedTask;;
     }
 }
