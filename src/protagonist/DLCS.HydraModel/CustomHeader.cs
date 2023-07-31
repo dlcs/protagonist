@@ -47,7 +47,7 @@ public class CustomHeader : DlcsResource
     
     [RdfProperty(Description = "The ID of the space this HTTP header is assigned to",
         Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 17, PropertyName = "spaceId")]
+    [JsonProperty(Order = 17, PropertyName = "space")]
     public int? SpaceId { get; set; }
 }
 
