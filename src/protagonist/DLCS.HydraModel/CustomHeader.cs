@@ -22,11 +22,11 @@ public class CustomHeader : DlcsResource
     {
     }
 
-    public CustomHeader(string baseUrl, int customerId, string customHeaderId, bool setLinks)
+    public CustomHeader(string baseUrl, int customerId, string modelId, bool setLinks)
     {
         CustomerId = customerId;
-        ModelId = customHeaderId;
-        Init(baseUrl, setLinks, customHeaderId);
+        ModelId = modelId;
+        Init(baseUrl, setLinks, customerId, modelId);
     }
     
     [HydraLink(Description = "URI of the registered DLCS role that assets must have for this HTTP header to be set. " +
