@@ -36,11 +36,24 @@ public class CreateNamedQueryHandler : IRequestHandler<CreateCustomHeader, Modif
         {
             Id = Guid.NewGuid().ToString(),
             Customer = request.CustomerId,
-            Space = request.CustomHeader.Space,
             Role = request.CustomHeader.Role,
             Key = request.CustomHeader.Key,
             Value = request.CustomHeader.Value
         };
+        
+        if (request.CustomHeader.Space.HasValue)
+        {
+            var spaceFound =
+                dbContext.Spaces.Any(s => s.Customer == request.CustomerId && s.Id == request.CustomHeader.Space);
+            
+            if (!spaceFound)
+            {
+                return ModifyEntityResult<CustomHeader>
+                    .Failure($"The specified space ({request.CustomerId}) was not found.", WriteResult.NotFound); 
+            }
+            
+            newCustomHeader.Space = request.CustomHeader.Space;
+        }
 
         await dbContext.CustomHeaders.AddAsync(newCustomHeader, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken); 
