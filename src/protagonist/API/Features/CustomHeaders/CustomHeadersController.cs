@@ -1,8 +1,6 @@
 ﻿using API.Features.CustomHeaders.Converters;
 using API.Features.CustomHeaders.Requests;
 using API.Features.CustomHeaders.Validation;
-using API.Features.NamedQueries.Converters;
-using API.Features.NamedQueries.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
@@ -73,15 +71,15 @@ public class CustomHeadersController : HydraController
     [Route("{customHeaderId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetNamedQuery(
+    public async Task<IActionResult> GetCustomHeader(
         [FromRoute] int customerId,
         [FromRoute] string customHeaderId,
         CancellationToken cancellationToken)
     {
-        var namedQuery = new GetCustomHeader(customerId, customHeaderId);
+        var customHeader = new GetCustomHeader(customerId, customHeaderId);
         
         return await HandleFetch(
-            namedQuery,
+            customHeader,
             ch => ch.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to get custom header",
             cancellationToken: cancellationToken
