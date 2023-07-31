@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.AWS.SNS;
 
-public class TopicPublisher : ITopicPublisher
+public class TopicPublisher : ITopicPublisher, IDisposable
 {
     private IAmazonSimpleNotificationService client;
     private ILogger<TopicPublisher> logger;
@@ -50,5 +50,10 @@ public class TopicPublisher : ITopicPublisher
             logger.LogError(ex, "Error sending message to {Topic}", topic);
             return false;
         }
+    }
+
+    public void Dispose()
+    {
+        client.Dispose();
     }
 }
