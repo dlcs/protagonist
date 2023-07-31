@@ -100,10 +100,10 @@ public class AssetNotificationSender : IAssetNotificationSender
     {
         var notificationRequest = new
         {
-            Id = assetToCleanup.Id.ToString()
+            Id = assetToCleanup.Id.ToString(),
         };
 
-        return await topicPublisher.PublishToTopicAsync(JsonConvert.SerializeObject(notificationRequest, Formatting.None, jsonSerializerSettings), cancellationToken);
+        return await topicPublisher.PublishToTopicAsync(JsonConvert.SerializeObject(notificationRequest, Formatting.None, jsonSerializerSettings), SubscribedQueueType.Delete, cancellationToken);
     }
 
     public async Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after)

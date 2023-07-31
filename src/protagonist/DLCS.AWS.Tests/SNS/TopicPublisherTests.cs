@@ -43,7 +43,7 @@ public class TopicPublisherTests
         var sut = GetSut();
 
         // Act
-        var published = await sut.PublishToTopicAsync(JsonConvert.SerializeObject(message));
+        var published = await sut.PublishToTopicAsync(JsonConvert.SerializeObject(message), SubscribedQueueType.Delete);
 
         // Assert
         published.Should().BeTrue();
@@ -71,7 +71,7 @@ public class TopicPublisherTests
         CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.CancelAfter(100);
         // Act
-        var published = await sut.PublishToTopicAsync(JsonConvert.SerializeObject(message), cancellationTokenSource.Token);
+        var published = await sut.PublishToTopicAsync(JsonConvert.SerializeObject(message), SubscribedQueueType.Delete, cancellationTokenSource.Token);
 
         // Assert
         published.Should().BeFalse();

@@ -20,7 +20,8 @@ public class TopicPublisher : ITopicPublisher, IDisposable
         sNSSettings = settings.Value.SNS;
     }
     
-    public async Task<bool> PublishToTopicAsync(string messageContents, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    public async Task<bool> PublishToTopicAsync(string messageContents, SubscribedQueueType subscribedQueueType, CancellationToken cancellationToken = default)
     {
         CreateTopicResponse? topic; 
         try
@@ -34,10 +35,20 @@ public class TopicPublisher : ITopicPublisher, IDisposable
             return false;
         }
 
+        var attributeValue = new MessageAttributeValue()
+        {
+            StringValue = subscribedQueueType.ToString(),
+            DataType = "String"
+        };
+
         var request = new PublishRequest
         {
             TopicArn = topic.TopicArn,
             Message = messageContents,
+            MessageAttributes = new Dictionary<string, MessageAttributeValue>()
+            {
+                {"messageType", attributeValue}
+            }
         };
 
         try
