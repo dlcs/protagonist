@@ -64,8 +64,27 @@ public class CustomHeadersController : HydraController
         var request = new CreateCustomHeader(customerId, newCustomHeader.ToDlcsModel());
         
         return await HandleUpsert(request, 
-            nq => nq.ToHydra(GetUrlRoots().BaseUrl),
+            ch => ch.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to create custom header",
             cancellationToken: cancellationToken);
+    }
+    
+    [HttpGet]
+    [Route("{customHeaderId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetNamedQuery(
+        [FromRoute] int customerId,
+        [FromRoute] string customHeaderId,
+        CancellationToken cancellationToken)
+    {
+        var namedQuery = new GetCustomHeader(customerId, customHeaderId);
+        
+        return await HandleFetch(
+            namedQuery,
+            nq => nq.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to get custom header",
+            cancellationToken: cancellationToken
+        );
     }
 }
