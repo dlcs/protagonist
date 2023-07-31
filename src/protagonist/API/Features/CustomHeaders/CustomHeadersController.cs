@@ -1,5 +1,8 @@
 ﻿using API.Features.CustomHeaders.Converters;
 using API.Features.CustomHeaders.Requests;
+using API.Features.CustomHeaders.Validation;
+using API.Features.NamedQueries.Converters;
+using API.Features.NamedQueries.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
@@ -37,6 +40,32 @@ public class CustomHeadersController : HydraController
             customHeaders,
             ch => ch.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to get custom headers",
+            cancellationToken: cancellationToken);
+    }
+    
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> PostCustomHeader(
+        [FromRoute] int customerId,
+        [FromBody] CustomHeader newCustomHeader,
+        [FromServices] HydraCustomHeaderValidator validator,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await validator.ValidateAsync(newCustomHeader, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
+        
+        newCustomHeader.CustomerId = customerId;
+        var request = new CreateCustomHeader(customerId, newCustomHeader.ToDlcsModel());
+        
+        return await HandleUpsert(request, 
+            nq => nq.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to create custom header",
             cancellationToken: cancellationToken);
     }
 }
