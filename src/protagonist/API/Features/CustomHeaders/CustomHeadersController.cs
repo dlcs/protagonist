@@ -82,7 +82,7 @@ public class CustomHeadersController : HydraController
         
         return await HandleFetch(
             namedQuery,
-            nq => nq.ToHydra(GetUrlRoots().BaseUrl),
+            ch => ch.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to get custom header",
             cancellationToken: cancellationToken
         );
