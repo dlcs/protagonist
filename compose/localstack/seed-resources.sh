@@ -14,11 +14,12 @@ awslocal sqs create-queue --queue-name dlcs-priority-image
 awslocal sqs create-queue --queue-name dlcs-timebased
 awslocal sqs create-queue --queue-name dlcs-file
 awslocal sqs create-queue --queue-name dlcs-transcode-complete
-awslocal sqs create-queue --queue-name dlcsspinup-delete-notifications
+awslocal sqs create-queue --queue-name dlcsspinup-delete-notification
 
 # create topics
-echo "creating topics"
 awslocal sns create-topic --name dlcsspinup-delete-notification
 
+awslocal sqs get-queue-attributes --queue-url http://localhost:4566/000000000000/dlcsspinup-delete-notification/ --attribute-names QueueArn
+
 # subscribe
-awslocal sns subscribe --topic-arn arn:aws:sns:us-east-1:000000000000:dlcsspinup-delete-notification --protocol sqs --notification-endpoint arn:aws:sqs:eu-west-1:000000000000:/dlcsspinup-delete-notifications
+awslocal sns subscribe --topic-arn arn:aws:sns:us-east-1:000000000000:dlcsspinup-delete-notification --protocol sqs --notification-endpoint arn:aws:sqs:us-east-1:000000000000:dlcsspinup-delete-notification

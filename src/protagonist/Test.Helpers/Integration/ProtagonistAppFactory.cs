@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using Amazon.S3;
+using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using LazyCache;
 using LazyCache.Mocks;
@@ -99,7 +100,7 @@ public class ProtagonistAppFactory<TStartup> : WebApplicationFactory<TStartup>
                 
                 if (localStack != null)
                 {
-                    ConfigureS3Services(services);
+                    ConfigureAWSServices(services);
                 }
 
                 services.AddSingleton<IAppCache, MockCachingService>();
@@ -120,7 +121,7 @@ public class ProtagonistAppFactory<TStartup> : WebApplicationFactory<TStartup>
         base.Dispose(disposing);
     }
 
-    private void ConfigureS3Services(IServiceCollection services)
+    private void ConfigureAWSServices(IServiceCollection services)
     {
         services.Remove(new ServiceDescriptor(typeof(IAmazonS3),
             a => a.GetService(typeof(IAmazonS3)), ServiceLifetime.Singleton));
@@ -129,5 +130,9 @@ public class ProtagonistAppFactory<TStartup> : WebApplicationFactory<TStartup>
         services.Remove(new ServiceDescriptor(typeof(IAmazonSQS),
             a => a.GetService(typeof(IAmazonSQS)), ServiceLifetime.Singleton));
         services.AddSingleton<IAmazonSQS>(p => localStack.AWSSQSClientFactory());
+        
+        services.Remove(new ServiceDescriptor(typeof(IAmazonSimpleNotificationService), 
+            a => a.GetService(typeof(IAmazonSimpleNotificationService)), ServiceLifetime.Singleton));
+        services.AddSingleton<IAmazonSimpleNotificationService>(p => localStack.AWSSNSFactory());
     }
 }

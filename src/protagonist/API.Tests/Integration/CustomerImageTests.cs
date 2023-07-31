@@ -14,17 +14,18 @@ using Test.Helpers.Integration.Infrastructure;
 namespace API.Tests.Integration;
 
 [Trait("Category", "Integration")]
-[Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
+[Collection(StorageCollection.CollectionName)]
 public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
 
-    public CustomerImageTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
+    public CustomerImageTests(StorageFixture storageFixture, ProtagonistAppFactory<Startup> factory)
     {
-        dbContext = dbFixture.DbContext;
-        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
-        dbFixture.CleanUp();
+        dbContext = storageFixture.DbFixture.DbContext;
+        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(storageFixture.DbFixture, "API-Test",
+            f => f.WithLocalStack(storageFixture.LocalStackFixture));
+        storageFixture.DbFixture.CleanUp();
     }
 
     [Fact]
