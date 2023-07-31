@@ -31,10 +31,10 @@ public class CustomHeadersController : HydraController
         [FromRoute] int customerId,
         CancellationToken cancellationToken)
     {
-        var namedQueries = new GetAllCustomHeaders(customerId);
+        var customHeaders = new GetAllCustomHeaders(customerId);
 
         return await HandleListFetch<DLCS.Model.Assets.CustomHeaders.CustomHeader, GetAllCustomHeaders, CustomHeader>(
-            namedQueries,
+            customHeaders,
             ch => ch.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to get custom headers",
             cancellationToken: cancellationToken);
