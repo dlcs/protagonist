@@ -49,7 +49,7 @@ public class CreateNamedQueryHandler : IRequestHandler<CreateCustomHeader, Modif
             if (!spaceFound)
             {
                 return ModifyEntityResult<CustomHeader>
-                    .Failure($"The specified space ({request.CustomerId}) was not found.", WriteResult.NotFound); 
+                    .Failure($"The specified space ({request.CustomHeader.Space}) was not found.", WriteResult.NotFound); 
             }
             
             newCustomHeader.Space = request.CustomHeader.Space;
