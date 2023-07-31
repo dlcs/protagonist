@@ -14,7 +14,7 @@ public class HydraCustomHeaderValidator : AbstractValidator<DLCS.HydraModel.Cust
             .Empty()
             .WithMessage("Should not include user id");
         RuleFor(ch => ch.Key)
-            .Empty()
+            .NotEmpty()
             .WithMessage("A key is required");
         RuleFor(nq => nq.Value)
             .NotEmpty()
