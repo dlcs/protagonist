@@ -23,10 +23,10 @@ awslocal sns create-topic --name asset-modified-notifications
 awslocal sqs get-queue-attributes --queue-url http://localhost:4566/000000000000/dlcsspinup-delete-notification/ --attribute-names QueueArn
 
 # subscribe SQS to SNS
-VARIABLE=`awslocal sns subscribe --topic-arn arn:aws:sns:us-east-1:000000000000:asset-modified-notifications --protocol sqs --notification-endpoint arn:aws:sqs:us-east-1:000000000000:dlcsspinup-delete-notification --output text  | awk -F\"SubscriptionArn\": '{print $NF}'`
+SUBSCRIPTION=`awslocal sns subscribe --topic-arn arn:aws:sns:us-east-1:000000000000:asset-modified-notifications --protocol sqs --notification-endpoint arn:aws:sqs:us-east-1:000000000000:dlcsspinup-delete-notification --output text  | awk -F\"SubscriptionArn\": '{print $NF}'`
 
 # set filter policy on subscription
-awslocal sns set-subscription-attributes --subscription-arn $VARIABLE --attribute-name FilterPolicy --attribute-value '{"messageType":["Delete"]}'
+awslocal sns set-subscription-attributes --subscription-arn $SUBSCRIPTION --attribute-name FilterPolicy --attribute-value '{"messageType":["Delete"]}'
 
 # log subscription
-awslocal sns get-subscription-attributes --subscription-arn $VARIABLE
+awslocal sns get-subscription-attributes --subscription-arn $SUBSCRIPTION
