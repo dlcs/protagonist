@@ -15,12 +15,16 @@ public class CustomHeader : DlcsResource
     [JsonIgnore]
     public string? ModelId { get; set; }
     
+    [JsonIgnore]
+    public int CustomerId { get; set; }
+    
     public CustomHeader()
     {
     }
 
-    public CustomHeader(string baseUrl, string customHeaderId, bool setLinks)
+    public CustomHeader(string baseUrl, int customerId, string customHeaderId, bool setLinks)
     {
+        CustomerId = customerId;
         ModelId = customHeaderId;
         Init(baseUrl, setLinks, customHeaderId);
     }
@@ -40,6 +44,11 @@ public class CustomHeader : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 16, PropertyName = "value")]
     public string? Value { get; set; }
+    
+    [RdfProperty(Description = "The ID of the space this HTTP header is assigned to",
+        Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 17, PropertyName = "spaceId")]
+    public int? SpaceId { get; set; }
 }
 
 public class CustomHeaderClass : Class
