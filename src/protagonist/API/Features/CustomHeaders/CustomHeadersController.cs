@@ -11,6 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace API.Features.CustomHeaders;
 
+/// <summary>
+/// DLCS REST API Operations for Custom Headers
+/// </summary>
 [Route("/customers/{customerId}/customHeaders")]
 [ApiController]
 public class CustomHeadersController : HydraController
@@ -22,7 +25,7 @@ public class CustomHeadersController : HydraController
     }
     
     /// <summary>
-    /// Get a list of custom headers owned by the user
+    /// Get a list of Custom Headers owned by the calling user
     /// </summary>
     /// <returns>HydraCollection of CustomHeader</returns>
     [HttpGet]
@@ -37,10 +40,24 @@ public class CustomHeadersController : HydraController
         return await HandleListFetch<DLCS.Model.Assets.CustomHeaders.CustomHeader, GetAllCustomHeaders, CustomHeader>(
             customHeaders,
             ch => ch.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to get custom headers",
+            errorTitle: "Failed to get Custom Headers",
             cancellationToken: cancellationToken);
     }
     
+    /// <summary>
+    /// Create a new Custom Header owned by the calling user
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST: /customers/1/customHeaders
+    ///     {
+    ///         "key": "my-key",
+    ///         "value": "my-value"
+    ///         (optional) "space": 1
+    ///         (optional) "role": "https://api.dlcs.digirati.io/customers/1/roles/my-role"
+    ///     }
+    /// </remarks>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -61,10 +78,13 @@ public class CustomHeadersController : HydraController
         
         return await HandleUpsert(request, 
             ch => ch.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to create custom header",
+            errorTitle: "Failed to create Custom Header",
             cancellationToken: cancellationToken);
     }
     
+    /// <summary>
+    /// Get a specified Custom Header owned by the calling user
+    /// </summary>
     [HttpGet]
     [Route("{customHeaderId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -79,11 +99,25 @@ public class CustomHeadersController : HydraController
         return await HandleFetch(
             customHeader,
             ch => ch.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to get custom header",
+            errorTitle: "Failed to get Custom Header",
             cancellationToken: cancellationToken
         );
     }
     
+    /// <summary>
+    /// Update an existing Custom Header owned by the calling user
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     PUT: /customers/1/customHeaders/3abc55fd-eb2d-47e8-8966-5f71d8e26476
+    ///     {
+    ///         "key": "my-new-key",
+    ///         "value": "my-new-value"
+    ///         (optional) "space": 2
+    ///         (optional) "role": "https://api.dlcs.digirati.io/customers/1/roles/my-new-role"
+    ///     }
+    /// </remarks>
     [HttpPut]
     [Route("{customHeaderId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -107,10 +141,13 @@ public class CustomHeadersController : HydraController
         
         return await HandleUpsert(request, 
             ch => ch.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to update custom header",
+            errorTitle: "Failed to update Custom Header",
             cancellationToken: cancellationToken);
     }
     
+    /// <summary>
+    /// Delete a specified Custom Header owned by the calling user
+    /// </summary>
     [HttpDelete]
     [Route("{customHeaderId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
