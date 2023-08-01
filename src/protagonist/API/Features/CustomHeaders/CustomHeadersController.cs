@@ -44,8 +44,6 @@ public class CustomHeadersController : HydraController
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> PostCustomHeader(
         [FromRoute] int customerId,
         [FromBody] CustomHeader newCustomHeader,
@@ -88,10 +86,8 @@ public class CustomHeadersController : HydraController
     
     [HttpPut]
     [Route("{customHeaderId}")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> PutCustomHeader(
         [FromRoute] int customerId,
         [FromRoute] string customHeaderId,
