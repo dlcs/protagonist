@@ -2,12 +2,13 @@
 using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
 using DLCS.Core;
+using DLCS.Model.Messaging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DLCS.AWS.SNS;
 
-public class TopicPublisher : ITopicPublisher, IDisposable
+public class TopicPublisher : ITopicPublisher
 {
     private IAmazonSimpleNotificationService client;
     private ILogger<TopicPublisher> logger;
@@ -21,29 +22,36 @@ public class TopicPublisher : ITopicPublisher, IDisposable
     }
     
     /// <inheritdoc />
-    public async Task<bool> PublishToTopicAsync(string messageContents, SubscribedQueueType subscribedQueueType, CancellationToken cancellationToken = default)
+    public async Task<bool> PublishToAssetModifiedTopic(string messageContents, ChangeType changeType, CancellationToken cancellationToken = default)
     {
-        CreateTopicResponse? topic; 
         try
         {
-            // Retrieving the ARN of a topic from AWS requires calling CreateTopic
-            topic = await client.CreateTopicAsync(sNSSettings.AssetModifiedNotificationTopicName, cancellationToken);
+            var topic = await client.GetTopicAttributesAsync(
+                new GetTopicAttributesRequest(sNSSettings.AssetModifiedNotificationTopicNameArn), cancellationToken);
+
+            if (!topic.HttpStatusCode.IsSuccess())
+            {
+                logger.LogError("Could not retrieve topic details for topic {Topic}",
+                    sNSSettings.AssetModifiedNotificationTopicNameArn);
+                return false;
+            }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving topic {Topic}", sNSSettings.AssetModifiedNotificationTopicName);
+            logger.LogError(ex, "Error retrieving details of topic {Topic}", 
+                sNSSettings.AssetModifiedNotificationTopicNameArn);
             return false;
         }
 
         var attributeValue = new MessageAttributeValue()
         {
-            StringValue = subscribedQueueType.ToString(),
+            StringValue = changeType.ToString(),
             DataType = "String"
         };
 
         var request = new PublishRequest
         {
-            TopicArn = topic.TopicArn,
+            TopicArn = sNSSettings.AssetModifiedNotificationTopicNameArn,
             Message = messageContents,
             MessageAttributes = new Dictionary<string, MessageAttributeValue>()
             {
@@ -58,13 +66,8 @@ public class TopicPublisher : ITopicPublisher, IDisposable
         }
         catch(Exception ex)
         {
-            logger.LogError(ex, "Error sending message to {Topic}", topic);
+            logger.LogError(ex, "Error sending message to {Topic}", sNSSettings.AssetModifiedNotificationTopicNameArn);
             return false;
         }
-    }
-
-    public void Dispose()
-    {
-        client.Dispose();
     }
 }

@@ -3,6 +3,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
+using DLCS.Model.PathElements;
 
 namespace DLCS.Model.Messaging;
 
@@ -30,9 +31,10 @@ public interface IAssetNotificationSender
     /// <param name="derivativesOnly">If true, only derivatives (e.g. thumbs) will be created</param>
     Task<HttpStatusCode> SendImmediateIngestAssetRequest(Asset assetToIngest, bool derivativesOnly,
         CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Broadcast a change to the status of an Asset, for any subscribers.
     /// </summary>
-    Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after);
+    Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after,
+        CustomerPathElement? customerPathElement = null);
 }

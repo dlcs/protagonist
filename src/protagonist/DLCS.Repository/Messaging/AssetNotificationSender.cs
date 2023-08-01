@@ -9,6 +9,7 @@ using DLCS.AWS.SNS;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.PathElements;
 using DLCS.Model.Processing;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -96,17 +97,18 @@ public class AssetNotificationSender : IAssetNotificationSender
         return statusCode;
     }
 
-    private async Task<bool> SendCleanupAssetRequest(Asset assetToCleanup, CancellationToken cancellationToken = default)
+    private async Task<bool> SendCleanupAssetRequest(Asset assetToCleanup, CustomerPathElement customerPathElement, CancellationToken cancellationToken = default)
     {
         var notificationRequest = new
         {
             Id = assetToCleanup.Id.ToString(),
+            CustomerPathElement = customerPathElement
         };
 
-        return await topicPublisher.PublishToTopicAsync(JsonConvert.SerializeObject(notificationRequest, Formatting.None, jsonSerializerSettings), SubscribedQueueType.Delete, cancellationToken);
+        return await topicPublisher.PublishToAssetModifiedTopic(JsonConvert.SerializeObject(notificationRequest, Formatting.None, jsonSerializerSettings), ChangeType.Delete, cancellationToken);
     }
 
-    public async Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after)
+    public async Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after, CustomerPathElement? customerPathElement)
     {
         /*
          * TODO - this should probably have a bulk implementation, assuming it handles bulk enqueuing of messages
@@ -126,8 +128,10 @@ public class AssetNotificationSender : IAssetNotificationSender
                 throw new ArgumentException("Asset Delete must have a before asset", nameof(before));
             case ChangeType.Delete when after != null:
                 throw new ArgumentException("Asset Delete cannot have an after asset", nameof(after));
+            case ChangeType.Delete when customerPathElement == null:
+                throw new ArgumentException("Asset Delete must have a customer path element", nameof(after));
             case ChangeType.Delete:
-                await SendCleanupAssetRequest(before);
+                await SendCleanupAssetRequest(before, customerPathElement);
                 break;
             default:
                 logger.LogDebug("Message Bus: Asset Modified: {AssetId}", after?.Id ?? before.Id);

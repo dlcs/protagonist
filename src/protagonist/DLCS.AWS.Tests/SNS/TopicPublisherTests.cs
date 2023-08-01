@@ -1,6 +1,8 @@
 ﻿using Amazon.SimpleNotificationService;
+using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
 using DLCS.AWS.SNS;
+using DLCS.Model.Messaging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -17,6 +19,8 @@ public class TopicPublisherTests
     public TopicPublisherTests(LocalStackFixture localStackFixture)
     {
         snsClient = localStackFixture.AWSSNSFactory();
+        
+        snsClient.CreateTopicAsync(new CreateTopicRequest("someTopic"));
     }
     
     private TopicPublisher GetSut()
@@ -25,15 +29,15 @@ public class TopicPublisherTests
         {
             SNS = new SNSSettings()
             {
-                AssetModifiedNotificationTopicName = "someTopic"
+                AssetModifiedNotificationTopicNameArn = "arn:aws:sns:us-east-1:000000000000:someTopic"
             }
         });
-
+        
         return new TopicPublisher(snsClient, new NullLogger<TopicPublisher>(), settings);
     }
 
     [Fact]
-    public async Task PublishToTopicAsync_SuccessfullyPublishesToTopic_WhenCalledWithMessage()
+    public async Task PublishToTopic_SuccessfullyPublishesToTopic_WhenCalledWithMessage()
     {
         // Arrange
         var message = new
@@ -43,21 +47,21 @@ public class TopicPublisherTests
         var sut = GetSut();
 
         // Act
-        var published = await sut.PublishToTopicAsync(JsonConvert.SerializeObject(message), SubscribedQueueType.Delete);
+        var published = await sut.PublishToAssetModifiedTopic(JsonConvert.SerializeObject(message), ChangeType.Delete);
 
         // Assert
         published.Should().BeTrue();
     }
     
     [Fact]
-    public async Task PublishToTopicAsync_FailsToCreateTopic_WhenTopicSettingIsNull()
+    public async Task PublishToTopic_FailsToRetrieveTopic_WhenTopicSettingIsNull()
     {
         // Arrange
         var settings = Options.Create(new AWSSettings()
         {
             SNS = new SNSSettings()
             {
-                AssetModifiedNotificationTopicName = null
+                AssetModifiedNotificationTopicNameArn = null
             }
         });
 
@@ -71,7 +75,33 @@ public class TopicPublisherTests
         CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.CancelAfter(100);
         // Act
-        var published = await sut.PublishToTopicAsync(JsonConvert.SerializeObject(message), SubscribedQueueType.Delete, cancellationTokenSource.Token);
+        var published = await sut.PublishToAssetModifiedTopic(JsonConvert.SerializeObject(message), ChangeType.Delete, cancellationTokenSource.Token);
+
+        // Assert
+        published.Should().BeFalse();
+    }
+    
+    [Fact]
+    public async Task PublishToTopic_FailsToRetrieveTopic_WhenTopicSettingIsNotAValidTopic()
+    {
+        // Arrange
+        var settings = Options.Create(new AWSSettings()
+        {
+            SNS = new SNSSettings()
+            {
+                AssetModifiedNotificationTopicNameArn = "arn:aws:sns:us-east-1:000000000000:invalidTopic"
+            }
+        });
+
+        var sut = new TopicPublisher(snsClient, new NullLogger<TopicPublisher>(), settings);
+        
+        var message = new
+        {
+            someValue = "something"
+        };
+        
+        // Act
+        var published = await sut.PublishToAssetModifiedTopic(JsonConvert.SerializeObject(message), ChangeType.Delete);
 
         // Assert
         published.Should().BeFalse();
