@@ -39,7 +39,11 @@ public class DeleteCustomHeaderHandler : IRequestHandler<DeleteCustomHeader, Res
                   ch.Id == request.CustomHeaderId,
             cancellationToken: cancellationToken);
 
-        if (customHeader == null) return new ResultMessage<DeleteResult>(message, deleteResult);
+        if (customHeader == null)
+        {
+            message = $"Deletion failed - Custom Header {request.CustomHeaderId} was not found";
+            return new ResultMessage<DeleteResult>(message, deleteResult);
+        }
 
         dbContext.CustomHeaders.Remove(customHeader);
         await dbContext.SaveChangesAsync(cancellationToken);
