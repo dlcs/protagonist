@@ -33,7 +33,7 @@ public class GetAllCustomHeadersHandler : IRequestHandler<GetAllCustomHeaders, F
     {
         var customHeaders = await dbContext.CustomHeaders
             .AsNoTracking()
-            .Where(nq => nq.Customer == request.CustomerId)
+            .Where(ch => ch.Customer == request.CustomerId)
             .ToListAsync(cancellationToken);
         
         return FetchEntityResult<IReadOnlyCollection<CustomHeader>>.Success(customHeaders);
