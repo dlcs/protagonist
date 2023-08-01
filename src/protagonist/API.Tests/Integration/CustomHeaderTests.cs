@@ -177,4 +177,24 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
         updatedCustomHeader.Value.Should().Be("test-value-2");
         updatedCustomHeader.Space.Should().Be(2);
     }
+    
+    [Fact]
+    public async Task Put_CustomHeader_404_IfNotFound()
+    {
+        // Arrange
+        const int customerId = 96;
+        var path = $"customers/{customerId}/customHeaders/{Guid.Empty}";
+        const string updatedCustomHeaderJson = @"{
+          ""key"": ""test-key-2"",
+          ""value"": ""test-value-2"",
+          ""space"": 2,
+        }";
+        
+        // Act
+        var content = new StringContent(updatedCustomHeaderJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
 }
