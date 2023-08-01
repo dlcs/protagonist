@@ -6,6 +6,8 @@
         <Nullable>enable</Nullable>
 
         <IsPackable>false</IsPackable>
+
+        <RootNamespace>DeleteHandlerTests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

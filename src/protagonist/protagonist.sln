@@ -67,7 +67,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Engine.Tests", "Engine.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CleanupHandler", "CleanupHandler\CleanupHandler.csproj", "{A8760A1D-8E1B-4822-954C-41188BD9745F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeleteHandlerTests", "DeleteHandlerTests\DeleteHandlerTests.csproj", "{E0663AC2-FCCC-4660-999F-53AF37F8C63F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CleanupHandlerTests", "CleanupHandlerTests\CleanupHandlerTests.csproj", "{E0663AC2-FCCC-4660-999F-53AF37F8C63F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Migrator", "Utils\Migrator\Migrator.csproj", "{AD19E6C6-358C-4835-8431-A62018EA617B}"
 EndProject
