@@ -40,7 +40,10 @@ public class HydraCustomHeaderValidatorTests
     [Fact]
     public void NewCustomHeader_Requires_Key()
     {
-        var customHeader = new CustomHeader();
+        var customHeader = new CustomHeader()
+        {
+            Key = null
+        };
         var result = sut.TestValidate(customHeader);
         result.ShouldHaveValidationErrorFor(ch => ch.Key);
     }
@@ -48,7 +51,10 @@ public class HydraCustomHeaderValidatorTests
     [Fact]
     public void NewCustomHeader_Requires_Value()
     {
-        var customHeader = new CustomHeader();
+        var customHeader = new CustomHeader()
+        {
+            Value = null
+        };
         var result = sut.TestValidate(customHeader);
         result.ShouldHaveValidationErrorFor(ch => ch.Value);
     }
