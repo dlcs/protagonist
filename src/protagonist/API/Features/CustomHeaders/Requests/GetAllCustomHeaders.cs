@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using API.Features.NamedQueries.Requests;
 using API.Infrastructure.Requests;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Repository;
