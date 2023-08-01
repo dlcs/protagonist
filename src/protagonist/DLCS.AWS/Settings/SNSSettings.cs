@@ -3,9 +3,9 @@
 public class SNSSettings
 {
     /// <summary>
-    /// Name of the SNS topic for notifying that assets have been deleted
+    /// Name of the SNS topic for notifying that assets have been modified
     /// </summary>
-    public string? DeleteNotificationTopicName { get; set; }
+    public string? AssetModifiedNotificationTopicName { get; set; }
     
     /// <summary>
     /// Service root for SNS. Only used if running LocalStack

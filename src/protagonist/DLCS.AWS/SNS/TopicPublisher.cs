@@ -27,11 +27,11 @@ public class TopicPublisher : ITopicPublisher, IDisposable
         try
         {
             // Retrieving the ARN of a topic from AWS requires calling CreateTopic
-            topic = await client.CreateTopicAsync(sNSSettings.DeleteNotificationTopicName, cancellationToken);
+            topic = await client.CreateTopicAsync(sNSSettings.AssetModifiedNotificationTopicName, cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving topic {Topic}", sNSSettings.DeleteNotificationTopicName);
+            logger.LogError(ex, "Error retrieving topic {Topic}", sNSSettings.AssetModifiedNotificationTopicName);
             return false;
         }
 

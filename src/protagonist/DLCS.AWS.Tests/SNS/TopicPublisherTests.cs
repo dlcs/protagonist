@@ -25,7 +25,7 @@ public class TopicPublisherTests
         {
             SNS = new SNSSettings()
             {
-                DeleteNotificationTopicName = "someTopic"
+                AssetModifiedNotificationTopicName = "someTopic"
             }
         });
 
@@ -57,7 +57,7 @@ public class TopicPublisherTests
         {
             SNS = new SNSSettings()
             {
-                DeleteNotificationTopicName = null
+                AssetModifiedNotificationTopicName = null
             }
         });
 
