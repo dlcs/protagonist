@@ -35,7 +35,6 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         const int customerId = 90;
-        var path = $"customers/{customerId}/customHeaders";
         var customHeader = new CustomHeader()
         {
             Id = Guid.NewGuid().ToString(),
@@ -43,12 +42,13 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
             Key = "test-key",
             Value = "test-value"
         };
+        var path = $"customers/{customerId}/customHeaders/{customHeader.Id}";
         
         await dlcsContext.CustomHeaders.AddAsync(customHeader);
         await dlcsContext.SaveChangesAsync();
         
         // Act
-        var response = await httpClient.AsCustomer(customerId).GetAsync(Path.Combine(path, customHeader.Id));
+        var response = await httpClient.AsCustomer(customerId).GetAsync(path);
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -73,7 +73,6 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         const int customerId = 92;
-        var path = $"customers/{customerId}/customHeaders";
         var customHeader = new CustomHeader()
         {
             Id = Guid.NewGuid().ToString(),
@@ -81,12 +80,13 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
             Key = "test-key",
             Value = "test-value"
         };
+        var path = $"customers/{customerId}/customHeaders/{customHeader.Id}";
         
         await dlcsContext.CustomHeaders.AddAsync(customHeader);
         await dlcsContext.SaveChangesAsync();
         
         // Act
-        var response = await httpClient.AsCustomer(customerId).DeleteAsync(Path.Combine(path, customHeader.Id));
+        var response = await httpClient.AsCustomer(customerId).DeleteAsync(path);
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -148,7 +148,6 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         const int customerId = 95;
-        var path = $"customers/{customerId}/customHeaders";
         var customHeader = new CustomHeader()
         {
             Id = Guid.NewGuid().ToString(),
@@ -161,13 +160,14 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""value"": ""test-value-2"",
           ""space"": 2,
         }";
+        var path = $"customers/{customerId}/customHeaders/{customHeader.Id}";
         
         await dlcsContext.CustomHeaders.AddAsync(customHeader);
         await dlcsContext.SaveChangesAsync();
         
         // Act
         var content = new StringContent(updatedCustomHeaderJson, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customerId).PutAsync(Path.Combine(path, customHeader.Id), content);
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
