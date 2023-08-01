@@ -110,4 +110,17 @@ public class CustomHeadersController : HydraController
             errorTitle: "Failed to update custom header",
             cancellationToken: cancellationToken);
     }
+    
+    [HttpDelete]
+    [Route("{customHeaderId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteCustomHeader(
+        [FromRoute] int customerId,
+        [FromRoute] string customHeaderId)
+    {
+        var deleteRequest = new DeleteCustomHeader(customerId, customHeaderId);
+
+        return await HandleDelete(deleteRequest);
+    }
 }
