@@ -1,7 +1,6 @@
 ﻿using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Assets.CustomHeaders;
-using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -21,11 +20,11 @@ public class CreateCustomHeader : IRequest<ModifyEntityResult<CustomHeader>>
     }
 }
 
-public class CreateNamedQueryHandler : IRequestHandler<CreateCustomHeader, ModifyEntityResult<CustomHeader>>
+public class CreateCustomHeaderHandler : IRequestHandler<CreateCustomHeader, ModifyEntityResult<CustomHeader>>
 {  
     private readonly DlcsContext dbContext;
 
-    public CreateNamedQueryHandler(DlcsContext dbContext)
+    public CreateCustomHeaderHandler(DlcsContext dbContext)
     {
         this.dbContext = dbContext;
     }
