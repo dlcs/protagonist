@@ -85,4 +85,33 @@ public class CustomHeadersController : HydraController
             cancellationToken: cancellationToken
         );
     }
+    
+    [HttpPut]
+    [Route("{customHeaderId}")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> PutCustomHeader(
+        [FromRoute] int customerId,
+        [FromRoute] string customHeaderId,
+        [FromBody] CustomHeader customHeaderChanges,
+        [FromServices] HydraCustomHeaderValidator validator,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await validator.ValidateAsync(customHeaderChanges, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
+        
+        customHeaderChanges.CustomerId = customerId;
+        customHeaderChanges.ModelId = customHeaderId;
+        var request = new UpdateCustomHeader(customerId, customHeaderChanges.ToDlcsModel());
+        
+        return await HandleUpsert(request, 
+            ch => ch.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to update custom header",
+            cancellationToken: cancellationToken);
+    }
 }
