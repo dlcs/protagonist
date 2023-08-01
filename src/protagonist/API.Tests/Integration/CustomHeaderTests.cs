@@ -53,4 +53,18 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
+    
+    [Fact]
+    public async Task Get_CustomHeader_404_IfNotFound()
+    {
+        // Arrange
+        const int customerId = 91;
+        var path = $"customers/{customerId}/customHeaders/{Guid.Empty}";
+        
+        // Act
+        var response = await httpClient.AsCustomer(customerId).GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
 }
