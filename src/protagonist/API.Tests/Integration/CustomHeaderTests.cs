@@ -93,4 +93,26 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var deletedNamedQuery = await dlcsContext.NamedQueries.AnyAsync(nq => nq.Id == customHeader.Id);
         deletedNamedQuery.Should().BeFalse();
     }
+    
+    [Fact]
+    public async Task Get_CustomHeaders_200()
+    {
+        // Arrange
+        const int customerId = 93;
+        var path = $"customers/{customerId}/customHeaders";
+        
+        await dlcsContext.CustomHeaders.AddTestCustomHeader("test-key-1", "test-value-1", customerId);
+        await dlcsContext.CustomHeaders.AddTestCustomHeader("test-key-2", "test-value-2", customerId, space:1);
+        await dlcsContext.CustomHeaders.AddTestCustomHeader("test-key-3", "test-value-3", 1);
+        await dlcsContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer(customerId).GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var model = await response.ReadAsHydraResponseAsync<HydraCollection<CustomHeader>>();
+        model.Members.Should().HaveCount(2);
+    }
 }
