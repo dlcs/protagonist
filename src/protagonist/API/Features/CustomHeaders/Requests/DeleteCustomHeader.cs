@@ -31,9 +31,6 @@ public class DeleteCustomHeaderHandler : IRequestHandler<DeleteCustomHeader, Res
 
     public async Task<ResultMessage<DeleteResult>> Handle(DeleteCustomHeader request, CancellationToken cancellationToken)
     {
-        var deleteResult = DeleteResult.NotFound;
-        var message = string.Empty;
-        
         var customHeader = await dbContext.CustomHeaders.SingleOrDefaultAsync(
             ch => ch.Customer == request.CustomerId && 
                   ch.Id == request.CustomHeaderId,
@@ -41,14 +38,14 @@ public class DeleteCustomHeaderHandler : IRequestHandler<DeleteCustomHeader, Res
 
         if (customHeader == null)
         {
-            message = $"Deletion failed - Custom Header {request.CustomHeaderId} was not found";
-            return new ResultMessage<DeleteResult>(message, deleteResult);
+            return new ResultMessage<DeleteResult>(
+                $"Deletion failed - Custom Header {request.CustomHeaderId} was not found", DeleteResult.NotFound);
         }
 
         dbContext.CustomHeaders.Remove(customHeader);
         await dbContext.SaveChangesAsync(cancellationToken);
-        deleteResult = DeleteResult.Deleted;
-
-        return new ResultMessage<DeleteResult>(message, deleteResult);
+        
+        return new ResultMessage<DeleteResult>(
+            $"Custom Header {request.CustomHeaderId} successfully deleted", DeleteResult.Deleted);
     }
 }
