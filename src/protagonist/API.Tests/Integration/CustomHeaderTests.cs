@@ -136,10 +136,45 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         
-        var foundCustomHeader = dlcsContext.CustomHeaders.Single(nq => nq.Key == "test-key");
+        var foundCustomHeader = dlcsContext.CustomHeaders.Single(ch => ch.Key == "test-key");
         foundCustomHeader.Should().NotBeNull();
         foundCustomHeader.Customer.Should().Be(customerId);
         foundCustomHeader.Value.Should().Be("test-value");
         foundCustomHeader.Space.Should().Be(1);
+    }
+    
+    [Fact]
+    public async Task Put_CustomHeader_200()
+    {
+        // Arrange
+        const int customerId = 95;
+        var path = $"customers/{customerId}/customHeaders";
+        var customHeader = new CustomHeader()
+        {
+            Id = Guid.NewGuid().ToString(),
+            Customer = customerId,
+            Key = "test-key",
+            Value = "test-value"
+        };
+        const string updatedCustomHeaderJson = @"{
+          ""key"": ""test-key-2"",
+          ""value"": ""test-value-2"",
+          ""space"": 2,
+        }";
+        
+        await dlcsContext.CustomHeaders.AddAsync(customHeader);
+        await dlcsContext.SaveChangesAsync();
+        
+        // Act
+        var content = new StringContent(updatedCustomHeaderJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(Path.Combine(path, customHeader.Id), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var updatedCustomHeader = dlcsContext.CustomHeaders.Single(ch => ch.Key == "test-key-2");
+        updatedCustomHeader.Should().NotBeNull();
+        updatedCustomHeader.Value.Should().Be("test-value-2");
+        updatedCustomHeader.Space.Should().Be(2);
     }
 }
