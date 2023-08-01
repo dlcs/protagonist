@@ -37,23 +37,10 @@ public class CreateCustomHeaderHandler : IRequestHandler<CreateCustomHeader, Mod
             Customer = request.CustomerId,
             Role = request.CustomHeader.Role,
             Key = request.CustomHeader.Key,
-            Value = request.CustomHeader.Value
+            Value = request.CustomHeader.Value,
+            Space = request.CustomHeader.Space
         };
         
-        if (request.CustomHeader.Space.HasValue)
-        {
-            var spaceFound =
-                dbContext.Spaces.Any(s => s.Customer == request.CustomerId && s.Id == request.CustomHeader.Space);
-            
-            if (!spaceFound)
-            {
-                return ModifyEntityResult<CustomHeader>
-                    .Failure($"The specified space ({request.CustomHeader.Space}) was not found.", WriteResult.NotFound); 
-            }
-            
-            newCustomHeader.Space = request.CustomHeader.Space;
-        }
-
         await dbContext.CustomHeaders.AddAsync(newCustomHeader, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken); 
         
