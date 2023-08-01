@@ -67,4 +67,30 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+    
+    [Fact]
+    public async Task Delete_CustomHeader_204()
+    {
+        // Arrange
+        const int customerId = 92;
+        var path = $"customers/{customerId}/customHeaders";
+        var customHeader = new CustomHeader()
+        {
+            Id = Guid.NewGuid().ToString(),
+            Customer = customerId,
+            Key = "test-key",
+            Value = "test-value"
+        };
+        
+        await dlcsContext.CustomHeaders.AddAsync(customHeader);
+        await dlcsContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer(customerId).DeleteAsync(Path.Combine(path, customHeader.Id));
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var deletedNamedQuery = await dlcsContext.NamedQueries.AnyAsync(nq => nq.Id == customHeader.Id);
+        deletedNamedQuery.Should().BeFalse();
+    }
 }
