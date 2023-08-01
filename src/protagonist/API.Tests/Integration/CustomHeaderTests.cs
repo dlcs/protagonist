@@ -90,8 +90,8 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var deletedNamedQuery = await dlcsContext.NamedQueries.AnyAsync(nq => nq.Id == customHeader.Id);
-        deletedNamedQuery.Should().BeFalse();
+        var deletedCustomHeader = await dlcsContext.CustomHeaders.AnyAsync(ch => ch.Id == customHeader.Id);
+        deletedCustomHeader.Should().BeFalse();
     }
     
     [Fact]
