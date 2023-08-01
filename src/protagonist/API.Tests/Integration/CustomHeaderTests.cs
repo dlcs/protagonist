@@ -144,6 +144,46 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Post_CustomHeader_400IfKeyNotSpecified()
+    {
+        // Arrange
+        const int customerId = 94;
+        var path = $"customers/{customerId}/customHeaders";
+        
+        const string newCustomHeaderJson = @"{
+          ""value"": ""test-value"",
+          ""space"": 1,
+        }";
+        
+        // Act
+        var content = new StringContent(newCustomHeaderJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Post_CustomHeader_400IfValueNotSpecified()
+    {
+        // Arrange
+        const int customerId = 94;
+        var path = $"customers/{customerId}/customHeaders";
+        
+        const string newCustomHeaderJson = @"{
+          ""key"": ""test-key"",
+          ""space"": 1,
+        }";
+        
+        // Act
+        var content = new StringContent(newCustomHeaderJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
     public async Task Put_CustomHeader_200()
     {
         // Arrange
