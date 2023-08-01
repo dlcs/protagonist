@@ -115,4 +115,31 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var model = await response.ReadAsHydraResponseAsync<HydraCollection<CustomHeader>>();
         model.Members.Should().HaveCount(2);
     }
+    
+    [Fact]
+    public async Task Post_CustomHeader_201()
+    {
+        // Arrange
+        const int customerId = 94;
+        var path = $"customers/{customerId}/customHeaders";
+        
+        const string newCustomHeaderJson = @"{
+          ""key"": ""test-key"",
+          ""value"": ""test-value"",
+          ""space"": 1,
+        }";
+        
+        // Act
+        var content = new StringContent(newCustomHeaderJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var foundCustomHeader = dlcsContext.CustomHeaders.Single(nq => nq.Key == "test-key");
+        foundCustomHeader.Should().NotBeNull();
+        foundCustomHeader.Customer.Should().Be(customerId);
+        foundCustomHeader.Value.Should().Be("test-value");
+        foundCustomHeader.Space.Should().Be(1);
+    }
 }
