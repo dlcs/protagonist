@@ -49,31 +49,36 @@ public class AssetDeletedHandler : IMessageHandler
         await DeleteThumbnails(assetId);
         await DeleteTileOptimised(assetId);
         DeleteFromNas(assetId);
-        DeleteFromFolder(assetId, handlerSettings.AWS.S3.OriginBucket);
-        
-        if (!string.IsNullOrEmpty(handlerSettings.AWS.S3.OutputBucket))
-        {
-            DeleteFromFolder(assetId, handlerSettings.AWS.S3.OutputBucket);
-        }
-        else
-        {
-            logger.LogDebug("No OutputBucket configured - files will not be deleted. {AssetId}", assetId);
-        }
+        DeleteFromOriginBucket(assetId);
+        DeleteFromOutputBucket(assetId);
 
         await InvalidateContentDeliveryNetwork(assetId);
 
         return true;
     }
 
-    private void DeleteFromFolder(AssetId assetId, string bucket)
+    private void DeleteFromOriginBucket(AssetId assetId)
     {
-        if (string.IsNullOrEmpty(bucket))
+        if (string.IsNullOrEmpty(handlerSettings.AWS.S3.OriginBucket))
         {
-            logger.LogDebug("No ImageFolderTemplate configured - NAS file will not be deleted. {AssetId}", assetId);
+            logger.LogDebug("No OriginBucket configured - NAS file will not be deleted. {AssetId}", assetId);
             return;
         }
 
-        var imagePath = TemplatedFolders.GenerateFolderTemplate(bucket, assetId);
+        var imagePath = TemplatedFolders.GenerateFolderTemplate(handlerSettings.AWS.S3.OriginBucket, assetId);
+        logger.LogInformation("Deleting file: {StorageKey} for {AssetId}", imagePath, assetId);
+        fileSystem.DeleteFile(imagePath);
+    }
+    
+    private void DeleteFromOutputBucket(AssetId assetId)
+    {
+        if (string.IsNullOrEmpty(handlerSettings.AWS.S3.OutputBucket))
+        {
+            logger.LogDebug("No OutputBucket configured - NAS file will not be deleted. {AssetId}", assetId);
+            return;
+        }
+
+        var imagePath = TemplatedFolders.GenerateFolderTemplate(handlerSettings.AWS.S3.OutputBucket, assetId);
         logger.LogInformation("Deleting file: {StorageKey} for {AssetId}", imagePath, assetId);
         fileSystem.DeleteFile(imagePath);
     }
