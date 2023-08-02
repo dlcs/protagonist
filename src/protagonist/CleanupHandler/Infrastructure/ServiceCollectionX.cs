@@ -1,4 +1,6 @@
-﻿using DLCS.AWS.Configuration;
+﻿using Amazon.CloudFront;
+using DLCS.AWS.Cloudfront;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.FileSystem;
@@ -21,6 +23,8 @@ public static class ServiceCollectionX
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .AddSingleton<SqsListenerManager>()
             .AddTransient(typeof(SqsListener<>))
+            .AddSingleton<AmazonCloudFrontClient>()
+            .AddSingleton<ICacheInvalidator, CacheInvalidator>()
             .AddSingleton<SqsQueueUtilities>()
             .SetupAWS(configuration, hostEnvironment)
             .WithAmazonS3()

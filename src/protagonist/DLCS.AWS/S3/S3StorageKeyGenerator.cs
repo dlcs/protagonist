@@ -73,6 +73,12 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         var key = GetStorageKey(assetId);
         return new RegionalisedObjectInBucket(s3Options.StorageBucket, key, awsSettings.Region);
     }
+    
+    public ObjectInBucket GetStorageLocationRoot(AssetId assetId)
+    {
+        var key = GetStorageKey(assetId);
+        return new ObjectInBucket(s3Options.StorageBucket, $"{key}/");
+    }
 
     public RegionalisedObjectInBucket GetStoredOriginalLocation(AssetId assetId)
     {

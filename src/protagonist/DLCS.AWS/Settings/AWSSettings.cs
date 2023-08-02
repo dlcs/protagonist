@@ -35,4 +35,9 @@ public class AWSSettings
     /// SNS Settings
     /// </summary>
     public SNSSettings SNS { get; set; } = new();
+
+    /// <summary>
+    /// Cloudfront settings
+    /// </summary>
+    public CloudfrontSettings CloudfrontSettings { get; set; } = new();
 }

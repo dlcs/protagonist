@@ -1,4 +1,5 @@
 ﻿using CleanupHandler.Infrastructure;
+using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Exceptions;
@@ -20,10 +21,12 @@ public class AssetDeletedHandler : IMessageHandler
     private readonly IBucketWriter bucketWriter;
     private readonly IFileSystem fileSystem;
     private readonly ILogger<AssetDeletedHandler> logger;
+    private readonly ICacheInvalidator cacheInvalidator;
 
     public AssetDeletedHandler(
         IStorageKeyGenerator storageKeyGenerator,
         IBucketWriter bucketWriter,
+        ICacheInvalidator cacheInvalidator,
         IFileSystem fileSystem,
         IOptions<CleanupHandlerSettings> handlerSettings,
         ILogger<AssetDeletedHandler> logger)
@@ -31,6 +34,7 @@ public class AssetDeletedHandler : IMessageHandler
         this.storageKeyGenerator = storageKeyGenerator;
         this.bucketWriter = bucketWriter;
         this.fileSystem = fileSystem;
+        this.cacheInvalidator = cacheInvalidator;
         this.logger = logger;
         this.handlerSettings = handlerSettings.Value;
     }
@@ -45,8 +49,44 @@ public class AssetDeletedHandler : IMessageHandler
         await DeleteThumbnails(assetId);
         await DeleteTileOptimised(assetId);
         DeleteFromNas(assetId);
+        DeleteFromFolder(assetId, handlerSettings.AWS.S3.OriginBucket);
+        
+        if (!string.IsNullOrEmpty(handlerSettings.AWS.S3.OutputBucket))
+        {
+            DeleteFromFolder(assetId, handlerSettings.AWS.S3.OutputBucket);
+        }
+        else
+        {
+            logger.LogDebug("No OutputBucket configured - files will not be deleted. {AssetId}", assetId);
+        }
+
+        await InvalidateContentDeliveryNetwork(assetId);
 
         return true;
+    }
+
+    private void DeleteFromFolder(AssetId assetId, string bucket)
+    {
+        if (string.IsNullOrEmpty(bucket))
+        {
+            logger.LogDebug("No ImageFolderTemplate configured - NAS file will not be deleted. {AssetId}", assetId);
+            return;
+        }
+
+        var imagePath = TemplatedFolders.GenerateFolderTemplate(bucket, assetId);
+        logger.LogInformation("Deleting file: {StorageKey} for {AssetId}", imagePath, assetId);
+        fileSystem.DeleteFile(imagePath);
+    }
+
+    private async Task InvalidateContentDeliveryNetwork(AssetId assetId)
+    {
+        var assetsToInvalidate = new List<string>()
+        {
+            assetId.Asset
+        };
+        
+        
+        await cacheInvalidator.InvalidateCdnCache(assetsToInvalidate);
     }
 
     private async Task DeleteThumbnails(AssetId assetId)
@@ -71,9 +111,9 @@ public class AssetDeletedHandler : IMessageHandler
             return;
         }
 
-        var storageKey = storageKeyGenerator.GetStorageLocation(assetId);
+        var storageKey = storageKeyGenerator.GetStorageLocationRoot(assetId);
         logger.LogInformation("Deleting tile-optimised key from {StorageKey} for {AssetId}", storageKey, assetId);
-        await bucketWriter.DeleteFromBucket(storageKey);
+        await bucketWriter.DeleteFolder(storageKey);
     }
     
     private void DeleteFromNas(AssetId assetId)

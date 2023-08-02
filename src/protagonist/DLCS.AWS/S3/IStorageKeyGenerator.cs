@@ -14,6 +14,13 @@ public interface IStorageKeyGenerator
     RegionalisedObjectInBucket GetStorageLocation(AssetId assetId);
     
     /// <summary>
+    /// Get <see cref="ObjectInBucket"/> for storing objects below the root
+    /// </summary>
+    /// <param name="assetId">Unique identifier for Asset</param>
+    /// <returns><see cref="ObjectInBucket"/> for tile-ready asset</returns>
+    ObjectInBucket GetStorageLocationRoot(AssetId assetId);
+    
+    /// <summary>
     /// Get <see cref="ObjectInBucket"/> for stored original file.
     /// This is for assets for "file" delivery, or images where origin is tile-optimised
     /// </summary>
