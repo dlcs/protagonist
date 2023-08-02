@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -143,6 +144,32 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
         foundCustomHeader.Space.Should().Be(1);
     }
     
+    [Fact]
+    public async Task Post_CustomHeader_201_IfMultipleSameKey()
+    {
+        // Arrange
+        const int customerId = 94;
+        const int customHeaderCount = 4;
+        var responses = new List<HttpResponseMessage>();
+        var path = $"customers/{customerId}/customHeaders";
+        
+        // Act
+        for (var i = 0; i < customHeaderCount; i++)
+        {
+            var newCustomHeaderJson = $@"{{
+              ""key"": ""same-key"",
+              ""value"": ""test-value-{i}""
+            }}";
+            var content = new StringContent(newCustomHeaderJson, Encoding.UTF8, "application/json");
+            var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+            responses.Add(response);
+        }
+        
+        // Assert
+        responses.Should().AllSatisfy(r => r.StatusCode = HttpStatusCode.Created);
+        dlcsContext.CustomHeaders.Should().HaveCount(customHeaderCount);
+    }
+
     [Fact]
     public async Task Post_CustomHeader_400IfKeyNotSpecified()
     {
