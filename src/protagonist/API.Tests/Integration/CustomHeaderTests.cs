@@ -148,7 +148,7 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Post_CustomHeader_201_IfMultipleSameKey()
     {
         // Arrange
-        const int customerId = 94;
+        const int customerId = 95;
         const int customHeaderCount = 4;
         var responses = new List<HttpResponseMessage>();
         var path = $"customers/{customerId}/customHeaders";
@@ -167,14 +167,14 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         responses.Should().AllSatisfy(r => r.StatusCode = HttpStatusCode.Created);
-        dlcsContext.CustomHeaders.Should().HaveCount(customHeaderCount);
+        dlcsContext.CustomHeaders.Where(ch => ch.Customer == customerId).Should().HaveCount(customHeaderCount);
     }
 
     [Fact]
     public async Task Post_CustomHeader_400IfKeyNotSpecified()
     {
         // Arrange
-        const int customerId = 94;
+        const int customerId = 96;
         var path = $"customers/{customerId}/customHeaders";
         
         const string newCustomHeaderJson = @"{
@@ -194,7 +194,7 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Post_CustomHeader_400IfValueNotSpecified()
     {
         // Arrange
-        const int customerId = 94;
+        const int customerId = 97;
         var path = $"customers/{customerId}/customHeaders";
         
         const string newCustomHeaderJson = @"{
@@ -214,7 +214,7 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Put_CustomHeader_200()
     {
         // Arrange
-        const int customerId = 95;
+        const int customerId = 98;
         var customHeader = new CustomHeader()
         {
             Id = Guid.NewGuid().ToString(),
@@ -249,7 +249,7 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Put_CustomHeader_404_IfNotFound()
     {
         // Arrange
-        const int customerId = 96;
+        const int customerId = 99;
         var path = $"customers/{customerId}/customHeaders/{Guid.Empty}";
         const string updatedCustomHeaderJson = @"{
           ""key"": ""test-key-2"",
