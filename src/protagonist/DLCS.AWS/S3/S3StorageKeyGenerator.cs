@@ -179,4 +179,16 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         var key = $"{GetStorageKey(assetId)}/{MetadataKey}";
         return new ObjectInBucket(s3Options.StorageBucket, key);
     }
+
+    public ObjectInBucket GetOriginBucketRoot(AssetId assetId)
+    {
+        var key = GetStorageKey(assetId);
+        return new ObjectInBucket(s3Options.OriginBucket, $"{key}/");
+    }
+
+    public ObjectInBucket GetOutputBucketRoot(AssetId assetId)
+    {
+        var key = GetStorageKey(assetId);
+        return new ObjectInBucket(s3Options.OutputBucket, $"{key}/");
+    }
 }

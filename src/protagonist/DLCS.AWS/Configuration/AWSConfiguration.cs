@@ -1,4 +1,5 @@
 using Amazon;
+using Amazon.CloudFront;
 using Amazon.ElasticTranscoder;
 using Amazon.Runtime;
 using Amazon.S3;
@@ -146,6 +147,13 @@ public class AwsBuilder
         {
             services.AddAWSService<IAmazonSimpleNotificationService>(lifetime);
         }
+        
+        return this;
+    }
+
+    public AwsBuilder WithAmazonCloudfront(ServiceLifetime lifetime = ServiceLifetime.Singleton)
+    {
+        services.AddAWSService<IAmazonCloudFront>(lifetime);
         
         return this;
     }

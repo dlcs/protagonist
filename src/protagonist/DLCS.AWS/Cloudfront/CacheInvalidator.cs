@@ -10,18 +10,19 @@ namespace DLCS.AWS.Cloudfront;
 public class CacheInvalidator : ICacheInvalidator
 {
     private readonly ILogger<CacheInvalidator> logger;
-    private readonly AmazonCloudFrontClient client;
+   // private readonly AmazonCloudFrontClient client;
+    private readonly IAmazonCloudFront client;
     private CloudfrontSettings cloudfrontSettings;
     
     
     public CacheInvalidator(
         ILogger<CacheInvalidator> logger,
-        AmazonCloudFrontClient client,
+        IAmazonCloudFront client,
         IOptions<AWSSettings> settings)
     {
         this.logger = logger;
         this.client = client;
-        cloudfrontSettings = settings.Value.CloudfrontSettings;
+        cloudfrontSettings = settings.Value.Cloudfront;
     }
     
     public async Task<bool> InvalidateCdnCache(List<string> invalidationPaths, CancellationToken cancellationToken)

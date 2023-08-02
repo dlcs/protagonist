@@ -102,6 +102,7 @@ public class AssetNotificationSender : IAssetNotificationSender
         var notificationRequest = new
         {
             Id = assetToCleanup.Id.ToString(),
+            assetToCleanup.DeliveryChannels,
             CustomerPathElement = customerPathElement
         };
 

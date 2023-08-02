@@ -43,6 +43,7 @@ public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
     public async Task<DeleteResult> Handle(DeleteAsset request, CancellationToken cancellationToken)
     {
         logger.LogDebug("Deleting asset {AssetId}", request.AssetId);
+        var assetFromDatabase = await assetRepository.GetAsset(request.AssetId);
         var deleteResult = await assetRepository.DeleteAsset(request.AssetId);
 
         if (!deleteResult.Success)
@@ -55,7 +56,7 @@ public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
             var customerPathElement = await customerPathRepository.GetCustomerPathElement(request.AssetId.Customer.ToString());
             logger.LogDebug("Sending delete asset notification for {AssetId}", request.AssetId);
             await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Delete,
-                new Asset { Id = request.AssetId }, null, customerPathElement);
+                assetFromDatabase, null, customerPathElement);
         }
         catch (Exception ex)
         {

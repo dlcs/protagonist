@@ -1,10 +1,12 @@
-﻿using CleanupHandler.Infrastructure;
+﻿using System.Text.Json.Nodes;
+using CleanupHandler.Infrastructure;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Exceptions;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Templates;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -49,49 +51,78 @@ public class AssetDeletedHandler : IMessageHandler
         await DeleteThumbnails(assetId);
         await DeleteTileOptimised(assetId);
         DeleteFromNas(assetId);
-        DeleteFromOriginBucket(assetId);
-        DeleteFromOutputBucket(assetId);
+        await DeleteFromOriginBucket(assetId);
+        await DeleteFromOutputBucket(assetId);
 
-        await InvalidateContentDeliveryNetwork(assetId);
+        await InvalidateContentDeliveryNetwork(message.Body, assetId);
 
         return true;
     }
 
-    private void DeleteFromOriginBucket(AssetId assetId)
+    private async Task DeleteFromOriginBucket(AssetId assetId)
     {
         if (string.IsNullOrEmpty(handlerSettings.AWS.S3.OriginBucket))
         {
-            logger.LogDebug("No OriginBucket configured - NAS file will not be deleted. {AssetId}", assetId);
+            logger.LogDebug("No OriginBucket configured - origin folder will not be deleted. {AssetId}", assetId);
             return;
         }
 
-        var imagePath = TemplatedFolders.GenerateFolderTemplate(handlerSettings.AWS.S3.OriginBucket, assetId);
-        logger.LogInformation("Deleting file: {StorageKey} for {AssetId}", imagePath, assetId);
-        fileSystem.DeleteFile(imagePath);
+        var storageKey = storageKeyGenerator.GetOriginBucketRoot(assetId);
+        logger.LogInformation("Deleting OriginBucket key from {StorageKey} for {AssetId}", storageKey, assetId);
+        await bucketWriter.DeleteFolder(storageKey);
     }
     
-    private void DeleteFromOutputBucket(AssetId assetId)
+    private async Task DeleteFromOutputBucket(AssetId assetId)
     {
         if (string.IsNullOrEmpty(handlerSettings.AWS.S3.OutputBucket))
         {
-            logger.LogDebug("No OutputBucket configured - NAS file will not be deleted. {AssetId}", assetId);
+            logger.LogDebug("No OutputBucket configured - output folder will not be deleted. {AssetId}", assetId);
             return;
         }
 
-        var imagePath = TemplatedFolders.GenerateFolderTemplate(handlerSettings.AWS.S3.OutputBucket, assetId);
-        logger.LogInformation("Deleting file: {StorageKey} for {AssetId}", imagePath, assetId);
-        fileSystem.DeleteFile(imagePath);
+        var storageKey = storageKeyGenerator.GetOutputBucketRoot(assetId);
+        logger.LogInformation("Deleting OutputBucket key from {StorageKey} for {AssetId}", storageKey, assetId);
+        await bucketWriter.DeleteFolder(storageKey);
     }
 
-    private async Task InvalidateContentDeliveryNetwork(AssetId assetId)
+    private async Task InvalidateContentDeliveryNetwork(JsonObject messageBody, AssetId assetId)
     {
-        var assetsToInvalidate = new List<string>()
+        if (string.IsNullOrEmpty(handlerSettings.AWS.Cloudfront.DistributionId))
         {
-            assetId.Asset
-        };
+            logger.LogDebug("No Cloudfront distribution id configured - Cloudfront will not be invalidated");
+            return;
+        }
         
-        
-        await cacheInvalidator.InvalidateCdnCache(assetsToInvalidate);
+        if (!messageBody.TryGetPropertyValue("deliveryChannels", out var deliveryChannelsProperty))
+        {
+            logger.LogWarning("Received message body with no 'deliveryChannels' property - Cloudfront will not be invalidated. {Body}", 
+                messageBody.ToJsonString());
+            return;
+        }
+
+        List<string> invalidationUriList = new List<string>();
+        foreach (var deliveryChannel in deliveryChannelsProperty!.AsArray())
+        {
+            switch (deliveryChannel!.ToString())
+            {
+                case AssetDeliveryChannels.Image:
+                    invalidationUriList.Add($"/iiif-img/{assetId}/*");
+                    invalidationUriList.Add($"/iiif-img/v2/{assetId}/*");
+                    invalidationUriList.Add($"/iiif-img/v3/{assetId}/*");
+                    invalidationUriList.Add($"/thumbs/{assetId}/*");
+                    invalidationUriList.Add($"/thumbs/v2/{assetId}/*");
+                    invalidationUriList.Add($"/thumbs/v3/{assetId}/*");
+                    break;
+                case AssetDeliveryChannels.File: 
+                    invalidationUriList.Add($"/file/{assetId}/*");
+                    break;
+                case AssetDeliveryChannels.Timebased: 
+                    invalidationUriList.Add($"/iiif-av/{assetId}/*");
+                    break;
+            }
+        }
+
+        await cacheInvalidator.InvalidateCdnCache(invalidationUriList);
     }
 
     private async Task DeleteThumbnails(AssetId assetId)

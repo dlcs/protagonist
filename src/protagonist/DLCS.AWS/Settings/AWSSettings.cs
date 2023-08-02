@@ -39,5 +39,5 @@ public class AWSSettings
     /// <summary>
     /// Cloudfront settings
     /// </summary>
-    public CloudfrontSettings CloudfrontSettings { get; set; } = new();
+    public CloudfrontSettings Cloudfront { get; set; } = new();
 }

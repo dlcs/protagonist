@@ -153,4 +153,18 @@ public interface IStorageKeyGenerator
     /// </summary>
     /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
     ObjectInBucket GetTimebasedMetadataLocation(AssetId assetId);
+
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> root location for the origin bucket
+    /// </summary>
+    /// <param name="assetId">asset id the request is for</param>
+    /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
+    ObjectInBucket GetOriginBucketRoot(AssetId assetId);
+
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> root location for the output bucket
+    /// </summary>
+    /// <param name="assetId">asset id the request is for</param>
+    /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
+    ObjectInBucket GetOutputBucketRoot(AssetId assetId);
 }

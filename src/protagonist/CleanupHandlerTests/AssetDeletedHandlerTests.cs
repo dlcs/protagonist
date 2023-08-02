@@ -45,7 +45,7 @@ public class AssetDeletedHandlerTests
         storageKeyGenerator = new S3StorageKeyGenerator(Options.Create(handlerSettings.AWS));
         bucketWriter = A.Fake<IBucketWriter>();
         fakeFileSystem = new FakeFileSystem();
-        cacheInvalidator = A.Fake<CacheInvalidator>();
+        cacheInvalidator = A.Fake<ICacheInvalidator>();
     }
 
     private AssetDeletedHandler GetSut()
@@ -121,6 +121,18 @@ public class AssetDeletedHandlerTests
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
             ))).MustHaveHappened();
+        
+        // origin deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
+        
+        // output deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
     }
     
     [Fact]
@@ -154,6 +166,18 @@ public class AssetDeletedHandlerTests
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
+        
+        // origin deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
+        
+        // output deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
             ))).MustHaveHappened();
     }
     
@@ -189,6 +213,18 @@ public class AssetDeletedHandlerTests
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
             ))).MustHaveHappened();
+        
+        // origin deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
+        
+        // output deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
     }
     
     [Fact]
@@ -218,9 +254,189 @@ public class AssetDeletedHandlerTests
                 a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
             ))).MustHaveHappened();
         
+        
+        // storage not deleted
         A.CallTo(() =>
-            bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(a =>
-                a[0].Bucket == LocalStackFixture.StorageBucketName && a[0].Key == assetId
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
             ))).MustNotHaveHappened();
+        
+        // origin deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
+        
+        // output deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_DoesNotDeleteOrigin_IfSettingEmpty()
+    {
+        // Arrange
+        const string assetId = "1/99/foo";
+        var queueMessage = new QueueMessage
+        {
+            Body = new JsonObject { ["id"] = assetId }
+        };
+        handlerSettings.AWS.S3.OriginBucket = "";
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        
+        // File deleted from local disk
+        fakeFileSystem.DeletedFiles.Should().ContainSingle(s => s == "/nas/1/99/foo/foo.jp2");
+        
+        // Thumbs deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
+        
+        
+        // storage not deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
+        
+        // origin deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
+            ))).MustNotHaveHappened();
+        
+        // output deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_DoesNotDeleteOutput_IfSettingEmpty()
+    {
+        // Arrange
+        const string assetId = "1/99/foo";
+        var queueMessage = new QueueMessage
+        {
+            Body = new JsonObject { ["id"] = assetId }
+        };
+        handlerSettings.AWS.S3.OriginBucket = "";
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        
+        // File deleted from local disk
+        fakeFileSystem.DeletedFiles.Should().ContainSingle(s => s == "/nas/1/99/foo/foo.jp2");
+        
+        // Thumbs deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
+        
+        
+        // storage not deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
+        
+        // origin deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
+            ))).MustNotHaveHappened();
+        
+        // output deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
+            ))).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_InvalidatesImagePath_IfDeliveryChannels()
+    {
+        // Arrange
+        const string assetId = "1/99/foo";
+        var queueMessage = new QueueMessage
+        {
+            Body = new JsonObject { ["id"] = assetId , ["deliveryChannels"] = new JsonArray()
+            {
+                "iiif-img",
+                "file",
+                "iiif-av"
+            }}
+        };
+        handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        
+        // File deleted from local disk
+        fakeFileSystem.DeletedFiles.Should().ContainSingle(s => s == "/nas/1/99/foo/foo.jp2");
+        
+        
+        // invalidates images
+        A.CallTo(() =>
+            cacheInvalidator.InvalidateCdnCache(A<List<string>>.That.Contains("/iiif-img/1/99/foo/*"), 
+                A<CancellationToken>._)).MustHaveHappened();
+        
+        // invalidates files
+        A.CallTo(() =>
+            cacheInvalidator.InvalidateCdnCache(A<List<string>>.That.Contains("/file/1/99/foo/*"),
+                A<CancellationToken>._)).MustHaveHappened();
+        
+        // invalidates av
+        A.CallTo(() =>
+            cacheInvalidator.InvalidateCdnCache(A<List<string>>.That.Contains("/iiif-av/1/99/foo/*"),
+                A<CancellationToken>._)).MustHaveHappened();
+    }
+
+    [Fact]
+    public async Task Handle_DoesNotInvalidateImagePath_IfNoDeliveryChannels()
+    {
+        // Arrange
+        const string assetId = "1/99/foo";
+        var queueMessage = new QueueMessage
+        {
+            Body = new JsonObject { ["id"] = assetId }
+
+        };
+        handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+
+        // Assert
+        response.Should().BeTrue();
+
+        // File deleted from local disk
+        fakeFileSystem.DeletedFiles.Should().ContainSingle(s => s == "/nas/1/99/foo/foo.jp2");
+
+
+        // invalidates images
+        A.CallTo(() =>
+            cacheInvalidator.InvalidateCdnCache(A<List<string>>._,
+                A<CancellationToken>._)).MustNotHaveHappened();
     }
 }
