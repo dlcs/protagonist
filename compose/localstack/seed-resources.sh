@@ -20,7 +20,7 @@ awslocal sqs create-queue --queue-name dlcs-delete-notification
 awslocal sns create-topic --name asset-modified-notifications
 
 # check attributes
-awslocal sqs get-queue-attributes --queue-url http://localhost:4566/000000000000/dlcsspinup-delete-notification/ --attribute-names QueueArn
+awslocal sqs get-queue-attributes --queue-url http://localhost:4566/000000000000/dlcs-delete-notification/ --attribute-names QueueArn
 
 # subscribe SQS to SNS
 SUBSCRIPTION=`awslocal sns subscribe --topic-arn arn:aws:sns:us-east-1:000000000000:asset-modified-notifications --protocol sqs --notification-endpoint arn:aws:sqs:us-east-1:000000000000:dlcs-delete-notification --output text  | awk -F\"SubscriptionArn\": '{print $NF}'`

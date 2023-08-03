@@ -1,15 +1,21 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 using CleanupHandler.Infrastructure;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
+using DLCS.Core.Collections;
 using DLCS.Core.Exceptions;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 
 namespace CleanupHandler;
 
@@ -43,18 +49,32 @@ public class AssetDeletedHandler : IMessageHandler
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        var assetId = TryGetAssetId(message);
-        if (assetId == null) return true;
+        CleanupAssetRequest? request = null;
+        
+        try
+        {
+            request = JsonConvert.DeserializeObject<CleanupAssetRequest>(message.Body.ToJsonString(),
+                              new JsonSerializerSettings()
+                                  { ContractResolver = new CamelCasePropertyNamesContractResolver() })
+                          ?? throw new InvalidOperationException();
+        }
+        catch (JsonSerializationException ex)
+        {
+            logger.LogError(ex, "Failed to deserialize request body {Body}", message.Body);
+            return true;
+        }
 
-        logger.LogDebug("Processing delete notification for {AssetId}", assetId);
+        if (request?.Id == null) return true;
 
-        await DeleteThumbnails(assetId);
-        await DeleteTileOptimised(assetId);
-        DeleteFromNas(assetId);
-        await DeleteFromOriginBucket(assetId);
-        await DeleteFromOutputBucket(assetId);
+        logger.LogDebug("Processing delete notification for {AssetId}", request.Id);
 
-        await InvalidateContentDeliveryNetwork(message.Body, assetId);
+        await DeleteThumbnails(request.Id);
+        await DeleteTileOptimised(request.Id);
+        DeleteFromNas(request.Id);
+        await DeleteFromOriginBucket(request.Id);
+        await DeleteFromOutputBucket(request.Id);
+
+        await InvalidateContentDeliveryNetwork(request);
 
         return true;
     }
@@ -85,25 +105,53 @@ public class AssetDeletedHandler : IMessageHandler
         await bucketWriter.DeleteFolder(storageKey);
     }
 
-    private async Task InvalidateContentDeliveryNetwork(JsonObject messageBody, AssetId assetId)
+    private async Task InvalidateContentDeliveryNetwork(CleanupAssetRequest request)
     {
         if (string.IsNullOrEmpty(handlerSettings.AWS.Cloudfront.DistributionId))
         {
             logger.LogDebug("No Cloudfront distribution id configured - Cloudfront will not be invalidated");
             return;
         }
-        
-        if (!messageBody.TryGetPropertyValue("deliveryChannels", out var deliveryChannelsProperty))
-        {
-            logger.LogWarning("Received message body with no 'deliveryChannels' property - Cloudfront will not be invalidated. {Body}", 
-                messageBody.ToJsonString());
-            return;
-        }
 
-        List<string> invalidationUriList = new List<string>();
-        foreach (var deliveryChannel in deliveryChannelsProperty!.AsArray())
+        var invalidationUriList = new List<string>();
+        
+        if (request.DeliveryChannels.IsNullOrEmpty())
         {
-            switch (deliveryChannel!.ToString())
+            logger.LogDebug("Received message body with no 'deliveryChannels' property. {@Request}", 
+                request);
+        }
+        else
+        {
+            invalidationUriList = SetDeliveryChannelInvalidations(request.Id!, request.DeliveryChannels);
+        }
+        
+        if (!request.AssetFamily.HasValue)
+        {
+            logger.LogDebug("Received message body with no 'asset family' property. {@Request}", 
+                request);
+        }
+        else
+        {
+            if (request.AssetFamily == (char)AssetFamily.Image)
+            {
+                invalidationUriList.Add($"/iiif-manifest/{request.Id}");
+                invalidationUriList.Add($"/iiif-manifest/v2/{request.Id}");
+                invalidationUriList.Add($"/iiif-manifest/v3/{request.Id}");
+            }
+        }
+        
+        if (invalidationUriList.Count > 0)
+        {
+            await cacheInvalidator.InvalidateCdnCache(invalidationUriList);
+        }
+    }
+
+    private static List<string> SetDeliveryChannelInvalidations(AssetId assetId, List<string> deliveryChannels)
+    {
+        List<string> invalidationUriList = new List<string>();
+        foreach (var deliveryChannel in deliveryChannels)
+        {
+            switch (deliveryChannel)
             {
                 case AssetDeliveryChannels.Image:
                     invalidationUriList.Add($"/iiif-img/{assetId}/*");
@@ -113,16 +161,16 @@ public class AssetDeletedHandler : IMessageHandler
                     invalidationUriList.Add($"/thumbs/v2/{assetId}/*");
                     invalidationUriList.Add($"/thumbs/v3/{assetId}/*");
                     break;
-                case AssetDeliveryChannels.File: 
+                case AssetDeliveryChannels.File:
                     invalidationUriList.Add($"/file/{assetId}/*");
                     break;
-                case AssetDeliveryChannels.Timebased: 
+                case AssetDeliveryChannels.Timebased:
                     invalidationUriList.Add($"/iiif-av/{assetId}/*");
                     break;
             }
         }
 
-        await cacheInvalidator.InvalidateCdnCache(invalidationUriList);
+        return invalidationUriList;
     }
 
     private async Task DeleteThumbnails(AssetId assetId)

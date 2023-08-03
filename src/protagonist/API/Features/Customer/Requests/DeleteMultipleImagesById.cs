@@ -47,22 +47,20 @@ public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleIma
 
     public async Task<int> Handle(DeleteMultipleImagesById request, CancellationToken cancellationToken)
     {
-        
-        
         var assetIds = ImageIdListValidation.ValidateRequest(request.AssetIds, request.CustomerId);
-        var assetsFromDatabase = dlcsContext.Images.AsNoTracking()
-            .Where(i => i.Customer == request.CustomerId && assetIds.Contains(i.Id));
-        var deletedRows = await assetsFromDatabase.DeleteFromQueryAsync(cancellationToken);
+        var assetsFromDatabase = dlcsContext.Images
+            .Where(i => i.Customer == request.CustomerId && assetIds.Contains(i.Id)).ToList();
+        dlcsContext.Images.RemoveRange(assetsFromDatabase);
 
-        logger.LogInformation("Deleted {DeletedRows} assets from a requested {RequestedRows}", deletedRows,
+        logger.LogInformation("Deleted {DeletedRows} assets from a requested {RequestedRows}", assetsFromDatabase.Count,
             request.AssetIds.Count);
 
-        if (deletedRows == 0) return 0;
+        if (assetsFromDatabase.Count == 0) return 0;
         
         var customerPathElement = await customerPathRepository.GetCustomerPathElement(request.CustomerId.ToString());
         await RaiseModifiedNotifications(assetsFromDatabase.ToList(), customerPathElement);
 
-        return deletedRows;
+        return assetsFromDatabase.Count;
     }
 
     private async Task RaiseModifiedNotifications(List<Asset> assets, CustomerPathElement customerPathElement)

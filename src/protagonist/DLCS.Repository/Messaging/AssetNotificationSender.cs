@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.SNS;
@@ -99,10 +98,11 @@ public class AssetNotificationSender : IAssetNotificationSender
 
     private async Task<bool> SendCleanupAssetRequest(Asset assetToCleanup, CustomerPathElement customerPathElement, CancellationToken cancellationToken = default)
     {
-        var notificationRequest = new
+        var notificationRequest = new CleanupAssetRequest()
         {
-            Id = assetToCleanup.Id.ToString(),
-            assetToCleanup.DeliveryChannels,
+            Id = assetToCleanup.Id,
+            DeliveryChannels = assetToCleanup.DeliveryChannels.ToList(),
+            AssetFamily = (char)assetToCleanup.Family,
             CustomerPathElement = customerPathElement
         };
 

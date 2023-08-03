@@ -439,4 +439,34 @@ public class AssetDeletedHandlerTests
             cacheInvalidator.InvalidateCdnCache(A<List<string>>._,
                 A<CancellationToken>._)).MustNotHaveHappened();
     }
+
+    [Fact]
+    public async Task Handle_InvalidatesImagePath_IfImageAssetFamily()
+    {
+        // Arrange
+        const string assetId = "1/99/foo";
+        const string assetFamily = "I";
+        var queueMessage = new QueueMessage
+        {
+            Body = new JsonObject { ["id"] = assetId , ["assetFamily"] = assetFamily }
+
+        };
+        handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+
+        // Assert
+        response.Should().BeTrue();
+
+        // File deleted from local disk
+        fakeFileSystem.DeletedFiles.Should().ContainSingle(s => s == "/nas/1/99/foo/foo.jp2");
+
+
+        // invalidates images
+        A.CallTo(() =>
+            cacheInvalidator.InvalidateCdnCache(A<List<string>>._,
+                A<CancellationToken>._)).MustHaveHappened();
+    }
 }

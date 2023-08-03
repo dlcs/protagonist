@@ -27,19 +27,19 @@ public class TopicPublisher : ITopicPublisher
         try
         {
             var topic = await client.GetTopicAttributesAsync(
-                new GetTopicAttributesRequest(sNSSettings.AssetModifiedNotificationTopicNameArn), cancellationToken);
+                new GetTopicAttributesRequest(sNSSettings.AssetModifiedNotificationTopicArn), cancellationToken);
 
             if (!topic.HttpStatusCode.IsSuccess())
             {
                 logger.LogError("Could not retrieve topic details for topic {Topic}",
-                    sNSSettings.AssetModifiedNotificationTopicNameArn);
+                    sNSSettings.AssetModifiedNotificationTopicArn);
                 return false;
             }
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error retrieving details of topic {Topic}", 
-                sNSSettings.AssetModifiedNotificationTopicNameArn);
+                sNSSettings.AssetModifiedNotificationTopicArn);
             return false;
         }
 
@@ -51,7 +51,7 @@ public class TopicPublisher : ITopicPublisher
 
         var request = new PublishRequest
         {
-            TopicArn = sNSSettings.AssetModifiedNotificationTopicNameArn,
+            TopicArn = sNSSettings.AssetModifiedNotificationTopicArn,
             Message = messageContents,
             MessageAttributes = new Dictionary<string, MessageAttributeValue>()
             {
@@ -66,7 +66,7 @@ public class TopicPublisher : ITopicPublisher
         }
         catch(Exception ex)
         {
-            logger.LogError(ex, "Error sending message to {Topic}", sNSSettings.AssetModifiedNotificationTopicNameArn);
+            logger.LogError(ex, "Error sending message to {Topic}", sNSSettings.AssetModifiedNotificationTopicArn);
             return false;
         }
     }

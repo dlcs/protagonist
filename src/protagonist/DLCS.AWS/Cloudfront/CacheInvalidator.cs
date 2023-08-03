@@ -43,6 +43,7 @@ public class CacheInvalidator : ICacheInvalidator
         
         try
         {
+            logger.LogDebug("invalidating cloud front. {Paths}", invalidationPaths);
             var invalidationResult = await client.CreateInvalidationAsync(invalidationRequest, cancellationToken);
 
             return invalidationResult.HttpStatusCode.IsSuccess();
