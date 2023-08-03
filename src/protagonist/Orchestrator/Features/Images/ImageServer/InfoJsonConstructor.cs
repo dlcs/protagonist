@@ -21,13 +21,13 @@ namespace Orchestrator.Features.Images.ImageServer;
 /// </summary>
 public class InfoJsonConstructor
 {
-    private readonly IIIFAuthBuilder iiifAuthBuilder;
+    private readonly IIIIFAuthBuilder iiifAuthBuilder;
     private readonly IImageServerClient imageServerClient;
     private readonly IThumbRepository thumbRepository;
     private readonly ILogger<InfoJsonConstructor> logger;
 
     public InfoJsonConstructor(
-        IIIFAuthBuilder iiifAuthBuilder,
+        IIIIFAuthBuilder iiifAuthBuilder,
         IImageServerClient imageServerClient,
         IThumbRepository thumbRepository,
         ILogger<InfoJsonConstructor> logger)
@@ -84,16 +84,16 @@ public class InfoJsonConstructor
 
         if (orchestrationImage.RequiresAuth && !orchestrationImage.Roles.IsNullOrEmpty())
         {
-            var authCookieServiceForAsset =
-                await iiifAuthBuilder.GetAuthCookieServiceForAsset(orchestrationImage, cancellationToken);
-            if (authCookieServiceForAsset == null)
+            var authServicesForAsset =
+                await iiifAuthBuilder.GetAuthServicesForAsset(orchestrationImage, cancellationToken);
+            if (authServicesForAsset == null)
             {
                 logger.LogWarning("{AssetId} requires auth but no auth services generated", orchestrationImage.AssetId);
                 return;
             }
             
             imageService.Service ??= new List<IService>(1);
-            imageService.Service.Add(authCookieServiceForAsset);
+            imageService.Service.Add(authServicesForAsset);
         }
     }
 
@@ -108,7 +108,7 @@ public class InfoJsonConstructor
         if (orchestrationImage.RequiresAuth && !orchestrationImage.Roles.IsNullOrEmpty())
         {
             var authCookieServiceForAsset =
-                await iiifAuthBuilder.GetAuthCookieServiceForAsset(orchestrationImage, cancellationToken);
+                await iiifAuthBuilder.GetAuthServicesForAsset(orchestrationImage, cancellationToken);
             if (authCookieServiceForAsset == null)
             {
                 logger.LogWarning("{AssetId} requires auth but no auth services generated", orchestrationImage.AssetId);

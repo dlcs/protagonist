@@ -80,7 +80,7 @@ public class Startup
             .AddScoped<IAuthPathGenerator, ConfigDrivenAuthPathGenerator>()
             .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
             .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
-            .AddScoped<IIIFAuthBuilder>()
+            .AddScoped<IIIIFAuthBuilder, IIIFAuth1Builder>()
             .AddSingleton<DownstreamDestinationSelector>()
             .AddCaching(cachingSection.Get<CacheSettings>())
             .AddOriginStrategies()
