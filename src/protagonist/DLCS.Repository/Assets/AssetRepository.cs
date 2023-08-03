@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core;
 using DLCS.Core.Caching;
@@ -36,14 +35,19 @@ public class AssetRepository : AssetRepositoryCachingBase
     public override async Task<ImageLocation?> GetImageLocation(AssetId assetId)
         => await dlcsContext.ImageLocations.FindAsync(assetId.ToString());
 
-    protected override async Task<ResultStatus<DeleteResult>> DeleteAssetFromDatabase(AssetId assetId)
+    protected override async Task<DeleteEntityResult<Asset>> DeleteAssetFromDatabase(AssetId assetId)
     {
         try
         {
+            var asset = await dlcsContext.Images.SingleOrDefaultAsync(i => i.Id == assetId);
+            if (asset == null)
+            {
+                Logger.LogDebug("Attempt to delete non-existent asset {AssetId}", assetId);
+                return new DeleteEntityResult<Asset>(DeleteResult.NotFound);
+            }
+            
             // Delete Asset
-            var toDelete = new Asset { Id = assetId };
-            dlcsContext.Images.Attach(toDelete);
-            dlcsContext.Images.Remove(toDelete);
+            dlcsContext.Images.Remove(asset);
 
             // And related ImageLocation
             var imageLocation = new ImageLocation { Id = assetId };
@@ -58,6 +62,10 @@ public class AssetRepository : AssetRepositoryCachingBase
             {
                 // And related ImageStorage record
                 dlcsContext.Remove(imageStorage);
+            }
+            else
+            {
+                Logger.LogInformation("No ImageStorage record found when deleting asset {AssetId}", assetId);
             }
             
             void ReduceCustomerStorage(CustomerStorage customerStorage)
@@ -79,12 +87,12 @@ public class AssetRepository : AssetRepositoryCachingBase
             var rowCount = await dlcsContext.SaveChangesAsync();
             if (rowCount == 0)
             {
-                return ResultStatus<DeleteResult>.Unsuccessful(DeleteResult.NotFound);
+                return new DeleteEntityResult<Asset>(DeleteResult.NotFound);
             }
             
             await entityCounterRepository.Decrement(customer, KnownEntityCounters.SpaceImages, space.ToString());
             await entityCounterRepository.Decrement(0, KnownEntityCounters.CustomerImages, customer.ToString());
-            return ResultStatus<DeleteResult>.Successful(DeleteResult.Deleted);
+            return new DeleteEntityResult<Asset>(DeleteResult.Deleted, asset);
         }
         catch (DbUpdateConcurrencyException dbEx)
         {
@@ -100,18 +108,18 @@ public class AssetRepository : AssetRepositoryCachingBase
 
             if (notFound)
             {
-                return ResultStatus<DeleteResult>.Unsuccessful(DeleteResult.NotFound);
+                return new DeleteEntityResult<Asset>(DeleteResult.NotFound);
             }
             else
             {
                 Logger.LogError(dbEx, "Concurrency exception deleting Asset {AssetId}", assetId);
-                return ResultStatus<DeleteResult>.Unsuccessful(DeleteResult.Error);
+                return new DeleteEntityResult<Asset>(DeleteResult.Error);
             }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error deleting asset {AssetId}", assetId);
-            return ResultStatus<DeleteResult>.Unsuccessful(DeleteResult.Error);
+            return new DeleteEntityResult<Asset>(DeleteResult.Error);
         }
     }
 

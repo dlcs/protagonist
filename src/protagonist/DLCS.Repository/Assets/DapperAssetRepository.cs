@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
-using DLCS.Core;
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
+using DLCS.Model;
 using DLCS.Model.Assets;
 using LazyCache;
 using Microsoft.Extensions.Configuration;
@@ -29,11 +29,9 @@ public class DapperAssetRepository : AssetRepositoryCachingBase, IDapperConfigRe
     
     public override async Task<ImageLocation?> GetImageLocation(AssetId assetId) 
         => await this.QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql, new {Id = assetId.ToString()});
-    
-    protected override Task<ResultStatus<DeleteResult>> DeleteAssetFromDatabase(AssetId assetId)
-    {
-        throw new NotImplementedException();
-    }
+
+    protected override Task<DeleteEntityResult<Asset>> DeleteAssetFromDatabase(AssetId assetId)
+        => throw new NotImplementedException("Deleting assets via Dapper is not supported");
 
     protected override async Task<Asset?> GetAssetFromDatabase(AssetId assetId)
     {

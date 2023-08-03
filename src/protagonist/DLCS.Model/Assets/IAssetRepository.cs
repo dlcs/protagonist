@@ -12,5 +12,5 @@ public interface IAssetRepository
 
     public Task<ImageLocation?> GetImageLocation(AssetId assetId);
 
-    public Task<ResultStatus<DeleteResult>> DeleteAsset(AssetId assetId);
+    public Task<DeleteEntityResult<Asset>> DeleteAsset(AssetId assetId);
 }

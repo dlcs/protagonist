@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using API.Features.Assets;
 using API.Tests.Integration.Infrastructure;
+using DLCS.Core;
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -264,5 +265,56 @@ public class ApiAssetRepositoryTests
         await contextForTests.Entry(dbAsset.Entity).ReloadAsync();
         dbAsset.Entity.Reference1.Should().Be("I am changed");
         dbAsset.Entity.Reference2.Should().Be("I am original 2");
+    }
+
+    [Fact]
+    public async Task DeleteAsset_ReturnsCorrectStatus_IfNotFound()
+    {
+        // Arrange
+        var assetId = AssetId.FromString($"100/10/{nameof(DeleteAsset_ReturnsCorrectStatus_IfNotFound)}");
+        
+        // Act
+        var result = await sut.DeleteAsset(assetId);
+        
+        // Assert
+        result.Result.Should().Be(DeleteResult.NotFound);
+        result.DeletedEntity.Should().BeNull();
+    }
+    
+    [Fact]
+    public async Task DeleteAsset_ReturnsCorrectStatus_IfAssetFoundButNoImageLocation()
+    {
+        // Arrange
+        var assetId = AssetId.FromString($"100/10/{nameof(DeleteAsset_ReturnsCorrectStatus_IfAssetFoundButNoImageLocation)}");
+        await contextForTests.Images.AddTestAsset(assetId);
+        await contextForTests.SaveChangesAsync();
+        
+        // Act
+        var result = await sut.DeleteAsset(assetId);
+        
+        // Assert
+        result.Result.Should().Be(DeleteResult.NotFound);
+    }
+    
+    [Fact]
+    public async Task DeleteAsset_ReturnsCorrectStatus_IfDeleted()
+    {
+        // Arrange
+        var assetId = AssetId.FromString($"100/10/{nameof(DeleteAsset_ReturnsCorrectStatus_IfDeleted)}");
+        var dbAsset = await contextForTests.Images.AddTestAsset(assetId);
+        await contextForTests.ImageLocations.AddTestImageLocation(assetId);
+        await contextForTests.SaveChangesAsync();
+        
+        // Act
+        var result = await sut.DeleteAsset(assetId);
+        
+        // Assert
+        result.Result.Should().Be(DeleteResult.Deleted);
+        result.DeletedEntity.Should()
+            .BeEquivalentTo(dbAsset.Entity, options => options.Excluding(a => a.Created),
+                "returned object is as deleted, exclude created as datetime can be off by a few ms");
+        result.DeletedEntity.Created.Should().BeCloseTo(dbAsset.Entity.Created.Value, TimeSpan.FromSeconds(1));
+
+        contextForTests.Images.Any(i => i.Id == assetId).Should().BeFalse();
     }
 }
