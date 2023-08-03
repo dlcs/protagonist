@@ -2,13 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.AWS.SNS;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.PathElements;
 using DLCS.Model.Processing;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace DLCS.Repository.Messaging;
 
@@ -17,15 +22,25 @@ public class AssetNotificationSender : IAssetNotificationSender
     private readonly ILogger<AssetNotificationSender> logger;
     private readonly IEngineClient engineClient;
     private readonly ICustomerQueueRepository customerQueueRepository;
+    private readonly ITopicPublisher topicPublisher;
+    private readonly JsonSerializerSettings jsonSerializerSettings;
 
     public AssetNotificationSender(
         IEngineClient engineClient,
         ICustomerQueueRepository customerQueueRepository,
-        ILogger<AssetNotificationSender> logger)
+        ILogger<AssetNotificationSender> logger,
+        ITopicPublisher topicPublisher)
     {
         this.engineClient = engineClient;
         this.logger = logger;
         this.customerQueueRepository = customerQueueRepository;
+        this.topicPublisher = topicPublisher;
+        
+        jsonSerializerSettings = new JsonSerializerSettings()
+        {
+            NullValueHandling = NullValueHandling.Ignore,
+            ContractResolver = new CamelCasePropertyNamesContractResolver()
+        };
     }
     
     public async Task<bool> SendIngestAssetRequest(Asset assetToIngest, CancellationToken cancellationToken = default)
@@ -82,7 +97,18 @@ public class AssetNotificationSender : IAssetNotificationSender
         return statusCode;
     }
 
-    public Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after)
+    private async Task<bool> SendCleanupAssetRequest(Asset assetToCleanup, CustomerPathElement customerPathElement, CancellationToken cancellationToken = default)
+    {
+        var notificationRequest = new
+        {
+            Id = assetToCleanup.Id.ToString(),
+            CustomerPathElement = customerPathElement
+        };
+
+        return await topicPublisher.PublishToAssetModifiedTopic(JsonConvert.SerializeObject(notificationRequest, Formatting.None, jsonSerializerSettings), ChangeType.Delete, cancellationToken);
+    }
+
+    public async Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after, CustomerPathElement? customerPathElement)
     {
         /*
          * TODO - this should probably have a bulk implementation, assuming it handles bulk enqueuing of messages
@@ -102,11 +128,14 @@ public class AssetNotificationSender : IAssetNotificationSender
                 throw new ArgumentException("Asset Delete must have a before asset", nameof(before));
             case ChangeType.Delete when after != null:
                 throw new ArgumentException("Asset Delete cannot have an after asset", nameof(after));
+            case ChangeType.Delete when customerPathElement == null:
+                throw new ArgumentException("Asset Delete must have a customer path element", nameof(after));
+            case ChangeType.Delete:
+                await SendCleanupAssetRequest(before, customerPathElement);
+                break;
             default:
                 logger.LogDebug("Message Bus: Asset Modified: {AssetId}", after?.Id ?? before.Id);
                 break;
         }
-        
-        return Task.CompletedTask;;
     }
 }

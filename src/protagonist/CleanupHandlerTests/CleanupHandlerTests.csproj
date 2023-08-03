@@ -6,6 +6,8 @@
         <Nullable>enable</Nullable>
 
         <IsPackable>false</IsPackable>
+
+        <RootNamespace>DeleteHandlerTests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,7 +26,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DeleteHandler\DeleteHandler.csproj" />
+      <ProjectReference Include="..\CleanupHandler\CleanupHandler.csproj" />
       <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj" />
     </ItemGroup>
 

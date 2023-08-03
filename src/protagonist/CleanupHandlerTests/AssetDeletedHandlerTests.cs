@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Nodes;
 using Amazon.S3;
 using Amazon.S3.Model;
-using DeleteHandler;
-using DeleteHandler.Infrastructure;
+using CleanupHandler;
+using CleanupHandler.Infrastructure;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
@@ -19,14 +19,14 @@ namespace DeleteHandlerTests;
 
 public class AssetDeletedHandlerTests
 {
-    private readonly DeleteHandlerSettings handlerSettings;
+    private readonly CleanupHandlerSettings handlerSettings;
     private readonly IBucketWriter bucketWriter;
     private readonly FakeFileSystem fakeFileSystem;
     private readonly IStorageKeyGenerator storageKeyGenerator;
 
     public AssetDeletedHandlerTests()
     {
-        handlerSettings = new DeleteHandlerSettings
+        handlerSettings = new CleanupHandlerSettings
         {
             AWS = new AWSSettings
             {

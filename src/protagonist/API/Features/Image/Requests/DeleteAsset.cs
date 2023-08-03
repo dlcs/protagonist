@@ -2,6 +2,7 @@
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.PathElements;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -25,14 +26,17 @@ public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
     private readonly IAssetNotificationSender assetNotificationSender;
     private readonly IAssetRepository assetRepository;
     private readonly ILogger<DeleteAssetHandler> logger;
+    private readonly IPathCustomerRepository customerPathRepository;
 
     public DeleteAssetHandler(
         IAssetNotificationSender assetNotificationSender,
         IAssetRepository assetRepository,
+        IPathCustomerRepository customerPathRepository,
         ILogger<DeleteAssetHandler> logger)
     {
         this.assetNotificationSender = assetNotificationSender;
         this.assetRepository = assetRepository;
+        this.customerPathRepository = customerPathRepository;
         this.logger = logger;
     }
     
@@ -45,12 +49,13 @@ public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
         {
             return deleteResult.Value;
         }
-        
+
         try
         {
+            var customerPathElement = await customerPathRepository.GetCustomerPathElement(request.AssetId.Customer.ToString());
             logger.LogDebug("Sending delete asset notification for {AssetId}", request.AssetId);
             await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Delete,
-                new Asset { Id = request.AssetId }, null);
+                new Asset { Id = request.AssetId }, null, customerPathElement);
         }
         catch (Exception ex)
         {

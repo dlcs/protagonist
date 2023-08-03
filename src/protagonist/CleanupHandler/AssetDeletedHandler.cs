@@ -1,4 +1,4 @@
-﻿using DeleteHandler.Infrastructure;
+﻿using CleanupHandler.Infrastructure;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Exceptions;
@@ -8,14 +8,14 @@ using DLCS.Model.Templates;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DeleteHandler;
+namespace CleanupHandler;
 
 /// <summary>
 /// Handler for SQS messages notifying of asset deletion
 /// </summary>
 public class AssetDeletedHandler : IMessageHandler
 {
-    private readonly DeleteHandlerSettings handlerSettings;
+    private readonly CleanupHandlerSettings handlerSettings;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IBucketWriter bucketWriter;
     private readonly IFileSystem fileSystem;
@@ -25,7 +25,7 @@ public class AssetDeletedHandler : IMessageHandler
         IStorageKeyGenerator storageKeyGenerator,
         IBucketWriter bucketWriter,
         IFileSystem fileSystem,
-        IOptions<DeleteHandlerSettings> handlerSettings,
+        IOptions<CleanupHandlerSettings> handlerSettings,
         ILogger<AssetDeletedHandler> logger)
     {
         this.storageKeyGenerator = storageKeyGenerator;

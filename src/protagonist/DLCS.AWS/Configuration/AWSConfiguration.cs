@@ -1,7 +1,8 @@
-﻿using Amazon;
+using Amazon;
 using Amazon.ElasticTranscoder;
 using Amazon.Runtime;
 using Amazon.S3;
+using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using DLCS.AWS.Settings;
 using DLCS.Core.Guard;
@@ -100,20 +101,50 @@ public class AwsBuilder
         {
             var serviceDescriptor = ServiceDescriptor.Describe(typeof(IAmazonSQS), _ =>
             {
-                var amazonS3Config = new AmazonSQSConfig
+                var amazonSQSConfig = new AmazonSQSConfig
                 {
                     UseHttp = true,
                     RegionEndpoint = RegionEndpoint.USEast1,
                     ServiceURL =
                         awsSettings.SQS.ServiceUrl.ThrowIfNullOrWhiteSpace(nameof(awsSettings.SQS.ServiceUrl)),
                 };
-                return new AmazonSQSClient(new BasicAWSCredentials("foo", "bar"), amazonS3Config);
+                return new AmazonSQSClient(new BasicAWSCredentials("foo", "bar"), amazonSQSConfig);
             }, lifetime);
             services.Add(serviceDescriptor);
         }
         else
         {
             services.AddAWSService<IAmazonSQS>(lifetime);
+        }
+        
+        return this;
+    }
+    
+    /// <summary>
+    /// Add <see cref="IAmazonSimpleNotificationService"/> to service collection with specified lifetime.
+    /// </summary>
+    /// <param name="lifetime">ServiceLifetime for dependency</param>
+    /// <returns></returns>
+    public AwsBuilder WithAmazonSNS(ServiceLifetime lifetime = ServiceLifetime.Singleton)
+    {
+        if (useLocalStack)
+        {
+            var serviceDescriptor = ServiceDescriptor.Describe(typeof(IAmazonSimpleNotificationService), _ =>
+            {
+                var amazonSNSConfig = new AmazonSimpleNotificationServiceConfig()
+                {
+                    UseHttp = true,
+                    RegionEndpoint = RegionEndpoint.USEast1,
+                    ServiceURL =
+                        awsSettings.SNS.ServiceUrl.ThrowIfNullOrWhiteSpace(nameof(awsSettings.SNS.ServiceUrl)),
+                };
+                return new AmazonSimpleNotificationServiceClient(new BasicAWSCredentials("foo", "bar"), amazonSNSConfig);
+            }, lifetime);
+            services.Add(serviceDescriptor);
+        }
+        else
+        {
+            services.AddAWSService<IAmazonSimpleNotificationService>(lifetime);
         }
         
         return this;
@@ -146,7 +177,7 @@ public class AwsBuilder
         }
         else
         {
-            services.AddAWSService<IAmazonElasticTranscoder>(lifetime);
+             services.AddAWSService<IAmazonElasticTranscoder>(lifetime);
         }
 
         return this;

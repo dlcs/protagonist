@@ -93,15 +93,15 @@ jobs:
           context: "./src/protagonist"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  build-push-deletehandler:
+  build-push-cleanuphandler:
     runs-on: ubuntu-latest
     needs: test-dotnet
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/docker-build-and-push
         with:
-          image-name: "deletehandler"
-          dockerfile: "Dockerfile.DeleteHandler"
+          image-name: "cleanuphandler"
+          dockerfile: "Dockerfile.CleanupHandler"
           context: "./src/protagonist"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 

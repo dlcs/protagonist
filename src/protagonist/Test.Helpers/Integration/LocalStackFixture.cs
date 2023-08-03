@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
+using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
@@ -36,6 +37,8 @@ public class LocalStackFixture : IAsyncLifetime
 
     public Func<IAmazonS3> AWSS3ClientFactory { get; private set; }
     public Func<IAmazonSQS> AWSSQSClientFactory { get; private set; }
+    public Func<IAmazonSimpleNotificationService> AWSSNSFactory { get; private set; }
+    
 
     public LocalStackFixture()
     {
@@ -45,7 +48,7 @@ public class LocalStackFixture : IAsyncLifetime
             .WithCleanUp(true)
             .WithLabel("protagonist_test", "True")
             .WithEnvironment("DEFAULT_REGION", "eu-west-1")
-            .WithEnvironment("SERVICES", "s3,sqs")
+            .WithEnvironment("SERVICES", "s3,sqs,sns")
             .WithEnvironment("DOCKER_HOST", "unix:///var/run/docker.sock")
             .WithEnvironment("DEBUG", "1")
             .WithPortBinding(0, LocalStackContainerPort);
@@ -89,6 +92,15 @@ public class LocalStackFixture : IAsyncLifetime
         };
 
         AWSSQSClientFactory = () => new AmazonSQSClient(new BasicAWSCredentials("foo", "bar"), sqsConfig);
+
+        var snsConfig = new AmazonSimpleNotificationServiceConfig()
+        {
+            RegionEndpoint = RegionEndpoint.EUWest1,
+            UseHttp = true,
+            ServiceURL = localStackUrl
+        };
+
+        AWSSNSFactory = () => new AmazonSimpleNotificationServiceClient(new BasicAWSCredentials("foo", "bar"), snsConfig);
     }
     
     private async Task SeedAwsResources()

@@ -3,6 +3,7 @@ using API.Features.Customer.Validation;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.PathElements;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -30,14 +31,17 @@ public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleIma
     private readonly DlcsContext dlcsContext;
     private readonly IAssetNotificationSender assetNotificationSender;
     private readonly ILogger<DeleteMultipleImagesByIdHandler> logger;
+    private readonly IPathCustomerRepository customerPathRepository;
 
     public DeleteMultipleImagesByIdHandler(
         DlcsContext dlcsContext,
         IAssetNotificationSender assetNotificationSender,
+        IPathCustomerRepository customerPathRepository,
         ILogger<DeleteMultipleImagesByIdHandler> logger)
     {
         this.dlcsContext = dlcsContext;
         this.assetNotificationSender = assetNotificationSender;
+        this.customerPathRepository = customerPathRepository;
         this.logger = logger;
     }
 
@@ -53,19 +57,20 @@ public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleIma
             request.AssetIds.Count);
 
         if (deletedRows == 0) return 0;
-
-        await RaiseModifiedNotifications(request);
+        
+        var customerPathElement = await customerPathRepository.GetCustomerPathElement(request.CustomerId.ToString());
+        await RaiseModifiedNotifications(request, customerPathElement);
 
         return deletedRows;
     }
 
-    private async Task RaiseModifiedNotifications(DeleteMultipleImagesById request)
+    private async Task RaiseModifiedNotifications(DeleteMultipleImagesById request, CustomerPathElement customerPathElement)
     {
         // NOTE(DG) there is the possibility to raise a notification for an object that doesn't exist here,
         // we just issue a DELETE request to DB without checking which items exist 
         foreach (var asset in request.AssetIds.Select(i => new Asset { Id = AssetId.FromString(i) }))
         {
-            await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Delete, asset, null);
+            await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Delete, asset, null, customerPathElement);
         }
     }
 }
