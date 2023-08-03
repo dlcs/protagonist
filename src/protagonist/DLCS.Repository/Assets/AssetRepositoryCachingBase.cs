@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using DLCS.Core;
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
+using DLCS.Model;
 using DLCS.Model.Assets;
 using LazyCache;
 using Microsoft.Extensions.Logging;
@@ -33,7 +34,7 @@ public abstract class AssetRepositoryCachingBase : IAssetRepository
 
     public abstract Task<ImageLocation?> GetImageLocation(AssetId assetId);
 
-    public Task<ResultStatus<DeleteResult>> DeleteAsset(AssetId assetId)
+    public Task<DeleteEntityResult<Asset>> DeleteAsset(AssetId assetId)
     {
         AppCache.Remove(GetCacheKey(assetId));
         
@@ -45,7 +46,7 @@ public abstract class AssetRepositoryCachingBase : IAssetRepository
     /// <summary>
     /// Delete asset from database
     /// </summary>
-    protected abstract Task<ResultStatus<DeleteResult>> DeleteAssetFromDatabase(AssetId assetId);
+    protected abstract Task<DeleteEntityResult<Asset>> DeleteAssetFromDatabase(AssetId assetId);
     
     /// <summary>
     /// Find asset in DB and materialise to <see cref="Asset"/> object
