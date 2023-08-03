@@ -53,6 +53,18 @@ public class CustomerOriginStrategy : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 20, PropertyName = "credentials")]
     public string? Credentials { get; set; }
+    
+    
+    [HydraLink(Description = "Placeholder",
+        Range = Names.XmlSchema.Boolean, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 23, PropertyName = "optimised")]
+    public bool Optimised { get; set; }
+    
+    
+    [HydraLink(Description = "Placeholder",
+        Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 26, PropertyName = "order")]
+    public int Order { get; set; }
 }
 
 public class CustomerOriginStrategyClass : Class
