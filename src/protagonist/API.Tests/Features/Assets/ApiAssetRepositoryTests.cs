@@ -44,15 +44,18 @@ public class ApiAssetRepositoryTests
             .AddInMemoryCollection(new[]
                 { new KeyValuePair<string, string>("ConnectionStrings:PostgreSQLConnection", dbFixture.ConnectionString) })
             .Build();
-        var dapperAssetRepository = new DapperAssetRepository(
-            config,
-            new MockCachingService(),
-            Options.Create(new CacheSettings()),
-            new NullLogger<DapperAssetRepository>()
-        );
+        
         var entityCounterRepo = new EntityCounterRepository(dbContext);
 
-        sut = new ApiAssetRepository(dbContext, dapperAssetRepository, entityCounterRepo);
+        var assetRepository = new AssetRepository(
+            dbContext,
+            new MockCachingService(),
+            entityCounterRepo,
+            Options.Create(new CacheSettings()),
+            new NullLogger<AssetRepository>()
+        );
+
+        sut = new ApiAssetRepository(dbContext, assetRepository, entityCounterRepo);
 
         dbFixture.CleanUp();
     }
