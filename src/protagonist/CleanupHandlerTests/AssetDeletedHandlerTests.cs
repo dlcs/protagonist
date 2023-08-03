@@ -374,6 +374,8 @@ public class AssetDeletedHandlerTests
 
         };
         handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
+        A.CallTo(() => cacheInvalidator.InvalidateCdnCache(A<List<string>>._, 
+            A<CancellationToken>._)).Returns(true);
 
         // Act
         var sut = GetSut();
@@ -448,6 +450,9 @@ public class AssetDeletedHandlerTests
 
         };
         handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
+        
+        A.CallTo(() => cacheInvalidator.InvalidateCdnCache(A<List<string>>._, 
+            A<CancellationToken>._)).Returns(true);
 
         // Act
         var sut = GetSut();
@@ -503,6 +508,40 @@ public class AssetDeletedHandlerTests
         A.CallTo(() =>
             cacheInvalidator.InvalidateCdnCache(A<List<string>>._,
                 A<CancellationToken>._)).MustNotHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_ReturnsFalse_IfInvalidationFails()
+    {
+        // Arrange
+        var cleanupRequest = new CleanupAssetNotificationRequest()
+        {
+            Asset = new Asset()
+            {
+                Id = new AssetId(1, 99, "foo"),
+                Family = AssetFamily.Image
+            },
+            CustomerPathElement = new CustomerPathElement(99, "stuff")
+        };
+
+        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
+        
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonNode.Parse(serialized)!.AsObject()
+
+        };
+        handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
+        
+        A.CallTo(() => cacheInvalidator.InvalidateCdnCache(A<List<string>>._, 
+            A<CancellationToken>._)).Returns(false);
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+
+        // Assert
+        response.Should().BeFalse();
     }
     
     private QueueMessage CreateMinimalQueueMessage()

@@ -67,9 +67,7 @@ public class AssetDeletedHandler : IMessageHandler
         await DeleteFromOriginBucket(request.Asset.Id);
         await DeleteFromOutputBucket(request.Asset.Id);
 
-        await InvalidateContentDeliveryNetwork(request.Asset);
-
-        return true;
+        return await InvalidateContentDeliveryNetwork(request.Asset);
     }
 
     private async Task DeleteFromOriginBucket(AssetId assetId)
@@ -98,12 +96,12 @@ public class AssetDeletedHandler : IMessageHandler
         await bucketWriter.DeleteFolder(storageKey);
     }
 
-    private async Task InvalidateContentDeliveryNetwork(Asset asset)
+    private async Task<bool> InvalidateContentDeliveryNetwork(Asset asset)
     {
         if (string.IsNullOrEmpty(handlerSettings.AWS.Cloudfront.DistributionId))
         {
             logger.LogDebug("No Cloudfront distribution id configured - Cloudfront will not be invalidated");
-            return;
+            return true;
         }
 
         var invalidationUriList = new List<string>();
@@ -135,8 +133,10 @@ public class AssetDeletedHandler : IMessageHandler
         
         if (invalidationUriList.Count > 0)
         {
-            await cacheInvalidator.InvalidateCdnCache(invalidationUriList);
+            return await cacheInvalidator.InvalidateCdnCache(invalidationUriList);
         }
+
+        return true;
     }
 
     private static List<string> SetDeliveryChannelInvalidations(AssetId assetId, List<string> deliveryChannels)
