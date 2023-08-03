@@ -14,7 +14,6 @@ public class IngestHandler : IMessageHandler
     private readonly IAssetIngester ingester;
     private readonly ICustomerQueueRepository customerQueueRepository;
     private readonly ILogger<IngestHandler> logger;
-    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
     public IngestHandler(IAssetIngester ingester, ICustomerQueueRepository customerQueueRepository, 
         ILogger<IngestHandler> logger)
@@ -75,7 +74,7 @@ public class IngestHandler : IMessageHandler
     {
         try
         {
-            return message.Body.Deserialize<T>(settings);
+            return message.GetMessageContents<T>();
         }
         catch (JsonException jsonException)
         {

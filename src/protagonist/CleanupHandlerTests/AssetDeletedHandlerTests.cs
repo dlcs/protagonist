@@ -1,6 +1,5 @@
-﻿using System.Text.Json.Nodes;
-using Amazon.S3;
-using Amazon.S3.Model;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 using CleanupHandler;
 using CleanupHandler.Infrastructure;
 using DLCS.AWS.Cloudfront;
@@ -8,13 +7,15 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.AWS.SQS;
-using DLCS.Core.FileSystem;
+using DLCS.Core.Types;
+using DLCS.Model.Assets;
+using DLCS.Model.Messaging;
+using DLCS.Model.PathElements;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Test.Helpers;
 using Test.Helpers.Integration;
-using Test.Helpers.Storage;
 
 namespace DeleteHandlerTests;
 
@@ -25,6 +26,7 @@ public class AssetDeletedHandlerTests
     private readonly FakeFileSystem fakeFileSystem;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly ICacheInvalidator cacheInvalidator;
+    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
     public AssetDeletedHandlerTests()
     {
@@ -95,10 +97,7 @@ public class AssetDeletedHandlerTests
     {
         // Arrange
         const string assetId = "1/99/foo";
-        var queueMessage = new QueueMessage
-        {
-            Body = new JsonObject { ["id"] = assetId }
-        };
+        var queueMessage = CreateMinimalQueueMessage();
 
         // Act
         var sut = GetSut();
@@ -140,10 +139,7 @@ public class AssetDeletedHandlerTests
     {
         // Arrange
         const string assetId = "1/99/foo";
-        var queueMessage = new QueueMessage
-        {
-            Body = new JsonObject { ["id"] = assetId }
-        };
+        var queueMessage = CreateMinimalQueueMessage();
         handlerSettings.ImageFolderTemplate = null;
 
         // Act
@@ -186,10 +182,7 @@ public class AssetDeletedHandlerTests
     {
         // Arrange
         const string assetId = "1/99/foo";
-        var queueMessage = new QueueMessage
-        {
-            Body = new JsonObject { ["id"] = assetId }
-        };
+        var queueMessage = CreateMinimalQueueMessage();
         handlerSettings.AWS.S3.ThumbsBucket = "";
 
         // Act
@@ -232,10 +225,7 @@ public class AssetDeletedHandlerTests
     {
         // Arrange
         const string assetId = "1/99/foo";
-        var queueMessage = new QueueMessage
-        {
-            Body = new JsonObject { ["id"] = assetId }
-        };
+        var queueMessage = CreateMinimalQueueMessage();
         handlerSettings.AWS.S3.StorageBucket = "";
 
         // Act
@@ -279,10 +269,7 @@ public class AssetDeletedHandlerTests
     {
         // Arrange
         const string assetId = "1/99/foo";
-        var queueMessage = new QueueMessage
-        {
-            Body = new JsonObject { ["id"] = assetId }
-        };
+        var queueMessage = CreateMinimalQueueMessage();
         handlerSettings.AWS.S3.OriginBucket = "";
 
         // Act
@@ -326,10 +313,7 @@ public class AssetDeletedHandlerTests
     {
         // Arrange
         const string assetId = "1/99/foo";
-        var queueMessage = new QueueMessage
-        {
-            Body = new JsonObject { ["id"] = assetId }
-        };
+        var queueMessage = CreateMinimalQueueMessage();
         handlerSettings.AWS.S3.OriginBucket = "";
 
         // Act
@@ -367,20 +351,27 @@ public class AssetDeletedHandlerTests
                 a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
             ))).MustHaveHappened();
     }
-    
+
     [Fact]
     public async Task Handle_InvalidatesImagePath_IfDeliveryChannels()
     {
         // Arrange
-        const string assetId = "1/99/foo";
+        var cleanupRequest = new CleanupAssetNotificationRequest()
+        {
+            Asset = new Asset()
+            {
+                Id = new AssetId(1, 99, "foo"),
+                DeliveryChannels = new[] {"iiif-img","iiif-av", "file" }
+            },
+            CustomerPathElement = new CustomerPathElement(99, "stuff")
+        };
+
+        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
+        
         var queueMessage = new QueueMessage
         {
-            Body = new JsonObject { ["id"] = assetId , ["deliveryChannels"] = new JsonArray()
-            {
-                "iiif-img",
-                "file",
-                "iiif-av"
-            }}
+            Body = JsonNode.Parse(serialized)!.AsObject()
+
         };
         handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
 
@@ -412,15 +403,10 @@ public class AssetDeletedHandlerTests
     }
 
     [Fact]
-    public async Task Handle_DoesNotInvalidateImagePath_IfNoDeliveryChannels()
+    public async Task Handle_DoesNotInvalidateImagePath_IfNoDeliveryChannelsOrAssetFamily()
     {
         // Arrange
-        const string assetId = "1/99/foo";
-        var queueMessage = new QueueMessage
-        {
-            Body = new JsonObject { ["id"] = assetId }
-
-        };
+        var queueMessage = CreateMinimalQueueMessage();
         handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
 
         // Act
@@ -444,11 +430,21 @@ public class AssetDeletedHandlerTests
     public async Task Handle_InvalidatesImagePath_IfImageAssetFamily()
     {
         // Arrange
-        const string assetId = "1/99/foo";
-        const string assetFamily = "I";
+        var cleanupRequest = new CleanupAssetNotificationRequest()
+        {
+            Asset = new Asset()
+            {
+                Id = new AssetId(1, 99, "foo"),
+                Family = AssetFamily.Image
+            },
+            CustomerPathElement = new CustomerPathElement(99, "stuff")
+        };
+        
+        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
+        
         var queueMessage = new QueueMessage
         {
-            Body = new JsonObject { ["id"] = assetId , ["assetFamily"] = assetFamily }
+            Body = JsonNode.Parse(serialized)!.AsObject()
 
         };
         handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
@@ -468,5 +464,63 @@ public class AssetDeletedHandlerTests
         A.CallTo(() =>
             cacheInvalidator.InvalidateCdnCache(A<List<string>>._,
                 A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_DoesNotCreateInvalidation_IfFileAssetFamily()
+    {
+        // Arrange
+        var cleanupRequest = new CleanupAssetNotificationRequest()
+        {
+            Asset = new Asset()
+            {
+                Id = new AssetId(1, 99, "foo"),
+                Family = AssetFamily.File
+            },
+            CustomerPathElement = new CustomerPathElement(99, "stuff")
+        };
+        
+        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
+        
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonNode.Parse(serialized)!.AsObject()
+
+        };
+        handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+
+        // Assert
+        response.Should().BeTrue();
+
+        // File deleted from local disk
+        fakeFileSystem.DeletedFiles.Should().ContainSingle(s => s == "/nas/1/99/foo/foo.jp2");
+
+        // does not invalidate
+        A.CallTo(() =>
+            cacheInvalidator.InvalidateCdnCache(A<List<string>>._,
+                A<CancellationToken>._)).MustNotHaveHappened();
+    }
+    
+    private QueueMessage CreateMinimalQueueMessage()
+    {
+        var cleanupRequest = new CleanupAssetNotificationRequest()
+        {
+            Asset = new Asset()
+            {
+                Id = new AssetId(1, 99, "foo")
+            },
+            CustomerPathElement = new CustomerPathElement(99, "stuff")
+        };
+        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
+
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonNode.Parse(serialized)!.AsObject()
+        };
+        return queueMessage;
     }
 }

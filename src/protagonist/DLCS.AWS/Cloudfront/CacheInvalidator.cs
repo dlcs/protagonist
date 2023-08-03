@@ -10,7 +10,6 @@ namespace DLCS.AWS.Cloudfront;
 public class CacheInvalidator : ICacheInvalidator
 {
     private readonly ILogger<CacheInvalidator> logger;
-   // private readonly AmazonCloudFrontClient client;
     private readonly IAmazonCloudFront client;
     private CloudfrontSettings cloudfrontSettings;
     

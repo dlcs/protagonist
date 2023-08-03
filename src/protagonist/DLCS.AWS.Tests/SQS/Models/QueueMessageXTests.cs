@@ -1,10 +1,15 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 using DLCS.AWS.SQS;
+using DLCS.Core.Types;
+using DLCS.Model.Assets;
 
 namespace DLCS.AWS.Tests.SQS.Models;
 
 public class QueueMessageXTests
 {
+    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
+    
     [Fact]
     public void GetMessageContents_ReturnsBody_IfSqsOrigin()
     {
@@ -69,5 +74,60 @@ public class QueueMessageXTests
         
         // Assert
         contents.Should().BeNull();
+    }
+    
+    [Fact] 
+    public void GetMessageContentsWithType_ReturnsObject_WhenCalledWithObject()
+    {
+        // Arrange
+        var asset = new Asset()
+        {
+            Id = new AssetId(1, 99, "foo")
+        };
+        
+        var serialized =  JsonSerializer.Serialize(asset, settings);
+        
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonNode.Parse(serialized)!.AsObject()
+        };
+        
+        // Act
+        var contents = queueMessage.GetMessageContents<Asset>();
+        
+        // Assert
+        contents?.Id.Should().NotBeNull();
+        contents?.Id.Customer.Should().Be(1);
+        contents?.Id.Space.Should().Be(99);
+        contents?.Id.Asset.Should().Be("foo");
+    }
+    
+    [Fact] 
+    public void GetMessageContentsWithType_ThrowsException_WhenCalledWithObjectThatCannotBeDeserialized()
+    {
+        // Arrange
+        var queueMessage = new QueueMessage
+        {
+            Body = new JsonObject { ["id"] = "foo" }
+        };
+
+        // Act and Assert
+        Assert.Throws<JsonException>(() =>queueMessage.GetMessageContents<Asset>());
+    }
+    
+    [Fact] 
+    public void GetMessageContentsWithType_DoesNotThrowException_WhenCalledWithDoNotThrowExceptions()
+    {
+        // Arrange
+        var queueMessage = new QueueMessage
+        {
+            Body = new JsonObject { ["id"] = "foo" }
+        };
+
+        // Act
+        var exception = Record.Exception(() => queueMessage.GetMessageContents<Asset>(false));
+        
+        // Assert
+        Assert.Null(exception);
     }
 }

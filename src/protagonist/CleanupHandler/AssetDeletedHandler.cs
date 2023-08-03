@@ -13,9 +13,6 @@ using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Serialization;
 
 namespace CleanupHandler;
 
@@ -49,32 +46,28 @@ public class AssetDeletedHandler : IMessageHandler
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        CleanupAssetRequest? request = null;
-        
+        CleanupAssetNotificationRequest? request = null;
         try
         {
-            request = JsonConvert.DeserializeObject<CleanupAssetRequest>(message.Body.ToJsonString(),
-                              new JsonSerializerSettings()
-                                  { ContractResolver = new CamelCasePropertyNamesContractResolver() })
-                          ?? throw new InvalidOperationException();
+            request = message.GetMessageContents<CleanupAssetNotificationRequest>();
         }
-        catch (JsonSerializationException ex)
+        catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to deserialize request body {Body}", message.Body);
+            logger.LogError(ex, "Failed to deserialize asset {@Message}", message);
             return true;
         }
 
-        if (request?.Id == null) return true;
+        if (request?.Asset?.Id == null) return true;
 
-        logger.LogDebug("Processing delete notification for {AssetId}", request.Id);
+        logger.LogDebug("Processing delete notification for {AssetId}", request.Asset.Id);
 
-        await DeleteThumbnails(request.Id);
-        await DeleteTileOptimised(request.Id);
-        DeleteFromNas(request.Id);
-        await DeleteFromOriginBucket(request.Id);
-        await DeleteFromOutputBucket(request.Id);
+        await DeleteThumbnails(request.Asset.Id);
+        await DeleteTileOptimised(request.Asset.Id);
+        DeleteFromNas(request.Asset.Id);
+        await DeleteFromOriginBucket(request.Asset.Id);
+        await DeleteFromOutputBucket(request.Asset.Id);
 
-        await InvalidateContentDeliveryNetwork(request);
+        await InvalidateContentDeliveryNetwork(request.Asset);
 
         return true;
     }
@@ -105,7 +98,7 @@ public class AssetDeletedHandler : IMessageHandler
         await bucketWriter.DeleteFolder(storageKey);
     }
 
-    private async Task InvalidateContentDeliveryNetwork(CleanupAssetRequest request)
+    private async Task InvalidateContentDeliveryNetwork(Asset asset)
     {
         if (string.IsNullOrEmpty(handlerSettings.AWS.Cloudfront.DistributionId))
         {
@@ -115,28 +108,28 @@ public class AssetDeletedHandler : IMessageHandler
 
         var invalidationUriList = new List<string>();
         
-        if (request.DeliveryChannels.IsNullOrEmpty())
+        if (asset.DeliveryChannels.IsNullOrEmpty())
         {
             logger.LogDebug("Received message body with no 'deliveryChannels' property. {@Request}", 
-                request);
+                asset);
         }
         else
         {
-            invalidationUriList = SetDeliveryChannelInvalidations(request.Id!, request.DeliveryChannels);
+            invalidationUriList = SetDeliveryChannelInvalidations(asset.Id!, asset.DeliveryChannels.ToList());
         }
         
-        if (!request.AssetFamily.HasValue)
+        if (!asset.Family.HasValue)
         {
             logger.LogDebug("Received message body with no 'asset family' property. {@Request}", 
-                request);
+                asset);
         }
         else
         {
-            if (request.AssetFamily == (char)AssetFamily.Image)
+            if (asset.Family == AssetFamily.Image)
             {
-                invalidationUriList.Add($"/iiif-manifest/{request.Id}");
-                invalidationUriList.Add($"/iiif-manifest/v2/{request.Id}");
-                invalidationUriList.Add($"/iiif-manifest/v3/{request.Id}");
+                invalidationUriList.Add($"/iiif-manifest/{asset.Id}");
+                invalidationUriList.Add($"/iiif-manifest/v2/{asset.Id}");
+                invalidationUriList.Add($"/iiif-manifest/v3/{asset.Id}");
             }
         }
         

@@ -98,15 +98,13 @@ public class AssetNotificationSender : IAssetNotificationSender
 
     private async Task<bool> SendCleanupAssetRequest(Asset assetToCleanup, CustomerPathElement customerPathElement, CancellationToken cancellationToken = default)
     {
-        var notificationRequest = new CleanupAssetRequest()
+        var request = new CleanupAssetNotificationRequest()
         {
-            Id = assetToCleanup.Id,
-            DeliveryChannels = assetToCleanup.DeliveryChannels.ToList(),
-            AssetFamily = (char)assetToCleanup.Family,
+            Asset = assetToCleanup,
             CustomerPathElement = customerPathElement
         };
-
-        return await topicPublisher.PublishToAssetModifiedTopic(JsonConvert.SerializeObject(notificationRequest, Formatting.None, jsonSerializerSettings), ChangeType.Delete, cancellationToken);
+        
+        return await topicPublisher.PublishToAssetModifiedTopic(JsonConvert.SerializeObject(request, Formatting.None, jsonSerializerSettings), ChangeType.Delete, cancellationToken);
     }
 
     public async Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after, CustomerPathElement? customerPathElement)
