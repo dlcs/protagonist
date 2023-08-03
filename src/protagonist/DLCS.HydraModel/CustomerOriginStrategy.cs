@@ -18,7 +18,8 @@ namespace DLCS.HydraModel;
 public class CustomerOriginStrategy : DlcsResource
 {
     [JsonIgnore]
-    public int ModelId { get; set; }
+    public string? ModelId { get; set; }
+    
     [JsonIgnore]
     public int CustomerId { get; set; }
 
@@ -26,7 +27,7 @@ public class CustomerOriginStrategy : DlcsResource
     {
     }
     
-    public CustomerOriginStrategy(string baseUrl, int customerId, int strategyId)
+    public CustomerOriginStrategy(string baseUrl, int customerId, string strategyId)
     {
         CustomerId = customerId;
         ModelId = strategyId;
@@ -72,7 +73,7 @@ public class CustomerOriginStrategyClass : Class
         {
             Id = "_:customer_originStrategy_credentials_upsert",
             Method = "PUT",
-            Label = "create or replace customer credential objedt",
+            Label = "create or replace customer credential object",
             Expects = "vocab:Credentials",
             Returns = "vocab:Credentials",
             StatusCodes =new[] {new Status { StatusCode = 201, Description = "Created"} }
