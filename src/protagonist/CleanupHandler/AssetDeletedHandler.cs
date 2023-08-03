@@ -46,7 +46,7 @@ public class AssetDeletedHandler : IMessageHandler
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        CleanupAssetNotificationRequest? request = null;
+        CleanupAssetNotificationRequest? request;
         try
         {
             request = message.GetMessageContents<CleanupAssetNotificationRequest>();
