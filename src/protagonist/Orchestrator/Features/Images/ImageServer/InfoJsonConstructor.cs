@@ -85,7 +85,8 @@ public class InfoJsonConstructor
         if (orchestrationImage.RequiresAuth && !orchestrationImage.Roles.IsNullOrEmpty())
         {
             var authServicesForAsset =
-                await iiifAuthBuilder.GetAuthServicesForAsset(orchestrationImage, cancellationToken);
+                await iiifAuthBuilder.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles,
+                    cancellationToken);
             if (authServicesForAsset == null)
             {
                 logger.LogWarning("{AssetId} requires auth but no auth services generated", orchestrationImage.AssetId);
@@ -108,7 +109,8 @@ public class InfoJsonConstructor
         if (orchestrationImage.RequiresAuth && !orchestrationImage.Roles.IsNullOrEmpty())
         {
             var authCookieServiceForAsset =
-                await iiifAuthBuilder.GetAuthServicesForAsset(orchestrationImage, cancellationToken);
+                await iiifAuthBuilder.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles,
+                    cancellationToken);
             if (authCookieServiceForAsset == null)
             {
                 logger.LogWarning("{AssetId} requires auth but no auth services generated", orchestrationImage.AssetId);

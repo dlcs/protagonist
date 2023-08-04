@@ -41,7 +41,7 @@ public class IIIFAuth2ClientTests
         };
         
         // Act
-        await sut.GetAuthServicesForAsset(orchestrationImage, CancellationToken.None);
+        await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
         
         // Assert
         httpHandler.CallsMade.Should().ContainSingle(s => s == "http://auth-2/services/99/100/foo?roles=role1");
@@ -57,7 +57,7 @@ public class IIIFAuth2ClientTests
         };
         
         // Act
-        await sut.GetAuthServicesForAsset(orchestrationImage, CancellationToken.None);
+        await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
         
         // Assert
         httpHandler.CallsMade.Should()
@@ -78,7 +78,8 @@ public class IIIFAuth2ClientTests
         httpHandler.SetResponse(new HttpResponseMessage(status));
 
         // Act
-        var response = await sut.GetAuthServicesForAsset(orchestrationImage, CancellationToken.None);
+        var response = await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles,
+            CancellationToken.None);
 
         // Assert
         response.Should().BeNull();
@@ -98,7 +99,8 @@ public class IIIFAuth2ClientTests
         httpHandler.SetResponse(httpResponseMessage);
 
         // Act
-        var response = await sut.GetAuthServicesForAsset(orchestrationImage, CancellationToken.None);
+        var response = await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles,
+            CancellationToken.None);
 
         // Assert
         response.Should().BeNull();
@@ -123,7 +125,8 @@ public class IIIFAuth2ClientTests
         httpHandler.SetResponse(httpResponseMessage);
 
         // Act
-        var response = await sut.GetAuthServicesForAsset(orchestrationImage, CancellationToken.None);
+        var response = await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles,
+            CancellationToken.None);
 
         // Assert
         response.Should().BeEquivalentTo(probeService);

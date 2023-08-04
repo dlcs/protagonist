@@ -2,23 +2,17 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests;
 using IIIF;
-using IIIF.Presentation;
-using IIIF.Presentation.V2.Strings;
-using IIIF.Presentation.V3.Strings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.NamedQueries;
-using IIIF2 = IIIF.Presentation.V2;
-using IIIF3 = IIIF.Presentation.V3;
 using Version = IIIF.Presentation.Version;
 
 namespace Orchestrator.Features.Manifests;
@@ -28,11 +22,11 @@ namespace Orchestrator.Features.Manifests;
 /// </summary>
 public class IIIFNamedQueryProjector
 {
-    private readonly IIIFCanvasFactory canvasFactory;
+    private readonly IIIFManifestBuilder manifestBuilder;
 
-    public IIIFNamedQueryProjector(IIIFCanvasFactory canvasFactory) 
+    public IIIFNamedQueryProjector(IIIFManifestBuilder manifestBuilder) 
     {
-        this.canvasFactory = canvasFactory;
+        this.manifestBuilder = manifestBuilder;
     }
 
     /// <summary>
@@ -57,47 +51,25 @@ public class IIIFNamedQueryProjector
     private async Task<JsonLdBase> GenerateV2Manifest(IIIFParsedNamedQuery parsedNamedQuery,
         CustomerPathElement customerPathElement, List<Asset> results, HttpRequest request)
     {
-        var rootUrl = HttpRequestX.GetDisplayUrl(request);
-        var manifest = new IIIF2.Manifest
-        {
-            Id = UriHelper.GetDisplayUrl(request),
-            Label = new MetaDataValue($"Generated from '{parsedNamedQuery.NamedQueryName}' named query"),
-            Metadata = new IIIF2.Metadata
-            {
-                Label = new MetaDataValue("Title"), Value = new MetaDataValue("Created by DLCS")
-            }.AsList(),
-        };
-
-        var canvases = await canvasFactory.CreateV2Canvases(results, customerPathElement);
-        var sequence = new IIIF2.Sequence
-        {
-            Id = string.Concat(rootUrl, "/iiif-query/sequence/0"),
-            Label = new MetaDataValue("Sequence 0"),
-        };
-        sequence.Canvases = canvases;
-        manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
-        manifest.Sequences = sequence.AsList();
-
-        manifest.EnsurePresentation2Context();
+        var sequenceRootUrl = request.GetDisplayUrl("/iiif-query/");
+        var manifestId = request.GetDisplayUrl();
+        var label = GetManifestLabel(parsedNamedQuery);
+        var manifest =
+            await manifestBuilder.GenerateV2Manifest(results, customerPathElement, manifestId, label, sequenceRootUrl);
+        
         return manifest;
     }
 
     private async Task<JsonLdBase> GenerateV3Manifest(IIIFParsedNamedQuery parsedNamedQuery,
         CustomerPathElement customerPathElement, List<Asset> results, HttpRequest request)
     {
-        const string language = "en";
-        var manifest = new IIIF3.Manifest
-        {
-            Id = UriHelper.GetDisplayUrl(request),
-            Label = new LanguageMap(language, $"Generated from '{parsedNamedQuery.NamedQueryName}' named query"),
-            Metadata = new LabelValuePair(language, "Title", "Created by DLCS").AsList(),
-        };
-
-        var canvases = await canvasFactory.CreateV3Canvases(results, customerPathElement);
-        manifest.Items = canvases;
-        manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
+        var manifestId = request.GetDisplayUrl();
+        var label = GetManifestLabel(parsedNamedQuery);
+        var manifest = await manifestBuilder.GenerateV3Manifest(results, customerPathElement, manifestId, label);
         
-        manifest.EnsurePresentation3Context();
         return manifest;
     }
+
+    private static string GetManifestLabel(IIIFParsedNamedQuery parsedNamedQuery)
+        => $"Generated from '{parsedNamedQuery.NamedQueryName}' named query";
 }

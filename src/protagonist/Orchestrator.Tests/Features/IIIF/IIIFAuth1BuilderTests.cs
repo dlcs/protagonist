@@ -45,7 +45,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset);
+        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
         
         // Assert
         result.Should().BeNull();
@@ -68,7 +68,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset);
+        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
         
         // Assert
         result.Should().BeNull();
@@ -91,7 +91,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut(true);
         
         // Act 
-        Func<Task> action = () => sut.GetAuthServicesForAsset(asset);
+        Func<Task> action = () => sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
         
         // Assert
         await action.Should()
@@ -118,7 +118,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset);
+        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
         
         // Assert
         result.Id.Should().Be("The-Parent");
@@ -152,7 +152,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset);
+        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
         
         // Assert
         result.Id.Should().Be("The-Parent");
@@ -204,7 +204,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset);
+        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
         
         // Assert
         result.Id.Should().Be("The-Parent");
@@ -243,7 +243,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset);
+        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
         
         // Assert
         var authCookieSvc = result as AuthCookieService;

@@ -9,7 +9,6 @@ using DLCS.Model.Auth.Entities;
 using IIIF;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orchestrator.Assets;
 using Orchestrator.Settings;
 using AuthCookie0 = IIIF.Auth.V0.AuthCookieService;
 using AuthCookie1 = IIIF.Auth.V1.AuthCookieService;
@@ -41,11 +40,9 @@ public class IIIFAuth1Builder : IIIIFAuthBuilder
     /// The 'id'/'@id' parameters will the the name of the auth service only
     /// </summary>
     /// <returns><see cref="IService"/> if found, else null</returns>
-    public async Task<IService?> GetAuthServicesForAsset(OrchestrationImage asset,
-        CancellationToken cancellationToken = default)
+    public async Task<IService?> GetAuthServicesForAsset(AssetId assetId, List<string> roles, CancellationToken cancellationToken = default)
     {
-        var assetId = asset.AssetId;
-        var authServices = await GetAuthServices(assetId, asset.Roles, cancellationToken);
+        var authServices = await GetAuthServices(assetId, roles, cancellationToken);
 
         if (authServices.IsNullOrEmpty())
         {

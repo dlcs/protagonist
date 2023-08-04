@@ -73,6 +73,7 @@ public class Startup
             .AddSingleton<S3ProxyPathGenerator>()
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
             .AddScoped<AccessChecker>()
+            .AddScoped<IIIFManifestBuilder>()
             .AddScoped<IIIFCanvasFactory>()
             .AddScoped<ISessionAuthService, SessionAuthService>()
             .AddScoped<AuthCookieManager>()

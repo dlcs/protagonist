@@ -1559,26 +1559,26 @@ public class FakeImageServerClient : IImageServerClient
 
 public class FakeAuth2Client : IIIIFAuthBuilder
 {
-    public Task<IService> GetAuthServicesForAsset(OrchestrationImage asset, CancellationToken cancellationToken = default)
+    public Task<IService> GetAuthServicesForAsset(AssetId assetId, List<string> roles, CancellationToken cancellationToken = default)
     {
         var probeService = new AuthProbeService2
         {
-            Id = $"http://localhost/auth/v2/probe/{asset.AssetId}",
+            Id = $"http://localhost/auth/v2/probe/{assetId}",
             Service = new List<IService>
             {
                 new AuthAccessService2
                 {
-                    Id = $"http://localhost/auth/v2/access/{asset.AssetId.Customer}/clickthrough",
+                    Id = $"http://localhost/auth/v2/access/{assetId.Customer}/clickthrough",
                     Profile = "active",
                     Service = new List<IService>
                     {
                         new AuthAccessTokenService2
                         {
-                            Id = $"http://localhost/auth/v2/access/{asset.AssetId.Customer}/token",
+                            Id = $"http://localhost/auth/v2/access/{assetId.Customer}/token",
                         },
                         new AuthLogoutService2
                         {
-                            Id = $"http://localhost/auth/v2/access/{asset.AssetId.Customer}/clickthrough/logout",
+                            Id = $"http://localhost/auth/v2/access/{assetId.Customer}/clickthrough/logout",
                         }
                     }
                 }

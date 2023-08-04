@@ -27,11 +27,8 @@ public class IIIFAuth2Client : IIIIFAuthBuilder
         this.logger = logger;
     }
     
-    public async Task<IService?> GetAuthServicesForAsset(OrchestrationImage asset, CancellationToken cancellationToken = default)
+    public async Task<IService?> GetAuthServicesForAsset(AssetId assetId, List<string> roles, CancellationToken cancellationToken = default)
     {
-        var assetId = asset.AssetId;
-        var roles = asset.Roles;
-        
         logger.LogTrace("Getting auth 2 services description for {AssetId}, {@Roles}", assetId, roles);
         var path = GetServicesDescriptionPath(assetId, roles);
 
@@ -47,7 +44,7 @@ public class IIIFAuth2Client : IIIIFAuthBuilder
             return null;
         }
     }
-    
+
     private static string GetServicesDescriptionPath(AssetId assetId, IList<string> roles)
     {
         var rolesString = roles.Count == 1 ? roles[0] : string.Join(",", roles);
