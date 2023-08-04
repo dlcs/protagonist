@@ -7,15 +7,15 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.AWS.Cloudfront;
 
-public class CloudfrontCacheInvalidator : ICacheInvalidator
+public class CloudfrontInvalidator : ICacheInvalidator
 {
-    private readonly ILogger<CloudfrontCacheInvalidator> logger;
+    private readonly ILogger<CloudfrontInvalidator> logger;
     private readonly IAmazonCloudFront client;
     private CloudfrontSettings cloudfrontSettings;
     
     
-    public CloudfrontCacheInvalidator(
-        ILogger<CloudfrontCacheInvalidator> logger,
+    public CloudfrontInvalidator(
+        ILogger<CloudfrontInvalidator> logger,
         IAmazonCloudFront client,
         IOptions<AWSSettings> settings)
     {
