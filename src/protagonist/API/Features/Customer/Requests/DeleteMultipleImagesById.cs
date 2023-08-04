@@ -58,15 +58,13 @@ public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleIma
         if (assetsFromDatabase.Count == 0) return 0;
         
         var customerPathElement = await customerPathRepository.GetCustomerPathElement(request.CustomerId.ToString());
-        await RaiseModifiedNotifications(assetsFromDatabase.ToList(), customerPathElement);
+        await RaiseModifiedNotifications(assetsFromDatabase, customerPathElement);
 
         return assetsFromDatabase.Count;
     }
 
     private async Task RaiseModifiedNotifications(List<Asset> assets, CustomerPathElement customerPathElement)
     {
-        // NOTE(DG) there is the possibility to raise a notification for an object that doesn't exist here,
-        // we just issue a DELETE request to DB without checking which items exist 
         foreach (var asset in assets)
         {
             await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Delete, asset, null, customerPathElement);

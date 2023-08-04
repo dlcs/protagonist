@@ -23,7 +23,7 @@ public static class ServiceCollectionX
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .AddSingleton<SqsListenerManager>()
             .AddTransient(typeof(SqsListener<>))
-            .AddSingleton<ICacheInvalidator, CacheInvalidator>()
+            .AddSingleton<ICacheInvalidator, CloudfrontCacheInvalidator>()
             .AddSingleton<SqsQueueUtilities>()
             .SetupAWS(configuration, hostEnvironment)
             .WithAmazonS3()

@@ -13,29 +13,29 @@ public class S3Settings
     /// <summary>
     /// Name of bucket storing pre-generated thumbnails
     /// </summary>
-    public string? ThumbsBucket { get; set; }
+    public string ThumbsBucket { get; set; }
     
     /// <summary>
     /// Name of bucket for storing generated output (e.g. NamedQuery results)
     /// </summary>
-    public string? OutputBucket { get; set; }
+    public string OutputBucket { get; set; }
 
     /// <summary>
     /// Name of bucket for storing timebased assets to be transcoded
     /// </summary>
-    public string? TimebasedInputBucket { get; set; }
+    public string TimebasedInputBucket { get; set; }
     
     /// <summary>
     /// Name of bucket for storing timebased assets to be transcoded
     /// </summary>
-    public string? TimebasedOutputBucket { get; set; }
+    public string TimebasedOutputBucket { get; set; }
     
     /// <summary>
     /// Name of bucket used when the DLCS provides the origin of asset itself, by hosting, rather than
     /// relying on a third party bucket or other origin.
     /// DLCS applications like API and Portal will deposit uploaded resources here.
     /// </summary>
-    public string? OriginBucket { get; set; }
+    public string OriginBucket { get; set; }
     
     /// <summary>
     /// Service root for S3. Only used if running LocalStack

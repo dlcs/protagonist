@@ -14,10 +14,10 @@ public interface IStorageKeyGenerator
     RegionalisedObjectInBucket GetStorageLocation(AssetId assetId);
     
     /// <summary>
-    /// Get <see cref="ObjectInBucket"/> for storing objects below the root
+    /// Get <see cref="ObjectInBucket"/> for root location of stored delivery assets (tile-ready or original)
     /// </summary>
     /// <param name="assetId">Unique identifier for Asset</param>
-    /// <returns><see cref="ObjectInBucket"/> for tile-ready asset</returns>
+    /// <returns><see cref="ObjectInBucket"/> for delivery asset root</returns>
     ObjectInBucket GetStorageLocationRoot(AssetId assetId);
     
     /// <summary>
@@ -159,12 +159,12 @@ public interface IStorageKeyGenerator
     /// </summary>
     /// <param name="assetId">asset id the request is for</param>
     /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
-    ObjectInBucket GetOriginBucketRoot(AssetId assetId);
+    ObjectInBucket GetOriginRoot(AssetId assetId);
 
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> root location for the output bucket
     /// </summary>
     /// <param name="assetId">asset id the request is for</param>
     /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
-    ObjectInBucket GetOutputBucketRoot(AssetId assetId);
+    ObjectInBucket GetOutputRoot(AssetId assetId);
 }

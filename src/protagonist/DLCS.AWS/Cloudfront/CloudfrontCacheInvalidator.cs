@@ -7,15 +7,15 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.AWS.Cloudfront;
 
-public class CacheInvalidator : ICacheInvalidator
+public class CloudfrontCacheInvalidator : ICacheInvalidator
 {
-    private readonly ILogger<CacheInvalidator> logger;
+    private readonly ILogger<CloudfrontCacheInvalidator> logger;
     private readonly IAmazonCloudFront client;
     private CloudfrontSettings cloudfrontSettings;
     
     
-    public CacheInvalidator(
-        ILogger<CacheInvalidator> logger,
+    public CloudfrontCacheInvalidator(
+        ILogger<CloudfrontCacheInvalidator> logger,
         IAmazonCloudFront client,
         IOptions<AWSSettings> settings)
     {
@@ -39,7 +39,7 @@ public class CacheInvalidator : ICacheInvalidator
                 CallerReference = DateTime.Now.Ticks.ToString()
             }
         };
-        
+
         try
         {
             logger.LogDebug("invalidating cloud front. {Paths}", invalidationPaths);
@@ -47,9 +47,21 @@ public class CacheInvalidator : ICacheInvalidator
 
             return invalidationResult.HttpStatusCode.IsSuccess();
         }
+        catch (NoSuchDistributionException ex)
+        {
+            logger.LogError(ex, "No such distribution {Distribution}", 
+                cloudfrontSettings.DistributionId);
+            throw;
+        }
+        catch (TooManyInvalidationsInProgressException ex)
+        {
+            logger.LogError(ex, "Too many invalidations in progress. {Distribution}", 
+                cloudfrontSettings.DistributionId);
+            return false;
+        }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error invalidating the cache for  distribution {Distribution}", 
+            logger.LogError(ex, "Error invalidating the cache for distribution {Distribution}", 
                 cloudfrontSettings.DistributionId);
             return false;
         }

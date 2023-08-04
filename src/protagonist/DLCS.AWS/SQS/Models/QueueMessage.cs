@@ -31,7 +31,7 @@ public class QueueMessage
 
 public static class QueueMessageX
 {
-    private readonly static JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
     
     /// <summary>
     /// Get a <see cref="JsonObject"/> representing the contents of the message as raised by source system. This helps
@@ -82,7 +82,7 @@ public static class QueueMessageX
         try
         {
             var messageContents = GetMessageContents(message);
-            return messageContents.Deserialize<T>(settings);
+            return messageContents.Deserialize<T>(Settings);
         }
         catch (JsonException)
         {

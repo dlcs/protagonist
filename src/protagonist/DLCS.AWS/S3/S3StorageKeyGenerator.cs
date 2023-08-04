@@ -180,13 +180,13 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         return new ObjectInBucket(s3Options.StorageBucket, key);
     }
 
-    public ObjectInBucket GetOriginBucketRoot(AssetId assetId)
+    public ObjectInBucket GetOriginRoot(AssetId assetId)
     {
         var key = GetStorageKey(assetId);
         return new ObjectInBucket(s3Options.OriginBucket, $"{key}/");
     }
 
-    public ObjectInBucket GetOutputBucketRoot(AssetId assetId)
+    public ObjectInBucket GetOutputRoot(AssetId assetId)
     {
         var key = GetStorageKey(assetId);
         return new ObjectInBucket(s3Options.OutputBucket, $"{key}/");

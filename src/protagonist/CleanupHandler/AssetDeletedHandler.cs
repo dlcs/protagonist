@@ -54,10 +54,10 @@ public class AssetDeletedHandler : IMessageHandler
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to deserialize asset {@Message}", message);
-            return true;
+            return false;
         }
 
-        if (request?.Asset?.Id == null) return true;
+        if (request?.Asset?.Id == null) return false;
 
         logger.LogDebug("Processing delete notification for {AssetId}", request.Asset.Id);
 
@@ -78,7 +78,7 @@ public class AssetDeletedHandler : IMessageHandler
             return;
         }
 
-        var storageKey = storageKeyGenerator.GetOriginBucketRoot(assetId);
+        var storageKey = storageKeyGenerator.GetOriginRoot(assetId);
         logger.LogInformation("Deleting OriginBucket key from {StorageKey} for {AssetId}", storageKey, assetId);
         await bucketWriter.DeleteFolder(storageKey);
     }
@@ -91,7 +91,7 @@ public class AssetDeletedHandler : IMessageHandler
             return;
         }
 
-        var storageKey = storageKeyGenerator.GetOutputBucketRoot(assetId);
+        var storageKey = storageKeyGenerator.GetOutputRoot(assetId);
         logger.LogInformation("Deleting OutputBucket key from {StorageKey} for {AssetId}", storageKey, assetId);
         await bucketWriter.DeleteFolder(storageKey);
     }
