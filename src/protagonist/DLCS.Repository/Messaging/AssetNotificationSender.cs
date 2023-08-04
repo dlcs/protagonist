@@ -24,7 +24,6 @@ public class AssetNotificationSender : IAssetNotificationSender
     private readonly ICustomerQueueRepository customerQueueRepository;
     private readonly ITopicPublisher topicPublisher;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
-    //private readonly JsonSerializerSettings jsonSerializerSettings;
 
     public AssetNotificationSender(
         IEngineClient engineClient,
@@ -36,12 +35,6 @@ public class AssetNotificationSender : IAssetNotificationSender
         this.logger = logger;
         this.customerQueueRepository = customerQueueRepository;
         this.topicPublisher = topicPublisher;
-        //
-        // jsonSerializerSettings = new JsonSerializerSettings()
-        // {
-        //     NullValueHandling = NullValueHandling.Ignore,
-        //     ContractResolver = new CamelCasePropertyNamesContractResolver()
-        // };
     }
     
     public async Task<bool> SendIngestAssetRequest(Asset assetToIngest, CancellationToken cancellationToken = default)
