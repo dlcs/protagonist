@@ -68,7 +68,7 @@ public class ConfigDrivenAuthPathGeneratorTests
         // Assert
         actual.Should().Be(expected);
     }
-    
+
     private ConfigDrivenAuthPathGenerator GetSut(string host)
     {
         var context = new DefaultHttpContext();
