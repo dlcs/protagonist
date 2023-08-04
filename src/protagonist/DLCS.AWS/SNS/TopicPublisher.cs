@@ -24,25 +24,6 @@ public class TopicPublisher : ITopicPublisher
     /// <inheritdoc />
     public async Task<bool> PublishToAssetModifiedTopic(string messageContents, ChangeType changeType, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var topic = await client.GetTopicAttributesAsync(
-                new GetTopicAttributesRequest(sNSSettings.AssetModifiedNotificationTopicArn), cancellationToken);
-
-            if (!topic.HttpStatusCode.IsSuccess())
-            {
-                logger.LogError("Could not retrieve topic details for topic {Topic}",
-                    sNSSettings.AssetModifiedNotificationTopicArn);
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error retrieving details of topic {Topic}", 
-                sNSSettings.AssetModifiedNotificationTopicArn);
-            return false;
-        }
-
         var attributeValue = new MessageAttributeValue()
         {
             StringValue = changeType.ToString(),
