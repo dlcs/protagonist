@@ -8,7 +8,7 @@ public class IIIFAuth2ParsingHelpersTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public void GetAccessServiceNameFromDefaultPath_ReturnsNullOrEmpty_IfIdNullOrEmpty(string id)
+    public void GetAccessServiceNameFromDefaultPath_AccessService_ReturnsNullOrEmpty_IfIdNullOrEmpty(string id)
     {
         // Arrange
         var tokenService = new AuthAccessService2 { Id = id };
@@ -21,7 +21,7 @@ public class IIIFAuth2ParsingHelpersTests
     }
     
     [Fact]
-    public void GetAccessServiceNameFromDefaultPath_ReturnsCorrectAccessServiceName()
+    public void GetAccessServiceNameFromDefaultPath_AccessService_ReturnsCorrectAccessServiceName()
     {
         // Arrange
         var tokenService = new AuthAccessService2 { Id = "https://dlcs.digirati.io/auth/v2/access/2/clickthrough" };
@@ -31,5 +31,33 @@ public class IIIFAuth2ParsingHelpersTests
         
         // Assert
         accessServiceName.Should().Be("clickthrough", "the last path part is access-service-name");
+    }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void GetAccessServiceNameFromDefaultPath_LogoutService_ReturnsNullOrEmpty_IfIdNullOrEmpty(string id)
+    {
+        // Arrange
+        var tokenService = new AuthLogoutService2 { Id = id };
+        
+        // Act
+        var accessServiceName = tokenService.GetAccessServiceNameFromDefaultPath();
+        
+        // Assert
+        accessServiceName.Should().BeNullOrEmpty();
+    }
+    
+    [Fact]
+    public void GetAccessServiceNameFromDefaultPath_LogoutService_ReturnsCorrectAccessServiceName()
+    {
+        // Arrange
+        var tokenService = new AuthLogoutService2 { Id = "https://dlcs.digirati.io/auth/v2/access/2/clickthrough/logout" };
+        
+        // Act
+        var accessServiceName = tokenService.GetAccessServiceNameFromDefaultPath();
+        
+        // Assert
+        accessServiceName.Should().Be("clickthrough", "the 2nd last path part is access-service-name");
     }
 }

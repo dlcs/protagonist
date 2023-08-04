@@ -48,7 +48,7 @@ public class ConfigDrivenAuthPathGeneratorTests
         var expected = "https://default.com/access_99/99/100/asset/test-auth";
         
         // Act
-        var actual = sut.GetAuth2PathForRequest(assetId, "test-auth", "TestType");
+        var actual = sut.GetAuth2PathForRequest(assetId, "TestType", "test-auth");
         
         // Assert
         actual.Should().Be(expected);
@@ -63,7 +63,7 @@ public class ConfigDrivenAuthPathGeneratorTests
         var expected = "https://test.example.com/different_99/99/100/asset/test-auth";
 
         // Act
-        var actual = sut.GetAuth2PathForRequest(assetId, "test-auth", "TestType");
+        var actual = sut.GetAuth2PathForRequest(assetId, "TestType", "test-auth");
         
         // Assert
         actual.Should().Be(expected);

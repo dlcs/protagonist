@@ -31,7 +31,7 @@ public class ConfigDrivenAuthPathGenerator : IAuthPathGenerator
         return request.GetDisplayUrl(path);
     }
 
-    public string GetAuth2PathForRequest(AssetId assetId, string accessServiceName, string iiifServiceType)
+    public string GetAuth2PathForRequest(AssetId assetId, string iiifServiceType, string? accessServiceName)
     {
         var request = GetHttpRequest();
         var host = request.Host.Value;

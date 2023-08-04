@@ -62,9 +62,18 @@ public static class DlcsPathHelpers
         string template,
         AssetId? assetId = null,
         string? customer = null,
-        string? accessService = null) =>
-        template
-            .Replace("{assetId}", assetId?.ToString() ?? string.Empty)
+        string? accessService = null)
+    {
+        if (assetId != null)
+        {
+            template = template
+                .Replace("{assetId}", assetId.ToString())
+                .Replace("{asset}", assetId.Asset)
+                .Replace("{space}", assetId.Space.ToString());
+        }
+        
+        return template
             .Replace("{customer}", customer ?? string.Empty)
             .Replace("{accessService}", accessService ?? string.Empty);
+    }
 }

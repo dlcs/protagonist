@@ -12,5 +12,5 @@ public interface IAuthPathGenerator
     /// <summary>
     /// Generate full auth path for IIIF Auth Flow 2.0, using specified params for template replacement
     /// </summary>
-    string GetAuth2PathForRequest(AssetId assetId, string accessServiceName, string iiifServiceType);
+    string GetAuth2PathForRequest(AssetId assetId, string iiifServiceType, string? accessServiceName);
 }
