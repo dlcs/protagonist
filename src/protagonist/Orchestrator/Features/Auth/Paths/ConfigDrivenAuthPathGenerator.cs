@@ -1,4 +1,6 @@
 ﻿using DLCS.Core;
+using DLCS.Core.Guard;
+using DLCS.Core.Types;
 using DLCS.Web.Requests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -18,14 +20,32 @@ public class ConfigDrivenAuthPathGenerator : IAuthPathGenerator
         this.httpContextAccessor = httpContextAccessor;
         this.orchestratorSettings = orchestratorSettings.Value;
     }
-    
+
     public string GetAuthPathForRequest(string customer, string behaviour)
     {
-        var request = httpContextAccessor.HttpContext.Request;
-        var host = request.Host.Value ?? string.Empty;
+        var request = GetHttpRequest();
+        var host = request.Host.Value;
         var template = orchestratorSettings.Auth.AuthPathRules.GetPathTemplateForHost(host);
 
         var path = DlcsPathHelpers.GenerateAuthPathFromTemplate(template, customer, behaviour);
         return request.GetDisplayUrl(path);
+    }
+
+    public string GetAuth2PathForRequest(AssetId assetId, string accessServiceName, string iiifServiceType)
+    {
+        var request = GetHttpRequest();
+        var host = request.Host.Value;
+        var template = orchestratorSettings.Auth.Auth2PathRules.GetPathTemplateForHostAndType(host, iiifServiceType);
+
+        var path = DlcsPathHelpers.GenerateAuth2PathFromTemplate(template, assetId, assetId.Customer.ToString(),
+            accessServiceName);
+        return request.GetDisplayUrl(path);
+    }
+    
+    private HttpRequest GetHttpRequest()
+    {
+        var httpContext = httpContextAccessor.HttpContext.ThrowIfNull(nameof(httpContextAccessor.HttpContext));
+        var request = httpContext.Request;
+        return request;
     }
 }

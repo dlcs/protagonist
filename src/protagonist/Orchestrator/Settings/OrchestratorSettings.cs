@@ -197,6 +197,16 @@ public class AuthSettings
     /// URI template configuration for auth paths 
     /// </summary>
     public PathTemplateOptions AuthPathRules { get; set; }
+    
+    /// <summary>
+    /// URI template configurations for IIIF Auth 2.0 paths
+    /// </summary>
+    public TypedPathTemplateOptions Auth2PathRules { get; set; }
+    
+    /// <summary>
+    /// URL root for service handling IIIF Authorization 2.0 flow requests
+    /// </summary>
+    public Uri Auth2ServiceRoot { get; set; }
 }
 
 /// <summary>
