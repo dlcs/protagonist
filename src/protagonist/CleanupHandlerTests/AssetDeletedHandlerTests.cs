@@ -68,7 +68,7 @@ public class AssetDeletedHandlerTests
         var response = await sut.HandleMessage(queueMessage);
         
         // Assert
-        response.Should().BeTrue();
+        response.Should().BeFalse();
         fakeFileSystem.DeletedFiles.Should().BeEmpty();
         A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
     }
@@ -87,7 +87,7 @@ public class AssetDeletedHandlerTests
         var response = await sut.HandleMessage(queueMessage);
         
         // Assert
-        response.Should().BeTrue();
+        response.Should().BeFalse();
         fakeFileSystem.DeletedFiles.Should().BeEmpty();
         A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
     }
