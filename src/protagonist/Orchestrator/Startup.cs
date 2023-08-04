@@ -80,7 +80,6 @@ public class Startup
             .AddScoped<IAuthPathGenerator, ConfigDrivenAuthPathGenerator>()
             .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
             .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
-            .AddScoped<IIIIFAuthBuilder, IIIFAuth1Builder>()
             .AddSingleton<DownstreamDestinationSelector>()
             .AddCaching(cachingSection.Get<CacheSettings>())
             .AddOriginStrategies()
@@ -94,6 +93,7 @@ public class Startup
             .AddAws(configuration, webHostEnvironment)
             .AddHeaderPropagation()
             .AddInfoJsonClient()
+            .AddAuth2Client(orchestratorSettings)
             .HandlePathTemplates();
         
         // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively

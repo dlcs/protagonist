@@ -24,6 +24,8 @@ using Orchestrator.Assets;
 using Orchestrator.Features.Images.ImageServer;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.API;
+using Orchestrator.Infrastructure.Auth.V2;
+using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 
@@ -93,6 +95,17 @@ public static class ServiceCollectionX
                 client.DefaultRequestHeaders.WithRequestedBy();
             });
 
+        return services;
+    }
+
+    public static IServiceCollection AddAuth2Client(this IServiceCollection services, OrchestratorSettings orchestratorSettings)
+    {
+        services
+            .AddHttpClient<IIIIFAuthBuilder, IIIFAuth2Client>(client =>
+            {
+                client.DefaultRequestHeaders.WithRequestedBy();
+                client.BaseAddress = orchestratorSettings.Auth.Auth2ServiceRoot;
+            });
         return services;
     }
 
