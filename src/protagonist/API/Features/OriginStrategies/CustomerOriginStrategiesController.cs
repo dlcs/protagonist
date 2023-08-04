@@ -44,4 +44,26 @@ public class CustomerOriginStrategiesController : HydraController
             cancellationToken: cancellationToken
         );
     }
+    
+    /// <summary>
+    /// Get a specified origin strategy owned by the user
+    /// </summary>
+    [HttpGet]
+    [Route("{strategyId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCustomerOriginStrategy(
+        [FromRoute] int customerId,
+        [FromRoute] string strategyId,
+        CancellationToken cancellationToken)
+    {
+        var strategy = new GetCustomerOriginStrategy(customerId, strategyId);
+        
+        return await HandleFetch(
+            strategy,
+            s => s.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to get Origin Strategy",
+            cancellationToken: cancellationToken
+        );
+    }
 }
