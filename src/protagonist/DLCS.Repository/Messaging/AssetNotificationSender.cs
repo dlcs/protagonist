@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.SNS;
@@ -12,7 +12,7 @@ using DLCS.Model.Messaging;
 using DLCS.Model.PathElements;
 using DLCS.Model.Processing;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+//using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace DLCS.Repository.Messaging;
@@ -23,7 +23,8 @@ public class AssetNotificationSender : IAssetNotificationSender
     private readonly IEngineClient engineClient;
     private readonly ICustomerQueueRepository customerQueueRepository;
     private readonly ITopicPublisher topicPublisher;
-    private readonly JsonSerializerSettings jsonSerializerSettings;
+    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
+    //private readonly JsonSerializerSettings jsonSerializerSettings;
 
     public AssetNotificationSender(
         IEngineClient engineClient,
@@ -35,12 +36,12 @@ public class AssetNotificationSender : IAssetNotificationSender
         this.logger = logger;
         this.customerQueueRepository = customerQueueRepository;
         this.topicPublisher = topicPublisher;
-        
-        jsonSerializerSettings = new JsonSerializerSettings()
-        {
-            NullValueHandling = NullValueHandling.Ignore,
-            ContractResolver = new CamelCasePropertyNamesContractResolver()
-        };
+        //
+        // jsonSerializerSettings = new JsonSerializerSettings()
+        // {
+        //     NullValueHandling = NullValueHandling.Ignore,
+        //     ContractResolver = new CamelCasePropertyNamesContractResolver()
+        // };
     }
     
     public async Task<bool> SendIngestAssetRequest(Asset assetToIngest, CancellationToken cancellationToken = default)
@@ -99,13 +100,13 @@ public class AssetNotificationSender : IAssetNotificationSender
 
     private async Task<bool> SendCleanupAssetRequest(Asset assetToCleanup, CustomerPathElement customerPathElement, CancellationToken cancellationToken = default)
     {
-        var notificationRequest = new
+        var request = new CleanupAssetNotificationRequest()
         {
-            Id = assetToCleanup.Id.ToString(),
+            Asset = assetToCleanup,
             CustomerPathElement = customerPathElement
         };
-
-        return await topicPublisher.PublishToAssetModifiedTopic(JsonConvert.SerializeObject(notificationRequest, Formatting.None, jsonSerializerSettings), ChangeType.Delete, cancellationToken);
+        
+        return await topicPublisher.PublishToAssetModifiedTopic(JsonSerializer.Serialize(request, settings), ChangeType.Delete, cancellationToken);
     }
 
     public async Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after, CustomerPathElement? customerPathElement)

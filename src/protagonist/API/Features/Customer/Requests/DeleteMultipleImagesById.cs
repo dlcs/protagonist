@@ -48,27 +48,24 @@ public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleIma
     public async Task<int> Handle(DeleteMultipleImagesById request, CancellationToken cancellationToken)
     {
         var assetIds = ImageIdListValidation.ValidateRequest(request.AssetIds, request.CustomerId);
+        var assetsFromDatabase = dlcsContext.Images
+            .Where(i => i.Customer == request.CustomerId && assetIds.Contains(i.Id)).ToList();
+        dlcsContext.Images.RemoveRange(assetsFromDatabase);
 
-        var deletedRows = await dlcsContext.Images.AsNoTracking()
-            .Where(i => i.Customer == request.CustomerId && assetIds.Contains(i.Id))
-            .DeleteFromQueryAsync(cancellationToken);
-
-        logger.LogInformation("Deleted {DeletedRows} assets from a requested {RequestedRows}", deletedRows,
+        logger.LogInformation("Deleted {DeletedRows} assets from a requested {RequestedRows}", assetsFromDatabase.Count,
             request.AssetIds.Count);
 
-        if (deletedRows == 0) return 0;
+        if (assetsFromDatabase.Count == 0) return 0;
         
         var customerPathElement = await customerPathRepository.GetCustomerPathElement(request.CustomerId.ToString());
-        await RaiseModifiedNotifications(request, customerPathElement);
+        await RaiseModifiedNotifications(assetsFromDatabase, customerPathElement);
 
-        return deletedRows;
+        return assetsFromDatabase.Count;
     }
 
-    private async Task RaiseModifiedNotifications(DeleteMultipleImagesById request, CustomerPathElement customerPathElement)
+    private async Task RaiseModifiedNotifications(List<Asset> assets, CustomerPathElement customerPathElement)
     {
-        // NOTE(DG) there is the possibility to raise a notification for an object that doesn't exist here,
-        // we just issue a DELETE request to DB without checking which items exist 
-        foreach (var asset in request.AssetIds.Select(i => new Asset { Id = AssetId.FromString(i) }))
+        foreach (var asset in assets)
         {
             await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Delete, asset, null, customerPathElement);
         }

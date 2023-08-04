@@ -14,6 +14,13 @@ public interface IStorageKeyGenerator
     RegionalisedObjectInBucket GetStorageLocation(AssetId assetId);
     
     /// <summary>
+    /// Get <see cref="ObjectInBucket"/> for root location of stored delivery assets (tile-ready or original)
+    /// </summary>
+    /// <param name="assetId">Unique identifier for Asset</param>
+    /// <returns><see cref="ObjectInBucket"/> for delivery asset root</returns>
+    ObjectInBucket GetStorageLocationRoot(AssetId assetId);
+    
+    /// <summary>
     /// Get <see cref="ObjectInBucket"/> for stored original file.
     /// This is for assets for "file" delivery, or images where origin is tile-optimised
     /// </summary>
@@ -146,4 +153,18 @@ public interface IStorageKeyGenerator
     /// </summary>
     /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
     ObjectInBucket GetTimebasedMetadataLocation(AssetId assetId);
+
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> root location for the origin bucket
+    /// </summary>
+    /// <param name="assetId">asset id the request is for</param>
+    /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
+    ObjectInBucket GetOriginRoot(AssetId assetId);
+
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> root location for the output bucket
+    /// </summary>
+    /// <param name="assetId">asset id the request is for</param>
+    /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
+    ObjectInBucket GetOutputRoot(AssetId assetId);
 }

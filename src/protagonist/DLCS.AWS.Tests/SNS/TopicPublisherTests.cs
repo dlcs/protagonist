@@ -29,7 +29,7 @@ public class TopicPublisherTests
         {
             SNS = new SNSSettings()
             {
-                AssetModifiedNotificationTopicNameArn = "arn:aws:sns:us-east-1:000000000000:someTopic"
+                AssetModifiedNotificationTopicArn = "arn:aws:sns:us-east-1:000000000000:someTopic"
             }
         });
         
@@ -61,7 +61,7 @@ public class TopicPublisherTests
         {
             SNS = new SNSSettings()
             {
-                AssetModifiedNotificationTopicNameArn = null
+                AssetModifiedNotificationTopicArn = null
             }
         });
 
@@ -89,7 +89,7 @@ public class TopicPublisherTests
         {
             SNS = new SNSSettings()
             {
-                AssetModifiedNotificationTopicNameArn = "arn:aws:sns:us-east-1:000000000000:invalidTopic"
+                AssetModifiedNotificationTopicArn = "arn:aws:sns:us-east-1:000000000000:invalidTopic"
             }
         });
 

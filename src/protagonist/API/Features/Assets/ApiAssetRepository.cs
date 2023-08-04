@@ -1,4 +1,3 @@
-using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Model;
 using DLCS.Model.Assets;
@@ -34,7 +33,7 @@ public class ApiAssetRepository : IApiAssetRepository
 
     public Task<ImageLocation?> GetImageLocation(AssetId assetId) => assetRepository.GetImageLocation(assetId);
     
-    public Task<ResultStatus<DeleteResult>> DeleteAsset(AssetId assetId) => assetRepository.DeleteAsset(assetId);
+    public Task<DeleteEntityResult<Asset>> DeleteAsset(AssetId assetId) => assetRepository.DeleteAsset(assetId);
     
     /// <summary>
     /// Save changes to Asset, incrementing EntityCounters if required.

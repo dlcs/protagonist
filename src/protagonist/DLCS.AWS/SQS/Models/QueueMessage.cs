@@ -1,5 +1,5 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
-using Newtonsoft.Json;
 
 namespace DLCS.AWS.SQS;
 
@@ -31,6 +31,8 @@ public class QueueMessage
 
 public static class QueueMessageX
 {
+    private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
+    
     /// <summary>
     /// Get a <see cref="JsonObject"/> representing the contents of the message as raised by source system. This helps
     /// when the message can be from SNS->SQS, SNS->SQS with RawDelivery or SQS directly.
@@ -65,5 +67,31 @@ public static class QueueMessageX
 
         // From SQS or SNS with Raw Message Delivery
         return queueMessage.Body;
+    }
+    
+    /// <summary>
+    /// Serializes a queue message body into a class of type <see cref="T"/>
+    /// </summary>
+    /// <param name="message">The message to serialize</param>
+    /// <param name="throwIfConversionFails">Whether to throw an exception on failure to deserialize</param>
+    /// <typeparam name="T">The class type to serialize to</typeparam>
+    /// <returns>A class of type <see cref="T"/></returns>
+    public static T? GetMessageContents<T>(this QueueMessage message, bool throwIfConversionFails = true)
+        where T : class
+    {
+        try
+        {
+            var messageContents = GetMessageContents(message);
+            return messageContents.Deserialize<T>(Settings);
+        }
+        catch (JsonException)
+        {
+            if (throwIfConversionFails)
+            {
+                throw;
+            }
+
+            return null;
+        }
     }
 } 
