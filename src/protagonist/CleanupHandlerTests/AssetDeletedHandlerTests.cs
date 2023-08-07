@@ -38,7 +38,6 @@ public class AssetDeletedHandlerTests
                 {
                     StorageBucket = LocalStackFixture.StorageBucketName,
                     ThumbsBucket = LocalStackFixture.ThumbsBucketName,
-                    OutputBucket = LocalStackFixture.OutputBucketName,
                     OriginBucket = LocalStackFixture.OriginBucketName
                 }
             },
@@ -126,12 +125,6 @@ public class AssetDeletedHandlerTests
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
             ))).MustHaveHappened();
-        
-        // output deleted
-        A.CallTo(() =>
-            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
-                a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
     }
     
     [Fact]
@@ -169,12 +162,6 @@ public class AssetDeletedHandlerTests
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
             ))).MustHaveHappened();
-        
-        // output deleted
-        A.CallTo(() =>
-            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
-                a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
     }
     
     [Fact]
@@ -211,12 +198,6 @@ public class AssetDeletedHandlerTests
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
-        
-        // output deleted
-        A.CallTo(() =>
-            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
-                a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
             ))).MustHaveHappened();
     }
     
@@ -256,12 +237,6 @@ public class AssetDeletedHandlerTests
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
             ))).MustHaveHappened();
-        
-        // output deleted
-        A.CallTo(() =>
-            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
-                a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
     }
     
     [Fact]
@@ -300,56 +275,6 @@ public class AssetDeletedHandlerTests
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
             ))).MustNotHaveHappened();
-        
-        // output deleted
-        A.CallTo(() =>
-            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
-                a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
-    }
-    
-    [Fact]
-    public async Task Handle_DoesNotDeleteOutput_IfSettingEmpty()
-    {
-        // Arrange
-        const string assetId = "1/99/foo";
-        var queueMessage = CreateMinimalQueueMessage();
-        handlerSettings.AWS.S3.OriginBucket = "";
-
-        // Act
-        var sut = GetSut();
-        var response = await sut.HandleMessage(queueMessage);
-        
-        // Assert
-        response.Should().BeTrue();
-        
-        // File deleted from local disk
-        fakeFileSystem.DeletedFiles.Should().ContainSingle(s => s == "/nas/1/99/foo/foo.jp2");
-        
-        // Thumbs deleted
-        A.CallTo(() =>
-            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
-                a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
-        
-        
-        // storage not deleted
-        A.CallTo(() =>
-            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
-                a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
-        
-        // origin deleted
-        A.CallTo(() =>
-            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
-                a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
-            ))).MustNotHaveHappened();
-        
-        // output deleted
-        A.CallTo(() =>
-            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
-                a.Bucket == LocalStackFixture.OutputBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
     }
 
     [Fact]

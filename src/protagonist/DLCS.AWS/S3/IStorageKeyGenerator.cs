@@ -160,11 +160,4 @@ public interface IStorageKeyGenerator
     /// <param name="assetId">asset id the request is for</param>
     /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
     ObjectInBucket GetOriginRoot(AssetId assetId);
-
-    /// <summary>
-    /// Get <see cref="ObjectInBucket"/> root location for the output bucket
-    /// </summary>
-    /// <param name="assetId">asset id the request is for</param>
-    /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
-    ObjectInBucket GetOutputRoot(AssetId assetId);
 }
