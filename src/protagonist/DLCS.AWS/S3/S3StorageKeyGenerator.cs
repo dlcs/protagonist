@@ -185,10 +185,4 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         var key = GetStorageKey(assetId);
         return new ObjectInBucket(s3Options.OriginBucket, $"{key}/");
     }
-
-    public ObjectInBucket GetOutputRoot(AssetId assetId)
-    {
-        var key = GetStorageKey(assetId);
-        return new ObjectInBucket(s3Options.OutputBucket, $"{key}/");
-    }
 }

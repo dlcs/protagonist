@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-using System.Text.Json.Nodes;
-using CleanupHandler.Infrastructure;
+﻿using CleanupHandler.Infrastructure;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
@@ -65,7 +63,6 @@ public class AssetDeletedHandler : IMessageHandler
         await DeleteTileOptimised(request.Asset.Id);
         DeleteFromNas(request.Asset.Id);
         await DeleteFromOriginBucket(request.Asset.Id);
-        await DeleteFromOutputBucket(request.Asset.Id);
 
         return await InvalidateContentDeliveryNetwork(request.Asset);
     }
@@ -80,19 +77,6 @@ public class AssetDeletedHandler : IMessageHandler
 
         var storageKey = storageKeyGenerator.GetOriginRoot(assetId);
         logger.LogInformation("Deleting OriginBucket key from {StorageKey} for {AssetId}", storageKey, assetId);
-        await bucketWriter.DeleteFolder(storageKey);
-    }
-    
-    private async Task DeleteFromOutputBucket(AssetId assetId)
-    {
-        if (string.IsNullOrEmpty(handlerSettings.AWS.S3.OutputBucket))
-        {
-            logger.LogDebug("No OutputBucket configured - output folder will not be deleted. {AssetId}", assetId);
-            return;
-        }
-
-        var storageKey = storageKeyGenerator.GetOutputRoot(assetId);
-        logger.LogInformation("Deleting OutputBucket key from {StorageKey} for {AssetId}", storageKey, assetId);
         await bucketWriter.DeleteFolder(storageKey);
     }
 
