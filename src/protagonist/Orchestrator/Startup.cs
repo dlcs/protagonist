@@ -2,10 +2,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Caching;
 using DLCS.Repository;
-using DLCS.Repository.Auth;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Configuration;
+using DLCS.Web.Handlers;
 using DLCS.Web.Logging;
 using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
@@ -20,13 +20,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Orchestrator.Features.Auth;
-using Orchestrator.Features.Auth.Paths;
 using Orchestrator.Features.Files;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
-using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.NamedQueries;
@@ -66,21 +63,16 @@ public class Startup
         var orchestratorSettings = configuration.Get<OrchestratorSettings>();
         
         services
+            .AddTransient<TimingHandler>()
             .AddSingleton<IAssetDeliveryPathParser, AssetDeliveryPathParser>()
             .AddSingleton<ImageRequestHandler>()
             .AddSingleton<TimeBasedRequestHandler>()
             .AddSingleton<FileRequestHandler>()
             .AddSingleton<S3ProxyPathGenerator>()
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
-            .AddScoped<AccessChecker>()
             .AddScoped<IIIFManifestBuilder>()
             .AddScoped<IIIFCanvasFactory>()
-            .AddScoped<ISessionAuthService, SessionAuthService>()
-            .AddScoped<AuthCookieManager>()
             .AddSingleton<AssetRequestProcessor>()
-            .AddScoped<IAuthPathGenerator, ConfigDrivenAuthPathGenerator>()
-            .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
-            .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
             .AddSingleton<DownstreamDestinationSelector>()
             .AddCaching(cachingSection.Get<CacheSettings>())
             .AddOriginStrategies()
@@ -94,7 +86,7 @@ public class Startup
             .AddAws(configuration, webHostEnvironment)
             .AddHeaderPropagation()
             .AddInfoJsonClient()
-            .AddAuth2Client(orchestratorSettings)
+            .AddIIIFAuth(orchestratorSettings)
             .HandlePathTemplates();
         
         // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively

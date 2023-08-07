@@ -67,27 +67,28 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
         }
 
         JsonLdBase manifest = request.IIIFPresentationVersion == Version.V3
-            ? await GenerateV3Manifest(request.AssetRequest, asset)
-            : await GenerateV2Manifest(request.AssetRequest, asset);
+            ? await GenerateV3Manifest(request.AssetRequest, asset, cancellationToken)
+            : await GenerateV2Manifest(request.AssetRequest, asset, cancellationToken);
 
         return DescriptionResourceResponse.Open(manifest);
     }
 
-    private async Task<IIIF3.Manifest> GenerateV3Manifest(BaseAssetRequest assetRequest, Asset asset)
+    private async Task<IIIF3.Manifest> GenerateV3Manifest(BaseAssetRequest assetRequest, Asset asset, CancellationToken cancellationToken)
     {
         var manifestId = GetFullyQualifiedId(assetRequest);
         var manifest =
-            await manifestBuilder.GenerateV3Manifest(asset.AsList(), assetRequest.Customer, manifestId, ManifestLabel);
+            await manifestBuilder.GenerateV3Manifest(asset.AsList(), assetRequest.Customer, manifestId, ManifestLabel,
+                cancellationToken);
 
         return manifest;
     }
 
-    private async Task<IIIF2.Manifest> GenerateV2Manifest(BaseAssetRequest assetRequest, Asset asset)
+    private async Task<IIIF2.Manifest> GenerateV2Manifest(BaseAssetRequest assetRequest, Asset asset, CancellationToken cancellationToken)
     {
         var manifestIdAndSequenceRoot = GetFullyQualifiedId(assetRequest);
         var manifest =
             await manifestBuilder.GenerateV2Manifest(asset.AsList(), assetRequest.Customer, manifestIdAndSequenceRoot,
-                ManifestLabel, manifestIdAndSequenceRoot);
+                ManifestLabel, manifestIdAndSequenceRoot, cancellationToken);
         return manifest;
     }
 

@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.PathElements;
 using DLCS.Model.Policies;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
+using IIIF.Auth.V2;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
 using IIIF.Presentation.V2.Annotation;
@@ -49,7 +51,7 @@ public class IIIFCanvasFactory
     /// Generate IIIF V3 canvases for assets.
     /// </summary>
     public async Task<List<IIIF3.Canvas>> CreateV3Canvases(List<Asset> results,
-        CustomerPathElement customerPathElement)
+        CustomerPathElement customerPathElement, Dictionary<AssetId, AuthProbeService2>? authProbeServices)
     {
         int counter = 0;
         var canvases = new List<IIIF3.Canvas>(results.Count);
@@ -79,7 +81,7 @@ public class IIIFCanvasFactory
                             Format = "image/jpeg",
                             Width = thumbnailSizes.MaxDerivativeSize.Width,
                             Height = thumbnailSizes.MaxDerivativeSize.Height,
-                            Service = GetImageServices(i, customerPathElement)
+                            Service = GetImageServices(i, customerPathElement, authProbeServices)
                         }
                     }.AsListOf<IAnnotation>()
                 }.AsList()
@@ -132,7 +134,7 @@ public class IIIFCanvasFactory
                             thumbnailSizes.MaxDerivativeSize, false),
                         Width = thumbnailSizes.MaxDerivativeSize.Width,
                         Height = thumbnailSizes.MaxDerivativeSize.Height,
-                        Service = GetImageServices(i, customerPathElement)
+                        Service = GetImageServices(i, customerPathElement, null)
                     }
                 }.AsList()
             };
@@ -268,8 +270,20 @@ public class IIIFCanvasFactory
         return assetPathGenerator.GetFullPathForRequest(imageRequest, true);
     }
 
-    private List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement)
+    private List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement,
+        Dictionary<AssetId, AuthProbeService2>? authProbeServices)
     {
+        var noAuthServices = authProbeServices.IsNullOrEmpty();
+        
+        List<IService>? TryGetAuthServices(bool createEmbeddedVersion)
+        {
+            if (noAuthServices) return null;
+            if (!authProbeServices!.TryGetValue(asset.Id, out var probeService2)) return null;
+
+            var authServiceToAdd = createEmbeddedVersion ? probeService2 : probeService2.ToEmbeddedService();
+            return authServiceToAdd.AsListOf<IService>();
+        }
+
         var services = new List<IService>(2);
         if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(ImageApi.Version.V2))
         {
@@ -279,7 +293,8 @@ public class IIIFCanvasFactory
                 Profile = ImageService2.Level2Profile,
                 Context = ImageService2.Image2Context,
                 Width = asset.Width ?? 0,
-                Height = asset.Height ?? 0
+                Height = asset.Height ?? 0,
+                Service = TryGetAuthServices(false),
             });
         }
 
@@ -291,7 +306,8 @@ public class IIIFCanvasFactory
                 Profile = ImageService3.Level2Profile,
                 Context = ImageService3.Image3Context,
                 Width = asset.Width ?? 0,
-                Height = asset.Height ?? 0
+                Height = asset.Height ?? 0,
+                Service = TryGetAuthServices(true),
             });
         }
         

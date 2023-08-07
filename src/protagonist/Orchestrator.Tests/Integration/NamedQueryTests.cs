@@ -2,14 +2,19 @@
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.NamedQueries;
-using FluentAssertions;
+using IIIF.Auth.V2;
+using IIIF.ImageApi.V2;
+using IIIF.ImageApi.V3;
+using IIIF.Presentation.V3.Annotation;
+using IIIF.Serialisation;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
+using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
-using Xunit;
+using IIIF3 = IIIF.Presentation.V3;
 
 namespace Orchestrator.Tests.Integration;
 
@@ -24,6 +29,10 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
     {
         dbFixture = databaseFixture;
         httpClient = factory
+            .WithTestServices(services =>
+            {
+                services.AddSingleton<IIIIFAuthBuilder, FakeAuth2Client>();
+            })
             .WithConnectionString(dbFixture.ConnectionString)
             .CreateClient();
 
@@ -42,6 +51,13 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
             maxUnauthorised: 10, roles: "default");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/not-for-delivery"), num1: 4, ref1: "my-ref",
             notForDelivery: true);
+        
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/auth-1"), num1: 2, ref1: "auth-ref",
+            roles: "clickthrough");
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/auth-2"), num1: 1, ref1: "auth-ref",
+            roles: "clickthrough");
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/no-auth"), num1: 3, ref1: "auth-ref");
+        
         dbFixture.DbContext.SaveChanges();
     }
     
@@ -240,5 +256,52 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         {
             token["id"].Value<string>().Should().Contain(expectedOrder[count++]);
         }
+    }
+    
+    [Fact]
+    public async Task Get_AssetsRequireAuth_ReturnsV2ManifestWithoutAuthServices()
+    {
+        // Arrange
+        const string path = "iiif-resource/v2/99/test-named-query/auth-ref/1";
+        
+        // Act
+        var response = await httpClient.GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var jsonResponse = JObject.Parse(jsonContent);
+        jsonContent.Should().NotContain("clickthrough", "auth services are not included in v2 manifests");
+        jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(3);
+    }
+    
+    [Fact]
+    public async Task Get_AssetsRequireAuth_ReturnsV3ManifestWithAuthServices()
+    {
+        // Arrange
+        const string path = "iiif-resource/v3/99/test-named-query/auth-ref/1";
+        
+        // Act
+        var response = await httpClient.GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+        manifest.Context.ToString().Should().Contain("http://iiif.io/api/auth/2/context.json", "Auth2 context added");
+        manifest.Services.Should().ContainItemsAssignableTo<AuthAccessService2>()
+            .And.HaveCount(1, "2 items require auth but they share an access service");
+        
+        var paintable = manifest.Items.First()
+            .Items.First()
+            .Items.Cast<PaintingAnnotation>().Single()
+            .Body.As<IIIF.Presentation.V3.Content.Image>();
+            
+        paintable.Service.Should().HaveCount(2);
+        paintable.Service.OfType<ImageService2>().Single().Service.Should()
+            .ContainSingle(s => s is AuthProbeService2 && s.Id.Contains("auth-1"));
+        paintable.Service.OfType<ImageService3>().Single().Service.Should()
+            .ContainSingle(s => s is AuthProbeService2 && s.Id.Contains("auth-1"));
     }
 }

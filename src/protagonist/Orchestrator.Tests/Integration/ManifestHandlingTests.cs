@@ -2,14 +2,19 @@
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using FluentAssertions;
+using IIIF.Auth.V2;
+using IIIF.ImageApi.V2;
+using IIIF.ImageApi.V3;
+using IIIF.Presentation.V3.Annotation;
+using IIIF.Serialisation;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
+using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
-using Xunit;
+using IIIF3 = IIIF.Presentation.V3;
 
 namespace Orchestrator.Tests.Integration;
 
@@ -29,6 +34,10 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         dbFixture = databaseFixture;
 
         httpClient = factory
+            .WithTestServices(services =>
+            {
+                services.AddSingleton<IIIIFAuthBuilder, FakeAuth2Client>();
+            })
             .WithConnectionString(dbFixture.ConnectionString)
             .CreateClient();
             
@@ -206,10 +215,10 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     }
         
     [Fact]
-    public async Task Get_ManifestForRestrictedImage_ReturnsManifest()
+    public async Task Get_V2ManifestForRestrictedImage_ReturnsManifest_WithoutAuthServices()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForRestrictedImage_ReturnsManifest)}");
+        var id = AssetId.FromString($"99/1/{nameof(Get_V2ManifestForRestrictedImage_ReturnsManifest_WithoutAuthServices)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 400,
             origin: "testorigin");
         await dbFixture.DbContext.SaveChangesAsync();
@@ -220,11 +229,13 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         var response = await httpClient.GetAsync(path);
             
         // Assert
-        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        var jsonContent = await response.Content.ReadAsStringAsync();
+        var jsonResponse = JObject.Parse(jsonContent);
         jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/v2/{id}");
         jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
             .Should().StartWith($"http://localhost/thumbs/{id}/full");
 
+        jsonContent.Should().NotContain("clickthrough", "auth services are not included in v2 manifests");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
@@ -381,5 +392,38 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         // Image3, canonical so Id doesn't have version in path
         imageServices.Last["@context"].ToString().Should().Be("http://iiif.io/api/image/3/context.json");
         imageServices.Last()["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
+    }
+    
+    [Fact]
+    public async Task Get_V3ManifestForRestrictedImage_ReturnsManifest_WithAuthServices()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_V3ManifestForRestrictedImage_ReturnsManifest_WithAuthServices)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 400,
+            origin: "testorigin");
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        var path = $"iiif-manifest/v3/{id}";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+            
+        // Assert
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+        manifest.Context.ToString().Should().Contain("http://iiif.io/api/auth/2/context.json", "Auth2 context added");
+        manifest.Services.Should().ContainItemsAssignableTo<AuthAccessService2>()
+            .And.HaveCount(1, "item requires auth");
+        
+        manifest.Id.Should().Be($"http://localhost/iiif-manifest/v3/{id}");
+        var paintable = manifest.Items.First()
+            .Items.First()
+            .Items.Cast<PaintingAnnotation>().Single()
+            .Body.As<IIIF.Presentation.V3.Content.Image>();
+            
+        paintable.Service.Should().HaveCount(2);
+        paintable.Service.OfType<ImageService2>().Single().Service.Should()
+            .ContainSingle(s => s is AuthProbeService2 && s.Id.Contains(id.ToString()));
+        paintable.Service.OfType<ImageService3>().Single().Service.Should()
+            .ContainSingle(s => s is AuthProbeService2 && s.Id.Contains(id.ToString()));
     }
 }

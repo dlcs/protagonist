@@ -44,28 +44,33 @@ public class IIIFNamedQueryProjector
         var orderedImages = NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery).ToList();
 
         return iiifPresentationVersion == Version.V2
-            ? await GenerateV2Manifest(parsedNamedQuery, customerPathElement, orderedImages, request)
-            : await GenerateV3Manifest(parsedNamedQuery, customerPathElement, orderedImages, request);
+            ? await GenerateV2Manifest(parsedNamedQuery, customerPathElement, orderedImages, request, cancellationToken)
+            : await GenerateV3Manifest(parsedNamedQuery, customerPathElement, orderedImages, request, cancellationToken);
     }
 
     private async Task<JsonLdBase> GenerateV2Manifest(IIIFParsedNamedQuery parsedNamedQuery,
-        CustomerPathElement customerPathElement, List<Asset> results, HttpRequest request)
+        CustomerPathElement customerPathElement, List<Asset> results, HttpRequest request,
+        CancellationToken cancellationToken)
     {
         var sequenceRootUrl = request.GetDisplayUrl("/iiif-query/");
         var manifestId = request.GetDisplayUrl();
         var label = GetManifestLabel(parsedNamedQuery);
         var manifest =
-            await manifestBuilder.GenerateV2Manifest(results, customerPathElement, manifestId, label, sequenceRootUrl);
+            await manifestBuilder.GenerateV2Manifest(results, customerPathElement, manifestId, label, sequenceRootUrl,
+                cancellationToken);
         
         return manifest;
     }
 
     private async Task<JsonLdBase> GenerateV3Manifest(IIIFParsedNamedQuery parsedNamedQuery,
-        CustomerPathElement customerPathElement, List<Asset> results, HttpRequest request)
+        CustomerPathElement customerPathElement, List<Asset> results, HttpRequest request,
+        CancellationToken cancellationToken)
     {
         var manifestId = request.GetDisplayUrl();
         var label = GetManifestLabel(parsedNamedQuery);
-        var manifest = await manifestBuilder.GenerateV3Manifest(results, customerPathElement, manifestId, label);
+        var manifest =
+            await manifestBuilder.GenerateV3Manifest(results, customerPathElement, manifestId, label,
+                cancellationToken);
         
         return manifest;
     }
