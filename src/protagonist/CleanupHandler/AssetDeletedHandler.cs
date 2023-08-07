@@ -77,7 +77,7 @@ public class AssetDeletedHandler : IMessageHandler
 
         var storageKey = storageKeyGenerator.GetOriginRoot(assetId);
         logger.LogInformation("Deleting OriginBucket key from {StorageKey} for {AssetId}", storageKey, assetId);
-        await bucketWriter.DeleteFolder(storageKey);
+        await bucketWriter.DeleteFolder(storageKey, true);
     }
 
     private async Task<bool> InvalidateContentDeliveryNetwork(Asset asset)
@@ -139,7 +139,7 @@ public class AssetDeletedHandler : IMessageHandler
                     invalidationUriList.Add($"/thumbs/v3/{assetId}/*");
                     break;
                 case AssetDeliveryChannels.File:
-                    invalidationUriList.Add($"/file/{assetId}/*");
+                    invalidationUriList.Add($"/file/{assetId}");
                     break;
                 case AssetDeliveryChannels.Timebased:
                     invalidationUriList.Add($"/iiif-av/{assetId}/*");
@@ -160,7 +160,7 @@ public class AssetDeletedHandler : IMessageHandler
 
         var thumbsRoot = storageKeyGenerator.GetThumbnailsRoot(assetId);
         logger.LogInformation("Deleting thumbs from {ThumbnailRoot} for {AssetId}", thumbsRoot, assetId);
-        await bucketWriter.DeleteFolder(thumbsRoot);
+        await bucketWriter.DeleteFolder(thumbsRoot, true);
     }
     
     private async Task DeleteTileOptimised(AssetId assetId)
@@ -174,7 +174,7 @@ public class AssetDeletedHandler : IMessageHandler
 
         var storageKey = storageKeyGenerator.GetStorageLocationRoot(assetId);
         logger.LogInformation("Deleting tile-optimised key from {StorageKey} for {AssetId}", storageKey, assetId);
-        await bucketWriter.DeleteFolder(storageKey);
+        await bucketWriter.DeleteFolder(storageKey, true);
     }
     
     private void DeleteFromNas(AssetId assetId)

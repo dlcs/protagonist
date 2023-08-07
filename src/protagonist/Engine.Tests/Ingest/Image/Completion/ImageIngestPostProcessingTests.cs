@@ -103,7 +103,7 @@ public class ImageIngestPostProcessingTests
         await sut.CompleteIngestion(new IngestionContext(asset), true);
         
         // Assert
-        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(o => o.Key == $"{assetId}/info/")))
+        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(o => o.Key == $"{assetId}/info/"), A<bool>._))
             .MustHaveHappened();
     }
     
@@ -119,7 +119,7 @@ public class ImageIngestPostProcessingTests
         await sut.CompleteIngestion(new IngestionContext(asset), false);
         
         // Assert
-        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._))
+        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._))
             .MustNotHaveHappened();
     }
 

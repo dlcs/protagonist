@@ -172,7 +172,7 @@ public class TestBucketWriter : IBucketWriter
         return Task.CompletedTask;
     }
 
-    public Task DeleteFolder(ObjectInBucket root)
+    public Task DeleteFolder(ObjectInBucket root, bool removeRoot)
     {
         throw new NotImplementedException();
     }
