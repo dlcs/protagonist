@@ -1,12 +1,15 @@
 ﻿using API.Features.OriginStrategies.Converters;
 using API.Features.OriginStrategies.Requests;
+using API.Features.OriginStrategies.Validators;
 using API.Infrastructure;
 using API.Settings;
-using DLCS.HydraModel;
+using DLCS.Core.Enum;
+using DLCS.Model.Customers;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using CustomerOriginStrategy = DLCS.HydraModel.CustomerOriginStrategy;
 
 namespace API.Features.OriginStrategies;
 
@@ -43,6 +46,46 @@ public class CustomerOriginStrategiesController : HydraController
             errorTitle: "Failed to get Origin Strategies",
             cancellationToken: cancellationToken
         );
+    }
+    
+    /// <summary>
+    /// Create a new origin strategy owned by the user
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST: /customers/1/originStrategies
+    ///     {
+    ///          "originStrategy":"basic-http-authentication",
+    ///          "regex": "your-regex-here"
+    ///          "optimised": "false",
+    ///          "credentials": "{"user": "user-example", "password": "password-example"}"
+    ///          "order": 2
+    ///     }
+    /// </remarks>
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> PostCustomerOriginStrategy(
+        [FromRoute] int customerId,
+        [FromBody] CustomerOriginStrategy newStrategy,
+        [FromServices] HydraCustomerOriginStrategyValidator validator,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await validator.ValidateAsync(newStrategy, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
+        
+        newStrategy.CustomerId = customerId;
+        var request = new CreateCustomerOriginStrategy(customerId, newStrategy.ToDlcsModel());
+        return await HandleUpsert(request, 
+            nq => nq.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to create Origin Strategy",
+            cancellationToken: cancellationToken);
     }
     
     /// <summary>

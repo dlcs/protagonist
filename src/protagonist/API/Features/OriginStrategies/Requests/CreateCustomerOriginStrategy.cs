@@ -46,7 +46,7 @@ public class CreateCustomerOriginStrategyHandler : IRequestHandler<CreateCustome
             Customer = request.Strategy.Customer,
             Regex = request.Strategy.Regex,
             Strategy = request.Strategy.Strategy,
-            Credentials = request.Strategy.Credentials,
+            Credentials = request.Strategy.Credentials ?? string.Empty,
             Optimised = request.Strategy.Optimised,
             Order = request.Strategy.Order
         };
