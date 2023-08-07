@@ -1,0 +1,32 @@
+﻿using System.Text.RegularExpressions;
+using DLCS.Core.Enum;
+using DLCS.Model.Customers;
+using FluentValidation;
+
+namespace API.Features.OriginStrategies.Validators;
+
+public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.HydraModel.CustomerOriginStrategy>
+{
+    public HydraCustomerOriginStrategyValidator()
+    {
+        RuleFor(s => s.Id)
+            .Empty()
+            .WithMessage(s => $"DLCS must allocate named query id, but id {s.Id} was supplied");
+        RuleFor(nq => nq.CustomerId)
+            .Empty()
+            .WithMessage("Should not include user id");
+        RuleFor(s => s.OriginStrategy)
+            .NotEmpty()
+            .WithMessage(s => "You must specify an origin strategy");
+        RuleFor(s => s.OriginStrategy)
+            .Must( s => s?.GetEnumFromString<OriginStrategyType>() != OriginStrategyType.Default)
+            .WithMessage(s => $"'{s.OriginStrategy}' is not a valid origin strategy");
+        RuleFor(s => s.Optimised)
+            .NotEqual(true)
+            .When(s => s.OriginStrategy != OriginStrategyType.S3Ambient.GetDescription())
+            .WithMessage("'Optimised' is only applicable if the origin strategy is s3-ambient");
+        RuleFor(s => s.Regex)
+            .NotEmpty()
+            .WithMessage("Regex cannot be empty");
+    }
+}
