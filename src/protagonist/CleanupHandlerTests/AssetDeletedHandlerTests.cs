@@ -112,19 +112,19 @@ public class AssetDeletedHandlerTests
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
+            ), A<bool>._)).MustHaveHappened();
         
         // storage deleted
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
+            ), A<bool>._)).MustHaveHappened();
         
         // origin deleted
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
+            ), A<bool>._)).MustHaveHappened();
     }
     
     [Fact]
@@ -149,19 +149,19 @@ public class AssetDeletedHandlerTests
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
+            ), A<bool>._)).MustHaveHappened();
         
         // storage deleted
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
+            ), A<bool>._)).MustHaveHappened();
         
         // origin deleted
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
+            ), A<bool>._)).MustHaveHappened();
     }
     
     [Fact]
@@ -186,19 +186,19 @@ public class AssetDeletedHandlerTests
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
-            ))).MustNotHaveHappened();
+            ), A<bool>._)).MustNotHaveHappened();
         
         // storage deleted
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
+            ), A<bool>._)).MustHaveHappened();
         
         // origin deleted
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
+            ), A<bool>._)).MustHaveHappened();
     }
     
     [Fact]
@@ -223,20 +223,20 @@ public class AssetDeletedHandlerTests
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
+            ), A<bool>._)).MustHaveHappened();
         
         
         // storage not deleted
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
-            ))).MustNotHaveHappened();
+            ), A<bool>._)).MustNotHaveHappened();
         
         // origin deleted
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
+            ), A<bool>._)).MustHaveHappened();
     }
     
     [Fact]
@@ -261,20 +261,20 @@ public class AssetDeletedHandlerTests
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
+            ), A<bool>._)).MustHaveHappened();
         
         
         // storage not deleted
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
-            ))).MustHaveHappened();
+            ), A<bool>._)).MustHaveHappened();
         
         // origin deleted
         A.CallTo(() =>
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
-            ))).MustNotHaveHappened();
+            ), A<bool>._)).MustNotHaveHappened();
     }
 
     [Fact]
@@ -320,7 +320,7 @@ public class AssetDeletedHandlerTests
         
         // invalidates files
         A.CallTo(() =>
-            cacheInvalidator.InvalidateCdnCache(A<List<string>>.That.Contains("/file/1/99/foo/*"),
+            cacheInvalidator.InvalidateCdnCache(A<List<string>>.That.Contains("/file/1/99/foo"),
                 A<CancellationToken>._)).MustHaveHappened();
         
         // invalidates av

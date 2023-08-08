@@ -54,10 +54,11 @@ public interface IBucketWriter
     Task DeleteFromBucket(params ObjectInBucket[] toDelete);
 
     /// <summary>
-    /// Delete "folder" from underlying storage, this will be the specified root and any child elements.
+    /// Delete "folder" from underlying storage, this will be any child elements and optionally, the root.
     /// </summary>
     /// <param name="root">Root object to delete</param>
-    Task DeleteFolder(ObjectInBucket root);
+    /// <param name="removeRoot">Whether to remove the root</param>
+    Task DeleteFolder(ObjectInBucket root, bool removeRoot);
 }
 
 /// <summary>

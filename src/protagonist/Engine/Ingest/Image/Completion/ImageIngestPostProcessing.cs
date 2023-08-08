@@ -66,7 +66,7 @@ public class ImageIngestPostProcessing : IImageIngestPostProcessing
         if (!ingestSuccessful) return;
         
         var infoJsonRoot = storageKeyGenerator.GetInfoJsonRoot(ingestionContext.AssetId);
-        await bucketWriter.DeleteFolder(infoJsonRoot);
+        await bucketWriter.DeleteFolder(infoJsonRoot, false);
     }
 
     private async Task OrchestrateIfRequired(IngestionContext ingestionContext, bool ingestSuccessful)

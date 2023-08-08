@@ -254,7 +254,7 @@ public class S3BucketWriter : IBucketWriter
         }
     }
 
-    public async Task DeleteFolder(ObjectInBucket root)
+    public async Task DeleteFolder(ObjectInBucket root, bool deleteRoot)
     {
         // NOTE - this is based on the S3DirectoryInfo.Delete method that was removed from SDK
         try
@@ -269,6 +269,8 @@ public class S3BucketWriter : IBucketWriter
             {
                 BucketName = root.Bucket
             };
+
+            if (deleteRoot && root.Key != null) deleteObjectsRequest.AddKey(root.Key.TrimEnd('/'));
 
             ListObjectsResponse listObjectsResponse;
             do
@@ -286,7 +288,7 @@ public class S3BucketWriter : IBucketWriter
                     listObjectsRequest.Marker = item.Key;
                 }
             } while (listObjectsResponse.IsTruncated);
-
+            
             if (deleteObjectsRequest.Objects.Count > 0)
             {
                 await s3Client.DeleteObjectsAsync(deleteObjectsRequest);
