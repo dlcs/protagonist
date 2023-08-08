@@ -97,6 +97,32 @@ public class EnumXTests
         // Assert
         actual.Should().Be(expected);
     }
+
+    [Theory]
+    [InlineData("Brown Bear", true)]
+    [InlineData("BrownBear", true)]
+    [InlineData("Polar Bear", false)]
+    public void IsValidEnumValue_ReturnsCorrectValue(string lookingFor, bool expected)
+    {
+        // Act
+        var result = lookingFor.IsValidEnumValue<TestEnum>();
+        
+        // Assert
+        result.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void IsValidEnumValue_ReturnsFalse_IfNullOrEmptyValuePassed(string lookingFor)
+    {
+        // Act
+        var result = lookingFor.IsValidEnumValue<TestEnum>();
+        
+        // Assert
+        result.Should().Be(false);
+    }
     
     public enum TestEnum
     {

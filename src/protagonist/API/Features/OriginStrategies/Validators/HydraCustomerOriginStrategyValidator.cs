@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using DLCS.Core.Enum;
 using DLCS.Model.Customers;
+using DLCS.Model.Policies;
 using FluentValidation;
 
 namespace API.Features.OriginStrategies.Validators;
@@ -19,7 +20,7 @@ public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.Hydra
             .NotEmpty()
             .WithMessage(s => "You must specify an origin strategy");
         RuleFor(s => s.OriginStrategy)
-            .Must( s => s?.GetEnumFromString<OriginStrategyType>() != OriginStrategyType.Default)
+            .Must( s => s != null && s.IsValidEnumValue<OriginStrategyType>())
             .WithMessage(s => $"'{s.OriginStrategy}' is not a valid origin strategy");
         RuleFor(s => s.Optimised)
             .NotEqual(true)
