@@ -91,6 +91,7 @@ public static class ServiceCollectionX
     public static IServiceCollection AddInfoJsonClient(this IServiceCollection services)
     {
         services
+            .AddScoped<IIIFAuth1Builder>()
             .AddScoped<InfoJsonConstructor>()
             .AddScoped<InfoJsonService>()
             .AddHttpClient<IImageServerClient, YarpImageServerClient>(client =>

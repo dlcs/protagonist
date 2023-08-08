@@ -5,7 +5,7 @@ namespace DLCS.Web.Response;
 
 /// <summary>
 /// A collection of options related to path generation. This differs from <see cref="PathTemplateOptions"/> as this
-/// models objects w
+/// models objects with differing templates depending on 'type' parameter.
 /// </summary>
 public class TypedPathTemplateOptions
 {

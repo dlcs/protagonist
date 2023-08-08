@@ -21,13 +21,16 @@ namespace Orchestrator.Features.Images.ImageServer;
 /// </summary>
 public class InfoJsonConstructor
 {
+    // We want to include both Auth1 + 2 on info.json to allow for transition to auth2
     private readonly IIIIFAuthBuilder iiifAuthBuilder;
+    private readonly IIIFAuth1Builder iiifAuth1Builder;
     private readonly IImageServerClient imageServerClient;
     private readonly IThumbRepository thumbRepository;
     private readonly ILogger<InfoJsonConstructor> logger;
 
     public InfoJsonConstructor(
         IIIIFAuthBuilder iiifAuthBuilder,
+        IIIFAuth1Builder iiifAuth1Builder,
         IImageServerClient imageServerClient,
         IThumbRepository thumbRepository,
         ILogger<InfoJsonConstructor> logger)
@@ -36,6 +39,7 @@ public class InfoJsonConstructor
         this.imageServerClient = imageServerClient;
         this.thumbRepository = thumbRepository;
         this.logger = logger;
+        this.iiifAuth1Builder = iiifAuth1Builder;
     }
 
     public async Task<JsonLdBase?> BuildInfoJsonFromImageServer(OrchestrationImage orchestrationImage,
@@ -84,17 +88,9 @@ public class InfoJsonConstructor
 
         if (orchestrationImage.RequiresAuth && !orchestrationImage.Roles.IsNullOrEmpty())
         {
-            var authServicesForAsset =
-                await iiifAuthBuilder.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles,
-                    cancellationToken);
-            if (authServicesForAsset == null)
-            {
-                logger.LogWarning("{AssetId} requires auth but no auth services generated", orchestrationImage.AssetId);
-                return;
-            }
-            
-            imageService.Service ??= new List<IService>(1);
-            imageService.Service.Add(authServicesForAsset);
+            var authServices = await GetAuthServices(orchestrationImage, cancellationToken);
+            imageService.Service ??= new List<IService>(2);
+            imageService.Service.AddRange(authServices);
         }
     }
 
@@ -108,17 +104,9 @@ public class InfoJsonConstructor
 
         if (orchestrationImage.RequiresAuth && !orchestrationImage.Roles.IsNullOrEmpty())
         {
-            var authServicesForAsset =
-                await iiifAuthBuilder.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles,
-                    cancellationToken);
-            if (authServicesForAsset == null)
-            {
-                logger.LogWarning("{AssetId} requires auth but no auth services generated", orchestrationImage.AssetId);
-                return;
-            }
-            
-            imageService.Service ??= new List<IService>(1);
-            imageService.Service.Add(authServicesForAsset);
+            var authServices = await GetAuthServices(orchestrationImage, cancellationToken);
+            imageService.Service ??= new List<IService>(2);
+            imageService.Service.AddRange(authServices);
         }
     }
 
@@ -141,5 +129,36 @@ public class InfoJsonConstructor
             logger.LogError(ex, "Error getting size for info.json for {Asset}", orchestrationImage.AssetId);
             return Enumerable.Empty<Size>().ToList();
         }
+    }
+
+    private async Task<List<IService>> GetAuthServices(OrchestrationImage orchestrationImage, CancellationToken cancellationToken)
+    {
+        var getAuthServicesForAsset = iiifAuthBuilder.GetAuthServicesForAsset(orchestrationImage.AssetId,
+            orchestrationImage.Roles, cancellationToken);
+        var getAuthCookieService = iiifAuth1Builder.GetAuthServicesForAsset(orchestrationImage.AssetId,
+            orchestrationImage.Roles, cancellationToken);
+
+        await Task.WhenAll(getAuthServicesForAsset, getAuthCookieService);
+
+        var returnList = new List<IService>(2);
+        if (getAuthServicesForAsset.Result != null)
+        {
+            returnList.Add(getAuthServicesForAsset.Result);
+        }
+        else
+        {
+            logger.LogWarning("{AssetId} requires auth but no auth 2 services generated", orchestrationImage.AssetId);
+        }
+
+        if (getAuthCookieService.Result != null)
+        {
+            returnList.Add(getAuthCookieService.Result);
+        }
+        else
+        {
+            logger.LogWarning("{AssetId} requires auth but no auth 1 services generated", orchestrationImage.AssetId);
+        }
+
+        return returnList;
     }
 }

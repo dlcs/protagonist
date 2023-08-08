@@ -274,15 +274,6 @@ public class IIIFCanvasFactory
         Dictionary<AssetId, AuthProbeService2>? authProbeServices)
     {
         var noAuthServices = authProbeServices.IsNullOrEmpty();
-        
-        List<IService>? TryGetAuthServices(bool createEmbeddedVersion)
-        {
-            if (noAuthServices) return null;
-            if (!authProbeServices!.TryGetValue(asset.Id, out var probeService2)) return null;
-
-            var authServiceToAdd = createEmbeddedVersion ? probeService2 : probeService2.ToEmbeddedService();
-            return authServiceToAdd.AsListOf<IService>();
-        }
 
         var services = new List<IService>(2);
         if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(ImageApi.Version.V2))
@@ -294,7 +285,7 @@ public class IIIFCanvasFactory
                 Context = ImageService2.Image2Context,
                 Width = asset.Width ?? 0,
                 Height = asset.Height ?? 0,
-                Service = TryGetAuthServices(false),
+                Service = TryGetAuthServices(),
             });
         }
 
@@ -307,11 +298,20 @@ public class IIIFCanvasFactory
                 Context = ImageService3.Image3Context,
                 Width = asset.Width ?? 0,
                 Height = asset.Height ?? 0,
-                Service = TryGetAuthServices(true),
+                Service = TryGetAuthServices(),
             });
         }
         
         return services;
+
+        List<IService>? TryGetAuthServices()
+        {
+            if (noAuthServices) return null;
+            if (!authProbeServices!.TryGetValue(asset.Id, out var probeService2)) return null;
+
+            var authServiceToAdd = probeService2.ToEmbeddedService();
+            return authServiceToAdd.AsListOf<IService>();
+        }
     }
 
     /// <summary>
