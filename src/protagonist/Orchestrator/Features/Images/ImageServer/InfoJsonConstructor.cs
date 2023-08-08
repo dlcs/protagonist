@@ -8,9 +8,13 @@ using DLCS.Model.Assets;
 using IIIF;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
+using IIIF.Presentation;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure.IIIF;
+using IIIFAuth0 = IIIF.Auth.V0;
+using IIIFAuth1 = IIIF.Auth.V1;
+using IIIFAuth2 = IIIF.Auth.V2;
 using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Features.Images.ImageServer;
@@ -88,9 +92,11 @@ public class InfoJsonConstructor
 
         if (orchestrationImage.RequiresAuth && !orchestrationImage.Roles.IsNullOrEmpty())
         {
-            var authServices = await GetAuthServices(orchestrationImage, cancellationToken);
+            var authServices = await GetAuthAllServices(orchestrationImage, cancellationToken);
             imageService.Service ??= new List<IService>(2);
             imageService.Service.AddRange(authServices);
+            
+            SetAuthContext(imageService, authServices);
         }
     }
 
@@ -104,9 +110,13 @@ public class InfoJsonConstructor
 
         if (orchestrationImage.RequiresAuth && !orchestrationImage.Roles.IsNullOrEmpty())
         {
-            var authServices = await GetAuthServices(orchestrationImage, cancellationToken);
-            imageService.Service ??= new List<IService>(2);
-            imageService.Service.AddRange(authServices);
+            var authServices = await GetAuth2Service(orchestrationImage, cancellationToken);
+            if (authServices != null)
+            {
+                imageService.Service ??= new List<IService>(1);
+                imageService.Service.Add(authServices);
+                imageService.EnsureContext(IIIF.Auth.V2.Constants.IIIFAuth2Context);
+            }
         }
     }
 
@@ -131,10 +141,9 @@ public class InfoJsonConstructor
         }
     }
 
-    private async Task<List<IService>> GetAuthServices(OrchestrationImage orchestrationImage, CancellationToken cancellationToken)
+    private async Task<List<IService>> GetAuthAllServices(OrchestrationImage orchestrationImage, CancellationToken cancellationToken)
     {
-        var getAuthServicesForAsset = iiifAuthBuilder.GetAuthServicesForAsset(orchestrationImage.AssetId,
-            orchestrationImage.Roles, cancellationToken);
+        var getAuthServicesForAsset = GetAuth2Service(orchestrationImage, cancellationToken);
         var getAuthCookieService = iiifAuth1Builder.GetAuthServicesForAsset(orchestrationImage.AssetId,
             orchestrationImage.Roles, cancellationToken);
 
@@ -144,10 +153,6 @@ public class InfoJsonConstructor
         if (getAuthServicesForAsset.Result != null)
         {
             returnList.Add(getAuthServicesForAsset.Result);
-        }
-        else
-        {
-            logger.LogWarning("{AssetId} requires auth but no auth 2 services generated", orchestrationImage.AssetId);
         }
 
         if (getAuthCookieService.Result != null)
@@ -160,5 +165,33 @@ public class InfoJsonConstructor
         }
 
         return returnList;
+    }
+
+    private async Task<IService?> GetAuth2Service(OrchestrationImage orchestrationImage,
+        CancellationToken cancellationToken)
+    {
+        var authServicesForAsset = await iiifAuthBuilder.GetAuthServicesForAsset(orchestrationImage.AssetId,
+            orchestrationImage.Roles, cancellationToken);
+
+        if (authServicesForAsset == null)
+        {
+            logger.LogWarning("{AssetId} requires auth but no auth 2 services generated", orchestrationImage.AssetId);
+        }
+
+        return authServicesForAsset;
+    }
+    
+    private static void SetAuthContext(ImageService2 imageService, List<IService> authServices)
+    {
+        imageService.EnsureContext(IIIF.Auth.V2.Constants.IIIFAuth2Context);
+        if (authServices.Any(s => s is IIIFAuth0.AuthCookieService))
+        {
+            imageService.EnsureContext(IIIFAuth0.Constants.IIIFAuthContext);
+        }
+
+        if (authServices.Any(s => s is IIIFAuth1.AuthCookieService))
+        {
+            imageService.EnsureContext(IIIFAuth1.Constants.IIIFAuthContext);
+        }
     }
 }

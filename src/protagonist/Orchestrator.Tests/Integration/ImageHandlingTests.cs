@@ -703,9 +703,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var infoJson = responseStream.FromJsonStream<ImageService3>();
 
         infoJson.Id.Should().Be($"http://localhost/iiif-img/{id}");
-        infoJson.Service.Should().HaveCount(2, "Contains v1 + v2 auth services");
-        infoJson.Service.First().Id.Should().Be($"http://localhost/auth/v2/probe/{id}");
-        infoJson.Service.Last().Id.Should().Be("http://localhost/auth/99/test-service");
+        infoJson.Service.Should().HaveCount(1, "Contains v2 auth services");
+        infoJson.Service.Single().Id.Should().Be($"http://localhost/auth/v2/probe/{id}");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeFalse();
@@ -758,9 +757,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         infoJson.Id.Should()
             .Be($"http://my-proxy.com/const_value/99/{nameof(GetInfoJson_RestrictedImage_Correct_CustomPathRules)}");
-        infoJson.Service.Should().HaveCount(2, "Contains v1 + v2 auth services");
-        infoJson.Service.First().Id.Should().Be($"http://my-proxy.com/proxy-probe/{id}");
-        infoJson.Service.Last().Id.Should().Be("http://my-proxy.com/auth/test-service");
+        infoJson.Service.Should().HaveCount(1, "Contains v2 auth services only");
+        infoJson.Service.Single().Id.Should().Be($"http://my-proxy.com/proxy-probe/{id}");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeFalse();
