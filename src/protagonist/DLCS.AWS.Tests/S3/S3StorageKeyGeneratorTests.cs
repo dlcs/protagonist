@@ -20,6 +20,7 @@ public class S3StorageKeyGeneratorTests
                 OutputBucket = "test-output",
                 ThumbsBucket = "test-thumbs",
                 StorageBucket = "test-storage",
+                SecurityObjectsBucket = "test-security",
                 TimebasedInputBucket = "timebased-in",
                 TimebasedOutputBucket = "timebased-out"
             }
