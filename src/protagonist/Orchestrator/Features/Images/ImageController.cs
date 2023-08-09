@@ -136,12 +136,6 @@ public class ImageController : IIIFAssetControllerBase
         return await RenderInfoJson(requestedVersion.Value, noOrchestrate, cancellationToken);
     }
 
-    private StatusCodeResult RedirectToInfoJson()
-    {
-        var location = HttpContext.Request.Path.Add("/info.json");
-        return this.SeeAlsoResult(location);
-    }
-
     private Task<IActionResult> RenderInfoJson(Version imageApiVersion, bool noOrchestrate,
         CancellationToken cancellationToken)
     {

@@ -13,14 +13,6 @@ public interface IAssetRequest
 }
 
 /// <summary>
-/// Marker interface for any File asset requests
-/// </summary>
-public interface IFileRequest : IAssetRequest
-{
-    FileAssetDeliveryRequest AssetRequest { set; }
-}
-
-/// <summary>
 /// Marker interface for any Image asset requests
 /// </summary>
 public interface IImageRequest : IAssetRequest

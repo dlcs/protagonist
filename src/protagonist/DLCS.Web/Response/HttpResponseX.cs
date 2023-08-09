@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using DLCS.Core.Types;
 using Microsoft.AspNetCore.Http;
 
 namespace DLCS.Web.Response;
@@ -45,4 +46,13 @@ public static class HttpResponseX
         const string template = "public, s-maxage={0}, max-age={0}";
         response.Headers.Append("Cache-Control", String.Format(template, seconds));
     }
+
+    /// <summary>
+    /// Set the x-asset-id header to AssetId value
+    /// </summary>
+    public static void SetAssetIdResponseHeader(this HttpResponse response, AssetId assetId)
+    {
+        const string assetIdHeader = "x-asset-id";
+        response.Headers[assetIdHeader] = assetId.ToString();
+    } 
 }
