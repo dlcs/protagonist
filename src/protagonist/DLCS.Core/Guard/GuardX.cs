@@ -16,7 +16,8 @@ public static class GuardX
     /// <typeparam name="T">Type of argument to check.</typeparam>
     /// <returns>Passed argument, if not null.</returns>
     /// <exception cref="ArgumentNullException">Thrown if provided argument is null.</exception>
-    public static T ThrowIfNull<T>([NotNull] this T argument, string argName)
+    [return: NotNull]
+    public static T ThrowIfNull<T>(this T argument, string argName)
     {
         if (argument == null)
         {
