@@ -53,7 +53,7 @@ public class FileRequestHandler
             return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
         }
         
-        var orchestrationAsset = await assetRequestProcessor.GetAsset(assetRequest);
+        var orchestrationAsset = await assetRequestProcessor.GetAsset<OrchestrationAsset>(httpContext, assetRequest);
         if (orchestrationAsset == null)
         {
             logger.LogDebug("Request for {Path} asset not found", httpContext.Request.Path);

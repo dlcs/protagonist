@@ -71,8 +71,8 @@ public class ImageRequestHandler
             return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
         }
         
-        var orchestrationAsset = await assetRequestProcessor.GetAsset(assetRequest);
-        if (orchestrationAsset is not OrchestrationImage orchestrationImage)
+        var orchestrationImage = await assetRequestProcessor.GetAsset<OrchestrationImage>(httpContext, assetRequest);
+        if (orchestrationImage == null)
         {
             logger.LogDebug("Request for {Path}: asset not found", httpContext.Request.Path);
             return new StatusCodeResult(HttpStatusCode.NotFound);

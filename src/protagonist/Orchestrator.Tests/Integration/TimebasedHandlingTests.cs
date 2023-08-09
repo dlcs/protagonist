@@ -146,6 +146,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         proxyResponse.Uri.Should().Be(expectedPath);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -162,6 +163,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -182,6 +184,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -206,6 +209,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -230,6 +234,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -253,6 +258,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -272,6 +278,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
 
     [Fact]
@@ -301,6 +308,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
 
         // Assert
         proxyResponse.Uri.Should().Be(expectedPath);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -325,6 +333,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -348,5 +357,6 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
 }

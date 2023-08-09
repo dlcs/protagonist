@@ -138,7 +138,7 @@ public class ImageRequestHandlerTests
         var context = new DefaultHttpContext();
         context.Request.Path = "/iiif-img/2/2/test-image/full/!200,200/0/default.jpg";
         var sut = GetImageRequestHandlerWithMockPathParser();
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(new AssetId(2, 2, "test-image")))
             .Returns(new OrchestrationImage { Channels = deliveryChannel, RequiresAuth = true});
             
         // Act
@@ -157,7 +157,7 @@ public class ImageRequestHandlerTests
 
         var roles = new List<string> { "role" };
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(new AssetId(2, 2, "test-image")))
             .Returns(new OrchestrationImage
             {
                 Roles = roles, RequiresAuth = true, Channels = AvailableDeliveryChannel.Image, S3Location = "s3://"
@@ -189,7 +189,7 @@ public class ImageRequestHandlerTests
         var roles = new List<string> { "role" };
         var assetId = new AssetId(2, 2, "test-image");
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } },
@@ -217,7 +217,7 @@ public class ImageRequestHandlerTests
         var roles = new List<string> { "role" };
         var assetId = new AssetId(2, 2, "test-image");
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } },
@@ -250,7 +250,7 @@ public class ImageRequestHandlerTests
 
         var roles = new List<string> { "role" };
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(new AssetId(2, 2, "test-image")))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(new AssetId(2, 2, "test-image")))
             .Returns(new OrchestrationImage
             {
                 Roles = roles, MaxUnauthorised = 900, Width = 1800, Height = 1800, RequiresAuth = true,
@@ -276,7 +276,7 @@ public class ImageRequestHandlerTests
 
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         var assetId = new AssetId(2, 2, "test-image");
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = new List<int[]> { new[] { 150, 150 } }, Height = 1000, Width = 1000,
@@ -302,7 +302,7 @@ public class ImageRequestHandlerTests
 
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         var assetId = new AssetId(2, 2, "test-image");
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = new List<int[]> { new[] { 150, 150 } },
@@ -331,7 +331,7 @@ public class ImageRequestHandlerTests
         var roles = new List<string> { "role" };
         var assetId = new AssetId(2, 2, "test-image");
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } },
@@ -362,7 +362,7 @@ public class ImageRequestHandlerTests
         var roles = new List<string> { "role" };
         var assetId = new AssetId(2, 2, "test-image");
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, Roles = roles, OpenThumbs = new List<int[]> { new[] { 150, 150 } },
@@ -402,7 +402,7 @@ public class ImageRequestHandlerTests
 
         List<int[]> openSizes = new List<int[]> { new[] { 150, 150 } };
 
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = openSizes, S3Location = "s3://storage/2/2/test-image",
@@ -444,7 +444,7 @@ public class ImageRequestHandlerTests
             ? new List<int[]> { new[] { 150, 150 } }
             : new List<int[]>();
 
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = openSizes, S3Location = "s3://storage/2/2/test-image",
@@ -481,7 +481,7 @@ public class ImageRequestHandlerTests
         var settings = CreateOrchestratorSettings();
         settings.ImageServer = imageServer;
         var sut = GetImageRequestHandlerWithMockPathParser(orchestratorSettings: settings);
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = new List<int[]>(), S3Location = "s3://storage/2/2/test-image",
@@ -512,7 +512,7 @@ public class ImageRequestHandlerTests
         var settings = CreateOrchestratorSettings();
         settings.ImageServer = imageServer;
         var sut = GetImageRequestHandlerWithMockPathParser(orchestratorSettings: settings);
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = new List<int[]>(), S3Location = "s3://storage/2/2/test-image",
@@ -538,7 +538,7 @@ public class ImageRequestHandlerTests
 
         var settings = CreateOrchestratorSettings();
         var sut = GetImageRequestHandlerWithMockPathParser(orchestratorSettings: settings);
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = new List<int[]>(), S3Location = "s3://storage/2/2/test-image",
@@ -575,7 +575,7 @@ public class ImageRequestHandlerTests
 
         List<int[]> openSizes = new List<int[]> { new[] { 150, 150 } };
 
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = openSizes, S3Location = "s3://storage/2/2/test-image",
@@ -607,7 +607,7 @@ public class ImageRequestHandlerTests
 
         List<int[]> openSizes = new List<int[]> { new[] { 150, 150 } };
 
-        A.CallTo(() => assetTracker.GetOrchestrationAsset(assetId))
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = openSizes, S3Location = "",
