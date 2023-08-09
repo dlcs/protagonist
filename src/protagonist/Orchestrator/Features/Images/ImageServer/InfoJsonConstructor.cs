@@ -12,8 +12,6 @@ using IIIF.Presentation;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure.IIIF;
-using IIIFAuth0 = IIIF.Auth.V0;
-using IIIFAuth1 = IIIF.Auth.V1;
 using IIIFAuth2 = IIIF.Auth.V2;
 using Version = IIIF.ImageApi.Version;
 
@@ -95,8 +93,7 @@ public class InfoJsonConstructor
             var authServices = await GetAuthAllServices(orchestrationImage, cancellationToken);
             imageService.Service ??= new List<IService>(2);
             imageService.Service.AddRange(authServices);
-            
-            SetAuthContext(imageService, authServices);
+            imageService.EnsureContext(IIIF.Auth.V2.Constants.IIIFAuth2Context);
         }
     }
 
@@ -179,19 +176,5 @@ public class InfoJsonConstructor
         }
 
         return authServicesForAsset;
-    }
-    
-    private static void SetAuthContext(ImageService2 imageService, List<IService> authServices)
-    {
-        imageService.EnsureContext(IIIF.Auth.V2.Constants.IIIFAuth2Context);
-        if (authServices.Any(s => s is IIIFAuth0.AuthCookieService))
-        {
-            imageService.EnsureContext(IIIFAuth0.Constants.IIIFAuthContext);
-        }
-
-        if (authServices.Any(s => s is IIIFAuth1.AuthCookieService))
-        {
-            imageService.EnsureContext(IIIFAuth1.Constants.IIIFAuthContext);
-        }
     }
 }
