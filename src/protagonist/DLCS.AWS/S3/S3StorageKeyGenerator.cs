@@ -185,4 +185,10 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         var key = GetStorageKey(assetId);
         return new ObjectInBucket(s3Options.OriginBucket, $"{key}/");
     }
+    
+    public ObjectInBucket GetOriginStrategyCredentialsLocation(int customerId, string originStrategyId)
+    {
+        var key = $"{customerId}/origin-strategy/{originStrategyId}/credentials.json";
+        return new ObjectInBucket(s3Options.SecurityObjectsBucket, key);
+    }
 }

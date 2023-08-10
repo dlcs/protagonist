@@ -160,4 +160,10 @@ public interface IStorageKeyGenerator
     /// <param name="assetId">asset id the request is for</param>
     /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
     ObjectInBucket GetOriginRoot(AssetId assetId);
+    
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> item for customer origin strategy credentials object
+    /// </summary>
+    /// <returns><see cref="ObjectInBucket"/> for JSON object containing credentials for a user's origin strategy</returns>
+    ObjectInBucket GetOriginStrategyCredentialsLocation(int customerId, string originStrategyId);
 }

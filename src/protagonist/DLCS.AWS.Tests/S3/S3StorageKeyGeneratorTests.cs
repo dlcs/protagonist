@@ -346,4 +346,19 @@ public class S3StorageKeyGeneratorTests
         actual.Key.Should().Be("10/20/foo-bar/metadata");
         actual.Bucket.Should().Be("test-storage");
     }
+    
+    [Fact]
+    public void GetOriginStrategyCredentialsLocation_WithKey_Correct()
+    {
+        // Arrange
+        const int customerId = 10;
+        var strategyId = Guid.NewGuid().ToString();
+        
+        // Act
+        var result = sut.GetOriginStrategyCredentialsLocation(customerId, strategyId);
+        
+        // Assert
+        result.Bucket.Should().Be("test-security");
+        result.Key.Should().Be($"{customerId}/origin-strategy/{strategyId}/credentials.json");
+    }
 }
