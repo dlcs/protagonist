@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
@@ -29,7 +30,7 @@ public class IIIFAuth2Client : IIIIFAuthBuilder
     public async Task<IService?> GetAuthServicesForAsset(AssetId assetId, List<string> roles, CancellationToken cancellationToken = default)
     {
         logger.LogTrace("Getting auth 2 services description for {AssetId}, {@Roles}", assetId, roles);
-        var path = GetServicesDescriptionPath(assetId, roles);
+        var path = $"services/{assetId}?roles={GetRolesString(roles)}";
 
         try
         {
@@ -44,10 +45,28 @@ public class IIIFAuth2Client : IIIIFAuthBuilder
         }
     }
 
-    private static string GetServicesDescriptionPath(AssetId assetId, IList<string> roles)
+    public async Task<AuthProbeResult2> GetProbeServiceResult(AssetId assetId, List<string> roles, string accessToken,
+        CancellationToken cancellationToken)
     {
-        var rolesString = roles.Count == 1 ? roles[0] : string.Join(",", roles);
-        var path = $"services/{assetId}?roles={rolesString}";
-        return path;
+        var path = $"probe_internal/{assetId}?roles={GetRolesString(roles)}";
+        try
+        {
+            var httpRequest = new HttpRequestMessage(HttpMethod.Get, path);
+            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            var response = await httpClient.SendAsync(httpRequest, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            
+            var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            var probeServiceResult = contentStream.FromJsonStream<AuthProbeResult2>();
+            return probeServiceResult;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting IIIF Probe Service2 for {AssetId}", assetId);
+            return AuthProbeResult2Builder.UnexpectedError;
+        }
     }
+
+    private static string GetRolesString(IList<string> roles)
+        => roles.Count == 1 ? roles[0] : string.Join(",", roles);
 }
