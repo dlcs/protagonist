@@ -17,6 +17,6 @@ public class ContextsController : ControllerBase
     [Route("/contexts/{typeName}.jsonld")]
     public DlcsClassContext Index(string typeName)
     {
-        return new(model.BaseUrl, typeName);
+        return new(model.BaseUrl, "DLCS.HydraModel." + typeName);
     }
 }
