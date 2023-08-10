@@ -143,7 +143,7 @@ public class ImageController : IIIFAssetControllerBase
         return GenerateIIIFDescriptionResource(
             () => new GetImageInfoJson(HttpContext.Request.Path, imageApiVersion, noOrchestrate),
             contentType,
-            cancellationToken);
+            cancellationToken: cancellationToken);
     }
     
     private bool IsCanonicalRequest(Version? requestedVersion) 

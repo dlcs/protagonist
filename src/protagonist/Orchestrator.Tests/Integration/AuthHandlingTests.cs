@@ -3,15 +3,14 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
-using FluentAssertions;
+using IIIF.Auth.V2;
+using IIIF.Serialisation;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Integration;
-using Xunit;
 
 namespace Orchestrator.Tests.Integration;
 
@@ -331,6 +330,23 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         responseBody["messageId"].Value<string>().Should().Be("123");
     }
     #endregion
+
+    [Fact]
+    public async Task ProbeService_ReturnsProbeResultWith401Status_IfNoAccessToken()
+    {
+        // Arrange
+        var path = "auth/v2/probe/99/1/asset";
+        
+        // Act
+        var result = await httpClient.GetAsync(path);
+        
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Headers.CacheControl.Private.Should().BeTrue();
+
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Status.Should().Be(401);
+    }
     
     private async Task<JObject> ParseHtmlTokenReponse(HttpResponseMessage response)
     {

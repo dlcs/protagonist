@@ -20,7 +20,7 @@ public class DescriptionResourceResponse
     public static readonly DescriptionResourceResponse Empty = new();
 
     /// <summary>
-    /// Get <see cref="DescriptionResourceResponse"/> for an open asset
+    /// Get <see cref="DescriptionResourceResponse"/> for an open/available asset
     /// </summary>
     public static DescriptionResourceResponse Open(JsonLdBase resource) 
         => new()

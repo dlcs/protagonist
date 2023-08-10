@@ -67,5 +67,5 @@ public class NamedQueryController : IIIFAssetControllerBase
         => GenerateIIIFDescriptionResource(
             () => new GetNamedQueryResults(customer, namedQueryName, namedQueryArgs, presentationVersion),
             Request.GetIIIFContentType(presentationVersion),
-            cancellationToken);
+            cancellationToken: cancellationToken);
 }

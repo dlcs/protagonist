@@ -1,27 +1,30 @@
 ﻿using System;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Caching;
 using DLCS.Core.Strings;
 using DLCS.Web.Constraints;
 using IIIF.Auth.V1.AccessTokenService;
 using IIIF.Serialisation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orchestrator.Features.Auth.Requests;
+using Orchestrator.Infrastructure;
 
 namespace Orchestrator.Features.Auth;
 
 [Route("[controller]")]
 [ApiController]
-public class AuthController : Controller
+public class AuthController : IIIFAssetControllerBase
 {
-    private readonly IMediator mediator;
-
-    public AuthController(IMediator mediator)
+    public AuthController(IMediator mediator, IOptions<CacheSettings> cacheSettings, ILogger<AuthController> logger)
+        : base(mediator, cacheSettings, logger)
     {
-        this.mediator = mediator;
     }
-    
+
     /// <summary>
     /// Handle clickthrough auth request - create a new auth cookie and return View for user to close
     /// </summary>
@@ -29,7 +32,7 @@ public class AuthController : Controller
     [HttpGet]
     public async Task<IActionResult> Clickthrough(int customer)
     {
-        var result = await mediator.Send(new IssueAuthToken(customer, "clickthrough"));
+        var result = await Mediator.Send(new IssueAuthToken(customer, "clickthrough"));
 
         if (result.CookieCreated)
         {
@@ -47,7 +50,7 @@ public class AuthController : Controller
     [HttpGet]
     public async Task<IActionResult> Token(int customer, string? messageId, string? origin)
     {
-        var result = await mediator.Send(new AccessTokenService(customer, messageId));
+        var result = await Mediator.Send(new AccessTokenService(customer, messageId));
 
         // If messageId provided, return HTML, else return JSON
         var returnHtmlRepresentation = messageId.HasText();
@@ -87,7 +90,7 @@ public class AuthController : Controller
     [HttpGet]
     public async Task<IActionResult> InitiateAuthService(int customer, string authService)
     {
-        var loginUri = await mediator.Send(new LoginWorkflow(customer, authService));
+        var loginUri = await Mediator.Send(new LoginWorkflow(customer, authService));
 
         return loginUri == null
             ? new NotFoundResult()
@@ -100,13 +103,12 @@ public class AuthController : Controller
     /// <param name="customer">Customer Id</param>
     /// <param name="authService">Name of authService.</param>
     /// <param name="token">Role-provider token</param>
-    /// <returns></returns>
     [Route("{customer}/{authService}")]
     [HttpGet]
     public async Task<IActionResult> RoleProviderToken(int customer, string authService,
         [RequiredFromQuery] string token)
     {
-        var result = await mediator.Send(new ProcessRoleProviderToken(customer, authService, token));
+        var result = await Mediator.Send(new ProcessRoleProviderToken(customer, authService, token));
 
         if (result.CookieCreated)
         {
@@ -119,19 +121,37 @@ public class AuthController : Controller
     /// <summary>
     /// Log current user out of specified auth-service.
     /// </summary>
-    /// <param name="customer"></param>
-    /// <param name="authService"></param>
+    /// <param name="customer">Customer Id</param>
+    /// <param name="authService">Name of authService.</param>
     /// <returns></returns>
     [Route("{customer}/{authService}/logout")]
     [HttpGet]
     public async Task<IActionResult> Logout(int customer, string authService)
     {
-        var logoutUri = await mediator.Send(new LogoutAuthService(customer, authService));
-        
+        var logoutUri = await Mediator.Send(new LogoutAuthService(customer, authService));
+
         return logoutUri == null
             ? View("CloseWindow")
             : new RedirectResult(logoutUri.ToString(), false);
     }
+
+    /// <summary>
+    /// IIIF Authorization Flow 2.0 ProbeService. The probe service is used by the client to understand whether the user
+    /// has access to the access-controlled resource for which the probe service is declared.
+    /// </summary>
+    /// <param name="customer">Customer Id</param>
+    /// <param name="space">Space Id</param>
+    /// <param name="image">Image Id</param>
+    /// <remarks>https://iiif.io/api/auth/2.0/#probe-service</remarks>
+    [Route("v2/probe/{customer}/{space}/{image}")]
+    [HttpGet]
+    public Task<IActionResult> ProbeService(
+        [FromRoute] int customer,
+        [FromRoute] int space,
+        [FromRoute] string image,
+        CancellationToken cancellationToken = default)
+        => GenerateIIIFDescriptionResource(
+            () => new ProbeService(customer, space, image), cacheTtl: 30, cancellationToken: cancellationToken);
 
     private HttpStatusCode GetStatusCodeForAccessTokenError(AccessTokenErrorConditions conditions)
         => conditions switch

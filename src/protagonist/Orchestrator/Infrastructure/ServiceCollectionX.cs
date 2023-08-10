@@ -116,7 +116,8 @@ public static class ServiceCollectionX
             .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
             .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
             .AddScoped<IAuthPathGenerator, ConfigDrivenAuthPathGenerator>()
-            .AddHttpClient<IIIIFAuthBuilder, IIIFAuth2Client>(client =>
+            .AddScoped<IIIIFAuthBuilder>(provider => provider.GetRequiredService<IIIFAuth2Client>())
+            .AddHttpClient<IIIFAuth2Client>(client =>
             {
                 client.DefaultRequestHeaders.WithRequestedBy();
                 client.BaseAddress = orchestratorSettings.Auth.Auth2ServiceRoot;
