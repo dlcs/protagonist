@@ -181,7 +181,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         var expectedSizes = new List<Size> { new(800, 800), new(400, 400), new(200, 200) };
