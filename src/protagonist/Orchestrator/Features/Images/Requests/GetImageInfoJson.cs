@@ -8,6 +8,7 @@ using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
 using IIIF.Auth.V1;
+using IIIF.Auth.V2;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
 using MediatR;
@@ -18,6 +19,7 @@ using Orchestrator.Features.Auth.Paths;
 using Orchestrator.Features.Images.ImageServer;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.Auth;
+using Orchestrator.Infrastructure.Auth.V2;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
 using Orchestrator.Settings;
@@ -168,16 +170,41 @@ public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, Descrip
 
     private void SetServiceIdProperties(AssetId assetId, List<IService>? services)
     {
+        void SetAuth2Id(IService service, string? accessServiceName = null)
+        {
+            service.Id =
+                authPathGenerator.GetAuth2PathForRequest(assetId, service.Type!, accessServiceName);
+        }
+        
         void SetAuthId(IService service)
         {
             service.Id =
                 authPathGenerator.GetAuthPathForRequest(assetId.Customer.ToString(), service.Id ?? "_unknown_");
         }
 
-        foreach (var service in services ?? Enumerable.Empty<IService>())
+        foreach (var service in services ?? Enumerable.Empty<IService?>())
         {
             if (service == null) continue;
-            if (service is AuthCookieService cookieServiceV1)
+            if (service is AuthProbeService2 probeService2)
+            {
+                SetAuth2Id(probeService2, probeService2.Type);
+                SetServiceIdProperties(assetId, probeService2.Service);
+            }
+            else if (service is AuthAccessService2 accessService2)
+            {
+                SetAuth2Id(accessService2, accessService2.GetAccessServiceNameFromDefaultPath());
+                SetServiceIdProperties(assetId, accessService2.Service);
+            }
+            else if (service is AuthLogoutService2 logoutService2)
+            {
+                SetAuth2Id(logoutService2, logoutService2.GetAccessServiceNameFromDefaultPath());
+                SetServiceIdProperties(assetId, logoutService2.Service);
+            }
+            else if (service is AuthAccessTokenService2 or AuthLogoutService2)
+            {
+                SetAuth2Id(service);
+            }
+            else if (service is AuthCookieService cookieServiceV1)
             {
                 SetAuthId(cookieServiceV1);
                 SetServiceIdProperties(assetId, cookieServiceV1.Service);

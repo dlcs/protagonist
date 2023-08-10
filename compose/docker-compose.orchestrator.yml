@@ -1,10 +1,5 @@
 version: '3'
 
-volumes:
-  dlcs_postgres_data: {}
-  dlcs_postgres_data_backups: {}
-  dlcs_localstack_tmp: {}
-
 services:
   cantaloupe:
     image: ghcr.io/dlcs/cantaloupe:5.0.5
@@ -59,3 +54,13 @@ services:
       - .env
     volumes:
       - $HOME\.aws:/root/.aws
+
+  auth2:
+    image: ghcr.io/dlcs/iiif-auth-2:main
+    ports:
+      - "5040:80"
+    environment:
+      - PathBase=auth/v2/
+      - OrchestratorRoot=https://localhost:5003  
+    env_file:
+      - .env

@@ -17,13 +17,19 @@ using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Strategy;
 using DLCS.Web.Auth;
+using DLCS.Web.Handlers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Assets;
+using Orchestrator.Features.Auth;
+using Orchestrator.Features.Auth.Paths;
 using Orchestrator.Features.Images.ImageServer;
 using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.API;
+using Orchestrator.Infrastructure.Auth;
+using Orchestrator.Infrastructure.Auth.V2;
+using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 
@@ -82,17 +88,40 @@ public static class ServiceCollectionX
     /// <summary>
     /// Add ImageServerClient dependencies for building and managing info.json requests.
     /// </summary>
-    /// <returns></returns>
     public static IServiceCollection AddInfoJsonClient(this IServiceCollection services)
     {
         services
+            .AddScoped<IIIFAuth1Builder>()
             .AddScoped<InfoJsonConstructor>()
             .AddScoped<InfoJsonService>()
             .AddHttpClient<IImageServerClient, YarpImageServerClient>(client =>
             {
                 client.DefaultRequestHeaders.WithRequestedBy();
-            });
+            })
+            .AddHttpMessageHandler<TimingHandler>();
 
+        return services;
+    }
+
+    /// <summary>
+    /// Add IIIF Auth services
+    /// </summary>
+    public static IServiceCollection AddIIIFAuth(this IServiceCollection services,
+        OrchestratorSettings orchestratorSettings)
+    {
+        services
+            .AddScoped<AccessChecker>()
+            .AddScoped<ISessionAuthService, SessionAuthService>()
+            .AddScoped<AuthCookieManager>()
+            .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
+            .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
+            .AddScoped<IAuthPathGenerator, ConfigDrivenAuthPathGenerator>()
+            .AddHttpClient<IIIIFAuthBuilder, IIIFAuth2Client>(client =>
+            {
+                client.DefaultRequestHeaders.WithRequestedBy();
+                client.BaseAddress = orchestratorSettings.Auth.Auth2ServiceRoot;
+            })
+            .AddHttpMessageHandler<TimingHandler>();
         return services;
     }
 

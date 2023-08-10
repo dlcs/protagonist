@@ -20,6 +20,7 @@ using Newtonsoft.Json.Linq;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images.ImageServer;
 using Orchestrator.Features.Images.Orchestration;
+using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers;
 using Test.Helpers.Integration;
@@ -39,7 +40,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly HttpClient httpClient;
     private readonly IAmazonS3 amazonS3;
     private readonly FakeImageOrchestrator orchestrator = new();
-    private string sizesJsonContent = "{\"o\":[[800,800],[400,400],[200,200]],\"a\":[]}";
+    private const string SizesJsonContent = "{\"o\":[[800,800],[400,400],[200,200]],\"a\":[]}";
 
     public ImageHandlingTests(ProtagonistAppFactory<Startup> factory, StorageFixture storageFixture)
     {
@@ -55,6 +56,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     .AddSingleton<IForwarderHttpClientFactory, TestProxyHttpClientFactory>()
                     .AddSingleton<IHttpForwarder, TestProxyForwarder>()
                     .AddSingleton<IImageServerClient, FakeImageServerClient>()
+                    .AddSingleton<IIIIFAuthBuilder, FakeAuth2Client>()
                     .AddSingleton<IImageOrchestrator>(orchestrator)
                     .AddSingleton<TestProxyHandler>();
             })
@@ -179,7 +181,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         var expectedSizes = new List<Size> { new(800, 800), new(400, 400), new(200, 200) };
@@ -214,7 +216,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         var expectedSizes = new List<Size> { new(800, 800), new(400, 400), new(200, 200) };
@@ -295,7 +297,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         var expectedSizes = new List<Size> { new(800, 800), new(400, 400), new(200, 200) };
@@ -343,7 +345,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -382,7 +384,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -425,7 +427,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -472,7 +474,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         var expectedSizes = new List<Size> { new(800, 800), new(400, 400), new(200, 200) };
@@ -509,7 +511,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -540,7 +542,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -567,7 +569,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -598,7 +600,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -620,7 +622,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -642,7 +644,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -700,8 +702,9 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var responseStream = await response.Content.ReadAsStreamAsync();
         var infoJson = responseStream.FromJsonStream<ImageService3>();
 
-        infoJson.Id.Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_Correct");
-        infoJson.Service.Single().Id.Should().Be("http://localhost/auth/99/test-service");
+        infoJson.Id.Should().Be($"http://localhost/iiif-img/{id}");
+        infoJson.Service.Should().HaveCount(1, "Contains v2 auth services");
+        infoJson.Service.Single().Id.Should().Be($"http://localhost/auth/v2/probe/{id}");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeFalse();
@@ -754,7 +757,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         infoJson.Id.Should()
             .Be($"http://my-proxy.com/const_value/99/{nameof(GetInfoJson_RestrictedImage_Correct_CustomPathRules)}");
-        infoJson.Service.Single().Id.Should().Be("http://my-proxy.com/auth/test-service");
+        infoJson.Service.Should().HaveCount(1, "Contains v2 auth services only");
+        infoJson.Service.Single().Id.Should().Be($"http://my-proxy.com/proxy-probe/{id}");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeFalse();
@@ -838,7 +842,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         
         // Act
@@ -867,7 +871,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         
         // Act
@@ -903,7 +907,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         
         // Act
@@ -939,7 +943,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Key = $"{id}/s.json",
             BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = sizesJsonContent
+            ContentBody = SizesJsonContent
         });
         
         var bearerToken = authToken.Entity.BearerToken;

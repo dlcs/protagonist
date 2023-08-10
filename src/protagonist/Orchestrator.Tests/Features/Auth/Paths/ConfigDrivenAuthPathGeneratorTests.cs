@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DLCS.Core.Types;
 using DLCS.Web.Response;
 using FakeItEasy;
 using Microsoft.AspNetCore.Http;
@@ -37,6 +38,37 @@ public class ConfigDrivenAuthPathGeneratorTests
         // Assert
         actual.Should().Be(expected);
     }
+    
+    [Fact]
+    public void GetAuth2PathForRequest_Default()
+    {
+        // Arrange
+        var sut = GetSut("default.com");
+        var assetId = new AssetId(99, 100, "asset");
+        var expected = "https://default.com/access_99/99/100/asset/test-auth";
+        
+        // Act
+        var actual = sut.GetAuth2PathForRequest(assetId, "TestType", "test-auth");
+        
+        // Assert
+        actual.Should().Be(expected);
+    }
+    
+    [Fact]
+    public void GetAuth2PathForRequest_Override()
+    {
+        // Arrange
+        var sut = GetSut("test.example.com");
+        var assetId = new AssetId(99, 100, "asset");
+        var expected = "https://test.example.com/different_99/99/100/asset/test-auth";
+
+        // Act
+        var actual = sut.GetAuth2PathForRequest(assetId, "TestType", "test-auth");
+        
+        // Assert
+        actual.Should().Be(expected);
+    }
+
     private ConfigDrivenAuthPathGenerator GetSut(string host)
     {
         var context = new DefaultHttpContext();
@@ -56,6 +88,20 @@ public class ConfigDrivenAuthPathGeneratorTests
                     Overrides = new Dictionary<string, string>
                     {
                         ["test.example.com"] = "/authentication_{customer}/{behaviour}"
+                    }
+                },
+                Auth2PathRules = new TypedPathTemplateOptions
+                {
+                    Defaults = new Dictionary<string, string>
+                    {
+                        ["TestType"] = "/access_{customer}/{assetId}/{accessService}"
+                    },
+                    Overrides = new Dictionary<string, Dictionary<string, string>>
+                    {
+                        ["test.example.com"] = new()
+                        {
+                            ["TestType"] = "/different_{customer}/{assetId}/{accessService}"
+                        }
                     }
                 }
             }

@@ -115,7 +115,7 @@ public class AssetId
         return assetId1.Equals(assetId2);
     }
 
-    public static bool operator !=(AssetId assetId1, AssetId assetId2) 
+    public static bool operator !=(AssetId? assetId1, AssetId? assetId2) 
         => !(assetId1 == assetId2);
 
     public static explicit operator AssetId(string s) => FromString(s);

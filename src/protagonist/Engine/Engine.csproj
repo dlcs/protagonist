@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="iiif-net" Version="0.1.11" />
+        <PackageReference Include="iiif-net" Version="0.2.2" />
         <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.9" />
         <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
         <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.150" />

@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace DLCS.Web.Handlers;
 
 /// <summary>
-/// A basic delegating handler that logs Debug level timing notifications
+/// A basic delegating handler that logs Trace level timing notifications
 /// </summary>
 public class TimingHandler : DelegatingHandler
 {
@@ -22,12 +22,12 @@ public class TimingHandler : DelegatingHandler
         CancellationToken cancellationToken)
     {
         var sw = Stopwatch.StartNew();
-        logger.LogDebug("Calling {HttpMethod} {Uri}..", request.Method, request.RequestUri);
+        logger.LogTrace("Calling {HttpMethod} {Uri}..", request.Method, request.RequestUri);
         
         var result = await base.SendAsync(request, cancellationToken);
         
         sw.Stop();
-        logger.LogDebug("Request to {HttpMethod} {Uri} completed with status {StatusCode} in {Elapsed}ms",
+        logger.LogTrace("Request to {HttpMethod} {Uri} completed with status {StatusCode} in {Elapsed}ms",
             request.Method, request.RequestUri, result.StatusCode, sw.ElapsedMilliseconds);
         return result;
     }

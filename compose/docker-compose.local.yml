@@ -50,7 +50,7 @@ services:
       - .env
 
   appetiser:
-    image: digirati/appetiser:latest
+    image: ghcr.io/dlcs/appetiser:latest
     ports:
       - "5031:80"
     volumes:
