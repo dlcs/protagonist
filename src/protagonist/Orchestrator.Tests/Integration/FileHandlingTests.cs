@@ -163,6 +163,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
         proxyResponse.Uri.Should().Be(expectedPath);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact(Skip = "'not in dlcs storage' handling removed when switch to Yarp handling")]
@@ -265,6 +266,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         proxyResponse.Uri.Should().Be(expectedPath);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -280,6 +282,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -297,6 +300,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -319,6 +323,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -350,6 +355,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKey("Set-Cookie");
         proxyResponse.Uri.Should().Be(expectedPath);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
 
     private static void ConfigureStubbery(OrchestratorFixture orchestratorFixture)

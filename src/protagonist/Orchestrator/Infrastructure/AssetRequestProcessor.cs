@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using DLCS.Web.Requests.AssetDelivery;
+using DLCS.Web.Response;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
@@ -41,6 +42,7 @@ public class AssetRequestProcessor
         {
             var assetRequest =
                 await assetDeliveryPathParser.Parse<T>(httpContext.Request.Path);
+            
             return (assetRequest, null);
         }
         catch (KeyNotFoundException ex)
@@ -61,10 +63,16 @@ public class AssetRequestProcessor
         }
     }
 
-    public async Task<OrchestrationAsset?> GetAsset(BaseAssetRequest assetRequest)
+    /// <summary>
+    /// Get cached <see cref="OrchestrationAsset"/>, setting x-asset-id header in response if found
+    /// </summary>
+    public async Task<T?> GetAsset<T>(HttpContext httpContext, BaseAssetRequest assetRequest)
+        where T : OrchestrationAsset
     {
         var imageId = assetRequest.GetAssetId();
-        var asset = await assetTracker.GetOrchestrationAsset(imageId);
+        var asset = await assetTracker.GetOrchestrationAsset<T>(imageId);
+        
+        if (asset != null) httpContext.Response.SetAssetIdResponseHeader(imageId);
         return asset;
     }
 }

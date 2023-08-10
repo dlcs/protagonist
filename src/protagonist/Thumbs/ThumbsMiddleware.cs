@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
+using DLCS.Core.Guard;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Web.IIIF;
@@ -48,7 +49,9 @@ public class ThumbsMiddleware
     {
         try
         {
-            var thumbnailRequest = await parser.Parse<ImageAssetDeliveryRequest>(context.Request.Path.Value);
+            var pathValue = context.Request.Path.Value.ThrowIfNullOrEmpty(nameof(context.Request.Path.Value));
+            var thumbnailRequest = await parser.Parse<ImageAssetDeliveryRequest>(pathValue);
+            context.Response.SetAssetIdResponseHeader(thumbnailRequest.GetAssetId());
             if (thumbnailRequest.IIIFImageRequest.IsBase)
             {
                 await RedirectToInfoJson(context, thumbnailRequest);

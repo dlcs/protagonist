@@ -1,7 +1,10 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Web.Requests.AssetDelivery;
+using DLCS.Web.Response;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 
 namespace Orchestrator.Infrastructure.Mediatr;
 
@@ -14,33 +17,44 @@ public class AssetRequestParsingBehavior<TRequest, TResponse> : IPipelineBehavio
     where TRequest : IRequest<TResponse>, IAssetRequest
 {
     private readonly IAssetDeliveryPathParser assetDeliveryPathParser;
+    private readonly IHttpContextAccessor httpContextAccessor;
 
-    public AssetRequestParsingBehavior(IAssetDeliveryPathParser assetDeliveryPathParser)
+    public AssetRequestParsingBehavior(IAssetDeliveryPathParser assetDeliveryPathParser,
+        IHttpContextAccessor httpContextAccessor)
     {
         this.assetDeliveryPathParser = assetDeliveryPathParser;
+        this.httpContextAccessor = httpContextAccessor;
     }
-    
+
     public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken,
         RequestHandlerDelegate<TResponse> next)
     {
+        AssetId? assetId = null;
         switch (request)
         {
             case IImageRequest imageRequest:
-                imageRequest.AssetRequest =
+                var imageAssetDeliveryRequest =
                     await assetDeliveryPathParser.Parse<ImageAssetDeliveryRequest>(request.FullPath);
-                break;
-            case IFileRequest fileRequest:
-                fileRequest.AssetRequest =
-                    await assetDeliveryPathParser.Parse<FileAssetDeliveryRequest>(request.FullPath);
+                assetId = imageAssetDeliveryRequest.GetAssetId();
+                imageRequest.AssetRequest =
+                    imageAssetDeliveryRequest;
                 break;
             case IGenericAssetRequest genericRequest:
+                var baseAssetRequest = await assetDeliveryPathParser.Parse<BaseAssetRequest>(request.FullPath);
+                assetId = baseAssetRequest.GetAssetId();
                 genericRequest.AssetRequest =
-                    await assetDeliveryPathParser.Parse<BaseAssetRequest>(request.FullPath);
+                    baseAssetRequest;
                 break;
         }
 
-        // TODO - error handling
-        // TODO - timeBased handling
-        return await next();
+        var response = await next();
+        TrySetAssetIdResponseHeader(assetId);
+        return response;
+    }
+
+    private void TrySetAssetIdResponseHeader(AssetId? assetId)
+    {
+        if (assetId == null) return;
+        httpContextAccessor.HttpContext?.Response.SetAssetIdResponseHeader(assetId);
     }
 }

@@ -44,6 +44,7 @@ public class ImageRequestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         var responseObject = JsonNode.Parse(await response.Content.ReadAsStringAsync());
         responseObject["message"].ToString().Should().Be($"Requested format '{format}' not supported, use 'jpg'");
         responseObject["statusCode"].ToString().Should().Be("400");
@@ -62,6 +63,7 @@ public class ImageRequestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         var responseObject = JsonNode.Parse(await response.Content.ReadAsStringAsync());
         responseObject["message"].ToString().Should()
             .Be($"Requested quality '{quality}' not supported, use 'default' or 'color'");
@@ -81,6 +83,7 @@ public class ImageRequestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         var responseObject = JsonNode.Parse(await response.Content.ReadAsStringAsync());
         responseObject["message"].ToString().Should()
             .Be($"Requested rotation value not supported, use '0'");

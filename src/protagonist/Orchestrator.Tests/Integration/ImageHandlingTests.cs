@@ -166,6 +166,42 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.SeeOther);
         response.Headers.Location.Should().Be(expected);
     }
+    
+    [Fact]
+    public async Task GetInfoJson_Correct_ViaDisplayName()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3)}");
+        var namedId = $"test/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3)}";
+        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = sizesJsonContent
+        });
+        await dbFixture.DbContext.SaveChangesAsync();
+        var expectedSizes = new List<Size> { new(800, 800), new(400, 400), new(200, 200) };
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/v2/{namedId}/info.json");
+        
+        // Assert
+        // Verify correct info.json returned
+        var jsonResponse = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService2>();
+        jsonResponse.Id.Should().Be($"http://localhost/iiif-img/v2/{namedId}");
+        jsonResponse.Context.ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+        jsonResponse.Sizes.Should().BeEquivalentTo(expectedSizes);
+
+        // With correct headers/status
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        response.Content.Headers.ContentType.ToString().Should()
+            .Be("application/json", "application/json unless Accept header specified");
+    }
 
     [Fact]
     public async Task GetInfoJsonV2_Correct_ViaDirectPath_NotInS3()
@@ -195,6 +231,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // With correct headers/status
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         response.Content.Headers.ContentType.ToString().Should()
@@ -232,6 +269,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // With correct headers/status
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         response.Content.Headers.ContentType.ToString().Should()
@@ -277,6 +315,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // With correct headers/status
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         response.Content.Headers.ContentType.ToString().Should()
@@ -325,6 +364,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // With correct headers/status
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         response.Content.Headers.ContentType.ToString().Should()
@@ -366,6 +406,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // With correct headers/status
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         response.Content.Headers.ContentType.ToString().Should()
@@ -398,6 +439,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse["@id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJsonV2_Correct_ViaConneg");
         jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         response.Content.Headers.ContentType.ToString().Should()
@@ -449,6 +491,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse.Sizes.Should().BeEquivalentTo(expectedSizes);
         
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
@@ -480,6 +523,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJsonV3_Correct_ViaConneg");
         jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/image/3/context.json");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
@@ -507,6 +551,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse["id"].ToString().Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_OpenImage_Correct");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
     }
@@ -658,6 +703,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         infoJson.Id.Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_Correct");
         infoJson.Service.Single().Id.Should().Be("http://localhost/auth/99/test-service");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeFalse();
         response.Headers.CacheControl.Private.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
@@ -710,6 +756,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .Be($"http://my-proxy.com/const_value/99/{nameof(GetInfoJson_RestrictedImage_Correct_CustomPathRules)}");
         infoJson.Service.Single().Id.Should().Be("http://my-proxy.com/auth/test-service");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeFalse();
         response.Headers.CacheControl.Private.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
@@ -740,6 +787,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         infoJson.Id.Should().Be("http://localhost/iiif-img/99/1/GetInfoJson_RestrictedImage_NoRole_HasNoService");
         infoJson.Service.Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeFalse();
         response.Headers.CacheControl.Private.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
@@ -770,6 +818,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
         jsonResponse["services"].Should().BeNull();
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeFalse();
         response.Headers.CacheControl.Private.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
@@ -799,6 +848,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeFalse();
         response.Headers.CacheControl.Private.Should().BeTrue();
     }
@@ -829,6 +879,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeFalse();
         response.Headers.CacheControl.Private.Should().BeTrue();
     }
@@ -864,6 +915,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeFalse();
         response.Headers.CacheControl.Private.Should().BeTrue();
     }
@@ -901,6 +953,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-img/{id}");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeFalse();
         response.Headers.CacheControl.Private.Should().BeTrue();
         
@@ -976,6 +1029,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Theory]
@@ -997,6 +1051,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Theory]
@@ -1023,6 +1078,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Theory]
@@ -1059,6 +1115,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         proxyResponse.Uri.ToString().Should().StartWith("http://image-server/iiif");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKey("Set-Cookie");
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Theory]
@@ -1095,6 +1152,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         proxyResponse.Uri.ToString().Should().StartWith("http://special-server/iiif");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKey("Set-Cookie");
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -1121,6 +1179,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         proxyResponse.Uri.Should().Be(expectedPath);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
 
     [Fact]
@@ -1147,6 +1206,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         proxyResponse.Uri.Should().Be(expectedPath);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -1173,6 +1233,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         proxyResponse.Uri.ToString().Should().StartWith("http://special-server/iiif");
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -1199,6 +1260,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         proxyResponse.Uri.ToString().Should().StartWith("http://special-server/iiif");
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -1226,6 +1288,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         proxyResponse.Uri.ToString().Should().StartWith("http://special-server/iiif");
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -1254,6 +1317,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         proxyResponse.Uri.Should().Be(expectedPath);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -1300,6 +1364,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.CacheControl.SharedMaxAge.Should().Be(TimeSpan.FromDays(28));
         response.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromDays(28));
         response.Headers.Should().ContainKey("x-test-key").WhoseValue.Should().BeEquivalentTo("foo bar");
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Theory]
@@ -1332,6 +1397,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.CacheControl.SharedMaxAge.Should().Be(TimeSpan.FromDays(28));
         response.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromDays(28));
         response.Headers.Should().ContainKey("x-test-key").WhoseValue.Should().BeEquivalentTo("foo bar");
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -1360,6 +1426,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Fact]
@@ -1388,6 +1455,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
     [Theory]

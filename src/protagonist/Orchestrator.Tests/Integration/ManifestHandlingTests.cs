@@ -149,6 +149,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             .Should().StartWith($"http://my-proxy.com/thumbs/{id}/full");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
     }
@@ -173,6 +174,33 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             .Should().StartWith($"http://localhost/thumbs/{id}/full");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+    }
+    
+    [Fact]
+    public async Task Get_ManifestForImage_ReturnsManifest_ByName()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest_ByName)}");
+        var namedId = $"test/1/{nameof(Get_ManifestForImage_ReturnsManifest_ByName)}";
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin");
+        await dbFixture.DbContext.SaveChangesAsync();
+            
+        var path = $"iiif-manifest/v2/{namedId}";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+            
+        // Assert
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/v2/{namedId}");
+        jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
+            .Should().StartWith($"http://localhost/thumbs/{id}/full");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
     }
@@ -198,6 +226,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             .Should().StartWith($"http://localhost/thumbs/{id}/full");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
     }
@@ -220,6 +249,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
@@ -243,6 +273,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
@@ -269,6 +300,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
@@ -292,6 +324,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
@@ -315,6 +348,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());

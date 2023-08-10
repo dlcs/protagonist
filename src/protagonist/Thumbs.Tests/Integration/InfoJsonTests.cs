@@ -85,6 +85,7 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse["height"].ToString().Should().Be("800");
         jsonResponse["width"].ToString().Should().Be("800");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         response.Content.Headers.ContentType.ToString().Should()
@@ -119,6 +120,7 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse["height"].ToString().Should().Be("800");
         jsonResponse["width"].ToString().Should().Be("800");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         response.Content.Headers.ContentType.ToString().Should()
@@ -146,6 +148,7 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.Location.Should().Be(expected);
     }
 
@@ -177,6 +180,7 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse["height"].ToString().Should().Be("800");
         jsonResponse["width"].ToString().Should().Be("800");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
