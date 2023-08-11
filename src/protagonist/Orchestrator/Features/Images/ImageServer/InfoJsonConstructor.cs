@@ -88,12 +88,26 @@ public class InfoJsonConstructor
         // Placeholder, will be rewritten on way out
         imageService.Id = $"v2/{orchestrationImage.AssetId}";
 
-        if (orchestrationImage.RequiresAuth && !orchestrationImage.Roles.IsNullOrEmpty())
+        if (orchestrationImage.RequiresAuth)
         {
-            var authServices = await GetAuthAllServices(orchestrationImage, cancellationToken);
-            imageService.Service ??= new List<IService>(2);
-            imageService.Service.AddRange(authServices);
-            imageService.EnsureContext(IIIF.Auth.V2.Constants.IIIFAuth2Context);
+            if (orchestrationImage.Roles.IsNullOrEmpty())
+            {
+                logger.LogDebug("Asset {AssetId} requires auth but no roles, adding maxWidth",
+                    orchestrationImage.AssetId);
+                imageService.ProfileDescription ??= new ProfileDescription();
+                imageService.ProfileDescription.MaxArea = null;
+                imageService.ProfileDescription.MaxHeight = null;
+                imageService.ProfileDescription.MaxWidth = orchestrationImage.MaxUnauthorised;
+            }
+            else
+            {
+                logger.LogDebug("Asset {AssetId} requires auth with roles, adding auth-services",
+                    orchestrationImage.AssetId);
+                var authServices = await GetAuthAllServices(orchestrationImage, cancellationToken);
+                imageService.Service ??= new List<IService>(2);
+                imageService.Service.AddRange(authServices);
+                imageService.EnsureContext(IIIF.Auth.V2.Constants.IIIFAuth2Context);
+            }
         }
     }
 
@@ -105,14 +119,27 @@ public class InfoJsonConstructor
         // Placeholder, will be rewritten on way out
         imageService.Id = $"v3/{orchestrationImage.AssetId}";
 
-        if (orchestrationImage.RequiresAuth && !orchestrationImage.Roles.IsNullOrEmpty())
+        if (orchestrationImage.RequiresAuth)
         {
-            var authServices = await GetAuth2Service(orchestrationImage, cancellationToken);
-            if (authServices != null)
+            if (orchestrationImage.Roles.IsNullOrEmpty())
             {
-                imageService.Service ??= new List<IService>(1);
-                imageService.Service.Add(authServices);
-                imageService.EnsureContext(IIIF.Auth.V2.Constants.IIIFAuth2Context);
+                logger.LogDebug("Asset {AssetId} requires auth but no roles, adding maxWidth",
+                    orchestrationImage.AssetId);
+                imageService.MaxArea = null;
+                imageService.MaxHeight = null;
+                imageService.MaxWidth = orchestrationImage.MaxUnauthorised;
+            }
+            else
+            {
+                logger.LogDebug("Asset {AssetId} requires auth with roles, adding auth-services",
+                    orchestrationImage.AssetId);
+                var authServices = await GetAuth2Service(orchestrationImage, cancellationToken);
+                if (authServices != null)
+                {
+                    imageService.Service ??= new List<IService>(1);
+                    imageService.Service.Add(authServices);
+                    imageService.EnsureContext(IIIF.Auth.V2.Constants.IIIFAuth2Context);
+                }
             }
         }
     }
