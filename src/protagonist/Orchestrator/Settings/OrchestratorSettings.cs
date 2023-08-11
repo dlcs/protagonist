@@ -207,6 +207,11 @@ public class AuthSettings
     /// URL root for service handling IIIF Authorization 2.0 flow requests
     /// </summary>
     public Uri Auth2ServiceRoot { get; set; }
+
+    /// <summary>
+    /// Timeout, in seconds, for Http requests to auth service
+    /// </summary>
+    public int AuthTimeoutSecs { get; set; } = 5;
 }
 
 /// <summary>

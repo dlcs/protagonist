@@ -1,4 +1,5 @@
-﻿using DLCS.AWS.Configuration;
+﻿using System;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
@@ -121,6 +122,7 @@ public static class ServiceCollectionX
             {
                 client.DefaultRequestHeaders.WithRequestedBy();
                 client.BaseAddress = orchestratorSettings.Auth.Auth2ServiceRoot;
+                client.Timeout = TimeSpan.FromSeconds(orchestratorSettings.Auth.AuthTimeoutSecs);
             })
             .AddHttpMessageHandler<TimingHandler>();
         return services;
