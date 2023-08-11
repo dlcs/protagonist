@@ -80,3 +80,45 @@ public class AssetAccessValidator : IAssetAccessValidator
             .GetAuthHeaderValue(AuthenticationHeaderUtils.BearerTokenScheme) != null;
 
 }
+
+/// <summary>
+/// Enum representing various results for attempting to access an asset.
+/// </summary>
+public enum AssetAccessResult
+{
+    /// <summary>
+    /// Asset is open
+    /// </summary>
+    Open,
+    
+    /// <summary>
+    /// Asset is restricted and current user does not have appropriate access
+    /// </summary>
+    Unauthorized,
+    
+    /// <summary>
+    /// Asset is restricted and current user has access
+    /// </summary>
+    Authorized
+}
+
+/// <summary>
+/// Enum representing different mechanisms for authorising users
+/// </summary>
+public enum AuthMechanism
+{
+    /// <summary>
+    /// Auth user by cookie provided with request
+    /// </summary>
+    Cookie,
+    
+    /// <summary>
+    /// Auth user by bearer token provided with request
+    /// </summary>
+    BearerToken,
+    
+    /// <summary>
+    /// Try all possible methods of validation
+    /// </summary>
+    All
+}
