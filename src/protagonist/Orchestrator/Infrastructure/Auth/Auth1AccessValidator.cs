@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Repository.Auth;
 using DLCS.Web;
+using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 using Orchestrator.Features.Auth;
@@ -61,7 +62,8 @@ public class Auth1AccessValidator : IAssetAccessValidator
         {
             var httpContext = httpContextAccessor.SafeHttpContext();
 
-            var bearerToken = GetBearerToken(httpContext.Request);
+            var bearerTokenHeader = httpContext.Request.GetAuthHeaderValue(AuthenticationHeaderUtils.BearerTokenScheme);
+            var bearerToken = bearerTokenHeader?.Parameter;
             return string.IsNullOrEmpty(bearerToken)
                 ? Task.FromResult<AuthToken?>(null)
                 : sessionAuthService.GetAuthTokenForBearerId(customer, bearerToken);
@@ -108,11 +110,6 @@ public class Auth1AccessValidator : IAssetAccessValidator
         var cookieValue = authCookieManager.GetCookieValueForCustomer(customer);
         return string.IsNullOrEmpty(cookieValue) ? null : authCookieManager.GetCookieIdFromValue(cookieValue);
     }
-
-    private string? GetBearerToken(HttpRequest httpRequest)
-        => httpRequest.Headers.TryGetValue(HeaderNames.Authorization, out var authHeader)
-            ? authHeader.ToString()?[7..] // everything after "Bearer "
-            : null;
 }
 
 /// <summary>
