@@ -33,8 +33,14 @@ using Orchestrator.Infrastructure.Auth.V2;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
+using ImageServiceVersion = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Infrastructure;
+
+/// <summary>
+/// Delegate for getting <see cref="IOriginStrategy"/> implementation for specified strategy.
+/// </summary>
+public delegate IInfoJsonConstructor InfoJsonConstructorResolver(ImageServiceVersion version);
 
 public static class ServiceCollectionX
 {
@@ -93,8 +99,15 @@ public static class ServiceCollectionX
     {
         services
             .AddScoped<IIIFAuth1Builder>()
-            .AddScoped<InfoJsonConstructor>()
             .AddScoped<InfoJsonService>()
+            .AddScoped<InfoJson2Constructor>()
+            .AddScoped<InfoJson3Constructor>()
+            .AddScoped<InfoJsonConstructorResolver>(provider => version => version switch
+            {
+                ImageServiceVersion.V2 => provider.GetRequiredService<InfoJson2Constructor>(),
+                ImageServiceVersion.V3 => provider.GetRequiredService<InfoJson3Constructor>(),
+                _ => throw new ArgumentOutOfRangeException(nameof(version), version, null)
+            })
             .AddHttpClient<IImageServerClient, YarpImageServerClient>(client =>
             {
                 client.DefaultRequestHeaders.WithRequestedBy();
