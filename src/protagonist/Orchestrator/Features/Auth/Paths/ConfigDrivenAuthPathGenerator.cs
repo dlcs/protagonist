@@ -1,6 +1,7 @@
 ﻿using DLCS.Core;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
+using DLCS.Web;
 using DLCS.Web.Requests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -44,8 +45,7 @@ public class ConfigDrivenAuthPathGenerator : IAuthPathGenerator
     
     private HttpRequest GetHttpRequest()
     {
-        var httpContext = httpContextAccessor.HttpContext.ThrowIfNull(nameof(httpContextAccessor.HttpContext));
-        var request = httpContext.Request;
+        var request = httpContextAccessor.SafeHttpContext().Request;
         return request;
     }
 }

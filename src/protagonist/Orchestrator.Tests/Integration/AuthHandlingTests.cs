@@ -2,16 +2,19 @@
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
-using FluentAssertions;
+using DLCS.Core.Types;
+using IIIF.Auth.V2;
+using IIIF.Serialisation;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Tests.Integration.Infrastructure;
+using Stubbery;
+using Test.Helpers;
 using Test.Helpers.Integration;
-using Xunit;
 
 namespace Orchestrator.Tests.Integration;
 
@@ -20,17 +23,22 @@ namespace Orchestrator.Tests.Integration;
 /// </summary>
 [Trait("Category", "Integration")]
 [Collection(DatabaseCollection.CollectionName)]
-public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
+public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, IClassFixture<ApiStub>
 {
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
+    private readonly ApiStub apiStub;
 
-    public AuthHandlingTests(ProtagonistAppFactory<Startup> factory, DlcsDatabaseFixture databaseFixture)
+    public AuthHandlingTests(ProtagonistAppFactory<Startup> factory, ApiStub apiStub, DlcsDatabaseFixture databaseFixture)
     {
+        apiStub.SafeStart();
+        this.apiStub = apiStub; 
+        
         dbFixture = databaseFixture;
 
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
+            .WithConfigValue("Auth:Auth2ServiceRoot", apiStub.Address)
             .CreateClient();
         
         dbFixture.CleanUp();
@@ -331,6 +339,112 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         responseBody["messageId"].Value<string>().Should().Be("123");
     }
     #endregion
+
+    [Fact]
+    public async Task ProbeService_ReturnsProbeResultWith401Status_IfNoAccessToken()
+    {
+        // Arrange
+        var path = "auth/v2/probe/99/1/asset";
+        
+        // Act
+        var result = await httpClient.GetAsync(path);
+        
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Headers.CacheControl.Private.Should().BeTrue();
+
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Status.Should().Be(401);
+    }
+    
+    [Fact]
+    public async Task ProbeService_404_IfAssetNotFound()
+    {
+        // Arrange
+        var path = "auth/v2/probe/99/1/not-found-asset";
+        
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("bearer", "12345");
+        var result = await httpClient.SendAsync(request);
+        
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        result.Content.Headers.ContentType.MediaType
+            .Should().Be("application/problem+json", "this isn't an AuthProbeResult2");
+    }
+
+    [Fact]
+    public async Task ProbeService_ReturnsProbeResultWith200Status_IfOpen()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(ProbeService_ReturnsProbeResultWith200Status_IfOpen)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id);
+        await dbFixture.DbContext.SaveChangesAsync();
+        var path = $"auth/v2/probe/{id}";
+        
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("bearer", "12345");
+        var result = await httpClient.SendAsync(request);
+        
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Headers.CacheControl.Private.Should().BeTrue("asset is open but all auth responses should be private");
+
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Status.Should().Be(200);
+    }
+    
+    [Fact]
+    public async Task ProbeService_ReturnsProbeResultWith200Status_IfHasMaxUnauth_WithoutRoles()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(ProbeService_ReturnsProbeResultWith200Status_IfHasMaxUnauth_WithoutRoles)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 100);
+        await dbFixture.DbContext.SaveChangesAsync();
+        var path = $"auth/v2/probe/{id}";
+        
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("bearer", "12345");
+        var result = await httpClient.SendAsync(request);
+        
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Headers.CacheControl.Private.Should().BeTrue();
+
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Status.Should().Be(200);
+    }
+
+    [Fact]
+    public async Task ProbeService_ReturnsProbeResult_FromDownstreamAuthService()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(ProbeService_ReturnsProbeResult_FromDownstreamAuthService)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 100, roles: "test-role");
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        var downstreamProbeResult = new AuthProbeResult2 { Status = 999 };
+        apiStub
+            .Get($"probe_internal/{id}?roles=test-role", (_, _) => downstreamProbeResult.AsJson())
+            .IfHeader("Authorization", "Bearer 12345");
+        
+        var path = $"auth/v2/probe/{id}";
+        
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("bearer", "12345");
+        var result = await httpClient.SendAsync(request);
+        
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Headers.CacheControl.Private.Should().BeTrue();
+
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Should().BeEquivalentTo(downstreamProbeResult);
+    }
     
     private async Task<JObject> ParseHtmlTokenReponse(HttpResponseMessage response)
     {

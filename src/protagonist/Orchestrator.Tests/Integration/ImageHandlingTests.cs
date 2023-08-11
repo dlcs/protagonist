@@ -249,6 +249,63 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task GetInfoJsonV2_RestrictedImage_NoRole_HasMaxWidthSet()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_RestrictedImage_NoRole_HasMaxWidthSet)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 500, deliveryChannels: new[] { "iiif-img" });
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": [[400,400],[200,200]]}"
+        });
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/v2/{id}/info.json");
+
+        // Assert
+        var infoJson = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService2>();
+
+        infoJson.Id.Should().Be($"http://localhost/iiif-img/v2/{id}");
+        infoJson.Service.Should().BeNull();
+        infoJson.ProfileDescription.MaxArea.Should().BeNull();
+        infoJson.ProfileDescription.MaxHeight.Should().BeNull();
+        infoJson.ProfileDescription.MaxWidth.Should().Be(500);
+    }
+    
+    [Fact]
+    public async Task GetInfoJson_RestrictedImage_NoRole_HasMaxWidthSet()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_RestrictedImage_NoRole_HasMaxWidthSet)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 500, deliveryChannels: new[] { "iiif-img" });
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": [[400,400],[200,200]]}"
+        });
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
+
+        // Assert
+        var responseStream = await response.Content.ReadAsStreamAsync();
+        var infoJson = responseStream.FromJsonStream<ImageService3>();
+
+        infoJson.Id.Should().Be($"http://localhost/iiif-img/{id}");
+        infoJson.Service.Should().BeNull();
+        infoJson.MaxArea.Should().BeNull();
+        infoJson.MaxHeight.Should().BeNull();
+        infoJson.MaxWidth.Should().Be(500);
+    }
+    
+    [Fact]
     public async Task GetInfoJsonV2_ReturnsImageServerSizes_IfS3GetFails()
     {
         // Arrange

@@ -1,4 +1,5 @@
-﻿using DLCS.AWS.Configuration;
+﻿using System;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
@@ -32,8 +33,14 @@ using Orchestrator.Infrastructure.Auth.V2;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
+using ImageServiceVersion = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Infrastructure;
+
+/// <summary>
+/// Delegate for getting <see cref="IOriginStrategy"/> implementation for specified strategy.
+/// </summary>
+public delegate IInfoJsonConstructor InfoJsonConstructorResolver(ImageServiceVersion version);
 
 public static class ServiceCollectionX
 {
@@ -92,8 +99,15 @@ public static class ServiceCollectionX
     {
         services
             .AddScoped<IIIFAuth1Builder>()
-            .AddScoped<InfoJsonConstructor>()
             .AddScoped<InfoJsonService>()
+            .AddScoped<InfoJson2Constructor>()
+            .AddScoped<InfoJson3Constructor>()
+            .AddScoped<InfoJsonConstructorResolver>(provider => version => version switch
+            {
+                ImageServiceVersion.V2 => provider.GetRequiredService<InfoJson2Constructor>(),
+                ImageServiceVersion.V3 => provider.GetRequiredService<InfoJson3Constructor>(),
+                _ => throw new ArgumentOutOfRangeException(nameof(version), version, null)
+            })
             .AddHttpClient<IImageServerClient, YarpImageServerClient>(client =>
             {
                 client.DefaultRequestHeaders.WithRequestedBy();
@@ -116,10 +130,12 @@ public static class ServiceCollectionX
             .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
             .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
             .AddScoped<IAuthPathGenerator, ConfigDrivenAuthPathGenerator>()
-            .AddHttpClient<IIIIFAuthBuilder, IIIFAuth2Client>(client =>
+            .AddScoped<IIIIFAuthBuilder>(provider => provider.GetRequiredService<IIIFAuth2Client>())
+            .AddHttpClient<IIIFAuth2Client>(client =>
             {
                 client.DefaultRequestHeaders.WithRequestedBy();
                 client.BaseAddress = orchestratorSettings.Auth.Auth2ServiceRoot;
+                client.Timeout = TimeSpan.FromSeconds(orchestratorSettings.Auth.AuthTimeoutSecs);
             })
             .AddHttpMessageHandler<TimingHandler>();
         return services;

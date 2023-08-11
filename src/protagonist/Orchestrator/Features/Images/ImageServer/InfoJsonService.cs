@@ -12,6 +12,7 @@ using IIIF.Serialisation;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Infrastructure;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images.ImageServer;
@@ -24,7 +25,7 @@ public class InfoJsonService
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IBucketReader bucketReader;
     private readonly IBucketWriter bucketWriter;
-    private readonly InfoJsonConstructor infoJsonConstructor;
+    private readonly InfoJsonConstructorResolver infoJsonConstructorResolver;
     private readonly IOptions<OrchestratorSettings> orchestratorSettings;
     private readonly ILogger<InfoJsonService> logger;
 
@@ -32,14 +33,14 @@ public class InfoJsonService
         IStorageKeyGenerator storageKeyGenerator,
         IBucketReader bucketReader,
         IBucketWriter bucketWriter,
-        InfoJsonConstructor infoJsonConstructor,
+        InfoJsonConstructorResolver infoJsonConstructorResolver,
         IOptions<OrchestratorSettings> orchestratorSettings,
         ILogger<InfoJsonService> logger)
     {
         this.storageKeyGenerator = storageKeyGenerator;
         this.bucketReader = bucketReader;
         this.bucketWriter = bucketWriter;
-        this.infoJsonConstructor = infoJsonConstructor;
+        this.infoJsonConstructorResolver = infoJsonConstructorResolver;
         this.orchestratorSettings = orchestratorSettings;
         this.logger = logger;
     }
@@ -61,8 +62,9 @@ public class InfoJsonService
         }
 
         // If not found, build new copy
+        var infoJsonConstructor = infoJsonConstructorResolver(version);
         var infoJsonResponse =
-            await infoJsonConstructor.BuildInfoJsonFromImageServer(orchestrationImage, version, cancellationToken);
+            await infoJsonConstructor.BuildInfoJsonFromImageServer(orchestrationImage, cancellationToken);
 
         if (infoJsonResponse == null) return null;
 

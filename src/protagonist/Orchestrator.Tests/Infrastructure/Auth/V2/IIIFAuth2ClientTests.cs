@@ -131,4 +131,80 @@ public class IIIFAuth2ClientTests
         // Assert
         response.Should().BeEquivalentTo(probeService);
     }
+
+    [Fact]
+    public async Task GetProbeServiceResult_CallsCorrectPath_SingleRole()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1" }
+        };
+        
+        // Act
+        await sut.GetProbeServiceResult(orchestrationImage.AssetId, orchestrationImage.Roles, "accessToken",
+            CancellationToken.None);
+        
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle(s => s == "http://auth-2/probe_internal/99/100/foo?roles=role1");
+    }
+    
+    [Fact]
+    public async Task GetProbeServiceResult_CallsCorrectPath_MultipleRole()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+        };
+        
+        // Act
+        await sut.GetProbeServiceResult(orchestrationImage.AssetId, orchestrationImage.Roles, "accessToken",
+            CancellationToken.None);
+        
+        // Assert
+        httpHandler.CallsMade.Should()
+            .ContainSingle(s => s == "http://auth-2/probe_internal/99/100/foo?roles=role1,role2,role3");
+    }
+
+    [Fact]
+    public async Task GetAuthServicesForAsset_ReturnsErrorProbeService_IfHttpException()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+        };
+
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+
+        // Act
+        var response = await sut.GetProbeServiceResult(orchestrationImage.AssetId, orchestrationImage.Roles, "accessToken",
+            CancellationToken.None);
+
+        // Assert
+        response.Status.Should().Be(500);
+    }
+    
+    [Fact]
+    public async Task GetAuthServicesForAsset_ReturnsDownstreamProbeService()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+        };
+
+        var probeServiceResult = new AuthProbeResult2 { Status = 200 };
+        var httpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK);
+        httpResponseMessage.Content = new StringContent(probeServiceResult.AsJson(), Encoding.UTF8, "application/json");
+        httpHandler.SetResponse(httpResponseMessage);
+
+        // Act
+        var response = await sut.GetProbeServiceResult(orchestrationImage.AssetId, orchestrationImage.Roles, "accessToken",
+            CancellationToken.None);
+
+        // Assert
+        response.Should().BeEquivalentTo(probeServiceResult);
+    }
 }

@@ -9,8 +9,6 @@ namespace DLCS.Web.Auth;
 /// </summary>
 public static class AuthenticationHeaderUtils
 {
-    private const string AuthHeader = "Authorization";
-    
     /// <summary>
     /// Scheme for Basic authentication
     /// </summary>
@@ -30,8 +28,8 @@ public static class AuthenticationHeaderUtils
     /// <returns>Parsed <see cref="AuthenticationHeaderValue"/> if found and matches optional scheme.</returns>
     public static AuthenticationHeaderValue? GetAuthHeaderValue(this HttpRequest request, string? scheme = null)
     {
-        if (!AuthenticationHeaderValue.TryParse(request.Headers[AuthHeader],
-            out AuthenticationHeaderValue? headerValue))
+        if (!AuthenticationHeaderValue.TryParse(request.Headers.Authorization,
+                out AuthenticationHeaderValue? headerValue))
         {
             // Not found or invalid Authorization header
             return null;

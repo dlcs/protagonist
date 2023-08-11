@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Repository.Auth;
+using DLCS.Web;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 using Orchestrator.Features.Auth;
@@ -71,7 +72,7 @@ public class AssetAccessValidator : IAssetAccessValidator
     private Task<AssetAccessResult> TryValidateBearerToken(int customer, IEnumerable<string> roles)
         => ValidateAccess(customer, roles, () =>
         {
-            var httpContext = httpContextAccessor.HttpContext.ThrowIfNull(nameof(httpContextAccessor.HttpContext))!;
+            var httpContext = httpContextAccessor.SafeHttpContext();
 
             var bearerToken = GetBearerToken(httpContext.Request);
             return string.IsNullOrEmpty(bearerToken)

@@ -64,6 +64,8 @@ public class AuthenticationHeaderUtilsTests
     [Theory]
     [InlineData(Basic, "Basic")]
     [InlineData(Bearer, "Bearer")]
+    [InlineData(Basic, "basic")]
+    [InlineData(Bearer, "bearer")]
     public void GetAuthHeaderValue_ReturnsHeader_IfMatchingSchemeSpecified(string authHeader, string targetScheme)
     {
         // Arrange
@@ -76,7 +78,7 @@ public class AuthenticationHeaderUtilsTests
         var authHeadervalue = httpRequest.GetAuthHeaderValue(targetScheme);
         
         // Assert
-        authHeadervalue.Scheme.Should().Be(targetScheme);
+        authHeadervalue.Scheme.Should().BeEquivalentTo(targetScheme);
         authHeadervalue.Parameter.Should().Be(parameter);
     }
 }

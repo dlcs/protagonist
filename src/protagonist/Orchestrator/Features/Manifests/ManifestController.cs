@@ -68,5 +68,5 @@ public class ManifestController : IIIFAssetControllerBase
         => GenerateIIIFDescriptionResource(
             () => new GetManifestForAsset(HttpContext.Request.Path, presentationVersion),
             Request.GetIIIFContentType(presentationVersion),
-            cancellationToken);
+            cancellationToken: cancellationToken);
 }
