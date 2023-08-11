@@ -13,8 +13,10 @@ using Version = IIIF.ImageApi.Version;
 namespace Orchestrator.Features.Images.ImageServer;
 
 /// <summary>
-/// Service responsible for orchestrating image, calling IImageServerClient to get info.json and update with
-/// required information that image-server will be unaware of (e.g. Auth, Id).
+/// Implementation of <see cref="InfoJsonConstructorTemplate{T}"/> responsible for building IIIF ImageService2
+/// info.json. Assets requiring auth will have the following updates:
+///  If Roles are present, Auth v0/1 (dependant on DB profiles) and Auth v2 services are added. Only auth2 context added
+///  If no Roles (ie MaxUnauthorised only) the profile.maxWidth property is set  
 /// </summary>
 public class InfoJson2Constructor : InfoJsonConstructorTemplate<ImageService2>
 {

@@ -12,8 +12,10 @@ using Orchestrator.Infrastructure.IIIF;
 namespace Orchestrator.Features.Images.ImageServer;
 
 /// <summary>
-/// Service responsible for orchestrating image, calling IImageServerClient to get info.json and update with
-/// required information that image-server will be unaware of (e.g. Auth, Id).
+/// Implementation of <see cref="InfoJsonConstructorTemplate{T}"/> responsible for building IIIF ImageService3
+/// info.json. Assets requiring auth will have the following updates:
+///  If Roles are present, Auth v2 services are added + context updated
+///  If no Roles (ie MaxUnauthorised only) the maxWidth property is set  
 /// </summary>
 public class InfoJson3Constructor : InfoJsonConstructorTemplate<ImageService3>
 {
