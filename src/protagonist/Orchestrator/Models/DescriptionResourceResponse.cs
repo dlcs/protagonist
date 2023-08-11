@@ -32,7 +32,7 @@ public class DescriptionResourceResponse
         };
 
     /// <summary>
-    /// Get <see cref="DescriptionResourceResponse"/> for an restricted asset the user can access
+    /// Get <see cref="DescriptionResourceResponse"/> for a restricted asset the user can access
     /// </summary>
     public static DescriptionResourceResponse Restricted(JsonLdBase? resource) 
         => new()
@@ -44,7 +44,7 @@ public class DescriptionResourceResponse
         };
     
     /// <summary>
-    /// Get <see cref="DescriptionResourceResponse"/> for an restricted asset the user cannot access
+    /// Get <see cref="DescriptionResourceResponse"/> for a restricted asset the user cannot access
     /// </summary>
     public static DescriptionResourceResponse Unauthorised(JsonLdBase resource) 
         => new()
