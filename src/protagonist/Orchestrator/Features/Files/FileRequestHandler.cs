@@ -107,7 +107,7 @@ public class FileRequestHandler
         logger.LogDebug("Authenticating request for {Method} {Path} via {Mechanism}", httpRequest.Method,
             httpRequest.Path, authMechanism);
         var authResult =
-            await assetAccessValidator.TryValidate(assetRequest.Customer.Id, asset.Roles, authMechanism);
+            await assetAccessValidator.TryValidate(assetRequest.GetAssetId(), asset.Roles, authMechanism);
 
         return authResult is AssetAccessResult.Open or AssetAccessResult.Authorized;
     }

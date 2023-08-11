@@ -127,6 +127,8 @@ public static class ServiceCollectionX
             .AddScoped<AccessChecker>()
             .AddScoped<ISessionAuthService, SessionAuthService>()
             .AddScoped<AuthCookieManager>()
+            .AddScoped<Auth2AccessValidator>()
+            .AddScoped<Auth1AccessValidator>()
             .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
             .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
             .AddScoped<IAuthPathGenerator, ConfigDrivenAuthPathGenerator>()
