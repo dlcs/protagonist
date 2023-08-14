@@ -4,6 +4,7 @@ using API.Features.Queues.Requests;
 using API.Features.Queues.Validation;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Processing;
@@ -106,13 +107,24 @@ public class CustomerQueueController : HydraController
                 }
             }
         }
-        
+
+        if (images.Members != null)
+        {
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            images.Members.Select(c =>
+            {
+                if (c.ModelId.IsNullOrEmpty())
+                    c.ModelId = Guid.NewGuid().ToString();
+                return c;
+            }).ToList();
+        }
+
         var validationResult = await validator.ValidateAsync(images, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
         }
-        
+
         var request =
             new CreateBatchOfImages(customerId, images.Members!.Select(i => i.ToDlcsModel(customerId)).ToList());
 
@@ -121,7 +133,7 @@ public class CustomerQueueController : HydraController
             errorTitle: "Create batch failed",
             cancellationToken: cancellationToken);
     }
-    
+
     /// <summary>
     /// Create a batch of images to ingest, adding request to priority queue
     ///

@@ -560,6 +560,95 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // status code correct
         response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
+    
+    [Fact]
+    public async Task Post_CreateBatch_400_WithIdEmptyString()
+    {
+        const int customerId = 15;
+        const int space = 3;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""id"": "" "",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 3,
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_201_WithMixtureOfIdSet()
+    {
+        const int customerId = 15;
+        const int space = 4;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 4,
+          ""family"": ""T"",
+          ""mediaType"": ""video/mp4""
+        },
+        {
+          ""id"": """",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 4,
+          ""family"": ""T"",
+          ""mediaType"": ""video/mp4""
+        },
+        {
+          ""id"": ""someId"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 4,
+          ""family"": ""T"",
+          ""mediaType"": ""video/mp4""
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var assetInDatabase = dbContext.Images.Where(a => a.Customer == customerId && a.Space == space);
+        assetInDatabase.Count().Should().Be(3);
+        new Action(() => new Guid(assetInDatabase.ToList()[0].Id.Asset)).Should().NotThrow(
+            "because {0} is a valid Guid string representation", assetInDatabase.ToList()[0].Id.Asset);
+        new Action(() => new Guid(assetInDatabase.ToList()[1].Id.Asset)).Should().NotThrow(
+            "because {0} is a valid Guid string representation", assetInDatabase.ToList()[0].Id.Asset);
+        assetInDatabase.ToList()[2].Id.Asset.Should().Be("someId");
+    }
 
     [Fact]
     public async Task Post_CreateBatch_400_IfSpaceNotFound()
