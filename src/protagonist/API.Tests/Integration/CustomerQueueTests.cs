@@ -643,10 +643,8 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var assetInDatabase = dbContext.Images.Where(a => a.Customer == customerId && a.Space == space);
         assetInDatabase.Count().Should().Be(3);
-        new Action(() => new Guid(assetInDatabase.ToList()[0].Id.Asset)).Should().NotThrow(
-            "because {0} is a valid Guid string representation", assetInDatabase.ToList()[0].Id.Asset);
-        new Action(() => new Guid(assetInDatabase.ToList()[1].Id.Asset)).Should().NotThrow(
-            "because {0} is a valid Guid string representation", assetInDatabase.ToList()[0].Id.Asset);
+        Guid.TryParse(assetInDatabase.ToList()[0].Id.Asset, out _).Should().BeTrue();
+        Guid.TryParse(assetInDatabase.ToList()[1].Id.Asset, out _).Should().BeTrue();
         assetInDatabase.ToList()[2].Id.Asset.Should().Be("someId");
     }
 
@@ -809,6 +807,93 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         // status code correct
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Post_CreatePriorityBatch_201_IfLegacyModeEnabled()
+    {
+        const int customerId = 15;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, 5);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""id"": ""one"",
+          ""origin"": ""https://example.org/stuff.jpg"",
+          ""space"": 5,
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue/priority";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+    
+    [Fact]
+    public async Task Post_CreatePriorityBatch_201_WithMixtureOfIdSet()
+    {
+        const int customerId = 15;
+        const int space = 4;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""origin"": ""https://example.org/stuff.jpg"",
+          ""space"": 4,
+          ""family"": ""I"",
+          ""mediaType"": ""image/jpeg""
+        },
+        {
+          ""id"": """",
+          ""origin"": ""https://example.org/stuff.jpg"",
+          ""space"": 4,
+          ""family"": ""I"",
+          ""mediaType"": ""image/jpeg""
+        },
+        {
+          ""id"": ""someId"",
+          ""origin"": ""https://example.org/stuff.jpg"",
+          ""space"": 4,
+          ""family"": ""I"",
+          ""mediaType"": ""image/jpeg""
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue/priority";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var assetInDatabase = dbContext.Images.Where(a => a.Customer == customerId && a.Space == space);
+        assetInDatabase.Count().Should().Be(3);
+        Guid.TryParse(assetInDatabase.ToList()[0].Id.Asset, out _).Should().BeTrue();
+        Guid.TryParse(assetInDatabase.ToList()[1].Id.Asset, out _).Should().BeTrue();
+        assetInDatabase.ToList()[2].Id.Asset.Should().Be("someId");
     }
     
     [Fact]
