@@ -4,26 +4,31 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Amazon.S3;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Model.Customers;
 using DLCS.Repository;
+using Test.Helpers;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 
 namespace API.Tests.Integration;
 
 [Trait("Category", "Integration")]
-[Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
+[Collection(StorageCollection.CollectionName)]
 public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly HttpClient httpClient;
     private readonly DlcsContext dlcsContext;
-
-    public CustomerOriginStrategyTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
+    private readonly IAmazonS3 s3Client;
+    
+    public CustomerOriginStrategyTests(StorageFixture storageFixture, ProtagonistAppFactory<Startup> factory)
     {
-        dlcsContext = dbFixture.DbContext;
-        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
-        dbFixture.CleanUp();
+        dlcsContext = storageFixture.DbFixture.DbContext;
+        s3Client = storageFixture.LocalStackFixture.AWSS3ClientFactory();
+        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(storageFixture.DbFixture, "API-Test",
+            f => f.WithLocalStack(storageFixture.LocalStackFixture));
+        storageFixture.DbFixture.CleanUp();
     }
 
     [Fact]
@@ -76,7 +81,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         
         var foundStrategy = dlcsContext.CustomerOriginStrategies.Single(s => s.Customer == customerId);
-        foundStrategy.Strategy.Should().Be(OriginStrategyType.BasicHttp);
+        foundStrategy.Strategy.Should().Be(OriginStrategyType.S3Ambient);
         foundStrategy.Regex.Should().Be("my-regex");
         foundStrategy.Order.Should().Be(2);
     }
@@ -87,7 +92,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
         // Arrange
         const int customerId = 92;
         var path = $"customers/{customerId}/originStrategies";
-        
+
         const string newStrategyJson = @"{
             ""originStrategy"": ""basic-http-authentication"",
             ""credentials"": ""{\""user\"": \""user-example\"", \""password\"": \""password-example\""}"",
@@ -105,9 +110,14 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
         var foundStrategy = dlcsContext.CustomerOriginStrategies.Single(s => s.Customer == customerId);
         foundStrategy.Strategy.Should().Be(OriginStrategyType.BasicHttp);
         foundStrategy.Regex.Should().Be("my-regex");
-        foundStrategy.Credentials.Should().BeEmpty();
+        foundStrategy.Credentials.Should().NotBeEmpty();
         foundStrategy.Order.Should().Be(2);
         foundStrategy.Optimised.Should().BeFalse();
+        
+        var storedCredentials = await s3Client.GetObjectAsync(LocalStackFixture.SecurityObjectsBucketName, 
+            $"{customerId}/origin-strategy/{foundStrategy.Id}/credentials.json");
+        storedCredentials.ResponseStream.GetContentString().Should()
+            .Be(@"{""user"": ""user-example"", ""password"": ""password-example""}");
     }
     
     [Fact]
