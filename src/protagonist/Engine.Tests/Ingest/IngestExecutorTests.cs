@@ -18,7 +18,8 @@ public class IngestExecutorTests
     {
         workerBuilder = A.Fake<IWorkerBuilder>();
         repo = A.Fake<IEngineAssetRepository>();
-        sut = new IngestExecutor(workerBuilder, repo, new NullLogger<IngestExecutor>());
+        var assetSizeCheck = A.Fake<IAssetIngestorSizeCheck>();
+        sut = new IngestExecutor(workerBuilder, repo, assetSizeCheck ,new NullLogger<IngestExecutor>());
     }
 
     [Fact]
@@ -59,7 +60,7 @@ public class IngestExecutorTests
 
         // Act
         var result = await sut.IngestAsset(asset, customerOriginStrategy);
-
+ 
         // Assert
         result.Status.Should().Be(overall);
     }

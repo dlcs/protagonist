@@ -42,7 +42,7 @@ public class TimebasedIngesterWorkerTests
         // Arrange
         var asset = new Asset(AssetId.FromString("2/1/shallow"));
         A.CallTo(() =>
-                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, true, A<CustomerOriginStrategy>._,
+                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, true, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
             .ThrowsAsync(new Exception());
 
@@ -61,7 +61,7 @@ public class TimebasedIngesterWorkerTests
         // Arrange
         var asset = new Asset(AssetId.FromString($"{customerId}/1/shallow"));
         var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
-        A.CallTo(() => assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, A<bool>._,
+        A.CallTo(() => assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._,
             A<CustomerOriginStrategy>._, A<CancellationToken>._)).Returns(assetFromOrigin);
 
         // Act
@@ -69,7 +69,7 @@ public class TimebasedIngesterWorkerTests
 
         // Assert
         A.CallTo(() =>
-            assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, !noStoragePolicyCheck,
+            assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, !noStoragePolicyCheck,
                 A<CustomerOriginStrategy>._, A<CancellationToken>._))
             .MustHaveHappened();
     }
@@ -82,7 +82,7 @@ public class TimebasedIngesterWorkerTests
         var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
         assetFromOrigin.FileTooLarge();
         A.CallTo(() =>
-            assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, A<bool>._, A<CustomerOriginStrategy>._,
+            assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._, A<CustomerOriginStrategy>._,
                 A<CancellationToken>._))
             .Returns(assetFromOrigin);
 
@@ -100,7 +100,7 @@ public class TimebasedIngesterWorkerTests
         var asset = new Asset(AssetId.FromString("2/1/remurdered"));
 
         A.CallTo(() =>
-                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, A<bool>._, A<CustomerOriginStrategy>._,
+                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
             .Returns(new AssetFromOrigin(asset.Id, 13, "target", "application/json"));
 
@@ -132,7 +132,7 @@ public class TimebasedIngesterWorkerTests
         var asset = new Asset(AssetId.FromString("2/1/remurdered"));
 
         A.CallTo(() =>
-                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, A<bool>._, A<CustomerOriginStrategy>._,
+                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
             .Returns(new AssetFromOrigin(asset.Id, 13, "target", "application/json"));
 

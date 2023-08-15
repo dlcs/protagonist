@@ -1,5 +1,6 @@
 ﻿using DLCS.Model.Assets;
 using DLCS.Model.Customers;
+using DLCS.Model.Storage;
 using Engine.Data;
 
 namespace Engine.Ingest;
@@ -12,13 +13,17 @@ public class IngestExecutor
     private readonly IWorkerBuilder workerBuilder;
     private readonly IEngineAssetRepository assetRepository;
     private readonly ILogger<IngestExecutor> logger;
+    private readonly IAssetIngestorSizeCheck assetIngestorSizeCheck;
 
-    public IngestExecutor(IWorkerBuilder workerBuilder, IEngineAssetRepository assetRepository,
+    public IngestExecutor(IWorkerBuilder workerBuilder, 
+        IEngineAssetRepository assetRepository,
+        IAssetIngestorSizeCheck assetIngestorSizeCheck,
         ILogger<IngestExecutor> logger)
     {
         this.workerBuilder = workerBuilder;
         this.assetRepository = assetRepository;
         this.logger = logger;
+        this.assetIngestorSizeCheck = assetIngestorSizeCheck;
     }
 
     public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy customerOriginStrategy,
@@ -27,6 +32,14 @@ public class IngestExecutor
         var workers = workerBuilder.GetWorkers(asset);
         
         var context = new IngestionContext(asset);
+        long? preIngestionAssetSize = null;
+
+        if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
+        {
+            preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
+        }
+
+        context.WithPreIngestionAssetSize(preIngestionAssetSize);
 
         var postProcessors = new List<IAssetIngesterPostProcess>(workers.Count);
         

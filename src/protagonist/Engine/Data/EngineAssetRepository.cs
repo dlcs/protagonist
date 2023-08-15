@@ -85,6 +85,15 @@ public class EngineAssetRepository : IEngineAssetRepository
     public ValueTask<Asset?> GetAsset(AssetId assetId, CancellationToken cancellationToken = default)
         => dlcsContext.Images.FindAsync(new object[] { assetId }, cancellationToken);
 
+    public async Task<long?> GetImageSize(AssetId assetId, CancellationToken cancellationToken = default)
+    {
+        var imageSize = await dlcsContext.ImageStorages.AsNoTracking().FirstOrDefaultAsync(
+            i => i.Id == assetId, 
+            cancellationToken: cancellationToken);
+
+        return imageSize?.Size;
+    }
+    
     private async Task<bool> NonBatchedSave(CancellationToken cancellationToken)
     {
         var updatedRows = await dlcsContext.SaveChangesAsync(cancellationToken);

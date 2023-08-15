@@ -15,10 +15,10 @@ public abstract class AssetMoverBase
         StorageRepository = storageRepository;
     }
     
-    protected async Task<bool> VerifyFileSize(AssetId assetId, long size)
+    protected async Task<bool> VerifyFileSize(AssetId assetId, long size, long oldFileSize)
     {
         var storageMetrics = await StorageRepository.GetStorageMetrics(assetId.Customer, CancellationToken.None);
-        var customerHasEnoughSize = storageMetrics.CanStoreAssetSize(size);
+        var customerHasEnoughSize = storageMetrics.CanStoreAssetSize(size, oldFileSize );
         return customerHasEnoughSize;
     }
 }

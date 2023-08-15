@@ -22,6 +22,8 @@ public class IngestionContext
         
     public ImageStorage? ImageStorage { get; private set; }
     
+    public long PreIngestionAssetSize { get; private set; }
+    
     /// <summary>
     /// Any objects, and their size, uploaded to DLCS storage
     /// </summary>
@@ -42,6 +44,18 @@ public class IngestionContext
     public IngestionContext WithLocation(ImageLocation imageLocation)
     {
         ImageLocation = imageLocation.ThrowIfNull(nameof(imageLocation));
+        return this;
+    }
+
+    /// <summary>
+    /// Updates the pre-ingestion asset size.  This is used for calculating storage of reingested assets
+    /// </summary>
+    /// <param name="assetSize"></param>
+    /// <returns></returns>
+    public IngestionContext WithPreIngestionAssetSize(long? assetSize = null)
+    {
+        PreIngestionAssetSize = assetSize ?? 0;
+        
         return this;
     }
     

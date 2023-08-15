@@ -15,13 +15,13 @@ public interface IAssetToDisk
     /// <summary>
     /// Copy asset from Origin to local disk.
     /// </summary>
-    /// <param name="asset"><see cref="Asset"/> to be copied.</param>
+    /// <param name="context">Ingestion context containing the <see cref="Asset"/> to be copied.</param>
     /// <param name="destinationTemplate">String representing destinations folder to copy to.</param>
     /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>Current cancellation token</param>
     /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    Task<AssetFromOrigin> CopyAssetToLocalDisk(Asset asset, string destinationTemplate, bool verifySize, 
+    Task<AssetFromOrigin> CopyAssetToLocalDisk(IngestionContext context, string destinationTemplate, bool verifySize, 
         CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default);
 }
@@ -49,37 +49,37 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
     /// <summary>
     /// Copy asset from Origin to local disk.
     /// </summary>
-    /// <param name="asset"><see cref="Asset"/> to be copied.</param>
+    /// <param name="context">Ingestion context containing the <see cref="Asset"/> to be copied.</param>
     /// <param name="destinationTemplate">String representing destinations folder to copy to.</param>
     /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>Current cancellation token</param>
     /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    public async Task<AssetFromOrigin> CopyAssetToLocalDisk(Asset asset, string destinationTemplate, bool verifySize, 
+    public async Task<AssetFromOrigin> CopyAssetToLocalDisk(IngestionContext context, string destinationTemplate, bool verifySize, 
         CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
         destinationTemplate.ThrowIfNullOrWhiteSpace(nameof(destinationTemplate));
 
         var originResponse =
-            await originFetcher.LoadAssetFromLocation(asset.Id, asset.GetIngestOrigin(),
+            await originFetcher.LoadAssetFromLocation(context.Asset.Id, context.Asset.GetIngestOrigin(),
                 customerOriginStrategy, cancellationToken);
 
         if (originResponse == null || originResponse.Stream.IsNull())
         {
-            logger.LogWarning("Unable to fetch asset {AssetId} from {Origin}, using {OriginStrategy}", asset.Id,
-                asset.Origin, customerOriginStrategy.Strategy);
+            logger.LogWarning("Unable to fetch asset {AssetId} from {Origin}, using {OriginStrategy}", context.Asset.Id,
+                context.Asset.Origin, customerOriginStrategy.Strategy);
             throw new ApplicationException(
-                $"Unable to get asset '{asset.Id}' from origin '{asset.Origin}' using {customerOriginStrategy.Strategy}");
+                $"Unable to get asset '{context.Asset.Id}' from origin '{context.Asset.Origin}' using {customerOriginStrategy.Strategy}");
         }
         
         cancellationToken.ThrowIfCancellationRequested();
-        var assetFromOrigin = await CopyAssetToDisk(asset, destinationTemplate, originResponse, cancellationToken);
+        var assetFromOrigin = await CopyAssetToDisk(context.Asset, destinationTemplate, originResponse, cancellationToken);
         assetFromOrigin.CustomerOriginStrategy = customerOriginStrategy;
         
         if (verifySize)
         {
-            await VerifyFileSize(asset, assetFromOrigin);
+            await VerifyFileSize(context, assetFromOrigin);
         }
             
         return assetFromOrigin;
@@ -148,9 +148,9 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
         return extension;
     }
     
-    private async Task VerifyFileSize(Asset asset, AssetFromOrigin assetFromOrigin)
+    private async Task VerifyFileSize(IngestionContext context, AssetFromOrigin assetFromOrigin)
     {
-        var customerHasEnoughSize = await VerifyFileSize(asset.Id, assetFromOrigin.AssetSize);
+        var customerHasEnoughSize = await VerifyFileSize(context.Asset.Id, assetFromOrigin.AssetSize, context.PreIngestionAssetSize);
 
         if (!customerHasEnoughSize)
         {

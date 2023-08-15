@@ -43,7 +43,7 @@ public class FileChannelWorker : IAssetIngesterWorker
 
             var targetStorageLocation = storageKeyGenerator.GetStoredOriginalLocation(ingestionContext.AssetId);
             var assetInBucket = await assetToS3.CopyOriginToStorage(targetStorageLocation,
-                asset,
+                ingestionContext,
                 !assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer),
                 customerOriginStrategy,
                 cancellationToken);
