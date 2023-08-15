@@ -29,18 +29,15 @@ public class CreateCustomerOriginStrategy : IRequest<ModifyEntityResult<Customer
 public class CreateCustomerOriginStrategyHandler : IRequestHandler<CreateCustomerOriginStrategy, ModifyEntityResult<CustomerOriginStrategy>>
 {  
     private readonly DlcsContext dbContext;
-    private readonly ILogger<HostAssetAtOriginHandler> logger;
     private readonly IBucketWriter bucketWriter;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     
     public CreateCustomerOriginStrategyHandler(
         DlcsContext dbContext,
-        ILogger<HostAssetAtOriginHandler> logger,
         IBucketWriter bucketWriter,
         IStorageKeyGenerator storageKeyGenerator)
     {
         this.dbContext = dbContext;
-        this.logger = logger;
         this.bucketWriter = bucketWriter;
         this.storageKeyGenerator = storageKeyGenerator;
     }
@@ -60,15 +57,18 @@ public class CreateCustomerOriginStrategyHandler : IRequestHandler<CreateCustome
         var newStrategyId = Guid.NewGuid().ToString();
         var newStrategyCredentials = string.Empty;
         
-        if (!string.IsNullOrWhiteSpace(request.Strategy.Credentials) && request.Strategy.Strategy == OriginStrategyType.BasicHttp)
+        if (string.IsNullOrWhiteSpace(request.Strategy.Credentials))
         {
+            if(request.Strategy.Strategy != OriginStrategyType.BasicHttp)
+                return ModifyEntityResult<CustomerOriginStrategy>.Failure("Credentials can only be supplied when the origin strategy is set to basic-http-authentication", WriteResult.Error);
+            
             try
             {
                 JsonSerializer.Deserialize<BasicCredentials>(request.Strategy.Credentials);
             }
             catch (Exception e)
             {
-                return ModifyEntityResult<CustomerOriginStrategy>.Failure(e.Message, WriteResult.Error);
+                return ModifyEntityResult<CustomerOriginStrategy>.Failure($"Error with credentials JSON: {e.Message}", WriteResult.Error);
             }
             
             var objectInBucket = storageKeyGenerator.GetOriginStrategyCredentialsLocation(request.CustomerId, newStrategyId);
