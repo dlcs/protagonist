@@ -128,7 +128,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         // Create a new customer to have control over CustomerStorage and make sure it's isolated
         const int customerId = -10;
-        var assetId = AssetId.FromString($"{customerId}/1/{nameof(IngestAsset_Success_OnLargerReingest)}");
+        var assetId = AssetId.FromString($"{customerId}/2/{nameof(IngestAsset_Success_OnLargerReingest)}");
 
         // Note - API will have set this up before handing off
         var origin = $"{apiStub.Address}/image";
@@ -143,7 +143,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Customer = customerId,
             Id = assetId,
-            Space = 1,
+            Space = 2,
             Size = 950
         });
         await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customerId, sizeOfStored: 950,
@@ -291,7 +291,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             width: 0, height: 0, duration: 0, mediaType: "image/tiff", deliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.Customers.AddTestCustomer(customerId);
-        await dbContext.Spaces.AddTestSpace(customerId, 1);
+        await dbContext.Spaces.AddTestSpace(customerId, 2);
         await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customerId, sizeOfStored: 99,
             storagePolicy: "small");
         await dbContext.SaveChangesAsync();
@@ -329,7 +329,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         // Create a new customer to have control over CustomerStorage and make sure it's isolated
         const int customerId = -10;
-        var assetId = AssetId.FromString($"{customerId}/1/{nameof(IngestAsset_Error_ExceedAllowanceOnReingest)}");
+        var assetId = AssetId.FromString($"{customerId}/3/{nameof(IngestAsset_Error_ExceedAllowanceOnReingest)}");
 
         // Note - API will have set this up before handing off
         var origin = $"{apiStub.Address}/image";
@@ -338,7 +338,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             width: 0, height: 0, duration: 0, mediaType: "image/tiff", deliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.Customers.AddTestCustomer(customerId);
-        await dbContext.Spaces.AddTestSpace(customerId, 1);
+        await dbContext.Spaces.AddTestSpace(customerId, 3);
         dbContext.ImageStorages.Add(new ImageStorage()
         {
             Customer = customerId,
