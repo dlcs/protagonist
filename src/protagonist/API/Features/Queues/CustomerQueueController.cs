@@ -1,4 +1,5 @@
-﻿using API.Converters;
+﻿using System.Collections.Generic;
+using API.Converters;
 using API.Features.Queues.Converters;
 using API.Features.Queues.Requests;
 using API.Features.Queues.Validation;
@@ -93,26 +94,14 @@ public class CustomerQueueController : HydraController
         [FromServices] QueuePostValidator validator,
         CancellationToken cancellationToken)
     {
-        if (images.Members != null)
-        {
-            if (apiSettings.LegacyModeEnabledForCustomer(customerId))
-            {
-                for (int i = 0; i < images.Members.Length; i++)
-                {
-                    if (apiSettings.LegacyModeEnabledForSpace(customerId, images.Members[i].Space))
-                    {
-                        images.Members[i] = LegacyModeConverter.VerifyAndConvertToModernFormat(images.Members[i]);
-                    }
-                }
-            }
-        }
-        
+        UpdateMembers(customerId, images.Members);
+
         var validationResult = await validator.ValidateAsync(images, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
         }
-        
+
         var request =
             new CreateBatchOfImages(customerId, images.Members!.Select(i => i.ToDlcsModel(customerId)).ToList());
 
@@ -122,6 +111,33 @@ public class CustomerQueueController : HydraController
             cancellationToken: cancellationToken);
     }
     
+    /// <summary>
+    /// Updates assets for legacy mode compatibility and mints GUIDs if no ID set
+    /// </summary>
+    /// <param name="customerId">The customer id</param>
+    /// <param name="members">The assets to update</param>
+    private  void UpdateMembers(int customerId, IList<DLCS.HydraModel.Image>? members)
+    {
+        if (members != null)
+        {
+            if (apiSettings.LegacyModeEnabledForCustomer(customerId))
+            {
+                for (int i = 0; i < members.Count; i++)
+                {
+                    if (apiSettings.LegacyModeEnabledForSpace(customerId, members[i].Space))
+                    {
+                        members[i] = LegacyModeConverter.VerifyAndConvertToModernFormat(members[i]);
+                    }
+                }
+            }
+            
+            foreach (var image in members.Where(image =>  string.IsNullOrEmpty(image.ModelId)))
+            {
+                image.ModelId = Guid.NewGuid().ToString();
+            }
+        }
+    }
+
     /// <summary>
     /// Create a batch of images to ingest, adding request to priority queue
     ///
@@ -159,6 +175,8 @@ public class CustomerQueueController : HydraController
         [FromServices] QueuePostValidator validator,
         CancellationToken cancellationToken)
     {
+        UpdateMembers(customerId, images.Members);
+        
         var validationResult = await validator.ValidateAsync(images, cancellationToken);
         if (!validationResult.IsValid)
         {
