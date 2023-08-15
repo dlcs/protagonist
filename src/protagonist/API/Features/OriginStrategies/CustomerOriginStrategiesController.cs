@@ -83,7 +83,7 @@ public class CustomerOriginStrategiesController : HydraController
         newStrategy.CustomerId = customerId;
         var request = new CreateCustomerOriginStrategy(customerId, newStrategy.ToDlcsModel());
         return await HandleUpsert(request, 
-            nq => nq.ToHydra(GetUrlRoots().BaseUrl),
+            os => os.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to create Origin Strategy",
             cancellationToken: cancellationToken);
     }
@@ -108,5 +108,32 @@ public class CustomerOriginStrategiesController : HydraController
             errorTitle: "Failed to get Origin Strategy",
             cancellationToken: cancellationToken
         );
+    }
+    
+    [HttpPut]
+    [Route("{strategyId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PutCustomerOriginStrategy(
+        [FromRoute] int customerId,
+        [FromRoute] string strategyId,
+        [FromBody] CustomerOriginStrategy strategy,
+        [FromServices] HydraCustomerOriginStrategyValidator validator,
+        CancellationToken cancellationToken)
+    {
+        var request = new UpdateCustomerOriginStrategy(customerId, strategyId)
+        {
+            Regex = strategy.Regex,
+            Strategy = strategy.OriginStrategy,
+            Order = strategy.Order,
+            Optimised = strategy.Optimised
+        };
+        
+        return await HandleUpsert(request, 
+            os => os.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to update Origin Strategy",
+            cancellationToken: cancellationToken);
     }
 }
