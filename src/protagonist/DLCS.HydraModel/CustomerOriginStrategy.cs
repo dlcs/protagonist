@@ -44,7 +44,7 @@ public class CustomerOriginStrategy : DlcsResource
 
     [HydraLink(Description = "Link to the origin strategy definition that will be used if the regex is matched.",
         Range = "vocab:OriginStrategy", ReadOnly = true, WriteOnly = false, SetManually = true)]
-    [JsonProperty(Order = 17, PropertyName = "originStrategy")]
+    [JsonProperty(Order = 17, PropertyName = "strategy")]
     public string? OriginStrategy { get; set; }
 
 
@@ -62,7 +62,7 @@ public class CustomerOriginStrategy : DlcsResource
     
     
     [RdfProperty(Description = "Placeholder",
-        Range = Names.XmlSchema.Boolean, ReadOnly = false, WriteOnly = false)]
+        Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 26, PropertyName = "order")]
     public int? Order { get; set; }
 }
