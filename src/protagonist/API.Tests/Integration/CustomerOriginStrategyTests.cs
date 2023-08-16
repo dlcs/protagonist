@@ -117,7 +117,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
         var storedCredentials = await s3Client.GetObjectAsync(LocalStackFixture.SecurityObjectsBucketName, 
             $"{customerId}/origin-strategy/{foundStrategy.Id}/credentials.json");
         storedCredentials.ResponseStream.GetContentString().Should()
-            .Be(@"{""user"": ""user-example"", ""password"": ""password-example""}");
+            .Be(@"{""user"":""user-example"",""password"":""password-example""}");
     }
     
     [Fact]
