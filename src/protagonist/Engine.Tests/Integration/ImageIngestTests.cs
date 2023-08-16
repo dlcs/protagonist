@@ -138,7 +138,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             deliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.Customers.AddTestCustomer(customerId);
-        await dbContext.Spaces.AddTestSpace(customerId, 1);
+        await dbContext.Spaces.AddTestSpace(customerId, 2);
         dbContext.ImageStorages.Add(new ImageStorage()
         {
             Customer = customerId,
