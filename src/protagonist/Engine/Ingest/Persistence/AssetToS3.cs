@@ -19,7 +19,7 @@ public interface IAssetToS3
     /// Configuration determines if this is a direct S3-S3 copy, or S3-disk-S3.
     /// </summary>
     /// <param name="destination"><see cref="ObjectInBucket"/> where file is to copied to</param>
-    /// <param name="context">Ingestion context containing the <see cref="Asset"/> to be copied.</param>
+    /// <param name="context">Ingestion context containing the <see cref="Asset"/> to be copied</param>
     /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>

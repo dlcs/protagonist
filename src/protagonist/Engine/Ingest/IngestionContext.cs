@@ -50,8 +50,8 @@ public class IngestionContext
     /// <summary>
     /// Updates the pre-ingestion asset size.  This is used for calculating storage of reingested assets
     /// </summary>
-    /// <param name="assetSize"></param>
-    /// <returns></returns>
+    /// <param name="assetSize">The size of the asset</param>
+    /// <returns>The ingestion context</returns>
     public IngestionContext WithPreIngestionAssetSize(long? assetSize = null)
     {
         PreIngestionAssetSize = assetSize ?? 0;
