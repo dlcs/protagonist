@@ -57,7 +57,7 @@ public class CreateCustomerOriginStrategyHandler : IRequestHandler<CreateCustome
         var newStrategyId = Guid.NewGuid().ToString();
         var newStrategyCredentials = string.Empty;
         
-        if (string.IsNullOrWhiteSpace(request.Strategy.Credentials))
+        if (!string.IsNullOrWhiteSpace(request.Strategy.Credentials))
         {
             if(request.Strategy.Strategy != OriginStrategyType.BasicHttp)
                 return ModifyEntityResult<CustomerOriginStrategy>.Failure("Credentials can only be supplied when the origin strategy is set to basic-http-authentication", WriteResult.Error);
