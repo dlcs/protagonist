@@ -139,13 +139,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = entity.Entity;
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, 2);
-        dbContext.ImageStorages.Add(new ImageStorage()
-        {
-            Customer = customerId,
-            Id = assetId,
-            Space = 2,
-            Size = 950
-        });
+        await dbContext.ImageStorages.AddTestImageStorage(id: assetId, space: 2, customer: customerId, size: 950);
         await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customerId, sizeOfStored: 950,
             storagePolicy: "medium");
         await dbContext.SaveChangesAsync();
@@ -339,12 +333,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = entity.Entity;
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, 3);
-        dbContext.ImageStorages.Add(new ImageStorage()
-        {
-            Customer = customerId,
-            Id = assetId,
-            Size = 500
-        });
+        await dbContext.ImageStorages.AddTestImageStorage(id: assetId, space: 2, customer: customerId, size: 500);
         await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customerId, sizeOfStored: 950,
             storagePolicy: "medium");
         await dbContext.SaveChangesAsync();

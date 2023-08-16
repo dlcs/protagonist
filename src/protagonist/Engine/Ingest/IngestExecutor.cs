@@ -32,15 +32,14 @@ public class IngestExecutor
         var workers = workerBuilder.GetWorkers(asset);
         
         var context = new IngestionContext(asset);
-        long? preIngestionAssetSize = null;
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
         {
+            long? preIngestionAssetSize = null;
             preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
+            context.WithPreIngestionAssetSize(preIngestionAssetSize);
         }
-
-        context.WithPreIngestionAssetSize(preIngestionAssetSize);
-
+        
         var postProcessors = new List<IAssetIngesterPostProcess>(workers.Count);
         
         var overallStatus = IngestResultStatus.Unknown;

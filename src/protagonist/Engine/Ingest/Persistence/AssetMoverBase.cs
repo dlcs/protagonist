@@ -18,7 +18,7 @@ public abstract class AssetMoverBase
     protected async Task<bool> VerifyFileSize(AssetId assetId, long size, long oldFileSize)
     {
         var storageMetrics = await StorageRepository.GetStorageMetrics(assetId.Customer, CancellationToken.None);
-        var customerHasEnoughSize = storageMetrics.CanStoreAssetSize(size, oldFileSize );
+        var customerHasEnoughSize = storageMetrics.CanStoreAssetSize(size, oldFileSize);
         return customerHasEnoughSize;
     }
 }

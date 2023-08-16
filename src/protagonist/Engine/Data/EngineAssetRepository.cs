@@ -87,11 +87,12 @@ public class EngineAssetRepository : IEngineAssetRepository
 
     public async Task<long?> GetImageSize(AssetId assetId, CancellationToken cancellationToken = default)
     {
-        var imageSize = await dlcsContext.ImageStorages.AsNoTracking().FirstOrDefaultAsync(
-            i => i.Id == assetId, 
-            cancellationToken: cancellationToken);
+        var imageSize = await dlcsContext.ImageStorages.AsNoTracking()
+            .Where(i => i.Id == assetId)
+            .Select(i => i.Size)
+            .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
-        return imageSize?.Size;
+        return imageSize;
     }
     
     private async Task<bool> NonBatchedSave(CancellationToken cancellationToken)
