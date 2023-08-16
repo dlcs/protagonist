@@ -24,4 +24,12 @@ public interface IEngineAssetRepository
     /// Get Asset with specified Id
     /// </summary>
     ValueTask<Asset?> GetAsset(AssetId assetId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves the size of an image from the database, or null if the image is not found
+    /// </summary>
+    /// <param name="assetId">The asset id of the image to check</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>The size of the image, or null if not found</returns>
+    Task<long?> GetImageSize(AssetId assetId, CancellationToken cancellationToken = default);
 }

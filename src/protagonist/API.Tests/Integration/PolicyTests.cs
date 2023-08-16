@@ -111,7 +111,7 @@ public class PolicyTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var model = await response.ReadAsHydraResponseAsync<HydraCollection<StoragePolicy>>();
-        model.Members.Should().HaveCount(2);
+        model.Members.Should().HaveCount(3);
     }
     
     [Fact]

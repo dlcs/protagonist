@@ -48,7 +48,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
     {
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Spaces\" WHERE \"Customer\" != 99 AND \"Id\" != 1");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
-        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"StoragePolicies\" WHERE \"Id\" not in ('default', 'small')");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"StoragePolicies\" WHERE \"Id\" not in ('default', 'small', 'medium')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
         DbContext.Database.ExecuteSqlRaw(
             "DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" not in ('fast-higher', 'video-max', 'audio-max', 'cust-default')");
@@ -90,7 +90,14 @@ public class DlcsDatabaseFixture : IAsyncLifetime
                 Id = "small",
                 MaximumNumberOfStoredImages = 10,
                 MaximumTotalSizeOfStoredImages = 100
+            },
+            new StoragePolicy
+            {
+                Id = "medium",
+                MaximumNumberOfStoredImages = 100,
+                MaximumTotalSizeOfStoredImages = 1000
             });
+        
         await DbContext.EntityCounters.AddRangeAsync(new EntityCounter
         {
             Type = KnownEntityCounters.CustomerSpaces,

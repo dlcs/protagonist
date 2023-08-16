@@ -13,12 +13,14 @@ public class IngestExecutorTests
     private readonly IEngineAssetRepository repo;
     private readonly IngestExecutor sut;
     private readonly CustomerOriginStrategy customerOriginStrategy = new();
+    private readonly IAssetIngestorSizeCheck assetSizeCheck;
 
     public IngestExecutorTests()
     {
         workerBuilder = A.Fake<IWorkerBuilder>();
         repo = A.Fake<IEngineAssetRepository>();
-        sut = new IngestExecutor(workerBuilder, repo, new NullLogger<IngestExecutor>());
+        assetSizeCheck = A.Fake<IAssetIngestorSizeCheck>();
+        sut = new IngestExecutor(workerBuilder, repo, assetSizeCheck, new NullLogger<IngestExecutor>());
     }
 
     [Fact]
@@ -26,6 +28,26 @@ public class IngestExecutorTests
     {
         var asset = new Asset();
         A.CallTo(() => workerBuilder.GetWorkers(asset)).Returns(Array.Empty<IAssetIngesterWorker>());
+
+        // Act
+        await sut.IngestAsset(asset, customerOriginStrategy);
+        
+        // Assert
+        A.CallTo(() =>
+                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, true, A<CancellationToken>._))
+            .MustHaveHappened();
+    }
+    
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task IngestAsset_Handles_CanHaveAssetSizeCheck(bool sizeCheck)
+    {
+        var asset = new Asset();
+        A.CallTo(() => workerBuilder.GetWorkers(asset))
+            .Returns(new[] { new FakeWorker(IngestResultStatus.Success) });
+        A.CallTo(() => assetSizeCheck.CustomerHasNoStorageCheck(A<int>._))
+            .Returns(sizeCheck);
 
         // Act
         await sut.IngestAsset(asset, customerOriginStrategy);
@@ -59,7 +81,7 @@ public class IngestExecutorTests
 
         // Act
         var result = await sut.IngestAsset(asset, customerOriginStrategy);
-
+ 
         // Assert
         result.Status.Should().Be(overall);
     }

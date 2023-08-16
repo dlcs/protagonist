@@ -18,6 +18,6 @@ public class AssetStorageMetric
     /// <summary>
     /// Check if there is allowance to store asset based on size
     /// </summary>
-    public bool CanStoreAssetSize(long proposedNewSize) =>
-        CustomerStorage.TotalSizeOfStoredImages + proposedNewSize <= Policy.MaximumTotalSizeOfStoredImages;
+    public bool CanStoreAssetSize(long proposedNewSize, long oldFileSize) =>
+        (CustomerStorage.TotalSizeOfStoredImages - oldFileSize) + proposedNewSize <= Policy.MaximumTotalSizeOfStoredImages;
 }

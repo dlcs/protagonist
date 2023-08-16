@@ -40,7 +40,7 @@ public class FileChannelWorkerTests
         // Assert
         result.Should().Be(IngestResultStatus.Success);
         A.CallTo(() =>
-                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<Asset>._, A<bool>._, cos, A<CancellationToken>._))
+                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._, cos, A<CancellationToken>._))
             .MustNotHaveHappened();
     }
 
@@ -56,7 +56,7 @@ public class FileChannelWorkerTests
             .Returns(destination);
 
         A.CallTo(() =>
-                assetToS3.CopyOriginToStorage(destination, context.Asset, true, cos, A<CancellationToken>._))
+                assetToS3.CopyOriginToStorage(destination, context, true, cos, A<CancellationToken>._))
             .Returns(new AssetFromOrigin(context.AssetId, 1234L, "anywhere", "application/docx"));
 
         // Act
@@ -81,7 +81,7 @@ public class FileChannelWorkerTests
             .Returns(destination);
 
         A.CallTo(() =>
-                assetToS3.CopyOriginToStorage(destination, context.Asset, true, cos, A<CancellationToken>._))
+                assetToS3.CopyOriginToStorage(destination, context, true, cos, A<CancellationToken>._))
             .Returns(new AssetFromOrigin(context.AssetId, 1234L, "anywhere", "application/docx"));
 
         // Act
@@ -92,7 +92,7 @@ public class FileChannelWorkerTests
         context.StoredObjects.Should().ContainKey(destination).WhoseValue.Should().Be(1234L);
         result.Should().Be(IngestResultStatus.Success);
     }
-    
+
     [Fact]
     public async Task Ingest_ReturnsErrorIfCopyExceedStorageLimit()
     {
@@ -107,7 +107,7 @@ public class FileChannelWorkerTests
         var assetFromOrigin = new AssetFromOrigin(context.AssetId, 1234L, "anywhere", "application/docx");
         assetFromOrigin.FileTooLarge();
         A.CallTo(() =>
-                assetToS3.CopyOriginToStorage(destination, context.Asset, true, cos, A<CancellationToken>._))
+                assetToS3.CopyOriginToStorage(destination, context, true, cos, A<CancellationToken>._))
             .Returns(assetFromOrigin);
 
         // Act
@@ -135,7 +135,7 @@ public class FileChannelWorkerTests
         
         // Assert
         A.CallTo(() =>
-                assetToS3.CopyOriginToStorage(destination, context.Asset, false, cos, A<CancellationToken>._))
+                assetToS3.CopyOriginToStorage(destination, context, false, cos, A<CancellationToken>._))
             .MustHaveHappened();
         result.Should().Be(IngestResultStatus.Success);
     }

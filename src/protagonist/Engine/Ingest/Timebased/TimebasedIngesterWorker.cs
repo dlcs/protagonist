@@ -41,7 +41,7 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
             var targetStorageLocation = storageKeyGenerator.GetTimebasedInputLocation(asset.Id);
             var assetInBucket = await assetToS3.CopyOriginToStorage(
                 targetStorageLocation,
-                asset,
+                ingestionContext,
                 !assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer),
                 customerOriginStrategy, cancellationToken);
             ingestionContext.WithAssetFromOrigin(assetInBucket);
