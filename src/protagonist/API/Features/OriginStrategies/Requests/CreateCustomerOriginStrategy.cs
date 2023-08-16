@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using API.Features.Image.Requests;
 using API.Infrastructure.Requests;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
@@ -9,7 +8,6 @@ using DLCS.Model.Customers;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace API.Features.OriginStrategies.Requests;
 
@@ -44,24 +42,19 @@ public class CreateCustomerOriginStrategyHandler : IRequestHandler<CreateCustome
     
     public async Task<ModifyEntityResult<CustomerOriginStrategy>> Handle(CreateCustomerOriginStrategy request, CancellationToken cancellationToken)
     {
-        var existingStrategy = await dbContext.CustomerOriginStrategies.AsNoTracking().SingleOrDefaultAsync(
+        var regexUsed = await dbContext.CustomerOriginStrategies.AsNoTracking().AnyAsync(
             s => s.Customer == request.CustomerId && s.Regex == request.Strategy.Regex, 
             cancellationToken);
         
-        if (existingStrategy != null)
-        {
+        if (regexUsed)
             return ModifyEntityResult<CustomerOriginStrategy>.Failure("An origin strategy using the same regex already exists",
                 WriteResult.Conflict);
-        }
 
         var newStrategyId = Guid.NewGuid().ToString();
         var newStrategyCredentials = string.Empty;
         
-        if (!string.IsNullOrWhiteSpace(request.Strategy.Credentials))
+        if (request.Strategy.Strategy == OriginStrategyType.BasicHttp)
         {
-            if(request.Strategy.Strategy != OriginStrategyType.BasicHttp)
-                return ModifyEntityResult<CustomerOriginStrategy>.Failure("Credentials can only be supplied when the origin strategy is set to basic-http-authentication", WriteResult.Error);
-            
             try
             {
                 JsonSerializer.Deserialize<BasicCredentials>(request.Strategy.Credentials);
