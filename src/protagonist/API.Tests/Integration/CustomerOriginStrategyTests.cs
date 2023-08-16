@@ -68,7 +68,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
         var path = $"customers/{customerId}/originStrategies";
         
         const string newStrategyJson = @"{
-            ""originStrategy"": ""s3-ambient"",
+            ""strategy"": ""s3-ambient"",
             ""regex"": ""my-regex"",
             ""order"": ""2""
         }";
@@ -94,7 +94,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
         var path = $"customers/{customerId}/originStrategies";
 
         const string newStrategyJson = @"{
-            ""originStrategy"": ""basic-http-authentication"",
+            ""strategy"": ""basic-http-authentication"",
             ""credentials"": ""{\""user\"": \""user-example\"", \""password\"": \""password-example\""}"",
             ""regex"": ""my-regex"",
             ""order"": ""2""
@@ -134,7 +134,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
             Strategy = OriginStrategyType.BasicHttp
         };
         const string newStrategyJson = @"{
-            ""originStrategy"": ""basic-http-authentication"",
+            ""strategy"": ""basic-http-authentication"",
             ""regex"": ""my-regex"",
             ""order"": ""2""
         }";
@@ -158,7 +158,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
         var path = $"customers/{customerId}/originStrategies";
         
         const string newStrategyJson = @"{
-            ""originStrategy"": ""basic-http-authentication"",
+            ""strategy"": ""basic-http-authentication"",
             ""regex"": ""my-regex"",
             ""optimised"": ""true"",
             ""order"": ""2""
