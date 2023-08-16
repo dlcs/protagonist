@@ -35,8 +35,7 @@ public class IngestExecutor
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
         {
-            long? preIngestionAssetSize = null;
-            preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
+            var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
             context.WithPreIngestionAssetSize(preIngestionAssetSize);
         }
         
