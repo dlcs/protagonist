@@ -13,12 +13,12 @@ public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.Hydra
         RuleFor(s => s.Id)
             .Empty()
             .WithMessage(s => $"DLCS must allocate named query id, but id {s.Id} was supplied");
-        RuleFor(nq => nq.CustomerId)
+        RuleFor(s => s.CustomerId)
             .Empty()
             .WithMessage("Should not include user id");
         RuleFor(s => s.OriginStrategy)
             .NotEmpty()
-            .WithMessage(s => "You must specify an origin strategy");
+            .WithMessage(s => "An origin strategy must be specified");
         RuleFor(s => s.OriginStrategy)
             .Must( s => s != null && s.IsValidEnumValue<OriginStrategyType>())
             .WithMessage(s => $"'{s.OriginStrategy}' is not a valid origin strategy");
