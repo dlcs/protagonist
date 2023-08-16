@@ -25,10 +25,11 @@ public class CreateCustomerOriginStrategy : IRequest<ModifyEntityResult<Customer
 }
 
 public class CreateCustomerOriginStrategyHandler : IRequestHandler<CreateCustomerOriginStrategy, ModifyEntityResult<CustomerOriginStrategy>>
-{  
+{
     private readonly DlcsContext dbContext;
     private readonly IBucketWriter bucketWriter;
     private readonly IStorageKeyGenerator storageKeyGenerator;
+    private readonly JsonSerializerOptions jsonSettings = new(JsonSerializerDefaults.Web);
     
     public CreateCustomerOriginStrategyHandler(
         DlcsContext dbContext,
@@ -57,16 +58,24 @@ public class CreateCustomerOriginStrategyHandler : IRequestHandler<CreateCustome
         {
             try
             {
-                JsonSerializer.Deserialize<BasicCredentials>(request.Strategy.Credentials);
+                var credentials = JsonSerializer.Deserialize<BasicCredentials>(request.Strategy.Credentials, jsonSettings);
+                
+                if(string.IsNullOrWhiteSpace(credentials?.User))
+                    return ModifyEntityResult<CustomerOriginStrategy>.Failure($"The credentials object requires an username", WriteResult.FailedValidation);
+                if(string.IsNullOrWhiteSpace(credentials?.Password))
+                    return ModifyEntityResult<CustomerOriginStrategy>.Failure($"The credentials object requires a password", WriteResult.FailedValidation);
+               
+                var credentialsJson = JsonSerializer.Serialize(credentials, jsonSettings);
+                var objectInBucket = storageKeyGenerator.GetOriginStrategyCredentialsLocation(request.CustomerId, newStrategyId);
+                
+                await bucketWriter.WriteToBucket(objectInBucket, credentialsJson, "application/json", cancellationToken);
+                
+                newStrategyCredentials = objectInBucket.GetS3Uri().ToString();
             }
             catch (Exception e)
             {
-                return ModifyEntityResult<CustomerOriginStrategy>.Failure($"Error with credentials JSON: {e.Message}", WriteResult.Error);
+                return ModifyEntityResult<CustomerOriginStrategy>.Failure($"Invalid credentials JSON: {e.Message}", WriteResult.FailedValidation);
             }
-            
-            var objectInBucket = storageKeyGenerator.GetOriginStrategyCredentialsLocation(request.CustomerId, newStrategyId);
-            await bucketWriter.WriteToBucket(objectInBucket, request.Strategy.Credentials, "application/json", cancellationToken);
-            newStrategyCredentials = objectInBucket.GetS3Uri().ToString();
         }
         
         var newStrategy = new CustomerOriginStrategy()
