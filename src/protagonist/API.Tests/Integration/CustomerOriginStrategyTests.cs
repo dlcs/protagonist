@@ -135,6 +135,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
         };
         const string newStrategyJson = @"{
             ""strategy"": ""basic-http-authentication"",
+            ""credentials"": ""{\""user\"": \""user-example\"", \""password\"": \""password-example\""}"",
             ""regex"": ""my-regex"",
             ""order"": ""2""
         }";
