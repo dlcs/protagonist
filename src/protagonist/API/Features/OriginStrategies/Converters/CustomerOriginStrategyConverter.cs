@@ -15,6 +15,11 @@ public static class CustomerOriginStrategyConverter
             Optimised = originStrategy.Optimised,
             Order = originStrategy.Order,
         };
+        
+        if (!string.IsNullOrEmpty(hydraOriginStrategy.Credentials))
+            hydraOriginStrategy.OriginStrategy =
+                $"{baseUrl}/originStrategies/{hydraOriginStrategy.OriginStrategy}";
+        
         return hydraOriginStrategy;
     }
     
