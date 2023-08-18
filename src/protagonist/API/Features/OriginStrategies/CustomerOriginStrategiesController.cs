@@ -57,14 +57,13 @@ public class CustomerOriginStrategiesController : HydraController
     /// </summary>
     /// <remarks>
     /// Sample request:
-    ///
-    ///     POST: /customers/1/originStrategies
+    ///     PUT: /customers/1/originStrategies
     ///     {
-    ///          "originStrategy":"basic-http-authentication",
-    ///          "regex": "your-regex-here"
-    ///          "optimised": "false",
-    ///          "credentials": "{"user": "user-example", "password": "password-example"}"
-    ///          "order": 2
+    ///          "regex": "http[s]?://(.*).my-regex.com",
+    ///          "order": "1",
+    ///          "strategy": "basic-http-authentication", 
+    ///          "credentials": "{ \"user\": \"my-username\", \"password\": \"my-password\" }",
+    ///          "optimised": "false"
     ///     }
     /// </remarks>
     [HttpPost]
@@ -118,6 +117,20 @@ public class CustomerOriginStrategiesController : HydraController
         );
     }
     
+    /// <summary>
+    /// Update an origin strategy owned by the user
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    ///     PUT: /customers/1/originStrategies/68a8931b-e815-492b-bfe9-2f8135ba4898
+    ///     {
+    ///          "regex": "http[s]?://(.*).my-regex.com",
+    ///          "order": "1",
+    ///          "strategy": "basic-http-authentication", 
+    ///          "credentials": "{ \"user\": \"my-username\", \"password\": \"my-password\" }",
+    ///          "optimised": "false"
+    ///     }
+    /// </remarks>
     [HttpPut]
     [Route("{strategyId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -153,6 +166,22 @@ public class CustomerOriginStrategiesController : HydraController
             s => s.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to update Origin Strategy",
             cancellationToken: cancellationToken);
+    }
+    
+    /// <summary>
+    /// Delete a specified origin strategy owned by the user
+    /// </summary>
+    [HttpDelete]
+    [Route("{strategyId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteCustomerOriginStrategy(
+        [FromRoute] int customerId,
+        [FromRoute] string strategyId)
+    {
+        var deleteRequest = new DeleteCustomerOriginStrategy(customerId, strategyId);
+
+        return await HandleDelete(deleteRequest);
     }
     
     private OriginStrategyType? IsStrategyAllowed(string strategy)
