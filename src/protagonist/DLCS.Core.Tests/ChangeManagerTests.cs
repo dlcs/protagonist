@@ -213,6 +213,45 @@ public class ChangeManagerTests
         existingObject.Should().BeEquivalentTo(expected);
         changeCount.Should().Be(3);
     }
+    
+    [Fact]
+    public void ApplyChanges_RespectsIgnoreList()
+    {
+        // Arrange
+        var existingObject = new ChangeTest
+        {
+            StringVal = "default string",
+            NullableStringVal = "default nullable string",
+            NullableLongVal = null,
+            NullableDateTimeVal = DateTime.Today.AddDays(2),
+            NumberVal = 2
+        };
+
+        var candidateChanges = new ChangeTest
+        {
+            StringVal = "default string",
+            NullableStringVal = "",
+            NullableLongVal = 0,
+            NullableDateTimeVal = DateTime.Today,
+            NumberVal = 100
+        };
+        
+        var expected = new ChangeTest
+        {
+            StringVal = "default string",
+            NullableStringVal = "",
+            NullableLongVal = 0,
+            NullableDateTimeVal = DateTime.Today.AddDays(2),
+            NumberVal = 2
+        };
+        
+        // Act
+        var changeCount = existingObject.ApplyChanges(candidateChanges, i => i.NumberVal, i => i.NullableDateTimeVal);
+        
+        // Assert
+        existingObject.Should().BeEquivalentTo(expected);
+        changeCount.Should().Be(2, "4 values changed but 2 are ignored");
+    }
 }
 
 public class ChangeTest
@@ -226,6 +265,8 @@ public class ChangeTest
     public DateTime? NullableDateTimeVal { get; set; }
     
     public List<string> NullableList { get; set; }
+    
+    public int NumberVal { get; set; }
 
     public bool GetOnly { get; } = true;
 }
