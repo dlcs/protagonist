@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using API.Auth;
 using API.Features.Image.Ingest;
+using API.Features.OriginStrategies.Credentials;
 using API.Infrastructure;
 using API.Infrastructure.Validation;
 using API.Settings;
@@ -61,6 +62,7 @@ public class Startup
 
         services
             .AddHttpContextAccessor()
+            .AddSingleton<CredentialsExporter>()
             .AddSingleton<ApiKeyGenerator>()
             .AddSingleton<IEncryption, SHA256>()
             .AddSingleton<DlcsApiAuth>()
