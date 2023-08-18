@@ -1,7 +1,11 @@
-﻿using DLCS.Core;
+﻿using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
+using DLCS.Core;
+using DLCS.Model.Customers;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace API.Features.OriginStrategies.Requests;
 
@@ -19,10 +23,15 @@ public class DeleteCustomerOriginStrategy : IRequest<ResultMessage<DeleteResult>
     public class DeleteCustomerOriginStrategyHandler : IRequestHandler<DeleteCustomerOriginStrategy, ResultMessage<DeleteResult>>
     {
         private readonly DlcsContext dbContext;
+        private readonly IBucketWriter bucketWriter;
+        private readonly ILogger<DeleteCustomerOriginStrategyHandler> logger;
 
-        public DeleteCustomerOriginStrategyHandler(DlcsContext dbContext)
+        public DeleteCustomerOriginStrategyHandler(DlcsContext dbContext, IBucketWriter bucketWriter,
+            ILogger<DeleteCustomerOriginStrategyHandler> logger)
         {
             this.dbContext = dbContext;
+            this.bucketWriter = bucketWriter;
+            this.logger = logger;
         }
 
         public async Task<ResultMessage<DeleteResult>> Handle(DeleteCustomerOriginStrategy request,
@@ -40,9 +49,27 @@ public class DeleteCustomerOriginStrategy : IRequest<ResultMessage<DeleteResult>
             dbContext.CustomerOriginStrategies.Remove(strategy);
             
             await dbContext.SaveChangesAsync(cancellationToken);
+
+            await TryDeleteCredentials(strategy);
             
             return new ResultMessage<DeleteResult>(
                 $"Origin strategy {request.StrategyId} successfully deleted", DeleteResult.Deleted);
+        }
+
+        private async Task TryDeleteCredentials(CustomerOriginStrategy strategy)
+        {
+            if (strategy.Credentials.StartsWith("s3://"))
+            {
+                var objectInBucket = RegionalisedObjectInBucket.Parse(strategy.Credentials);
+                if (objectInBucket != null)
+                {
+                    await bucketWriter.DeleteFromBucket(objectInBucket);
+                }
+                else
+                {
+                    logger.LogInformation("Unable to parse S3 URI {S3Uri} to ObjectInBucket", strategy.Credentials);
+                }
+            }
         }
     }
 }
