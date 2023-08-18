@@ -8,9 +8,6 @@ namespace API.Features.OriginStrategies.Validators;
 
 public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.HydraModel.CustomerOriginStrategy>
 {
-    private readonly OriginStrategyType[] allowedStrategyTypes = 
-        { OriginStrategyType.BasicHttp, OriginStrategyType.S3Ambient };
-    
     public HydraCustomerOriginStrategyValidator()
     {
         RuleFor(s => s.Id)
@@ -22,12 +19,6 @@ public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.Hydra
         RuleFor(s => s.OriginStrategy)
             .NotEmpty()
             .WithMessage(s => "An origin strategy must be specified");
-        RuleFor(s => s.OriginStrategy)
-            .Must( s => s != null && s.IsValidEnumValue<OriginStrategyType>())
-            .WithMessage(s => $"'{s.OriginStrategy}' is not a valid origin strategy");
-        RuleFor(s => s.OriginStrategy)
-            .Must( s => s != null && allowedStrategyTypes.Contains(s.GetEnumFromString<OriginStrategyType>()))
-            .WithMessage(s => $"'{s.OriginStrategy}' is currently not supported as an origin strategy");
         RuleFor(s => s.Optimised)
             .NotEqual(true)
             .When(s => s.OriginStrategy != OriginStrategyType.S3Ambient.GetDescription())
