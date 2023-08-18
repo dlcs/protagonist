@@ -4,6 +4,7 @@ using API.Features.OriginStrategies.Validators;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Enum;
+using DLCS.Core.Strings;
 using DLCS.Model.Customers;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -20,6 +21,9 @@ namespace API.Features.OriginStrategies;
 [ApiController]
 public class CustomerOriginStrategiesController : HydraController
 {
+    private readonly OriginStrategyType[] allowedStrategyTypes = 
+        { OriginStrategyType.BasicHttp, OriginStrategyType.S3Ambient };
+    
     public CustomerOriginStrategiesController(
         IMediator mediator,
         IOptions<ApiSettings> options) : base(options.Value, mediator)
@@ -79,9 +83,13 @@ public class CustomerOriginStrategiesController : HydraController
         {
             return this.ValidationFailed(validationResult);
         }
+     
+        if (IsStrategyAllowed(newStrategy.OriginStrategy!) == null)
+            return this.HydraProblem($"'{newStrategy.OriginStrategy}' is not a valid origin strategy", null, 400, "Invalid Origin Strategy");
         
         newStrategy.CustomerId = customerId;
         var request = new CreateCustomerOriginStrategy(customerId, newStrategy.ToDlcsModel());
+        
         return await HandleUpsert(request, 
             os => os.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to create Origin Strategy",
@@ -123,17 +131,34 @@ public class CustomerOriginStrategiesController : HydraController
         [FromServices] HydraCustomerOriginStrategyValidator validator,
         CancellationToken cancellationToken)
     {
+        OriginStrategyType? strategyType = null;
+        
+        if (strategy.OriginStrategy.HasText())
+        {
+            strategyType = IsStrategyAllowed(strategy.OriginStrategy);
+            if(strategyType == null)
+                return this.HydraProblem($"'{strategy.OriginStrategy}' is not a valid origin strategy", null, 400, "Invalid Origin Strategy");
+        } 
+
         var request = new UpdateCustomerOriginStrategy(customerId, strategyId)
         {
             Regex = strategy.Regex,
-            Strategy = strategy.OriginStrategy,
+            Strategy = strategyType,
+            Credentials = strategy.Credentials,
             Order = strategy.Order,
             Optimised = strategy.Optimised
         };
         
         return await HandleUpsert(request, 
-            os => os.ToHydra(GetUrlRoots().BaseUrl),
+            s => s.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to update Origin Strategy",
             cancellationToken: cancellationToken);
+    }
+    
+    private OriginStrategyType? IsStrategyAllowed(string strategy)
+    {
+        var strategyType = strategy.GetEnumFromString<OriginStrategyType>();
+        if (allowedStrategyTypes.Contains(strategyType)) return strategyType;
+        return null;
     }
 }
