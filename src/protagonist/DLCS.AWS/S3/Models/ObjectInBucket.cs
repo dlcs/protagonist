@@ -55,7 +55,7 @@ public class ObjectInBucket
         return objectInBucket1.Equals(objectInBucket2);
     }
 
-    public static bool operator !=(ObjectInBucket objectInBucket1, ObjectInBucket objectInBucket2) 
+    public static bool operator !=(ObjectInBucket? objectInBucket1, ObjectInBucket? objectInBucket2) 
         => !(objectInBucket1 == objectInBucket2);
 
     public override string ToString() => $"{Bucket}:::{Key}";

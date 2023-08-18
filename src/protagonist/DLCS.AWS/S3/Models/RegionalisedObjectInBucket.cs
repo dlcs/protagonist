@@ -150,7 +150,7 @@ public class RegionalisedObjectInBucket : ObjectInBucket
         return objectInBucket1.Equals(objectInBucket2);
     }
 
-    public static bool operator !=(RegionalisedObjectInBucket objectInBucket1, RegionalisedObjectInBucket objectInBucket2) 
+    public static bool operator !=(RegionalisedObjectInBucket? objectInBucket1, RegionalisedObjectInBucket? objectInBucket2) 
         => !(objectInBucket1 == objectInBucket2);
 
     private bool Equals(RegionalisedObjectInBucket other)
