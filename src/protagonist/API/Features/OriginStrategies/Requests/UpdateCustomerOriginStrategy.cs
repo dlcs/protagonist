@@ -1,16 +1,12 @@
 ﻿using API.Features.Image.Requests;
 using API.Infrastructure.Requests;
-using DLCS.AWS.S3;
-using DLCS.AWS.S3.Models;
 using DLCS.Core;
-using DLCS.Core.Enum;
-using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
+using API.Features.OriginStrategies.Credentials;
 
 namespace API.Features.OriginStrategies.Requests;
 
@@ -34,19 +30,15 @@ public class UpdateCustomerOriginStrategy : IRequest<ModifyEntityResult<Customer
 public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustomerOriginStrategy, ModifyEntityResult<CustomerOriginStrategy>>
 {
     private readonly DlcsContext dbContext;
-    private readonly IBucketWriter bucketWriter;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly JsonSerializerOptions jsonSettings = new(JsonSerializerDefaults.Web);
+    private readonly CredentialsExporter credentialsExporter;
 
     public UpdateCustomerOriginStrategyHandler(
         DlcsContext dbContext,
-        ILogger<HostAssetAtOriginHandler> logger,
-        IBucketWriter bucketWriter,
-        IStorageKeyGenerator storageKeyGenerator)
+        CredentialsExporter credentialsExporter,
+        ILogger<HostAssetAtOriginHandler> logger)
     {
         this.dbContext = dbContext;
-        this.bucketWriter = bucketWriter;
-        this.storageKeyGenerator = storageKeyGenerator;
+        this.credentialsExporter = credentialsExporter;
     }
 
     public async Task<ModifyEntityResult<CustomerOriginStrategy>> Handle(
@@ -103,26 +95,14 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
                 return ModifyEntityResult<CustomerOriginStrategy>
                     .Failure($"Credentials can only be specified when using basic-http-authentication as an origin strategy",
                         WriteResult.FailedValidation);
-            try
-            {
-                var credentials = JsonSerializer.Deserialize<BasicCredentials>(request.Credentials, jsonSettings);
-                
-                if(string.IsNullOrWhiteSpace(credentials?.User))
-                    return ModifyEntityResult<CustomerOriginStrategy>.Failure($"The credentials object requires an username", WriteResult.FailedValidation);
-                if(string.IsNullOrWhiteSpace(credentials?.Password))
-                    return ModifyEntityResult<CustomerOriginStrategy>.Failure($"The credentials object requires a password", WriteResult.FailedValidation);
-               
-                var credentialsJson = JsonSerializer.Serialize(credentials, jsonSettings);
-                var objectInBucket = storageKeyGenerator.GetOriginStrategyCredentialsLocation(request.CustomerId, existingStrategy.Id);
-                
-                await bucketWriter.WriteToBucket(objectInBucket, credentialsJson, "application/json", cancellationToken);
-                
-                existingStrategy.Credentials = objectInBucket.GetS3Uri().ToString();
-            }
-            catch (Exception e)
-            {
-                return ModifyEntityResult<CustomerOriginStrategy>.Failure($"Invalid credentials JSON: {e.Message}", WriteResult.FailedValidation);
-            }
+
+            var exportCredentialsResult =
+                await credentialsExporter.ExportCredentials(request.Credentials, existingStrategy.Customer, existingStrategy.Id, cancellationToken);
+            if (exportCredentialsResult.IsError)
+                return ModifyEntityResult<CustomerOriginStrategy>.Failure(exportCredentialsResult.ErrorMessage!,
+                    WriteResult.FailedValidation);
+
+            existingStrategy.Credentials = exportCredentialsResult.S3Uri;
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -131,4 +111,3 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
         return ModifyEntityResult<CustomerOriginStrategy>.Success(existingStrategy);
     }
 }
-
