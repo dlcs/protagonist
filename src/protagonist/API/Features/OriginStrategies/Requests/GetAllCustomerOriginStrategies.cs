@@ -34,6 +34,9 @@ public class GetAllCustomerOriginStrategiesHandler : IRequestHandler<GetAllCusto
             .AsNoTracking()
             .Where(s => s.Customer == request.CustomerId)
             .ToListAsync(cancellationToken);
+       
+        foreach(var s in strategies) 
+            s.Credentials = "xxx";
         
         return FetchEntityResult<IReadOnlyCollection<CustomerOriginStrategy>>.Success(strategies);
     }
