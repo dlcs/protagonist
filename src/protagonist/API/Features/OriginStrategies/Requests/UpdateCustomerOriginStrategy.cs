@@ -1,12 +1,11 @@
-﻿using API.Features.Image.Requests;
-using API.Infrastructure.Requests;
+﻿using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Customers;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using API.Features.OriginStrategies.Credentials;
+using DLCS.Core.Strings;
 
 namespace API.Features.OriginStrategies.Requests;
 
@@ -34,8 +33,7 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
 
     public UpdateCustomerOriginStrategyHandler(
         DlcsContext dbContext,
-        CredentialsExporter credentialsExporter,
-        ILogger<HostAssetAtOriginHandler> logger)
+        CredentialsExporter credentialsExporter)
     {
         this.dbContext = dbContext;
         this.credentialsExporter = credentialsExporter;
@@ -75,14 +73,17 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
        
         if (request.Order.HasValue)
             existingStrategy.Order = request.Order.Value;
+
         
-        if (existingStrategy.Strategy != OriginStrategyType.S3Ambient && existingStrategy.Optimised)
-            return ModifyEntityResult<CustomerOriginStrategy>
-                .Failure($"'Optimised' is only applicable when using s3-ambient as an origin strategy", WriteResult.FailedValidation);
-        
-        if(existingStrategy.Strategy == OriginStrategyType.BasicHttp && string.IsNullOrWhiteSpace(request.Credentials))
+        if(existingStrategy.Strategy == OriginStrategyType.BasicHttp && string.IsNullOrWhiteSpace(request.Credentials)
+           && (request.Strategy.HasValue || request.Credentials.HasText()))
             return ModifyEntityResult<CustomerOriginStrategy>
                 .Failure($"Credentials must be specified when using basic-http-authentication as an origin strategy", WriteResult.FailedValidation);
+        
+        if (existingStrategy.Strategy != OriginStrategyType.S3Ambient && existingStrategy.Optimised
+            && (request.Strategy.HasValue || request.Optimised.HasValue))
+            return ModifyEntityResult<CustomerOriginStrategy>
+                .Failure($"'Optimised' is only applicable when using s3-ambient as an origin strategy", WriteResult.FailedValidation);
         
         if (!string.IsNullOrWhiteSpace(request.Credentials))
         {
@@ -98,6 +99,7 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
 
             var exportCredentialsResult =
                 await credentialsExporter.ExportCredentials(request.Credentials, existingStrategy.Customer, existingStrategy.Id, cancellationToken);
+            
             if (exportCredentialsResult.IsError)
                 return ModifyEntityResult<CustomerOriginStrategy>.Failure(exportCredentialsResult.ErrorMessage!,
                     WriteResult.FailedValidation);
