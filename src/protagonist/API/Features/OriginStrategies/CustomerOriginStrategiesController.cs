@@ -6,6 +6,7 @@ using API.Settings;
 using DLCS.Core.Enum;
 using DLCS.Core.Strings;
 using DLCS.Model.Customers;
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -77,21 +78,22 @@ public class CustomerOriginStrategiesController : HydraController
         [FromServices] HydraCustomerOriginStrategyValidator validator,
         CancellationToken cancellationToken)
     {
-        var validationResult = await validator.ValidateAsync(newStrategy, cancellationToken);
+        var validationResult = await validator.ValidateAsync(newStrategy, 
+            strategy => strategy.IncludeRuleSets("default", "create"), cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
         }
      
         if (IsStrategyAllowed(newStrategy.OriginStrategy!) == null)
-            return this.HydraProblem($"'{newStrategy.OriginStrategy}' is not a valid origin strategy", null,
+            return this.HydraProblem($"'{newStrategy.OriginStrategy}' is not allowed as an origin strategy type", null,
                 400, "Invalid origin strategy");
         
         newStrategy.CustomerId = customerId;
         var request = new CreateCustomerOriginStrategy(customerId, newStrategy.ToDlcsModel());
         
         return await HandleUpsert(request, 
-            os => os.ToHydra(GetUrlRoots().BaseUrl),
+            s => s.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to create origin strategy",
             cancellationToken: cancellationToken);
     }
@@ -141,26 +143,34 @@ public class CustomerOriginStrategiesController : HydraController
     public async Task<IActionResult> PutCustomerOriginStrategy(
         [FromRoute] int customerId,
         [FromRoute] string strategyId,
-        [FromBody] CustomerOriginStrategy strategy,
+        [FromBody] CustomerOriginStrategy strategyChanges,
         [FromServices] HydraCustomerOriginStrategyValidator validator,
         CancellationToken cancellationToken)
     {
+        var validationResult = await validator.ValidateAsync(strategyChanges, 
+            strategy => strategy.IncludeRuleSets("default"), cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
+        
         OriginStrategyType? strategyType = null;
         
-        if (strategy.OriginStrategy.HasText())
+        if (strategyChanges.OriginStrategy.HasText())
         {
-            strategyType = IsStrategyAllowed(strategy.OriginStrategy);
+            strategyType = IsStrategyAllowed(strategyChanges.OriginStrategy);
             if(strategyType == null)
-                return this.HydraProblem($"'{strategy.OriginStrategy}' is not a valid origin strategy", null, 400, "Invalid Origin Strategy");
+                return this.HydraProblem($"'{strategyChanges.OriginStrategy}' is not allowed as an origin strategy type", null, 
+                    400, "Invalid origin strategy");
         } 
 
         var request = new UpdateCustomerOriginStrategy(customerId, strategyId)
         {
-            Regex = strategy.Regex,
+            Regex = strategyChanges.Regex,
             Strategy = strategyType,
-            Credentials = strategy.Credentials,
-            Order = strategy.Order,
-            Optimised = strategy.Optimised
+            Credentials = strategyChanges.Credentials,
+            Order = strategyChanges.Order,
+            Optimised = strategyChanges.Optimised
         };
         
         return await HandleUpsert(request, 
