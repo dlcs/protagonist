@@ -15,7 +15,7 @@ using CustomerOriginStrategy = DLCS.HydraModel.CustomerOriginStrategy;
 namespace API.Features.OriginStrategies;
 
 /// <summary>
-/// Controller for handling requests for origin strategies
+/// DLCS REST API operations for customer origin strategies
 /// </summary>
 [Route("/customers/{customerId}/originStrategies")]
 [ApiController]
@@ -31,7 +31,7 @@ public class CustomerOriginStrategiesController : HydraController
     }
     
     /// <summary>
-    /// Get a list of the user's origin strategies
+    /// Get the user's origin strategies
     /// </summary>
     /// <returns>HydraCollection of CustomerOriginStrategies</returns>
     [HttpGet]
@@ -47,7 +47,7 @@ public class CustomerOriginStrategiesController : HydraController
             GetAllCustomerOriginStrategies, CustomerOriginStrategy>(
             strategies,
             s => s.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to get Origin Strategies",
+            errorTitle: "Failed to get origin strategies",
             cancellationToken: cancellationToken
         );
     }
@@ -84,14 +84,15 @@ public class CustomerOriginStrategiesController : HydraController
         }
      
         if (IsStrategyAllowed(newStrategy.OriginStrategy!) == null)
-            return this.HydraProblem($"'{newStrategy.OriginStrategy}' is not a valid origin strategy", null, 400, "Invalid Origin Strategy");
+            return this.HydraProblem($"'{newStrategy.OriginStrategy}' is not a valid origin strategy", null,
+                400, "Invalid origin strategy");
         
         newStrategy.CustomerId = customerId;
         var request = new CreateCustomerOriginStrategy(customerId, newStrategy.ToDlcsModel());
         
         return await HandleUpsert(request, 
             os => os.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to create Origin Strategy",
+            errorTitle: "Failed to create origin strategy",
             cancellationToken: cancellationToken);
     }
     
@@ -112,7 +113,7 @@ public class CustomerOriginStrategiesController : HydraController
         return await HandleFetch(
             strategy,
             s => s.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to get Origin Strategy",
+            errorTitle: "Failed to get origin strategy",
             cancellationToken: cancellationToken
         );
     }
@@ -164,7 +165,7 @@ public class CustomerOriginStrategiesController : HydraController
         
         return await HandleUpsert(request, 
             s => s.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to update Origin Strategy",
+            errorTitle: "Failed to update origin strategy",
             cancellationToken: cancellationToken);
     }
     
