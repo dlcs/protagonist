@@ -70,10 +70,9 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
         
         if (request.Optimised.HasValue)
             existingStrategy.Optimised = request.Optimised.Value;
-       
+        
         if (request.Order.HasValue)
             existingStrategy.Order = request.Order.Value;
-
         
         if(existingStrategy.Strategy == OriginStrategyType.BasicHttp && string.IsNullOrWhiteSpace(request.Credentials)
            && (request.Strategy.HasValue || request.Credentials.HasText()))
