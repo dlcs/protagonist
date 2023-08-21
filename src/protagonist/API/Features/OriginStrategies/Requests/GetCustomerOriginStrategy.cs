@@ -34,8 +34,13 @@ public class GetCustomerOriginStrategyHandler : IRequestHandler<GetCustomerOrigi
             .AsNoTracking()
             .SingleOrDefaultAsync(s => s.Customer == request.CustomerId
                                         && s.Id == request.StrategyId, cancellationToken);
-        return strategy == null
-            ? FetchEntityResult<CustomerOriginStrategy>.NotFound()
-            : FetchEntityResult<CustomerOriginStrategy>.Success(strategy);
+
+        if (strategy == null) 
+            return FetchEntityResult<CustomerOriginStrategy>.NotFound();
+        
+        strategy.Credentials = "xxx";
+        
+        return FetchEntityResult<CustomerOriginStrategy>.Success(strategy);
+
     }
 }
