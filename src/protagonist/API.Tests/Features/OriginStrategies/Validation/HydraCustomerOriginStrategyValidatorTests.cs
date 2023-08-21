@@ -21,7 +21,7 @@ public class HydraCustomerOriginStrategyValidatorTests
         {
             Id = Guid.NewGuid().ToString()
         };
-        var result = sut.TestValidate(strategy);
+        var result = sut.TestValidate(strategy, s => s.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(s => s.Id);
     }
     
@@ -32,7 +32,7 @@ public class HydraCustomerOriginStrategyValidatorTests
         {
             CustomerId = 1
         };
-        var result = sut.TestValidate(strategy);
+        var result = sut.TestValidate(strategy, s => s.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(s => s.CustomerId);
     }
     
@@ -43,7 +43,7 @@ public class HydraCustomerOriginStrategyValidatorTests
         {
             OriginStrategy = null
         };
-        var result = sut.TestValidate(strategy);
+        var result = sut.TestValidate(strategy, s => s.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(s => s.OriginStrategy);
     }
     
@@ -54,7 +54,7 @@ public class HydraCustomerOriginStrategyValidatorTests
         {
             OriginStrategy = "basic-http-authentication"
         };
-        var result = sut.TestValidate(strategy);
+        var result = sut.TestValidate(strategy, s => s.IncludeRuleSets("default", "create"));
         result.ShouldNotHaveValidationErrorFor(s => s.OriginStrategy);
     }
     
@@ -66,7 +66,7 @@ public class HydraCustomerOriginStrategyValidatorTests
             OriginStrategy = "basic-http-authentication",
             Optimised = true
         };
-        var result = sut.TestValidate(strategy);
+        var result = sut.TestValidate(strategy, s => s.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(s => s.Optimised);
     }
 }
