@@ -6,6 +6,9 @@ using DLCS.Model.Customers;
 
 namespace API.Features.OriginStrategies.Credentials;
 
+/// <summary>
+/// Class that encapsulates logic for updating customer origin strategy credentials on S3
+/// </summary>
 public class CredentialsExporter
 {
     private readonly IBucketWriter bucketWriter;

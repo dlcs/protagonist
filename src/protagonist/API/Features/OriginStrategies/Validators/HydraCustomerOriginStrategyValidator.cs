@@ -1,11 +1,12 @@
-﻿using System.Text.RegularExpressions;
-using DLCS.Core.Enum;
+﻿using DLCS.Core.Enum;
 using DLCS.Model.Customers;
-using DLCS.Model.Policies;
 using FluentValidation;
 
 namespace API.Features.OriginStrategies.Validators;
 
+/// <summary>
+/// Validator for model sent to POST/PUT /originStrategies/{id}
+/// </summary>
 public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.HydraModel.CustomerOriginStrategy>
 {
     public HydraCustomerOriginStrategyValidator()
