@@ -55,13 +55,14 @@ public class CustomerOriginStrategy : DlcsResource
     public string? Credentials { get; set; }
     
     
-    [RdfProperty(Description = "Placeholder",
+    [RdfProperty(Description = "Should the DLCS treat this as an optimised origin strategy?" +
+                               "Only origin strategies using s3-ambient can use this.",
         Range = Names.XmlSchema.Boolean, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 23, PropertyName = "optimised")]
     public bool? Optimised { get; set; }
     
     
-    [RdfProperty(Description = "Placeholder",
+    [RdfProperty(Description = "The order this origin strategy should be evaluated in.",
         Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 26, PropertyName = "order")]
     public int? Order { get; set; }

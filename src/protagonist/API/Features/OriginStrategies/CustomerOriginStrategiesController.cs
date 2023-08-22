@@ -54,11 +54,11 @@ public class CustomerOriginStrategiesController : HydraController
     }
     
     /// <summary>
-    /// Create a new origin strategy owned by the user
+    /// Update an origin strategy owned by the user
     /// </summary>
     /// <remarks>
     /// Sample request:
-    ///     PUT: /customers/1/originStrategies
+    ///     POST: /customers/1/originStrategies
     ///     {
     ///          "regex": "http[s]?://(.*).my-regex.com",
     ///          "order": "1",
