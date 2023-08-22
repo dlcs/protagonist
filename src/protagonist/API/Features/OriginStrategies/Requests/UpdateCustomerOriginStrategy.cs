@@ -43,6 +43,7 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
         UpdateCustomerOriginStrategy request,
         CancellationToken cancellationToken)
     {
+        var wipeCredentials = false;
         var existingStrategy = await dbContext.CustomerOriginStrategies.SingleOrDefaultAsync(
             s => s.Id == request.StrategyId && s.Customer == request.CustomerId,
             cancellationToken);
@@ -64,9 +65,14 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
 
             existingStrategy.Regex = request.Regex;
         }
-        
+
         if (request.Strategy.HasValue)
+        {
+            if(existingStrategy.Strategy == OriginStrategyType.BasicHttp && request.Strategy != OriginStrategyType.BasicHttp
+                && !string.IsNullOrWhiteSpace(existingStrategy.Credentials))
+                wipeCredentials = true;
             existingStrategy.Strategy = request.Strategy.Value;
+        }
         
         if (request.Optimised.HasValue)
             existingStrategy.Optimised = request.Optimised.Value;
@@ -77,23 +83,23 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
         if(existingStrategy.Strategy == OriginStrategyType.BasicHttp && string.IsNullOrWhiteSpace(request.Credentials)
            && (request.Strategy.HasValue || request.Credentials.HasText()))
             return ModifyEntityResult<CustomerOriginStrategy>
-                .Failure($"Credentials must be specified when using basic-http-authentication as an origin strategy", WriteResult.FailedValidation);
+                .Failure("Credentials must be specified when using basic-http-authentication as an origin strategy", WriteResult.FailedValidation);
         
         if (existingStrategy.Strategy != OriginStrategyType.S3Ambient && existingStrategy.Optimised
             && (request.Strategy.HasValue || request.Optimised.HasValue))
             return ModifyEntityResult<CustomerOriginStrategy>
-                .Failure($"'Optimised' is only applicable when using s3-ambient as an origin strategy", WriteResult.FailedValidation);
+                .Failure("'Optimised' is only applicable when using s3-ambient as an origin strategy", WriteResult.FailedValidation);
         
         if (!string.IsNullOrWhiteSpace(request.Credentials))
         {
             if (!(!string.IsNullOrEmpty(request.Regex) && request.Strategy.HasValue && request.Optimised.HasValue && request.Order.HasValue))
                 return ModifyEntityResult<CustomerOriginStrategy>
-                    .Failure($"A full origin strategy object is required when updating credentials",
+                    .Failure("A full origin strategy object is required when updating credentials",
                         WriteResult.FailedValidation);
 
             if (existingStrategy.Strategy != OriginStrategyType.BasicHttp)
                 return ModifyEntityResult<CustomerOriginStrategy>
-                    .Failure($"Credentials can only be specified when using basic-http-authentication as an origin strategy",
+                    .Failure("Credentials can only be specified when using basic-http-authentication as an origin strategy",
                         WriteResult.FailedValidation);
 
             var exportCredentialsResult =
@@ -105,10 +111,17 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
 
             existingStrategy.Credentials = exportCredentialsResult.S3Uri;
         }
-
+        
         await dbContext.SaveChangesAsync(cancellationToken);
-        existingStrategy.Credentials = "xxx";
+        
+        if (wipeCredentials)
+        {
+            await credentialsExporter.TryDeleteCredentials(existingStrategy);
+            existingStrategy.Credentials = string.Empty;
+        }
 
+        existingStrategy.Credentials = "xxx";
+        
         return ModifyEntityResult<CustomerOriginStrategy>.Success(existingStrategy);
     }
 }
