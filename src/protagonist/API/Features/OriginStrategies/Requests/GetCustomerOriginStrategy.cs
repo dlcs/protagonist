@@ -12,10 +12,10 @@ public class GetCustomerOriginStrategy : IRequest<FetchEntityResult<CustomerOrig
     
     public string StrategyId { get; }
     
-    public GetCustomerOriginStrategy(int id, string namedQueryId)
+    public GetCustomerOriginStrategy(int id, string strategyId)
     {
         CustomerId = id;
-        StrategyId = namedQueryId;
+        StrategyId = strategyId;
     }
 }
 
@@ -38,6 +38,7 @@ public class GetCustomerOriginStrategyHandler : IRequestHandler<GetCustomerOrigi
         if (strategy == null) 
             return FetchEntityResult<CustomerOriginStrategy>.NotFound();
         
+        // Hide credentials in returned JSON object 
         strategy.Credentials = "xxx";
         
         return FetchEntityResult<CustomerOriginStrategy>.Success(strategy);
