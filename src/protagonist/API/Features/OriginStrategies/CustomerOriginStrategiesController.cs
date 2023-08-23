@@ -85,7 +85,7 @@ public class CustomerOriginStrategiesController : HydraController
             return this.ValidationFailed(validationResult);
         }
      
-        if (IsStrategyAllowed(newStrategy.OriginStrategy!) == null)
+        if (GetAllowedStrategy(newStrategy.OriginStrategy!) == null)
             return this.HydraProblem($"'{newStrategy.OriginStrategy}' is not allowed as an origin strategy type", null,
                 400, "Invalid origin strategy");
         
@@ -158,7 +158,7 @@ public class CustomerOriginStrategiesController : HydraController
         
         if (strategyChanges.OriginStrategy.HasText())
         {
-            strategyType = IsStrategyAllowed(strategyChanges.OriginStrategy);
+            strategyType = GetAllowedStrategy(strategyChanges.OriginStrategy);
             if(strategyType == null)
                 return this.HydraProblem($"'{strategyChanges.OriginStrategy}' is not allowed as an origin strategy type", null, 
                     400, "Invalid origin strategy");
@@ -195,7 +195,7 @@ public class CustomerOriginStrategiesController : HydraController
         return await HandleDelete(deleteRequest);
     }
     
-    private OriginStrategyType? IsStrategyAllowed(string strategy)
+    private OriginStrategyType? GetAllowedStrategy(string strategy)
     {
         var strategyType = strategy.GetEnumFromString<OriginStrategyType>();
         if (allowedStrategyTypes.Contains(strategyType)) return strategyType;
