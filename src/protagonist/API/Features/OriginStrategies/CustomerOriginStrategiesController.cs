@@ -194,11 +194,10 @@ public class CustomerOriginStrategiesController : HydraController
 
         return await HandleDelete(deleteRequest);
     }
-    
+
     private OriginStrategyType? GetAllowedStrategy(string strategy)
     {
         var strategyType = strategy.GetEnumFromString<OriginStrategyType>();
-        if (allowedStrategyTypes.Contains(strategyType)) return strategyType;
-        return null;
+        return allowedStrategyTypes.Contains(strategyType) ? strategyType : null;
     }
 }
