@@ -33,6 +33,7 @@ public class GetAllCustomerOriginStrategiesHandler : IRequestHandler<GetAllCusto
         var strategies = await dbContext.CustomerOriginStrategies
             .AsNoTracking()
             .Where(s => s.Customer == request.CustomerId)
+            .OrderBy(s => s.Order)
             .ToListAsync(cancellationToken);
        
         foreach(var s in strategies) 
