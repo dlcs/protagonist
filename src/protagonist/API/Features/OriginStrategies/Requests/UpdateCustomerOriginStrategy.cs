@@ -116,10 +116,11 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
         
         if (wipeCredentials)
         {
-            await credentialsExporter.TryDeleteCredentials(existingStrategy);
+            await credentialsExporter.DeleteCredentials(existingStrategy);
             existingStrategy.Credentials = string.Empty;
         }
 
+        // Hide credentials in returned JSON object 
         existingStrategy.Credentials = "xxx";
         
         return ModifyEntityResult<CustomerOriginStrategy>.Success(existingStrategy);
