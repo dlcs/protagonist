@@ -33,7 +33,6 @@ public class NamedQueriesController : HydraController
     /// <returns>HydraCollection of NamedQuery</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetNamedQueries(
         [FromRoute] int customerId,
         CancellationToken cancellationToken)

@@ -28,19 +28,14 @@ public class CreateCustomerOriginStrategy : IRequest<ModifyEntityResult<Customer
 public class CreateCustomerOriginStrategyHandler : IRequestHandler<CreateCustomerOriginStrategy, ModifyEntityResult<CustomerOriginStrategy>>
 {
     private readonly DlcsContext dbContext;
-    private readonly IBucketWriter bucketWriter;
-    private CredentialsExporter credentialsExporter;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
+    private readonly CredentialsExporter credentialsExporter;
     private readonly JsonSerializerOptions jsonSettings = new(JsonSerializerDefaults.Web);
     
     public CreateCustomerOriginStrategyHandler(
-        DlcsContext dbContext,
-        IBucketWriter bucketWriter,
-        IStorageKeyGenerator storageKeyGenerator, CredentialsExporter credentialsExporter)
+        DlcsContext dbContext, 
+        CredentialsExporter credentialsExporter)
     {
         this.dbContext = dbContext;
-        this.bucketWriter = bucketWriter;
-        this.storageKeyGenerator = storageKeyGenerator;
         this.credentialsExporter = credentialsExporter;
     }
     

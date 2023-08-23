@@ -37,7 +37,6 @@ public class CustomerOriginStrategiesController : HydraController
     /// <returns>HydraCollection of CustomerOriginStrategies</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCustomerOriginStrategies(
         [FromRoute] int customerId,
         CancellationToken cancellationToken)
