@@ -37,8 +37,8 @@ public class GetAllCustomerOriginStrategiesHandler : IRequestHandler<GetAllCusto
             .ToListAsync(cancellationToken);
        
         // Hide credentials in returned JSON object 
-        foreach(var s in strategies) 
-            s.Credentials = "xxx";
+        foreach(var strategy in strategies) 
+            strategy.Credentials = "xxx";
         
         return FetchEntityResult<IReadOnlyCollection<CustomerOriginStrategy>>.Success(strategies);
     }

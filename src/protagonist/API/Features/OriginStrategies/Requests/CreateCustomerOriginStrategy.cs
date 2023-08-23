@@ -46,7 +46,7 @@ public class CreateCustomerOriginStrategyHandler : IRequestHandler<CreateCustome
     
     public async Task<ModifyEntityResult<CustomerOriginStrategy>> Handle(CreateCustomerOriginStrategy request, CancellationToken cancellationToken)
     {
-        var regexUsed = await dbContext.CustomerOriginStrategies.AsNoTracking().AnyAsync(
+        var regexUsed = await dbContext.CustomerOriginStrategies.AnyAsync(
             s => s.Customer == request.CustomerId && s.Regex == request.Strategy.Regex, 
             cancellationToken);
         
@@ -82,6 +82,7 @@ public class CreateCustomerOriginStrategyHandler : IRequestHandler<CreateCustome
         await dbContext.CustomerOriginStrategies.AddAsync(newStrategy, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
+        // Hide credentials in returned JSON object 
         newStrategy.Credentials = "xxx";
         
         return ModifyEntityResult<CustomerOriginStrategy>.Success(newStrategy, WriteResult.Created);
