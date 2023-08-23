@@ -44,8 +44,9 @@ public class CredentialsExporter
 
             return ExportCredentialsResult.Success(objectInBucket.GetS3Uri().ToString());
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            logger.LogInformation("Unable to export credentials to S3: {exceptionMessage}", ex.Message);
             return ExportCredentialsResult.Error("Invalid credentials JSON");
         }
     }
