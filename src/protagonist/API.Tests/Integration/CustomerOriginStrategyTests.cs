@@ -67,8 +67,10 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
         var model = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.CustomerOriginStrategy>>();
      
         // Assert
-        model.Members.Should().HaveCount(2);
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+       model.Members.Should().OnlyContain(s => s.Credentials == "xxx", @"credentials should be hidden with ""xxx"" in the returned collection");
+       model.Members.Should().HaveCount(2);
+       response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
     
     [Fact]
@@ -95,9 +97,11 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
 
         // Act
         var response = await httpClient.AsCustomer(customerId).GetAsync(path);
+        var model = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.CustomerOriginStrategy>();
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        model.Credentials.Should().Be("xxx", @"credentials should be hidden with ""xxx"" in the returned object");
     }
     
     [Fact]
