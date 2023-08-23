@@ -51,20 +51,20 @@ public class CredentialsExporter
         }
     }
     
-    public async Task TryDeleteCredentials(CustomerOriginStrategy strategy)
+    public async Task DeleteCredentials(CustomerOriginStrategy strategy)
     {
-        if (!strategy.Credentials.StartsWith("s3://")) 
+        if (!strategy.Credentials.StartsWith("s3://"))
             return;
         
         var objectInBucket = RegionalisedObjectInBucket.Parse(strategy.Credentials);
-        if (objectInBucket != null)
-        {
-            await bucketWriter.DeleteFromBucket(objectInBucket);
-        }
-        else
+        if (objectInBucket == null)
         {
             logger.LogInformation("Unable to parse S3 URI {S3Uri} to ObjectInBucket", strategy.Credentials);
+            return;
         }
+        
+        await bucketWriter.DeleteFromBucket(objectInBucket);
+       
     }
 }
 

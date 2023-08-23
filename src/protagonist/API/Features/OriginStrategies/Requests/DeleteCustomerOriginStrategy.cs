@@ -50,7 +50,7 @@ public class DeleteCustomerOriginStrategy : IRequest<ResultMessage<DeleteResult>
             
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            await credentialsExporter.TryDeleteCredentials(strategy);
+            await credentialsExporter.DeleteCredentials(strategy);
             
             return new ResultMessage<DeleteResult>(
                 $"Origin strategy {request.StrategyId} successfully deleted", DeleteResult.Deleted);
