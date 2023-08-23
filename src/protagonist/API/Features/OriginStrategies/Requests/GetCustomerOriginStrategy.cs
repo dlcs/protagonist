@@ -35,13 +35,8 @@ public class GetCustomerOriginStrategyHandler : IRequestHandler<GetCustomerOrigi
             .SingleOrDefaultAsync(s => s.Customer == request.CustomerId
                                         && s.Id == request.StrategyId, cancellationToken);
 
-        if (strategy == null) 
-            return FetchEntityResult<CustomerOriginStrategy>.NotFound();
-        
-        // Hide credentials in returned JSON object 
-        strategy.Credentials = "xxx";
-        
-        return FetchEntityResult<CustomerOriginStrategy>.Success(strategy);
-
+        return strategy == null 
+            ? FetchEntityResult<CustomerOriginStrategy>.NotFound() 
+            : FetchEntityResult<CustomerOriginStrategy>.Success(strategy);
     }
 }

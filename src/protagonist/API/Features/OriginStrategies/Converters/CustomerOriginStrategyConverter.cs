@@ -10,15 +10,12 @@ public static class CustomerOriginStrategyConverter
         var hydraOriginStrategy = new DLCS.HydraModel.CustomerOriginStrategy(baseUrl, originStrategy.Customer, originStrategy.Id)
         {
             Regex = originStrategy.Regex,
-            OriginStrategy = originStrategy.Strategy.GetDescription(),
-            Credentials = originStrategy.Credentials,
+            OriginStrategy = $"{baseUrl}/originStrategies/{originStrategy.Strategy.GetDescription()}", 
+            // Credentials should be hidden when returned to the user
+            Credentials = "xxx",
             Optimised = originStrategy.Optimised,
             Order = originStrategy.Order,
         };
-        
-        if (!string.IsNullOrEmpty(hydraOriginStrategy.Credentials))
-            hydraOriginStrategy.OriginStrategy =
-                $"{baseUrl}/originStrategies/{hydraOriginStrategy.OriginStrategy}";
         
         return hydraOriginStrategy;
     }

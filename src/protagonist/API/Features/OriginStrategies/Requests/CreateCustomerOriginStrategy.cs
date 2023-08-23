@@ -81,9 +81,6 @@ public class CreateCustomerOriginStrategyHandler : IRequestHandler<CreateCustome
         
         await dbContext.CustomerOriginStrategies.AddAsync(newStrategy, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        // Hide credentials in returned JSON object 
-        newStrategy.Credentials = "xxx";
         
         return ModifyEntityResult<CustomerOriginStrategy>.Success(newStrategy, WriteResult.Created);
     }
