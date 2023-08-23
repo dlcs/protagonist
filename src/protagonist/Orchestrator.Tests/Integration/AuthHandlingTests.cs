@@ -31,7 +31,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
 
     public AuthHandlingTests(ProtagonistAppFactory<Startup> factory, ApiStub apiStub, DlcsDatabaseFixture databaseFixture)
     {
-        apiStub.SafeStart();
+        apiStub.EnsureStarted();
         this.apiStub = apiStub; 
         
         dbFixture = databaseFixture;
