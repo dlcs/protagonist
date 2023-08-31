@@ -38,15 +38,16 @@ public class PutSpaceHandler : IRequestHandler<PutSpace, PutSpaceResult>
     public async Task<PutSpaceResult> Handle(PutSpace request, CancellationToken cancellationToken)
     {
         var result = new PutSpaceResult();
-        var existingSpace = await spaceRepository.GetSpace(request.CustomerId, request.SpaceId, cancellationToken);
-
-        if (existingSpace == null && !request.Name.HasText())
+        
+        var sameIdSpace = await spaceRepository.GetSpace(request.CustomerId, request.SpaceId, cancellationToken);
+        if (sameIdSpace == null && !request.Name.HasText())
         {
             result.ErrorMessages.Add("A name is required when creating a new space.");
             return result;
         }
         
-        if (existingSpace != null && existingSpace.Id != request.SpaceId)
+        var sameNameSpace = await spaceRepository.GetSpace(request.CustomerId, request.Name, cancellationToken);
+        if (sameNameSpace != null)
         {
             result.Conflict = true;
             result.ErrorMessages.Add($"The space name '{request.Name}' is already taken.");
