@@ -37,7 +37,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Get_CustomerOriginStrategies_200()
     {
         // Arrange
-        const int customerId = 88;
+        const int customerId = 85;
         
         var strategyA = new CustomerOriginStrategy()
         {
@@ -77,7 +77,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Get_CustomerOriginStrategy_200()
     {
         // Arrange
-        const int customerId = 89;
+        const int customerId = 86;
         
         var strategy = new CustomerOriginStrategy()
         {
@@ -85,8 +85,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
             Customer = customerId,
             Regex = "http[s]?://(.*).example.com",
             Strategy = OriginStrategyType.BasicHttp,
-            Credentials = @"{""user"": ""test-user"",
-                             ""password"": ""test-password""}",
+            Credentials = $"s3://{LocalStackFixture.SecurityObjectsBucketName}/{customerId}/origin-strategy/{Guid.Empty}/credentials.json",
             Optimised = false,
             Order = 1
         };
@@ -108,7 +107,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Get_CustomerOriginStrategy_404_IfNotFound()
     {
         // Arrange
-        const int customerId = 90;
+        const int customerId = 87;
         var path = $"customers/{customerId}/originStrategies/{Guid.Empty}";
         
         // Act
@@ -122,7 +121,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Post_CustomerOriginStrategy_201()
     {
         // Arrange
-        const int customerId = 91;
+        const int customerId = 88;
         const string newStrategyJson = @"{
             ""strategy"": ""s3-ambient"",
             ""regex"": ""http[s]?://(.*).example.com"",
@@ -148,7 +147,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Post_CustomerOriginStrategy_201_WithCredentials()
     {
         // Arrange
-        const int customerId = 92;
+        const int customerId = 89;
         const string newStrategyJson = @"{
             ""strategy"": ""basic-http-authentication"",
             ""credentials"": ""{\""user\"": \""user-example\"", \""password\"": \""password-example\""}"",
@@ -183,7 +182,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Post_CustomerOriginStrategy_409_IfRegexAlreadyExists()
     {
         // Arrange
-        const int customerId = 93;
+        const int customerId = 90;
         const string newStrategyJson = @"{
             ""strategy"": ""basic-http-authentication"",
             ""credentials"": ""{\""user\"": \""user-example\"", \""password\"": \""password-example\""}"",
@@ -212,10 +211,42 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     }
 
     [Fact]
+    public async Task Post_CustomerOriginStrategy_201_IfCustomersUseSameRegex()
+    {
+        // Arrange
+        const int customerId = 91;
+        const string sharedRegex = "http[s]?://(.*).example.com";
+        const string newStrategyJson = $@"{{
+            ""strategy"": ""s3-ambient"",
+            ""regex"": ""{sharedRegex}"",
+            ""order"": ""2""
+        }}";
+        
+        var path = $"customers/{customerId}/originStrategies";
+        var existingStrategy = new CustomerOriginStrategy()
+        {
+            Id = Guid.NewGuid().ToString(),
+            Customer = 90,
+            Regex = sharedRegex,
+            Strategy = OriginStrategyType.S3Ambient
+        };
+  
+        await dlcsContext.CustomerOriginStrategies.AddAsync(existingStrategy);
+        await dlcsContext.SaveChangesAsync();
+
+        // Act
+        var content = new StringContent(newStrategyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
     public async Task Post_CustomerOriginStrategy_400_IfOptimisedWithoutS3AmbientStrategy()
     {
         // Arrange
-        const int customerId = 94;
+        const int customerId = 92;
         const string newStrategyJson = @"{
             ""strategy"": ""basic-http-authentication"",
             ""credentials"": ""{\""user\"": \""user-example\"", \""password\"": \""password-example\""}"",
@@ -235,10 +266,10 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     }
     
     [Fact]
-    public async Task Post_CustomerOriginStrategy_400_IfCredentialsUsedWithoutBasicHttpAuth()
+    public async Task Post_CustomerOriginStrategy_400_IfCredentialsUsedWithS3Auth()
     {
         // Arrange
-        const int customerId = 95;
+        const int customerId = 93;
         const string newStrategyJson = @"{
             ""strategy"": ""s3-ambient"",
             ""credentials"": ""{\""user\"": \""user-example\"", \""password\"": \""password-example\""}"",
@@ -265,7 +296,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Post_CustomerOriginStrategy_400_IfCredentialsInvalid(string credentialsJson)
     {
         // Arrange
-        const int customerId = 96;
+        const int customerId = 94;
         
         var path = $"customers/{customerId}/originStrategies";
         var newStrategyJson = $@"{{
@@ -287,7 +318,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Put_CustomerOriginStrategy_200()
     {
         // Arrange
-        const int customerId = 97;
+        const int customerId = 95;
         const string strategyChangesJson = @"{
             ""regex"": ""http[s]?://(.*).example2.com"",
             ""optimised"": ""false"",
@@ -326,7 +357,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Put_CustomerOriginStrategy_200_WithCredentials()
     {
         // Arrange
-        const int customerId = 98;
+        const int customerId = 96;
         const string strategyChangesJson = @"{
             ""strategy"": ""basic-http-authentication"", 
             ""credentials"": ""{ \""user\"": \""user-updated\"", \""password\"": \""password-updated\"" }"",
@@ -373,7 +404,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Put_CustomerOriginStrategy_409_IfRegexAlreadyExists()
     {
         // Arrange
-        const int customerId = 99;
+        const int customerId = 97;
         const string newStrategyJson = @"{
             ""strategy"": ""basic-http-authentication"", 
             ""credentials"": ""{ \""user\"": \""user-updated\"", \""password\"": \""password-updated\"" }"",
@@ -423,7 +454,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Put_CustomerOriginStrategy_400_IfOptimisedWithoutS3AmbientStrategy()
     {
         // Arrange
-        const int customerId = 100;
+        const int customerId = 98;
         const string strategyChangesJson = @"{
             ""optimised"": ""true""
         }";
@@ -457,7 +488,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Put_CustomerOriginStrategy_400_IfCredentialsInvalid(string credentialsJson)
     {
         // Arrange
-        const int customerId = 101;
+        const int customerId = 99;
         
         var strategyChangesJson = $@"{{
             ""strategy"": ""basic-http-authentication"",
@@ -488,10 +519,10 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     }
     
     [Fact]
-    public async Task Put_CustomerOriginStrategy_400_IfCredentialsUsedWithoutBasicHttpAuth()
+    public async Task Put_CustomerOriginStrategy_400_IfCredentialsUsedWithS3Auth()
     {
         // Arrange
-        const int customerId = 102;
+        const int customerId = 100;
         const string strategyChangesJson = @"{
             ""strategy"": ""s3-ambient"",
             ""credentials"": ""{\""user\"": \""user-example\"", \""password\"": \""password-example\""}"",
@@ -525,7 +556,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Put_CustomerOriginStrategy_400_IfOnlyCredentialsProvided()
     {
         // Arrange
-        const int customerId = 103;
+        const int customerId = 101;
         const string strategyChangesJson = @"{
             ""credentials"": ""{\""user\"": \""user-example\"", \""password\"": \""password-example\""}"",
         }";
@@ -555,7 +586,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Delete_CustomerOriginStrategy_204()
     {
         // Arrange
-        const int customerId = 104;
+        const int customerId = 102;
         
         var strategy = new CustomerOriginStrategy()
         {
@@ -585,7 +616,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     public async Task Delete_CustomerOriginStrategy_404_IfNotFound()
     {
         // Arrange
-        const int customerId = 105;
+        const int customerId = 103;
         
         var path = $"customers/{customerId}/originStrategies/{Guid.Empty}";
         
