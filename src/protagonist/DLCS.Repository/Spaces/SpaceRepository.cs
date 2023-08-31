@@ -232,7 +232,7 @@ public class SpaceRepository : ISpaceRepository
             if (roles != null)
                 existingSpace.Roles = roles;
 
-            if (maxUnauthorised != null)
+            if (maxUnauthorised.HasValue)
                 existingSpace.MaxUnauthorised = (int)maxUnauthorised;
         }
         else

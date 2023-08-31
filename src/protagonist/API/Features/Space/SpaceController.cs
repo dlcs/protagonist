@@ -152,15 +152,15 @@ public class SpaceController : HydraController
     }
 
     /// <summary>
-    /// Make a partial update of an existing space
+    /// Create a new space within this customer. DLCS assigns identity.
     /// </summary>
     /// <remarks>
     /// Sample request:
     ///
-    ///     PATCH: /customers/1/spaces/5
+    ///     POST: /customers/1/spaces
     ///     {
-    ///         "@type": "Space",
-    ///         "name": "New Space Name"
+    ///         "@type":"Space",
+    ///         "name":"foo"
     ///     }
     /// </remarks>
     [HttpPatch]
@@ -193,5 +193,51 @@ public class SpaceController : HydraController
             return this.HydraProblem(result.ErrorMessages, null, 409, "Space name taken");
         }
         return this.HydraProblem(result.ErrorMessages, null, 500, "Cannot patch space");
+    }
+
+    /// <summary>
+    /// Create or update a space within this customer. A new space's ID is set by the user in the URL.
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     PUT: /customers/1/spaces/1
+    ///     {
+    ///         "@type":"Space",
+    ///         "name":"foo"
+    ///     }
+    /// </remarks>
+    [HttpPut]
+    [Route("{spaceId}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.Space))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> PutSpace(
+        int customerId, int spaceId, [FromBody] DLCS.HydraModel.Space space)
+    {
+        var putSpace = new PutSpace
+        {
+            CustomerId = customerId,
+            SpaceId = spaceId,
+            Name = space.Name,
+            MaxUnauthorised = space.MaxUnauthorised,
+            Tags = space.DefaultTags,
+            Roles = space.DefaultRoles
+        };
+        
+        var result = await Mediator.Send(putSpace);
+        
+        if (!result.ErrorMessages.Any() && result.Space != null)
+        {
+            return Ok(result.Space.ToHydra(GetUrlRoots().BaseUrl));
+        }
+        
+        if (result.Conflict)
+        {
+            return this.HydraProblem(result.ErrorMessages, null, 409, "Space name taken");
+        }
+        
+        return this.HydraProblem(result.ErrorMessages, null, 500, "Cannot update space");
     }
 }

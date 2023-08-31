@@ -333,6 +333,52 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         patchedSpace.MaxUnauthorised.Should().Be(400);
     }
     
+    [Fact]
+    public async Task Put_Space_Creates_Space()
+    {
+        int? customerId = await EnsureCustomerForSpaceTests("Put_Space_Creates_Space");
+        const int spaceId = 1;
+        
+        const string newSpaceJson = @"{
+          ""@type"": ""Space"",
+          ""name"": ""Test Space""
+        }";
+        
+        // Act
+        var content = new StringContent(newSpaceJson, Encoding.UTF8, "application/json");
+        var postUrl = $"/customers/{customerId}/spaces/{spaceId}";
+        var response = await httpClient.AsCustomer(customerId.Value).PutAsync(postUrl, content);
+        var apiSpace = await response.ReadAsHydraResponseAsync<Space>();
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        apiSpace.Should().NotBeNull();
+        apiSpace.ModelId.Should().Be(spaceId);
+        apiSpace.Name.Should().Be("Test Space");
+        apiSpace.MaxUnauthorised.Should().Be(-1);
+    }
+    
+    [Fact]
+    public async Task Put_Space_Updates_Name()
+    {
+        int? customerId = await EnsureCustomerForSpaceTests("Put_Space_Updates_Name");
+        await dbContext.Spaces.AddTestSpace(customerId.Value, 1, "Put Space Before");
+        await dbContext.SaveChangesAsync();
+        
+        const string putJson = @"{
+            ""@type"": ""Space"",
+            ""name"": ""Put Space After""
+            }";
+        var putContent = new StringContent(putJson, Encoding.UTF8, "application/json");
+        var putUrl = $"/customers/{customerId}/spaces/1";
+        var putResponse = await httpClient.AsCustomer(customerId.Value).PutAsync(putUrl, putContent);
+        var putSpace = await putResponse.ReadAsHydraResponseAsync<Space>();
+
+        putResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        putSpace.Name.Should().Be("Put Space After");
+    }
+    
     private async Task<int?> EnsureCustomerForSpaceTests(string customerName = "space-test-customer")
     {
         var spaceTestCustomer = await dbContext.Customers.SingleOrDefaultAsync(c => c.Name == customerName);
