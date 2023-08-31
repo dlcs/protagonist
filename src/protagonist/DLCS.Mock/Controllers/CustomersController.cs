@@ -101,7 +101,7 @@ public class CustomersController : ControllerBase
 
     [HttpGet]
     [Route("/customers/{customerId}/originStrategies/{originStrategyId}")]
-    public IActionResult OriginStrategies(int customerId, int originStrategyId)
+    public IActionResult OriginStrategies(int customerId, string originStrategyId)
     {
         var cos = model.CustomerOriginStrategies.SingleOrDefault(
             u => u.CustomerId == customerId && u.ModelId == originStrategyId);

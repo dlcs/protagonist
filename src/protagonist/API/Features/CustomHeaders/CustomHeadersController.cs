@@ -30,7 +30,6 @@ public class CustomHeadersController : HydraController
     /// <returns>HydraCollection of CustomHeader</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCustomHeaders(
         [FromRoute] int customerId,
         CancellationToken cancellationToken)

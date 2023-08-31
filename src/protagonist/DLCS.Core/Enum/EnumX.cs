@@ -58,4 +58,23 @@ public static class EnumX
         var desc = memberInfo.GetCustomAttribute<DescriptionAttribute>();
         return desc == null ? enumValue.ToString() : desc.Description;
     }
+
+    /// <summary>
+    /// Returns true if the input string can be matched to any of a specified enum's values.
+    /// </summary>
+    /// <param name="description">String to try and match to an enum.</param>
+    /// <typeparam name="T">Type of enum.</typeparam>
+    /// <returns>Boolean indicating if a match was found.</returns>
+    public static bool IsValidEnumValue<T>(this string description)
+        where T : System.Enum
+    {
+        if (string.IsNullOrWhiteSpace(description)) return false;
+        
+        var memberInfos = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Static);
+        var isValid = memberInfos.Any(
+            field => field.Name == description ||
+            field.GetCustomAttribute<DescriptionAttribute>()?.Description == description);
+        
+        return isValid;
+    }
 }

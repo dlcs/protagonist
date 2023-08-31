@@ -235,13 +235,13 @@ public class MockModel
         return new List<CustomerOriginStrategy>
         {
             MockHelp.MakeCustomerOriginStrategy(BaseUrl, customers.GetByName("wellcome").ModelId, 
-                101, "https://wellcomelibrary.org/service/asset(.+)", "s3://wellcome/path-to-origin-creds", 
+                "d0060f58-d603-468c-be12-94c2ffa1d7bd", "https://wellcomelibrary.org/service/asset(.+)", "s3://wellcome/path-to-origin-creds", 
                 originStrategies.Single(os => os.ModelId == "basic_https").Id),
             MockHelp.MakeCustomerOriginStrategy(BaseUrl, customers.GetByName("iiifly").ModelId,
-                102, "https://example.org/images/(.+)", "s3://test/path-to-origin-creds", 
+                "4df13bd5-931c-48b3-965b-0be523b6dd06", "https://example.org/images/(.+)", "s3://test/path-to-origin-creds", 
                 originStrategies.Single(os => os.ModelId == "basic_https").Id),
             MockHelp.MakeCustomerOriginStrategy(BaseUrl, customers.GetByName("iiifly").ModelId,
-                103, "ftps://example.org/images/(.+)", "s3://test/path-to-ftp-creds",
+                "86a02515-08d3-4d8d-be05-ea7190a38d8e", "ftps://example.org/images/(.+)", "s3://test/path-to-ftp-creds",
                 originStrategies.Single(os => os.ModelId == "ftps_creds").Id)
         };
     }

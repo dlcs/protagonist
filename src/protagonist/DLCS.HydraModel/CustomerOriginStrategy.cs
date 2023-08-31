@@ -18,7 +18,8 @@ namespace DLCS.HydraModel;
 public class CustomerOriginStrategy : DlcsResource
 {
     [JsonIgnore]
-    public int ModelId { get; set; }
+    public string? ModelId { get; set; }
+    
     [JsonIgnore]
     public int CustomerId { get; set; }
 
@@ -26,7 +27,7 @@ public class CustomerOriginStrategy : DlcsResource
     {
     }
     
-    public CustomerOriginStrategy(string baseUrl, int customerId, int strategyId)
+    public CustomerOriginStrategy(string baseUrl, int customerId, string strategyId)
     {
         CustomerId = customerId;
         ModelId = strategyId;
@@ -43,7 +44,7 @@ public class CustomerOriginStrategy : DlcsResource
 
     [HydraLink(Description = "Link to the origin strategy definition that will be used if the regex is matched.",
         Range = "vocab:OriginStrategy", ReadOnly = true, WriteOnly = false, SetManually = true)]
-    [JsonProperty(Order = 17, PropertyName = "originStrategy")]
+    [JsonProperty(Order = 17, PropertyName = "strategy")]
     public string? OriginStrategy { get; set; }
 
 
@@ -52,6 +53,19 @@ public class CustomerOriginStrategy : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 20, PropertyName = "credentials")]
     public string? Credentials { get; set; }
+    
+    
+    [RdfProperty(Description = "Should the DLCS treat this as an optimised origin strategy?" +
+                               "Only origin strategies using s3-ambient can use this.",
+        Range = Names.XmlSchema.Boolean, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 23, PropertyName = "optimised")]
+    public bool? Optimised { get; set; }
+    
+    
+    [RdfProperty(Description = "The order this origin strategy should be evaluated in.",
+        Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 26, PropertyName = "order")]
+    public int? Order { get; set; }
 }
 
 public class CustomerOriginStrategyClass : Class
@@ -72,7 +86,7 @@ public class CustomerOriginStrategyClass : Class
         {
             Id = "_:customer_originStrategy_credentials_upsert",
             Method = "PUT",
-            Label = "create or replace customer credential objedt",
+            Label = "create or replace customer credential object",
             Expects = "vocab:Credentials",
             Returns = "vocab:Credentials",
             StatusCodes =new[] {new Status { StatusCode = 201, Description = "Created"} }

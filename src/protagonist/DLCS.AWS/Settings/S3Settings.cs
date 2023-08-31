@@ -38,6 +38,11 @@ public class S3Settings
     public string OriginBucket { get; set; }
     
     /// <summary>
+    /// Name of bucket for storing secure data (e.g credentials for customer origin strategies)
+    /// </summary>
+    public string SecurityObjectsBucket { get; set; }
+    
+    /// <summary>
     /// Service root for S3. Only used if running LocalStack
     /// </summary>
     public string ServiceUrl { get; set; } = "http://localhost:4566/";

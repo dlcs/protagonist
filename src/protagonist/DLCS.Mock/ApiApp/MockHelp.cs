@@ -38,7 +38,7 @@ public static class MockHelp
     }
 
     public static CustomerOriginStrategy MakeCustomerOriginStrategy(
-        string baseUrl, int customerId, int strategyId,
+        string baseUrl, int customerId, string strategyId,
         string regex, string credentials, string originStrategy)
     {
         return new CustomerOriginStrategy(baseUrl, customerId, strategyId)
