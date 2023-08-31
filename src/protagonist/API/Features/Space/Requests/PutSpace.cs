@@ -47,7 +47,7 @@ public class PutSpaceHandler : IRequestHandler<PutSpace, PutSpaceResult>
         }
         
         var sameNameSpace = await spaceRepository.GetSpace(request.CustomerId, request.Name, cancellationToken);
-        if (sameNameSpace != null)
+        if (sameNameSpace != null && sameNameSpace.Id != request.SpaceId)
         {
             result.Conflict = true;
             result.ErrorMessages.Add($"The space name '{request.Name}' is already taken.");

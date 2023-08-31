@@ -221,6 +221,7 @@ public class SpaceRepository : ISpaceRepository
         var existingSpace = await dlcsContext.Spaces.SingleOrDefaultAsync(s =>
             s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
 
+        Space retrievedSpace;
         if (existingSpace != null)
         {
             if (name.HasText() && name != existingSpace.Name)
@@ -234,6 +235,8 @@ public class SpaceRepository : ISpaceRepository
 
             if (maxUnauthorised.HasValue)
                 existingSpace.MaxUnauthorised = (int)maxUnauthorised;
+            
+            retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken);
         }
         else
         {
@@ -251,10 +254,11 @@ public class SpaceRepository : ISpaceRepository
             
             await dlcsContext.Spaces.AddAsync(space, cancellationToken);
             await entityCounterRepository.Create(customerId, KnownEntityCounters.SpaceImages, space.Id.ToString());
+
+            retrievedSpace = space;
         }
-        await dlcsContext.SaveChangesAsync(cancellationToken);
         
-        var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken);
+        await dlcsContext.SaveChangesAsync(cancellationToken);
         
         return retrievedSpace;
     }
