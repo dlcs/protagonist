@@ -221,7 +221,6 @@ public class SpaceRepository : ISpaceRepository
         var existingSpace = await dlcsContext.Spaces.SingleOrDefaultAsync(s =>
             s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
 
-        Space retrievedSpace;
         if (existingSpace != null)
         {
             if (name.HasText() && name != existingSpace.Name)
@@ -236,31 +235,29 @@ public class SpaceRepository : ISpaceRepository
             if (maxUnauthorised.HasValue)
                 existingSpace.MaxUnauthorised = (int)maxUnauthorised;
             
-            retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken);
-        }
-        else
-        {
-            var space = new Space
-            {
-                Customer = customerId,
-                Id = spaceId,
-                Name = name,
-                Created = DateTime.UtcNow,
-                ImageBucket = imageBucket,
-                Tags = tags ?? Array.Empty<string>(),
-                Roles = roles ?? Array.Empty<string>(),
-                MaxUnauthorised = maxUnauthorised ?? -1
-            };
+            await dlcsContext.SaveChangesAsync(cancellationToken);
             
-            await dlcsContext.Spaces.AddAsync(space, cancellationToken);
-            await entityCounterRepository.Create(customerId, KnownEntityCounters.SpaceImages, space.Id.ToString());
-
-            retrievedSpace = space;
+            var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken);
+            
+            return retrievedSpace;
         }
+     
+        var space = new Space
+        {
+            Customer = customerId,
+            Id = spaceId,
+            Name = name,
+            Created = DateTime.UtcNow,
+            ImageBucket = imageBucket,
+            Tags = tags ?? Array.Empty<string>(),
+            Roles = roles ?? Array.Empty<string>(),
+            MaxUnauthorised = maxUnauthorised ?? -1
+        };
         
-        await dlcsContext.SaveChangesAsync(cancellationToken);
+        await dlcsContext.Spaces.AddAsync(space, cancellationToken);
+        await entityCounterRepository.Create(customerId, KnownEntityCounters.SpaceImages, space.Id.ToString());
         
-        return retrievedSpace;
+        return space;
     }
     
     public async Task<ResultMessage<DeleteResult>> DeleteSpace(int customerId, int spaceId, CancellationToken cancellationToken)
