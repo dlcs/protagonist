@@ -209,7 +209,7 @@ public class SpaceRepository : ISpaceRepository
         
         await dlcsContext.SaveChangesAsync(cancellationToken);
 
-        var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken);
+        var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken, noCache: true);
         return retrievedSpace;
     }
 
@@ -236,28 +236,27 @@ public class SpaceRepository : ISpaceRepository
                 existingSpace.MaxUnauthorised = (int)maxUnauthorised;
             
             await dlcsContext.SaveChangesAsync(cancellationToken);
-            
-            var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken);
-            
-            return retrievedSpace;
         }
-     
-        var space = new Space
+        else
         {
-            Customer = customerId,
-            Id = spaceId,
-            Name = name,
-            Created = DateTime.UtcNow,
-            ImageBucket = imageBucket,
-            Tags = tags ?? Array.Empty<string>(),
-            Roles = roles ?? Array.Empty<string>(),
-            MaxUnauthorised = maxUnauthorised ?? -1
-        };
+            var space = new Space
+            {
+                Customer = customerId,
+                Id = spaceId,
+                Name = name,
+                Created = DateTime.UtcNow,
+                ImageBucket = imageBucket,
+                Tags = tags ?? Array.Empty<string>(),
+                Roles = roles ?? Array.Empty<string>(),
+                MaxUnauthorised = maxUnauthorised ?? -1
+            };
         
-        await dlcsContext.Spaces.AddAsync(space, cancellationToken);
-        await entityCounterRepository.Create(customerId, KnownEntityCounters.SpaceImages, space.Id.ToString());
+            await dlcsContext.Spaces.AddAsync(space, cancellationToken);
+            await entityCounterRepository.Create(customerId, KnownEntityCounters.SpaceImages, space.Id.ToString()); 
+        }
         
-        return space;
+        var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken, noCache:true);
+        return retrievedSpace;
     }
     
     public async Task<ResultMessage<DeleteResult>> DeleteSpace(int customerId, int spaceId, CancellationToken cancellationToken)
