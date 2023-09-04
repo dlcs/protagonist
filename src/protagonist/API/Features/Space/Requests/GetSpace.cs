@@ -1,3 +1,4 @@
+using API.Infrastructure.Requests;
 using DLCS.Model.Spaces;
 using MediatR;
 
@@ -6,7 +7,7 @@ namespace API.Features.Space.Requests;
 /// <summary>
 /// Get details of specified space for customer
 /// </summary>
-public class GetSpace : IRequest<DLCS.Model.Spaces.Space?>
+public class GetSpace : IRequest<FetchEntityResult<DLCS.Model.Spaces.Space>>
 {
     public GetSpace(int customerId, int spaceId)
     {
@@ -18,7 +19,7 @@ public class GetSpace : IRequest<DLCS.Model.Spaces.Space?>
     public int SpaceId { get; }
 }
 
-public class GetSpaceHandler : IRequestHandler<GetSpace, DLCS.Model.Spaces.Space?>
+public class GetSpaceHandler : IRequestHandler<GetSpace, FetchEntityResult<DLCS.Model.Spaces.Space>>
 {
     private readonly ISpaceRepository spaceRepository;
 
@@ -27,10 +28,12 @@ public class GetSpaceHandler : IRequestHandler<GetSpace, DLCS.Model.Spaces.Space
         this.spaceRepository = spaceRepository;
     }
     
-    public async Task<DLCS.Model.Spaces.Space?> Handle(GetSpace request, CancellationToken cancellationToken)
+    public async Task<FetchEntityResult<DLCS.Model.Spaces.Space>> Handle(GetSpace request, CancellationToken cancellationToken)
     {
         var space = await spaceRepository.GetSpace(
             request.CustomerId, request.SpaceId, noCache: true, cancellationToken: cancellationToken);
-        return space;
+        return space == null
+            ? FetchEntityResult<DLCS.Model.Spaces.Space>.NotFound()
+            : FetchEntityResult<DLCS.Model.Spaces.Space>.Success(space);
     }
 }

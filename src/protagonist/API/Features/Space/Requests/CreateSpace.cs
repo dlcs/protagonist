@@ -41,12 +41,11 @@ public class CreateSpaceHandler : IRequestHandler<CreateSpace, DLCS.Model.Spaces
     public async Task<DLCS.Model.Spaces.Space> Handle(CreateSpace request, CancellationToken cancellationToken)
     {
         await ValidateRequest(request);
+       
         var existing = await spaceRepository.GetSpace(request.Customer, request.Name, cancellationToken);
         if (existing != null)
-        {
             throw new BadRequestException("A space with this name already exists.");
-        }
-
+        
         var newSpace = await spaceRepository.CreateSpace(
             request.Customer, request.Name, request.ImageBucket, 
             request.Tags, request.Roles, request.MaxUnauthorised,
@@ -59,8 +58,6 @@ public class CreateSpaceHandler : IRequestHandler<CreateSpace, DLCS.Model.Spaces
     {
         var customer = await customerRepository.GetCustomer(request.Customer);
         if (customer == null)
-        {
             throw new BadRequestException("Space must be created for an existing Customer.");
-        }
     }
 }

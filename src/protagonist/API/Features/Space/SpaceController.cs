@@ -80,16 +80,15 @@ public class SpaceController : HydraController
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateSpace(
-        [FromRoute] int customerId, [FromBody] DLCS.HydraModel.Space space)
+        [FromRoute] int customerId,
+        [FromBody] DLCS.HydraModel.Space space,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(space.Name))
-        {
             return this.HydraProblem("A space must have a name.", null, 400, "Invalid Space");
-        }
+        
         if (customerId <= 0)
-        {
             return this.HydraProblem("Space must be created for an existing Customer.", null, 400, "Invalid Space");
-        }
         
         logger.LogDebug("API will create space {SpaceName} for {CustomerId}", space.Name, customerId);
 
@@ -102,15 +101,14 @@ public class SpaceController : HydraController
 
         try
         {
-            var newDbSpace = await Mediator.Send(command);
+            var newDbSpace = await Mediator.Send(command, cancellationToken);
             var newApiSpace = newDbSpace.ToHydra(GetUrlRoots().BaseUrl);
-            if (newApiSpace.Id.HasText())
-            {
-                return this.HydraCreated(newApiSpace);
-            }
-            return this.HydraProblem("New space not assigned an ID", 
-                null, 500, "Bad Request");
             
+            if (!newApiSpace.Id.HasText())
+                return this.HydraProblem("New space not assigned an ID", 
+                    null, 500, "Bad Request");
+            
+            return this.HydraCreated(newApiSpace);
         }
         catch (BadRequestException badRequestException)
         {
@@ -140,19 +138,23 @@ public class SpaceController : HydraController
     [Route("{spaceId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.Space))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetSpace(int customerId, int spaceId)
+    public async Task<IActionResult> GetSpace(
+        [FromRoute] int customerId, 
+        [FromRoute] int spaceId,
+        CancellationToken cancellationToken)
     {
-        var dbSpace = await Mediator.Send(new GetSpace(customerId, spaceId));
-        if (dbSpace != null)
-        {
-            return Ok(dbSpace.ToHydra(GetUrlRoots().BaseUrl));
-        }
-
-        return NotFound();
+        var request = new GetSpace(customerId, spaceId);
+        
+        return await HandleFetch(
+            request,
+            s => s.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to get space",
+            cancellationToken: cancellationToken
+        );
     }
 
     /// <summary>
-    /// Create a new space within this customer. DLCS assigns identity.
+    /// Patch a space within this customer. DLCS assigns identity.
     /// </summary>
     /// <remarks>
     /// Sample request:
@@ -170,9 +172,12 @@ public class SpaceController : HydraController
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PatchSpace(
-        int customerId, int spaceId, [FromBody] DLCS.HydraModel.Space space)
+        [FromRoute] int customerId, 
+        [FromRoute] int spaceId, 
+        [FromBody] DLCS.HydraModel.Space space,
+        CancellationToken cancellationToken)
     {
-        var patchSpace = new PatchSpace
+        var request = new PatchSpace
         {
             CustomerId = customerId,
             SpaceId = spaceId,
@@ -182,17 +187,10 @@ public class SpaceController : HydraController
             Roles = space.DefaultRoles
         };
         
-        var result = await Mediator.Send(patchSpace);
-        if (!result.ErrorMessages.Any() && result.Space != null)
-        {
-            return Ok(result.Space.ToHydra(GetUrlRoots().BaseUrl));
-        }
-        
-        if (result.Conflict)
-        {
-            return this.HydraProblem(result.ErrorMessages, null, 409, "Space name taken");
-        }
-        return this.HydraProblem(result.ErrorMessages, null, 500, "Cannot patch space");
+        return await HandleUpsert(request, 
+            s => s.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to patch space",
+            cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -214,9 +212,12 @@ public class SpaceController : HydraController
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PutSpace(
-        int customerId, int spaceId, [FromBody] DLCS.HydraModel.Space space)
+        [FromRoute] int customerId,
+        [FromRoute] int spaceId,
+        [FromBody] DLCS.HydraModel.Space space,
+        CancellationToken cancellationToken)
     {
-        var putSpace = new PutSpace
+        var request = new PutSpace
         {
             CustomerId = customerId,
             SpaceId = spaceId,
@@ -226,18 +227,9 @@ public class SpaceController : HydraController
             Roles = space.DefaultRoles
         };
         
-        var result = await Mediator.Send(putSpace);
-        
-        if (!result.ErrorMessages.Any() && result.Space != null)
-        {
-            return Ok(result.Space.ToHydra(GetUrlRoots().BaseUrl));
-        }
-        
-        if (result.Conflict)
-        {
-            return this.HydraProblem(result.ErrorMessages, null, 409, "Space name taken");
-        }
-        
-        return this.HydraProblem(result.ErrorMessages, null, 500, "Cannot update space");
+        return await HandleUpsert(request, 
+            s => s.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to update space",
+            cancellationToken: cancellationToken);
     }
 }
