@@ -351,7 +351,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var apiSpace = await response.ReadAsHydraResponseAsync<Space>();
         
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         
         apiSpace.Should().NotBeNull();
         apiSpace.ModelId.Should().Be(spaceId);
