@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.CloudFront.Model;
 using DLCS.Core;
 using DLCS.Core.Caching;
 using DLCS.Core.Strings;
@@ -22,6 +23,8 @@ public class SpaceRepository : ISpaceRepository
     private readonly CacheSettings cacheSettings;
     private readonly IAppCache appCache;
     private ILogger<SpaceRepository> logger;
+    
+    private const int DefaultMaxUnauthorised = -1;
 
     public SpaceRepository(
         DlcsContext dlcsContext,
@@ -80,10 +83,10 @@ public class SpaceRepository : ISpaceRepository
             Id = newModelId,
             Name = name,
             Created = DateTime.UtcNow,
-            ImageBucket = imageBucket,
+            ImageBucket = imageBucket ?? string.Empty,
             Tags = tags ?? Array.Empty<string>(),
             Roles = roles ?? Array.Empty<string>(),
-            MaxUnauthorised = maxUnauthorised ?? -1
+            MaxUnauthorised = maxUnauthorised ?? DefaultMaxUnauthorised 
         };
 
         await dlcsContext.Spaces.AddAsync(space, cancellationToken);
@@ -209,10 +212,64 @@ public class SpaceRepository : ISpaceRepository
         
         await dlcsContext.SaveChangesAsync(cancellationToken);
 
-        var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken);
+        var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken, noCache: true);
         return retrievedSpace;
     }
 
+    public async Task<Space> PutSpace(
+        int customerId, int spaceId, string? name, string? imageBucket,
+        int? maxUnauthorised, string[]? tags, string[]? roles, 
+        CancellationToken cancellationToken)
+    {
+        var existingSpace = await dlcsContext.Spaces.SingleOrDefaultAsync(s =>
+            s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
+
+        if (existingSpace != null)
+        {
+            if (name.HasText() && name != existingSpace.Name)
+            {
+                existingSpace.Name = name;
+            }
+
+            if (tags != null)
+            {
+                existingSpace.Tags = tags;
+            }
+
+            if (roles != null)
+            {
+                existingSpace.Roles = roles;
+            }
+
+            if (maxUnauthorised.HasValue)
+            {
+                existingSpace.MaxUnauthorised = (int)maxUnauthorised;
+            }
+        }
+        else
+        {
+            var space = new Space
+            {
+                Customer = customerId,
+                Id = spaceId,
+                Name = name,
+                Created = DateTime.UtcNow,
+                ImageBucket = imageBucket ?? string.Empty,
+                Tags = tags ?? Array.Empty<string>(),
+                Roles = roles ?? Array.Empty<string>(),
+                MaxUnauthorised = maxUnauthorised ?? DefaultMaxUnauthorised 
+            };
+        
+            await dlcsContext.Spaces.AddAsync(space, cancellationToken);
+            await entityCounterRepository.Create(customerId, KnownEntityCounters.SpaceImages, space.Id.ToString()); 
+        }
+        
+        await dlcsContext.SaveChangesAsync(cancellationToken);
+        
+        var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken, noCache:true);
+        return retrievedSpace;
+    }
+    
     public async Task<ResultMessage<DeleteResult>> DeleteSpace(int customerId, int spaceId, CancellationToken cancellationToken)
     {
         var deleteResult = DeleteResult.NotFound;
