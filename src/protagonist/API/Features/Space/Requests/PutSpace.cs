@@ -15,7 +15,7 @@ public class PutSpace : IRequest<ModifyEntityResult<DLCS.Model.Spaces.Space>>
     public int CustomerId { get; set; }
     public int SpaceId { get; set; }
     public string? Name { get; set; }
-    public string? ImageBucket { get; set; } = string.Empty;
+    public string? ImageBucket { get; set; }
     public string[]? Tags { get; set; }
     public string[]? Roles { get; set; }
     public int? MaxUnauthorised { get; set; }
@@ -34,9 +34,11 @@ public class PutSpaceHandler : IRequestHandler<PutSpace, ModifyEntityResult<DLCS
     {
         var sameIdSpace = await spaceRepository.GetSpace(request.CustomerId, request.SpaceId, cancellationToken);
         if (sameIdSpace == null && !request.Name.HasText())
+        {
             return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure("A name is required when creating a new space.",
-                WriteResult.FailedValidation);
-
+                WriteResult.FailedValidation);            
+        }
+        
         if (request.Name.HasText())
         {
             var sameNameSpace = await spaceRepository.GetSpace(request.CustomerId, request.Name, cancellationToken);
@@ -49,7 +51,9 @@ public class PutSpaceHandler : IRequestHandler<PutSpace, ModifyEntityResult<DLCS
             request.CustomerId, request.SpaceId, request.Name, request.ImageBucket,
             request.MaxUnauthorised, request.Tags, request.Roles,
             cancellationToken);
-       
-        return ModifyEntityResult<DLCS.Model.Spaces.Space>.Success(putSpaceResult);
+        
+        var result = sameIdSpace == null ? WriteResult.Created : WriteResult.Updated;
+        
+        return ModifyEntityResult<DLCS.Model.Spaces.Space>.Success(putSpaceResult, result);
     }
 }

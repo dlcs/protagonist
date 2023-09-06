@@ -34,13 +34,17 @@ public class PatchSpaceHandler : IRequestHandler<PatchSpace, ModifyEntityResult<
     {
         var sameIdSpace = await spaceRepository.GetSpace(request.CustomerId, request.SpaceId, cancellationToken);
         if (sameIdSpace == null)
+        {
             return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure($"Couldn't find a space with the id {request.SpaceId}", WriteResult.NotFound);
-   
+        }
+          
         if (request.Name.HasText())
         {
             var sameNameSpace = await spaceRepository.GetSpace(request.CustomerId, request.Name, cancellationToken);
             if (sameNameSpace != null && sameNameSpace.Id != request.SpaceId)
+            {
                 return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure($"The space name '{request.Name}' is already taken.", WriteResult.Conflict);
+            }
         }
         
         // The request customer and space override any values for these that may

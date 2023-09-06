@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.CloudFront.Model;
 using DLCS.Core;
 using DLCS.Core.Caching;
 using DLCS.Core.Strings;
@@ -22,6 +23,8 @@ public class SpaceRepository : ISpaceRepository
     private readonly CacheSettings cacheSettings;
     private readonly IAppCache appCache;
     private ILogger<SpaceRepository> logger;
+    
+    private const int DefaultMaxUnauthorised = -1;
 
     public SpaceRepository(
         DlcsContext dlcsContext,
@@ -80,10 +83,10 @@ public class SpaceRepository : ISpaceRepository
             Id = newModelId,
             Name = name,
             Created = DateTime.UtcNow,
-            ImageBucket = imageBucket,
+            ImageBucket = imageBucket ?? string.Empty,
             Tags = tags ?? Array.Empty<string>(),
             Roles = roles ?? Array.Empty<string>(),
-            MaxUnauthorised = maxUnauthorised ?? -1
+            MaxUnauthorised = maxUnauthorised ?? DefaultMaxUnauthorised 
         };
 
         await dlcsContext.Spaces.AddAsync(space, cancellationToken);
@@ -224,16 +227,24 @@ public class SpaceRepository : ISpaceRepository
         if (existingSpace != null)
         {
             if (name.HasText() && name != existingSpace.Name)
+            {
                 existingSpace.Name = name;
+            }
 
             if (tags != null)
+            {
                 existingSpace.Tags = tags;
+            }
 
             if (roles != null)
+            {
                 existingSpace.Roles = roles;
+            }
 
             if (maxUnauthorised.HasValue)
+            {
                 existingSpace.MaxUnauthorised = (int)maxUnauthorised;
+            }
         }
         else
         {
@@ -243,10 +254,10 @@ public class SpaceRepository : ISpaceRepository
                 Id = spaceId,
                 Name = name,
                 Created = DateTime.UtcNow,
-                ImageBucket = imageBucket,
+                ImageBucket = imageBucket ?? string.Empty,
                 Tags = tags ?? Array.Empty<string>(),
                 Roles = roles ?? Array.Empty<string>(),
-                MaxUnauthorised = maxUnauthorised ?? -1
+                MaxUnauthorised = maxUnauthorised ?? DefaultMaxUnauthorised 
             };
         
             await dlcsContext.Spaces.AddAsync(space, cancellationToken);

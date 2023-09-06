@@ -85,11 +85,15 @@ public class SpaceController : HydraController
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(space.Name))
+        {
             return this.HydraProblem("A space must have a name.", null, 400, "Invalid Space");
-        
+        }
+
         if (customerId <= 0)
+        {
             return this.HydraProblem("Space must be created for an existing Customer.", null, 400, "Invalid Space");
-        
+        }
+         
         logger.LogDebug("API will create space {SpaceName} for {CustomerId}", space.Name, customerId);
 
         var command = new CreateSpace(customerId, space.Name)
@@ -103,11 +107,13 @@ public class SpaceController : HydraController
         {
             var newDbSpace = await Mediator.Send(command, cancellationToken);
             var newApiSpace = newDbSpace.ToHydra(GetUrlRoots().BaseUrl);
-            
+
             if (!newApiSpace.Id.HasText())
+            {
                 return this.HydraProblem("New space not assigned an ID", 
                     null, 500, "Bad Request");
-            
+            }
+
             return this.HydraCreated(newApiSpace);
         }
         catch (BadRequestException badRequestException)
@@ -154,12 +160,12 @@ public class SpaceController : HydraController
     }
 
     /// <summary>
-    /// Patch a space within this customer. DLCS assigns identity.
+    /// Make a partial update of an existing space
     /// </summary>
     /// <remarks>
     /// Sample request:
     ///
-    ///     POST: /customers/1/spaces
+    ///     PATCH: /customers/1/spaces/1
     ///     {
     ///         "@type":"Space",
     ///         "name":"foo"
