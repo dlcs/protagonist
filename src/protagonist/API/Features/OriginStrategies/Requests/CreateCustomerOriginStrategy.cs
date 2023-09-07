@@ -52,7 +52,7 @@ public class CreateCustomerOriginStrategyHandler : IRequestHandler<CreateCustome
         var newStrategyId = Guid.NewGuid().ToString();
         var newStrategyCredentials = string.Empty;
         
-        if (request.Strategy.Strategy == OriginStrategyType.BasicHttp)
+        if (request.Strategy.Strategy is OriginStrategyType.BasicHttp or OriginStrategyType.SFTP)
         {
             var exportCredentialsResult =
                 await credentialsExporter.ExportCredentials(request.Strategy.Credentials, request.CustomerId, newStrategyId, cancellationToken);

@@ -23,7 +23,7 @@ namespace API.Features.OriginStrategies;
 public class CustomerOriginStrategiesController : HydraController
 {
     private readonly OriginStrategyType[] allowedStrategyTypes = 
-        { OriginStrategyType.BasicHttp, OriginStrategyType.S3Ambient };
+        { OriginStrategyType.BasicHttp, OriginStrategyType.S3Ambient, OriginStrategyType.SFTP };
     
     public CustomerOriginStrategiesController(
         IMediator mediator,

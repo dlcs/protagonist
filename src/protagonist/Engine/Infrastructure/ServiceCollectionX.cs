@@ -14,6 +14,7 @@ using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;
+using DLCS.Repository.SFTP;
 using DLCS.Repository.Storage;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Handlers;
@@ -149,4 +150,11 @@ public static class ServiceCollectionX
 
         return services;
     }
+    
+    /// <summary>
+    /// Adds classes related to SFTP
+    /// </summary>
+    public static IServiceCollection AddSftp(this IServiceCollection services)
+        => services
+            .AddSingleton<ISftpReader, SftpReader>();
 }
