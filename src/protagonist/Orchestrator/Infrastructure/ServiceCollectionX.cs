@@ -133,7 +133,7 @@ public static class ServiceCollectionX
             .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
             .AddScoped<IAuthPathGenerator, ConfigDrivenAuthPathGenerator>()
             .AddScoped<IIIIFAuthBuilder>(provider => provider.GetRequiredService<IIIFAuth2Client>())
-            .AddHeaderPropagation(options => options.Headers.Add( "Cookie"))
+            .AddHeaderPropagation(options => options.Headers.Add("Cookie"))
             .AddHttpClient<IIIFAuth2Client>(client =>
             {
                 client.DefaultRequestHeaders.WithRequestedBy();
