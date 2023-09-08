@@ -13,8 +13,8 @@ public static class ImageStorageConverter
         var hydraImageStorage = new DLCS.HydraModel.ImageStorage(baseUrl, imageStorage.Customer,
             imageStorage.Space, imageStorage.Id.Asset)
         {
-            ThumbnailSize = (int)imageStorage.ThumbnailSize,
-            Size = (int)imageStorage.Size,
+            ThumbnailSize = imageStorage.ThumbnailSize,
+            Size = imageStorage.Size,
             LastChecked = imageStorage.LastChecked,
             CheckingInProgress = imageStorage.CheckingInProgress,
         };

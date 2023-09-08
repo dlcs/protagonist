@@ -37,7 +37,7 @@ public class StorageController : HydraController
         
         return await HandleFetch(request, 
             s => s.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to get storage from image",
+            errorTitle: "Failed to get storage for image",
             cancellationToken: cancellationToken);
     }
     
@@ -57,7 +57,7 @@ public class StorageController : HydraController
         
         return await HandleFetch(request, 
             s => s.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to get storage from space",
+            errorTitle: "Failed to get storage for space",
             cancellationToken: cancellationToken);
     }
     

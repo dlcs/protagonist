@@ -77,14 +77,6 @@ public class StorageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         const int spaceId = 1;
         
         var path = $"customers/{customerId}/spaces/{spaceId}/storage";
-        var space = new Space()
-        {
-            Id = spaceId,
-            Name = "test-space",
-            Customer = customerId,
-            Created = DateTime.MinValue.ToUniversalTime()
-          
-        };
         var spaceStorage = new CustomerStorage()
         {
             StoragePolicy = "default",
@@ -95,7 +87,6 @@ public class StorageTests : IClassFixture<ProtagonistAppFactory<Startup>>
             Space = spaceId,
         };
         
-        await dlcsContext.Spaces.AddAsync(space);
         await dlcsContext.CustomerStorages.AddAsync(spaceStorage);
         await dlcsContext.SaveChangesAsync();
         

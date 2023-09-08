@@ -34,7 +34,7 @@ public class GetImageStorageHandler : IRequestHandler<GetImageStorage, FetchEnti
 
     public async Task<FetchEntityResult<ImageStorage>> Handle(GetImageStorage request, CancellationToken cancellationToken)
     {
-        var assetId = AssetId.FromString($"{request.CustomerId}/{request.SpaceId}/{request.ImageId}");
+        var assetId = new AssetId(request.CustomerId, request.SpaceId, request.ImageId);
         var storage = await dbContext.ImageStorages.AsNoTracking()
             .SingleOrDefaultAsync(s => s.Customer == request.CustomerId && s.Id == assetId,
                 cancellationToken: cancellationToken);
