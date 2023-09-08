@@ -27,7 +27,7 @@ public class StorageController : HydraController
     [Route("/customers/{customerId}/spaces/{spaceId}/images/{imageId}/storage")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetSpaceImageStorage(
+    public async Task<IActionResult> GetImageStorage(
         [FromRoute] int customerId,
         [FromRoute] int spaceId,
         [FromRoute] string imageId,
