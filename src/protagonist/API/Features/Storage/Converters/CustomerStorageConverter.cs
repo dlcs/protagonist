@@ -12,12 +12,13 @@ public static class CustomerStorageConverter
     {
         var hydraCustomerStorage = new DLCS.HydraModel.CustomerStorage(baseUrl, customerStorage.Customer, customerStorage.Space)
         {
-            StoragePolicy = customerStorage.StoragePolicy,
+            StoragePolicy = $"{baseUrl}/storagePolicies/{customerStorage.StoragePolicy}",
             NumberOfStoredImages = customerStorage.NumberOfStoredImages,
             TotalSizeOfStoredImages = customerStorage.TotalSizeOfStoredImages,
             TotalSizeOfThumbnails = customerStorage.TotalSizeOfThumbnails,
             LastCalculated = customerStorage.LastCalculated
         };
+        
         return hydraCustomerStorage;
     }
 }
