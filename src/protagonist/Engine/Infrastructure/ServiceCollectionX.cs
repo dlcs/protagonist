@@ -156,5 +156,6 @@ public static class ServiceCollectionX
     /// </summary>
     public static IServiceCollection AddSftp(this IServiceCollection services)
         => services
-            .AddSingleton<ISftpReader, SftpReader>();
+            .AddSingleton<ISftpReader, SftpReader>()
+            .AddSingleton<ISftpWrapper, SftpWrapper>();
 }

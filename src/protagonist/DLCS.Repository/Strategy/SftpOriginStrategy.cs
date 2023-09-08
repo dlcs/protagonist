@@ -33,13 +33,16 @@ public class SftpOriginStrategy : IOriginStrategy
     public async Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
-        customerOriginStrategy.ThrowIfNull(nameof(customerOriginStrategy));
-        
         var basicCredentials =
             await credentialsRepository.GetBasicCredentialsForOriginStrategy(customerOriginStrategy!);
 
-        basicCredentials.ThrowIfNull(nameof(basicCredentials));
-
+        if (basicCredentials == null)
+        {
+            logger.LogError("Error retrieving credentials for {Asset} from Origin: {Origin}",
+                assetId, origin);
+            return OriginResponse.Empty;
+        }
+        
         var originUri = new Uri(origin);
 
         // The URI class doesn't know what the default port is for SFTP, so defaults to -1
@@ -51,14 +54,14 @@ public class SftpOriginStrategy : IOriginStrategy
                 basicCredentials.Password));
 
         try
-        {
+        { 
             var outputStream = await sftpReader.RetrieveFile(connectionInfo, originUri.AbsolutePath, cancellationToken);
-           return new OriginResponse(outputStream);
+            return new OriginResponse(outputStream).WithContentLength(outputStream.Length);
         }
-        catch (Exception exception)
+        catch (Exception ex)
         {
-            logger.LogError(exception, "Error retrieving file from SFTP server - {Origin}", origin);
-            throw;
+            logger.LogError(ex, "Error fetching {Asset} from Origin: {Origin}", assetId, origin);
+            return OriginResponse.Empty;
         }
     }
 }

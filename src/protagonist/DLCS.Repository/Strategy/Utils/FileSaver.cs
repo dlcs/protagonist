@@ -71,7 +71,7 @@ public class FileSaver : IFileSaver
                 // NOTE(DG) This was copied from previous Deliverator implementation, copies and works out size
                 received = await CopyToFileStream(assetStream, fileStream, cancellationToken);
             }
-            
+
             sw.Stop();
 
             logger.LogDebug(
@@ -85,6 +85,14 @@ public class FileSaver : IFileSaver
         {
             logger.LogError(ex, "Error writing file to disk. destination: {Destination}", destination);
             throw;
+        }
+        finally
+        {
+            // make sure the stream coming from the origin is disposed
+            if (originResponse.Stream.CanRead)
+            {
+                await originResponse.Stream.DisposeAsync();
+            }
         }
     }
 
