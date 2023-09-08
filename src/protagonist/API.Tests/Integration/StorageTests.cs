@@ -55,13 +55,28 @@ public class StorageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Get_SpaceStorage_200()
+    public async Task Get_CustomerStorage_400_IfNotFound()
     {
         // Arrange
         const int customerId = 91;
-        const int spaceId = 1;
-        var path = $"customers/{customerId}/spaces/{spaceId}/storage";
         
+        var path = $"customers/{customerId}/storage";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_SpaceStorage_200()
+    {
+        // Arrange
+        const int customerId = 92;
+        const int spaceId = 1;
+        
+        var path = $"customers/{customerId}/spaces/{spaceId}/storage";
         var space = new Space()
         {
             Id = spaceId,
@@ -90,15 +105,29 @@ public class StorageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
+    
+    [Fact]
+    public async Task Get_SpaceStorage_400_IfNotFound()
+    {
+        // Arrange
+        const int customerId = 93;
+        var path = $"customers/{customerId}/spaces/256/storage";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
 
     [Fact]
     public async Task Get_ImageStorage_200()
     {
         // Arrange
-        const int customerId = 91;
+        const int customerId = 94;
         const string imageId = "test-image";
+        
         var path = $"customers/{customerId}/spaces/0/images/{imageId}/storage";
-   
         var imageStorage = new ImageStorage()
         {
             Id = AssetId.FromString($"{customerId}/0/{imageId}"),
@@ -117,5 +146,19 @@ public class StorageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+    
+    [Fact]
+    public async Task Get_ImageStorage_400_IfNotFound()
+    {
+        // Arrange
+        const int customerId = 95;
+        var path = $"customers/{customerId}/spaces/0/images/256/storage";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }
