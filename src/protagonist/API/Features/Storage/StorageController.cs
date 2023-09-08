@@ -21,7 +21,7 @@ public class StorageController : HydraController
     }
 
     /// <summary>
-    /// Gets the storage of an image within a customer's space
+    /// Gets the storage object of an image within a customer's space
     /// </summary>
     [HttpGet]
     [Route("/customers/{customerId}/spaces/{spaceId}/images/{imageId}/storage")]
@@ -42,7 +42,7 @@ public class StorageController : HydraController
     }
     
     /// <summary>
-    /// Gets the storage of a customer's space
+    /// Get the storage object of a customer's space
     /// </summary>
     [HttpGet]
     [Route("/customers/{customerId}/spaces/{spaceId}/storage")]
@@ -62,7 +62,7 @@ public class StorageController : HydraController
     }
     
     /// <summary>
-    /// Get the customer's default storage
+    /// Get the customer's default storage object
     /// </summary>
     [HttpGet]
     [Route("/customers/{customerId}/storage")]
