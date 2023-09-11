@@ -26,7 +26,7 @@ public class ImageOptimisationPolicy : DlcsResource
         string technicalDetails, bool global, int? customerId)
     {
         ModelId = imageOptimisationPolicyId;
-        if (customerId.HasValue)
+        if (customerId.HasValue && !global)
         {
             Init(baseUrl, true, customerId, imageOptimisationPolicyId);
         }
