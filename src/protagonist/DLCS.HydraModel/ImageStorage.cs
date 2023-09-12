@@ -34,12 +34,12 @@ public class ImageStorage : DlcsResource
     [RdfProperty(Description = "Storage space taken up by this item's thumbnails",
         Range = Names.XmlSchema.NonNegativeInteger, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 53, PropertyName = "thumbnailSize")]
-    public int ThumbnailSize { get; set; }
+    public long ThumbnailSize { get; set; }
 
     [RdfProperty(Description = "Storage space taken up by the DLCS artifacts for this item",
         Range = Names.XmlSchema.NonNegativeInteger, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 54, PropertyName = "size")]
-    public int Size { get; set; }
+    public long Size { get; set; }
 
     [RdfProperty(Description = "When these figures were last computed",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
