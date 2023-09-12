@@ -1,5 +1,9 @@
-﻿using System.Net;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
@@ -7,6 +11,7 @@ using DLCS.HydraModel;
 using DLCS.Repository;
 using Hydra.Collections;
 using Test.Helpers.Integration;
+using Test.Helpers.Integration.Infrastructure;
 
 namespace API.Tests.Integration;
 
@@ -54,6 +59,46 @@ public class PolicyTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var model = await response.ReadAsHydraResponseAsync<HydraCollection<ImageOptimisationPolicy>>();
         model.Members.Should().HaveCount(2);
+    }
+    
+    [Fact]
+    public async Task Get_ImageOptimisationPolicies_ReturnsCorrectIds()
+    {
+        // Arrange
+        const int customerId = 100;
+        var path = $"customers/{customerId}/imageOptimisationPolicies";
+        var globalExample = new DLCS.Model.Policies.ImageOptimisationPolicy()
+        {
+            Customer = customerId,
+            Id = "global-policy-example",
+            Name = "Customer Specific Policy",
+            TechnicalDetails = new[] { "Nothing yet" },
+            Global = true
+        };
+        var customerSpecificExample = new DLCS.Model.Policies.ImageOptimisationPolicy()
+        {
+            Customer = customerId,
+            Id = "customer-specific-policy-example",
+            Name = "Customer Specific Policy",
+            TechnicalDetails = new[] { "Nothing yet" },
+            Global = false
+        };
+        
+        await dbContext.ImageOptimisationPolicies.AddRangeAsync(globalExample, customerSpecificExample);
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer(customerId).GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var model = await response.ReadAsHydraResponseAsync<HydraCollection<ImageOptimisationPolicy>>();
+
+        model.Members.Should().ContainSingle(p => 
+            p.Id == $"{httpClient.BaseAddress}imageOptimisationPolicies/{globalExample.Id}");
+        model.Members.Should().ContainSingle(p => 
+            p.Id == $"{httpClient.BaseAddress}customers/{customerId}/imageOptimisationPolicies/{customerSpecificExample.Id}");
     }
     
     [Fact]
