@@ -54,7 +54,7 @@ public class ImageController : HydraController
     ///
     /// PUT requests always trigger reingesting of asset - in general batch processing should be preferred.
     ///
-    /// Image assets are ingested synchronously. Timebased + File assets are ingested asynchronously.
+    /// Image + File assets are ingested synchronously. Timebased assets are ingested asynchronously.
     /// </summary>
     /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
     /// <returns>The created or updated Hydra Image object for the Asset</returns>
