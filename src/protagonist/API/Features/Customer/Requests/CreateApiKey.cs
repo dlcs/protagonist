@@ -47,7 +47,7 @@ public class CreateApiKeyHandler : IRequestHandler<CreateApiKey, CreateApiKeyRes
         var i = await dbContext.SaveChangesAsync(cancellationToken);
         if (i == 1)
         {
-            appCache.Remove($"cust:{request.CustomerId}");
+            appCache.Remove(CacheKeys.Customer(request.CustomerId));
             return CreateApiKeyResult.Success(apiKey, apiSecret);
         }
         

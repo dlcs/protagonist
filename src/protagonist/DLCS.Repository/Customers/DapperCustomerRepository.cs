@@ -77,7 +77,7 @@ public class DapperCustomerRepository : IDapperConfigRepository, ICustomerReposi
 
     private Task<Customer> GetCustomerInternal(int customerId)
     {
-        var key = $"cust:{customerId}";
+        var key = CacheKeys.Customer(customerId);
         return appCache.GetOrAddAsync(key, async entry =>
         {
             const string sql = CustomerSelect + @" WHERE ""Id""=@Id;";
