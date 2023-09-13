@@ -31,7 +31,7 @@ public class SftpReaderTests
         var outStream = await sut.RetrieveFile(connectionInfo, "some/path");
 
         // Assert
-        outStream.Should().BeNull();
+        outStream.Length.Should().Be(0);
 
         A.CallTo(() => sftpWrapper.DownloadFile(A<Stream>._, A<string>._, A<ConnectionInfo>._))
             .MustHaveHappened();

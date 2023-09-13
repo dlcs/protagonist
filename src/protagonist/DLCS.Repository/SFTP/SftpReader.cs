@@ -35,7 +35,12 @@ public class SftpReader : ISftpReader
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "");
+            if (outputStream.CanRead)
+            {
+                outputStream.Close();
+            }
+            
+            logger.LogError(ex, "Error downloading SFTP file");
             throw;
         }
 
