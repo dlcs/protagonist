@@ -79,7 +79,7 @@ public class PolicyTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             Customer = customerId,
             Id = "customer-specific-policy-example",
-            Name = "Customer Specific Policy",
+            Name = "Global Policy",
             TechnicalDetails = new[] { "Nothing yet" },
             Global = false
         };
