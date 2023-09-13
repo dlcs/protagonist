@@ -2,6 +2,7 @@
 using System.IO;
 using DLCS.Repository.SFTP;
 using FakeItEasy;
+using Microsoft.Extensions.Logging.Abstractions;
 using Renci.SshNet;
 using Renci.SshNet.Common;
 
@@ -16,7 +17,7 @@ public class SftpReaderTests
     {
         sftpWrapper = A.Fake<ISftpWrapper>();
 
-        sut = new SftpReader(sftpWrapper);
+        sut = new SftpReader(sftpWrapper, new NullLogger<SftpReader>());
     }
 
     [Fact]
@@ -30,7 +31,7 @@ public class SftpReaderTests
         var outStream = await sut.RetrieveFile(connectionInfo, "some/path");
 
         // Assert
-        Assert.NotNull(outStream);
+        outStream.Should().BeNull();
 
         A.CallTo(() => sftpWrapper.DownloadFile(A<Stream>._, A<string>._, A<ConnectionInfo>._))
             .MustHaveHappened();

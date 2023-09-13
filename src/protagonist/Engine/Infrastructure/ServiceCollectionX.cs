@@ -150,12 +150,4 @@ public static class ServiceCollectionX
 
         return services;
     }
-    
-    /// <summary>
-    /// Adds classes related to SFTP
-    /// </summary>
-    public static IServiceCollection AddSftp(this IServiceCollection services)
-        => services
-            .AddSingleton<ISftpReader, SftpReader>()
-            .AddSingleton<ISftpWrapper, SftpWrapper>();
 }

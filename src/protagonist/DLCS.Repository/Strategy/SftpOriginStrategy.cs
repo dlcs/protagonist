@@ -33,14 +33,15 @@ public class SftpOriginStrategy : IOriginStrategy
     public async Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
+        logger.LogDebug("Fetching {Asset} from Origin: {Origin}", assetId, origin);
+        
         var basicCredentials =
             await credentialsRepository.GetBasicCredentialsForOriginStrategy(customerOriginStrategy!);
 
         if (basicCredentials == null)
         {
-            logger.LogError("Error retrieving credentials for {Asset} from Origin: {Origin}",
-                assetId, origin);
-            return OriginResponse.Empty;
+            throw new ApplicationException(
+                $"Could not find credentials for customerOriginStrategy {customerOriginStrategy?.Id}");
         }
         
         var originUri = new Uri(origin);
@@ -48,10 +49,7 @@ public class SftpOriginStrategy : IOriginStrategy
         // The URI class doesn't know what the default port is for SFTP, so defaults to -1
         var port = originUri.IsDefaultPort ? DefaultPort : originUri.Port;
 
-        ConnectionInfo connectionInfo = new ConnectionInfo(originUri.Host, port, basicCredentials!.User,
-            ProxyTypes.None, originUri.Host, port, basicCredentials.User, 
-            basicCredentials.Password, new PasswordAuthenticationMethod(basicCredentials.User, 
-                basicCredentials.Password));
+        ConnectionInfo connectionInfo = GetConnectionInfo(originUri, port, basicCredentials);
 
         try
         { 
@@ -63,5 +61,13 @@ public class SftpOriginStrategy : IOriginStrategy
             logger.LogError(ex, "Error fetching {Asset} from Origin: {Origin}", assetId, origin);
             return OriginResponse.Empty;
         }
+    }
+
+    private static ConnectionInfo GetConnectionInfo(Uri originUri, int port, BasicCredentials basicCredentials)
+    {
+        return new ConnectionInfo(originUri.Host, port, basicCredentials!.User,
+            ProxyTypes.None, originUri.Host, port, basicCredentials.User, 
+            basicCredentials.Password, new PasswordAuthenticationMethod(basicCredentials.User, 
+                basicCredentials.Password));
     }
 }

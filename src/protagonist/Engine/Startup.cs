@@ -31,7 +31,6 @@ public class Startup
             .AddDataAccess(configuration)
             .AddCaching(cachingSection.Get<CacheSettings>())
             .AddHeaderPropagation()
-            .AddSftp()
             .ConfigureHealthChecks();
 
         services.AddControllers();

@@ -10,6 +10,7 @@ using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Renci.SshNet;
 using Renci.SshNet.Common;
+using Test.Helpers;
 
 namespace DLCS.Repository.Tests.Strategy;
 
@@ -33,12 +34,8 @@ public class SftpOriginStrategyTests
     {
         // Arrange
         var content = "this is a test";
-        
-        var stream = new MemoryStream();
-        var writer = new StreamWriter(stream);
-        await writer.WriteAsync(content);
-        await writer.FlushAsync();
-        stream.Position = 0;
+
+        var stream = content.ToMemoryStream();
         
         const string originUri = "sftp://www.someuri.com/public_ftp/someId";
 
@@ -85,6 +82,48 @@ public class SftpOriginStrategyTests
     }
     
     [Fact]
+    public async Task LoadAssetFromOrigin_ReturnsExpectedResponseWithNonStandardPort_OnSuccess()
+    {
+        // Arrange
+        var content = "this is a test";
+
+        var stream = content.ToMemoryStream();
+        
+        const string originUri = "sftp://www.someuri.com:23445/public_ftp/someId";
+
+        var basicCredentials = new BasicCredentials()
+        {
+            User = "correctTest",
+            Password = "correctPassword"
+        };
+        
+        var customerOriginStrategy = new CustomerOriginStrategy
+        {
+            Strategy = OriginStrategyType.SFTP,
+            Id = "correctResponse"
+        };
+
+        A.CallTo(() =>
+                credentialsRepository.GetBasicCredentialsForOriginStrategy(
+                    A<CustomerOriginStrategy>.That.Matches(a => a.Id == "correctResponse")))
+            .Returns(basicCredentials);
+        
+        A.CallTo(() =>
+                sftpReader.RetrieveFile(
+                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User), 
+                    A<string>._,
+                    A<CancellationToken>._))
+            .Returns(stream);
+
+        // Act
+        var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
+        
+        // Assert
+        result.Stream.Should().NotBeNull().And.Subject.Should().NotBeSameAs(Stream.Null);
+        result.ContentLength.Should().Be(stream.Length);
+    }
+    
+    [Fact]
     public async Task LoadAssetFromOrigin_ReturnsNull_IfCallFailsToFindCredentials()
     {
         // Arrange
@@ -104,11 +143,10 @@ public class SftpOriginStrategyTests
             .Returns(credentials);
         
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
+        Func<Task> action = async () =>  await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
         
         // Assert
-        result.Stream.Should().BeSameAs(Stream.Null);
-        result.IsEmpty.Should().BeTrue();
+        await action.Should().ThrowAsync<ApplicationException>();
     }
     
     [Fact]
