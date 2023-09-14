@@ -86,14 +86,6 @@ public class FileSaver : IFileSaver
             logger.LogError(ex, "Error writing file to disk. destination: {Destination}", destination);
             throw;
         }
-        finally
-        {
-            // make sure the stream coming from the origin is disposed
-            if (originResponse.Stream.CanRead)
-            {
-                await originResponse.Stream.DisposeAsync();
-            }
-        }
     }
 
     private static async Task<long> CopyToFileStream(Stream assetStream, FileStream fileStream,
