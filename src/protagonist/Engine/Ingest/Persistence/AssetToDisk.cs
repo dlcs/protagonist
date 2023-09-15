@@ -61,7 +61,7 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
     {
         destinationTemplate.ThrowIfNullOrWhiteSpace(nameof(destinationTemplate));
 
-        var originResponse =
+        await using var originResponse =
             await originFetcher.LoadAssetFromLocation(context.Asset.Id, context.Asset.GetIngestOrigin(),
                 customerOriginStrategy, cancellationToken);
 
@@ -76,12 +76,12 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
         cancellationToken.ThrowIfCancellationRequested();
         var assetFromOrigin = await CopyAssetToDisk(context.Asset, destinationTemplate, originResponse, cancellationToken);
         assetFromOrigin.CustomerOriginStrategy = customerOriginStrategy;
-        
+
         if (verifySize)
         {
             await VerifyFileSize(context, assetFromOrigin);
         }
-            
+
         return assetFromOrigin;
     }
 

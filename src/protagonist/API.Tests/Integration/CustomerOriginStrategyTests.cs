@@ -177,6 +177,41 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
         storedCredentials.ResponseStream.GetContentString().Should()
             .Be(@"{""user"":""user-example"",""password"":""password-example""}");
     }
+    
+    [Fact]
+    public async Task Post_CustomerOriginStrategy_201_WithCredentialsSftp()
+    {
+        // Arrange
+        const int customerId = 112;
+        const string newStrategyJson = @"{
+            ""strategy"": ""sftp"",
+            ""credentials"": ""{\""user\"": \""user-example\"", \""password\"": \""password-example\""}"",
+            ""regex"": ""someRegex"",
+            ""order"": ""1""
+        }}";
+        
+        var path = $"customers/{customerId}/originStrategies";
+        
+        // Act
+        var content = new StringContent(newStrategyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var foundStrategy = dlcsContext.CustomerOriginStrategies.Single(s => s.Customer == customerId);
+        foundStrategy.Strategy.Should().Be(OriginStrategyType.SFTP);
+        foundStrategy.Regex.Should().Be("someRegex");
+        foundStrategy.Credentials.Should().NotBeEmpty();
+        foundStrategy.Order.Should().Be(1);
+        foundStrategy.Optimised.Should().BeFalse();
+        foundStrategy.Credentials.Should().Be($"s3://{LocalStackFixture.SecurityObjectsBucketName}/{customerId}/origin-strategy/{foundStrategy.Id}/credentials.json");
+        
+        var storedCredentials = await s3Client.GetObjectAsync(LocalStackFixture.SecurityObjectsBucketName,
+            $"{customerId}/origin-strategy/{foundStrategy.Id}/credentials.json");
+        storedCredentials.ResponseStream.GetContentString().Should()
+            .Be(@"{""user"":""user-example"",""password"":""password-example""}");
+    }
 
     [Fact]
     public async Task Post_CustomerOriginStrategy_409_IfRegexAlreadyExists()
@@ -390,6 +425,53 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
         var foundStrategy = dlcsContext.CustomerOriginStrategies.Single(s => s.Id == strategy.Id);
         foundStrategy.Strategy.Should().Be(OriginStrategyType.BasicHttp);
         foundStrategy.Regex.Should().Be("http[s]?://(.*).example2.com");
+        foundStrategy.Optimised.Should().BeFalse();
+        foundStrategy.Order.Should().Be(2);
+        foundStrategy.Credentials.Should().Be($"s3://{LocalStackFixture.SecurityObjectsBucketName}/{customerId}/origin-strategy/{foundStrategy.Id}/credentials.json");
+
+        var storedCredentials = await s3Client.GetObjectAsync(LocalStackFixture.SecurityObjectsBucketName,
+            $"{customerId}/origin-strategy/{foundStrategy.Id}/credentials.json");
+        storedCredentials.ResponseStream.GetContentString().Should()
+            .Be(@"{""user"":""user-updated"",""password"":""password-updated""}");
+    }
+    
+        [Fact]
+    public async Task Put_CustomerOriginStrategy_200_WithCredentialsForSftp()
+    {
+        // Arrange
+        const int customerId = 115;
+        const string strategyChangesJson = @"{
+            ""strategy"": ""sftp"", 
+            ""credentials"": ""{ \""user\"": \""user-updated\"", \""password\"": \""password-updated\"" }"",
+            ""regex"": ""someRegex"",
+            ""optimised"": ""false"",
+            ""order"": ""2""
+        }";
+        
+        var strategy = new CustomerOriginStrategy()
+        {
+            Id = Guid.NewGuid().ToString(),
+            Customer = customerId,
+            Regex = "http[s]?://(.*).example.com",
+            Strategy = OriginStrategyType.S3Ambient,
+            Optimised = true,
+            Order = 1
+        };
+        var path = $"customers/{customerId}/originStrategies/{strategy.Id}";
+
+        await dlcsContext.CustomerOriginStrategies.AddAsync(strategy);
+        await dlcsContext.SaveChangesAsync();
+
+        // Act
+        var content = new StringContent(strategyChangesJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var foundStrategy = dlcsContext.CustomerOriginStrategies.Single(s => s.Id == strategy.Id);
+        foundStrategy.Strategy.Should().Be(OriginStrategyType.SFTP);
+        foundStrategy.Regex.Should().Be("someRegex");
         foundStrategy.Optimised.Should().BeFalse();
         foundStrategy.Order.Should().Be(2);
         foundStrategy.Credentials.Should().Be($"s3://{LocalStackFixture.SecurityObjectsBucketName}/{customerId}/origin-strategy/{foundStrategy.Id}/credentials.json");

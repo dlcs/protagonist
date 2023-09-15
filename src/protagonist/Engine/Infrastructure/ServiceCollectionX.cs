@@ -14,6 +14,7 @@ using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;
+using DLCS.Repository.SFTP;
 using DLCS.Repository.Storage;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Handlers;

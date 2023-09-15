@@ -71,7 +71,7 @@ public class FileSaver : IFileSaver
                 // NOTE(DG) This was copied from previous Deliverator implementation, copies and works out size
                 received = await CopyToFileStream(assetStream, fileStream, cancellationToken);
             }
-            
+
             sw.Stop();
 
             logger.LogDebug(

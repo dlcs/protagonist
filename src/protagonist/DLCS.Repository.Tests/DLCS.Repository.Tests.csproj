@@ -32,8 +32,4 @@
       <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Strategy" />
-    </ItemGroup>
-
 </Project>

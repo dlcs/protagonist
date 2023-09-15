@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 using DLCS.Model.Customers;
+using DLCS.Repository.SFTP;
 using DLCS.Repository.Strategy.Utils;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -31,6 +32,8 @@ public static class ServiceCollectionX
             .AddSingleton<SftpOriginStrategy>()
             .AddScoped<OriginFetcher>()
             .AddSingleton<IFileSaver, FileSaver>()
+            .AddSingleton<ISftpReader, SftpReader>()
+            .AddSingleton<ISftpWrapper, SftpWrapper>()
             .AddSingleton<OriginStrategyResolver>(provider => strategy => strategy switch
             {
                 OriginStrategyType.Default => provider.GetRequiredService<DefaultOriginStrategy>(),

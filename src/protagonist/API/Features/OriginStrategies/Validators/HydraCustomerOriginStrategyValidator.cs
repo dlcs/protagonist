@@ -32,8 +32,9 @@ public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.Hydra
                 .WithMessage("Credentials must be specified when using basic-http-authentication as an origin strategy");
             RuleFor(s => s.Credentials)
                 .Empty()
-                .When(s => s.OriginStrategy != OriginStrategyType.BasicHttp.GetDescription())
-                .WithMessage("Credentials can only be specified when when using basic-http-authentication as an origin strategy");
+                .When(s =>  s.OriginStrategy != OriginStrategyType.BasicHttp.GetDescription())
+                .When(s => s.OriginStrategy != OriginStrategyType.SFTP.GetDescription())
+                .WithMessage("Credentials can only be specified when using basic-http-authentication or SFTP as an origin strategy");
             RuleFor(s => s.Regex)
                 .NotEmpty()
                 .WithMessage("Regex cannot be empty");

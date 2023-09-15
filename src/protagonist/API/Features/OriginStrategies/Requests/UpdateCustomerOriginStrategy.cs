@@ -101,7 +101,7 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
                     .Failure("A full origin strategy object is required when updating credentials",
                         WriteResult.FailedValidation);
 
-            if (existingStrategy.Strategy == OriginStrategyType.BasicHttp)
+            if (existingStrategy.Strategy is OriginStrategyType.BasicHttp or OriginStrategyType.SFTP)
             {
                 
                 var exportCredentialsResult = await credentialsExporter.ExportCredentials(
