@@ -818,6 +818,31 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         img12.Reference1.Should().Be("Asset 12 patched");
         img12.Reference3.Should().Be("Asset 12 string3 added");
     }
+    
+    [Theory]
+    [InlineData("origin","https://example.com/images/example-image.jpg")]
+    [InlineData("imageOptimisationPolicy","example-policy")]
+    [InlineData("maxUnauthorised","200")]
+    [InlineData("deliveryChannel","[\"iiif-img\",\"thumbs\"]")]
+    public async Task Patch_Images_Returns400_IfReingestRequired(string field, string value)
+    {
+        var hydraCollectionBody = $@"{{
+          ""@type"": ""Collection"",
+          ""member"": [
+           {{
+                ""@type"": ""Image"",
+                ""id"": ""asset-0000"",
+                ""{field}"": ""{value}""
+           }}]
+        }}";
+        
+        // act
+        var content = new StringContent(hydraCollectionBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync("/customers/99/spaces/3003/images", content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 
     [Fact]
     public async Task Bulk_Patch_Prevents_Engine_Call()
