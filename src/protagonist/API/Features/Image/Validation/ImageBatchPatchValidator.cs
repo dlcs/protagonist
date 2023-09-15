@@ -33,7 +33,7 @@ public class ImageBatchPatchValidator : AbstractValidator<HydraCollection<DLCS.H
         {
             members.RuleFor(a => a.ModelId).NotEmpty().WithMessage("All assets require a ModelId");
             members.RuleFor(a => a.Origin).Empty().WithMessage("Origin cannot be set in a bulk patching operation");
-            members.RuleFor(a => a.ImageOptimisationPolicy).Empty().WithMessage("Image optimisation policies cannot be set in a bulk patching operations");
+            members.RuleFor(a => a.ImageOptimisationPolicy).Empty().WithMessage("Image optimisation policies cannot be set in a bulk patching operation");
             members.RuleFor(a => a.MaxUnauthorised).Empty().WithMessage("MaxUnauthorised cannot be set in a bulk patching operation");
             members.RuleFor(a => a.DeliveryChannels).Empty().WithMessage("Delivery channels cannot be set in a bulk patching operation");
         });
