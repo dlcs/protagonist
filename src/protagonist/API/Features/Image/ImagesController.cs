@@ -2,6 +2,7 @@
 using API.Converters;
 using API.Exceptions;
 using API.Features.Image.Requests;
+using API.Features.Image.Validation;
 using API.Features.Space.Requests;
 using API.Infrastructure;
 using API.Settings;
@@ -104,60 +105,49 @@ public class ImagesController : HydraController
     [ProducesResponseType(200, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
     [ProducesResponseType(400, Type = typeof(Error))]
     public async Task<IActionResult> PatchImages(
-        [FromRoute] int customerId, [FromRoute] int spaceId,
-        [FromBody] HydraCollection<DLCS.HydraModel.Image> images)
+        [FromRoute] int customerId,
+        [FromRoute] int spaceId,
+        [FromBody] HydraCollection<DLCS.HydraModel.Image> images,
+        [FromServices] ImageBatchPatchValidator validator,
+        CancellationToken cancellationToken)
     {
-        var patchedAssets = new List<Asset>();
-            
-        // Should there be a size limit on how many assets can be patched in a single go?
-        // https://github.com/dlcs/protagonist/issues/339
-
-        if (images.Members is { Length: > 0 })
+        var validationResult = await validator.ValidateAsync(images, cancellationToken);
+        if (!validationResult.IsValid)
         {
-            if (BulkPatchMayCauseReprocessing(images))
+            return this.ValidationFailed(validationResult);
+        }
+        
+        var patchedAssets = new List<Asset>(images.Members!.Length);
+        foreach (var hydraImage in images.Members)
+        {
+            try
+            {
+                var asset = hydraImage.ToDlcsModel(customerId, spaceId);
+                var request = new CreateOrUpdateImage(asset, "PATCH");
+                var result = await Mediator.Send(request, cancellationToken);
+                if (result.Entity != null)
+                {
+                    patchedAssets.Add(result.Entity);
+                }
+                else
+                {
+                    logger.LogError("We did not get an asset back for {AssetId}", asset.Id);
+                }
+            }
+            catch (APIException apiEx)
             {
                 return this.HydraProblem(
-                    "Bulk patching operations may not contain origin or image policy information.", 
-                    null, 400, "Not Supported");
+                    apiEx.Message, 
+                    null, 500, apiEx.Label);
             }
-            
-            if (images.Members.Any(image => image.ModelId == null))
+            catch (Exception ex)
             {
                 return this.HydraProblem(
-                    "All assets must have a ModelId", 
-                    null, 400, "Missing identifier");
-            }
-            foreach (var hydraImage in images.Members)
-            {
-                try
-                {
-                    var asset = hydraImage.ToDlcsModel(customerId, spaceId);
-                    var request = new CreateOrUpdateImage(asset, "PATCH");
-                    var result = await Mediator.Send(request);
-                    if (result.Entity != null)
-                    {
-                        patchedAssets.Add(result.Entity);
-                    }
-                    else
-                    {
-                        logger.LogError("We did not get an asset back for {AssetId}", asset.Id);
-                    }
-                }
-                catch (APIException apiEx)
-                {
-                    return this.HydraProblem(
-                        apiEx.Message, 
-                        null, 500, apiEx.Label);
-                }
-                catch (Exception ex)
-                {
-                    return this.HydraProblem(
-                        ex.Message, 
-                        null, 500, "Could not patch images");
-                }
+                    ex.Message,
+                    null, 500, "Could not patch images");
             }
         }
-
+        
         var urlRoots = GetUrlRoots();
         var output = new HydraCollection<DLCS.HydraModel.Image>
         {
@@ -167,19 +157,5 @@ public class ImagesController : HydraController
             Id = Request.GetDisplayUrl() + "?patch_" + Guid.NewGuid()
         };
         return Ok(output);
-    }
-
-    private bool BulkPatchMayCauseReprocessing(HydraCollection<DLCS.HydraModel.Image> images)
-    {
-        if (images.Members == null) return false;
-        
-        // This should check the same things as AssetPreparer::PrepareAssetForUpsert
-        // But we don't want to call that at the controller level; we haven't acquired 
-        // any existing assets yet.
-        return images.Members.Any(image => 
-            image.Origin.HasText() || 
-            image.ImageOptimisationPolicy.HasText() ||
-            image.MaxUnauthorised.HasValue
-            );
     }
 }
