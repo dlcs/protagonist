@@ -69,7 +69,7 @@ public class LoginPortalUserHandler : IRequestHandler<LoginPortalUser, bool>
     {
         var user = await dbContext.Users
             .AsNoTracking()
-            .SingleOrDefaultAsync(u => u.Email == request.Username.ToLowerInvariant() && u.Enabled,
+            .SingleOrDefaultAsync(u => u.Email.ToLower() == request.Username.ToLower() && u.Enabled,
                 cancellationToken: cancellationToken);
         return user;
     }
