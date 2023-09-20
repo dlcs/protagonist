@@ -85,7 +85,7 @@ public class Auth1AccessValidator : IAssetAccessValidator
         
         if (authToken?.SessionUser == null)
         {
-            // Authtoken token not found, or expired
+            // SessionUser for BearerToken/Cookie not found, or expired
             return AssetAccessResult.Unauthorized;
         }
         
