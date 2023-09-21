@@ -84,7 +84,7 @@ public class Startup
             .AddApiClient(orchestratorSettings)
             .ConfigureHealthChecks(proxySection, configuration)
             .AddAws(configuration, webHostEnvironment)
-            .AddHeaderPropagation()
+            .AddCorrelationIdHeaderPropagation()
             .AddInfoJsonClient()
             .AddIIIFAuth(orchestratorSettings)
             .HandlePathTemplates();
@@ -142,6 +142,7 @@ public class Startup
             .UseForwardedHeaders()
             .UseRouting()
             .UseOptions()
+            .UseHeaderPropagation()
             .UseSerilogRequestLogging(opts =>
             {
                 opts.GetLevel = LogHelper.ExcludeHealthChecks;

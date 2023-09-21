@@ -1,8 +1,10 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
+using DLCS.Core.Types;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.NamedQueries.Models;
@@ -134,10 +136,21 @@ public class StoredNamedQueryManager
 
     private async Task<bool> CanUserViewItem(StoredParsedNamedQuery parsedNamedQuery, ControlFile controlFile)
     {
-        var access =
-            await assetAccessValidator.TryValidate(parsedNamedQuery.Customer, controlFile.Roles,
-                AuthMechanism.Cookie);
+        var mockAssetId = GetMockAssetId(parsedNamedQuery);
+        var access = await assetAccessValidator.TryValidate(mockAssetId, controlFile.Roles ?? new List<string>(),
+            AuthMechanism.Cookie);
         return access is AssetAccessResult.Open or AssetAccessResult.Authorized;
+    }
+
+    /// <summary>
+    /// Validation relies on AssetId but for NQs we don't have that, we only have a CustomerId. This is enough to
+    /// perform validation so use dummy space + asset to generate AssetId 
+    /// </summary>
+    private static AssetId GetMockAssetId(StoredParsedNamedQuery parsedNamedQuery)
+    {
+        const int placeholderSpace = -1;
+        const string placeholderAsset = "_namedquery_";
+        return new AssetId(parsedNamedQuery.Customer, placeholderSpace, placeholderAsset);
     }
 }
 

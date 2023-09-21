@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Collections;
 using DLCS.Repository.Auth;
+using DLCS.Web;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Orchestrator.Settings;
@@ -51,9 +52,18 @@ public class AuthCookieManager
     public string? GetCookieValueForCustomer(int customer)
     {
         var cookieKey = GetAuthCookieKey(authSettings.CookieNameFormat, customer);
-        return httpContextAccessor.HttpContext.Request.Cookies.TryGetValue(cookieKey, out var cookieValue)
+        return httpContextAccessor.SafeHttpContext().Request.Cookies.TryGetValue(cookieKey, out var cookieValue)
             ? cookieValue
             : null;
+    }
+
+    /// <summary>
+    /// Check if Cookie for Auth2 exists for current customer
+    /// </summary>
+    public bool HasAuth2CookieForCustomer(int customer)
+    {
+        var cookieKey = GetAuthCookieKey(authSettings.Auth2CookieNameFormat, customer);
+        return httpContextAccessor.SafeHttpContext().Request.Cookies.ContainsKey(cookieKey);
     }
 
     /// <summary>

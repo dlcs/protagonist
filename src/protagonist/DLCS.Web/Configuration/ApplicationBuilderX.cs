@@ -72,7 +72,7 @@ public static class ApplicationBuilderX
     /// Propagate x-correlation-id header to any downstream calls.
     /// NOTE: This will be added to ALL httpClient requests.
     /// </summary>
-    public static IServiceCollection AddHeaderPropagation(this IServiceCollection services)
+    public static IServiceCollection AddCorrelationIdHeaderPropagation(this IServiceCollection services)
     {
         services.AddSingleton<IHttpMessageHandlerBuilderFilter, HeaderPropagationMessageHandlerBuilderFilter>();
         return services;

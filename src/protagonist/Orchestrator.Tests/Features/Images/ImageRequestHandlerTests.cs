@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.CustomHeaders;
@@ -162,8 +163,8 @@ public class ImageRequestHandlerTests
             {
                 Roles = roles, RequiresAuth = true, Channels = AvailableDeliveryChannel.Image, S3Location = "s3://"
             });
-        A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie))
-            .Returns(AssetAccessResult.Unauthorized);
+        A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
+            AuthMechanism.Cookie, CancellationToken.None)).Returns(AssetAccessResult.Unauthorized);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
         // Act
@@ -204,7 +205,8 @@ public class ImageRequestHandlerTests
         // Assert
         result.Target.Should().Be(ProxyDestination.SpecialServer);
         result.HasPath.Should().BeTrue();
-        A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie)).MustNotHaveHappened();
+        A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
+            AuthMechanism.Cookie, CancellationToken.None)).MustNotHaveHappened();
     }
     
     [Fact]
@@ -232,7 +234,8 @@ public class ImageRequestHandlerTests
         // Assert
         result.Target.Should().Be(ProxyDestination.SpecialServer);
         result.HasPath.Should().BeTrue();
-        A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie)).MustNotHaveHappened();
+        A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
+            AuthMechanism.Cookie, CancellationToken.None)).MustNotHaveHappened();
     }
 
     [Theory]
@@ -256,8 +259,8 @@ public class ImageRequestHandlerTests
                 Roles = roles, MaxUnauthorised = 900, Width = 1800, Height = 1800, RequiresAuth = true,
                 S3Location = "s3://storage/2/2/test-image", Channels = AvailableDeliveryChannel.Image
             });
-        A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie))
-            .Returns(AssetAccessResult.Unauthorized);
+        A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
+            AuthMechanism.Cookie, CancellationToken.None)).Returns(AssetAccessResult.Unauthorized);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
         // Act
@@ -338,7 +341,8 @@ public class ImageRequestHandlerTests
                 RequiresAuth = true, Height = 1000, Width = 1000, MaxUnauthorised = 300,
                 Channels = AvailableDeliveryChannel.Image, Reingest = true
             });
-        A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie)).Returns(accessResult);
+        A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
+            AuthMechanism.Cookie, CancellationToken.None)).Returns(accessResult);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
         // Act
@@ -369,7 +373,8 @@ public class ImageRequestHandlerTests
                 RequiresAuth = true, Height = 1000, Width = 1000, MaxUnauthorised = 300,
                 Channels = AvailableDeliveryChannel.Image, Reingest = false
             });
-        A.CallTo(() => accessValidator.TryValidate(2, roles, AuthMechanism.Cookie)).Returns(accessResult);
+        A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
+            AuthMechanism.Cookie, CancellationToken.None)).Returns(accessResult);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
         // Act

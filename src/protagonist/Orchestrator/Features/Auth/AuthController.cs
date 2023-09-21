@@ -151,7 +151,7 @@ public class AuthController : IIIFAssetControllerBase
         [FromRoute] string image,
         CancellationToken cancellationToken = default)
         => GenerateIIIFDescriptionResource(
-            () => new ProbeService(customer, space, image), cacheTtl: 30, cancellationToken: cancellationToken);
+            () => new ProbeService(customer, space, image), cacheTtl: 0, cancellationToken: cancellationToken);
 
     private HttpStatusCode GetStatusCodeForAccessTokenError(AccessTokenErrorConditions conditions)
         => conditions switch
