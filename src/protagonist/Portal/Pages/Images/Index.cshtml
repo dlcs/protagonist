@@ -5,65 +5,97 @@
     ViewData["Title"] = Model.Image.GetLastPathElement();
 }
 
-<div class="table-responsive">
-    <table class="table table-hover">
-        <tbody>
-        <tr>
-            <td>Created</td>
-            <td>@Model.Image.Created</td>
-        </tr>
-        <tr>
-            <td>Batch</td>
-            <td>@Model.Image.Batch</td>
-        </tr>
-        <tr>
-            <td>Origin</td>
-            <td>@Model.Image.Origin</td>
-        </tr>
-        <tr>
-            <td>Width</td>
-            <td>@Model.Image.Width</td>
-        </tr>
-        <tr>
-            <td>Height</td>
-            <td>@Model.Image.Height</td>
-        </tr>
-        <tr>
-            <td>String1</td>
-            <td>@Model.Image.String1</td>
-        </tr>
-        <tr>
-            <td>String2</td>
-            <td>@Model.Image.String2</td>
-        </tr>
-        <tr>
-            <td>String3</td>
-            <td>@Model.Image.String3</td>
-        </tr>
-        <tr>
-            <td>Number1</td>
-            <td>@Model.Image.Number1</td>
-        </tr>
-        <tr>
-            <td>Number2</td>
-            <td>@Model.Image.Number2</td>
-        </tr>
-        <tr>
-            <td>Number3</td>
-            <td>@Model.Image.Number3</td>
-        </tr>
-        <tr>
-            <td>Tags</td>
-            <td>@string.Join(",", Model.Image.Tags)</td>
-        </tr>
-        <tr>
-            <td>Roles</td>
-            <td>@string.Join(",", Model.Image.Roles)</td>
-        </tr>
-        <tr>
-            <td>MaxUnauthorised</td>
-            <td>@Model.Image.MaxUnauthorised</td>
-        </tr>
-        </tbody>
-    </table>
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <tbody>
+                    <tr>
+                        <td>Created</td>
+                        <td>@Model.Image.Created</td>
+                    </tr>
+                    <tr>
+                        <td>Batch</td>
+                        <td>@Model.Image.Batch</td>
+                    </tr>
+                    <tr>
+                        <td>Origin</td>
+                        <td>@Model.Image.Origin</td>
+                    </tr>
+                    <tr>
+                        <td>Width</td>
+                        <td>@Model.Image.Width</td>
+                    </tr>
+                    <tr>
+                        <td>Height</td>
+                        <td>@Model.Image.Height</td>
+                    </tr>
+                    <tr>
+                        <td>String1</td>
+                        <td>@Model.Image.String1</td>
+                    </tr>
+                    <tr>
+                        <td>String2</td>
+                        <td>@Model.Image.String2</td>
+                    </tr>
+                    <tr>
+                        <td>String3</td>
+                        <td>@Model.Image.String3</td>
+                    </tr>
+                    <tr>
+                        <td>Number1</td>
+                        <td>@Model.Image.Number1</td>
+                    </tr>
+                    <tr>
+                        <td>Number2</td>
+                        <td>@Model.Image.Number2</td>
+                    </tr>
+                    <tr>
+                        <td>Number3</td>
+                        <td>@Model.Image.Number3</td>
+                    </tr>
+                    <tr>
+                        <td>Tags</td>
+                        <td>@string.Join(",", Model.Image.Tags)</td>
+                    </tr>
+                    <tr>
+                        <td>Roles</td>
+                        <td>@string.Join(",", Model.Image.Roles)</td>
+                    </tr>
+                    <tr>
+                        <td>MaxUnauthorised</td>
+                        <td>@Model.Image.MaxUnauthorised</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group-vertical gap-2">
+                <button type="button" class="btn btn-warning text-start" data-bs-toggle="modal" data-bs-target="#reingestModal"><i class="me-2" data-feather="repeat"></i>Reingest</button>
+                <button type="button" class="btn btn-danger text-start" data-bs-toggle="modal" data-bs-target="#reingestModal"><i class="me-2" data-feather="trash-2"></i>Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="reingestModal" tabindex="-1" aria-labelledby="reingestModalLabel" aria-hidden="true">
+   <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+         <div class="modal-header">
+            <h5 class="modal-title" id="reingestModalLabel">Reingest</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+         </div>
+         <div class="modal-body">Are you sure that you want to reingest this image?</div>
+         <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <form method="post" asp-controller="Image" asp-action="Reingest">
+                <input type="hidden" value="@Model.Image.Space" name="spaceId">
+                <input type="hidden" value="@Model.Image.ModelId" name="imageId">
+                <button class="btn btn-primary" type="submit">Reingest</button>
+            </form>
+         </div>
+      </div>
+   </div>
 </div>

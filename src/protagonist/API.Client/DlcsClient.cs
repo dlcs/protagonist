@@ -191,6 +191,13 @@ public class DlcsClient : IDlcsClient
         return await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
     }
 
+    public async Task<Image?> ReingestImage(int spaceId, string imageId)
+    {
+        var uri = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}/reingest";
+        var response = await httpClient.PostAsync(uri, null);
+        return await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
+    }
+
     public async Task<HydraCollection<Image>> PatchImages(HydraCollection<Image> images, int spaceId)
     {
         int? customerId = currentUser.GetCustomerId();
