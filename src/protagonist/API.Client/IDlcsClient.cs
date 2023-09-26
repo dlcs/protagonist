@@ -23,5 +23,6 @@ public interface IDlcsClient
     Task<bool> DeletePortalUser(string portalUserId);
     Task<Image?> DirectIngestImage(int spaceId, string imageId, Image asset);
     Task<Image?> ReingestImage(int spaceId, string imageId);
+    Task<bool> DeleteImage(int spaceId, string imageId);
     Task<HydraCollection<Image>> PatchImages(HydraCollection<Image> images, int spaceId);
 }

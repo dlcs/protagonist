@@ -21,4 +21,11 @@ public class ImageController : Controller
         await mediator.Send(new ReingestImage(){SpaceId = spaceId, ImageId = imageId});
         return RedirectToPage("/Images/Index", new { space = spaceId, image = imageId });
     }
+        
+    [HttpPost]
+    public async Task<IActionResult> Delete([FromForm] int spaceId, [FromForm] string imageId )
+    {
+        await mediator.Send(new DeleteImage(){SpaceId = spaceId, ImageId = imageId});
+        return RedirectToPage("/Spaces/Index");
+    }
 }
