@@ -161,7 +161,16 @@
             $("#edit__string-3").prop('readonly', !state);
             $("#edit__number-1").prop('readonly', !state);
             $("#edit__number-2").prop('readonly', !state);
-            $("#edit__number-3").prop('readonly', !state);            
+            $("#edit__number-3").prop('readonly', !state); 
+            
+            if(!state){
+                $("#edit__string-1").val($("#edit__string-1").prop("defaultValue"));
+                $("#edit__string-2").val($("#edit__string-2").prop("defaultValue"));
+                $("#edit__string-3").val($("#edit__string-3").prop("defaultValue"));
+                $("#edit__number-1").val($("#edit__number-1").prop("defaultValue"));
+                $("#edit__number-2").val($("#edit__number-2").prop("defaultValue"));
+                $("#edit__number-3").val($("#edit__number-3").prop("defaultValue"));
+            }
         }
 
         function OnSubmit(){
