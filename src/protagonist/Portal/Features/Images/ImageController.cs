@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using DLCS.HydraModel;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Portal.Features.Images.Requests;
@@ -18,14 +19,32 @@ public class ImageController : Controller
     [HttpPost]
     public async Task<IActionResult> Reingest([FromForm] int spaceId, [FromForm] string imageId )
     {
-        await mediator.Send(new ReingestImage(){SpaceId = spaceId, ImageId = imageId});
+        await mediator.Send(new ReingestImage(){ SpaceId = spaceId, ImageId = imageId });
         return RedirectToPage("/Images/Index", new { space = spaceId, image = imageId });
     }
         
     [HttpPost]
     public async Task<IActionResult> Delete([FromForm] int spaceId, [FromForm] string imageId )
     {
-        await mediator.Send(new DeleteImage(){SpaceId = spaceId, ImageId = imageId});
+        await mediator.Send(new DeleteImage(){ SpaceId = spaceId, ImageId = imageId });
         return RedirectToPage("/Spaces/Index");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Patch([FromForm] int spaceId, [FromForm] string imageId, 
+        [FromForm] string string1, [FromForm] string string2, [FromForm] string string3,
+        [FromForm] int number1, [FromForm] int number2, [FromForm] int number3)
+    {
+        var patchedFields = new Image()
+        {
+            String1 = string1,
+            String2 = string2,
+            String3 = string3,
+            Number1 = number1,
+            Number2 = number2,
+            Number3 = number3
+        };
+        await mediator.Send(new PatchImage(){ Image = patchedFields, SpaceId = spaceId, ImageId = imageId });
+        return RedirectToPage("/Images/Index", new { space = spaceId, image = imageId });
     }
 }

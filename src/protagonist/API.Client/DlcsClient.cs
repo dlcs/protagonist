@@ -212,7 +212,17 @@ public class DlcsClient : IDlcsClient
             return false;
         }
     }
-    
+
+    public async Task<Image> PatchImage(Image image, int spaceId, string imageId)
+    {
+        var uri = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}";
+        var response = await httpClient.PatchAsync(uri, ApiBody(image));
+        var test = await ApiBody(image).ReadAsStringAsync();
+        Console.WriteLine(test);
+        var patched = await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
+        return patched;
+    }
+
     public async Task<HydraCollection<Image>> PatchImages(HydraCollection<Image> images, int spaceId)
     {
         int? customerId = currentUser.GetCustomerId();
