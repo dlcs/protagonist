@@ -1,8 +1,23 @@
 @page "{space}/{image}"
+@using DLCS.Core.Strings
 @model Portal.Pages.Images.Index
 
 @{
     ViewData["Title"] = Model.Image.GetLastPathElement();
+}
+
+@if(Model.Image.Error.HasText())
+{
+    <div class="alert alert-danger" role="alert">
+        <i class="me-2 fa-7x" data-feather="alert-circle"></i><strong>Error!</strong> @Model.Image.Error
+    </div> 
+}
+
+@if (Model.Image.Ingesting.GetValueOrDefault())
+{
+    <div class="alert alert-warning" role="alert">
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span><strong>This image is currently being ingested!</strong> If this is taking longer than usual, try restarting the re-ingest process.
+    </div> 
 }
 
 <div class="container">
@@ -168,12 +183,12 @@
         const saveNumber1 = $("#save__number-1");
         const saveNumber2 = $("#save__number-2");
         const saveNumber3 = $("#save__number-3");
-        
-            
+          
         function MakeEditable(state) {
             $("#edit-button").prop('hidden', state);
             $("#save-button").prop('hidden', !state);
             $("#discard-button").prop('hidden', !state);
+            
             editString1.prop('readonly', !state);
             editString2.prop('readonly', !state);
             editString3.prop('readonly', !state);
@@ -185,9 +200,9 @@
                 editString1.val(editString1.prop("defaultValue"));
                 editString2.val(editString2.prop("defaultValue"));
                 editString3.val(editString3.prop("defaultValue"));
-                saveNumber1.val(saveString1.prop("defaultValue"));
-                saveNumber2.val(saveString2.prop("defaultValue"));
-                saveNumber3.val(saveString3.prop("defaultValue"));
+                editNumber1.val(editNumber1.prop("defaultValue"));
+                editNumber2.val(editNumber2.prop("defaultValue"));
+                editNumber3.val(editNumber3.prop("defaultValue"));
             }
         }
 
