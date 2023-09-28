@@ -217,10 +217,8 @@ public class DlcsClient : IDlcsClient
     {
         var uri = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}";
         var response = await httpClient.PatchAsync(uri, ApiBody(image));
-        var test = await ApiBody(image).ReadAsStringAsync();
-        Console.WriteLine(test);
-        var patched = await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
-        return patched;
+        var patchedImage = await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
+        return patchedImage;
     }
 
     public async Task<HydraCollection<Image>> PatchImages(HydraCollection<Image> images, int spaceId)

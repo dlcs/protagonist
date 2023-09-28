@@ -152,34 +152,52 @@
 @section Scripts
 {
     <script>
+  
+        const editString1 = $("#edit__string-1");
+        const editString2 = $("#edit__string-2");
+        const editString3 = $("#edit__string-3");
+        
+        const editNumber1 = $("#edit__number-1");
+        const editNumber2 = $("#edit__number-2");
+        const editNumber3 = $("#edit__number-3");
+        
+        const saveString1 = $("#save__string-1");
+        const saveString2 = $("#save__string-2");
+        const saveString3 = $("#save__string-3");
+        
+        const saveNumber1 = $("#save__number-1");
+        const saveNumber2 = $("#save__number-2");
+        const saveNumber3 = $("#save__number-3");
+        
+            
         function MakeEditable(state) {
             $("#edit-button").prop('hidden', state);
             $("#save-button").prop('hidden', !state);
             $("#discard-button").prop('hidden', !state);
-            $("#edit__string-1").prop('readonly', !state);
-            $("#edit__string-2").prop('readonly', !state);
-            $("#edit__string-3").prop('readonly', !state);
-            $("#edit__number-1").prop('readonly', !state);
-            $("#edit__number-2").prop('readonly', !state);
-            $("#edit__number-3").prop('readonly', !state); 
+            editString1.prop('readonly', !state);
+            editString2.prop('readonly', !state);
+            editString3.prop('readonly', !state);
+            editNumber1.prop('readonly', !state);
+            editNumber2.prop('readonly', !state);
+            editNumber3.prop('readonly', !state); 
             
             if(!state){
-                $("#edit__string-1").val($("#edit__string-1").prop("defaultValue"));
-                $("#edit__string-2").val($("#edit__string-2").prop("defaultValue"));
-                $("#edit__string-3").val($("#edit__string-3").prop("defaultValue"));
-                $("#edit__number-1").val($("#edit__number-1").prop("defaultValue"));
-                $("#edit__number-2").val($("#edit__number-2").prop("defaultValue"));
-                $("#edit__number-3").val($("#edit__number-3").prop("defaultValue"));
+                editString1.val(editString1.prop("defaultValue"));
+                editString2.val(editString2.prop("defaultValue"));
+                editString3.val(editString3.prop("defaultValue"));
+                saveNumber1.val(saveString1.prop("defaultValue"));
+                saveNumber2.val(saveString2.prop("defaultValue"));
+                saveNumber3.val(saveString3.prop("defaultValue"));
             }
         }
 
         function OnSubmit(){
-            $("#save__string-1").val($("#edit__string-1").val());
-            $("#save__string-2").val($("#edit__string-2").val());
-            $("#save__string-3").val($("#edit__string-3").val());
-            $("#save__number-1").val($("#edit__number-1").val());
-            $("#save__number-2").val($("#edit__number-2").val());
-            $("#save__number-3").val($("#edit__number-3").val());
+            saveString1.val(editString1.val());
+            saveString2.val(editString2.val());
+            saveString3.val(editString3.val());
+            saveNumber1.val(editNumber1.val());
+            saveNumber2.val(editNumber2.val());
+            saveNumber3.val(editNumber3.val());
         }
     </script>
 }

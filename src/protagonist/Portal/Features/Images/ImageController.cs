@@ -27,19 +27,19 @@ public class ImageController : Controller
     public async Task<IActionResult> Delete([FromForm] int spaceId, [FromForm] string imageId )
     {
         await mediator.Send(new DeleteImage(){ SpaceId = spaceId, ImageId = imageId });
-        return RedirectToPage("/Spaces/Index");
+        return RedirectToPage("/Spaces/Details",new { id = spaceId});
     }
 
     [HttpPost]
     public async Task<IActionResult> Patch([FromForm] int spaceId, [FromForm] string imageId, 
-        [FromForm] string string1, [FromForm] string string2, [FromForm] string string3,
+        [FromForm] string? string1, [FromForm] string? string2, [FromForm] string? string3,
         [FromForm] int number1, [FromForm] int number2, [FromForm] int number3)
     {
         var patchedFields = new Image()
         {
-            String1 = string1,
-            String2 = string2,
-            String3 = string3,
+            String1 = string1 ?? string.Empty,
+            String2 = string2 ?? string.Empty,
+            String3 = string3 ?? string.Empty,
             Number1 = number1,
             Number2 = number2,
             Number3 = number3
