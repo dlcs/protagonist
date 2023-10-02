@@ -9,8 +9,9 @@ namespace Portal.Features.Images;
 [Route("[controller]/[action]")]
 public class ImageController : Controller
 {
+    private const string ImageViewerPath = "/Images/Index";
+    
     private readonly IMediator mediator;
-
     public ImageController(IMediator mediator)
     {
         this.mediator = mediator;
@@ -20,7 +21,7 @@ public class ImageController : Controller
     public async Task<IActionResult> Reingest([FromForm] int spaceId, [FromForm] string imageId )
     {
         await mediator.Send(new ReingestImage(){ SpaceId = spaceId, ImageId = imageId });
-        return RedirectToPage("/Images/Index", new { space = spaceId, image = imageId });
+        return RedirectToPage(ImageViewerPath, new { space = spaceId, image = imageId });
     }
         
     [HttpPost]
@@ -45,6 +46,6 @@ public class ImageController : Controller
             Number3 = number3
         };
         await mediator.Send(new PatchImage(){ Image = patchedFields, SpaceId = spaceId, ImageId = imageId });
-        return RedirectToPage("/Images/Index", new { space = spaceId, image = imageId });
+        return RedirectToPage(ImageViewerPath, new { space = spaceId, image = imageId });
     }
 }

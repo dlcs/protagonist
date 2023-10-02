@@ -208,7 +208,7 @@ public class DlcsClient : IDlcsClient
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error deleting image '{imageId}'", imageId);
+            logger.LogError(ex, "Error deleting image '{ImageId}'", imageId);
             return false;
         }
     }

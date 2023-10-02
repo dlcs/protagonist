@@ -6,18 +6,18 @@
     ViewData["Title"] = Model.Image.GetLastPathElement();
 }
 
-@if(Model.Image.Error.HasText())
+@if (Model.Image.Error.HasText())
 {
     <div class="alert alert-danger" role="alert">
         <i class="me-2 fa-7x" data-feather="alert-circle"></i><strong>Error!</strong> @Model.Image.Error
-    </div> 
+    </div>
 }
 
 @if (Model.Image.Ingesting.GetValueOrDefault())
 {
     <div class="alert alert-warning" role="alert">
         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span><strong>This image is currently being ingested!</strong> If this is taking longer than usual, try restarting the re-ingest process.
-    </div> 
+    </div>
 }
 
 <div class="container">
@@ -26,62 +26,74 @@
             <div class="table-responsive">
                 <table class="table table-hover">
                     <tbody>
-                    <tr>
-                        <td>Created</td>
-                        <td>@Model.Image.Created</td>
-                    </tr>
-                    <tr>
-                        <td>Batch</td>
-                        <td>@Model.Image.Batch</td>
-                    </tr>
-                    <tr>
-                        <td>Origin</td>
-                        <td>@Model.Image.Origin</td>
-                    </tr>
-                    <tr>
-                        <td>Width</td>
-                        <td>@Model.Image.Width</td>
-                    </tr>
-                    <tr>
-                        <td>Height</td>
-                        <td>@Model.Image.Height</td>
-                    </tr>
-                    <tr>
-                        <td>String1</td>
-                        <td><input type="email" class="form-control form-control-sm w-100" id="edit__string-1" value="@Model.Image.String1" readonly></td>   
-                    </tr>
-                    <tr>
-                        <td>String2</td>
-                        <td><input type="email" class="form-control form-control-sm w-100" id="edit__string-2" value="@Model.Image.String2" readonly></td>
-                    </tr>
-                    <tr>
-                        <td>String3</td>
-                        <td><input type="email" class="form-control form-control-sm w-100" id="edit__string-3" value="@Model.Image.String3" readonly></td>
-                    </tr>
-                    <tr>
-                        <td>Number1</td>
-                        <td><input type="number" class="form-control form-control-sm" id="edit__number-1" value="@Model.Image.Number1" readonly></td>
-                    </tr>
-                    <tr>
-                        <td>Number2</td>
-                        <td><input type="number" class="form-control form-control-sm" id="edit__number-2" value="@Model.Image.Number2" readonly></td>
-                    </tr>
-                    <tr>
-                        <td>Number3</td>
-                        <td><input type="number" class="form-control form-control-sm" id="edit__number-3" value="@Model.Image.Number3" readonly></td>
-                    </tr>
-                    <tr>
-                        <td>Tags</td>
-                        <td>@string.Join(",", Model.Image.Tags)</td>
-                    </tr>
-                    <tr>
-                        <td>Roles</td>
-                        <td>@string.Join(",", Model.Image.Roles)</td>
-                    </tr>
-                    <tr>
-                        <td>MaxUnauthorised</td>
-                        <td>@Model.Image.MaxUnauthorised</td>
-                    </tr>
+                        <tr>
+                            <td>Created</td>
+                            <td>@Model.Image.Created</td>
+                        </tr>
+                        <tr>
+                            <td>Batch</td>
+                            <td>@Model.Image.Batch</td>
+                        </tr>
+                        <tr>
+                            <td>Origin</td>
+                            <td>@Model.Image.Origin</td>
+                        </tr>
+                        <tr>
+                            <td>Width</td>
+                            <td>@Model.Image.Width</td>
+                        </tr>
+                        <tr>
+                            <td>Height</td>
+                            <td>@Model.Image.Height</td>
+                        </tr>
+                        <tr>
+                            <td>String1</td>
+                            <td>
+                                <input class="form-control form-control-sm w-100" id="edit__string-1" asp-for="Image.String1" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>String2</td>
+                            <td>
+                                <input class="form-control form-control-sm w-100" id="edit__string-2" asp-for="Image.String2" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>String3</td>
+                            <td>
+                                <input class="form-control form-control-sm w-100" id="edit__string-3" asp-for="Image.String3" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Number1</td>
+                            <td>
+                                <input class="form-control form-control-sm" id="edit__number-1" asp-for="Image.Number1" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Number2</td>
+                            <td>
+                                <input class="form-control form-control-sm" id="edit__number-2" asp-for="Image.Number2" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Number3</td>
+                            <td>
+                                <input class="form-control form-control-sm" id="edit__number-3" asp-for="Image.Number3" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Tags</td>
+                            <td>@string.Join(",", Model.Image.Tags)</td>
+                        </tr>
+                        <tr>
+                            <td>Roles</td>
+                            <td>@string.Join(",", Model.Image.Roles)</td>
+                        </tr>
+                        <tr>
+                            <td>MaxUnauthorised</td>
+                            <td>@Model.Image.MaxUnauthorised</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -109,8 +121,8 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <form method="post" asp-controller="Image" asp-action="Reingest">
-                    <input type="hidden" value="@Model.Image.Space" name="spaceId">
-                    <input type="hidden" value="@Model.Image.ModelId" name="imageId">
+                    <input type="hidden" asp-for="Image.Space" name="spaceId">
+                    <input type="hidden" asp-for="Image.ModelId" name="imageId">
                     <button class="btn btn-primary" type="submit">Reingest</button>
                 </form>
             </div>
@@ -129,8 +141,8 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <form method="post" asp-controller="Image" asp-action="Delete">
-                    <input type="hidden" value="@Model.Image.Space" name="spaceId">
-                    <input type="hidden" value="@Model.Image.ModelId" name="imageId">
+                    <input type="hidden" asp-for="Image.Space" name="spaceId">
+                    <input type="hidden" asp-for="Image.ModelId" name="imageId">
                     <button class="btn btn-primary" type="submit">Delete</button>
                 </form>
             </div>
@@ -148,9 +160,9 @@
             <div class="modal-body">Are you sure that you want to save your changes to this image?</div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form id="saveForm" method="post" onSubmit="OnSubmit()" asp-controller="Image" asp-action="Patch">
-                    <input type="hidden" value="@Model.Image.Space" name="spaceId">
-                    <input type="hidden" value="@Model.Image.ModelId" name="imageId">
+                <form id="saveForm" method="post" onsubmit="OnSubmit()" asp-controller="Image" asp-action="Patch">
+                    <input type="hidden" name="spaceId" asp-for="Image.Space">
+                    <input type="hidden" name="imageId" asp-for="Image.ModelId">
                     <input type="hidden" name="string1" id="save__string-1">
                     <input type="hidden" name="string2" id="save__string-2">
                     <input type="hidden" name="string3" id="save__string-3">
@@ -164,55 +176,35 @@
     </div>
 </div>
 
+
 @section Scripts
 {
-    <script>
-  
-        const editString1 = $("#edit__string-1");
-        const editString2 = $("#edit__string-2");
-        const editString3 = $("#edit__string-3");
-        
-        const editNumber1 = $("#edit__number-1");
-        const editNumber2 = $("#edit__number-2");
-        const editNumber3 = $("#edit__number-3");
-        
-        const saveString1 = $("#save__string-1");
-        const saveString2 = $("#save__string-2");
-        const saveString3 = $("#save__string-3");
-        
-        const saveNumber1 = $("#save__number-1");
-        const saveNumber2 = $("#save__number-2");
-        const saveNumber3 = $("#save__number-3");
-          
+    <script>         
+        fields = [
+            [$("#edit__string-1"), $("#save__string-1")],
+            [$("#edit__string-2"), $("#save__string-2")],
+            [$("#edit__string-3"), $("#save__string-3")],
+            [$("#edit__number-1"), $("#save__number-1")],
+            [$("#edit__number-2"), $("#save__number-2")],
+            [$("#edit__number-3"), $("#save__number-3")]]
+       
         function MakeEditable(state) {
             $("#edit-button").prop('hidden', state);
             $("#save-button").prop('hidden', !state);
             $("#discard-button").prop('hidden', !state);
             
-            editString1.prop('readonly', !state);
-            editString2.prop('readonly', !state);
-            editString3.prop('readonly', !state);
-            editNumber1.prop('readonly', !state);
-            editNumber2.prop('readonly', !state);
-            editNumber3.prop('readonly', !state); 
-            
-            if(!state){
-                editString1.val(editString1.prop("defaultValue"));
-                editString2.val(editString2.prop("defaultValue"));
-                editString3.val(editString3.prop("defaultValue"));
-                editNumber1.val(editNumber1.prop("defaultValue"));
-                editNumber2.val(editNumber2.prop("defaultValue"));
-                editNumber3.val(editNumber3.prop("defaultValue"));
-            }
+            fields.forEach(function(field) {
+                field[0].prop('readonly', !state);
+                if(!state){
+                    field[0].val(field[0].prop("defaultValue"));
+                }
+            })
         }
-
-        function OnSubmit(){
-            saveString1.val(editString1.val());
-            saveString2.val(editString2.val());
-            saveString3.val(editString3.val());
-            saveNumber1.val(editNumber1.val());
-            saveNumber2.val(editNumber2.val());
-            saveNumber3.val(editNumber3.val());
+        
+        function OnSubmit() {
+            fields.forEach(function(field) {
+                 field[1].val(field[0].val());
+            })  
         }
     </script>
 }
