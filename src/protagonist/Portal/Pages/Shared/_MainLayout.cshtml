@@ -1,0 +1,23 @@
+﻿<!doctype html>
+<html class="h-100" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <title>DLCS: Digital Library Cloud Services, from Digirati</title>
+    <link href="~/assets/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="~/css/portal.css" rel="stylesheet"/>
+</head>
+
+<body class="container d-flex flex-column py-4 px-4 h-100">
+    @await Html.PartialAsync("Shared/_GeneralSiteHeader")
+    <main class="flex-shrink-0 my-auto">
+        @RenderBody()
+    </main>
+    @await Html.PartialAsync("Shared/_GeneralSiteFooter")
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js" integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>
+    <script src="~/assets/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/portal.js" asp-append-version="true"></script>
+</body>
+</html>

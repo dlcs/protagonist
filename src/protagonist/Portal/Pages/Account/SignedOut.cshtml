@@ -2,41 +2,8 @@
 @model SignedOutModel
 
 @{
-    Layout = null;
+    Layout = "_MainLayout";
 }
 
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <title>DLCS: Digital Library Cloud Services, from Digirati</title>
-    
-    <link href="~/assets/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="~/css/portal.css" rel="stylesheet" />
-</head>
-<body>
-    
-<main>
-
-    <div class="container py-3">
-        @await Html.PartialAsync("Shared/_GeneralSiteHeader")
-  
-        <p>You are now signed out.</p>
-        
-  
-        <p><a href="/">Home</a></p>
-  
-        @await Html.PartialAsync("Shared/_GeneralSiteFooter")
-    </div>
-</main>
-
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-<script src="~/assets/dist/js/bootstrap.bundle.min.js"></script>
-<script src="~/js/portal.js" asp-append-version="true"></script>
-
-      
-</body>
-</html>
+<p>You are now signed out.</p>
+<p><a href="/">Home</a></p>
