@@ -191,6 +191,36 @@ public class DlcsClient : IDlcsClient
         return await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
     }
 
+    public async Task<Image?> ReingestImage(int spaceId, string imageId)
+    {
+        var uri = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}/reingest";
+        var response = await httpClient.PostAsync(uri, null);
+        return await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
+    }
+
+    public async Task<bool> DeleteImage(int spaceId, string imageId)
+    {
+        var uri = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}";
+        try
+        {
+            var response = await httpClient.DeleteAsync(uri);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deleting image '{ImageId}'", imageId);
+            return false;
+        }
+    }
+
+    public async Task<Image> PatchImage(Image image, int spaceId, string imageId)
+    {
+        var uri = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}";
+        var response = await httpClient.PatchAsync(uri, ApiBody(image));
+        var patchedImage = await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
+        return patchedImage;
+    }
+
     public async Task<HydraCollection<Image>> PatchImages(HydraCollection<Image> images, int spaceId)
     {
         int? customerId = currentUser.GetCustomerId();

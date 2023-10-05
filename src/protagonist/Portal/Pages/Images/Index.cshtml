@@ -1,69 +1,210 @@
 @page "{space}/{image}"
+@using DLCS.Core.Strings
 @model Portal.Pages.Images.Index
 
 @{
     ViewData["Title"] = Model.Image.GetLastPathElement();
 }
 
-<div class="table-responsive">
-    <table class="table table-hover">
-        <tbody>
-        <tr>
-            <td>Created</td>
-            <td>@Model.Image.Created</td>
-        </tr>
-        <tr>
-            <td>Batch</td>
-            <td>@Model.Image.Batch</td>
-        </tr>
-        <tr>
-            <td>Origin</td>
-            <td>@Model.Image.Origin</td>
-        </tr>
-        <tr>
-            <td>Width</td>
-            <td>@Model.Image.Width</td>
-        </tr>
-        <tr>
-            <td>Height</td>
-            <td>@Model.Image.Height</td>
-        </tr>
-        <tr>
-            <td>String1</td>
-            <td>@Model.Image.String1</td>
-        </tr>
-        <tr>
-            <td>String2</td>
-            <td>@Model.Image.String2</td>
-        </tr>
-        <tr>
-            <td>String3</td>
-            <td>@Model.Image.String3</td>
-        </tr>
-        <tr>
-            <td>Number1</td>
-            <td>@Model.Image.Number1</td>
-        </tr>
-        <tr>
-            <td>Number2</td>
-            <td>@Model.Image.Number2</td>
-        </tr>
-        <tr>
-            <td>Number3</td>
-            <td>@Model.Image.Number3</td>
-        </tr>
-        <tr>
-            <td>Tags</td>
-            <td>@string.Join(",", Model.Image.Tags)</td>
-        </tr>
-        <tr>
-            <td>Roles</td>
-            <td>@string.Join(",", Model.Image.Roles)</td>
-        </tr>
-        <tr>
-            <td>MaxUnauthorised</td>
-            <td>@Model.Image.MaxUnauthorised</td>
-        </tr>
-        </tbody>
-    </table>
+@if (Model.Image.Error.HasText())
+{
+    <div class="alert alert-danger" role="alert">
+        <i class="me-2 fa-7x" data-feather="alert-circle"></i><strong>Error!</strong> @Model.Image.Error
+    </div>
+}
+
+@if (Model.Image.Ingesting.GetValueOrDefault())
+{
+    <div class="alert alert-warning" role="alert">
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span><strong>This image is currently being ingested!</strong> If this is taking longer than usual, try restarting the re-ingest process.
+    </div>
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <tbody>
+                        <tr>
+                            <td>Created</td>
+                            <td>@Model.Image.Created</td>
+                        </tr>
+                        <tr>
+                            <td>Batch</td>
+                            <td>@Model.Image.Batch</td>
+                        </tr>
+                        <tr>
+                            <td>Origin</td>
+                            <td>@Model.Image.Origin</td>
+                        </tr>
+                        <tr>
+                            <td>Width</td>
+                            <td>@Model.Image.Width</td>
+                        </tr>
+                        <tr>
+                            <td>Height</td>
+                            <td>@Model.Image.Height</td>
+                        </tr>
+                        <tr>
+                            <td>String1</td>
+                            <td>
+                                <input class="form-control form-control-sm w-100" id="edit__string-1" asp-for="Image.String1" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>String2</td>
+                            <td>
+                                <input class="form-control form-control-sm w-100" id="edit__string-2" asp-for="Image.String2" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>String3</td>
+                            <td>
+                                <input class="form-control form-control-sm w-100" id="edit__string-3" asp-for="Image.String3" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Number1</td>
+                            <td>
+                                <input class="form-control form-control-sm" id="edit__number-1" asp-for="Image.Number1" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Number2</td>
+                            <td>
+                                <input class="form-control form-control-sm" id="edit__number-2" asp-for="Image.Number2" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Number3</td>
+                            <td>
+                                <input class="form-control form-control-sm" id="edit__number-3" asp-for="Image.Number3" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Tags</td>
+                            <td>@string.Join(",", Model.Image.Tags)</td>
+                        </tr>
+                        <tr>
+                            <td>Roles</td>
+                            <td>@string.Join(",", Model.Image.Roles)</td>
+                        </tr>
+                        <tr>
+                            <td>MaxUnauthorised</td>
+                            <td>@Model.Image.MaxUnauthorised</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group-vertical gap-2">
+                <button type="button" id="edit-button" class="btn text-start" OnClick="MakeEditable(true)"><i class="me-2" data-feather="edit"></i>Edit</button>
+                <button type="button" id="save-button" class="btn btn-primary text-start" data-bs-toggle="modal" data-bs-target="#save-modal" hidden><i class="me-2" data-feather="save"></i>Save</button>
+                <button type="button" id="discard-button" class="btn btn-danger text-start" onclick="MakeEditable(false)" hidden><i class="me-2" data-feather="x"></i>Cancel</button>
+                <button type="button" id="reingest-button" class="btn text-start" data-bs-toggle="modal" data-bs-target="#reingest-modal"><i class="me-2" data-feather="repeat"></i>Reingest</button>
+                <button type="button" id="delete-button" class="btn text-danger text-start" data-bs-toggle="modal" data-bs-target="#delete-modal"><i class="me-2" data-feather="trash-2"></i>Delete</button>
+            </div>
+        </div>
+    </div>
 </div>
+
+<div class="modal fade" id="reingest-modal" tabindex="-1" aria-labelledby="reingestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reingestModalLabel">Reingest @Model.Image.ModelId</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">Are you sure that you want to reingest this image?</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" asp-controller="Image" asp-action="Reingest">
+                    <input type="hidden" asp-for="Image.Space" name="spaceId">
+                    <input type="hidden" asp-for="Image.ModelId" name="imageId">
+                    <button class="btn btn-primary" type="submit">Reingest</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="delete-modal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Delete @Model.Image.ModelId</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">Are you sure that you want to delete this image? This action cannot be undone.</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" asp-controller="Image" asp-action="Delete">
+                    <input type="hidden" asp-for="Image.Space" name="spaceId">
+                    <input type="hidden" asp-for="Image.ModelId" name="imageId">
+                    <button class="btn btn-primary" type="submit">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="save-modal" tabindex="-1" aria-labelledby="saveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="saveModalLabel">Save changes to @Model.Image.ModelId</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">Are you sure that you want to save your changes to this image?</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="saveForm" method="post" onsubmit="OnSubmit()" asp-controller="Image" asp-action="Patch">
+                    <input type="hidden" name="spaceId" asp-for="Image.Space">
+                    <input type="hidden" name="imageId" asp-for="Image.ModelId">
+                    <input type="hidden" name="string1" id="save__string-1">
+                    <input type="hidden" name="string2" id="save__string-2">
+                    <input type="hidden" name="string3" id="save__string-3">
+                    <input type="hidden" name="number1" id="save__number-1">
+                    <input type="hidden" name="number2" id="save__number-2">
+                    <input type="hidden" name="number3" id="save__number-3">
+                    <button class="btn btn-primary" type="submit">Save</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts
+{
+    <script>         
+        fields = [
+            [$("#edit__string-1"), $("#save__string-1")],
+            [$("#edit__string-2"), $("#save__string-2")],
+            [$("#edit__string-3"), $("#save__string-3")],
+            [$("#edit__number-1"), $("#save__number-1")],
+            [$("#edit__number-2"), $("#save__number-2")],
+            [$("#edit__number-3"), $("#save__number-3")]]
+       
+        function MakeEditable(state) {
+            $("#edit-button").prop('hidden', state);
+            $("#save-button").prop('hidden', !state);
+            $("#discard-button").prop('hidden', !state);
+            
+            fields.forEach(function(field) {
+                field[0].prop('readonly', !state);
+                if(!state){
+                    field[0].val(field[0].prop("defaultValue"));
+                }
+            })
+        }
+        
+        function OnSubmit() {
+            fields.forEach(function(field) {
+                 field[1].val(field[0].val());
+            })  
+        }
+    </script>
+}

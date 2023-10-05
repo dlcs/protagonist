@@ -30,7 +30,7 @@ public class Index : PageModel
 
     public async Task<IActionResult> OnGetAsync(int space, string image)
     {
-        Image = await this.mediator.Send(new GetImage {SpaceId = space, ImageId = image});
+        Image = await mediator.Send(new GetImage {SpaceId = space, ImageId = image});
         return Page();
     }
 }
