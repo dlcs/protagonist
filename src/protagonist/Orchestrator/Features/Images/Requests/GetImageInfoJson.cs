@@ -115,7 +115,7 @@ public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, Descrip
         }
 
         var accessResult =
-            await accessValidator.TryValidate(assetId.Customer, asset.Roles, AuthMechanism.BearerToken);
+            await accessValidator.TryValidate(assetId, asset.Roles, AuthMechanism.BearerToken, cancellationToken);
         await orchestrationTask;
         return accessResult == AssetAccessResult.Authorized
             ? DescriptionResourceResponse.Restricted(infoJson)

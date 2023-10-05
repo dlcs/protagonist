@@ -67,6 +67,21 @@ public class IIIFAuth2Client : IIIIFAuthBuilder
         }
     }
 
+    public async Task<bool> VerifyAccess(AssetId assetId, List<string> roles, CancellationToken cancellationToken)
+    {
+        var path = $"verifyaccess/{assetId}?roles={GetRolesString(roles)}";
+        try
+        {
+            var response = await httpClient.GetAsync(path, cancellationToken);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error verifying access for {AssetId}", assetId);
+            return false;
+        }   
+    }
+
     private static string GetRolesString(IList<string> roles)
         => roles.Count == 1 ? roles[0] : string.Join(",", roles);
 }

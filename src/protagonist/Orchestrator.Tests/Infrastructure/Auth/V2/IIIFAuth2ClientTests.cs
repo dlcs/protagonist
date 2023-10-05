@@ -207,4 +207,79 @@ public class IIIFAuth2ClientTests
         // Assert
         response.Should().BeEquivalentTo(probeServiceResult);
     }
+    
+    [Fact]
+    public async Task VerifyAccess_CallsCorrectPath_SingleRole()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1" }
+        };
+        
+        // Act
+        await sut.VerifyAccess(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
+        
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle(s => s == "http://auth-2/verifyaccess/99/100/foo?roles=role1");
+    }
+    
+    [Fact]
+    public async Task VerifyAccess_CallsCorrectPath_MultipleRole()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+        };
+        
+        // Act
+        await sut.VerifyAccess(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
+        
+        // Assert
+        httpHandler.CallsMade.Should()
+            .ContainSingle(s => s == "http://auth-2/verifyaccess/99/100/foo?roles=role1,role2,role3");
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.BadGateway)]
+    [InlineData(HttpStatusCode.Redirect)]
+    public async Task VerifyAccess_ReturnsFalse_IfHttpException(HttpStatusCode statusCode)
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+        };
+
+        httpHandler.SetResponse(new HttpResponseMessage(statusCode));
+
+        // Act
+        var response =
+            await sut.VerifyAccess(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
+
+        // Assert
+        response.Should().Be(false);
+    }
+    
+    [Fact]
+    public async Task GetAuthServicesForAsset_ReturnsTrue_IfSuccess()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+        };
+
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+
+        // Act
+        var response =
+            await sut.VerifyAccess(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
+
+        // Assert
+        response.Should().BeTrue();
+    }
 }

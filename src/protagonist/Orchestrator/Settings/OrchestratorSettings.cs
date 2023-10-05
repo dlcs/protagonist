@@ -172,6 +172,11 @@ public class AuthSettings
     public string CookieNameFormat { get; set; } = "dlcs-token-{0}";
 
     /// <summary>
+    /// Format of authToken for IIIF Auth v2. {0} is replaced with customer id
+    /// </summary>
+    public string Auth2CookieNameFormat { get; set; } = "dlcs-auth2-{0}";
+
+    /// <summary>
     /// A list of domains to set on auth cookie.
     /// </summary>
     public List<string> CookieDomains { get; set; } = new();
