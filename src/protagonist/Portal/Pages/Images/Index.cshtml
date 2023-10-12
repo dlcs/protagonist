@@ -122,13 +122,13 @@
             }
             <div class="row">
                 <h4 class="h4">Actions</h4>
-                <div class="btn-group-vertical gap-2">
+                <div class="btn-group-vertical btn-group-sm gap-2">
+                    <a type="button" class="btn text-start" href="@Model.SingleAssetManifest" OnClick="MakeEditable(true)"><i class="me-2" data-feather="file-text"></i>View Single IIF Manifest</a>
                     <button type="button" id="edit-button" class="btn text-start" OnClick="MakeEditable(true)"><i class="me-2" data-feather="edit"></i>Edit</button>
                     <button type="button" id="save-button" class="btn btn-primary text-start" data-bs-toggle="modal" data-bs-target="#save-modal" hidden><i class="me-2" data-feather="save"></i>Save</button>
                     <button type="button" id="discard-button" class="btn btn-danger text-start" onclick="MakeEditable(false)" hidden><i class="me-2" data-feather="x"></i>Cancel</button>
                     <button type="button" id="reingest-button" class="btn text-start" data-bs-toggle="modal" data-bs-target="#reingest-modal"><i class="me-2" data-feather="repeat"></i>Reingest</button>
                     <button type="button" id="delete-button" class="btn text-danger text-start" data-bs-toggle="modal" data-bs-target="#delete-modal"><i class="me-2" data-feather="trash-2"></i>Delete</button>
-                    <a type="button" class="btn text-start" href="@Model.SingleAssetManifest" OnClick="MakeEditable(true)"><i class="me-2" data-feather="file-text"></i>View Single IIF Manifest</a>
                 </div>
             </div>
         </div>
