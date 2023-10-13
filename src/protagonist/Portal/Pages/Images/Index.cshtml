@@ -22,8 +22,9 @@
 
 <div class="container">
     <div class="row">
-        <div class="col">
+        <div class="col-md-8 col-sm-12">
             <div class="table-responsive">
+                <h4 class="h4">Details</h4>
                 <table class="table table-hover">
                     <tbody>
                         <tr>
@@ -95,16 +96,40 @@
                             <td>@Model.Image.MaxUnauthorised</td>
                         </tr>
                     </tbody>
-                </table>
+                </table> 
             </div>
         </div>
-        <div class="col-auto">
-            <div class="btn-group-vertical gap-2">
-                <button type="button" id="edit-button" class="btn text-start" OnClick="MakeEditable(true)"><i class="me-2" data-feather="edit"></i>Edit</button>
-                <button type="button" id="save-button" class="btn btn-primary text-start" data-bs-toggle="modal" data-bs-target="#save-modal" hidden><i class="me-2" data-feather="save"></i>Save</button>
-                <button type="button" id="discard-button" class="btn btn-danger text-start" onclick="MakeEditable(false)" hidden><i class="me-2" data-feather="x"></i>Cancel</button>
-                <button type="button" id="reingest-button" class="btn text-start" data-bs-toggle="modal" data-bs-target="#reingest-modal"><i class="me-2" data-feather="repeat"></i>Reingest</button>
-                <button type="button" id="delete-button" class="btn text-danger text-start" data-bs-toggle="modal" data-bs-target="#delete-modal"><i class="me-2" data-feather="trash-2"></i>Delete</button>
+        <div class="col-md-4 col-sm-12 d-flex flex-column">
+            @if (Model.Thumbnails != null)
+            {
+                <div class="row flex-grow-1">
+                    <div class="d-flex flex-column flew-grow-1">
+                        @{
+                            var defaultThumbnail = Model.Thumbnails.Sizes.First();
+                        }
+                        <h4 class="h4">Thumbnail Preview</h4>
+                        <div class="d-flex justify-content-center align-items-center flex-grow-1">
+                            <img class="img-thumbnail rounded" id="thumbnail-preview" src="@Model.CreateSrc(defaultThumbnail)">
+                        </div>
+                        <select class="form-select mb-4" multiple onchange="OnChangeThumbnail(this)" aria-label=".form-select">
+                            @foreach(var thumbnail in Model.Thumbnails.Sizes)
+                            {
+                                <option value="@Model.CreateSrc(thumbnail)" selected="@(thumbnail == defaultThumbnail)">@thumbnail.Width x @thumbnail.Height</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            }
+            <div class="row">
+                <h4 class="h4">Actions</h4>
+                <div class="btn-group-vertical btn-group-sm gap-2">
+                    <a type="button" class="btn text-start" href="@Model.SingleAssetManifest"><i class="iiif-icon me-2"></i>View Single IIIF Manifest</a>
+                    <button type="button" id="edit-button" class="btn text-start" OnClick="MakeEditable(true)"><i class="me-2" data-feather="edit"></i>Edit</button>
+                    <button type="button" id="save-button" class="btn btn-primary text-start" data-bs-toggle="modal" data-bs-target="#save-modal" hidden><i class="me-2" data-feather="save"></i>Save</button>
+                    <button type="button" id="discard-button" class="btn btn-danger text-start" onclick="MakeEditable(false)" hidden><i class="me-2" data-feather="x"></i>Cancel</button>
+                    <button type="button" id="reingest-button" class="btn text-start" data-bs-toggle="modal" data-bs-target="#reingest-modal"><i class="me-2" data-feather="repeat"></i>Reingest</button>
+                    <button type="button" id="delete-button" class="btn text-danger text-start" data-bs-toggle="modal" data-bs-target="#delete-modal"><i class="me-2" data-feather="trash-2"></i>Delete</button>
+                </div>
             </div>
         </div>
     </div>
@@ -205,6 +230,10 @@
             fields.forEach(function(field) {
                  field[1].val(field[0].val());
             })  
+        }
+        
+        function OnChangeThumbnail(sel) {
+             $("#thumbnail-preview").attr("src", sel.value);
         }
     </script>
 }

@@ -1,11 +1,18 @@
+using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using DLCS.Core;
 using DLCS.Core.Settings;
 using DLCS.HydraModel;
+using DLCS.Web.Auth;
+using IIIF;
+using IIIF.ImageApi.V3;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
+using Portal.Features.Images.Requests;
 using Portal.Features.Spaces.Requests;
 
 namespace Portal.Pages.Images;
@@ -14,23 +21,35 @@ namespace Portal.Pages.Images;
 public class Index : PageModel
 {
     private readonly IMediator mediator;
-    
-    public DlcsSettings DlcsSettings { get; }
-
+    private readonly DlcsSettings dlcsSettings;
     public Image Image { get; set; }
+    public ImageService3? Thumbnails { get; set; }
+    public string SingleAssetManifest { get; set; }
+    public string Customer { get; set; }
     
-    public Index(
-        IMediator mediator,
-        IOptions<DlcsSettings> dlcsSettings,
-        ClaimsPrincipal currentUser)
+    public Index(IMediator mediator, ClaimsPrincipal currentUser, IOptions<DlcsSettings> dlcsSettings)
     {
         this.mediator = mediator;
-        DlcsSettings = dlcsSettings.Value;
+        this.dlcsSettings = dlcsSettings.Value;
+        Customer = (currentUser.GetCustomerId() ?? -1).ToString();
     }
 
     public async Task<IActionResult> OnGetAsync(int space, string image)
     {
-        Image = await mediator.Send(new GetImage {SpaceId = space, ImageId = image});
+        var imageResult = await mediator.Send(new GetImage{SpaceId = space, ImageId = image});
+        Image = imageResult.Image;
+        Thumbnails = imageResult.ImageService;
+        SingleAssetManifest = DlcsPathHelpers.GeneratePathFromTemplate(
+            dlcsSettings.SingleAssetManifestTemplate,
+            prefix: dlcsSettings.ResourceRoot.ToString(),
+            customer: Customer,
+            space: Image.Space.ToString(),
+            assetPath: Image.ModelId);
         return Page();
+    }
+    
+    public string CreateSrc(Size size)
+    {
+        return $"{Image.ThumbnailImageService}/full/{size.Width},{size.Height}/0/default.jpg";
     }
 }
