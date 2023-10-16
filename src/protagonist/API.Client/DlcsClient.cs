@@ -247,6 +247,22 @@ public class DlcsClient : IDlcsClient
         return patched;
     }
 
+    public async Task<HydraCollection<Batch>> GetBatches(string type, int page, int pageSize)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/queue/{type}?page={page}&pageSize={pageSize}";
+        var response = await httpClient.GetAsync(url);
+        var batches = await response.ReadAsHydraResponseAsync<HydraCollection<Batch>>(jsonSerializerSettings);
+        return batches; 
+    }
+
+    public async Task<CustomerQueue> GetQueue()
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/queue";
+        var response = await httpClient.GetAsync(url);
+        var queue = await response.ReadAsHydraResponseAsync<CustomerQueue>(jsonSerializerSettings);
+        return queue;  
+    }
+
     private HttpContent ApiBody(JsonLdBase apiObject)
     {
         var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);
