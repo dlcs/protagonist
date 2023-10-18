@@ -3,7 +3,7 @@
 @model Portal.Pages.Queue.IndexModel;
 
 @{
-    ViewData["Title"] = "Queues";
+    ViewData["Title"] = "Queue";
 }
 
 @if (Model.QueueType == IndexModel.BatchQueueType.Active)
@@ -38,7 +38,7 @@
                 var progressPct = batch.Finished.HasValue ? 100 : percentComplete;
 
                 <tr>
-                    <td>@batch.Id.Split('/').Last()</td>
+                    <td>@batch.Id?.Split('/').Last()</td>
                     <td>
                         @percentComplete% (@batch.Completed/@batch.Count)
                     </td>

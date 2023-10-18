@@ -12,9 +12,11 @@ namespace Portal.Pages.Queue;
 public class IndexModel : PageModel
 {
     private readonly IDlcsClient dlcsClient;
-    public HydraCollection<Batch> Batches;
-    public CustomerQueue Queue;
-    public BatchQueueType QueueType;
+    private const string ActiveQueueName = "active";
+    private const string RecentQueueName = "recent";
+    public HydraCollection<Batch> Batches { get; set; }
+    public CustomerQueue Queue { get; set; }
+    public BatchQueueType QueueType { get; set; }
     public PagerValues? PagerValues { get; private set; }
     
     public IndexModel(IDlcsClient dlcsClient)
@@ -31,12 +33,12 @@ public class IndexModel : PageModel
         
         switch (queueType)
         {
-            case "active":
-                Batches = await dlcsClient.GetBatches("active", page, pageSize);    
+            case ActiveQueueName:
+                Batches = await dlcsClient.GetBatches(ActiveQueueName, page, pageSize);    
                 QueueType = BatchQueueType.Active;
                 break;
             default:
-                Batches = await dlcsClient.GetBatches("recent", page, pageSize);   
+                Batches = await dlcsClient.GetBatches(RecentQueueName, page, pageSize);   
                 QueueType = BatchQueueType.Recent;
                 break;
         }
