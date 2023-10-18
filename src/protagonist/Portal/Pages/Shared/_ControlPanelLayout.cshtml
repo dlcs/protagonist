@@ -49,16 +49,23 @@
                             <navlink href="/spaces" icon="folder">Spaces</navlink>
                         </li>
                         <li class="nav-item">
+                            <a href="#queue-submenu" data-bs-toggle="collapse" class="nav-link">
+                                <span data-feather="list"></span><span class="ms-1">Queue</span><span data-feather="chevron-right" class="float-end me-2"></span>
+                            </a>
+                            <ul class="nav collapse ms-4 ps-2" id="queue-submenu" data-bs-parent="#queue-submenu">
+                                <li class="w-100">
+                                    <a href="/queue/recent" class="nav-link">Recent</a>
+                                </li>
+                                <li class="w-100">
+                                    <a href="/queue/active" class="nav-link">Active</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
                             <navlink href="/users" icon="users">Users</navlink>
                         </li>
                         <li class="nav-item">
                             <navlink href="/keys" icon="key">API Keys</navlink>
-                        </li>
-                        <li class="nav-item">
-                            <navlink href="/queue/active" icon="list">Queue - Active</navlink>
-                        </li>
-                        <li class="nav-item">
-                            <navlink href="/queue/recent" icon="list">Queue - Recent</navlink>
                         </li>
                         
                         @if (User.IsInRole(ClaimsPrincipalUtils.Roles.Admin))
