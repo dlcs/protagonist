@@ -1,0 +1,88 @@
+﻿@page "{queueType}"
+@using DLCS.Core.Collections
+@model Portal.Pages.Queue.IndexModel;
+
+@{
+    ViewData["Title"] = "Queues";
+}
+
+@if (Model.QueueType == IndexModel.BatchQueueType.Active)
+{
+    <div class="row px-2">
+        <div class="p-2 d-flex flex-column align-content-center col-2">
+            <span>Batches waiting</span>
+            <span class="h3">@Model.Queue.BatchesWaiting</span>
+        </div>
+        <div class="p-2 d-flex flex-column align-content-center col-2">
+            <span>Images waiting</span>
+            <span class="h3">@Model.Queue.ImagesWaiting</span>
+        </div>
+    </div>
+}
+
+@if (!Model.Batches.Members.IsNullOrEmpty())
+{
+    <table class="table table-borderless">
+        <thead>
+            <tr>
+                <th scope="col" class="col-md-1">Batch No.</th>
+                <th scope="col" class="col-md-2">Images</th>
+                <th scope="col" class="col-md-4">Progress</th>
+                <th scope="col">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var batch in Model.Batches.Members.OrderByDescending(batch => batch.Id))
+            {
+                var percentComplete = Math.Round(batch.Count > 0 ? (double)batch.Completed / (double)batch.Count * 100.0 : 1.0);
+                var progressPct = batch.Finished.HasValue ? 100 : percentComplete;
+
+                <tr>
+                    <td>@batch.Id.Split('/').Last()</td>
+                    <td>
+                        @percentComplete% (@batch.Completed/@batch.Count)
+                    </td>
+                    <td>
+                        <div class="progress h-100">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: @progressPct%;" aria-valuenow="@progressPct" aria-valuemin="0" aria-valuemax="100">@progressPct%</div>
+                        </div>
+                    </td>
+                    <td>
+                        @if (Model.QueueType == IndexModel.BatchQueueType.Recent)
+                        {
+                            <span>Completed: @batch.Finished</span>
+                        }
+                        else
+                        {
+                            <span>Processing</span>
+                        }
+
+                        @if (batch.Finished > DateTime.MinValue)
+                        {
+                            <span class="badge bg-success float-end">Finished</span>
+                        }
+                        else if (batch.Completed == 0)
+                        {
+                            <span class="badge bg-primary float-end">Waiting</span>
+                        }
+                        else if (batch.Errors == 0)
+                        {
+                            <span class="badge bg-warning float-end">In progress</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger float-end">Errors</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-warning" role="alert">
+        There are currently no batches here
+    </div>
+}
+@await Component.InvokeAsync("Pager", new { values = Model.PagerValues })

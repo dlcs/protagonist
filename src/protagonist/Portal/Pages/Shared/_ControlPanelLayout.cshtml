@@ -54,6 +54,13 @@
                         <li class="nav-item">
                             <navlink href="/keys" icon="key">API Keys</navlink>
                         </li>
+                        <li class="nav-item">
+                            <navlink href="/queue/active" icon="list">Queue - Active</navlink>
+                        </li>
+                        <li class="nav-item">
+                            <navlink href="/queue/recent" icon="list">Queue - Recent</navlink>
+                        </li>
+                        
                         @if (User.IsInRole(ClaimsPrincipalUtils.Roles.Admin))
                         {
                             <li class="nav-item">
