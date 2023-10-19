@@ -39,7 +39,7 @@ public static class S3Extensions
         => new(
             objectInBucket,
             getObjectResponse.ResponseStream,
-            getObjectResponse.Headers.AsObjectInBucketHeaders()
+            getObjectResponse.AsObjectInBucketHeaders()
         );
 
     /// <summary>
@@ -52,8 +52,10 @@ public static class S3Extensions
             Key = resource.Key,
         };
 
-    public static ObjectInBucketHeaders AsObjectInBucketHeaders(this HeadersCollection headersCollection)
-        => new()
+    private static ObjectInBucketHeaders AsObjectInBucketHeaders(this GetObjectResponse getObjectResponse)
+    {
+        var headersCollection = getObjectResponse.Headers;
+        var fromHeaders = new ObjectInBucketHeaders
         {
             CacheControl = headersCollection.CacheControl,
             ContentDisposition = headersCollection.ContentDisposition,
@@ -61,6 +63,10 @@ public static class S3Extensions
             ContentLength = headersCollection.ContentLength == -1L ? null : headersCollection.ContentLength,
             ContentMD5 = headersCollection.ContentMD5,
             ContentType = headersCollection.ContentType,
-            ExpiresUtc = headersCollection.ExpiresUtc
+            ExpiresUtc = headersCollection.ExpiresUtc,
+            ETag = getObjectResponse.ETag,
+            LastModified = getObjectResponse.LastModified,
         };
+        return fromHeaders;
+    }
 }

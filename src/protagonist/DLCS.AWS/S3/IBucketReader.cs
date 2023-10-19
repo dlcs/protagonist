@@ -17,6 +17,7 @@ public interface IBucketReader
     /// Get specified object from bucket.
     /// </summary>
     /// <param name="objectInBucket">Object to read.</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     Task<Stream?> GetObjectContentFromBucket(ObjectInBucket objectInBucket,
         CancellationToken cancellationToken = default);
     

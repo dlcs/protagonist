@@ -46,6 +46,11 @@ public class OrchestratorSettings
     /// If true, requests for info.json will cause image to be orchestrated.
     /// </summary>
     public bool OrchestrateOnInfoJson { get; set; } = true;
+    
+    /// <summary>
+    /// Optional date, any info.json files generated prior to this date will be considered stale and regenerated.
+    /// </summary>
+    public DateTime? OldestAllowedInfoJson { get; set; }
 
     /// <summary>
     /// If <see cref="OrchestrateOnInfoJson"/> is true, this is the max number of requests that will be honoured
