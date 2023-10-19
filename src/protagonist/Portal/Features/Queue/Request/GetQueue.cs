@@ -37,23 +37,25 @@ public class GetQueueHandler : IRequestHandler<GetQueue, GetQueueResult>
     
     public async Task<GetQueueResult> Handle(GetQueue request, CancellationToken cancellationToken)
     {
-        CustomerQueue? queue = null;
-        HydraCollection<Batch> batches;
-        
         if (request.Type == QueueType.Active)
         {
-            batches = await dlcsClient.GetBatches("active", request.Page, request.PageSize);
-            queue = await dlcsClient.GetQueue();
+            var batches = await dlcsClient.GetBatches("active", request.Page, request.PageSize);
+            var queue = await dlcsClient.GetQueue();
+            
+            return new GetQueueResult()
+            {
+                Queue = queue,
+                Batches = batches
+            };
         }
         else
         {
-            batches = await dlcsClient.GetBatches("recent", request.Page, request.PageSize);
+            var batches = await dlcsClient.GetBatches("recent", request.Page, request.PageSize);
+            
+            return new GetQueueResult()
+            {
+                Batches = batches
+            };
         }
-
-        return new GetQueueResult()
-        {
-            Queue = queue,
-            Batches = batches
-        };
     }
 }

@@ -13,10 +13,8 @@ namespace Portal.Pages.Queue;
 
 public class IndexModel : PageModel
 {
-    private readonly IDlcsClient dlcsClient;
     private readonly IMediator mediator;
     private const string ActiveQueueName = "active";
-    private const string RecentQueueName = "recent";
     public HydraCollection<Batch> Batches { get; set; }
     public CustomerQueue? Queue { get; set; }
     public QueueType QueueType { get; set; }
@@ -24,7 +22,6 @@ public class IndexModel : PageModel
     
     public IndexModel(IDlcsClient dlcsClient, IMediator mediator)
     {
-        this.dlcsClient = dlcsClient;
         this.mediator = mediator;
     }
 
@@ -33,16 +30,10 @@ public class IndexModel : PageModel
         [FromQuery] int page = 1, 
         [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize)
     {
-        if (queueType == ActiveQueueName)
-        {
-            QueueType = QueueType.Active;  
-        }
-        else
-        {
-            QueueType = QueueType.Recent;
-        }
+        QueueType = queueType == ActiveQueueName ? QueueType.Active : QueueType.Recent;
         
         var queueResult = await mediator.Send(new GetQueue(){ Type = QueueType, Page = page, PageSize = pageSize });
+        
         Queue = queueResult.Queue;
         Batches = queueResult.Batches;
         PagerValues = new PagerValues(Batches.TotalItems, page, pageSize, null, true);
