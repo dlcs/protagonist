@@ -26,4 +26,6 @@ public interface IDlcsClient
     Task<bool> DeleteImage(int spaceId, string imageId);
     Task<Image> PatchImage(Image image, int spaceId, string imageId);
     Task<HydraCollection<Image>> PatchImages(HydraCollection<Image> images, int spaceId);
+    Task<HydraCollection<Batch>> GetBatches(string type, int page, int pageSize);
+    Task<CustomerQueue> GetQueue();
 }

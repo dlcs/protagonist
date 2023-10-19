@@ -109,7 +109,7 @@
                         }
                         <h4 class="h4">Thumbnail Preview</h4>
                         <div class="d-flex justify-content-center align-items-center flex-grow-1">
-                            <img class="img-thumbnail rounded" id="thumbnail-preview" src="@Model.CreateSrc(defaultThumbnail)">
+                            <img class="img-thumbnail rounded" id="thumbnail-preview" style="max-height: 256px;" src="@Model.CreateSrc(defaultThumbnail)">
                         </div>
                         <select class="form-select mb-4" multiple onchange="OnChangeThumbnail(this)" aria-label=".form-select">
                             @foreach(var thumbnail in Model.Thumbnails.Sizes)
