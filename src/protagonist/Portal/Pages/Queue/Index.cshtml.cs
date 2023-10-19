@@ -3,8 +3,10 @@ using API.Client;
 using DLCS.Core.Enum;
 using DLCS.HydraModel;
 using Hydra.Collections;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Portal.Features.Queue.Request;
 using Portal.ViewComponents;
 
 namespace Portal.Pages.Queue;
@@ -12,16 +14,18 @@ namespace Portal.Pages.Queue;
 public class IndexModel : PageModel
 {
     private readonly IDlcsClient dlcsClient;
+    private readonly IMediator mediator;
     private const string ActiveQueueName = "active";
     private const string RecentQueueName = "recent";
     public HydraCollection<Batch> Batches { get; set; }
-    public CustomerQueue Queue { get; set; }
-    public BatchQueueType QueueType { get; set; }
+    public CustomerQueue? Queue { get; set; }
+    public QueueType QueueType { get; set; }
     public PagerValues? PagerValues { get; private set; }
     
-    public IndexModel(IDlcsClient dlcsClient)
+    public IndexModel(IDlcsClient dlcsClient, IMediator mediator)
     {
         this.dlcsClient = dlcsClient;
+        this.mediator = mediator;
     }
 
     public async Task OnGetAsync(
@@ -29,26 +33,18 @@ public class IndexModel : PageModel
         [FromQuery] int page = 1, 
         [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize)
     {
-        Queue = await dlcsClient.GetQueue();
-        
-        switch (queueType)
+        if (queueType == ActiveQueueName)
         {
-            case ActiveQueueName:
-                Batches = await dlcsClient.GetBatches(ActiveQueueName, page, pageSize);    
-                QueueType = BatchQueueType.Active;
-                break;
-            default:
-                Batches = await dlcsClient.GetBatches(RecentQueueName, page, pageSize);   
-                QueueType = BatchQueueType.Recent;
-                break;
+            QueueType = QueueType.Active;  
+        }
+        else
+        {
+            QueueType = QueueType.Recent;
         }
         
+        var queueResult = await mediator.Send(new GetQueue(){ Type = QueueType, Page = page, PageSize = pageSize });
+        Queue = queueResult.Queue;
+        Batches = queueResult.Batches;
         PagerValues = new PagerValues(Batches.TotalItems, page, pageSize, null, true);
-    }
-    
-    public enum BatchQueueType
-    {
-        Recent,
-        Active
     }
 }

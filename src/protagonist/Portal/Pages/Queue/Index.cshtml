@@ -1,12 +1,14 @@
 ﻿@page "{queueType}"
 @using DLCS.Core.Collections
+@using Hydra
+@using Portal.Features.Queue.Request
 @model Portal.Pages.Queue.IndexModel;
 
 @{
     ViewData["Title"] = "Queue";
 }
 
-@if (Model.QueueType == IndexModel.BatchQueueType.Active)
+@if (Model.QueueType == QueueType.Active)
 {
     <div class="row px-2">
         <div class="p-2 d-flex flex-column align-content-center col-2">
@@ -38,7 +40,7 @@
                 var progressPct = batch.Finished.HasValue ? 100 : percentComplete;
 
                 <tr>
-                    <td>@batch.Id?.Split('/').Last()</td>
+                    <td>@batch.Id.GetLastPathElement()</td>
                     <td>
                         @percentComplete% (@batch.Completed/@batch.Count)
                     </td>
@@ -48,7 +50,7 @@
                         </div>
                     </td>
                     <td>
-                        @if (Model.QueueType == IndexModel.BatchQueueType.Recent)
+                        @if (Model.QueueType == QueueType.Recent)
                         {
                             <span>Completed: @batch.Finished</span>
                         }
