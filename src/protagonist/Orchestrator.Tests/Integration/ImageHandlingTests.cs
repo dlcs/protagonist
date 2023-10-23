@@ -204,6 +204,39 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Content.Headers.ContentType.ToString().Should()
             .Be("application/json", "application/json unless Accept header specified");
     }
+    
+    [Fact]
+    public async Task GetInfoJson_Correct_IgnoresQueryParamOnRequestUri()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_Correct_IgnoresQueryParamOnRequestUri)}");
+        var namedId = $"test/1/{nameof(GetInfoJson_Correct_IgnoresQueryParamOnRequestUri)}";
+        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = SizesJsonContent
+        });
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/v2/{namedId}/info.json?query=foo");
+        
+        // Assert
+        var jsonResponse = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService2>();
+        jsonResponse.Id.Should().Be($"http://localhost/iiif-img/v2/{namedId}",
+            "Id property should not contain query parameters");
+        
+        // With correct headers/status
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        response.Content.Headers.ContentType.ToString().Should()
+            .Be("application/json", "application/json unless Accept header specified");
+    }
 
     [Fact]
     public async Task GetInfoJsonV2_Correct_ViaDirectPath_NotInS3()

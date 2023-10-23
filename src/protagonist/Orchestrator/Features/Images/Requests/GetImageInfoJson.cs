@@ -165,7 +165,7 @@ public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, Descrip
         
         // We want the image id only, without "/info.json"
         baseRequest.AssetPath = request.AssetRequest.AssetId;
-        return assetPathGenerator.GetFullPathForRequest(baseRequest);
+        return assetPathGenerator.GetFullPathForRequest(baseRequest, includeQueryParams: false);
     }
 
     private void SetServiceIdProperties(AssetId assetId, List<IService>? services)
