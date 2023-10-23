@@ -15,7 +15,7 @@ public class ObjectFromBucket
     /// <summary>
     /// Gets headers associated with this object.
     /// </summary>
-    public ObjectInBucketHeaders? Headers { get; }
+    public ObjectInBucketHeaders Headers { get; }
     
     /// <summary>
     /// <see cref="ObjectInBucket"/> used to fetch this object.
@@ -30,6 +30,9 @@ public class ObjectFromBucket
     }
 }
 
+/// <summary>
+/// A collection of header/metadata values associated with object
+/// </summary>
 public class ObjectInBucketHeaders
 {
     public string? CacheControl { get; set; }
@@ -39,4 +42,6 @@ public class ObjectInBucketHeaders
     public string? ContentMD5 { get; set; }
     public string? ContentType { get; set; }
     public DateTime? ExpiresUtc { get; set; }
+    public DateTime LastModified { get; set; }
+    public string ETag { get; set; }
 }

@@ -26,7 +26,7 @@ public class InfoJsonService
     private readonly IBucketReader bucketReader;
     private readonly IBucketWriter bucketWriter;
     private readonly InfoJsonConstructorResolver infoJsonConstructorResolver;
-    private readonly IOptions<OrchestratorSettings> orchestratorSettings;
+    private readonly OrchestratorSettings orchestratorSettings;
     private readonly ILogger<InfoJsonService> logger;
 
     public InfoJsonService(
@@ -41,7 +41,7 @@ public class InfoJsonService
         this.bucketReader = bucketReader;
         this.bucketWriter = bucketWriter;
         this.infoJsonConstructorResolver = infoJsonConstructorResolver;
-        this.orchestratorSettings = orchestratorSettings;
+        this.orchestratorSettings = orchestratorSettings.Value;
         this.logger = logger;
     }
 
@@ -74,13 +74,23 @@ public class InfoJsonService
 
     private ObjectInBucket GetInfoJsonKey(OrchestrationImage asset, Version version)
     {
-        var imageServer = orchestratorSettings.Value.ImageServer.ToString();
+        var imageServer = orchestratorSettings.ImageServer.ToString();
         var infoJsonCandidate = storageKeyGenerator.GetInfoJsonLocation(asset.AssetId, imageServer, version);
         return infoJsonCandidate;
     }
 
-    private async Task<Stream?> GetStoredInfoJson(ObjectInBucket infoJsonKey, CancellationToken cancellationToken) 
-        => await bucketReader.GetObjectContentFromBucket(infoJsonKey, cancellationToken);
+    private async Task<Stream?> GetStoredInfoJson(ObjectInBucket infoJsonKey, CancellationToken cancellationToken)
+    {
+        var objectFromBucket = await bucketReader.GetObjectFromBucket(infoJsonKey, cancellationToken);
+        var oldestAllowedInfoJson = orchestratorSettings.OldestAllowedInfoJson;
+        
+        if (!oldestAllowedInfoJson.HasValue) return objectFromBucket.Stream;
+        if (oldestAllowedInfoJson.Value < objectFromBucket.Headers.LastModified) return objectFromBucket.Stream;
+        
+        logger.LogDebug("info.json from key '{InfoJsonKey}' too old ({LastModified}), regenerating",
+            infoJsonKey.ToString(), objectFromBucket.Headers.LastModified);
+        return null;
+    }
 
     private Task StoreInfoJson(ObjectInBucket infoJsonKey, JsonLdBase infoJson, CancellationToken cancellationToken)
         => bucketWriter.WriteToBucket(infoJsonKey, infoJson.AsJson(), "application/json", cancellationToken);
