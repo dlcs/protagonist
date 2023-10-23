@@ -255,6 +255,22 @@ public class DlcsClient : IDlcsClient
         return batches; 
     }
 
+    public async Task<Batch> GetBatch(int batchId)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/queue/batches/{batchId}";
+        var response = await httpClient.GetAsync(url);
+        var batch = await response.ReadAsHydraResponseAsync<Batch>(jsonSerializerSettings);
+        return batch;  
+    }
+
+    public async Task<HydraCollection<Image>> GetBatchImages(int batchId)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/queue/batches/{batchId}/images";
+        var response = await httpClient.GetAsync(url);
+        var batchImages = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>(jsonSerializerSettings);
+        return batchImages;      
+    }
+
     public async Task<CustomerQueue> GetQueue()
     {
         var url = $"customers/{currentUser.GetCustomerId()}/queue";

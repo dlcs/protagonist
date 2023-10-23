@@ -1,0 +1,55 @@
+﻿@page "{batch}"
+@using Hydra
+@using DLCS.Model.Assets
+@model Portal.Pages.Batches.Index
+
+@{
+    var batchId = Model.Batch.Id.GetLastPathElement();
+    var percentComplete = Math.Round(Model.Batch.Count > 0 ? (double)Model.Batch.Completed / (double)Model.Batch.Count * 100.0 : 1.0);
+    var progressPct = Model.Batch.Finished.HasValue ? 100 : percentComplete;
+    ViewData["Title"] = $"Batch {batchId} - {Model.Batch.Count} images";
+}
+
+<div class="card w-100">
+    <div class="card-body">
+        <div class="row mb-2">
+            <div class="col-sm">
+                Completion: @percentComplete% (@Model.Batch.Completed/@Model.Batch.Count)
+            </div>
+            <div class="col-sm">
+                <div class="progress h-100">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: @progressPct%;" aria-valuenow="@progressPct" aria-valuemin="0" aria-valuemax="100">@progressPct%</div>
+                </div>
+            </div>
+            <div class="col-sm">
+                @if (Model.Batch.Finished > DateTime.MinValue)
+                {
+                    <span class="badge bg-success float-end">Finished</span>
+                }
+                else if (Model.Batch.Completed == 0)
+                {
+                    <span class="badge bg-primary float-end">Waiting</span>
+                }
+                else if (Model.Batch.Errors == 0)
+                {
+                    <span class="badge bg-warning float-end">In progress</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger float-end">Errors</span>
+                }
+            </div>
+        </div>
+        Completed: @Model.Batch.Finished
+    </div>
+</div>
+<div class="row m-1">
+    @foreach(var image in Model.Images.Members)
+    {
+        <div class="p-4" style="width:20%">
+            <a href="/images/@image.Space/@image.ModelId">
+                <img src="@Model.Thumbnails[image.ModelId]" class="img-thumbnail rounded mx-auto d-block" style="max-height:256px;"/>
+            </a>
+        </div>
+    }
+</div>
