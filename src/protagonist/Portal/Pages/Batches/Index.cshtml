@@ -60,7 +60,7 @@
         @foreach (var image in Model.Images.Members)
         {
             <div class="p-4 d-flex flex-column" style="width:20%; min-width: 128px;">
-                <a href="/images/@image.Space/@image.ModelId" class="flex-grow-1 align-items-center d-flex mb-1">
+                <a asp-page="/Images/Index" asp-route-space="@image.Space" asp-route-image="@image.ModelId" class="flex-grow-1 align-items-center d-flex mb-1">
                     @if (!string.IsNullOrEmpty(image.Error) || !Model.Thumbnails.ContainsKey(image.ModelId))
                     {
                         <div class="card m-auto">
