@@ -77,6 +77,7 @@ public class ConfigDrivenAuthPathGeneratorTests
         A.CallTo(() => contextAccessor.HttpContext).Returns(context);
         request.Host = new HostString(host);
         request.Scheme = "https";
+        request.QueryString = new QueryString("?foo=bar");
 
         var options = Options.Create(new OrchestratorSettings
         {
