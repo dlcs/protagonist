@@ -36,12 +36,12 @@
         <tbody>
             @foreach (var batch in Model.Batches.Members.OrderByDescending(batch => batch.Id))
             {
-                var batchId = @batch.Id.GetLastPathElement();
+                var batchId = batch.Id.GetLastPathElement();
                 var percentComplete = Math.Round(batch.Count > 0 ? (double)batch.Completed / (double)batch.Count * 100.0 : 1.0);
                 var progressPct = batch.Finished.HasValue ? 100 : percentComplete;
 
                 <tr>
-                    <td><a href="/batches/@batchId">@batchId</a></td>
+                    <td><a asp-page="/Batches/Index" asp-route-batch="@batchId">@batchId</a></td>
                     <td>
                         @percentComplete% (@batch.Completed/@batch.Count)
                     </td>
