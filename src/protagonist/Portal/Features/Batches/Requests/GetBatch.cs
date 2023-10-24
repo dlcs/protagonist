@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
 using DLCS.Core.Settings;
 using DLCS.HydraModel;
+using DLCS.Web.Auth;
 using Hydra.Collections;
 using MediatR;
 using Microsoft.Extensions.Options;
@@ -28,13 +30,13 @@ public class GetBatchHandler : IRequestHandler<GetBatch, GetBatchResult>
 {
     private readonly DlcsSettings dlcsSettings;
     private readonly IDlcsClient dlcsClient;
-    private readonly HttpClient httpClient;
+    private readonly string customerId;
     
-    public GetBatchHandler(IDlcsClient dlcsClient, HttpClient httpClient, IOptions<DlcsSettings> dlcsSettings)
+    public GetBatchHandler(IDlcsClient dlcsClient, ClaimsPrincipal currentUser, IOptions<DlcsSettings> dlcsSettings)
     {
         this.dlcsClient = dlcsClient;
-        this.httpClient = httpClient;
         this.dlcsSettings = dlcsSettings.Value;
+        customerId = (currentUser.GetCustomerId() ?? -1).ToString();
     }
 
     public async Task<GetBatchResult> Handle(GetBatch request, CancellationToken cancellationToken)
@@ -46,7 +48,7 @@ public class GetBatchHandler : IRequestHandler<GetBatch, GetBatchResult>
         foreach (var image in images.Members)
         {
             var thumbnailSrc = new Uri(dlcsSettings.ResourceRoot, 
-                $"thumbs/27/{image.Space}/{image.ModelId}/full/full/0/default.jpg").ToString();
+                $"thumbs/{customerId}/{image.Space}/{image.ModelId}/full/full/0/default.jpg").ToString();
             thumbnails.Add(image.ModelId, thumbnailSrc);
         }
         

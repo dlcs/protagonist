@@ -1,6 +1,7 @@
 ﻿@page "{batch}"
 @using Hydra
 @using DLCS.Model.Assets
+@using AssetFamily = DLCS.HydraModel.AssetFamily
 @model Portal.Pages.Batches.Index
 
 @{
@@ -17,7 +18,7 @@
             <div class="row px-2">
                 <div class="alert alert-danger" role="alert">
                     <i class="me-2" data-feather="alert-circle"></i><strong>Error!</strong>
-                    This batch contains @Model.Batch.Errors image@(Model.Batch.Errors > 1 ? "s" : null) that could not be processed
+                    This batch contains @Model.Batch.Errors image@(Model.Batch.Errors > 1 ? "s" : null) with errors
                 </div>
             </div>
         }
@@ -76,6 +77,30 @@
                                 <div class="spinner-border text-muted m-auto"></div>
                             </div>
                         </div>   
+                    }
+                    else if (image.Family == AssetFamily.Timebased)
+                    {
+                        <div class="card m-auto">
+                            <div class="card-body">
+                                  <i class="text-secondary" data-feather="film"></i>
+                            </div>
+                        </div>                           
+                    }
+                    else if (image.Family == AssetFamily.File)
+                    {
+                        <div class="card m-auto">
+                            <div class="card-body">
+                                <i class="text-secondary" data-feather="save"></i>
+                            </div>
+                        </div>                           
+                    }
+                    else if (image.Roles.Any())
+                    {
+                        <div class="card m-auto">
+                            <div class="card-body">
+                                <i class="text-secondary" data-feather="lock"></i>
+                            </div>
+                        </div>  
                     }
                     else
                     {
