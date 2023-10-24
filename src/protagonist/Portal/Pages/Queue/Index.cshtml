@@ -34,7 +34,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var batch in Model.Batches.Members.OrderByDescending(batch => batch.Id))
+            @foreach (var batch in Model.Batches.Members)
             {
                 var batchId = batch.Id.GetLastPathElement();
                 var percentComplete = Math.Round(batch.Count > 0 ? (double)batch.Completed / (double)batch.Count * 100.0 : 1.0);
