@@ -12,6 +12,15 @@
 
 <div class="card w-100">
     <div class="card-body">
+        @if (Model.Batch.Errors > 0)
+        {
+            <div class="row px-2">
+                <div class="alert alert-danger" role="alert">
+                    <i class="me-2" data-feather="alert-circle"></i><strong>Error!</strong>
+                    This batch contains @Model.Batch.Errors image@(Model.Batch.Errors > 1 ? "s" : null) that could not be processed
+                </div>
+            </div>
+        }
         <div class="row mb-2">
             <div class="col-sm">
                 Completion: @percentComplete% (@Model.Batch.Completed/@Model.Batch.Count)
@@ -43,13 +52,37 @@
         Completed: @Model.Batch.Finished
     </div>
 </div>
-<div class="row m-1">
-    @foreach(var image in Model.Images.Members)
-    {
-        <div class="p-4" style="width:20%">
-            <a href="/images/@image.Space/@image.ModelId">
-                <img src="@Model.Thumbnails[image.ModelId]" class="img-thumbnail rounded mx-auto d-block" style="max-height:256px;"/>
-            </a>
-        </div>
-    }
+<div class="row m-1 justify-content-center">
+    <div class="row">
+        @foreach (var image in Model.Images.Members)
+        {
+            <div class="p-4 d-flex flex-column" style="width:20%">
+                <a href="/images/@image.Space/@image.ModelId" class="flex-grow-1 align-items-center d-flex mb-1">
+                    @if (!string.IsNullOrEmpty(image.Error))
+                    {
+                        <div class="card m-auto">
+                            <div class="card-body">
+                                <i class="text-secondary" data-feather="alert-triangle"></i>
+                            </div>
+                        </div>
+                    }
+                    else if (image.Ingesting.Value)
+                    {
+                        <div class="card m-auto">
+                            <div class="card-body">
+                                <div class="spinner-border text-muted m-auto"></div>
+                            </div>
+                        </div>   
+                    }
+                    else
+                    {
+                        <img src="@Model.Thumbnails[image.ModelId]" class="img-thumbnail rounded mx-auto d-block"/>  
+                    }
+                </a>
+                <small class="d-inline-block text-truncate text-muted text-center w-100">
+                    @Model.GetImageReference(image)
+                </small>
+            </div>
+        }
+    </div>
 </div>
