@@ -1,5 +1,4 @@
 ﻿using DLCS.Core;
-using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Web;
 using DLCS.Web.Requests;
@@ -29,7 +28,7 @@ public class ConfigDrivenAuthPathGenerator : IAuthPathGenerator
         var template = orchestratorSettings.Auth.AuthPathRules.GetPathTemplateForHost(host);
 
         var path = DlcsPathHelpers.GenerateAuthPathFromTemplate(template, customer, behaviour);
-        return request.GetDisplayUrl(path);
+        return request.GetDisplayUrl(path, includeQueryParams: false);
     }
 
     public string GetAuth2PathForRequest(AssetId assetId, string iiifServiceType, string? accessServiceName)
@@ -40,7 +39,7 @@ public class ConfigDrivenAuthPathGenerator : IAuthPathGenerator
 
         var path = DlcsPathHelpers.GenerateAuth2PathFromTemplate(template, assetId, assetId.Customer.ToString(),
             accessServiceName);
-        return request.GetDisplayUrl(path);
+        return request.GetDisplayUrl(path, includeQueryParams: false);
     }
     
     private HttpRequest GetHttpRequest()
