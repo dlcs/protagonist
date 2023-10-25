@@ -1,0 +1,116 @@
+﻿@page "{batch}"
+@using Hydra
+@using DLCS.Model.Assets
+@using AssetFamily = DLCS.HydraModel.AssetFamily
+@model Portal.Pages.Batches.Index
+
+@{
+    var batchId = Model.Batch.Id.GetLastPathElement();
+    var percentComplete = Math.Round(Model.Batch.Count > 0 ? (double)Model.Batch.Completed / (double)Model.Batch.Count * 100.0 : 1.0);
+    var progressPct = Model.Batch.Finished.HasValue ? 100 : percentComplete;
+    ViewData["Title"] = $"Batch {batchId} - {Model.Batch.Count} images";
+}
+
+<div class="card w-100">
+    <div class="card-body">
+        @if (Model.Batch.Errors > 0)
+        {
+            <div class="row px-2">
+                <div class="alert alert-danger" role="alert">
+                    <i class="me-2" data-feather="alert-circle"></i><strong>Error!</strong>
+                    This batch contains @Model.Batch.Errors image@(Model.Batch.Errors > 1 ? "s" : null) with errors
+                </div>
+            </div>
+        }
+        <div class="row mb-2">
+            <div class="col-sm">
+                Completion: @percentComplete% (@Model.Batch.Completed/@Model.Batch.Count)
+            </div>
+            <div class="col-sm">
+                <div class="progress h-100">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: @progressPct%;" aria-valuenow="@progressPct" aria-valuemin="0" aria-valuemax="100">@progressPct%</div>
+                </div>
+            </div>
+            <div class="col-sm">
+                @if (Model.Batch.Finished > DateTime.MinValue)
+                {
+                    <span class="badge bg-success float-end">Finished</span>
+                }
+                else if (Model.Batch.Completed == 0)
+                {
+                    <span class="badge bg-primary float-end">Waiting</span>
+                }
+                else if (Model.Batch.Errors == 0)
+                {
+                    <span class="badge bg-warning float-end">In progress</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger float-end">Errors</span>
+                }
+            </div>
+        </div>
+        @if (Model.Batch.Finished != null)
+        {
+            <span>Completed: @Model.Batch.Finished</span>
+        }
+    </div>
+</div>
+<div class="row m-1 justify-content-center">
+    <div class="row">
+        @foreach (var image in Model.Images.Members)
+        {
+            <div class="p-4 d-flex flex-column" style="width:20%; min-width: 128px;">
+                <a asp-page="/Images/Index" asp-route-space="@image.Space" asp-route-image="@image.ModelId" class="flex-grow-1 align-items-center d-flex mb-1">
+                    @if (!string.IsNullOrEmpty(image.Error) || !Model.Thumbnails.ContainsKey(image.ModelId))
+                    {
+                        <div class="card m-auto">
+                            <div class="card-body">
+                                <i class="text-secondary" data-feather="alert-triangle"></i>
+                            </div>
+                        </div>
+                    }
+                    else if (image.Ingesting == true)
+                    {
+                        <div class="card m-auto">
+                            <div class="card-body">
+                                <div class="spinner-border text-muted m-auto"></div>
+                            </div>
+                        </div>   
+                    }
+                    else if (image.Family == AssetFamily.Timebased)
+                    {
+                        <div class="card m-auto">
+                            <div class="card-body">
+                                  <i class="text-secondary" data-feather="film"></i>
+                            </div>
+                        </div>                           
+                    }
+                    else if (image.Family == AssetFamily.File)
+                    {
+                        <div class="card m-auto">
+                            <div class="card-body">
+                                <i class="text-secondary" data-feather="save"></i>
+                            </div>
+                        </div>                           
+                    }
+                    else if (image.Roles.Any())
+                    {
+                        <div class="card m-auto">
+                            <div class="card-body">
+                                <i class="text-secondary" data-feather="lock"></i>
+                            </div>
+                        </div>  
+                    }
+                    else
+                    {
+                        <img src="@Model.Thumbnails[image.ModelId]" class="img-thumbnail rounded mx-auto d-block"/>  
+                    }
+                </a>
+                <small class="d-inline-block text-truncate text-muted text-center w-100">
+                    @Model.GetImageReference(image)
+                </small>
+            </div>
+        }
+    </div>
+</div>

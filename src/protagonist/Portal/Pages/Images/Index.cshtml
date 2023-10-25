@@ -1,5 +1,6 @@
 @page "{space}/{image}"
 @using DLCS.Core.Strings
+@using Hydra
 @model Portal.Pages.Images.Index
 
 @{
@@ -33,7 +34,13 @@
                         </tr>
                         <tr>
                             <td>Batch</td>
-                            <td>@Model.Image.Batch</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(Model.Image.Batch))
+                                {
+                                    var batchId = Model.Image.Batch.GetLastPathElement();
+                                    <a asp-page="/Batches/Index" asp-route-batch="@batchId">@batchId</a>
+                                }
+                            </td>
                         </tr>
                         <tr>
                             <td>Origin</td>
