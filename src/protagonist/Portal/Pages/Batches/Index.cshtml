@@ -149,32 +149,35 @@
     </div>
 </div>
 
-<script>
-    function TestBatch() {
-        $.ajax({
-            type: 'POST',
-            url: '@Url.Action("Test", "Batch", new { batch = batchId })',
-            success: function (data, status) { 
-               let testBtn = $('#test-button')
-               let testSuccessMsg = $('#superseded-status-modal #success');
-               let testFailMsg = $('#superseded-status-modal #fail')
-                 
-                if (data === true) {
-                    testBtn.text("Superseded");
-                    testBtn.removeClass('btn-warning');
-                    testBtn.addClass('btn-info');
-                    testFailMsg.attr("hidden", true);
-                    testSuccessMsg.attr("hidden", false);
-                } 
-                else {
-                    testBtn.text("Just tested");
-                    testBtn.removeClass('btn-warning');
-                    testBtn.addClass('btn-light');
-                    testFailMsg.attr("hidden", false);
-                    testSuccessMsg.attr("hidden", true);
-                }
-                $('#superseded-status-modal').modal('show'); 
-            }    
-        });
-    }
-</script>
+@section Scripts 
+{
+    <script>
+        function TestBatch() {
+            $.ajax({
+                type: 'POST',
+                url: '@Url.Action("Test", "Batch", new { batch = batchId })',
+                success: function (data, status) { 
+                   let testBtn = $('#test-button');
+                   let testSuccessMsg = $('#superseded-status-modal #success');
+                   let testFailMsg = $('#superseded-status-modal #fail');
+                     
+                    if (data === true) {
+                        testBtn.text("Superseded");
+                        testBtn.removeClass('btn-warning');
+                        testBtn.addClass('btn-info');
+                        testFailMsg.attr("hidden", true);
+                        testSuccessMsg.attr("hidden", false);
+                    } 
+                    else {
+                        testBtn.text("Just tested");
+                        testBtn.removeClass('btn-warning');
+                        testBtn.addClass('btn-light');
+                        testFailMsg.attr("hidden", false);
+                        testSuccessMsg.attr("hidden", true);
+                    }
+                    $('#superseded-status-modal').modal('show'); 
+                }    
+            });
+        }
+    </script>
+}
