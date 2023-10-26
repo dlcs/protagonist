@@ -8,7 +8,7 @@
     var batchId = Model.Batch.Id.GetLastPathElement();
     var percentComplete = Math.Round(Model.Batch.Count > 0 ? (double)Model.Batch.Completed / (double)Model.Batch.Count * 100.0 : 1.0);
     var progressPct = Model.Batch.Finished.HasValue ? 100 : percentComplete;
-    ViewData["Title"] = $"Batch {batchId} - {Model.Batch.Count} images";
+    ViewData["Title"] = $"Batch {batchId} - {Model.Batch.Count} image{(Model.Batch.Count > 1 || Model.Batch.Count == 0 ? "s" : null)}";
 }
 
 <div class="card w-100">
@@ -23,15 +23,15 @@
             </div>
         }
         <div class="row mb-2">
-            <div class="col-sm">
+            <div class="col">
                 Completion: @percentComplete% (@Model.Batch.Completed/@Model.Batch.Count)
             </div>
-            <div class="col-sm">
+            <div class="col">
                 <div class="progress h-100">
                     <div class="progress-bar bg-success" role="progressbar" style="width: @progressPct%;" aria-valuenow="@progressPct" aria-valuemin="0" aria-valuemax="100">@progressPct%</div>
                 </div>
             </div>
-            <div class="col-sm">
+            <div class="col">
                 @if (Model.Batch.Finished > DateTime.MinValue)
                 {
                     <span class="badge bg-success float-end">Finished</span>
@@ -53,6 +53,15 @@
         @if (Model.Batch.Finished != null)
         {
             <span>Completed: @Model.Batch.Finished</span>
+        }
+        else
+        {
+            <hr/>
+            <div class="row mb-1">
+                <div class="col">
+                    <div id="test-button" class="btn btn-sm btn-warning" onclick="TestBatch()">Test if superseded</div>
+                </div>
+            </div>
         }
     </div>
 </div>
@@ -82,7 +91,7 @@
                     {
                         <div class="card m-auto">
                             <div class="card-body">
-                                  <i class="text-secondary" data-feather="film"></i>
+                                <i class="text-secondary" data-feather="film"></i>
                             </div>
                         </div>                           
                     }
@@ -114,3 +123,58 @@
         }
     </div>
 </div>
+<div class="modal fade" id="superseded-status-modal" tabindex="-1" aria-labelledby="supersededStatusLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <div id="success" hidden>
+                <div class="modal-header border-0">
+                     <h5 class="modal-title">Superseded</h5>
+                 </div>
+                 <div class="modal-body">
+                     Batch has been superseded and marked.
+                 </div>
+            </div>
+            <div id="fail" hidden>
+                  <div class="modal-header border-0">
+                       <h5 class="modal-title">Not superseded</h5>
+                   </div>
+                   <div class="modal-body">
+                       Batch does not appear to have been superseded. There may be some other kind of issue with one of the images it contains.
+                   </div>
+              </div>
+            <div class="modal-footer border-0 py-1">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function TestBatch() {
+        $.ajax({
+            type: 'POST',
+            url: '@Url.Action("Test", "Batch", new { batch = batchId })',
+            success: function (data, status) { 
+               let testBtn = $('#test-button')
+               let testSuccessMsg = $('#superseded-status-modal #success');
+               let testFailMsg = $('#superseded-status-modal #fail')
+                 
+                if (data === true) {
+                    testBtn.text("Superseded");
+                    testBtn.removeClass('btn-warning');
+                    testBtn.addClass('btn-info');
+                    testFailMsg.attr("hidden", true);
+                    testSuccessMsg.attr("hidden", false);
+                } 
+                else {
+                    testBtn.text("Just tested");
+                    testBtn.removeClass('btn-warning');
+                    testBtn.addClass('btn-light');
+                    testFailMsg.attr("hidden", false);
+                    testSuccessMsg.attr("hidden", true);
+                }
+                $('#superseded-status-modal').modal('show'); 
+            }    
+        });
+    }
+</script>
