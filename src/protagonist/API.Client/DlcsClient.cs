@@ -14,6 +14,7 @@ using Hydra.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 
 namespace API.Client;
@@ -261,6 +262,14 @@ public class DlcsClient : IDlcsClient
         var response = await httpClient.GetAsync(url);
         var batch = await response.ReadAsHydraResponseAsync<Batch>(jsonSerializerSettings);
         return batch;  
+    }
+    
+    public async Task<bool> TestBatch(int batchId)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/queue/batches/{batchId}/test";
+        var response = await httpClient.PostAsync(url, null);
+        var jObject = JObject.Parse(await response.Content.ReadAsStringAsync());
+        return jObject.SelectToken("success").Value<bool>();
     }
 
     public async Task<HydraCollection<Image>> GetBatchImages(int batchId)
