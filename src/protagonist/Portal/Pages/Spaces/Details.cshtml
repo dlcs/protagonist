@@ -22,9 +22,7 @@
     <link href="~/assets/dist/css/jquery-ui.structure.min.css" rel="stylesheet" />
 }
 
-
-
-<form action="/dropzone/@Model.Customer/@Model.SpaceId/upload"
+<form action="@Url.Action("Upload", "ImageDropzone", new { customer = Model.Customer, space = Model.SpaceId })"
       class="dropzone"
       id="dropzoneForm">
 </form>
