@@ -1,6 +1,7 @@
 ﻿using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.HydraModel;
+using Hydra;
 
 namespace API.Converters;
 
@@ -27,6 +28,11 @@ public static class LegacyModeConverter
             if (image.Origin is not null && image.Family is null && image.DeliveryChannels.IsNullOrEmpty())
             {
                   image.Family = AssetFamily.Image;
+            }
+
+            if (image.ModelId is null && image.Id is not null)
+            {
+                image.ModelId = image.Id.GetLastPathElement();
             }
         }
 
