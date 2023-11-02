@@ -10,45 +10,91 @@ namespace DLCS.AWS.SNS;
 
 public class TopicPublisher : ITopicPublisher
 {
-    private IAmazonSimpleNotificationService client;
-    private ILogger<TopicPublisher> logger;
-    private SNSSettings sNSSettings;
+    private readonly IAmazonSimpleNotificationService snsClient;
+    private readonly ILogger<TopicPublisher> logger;
+    private readonly SNSSettings snsSettings;
 
-    public TopicPublisher(IAmazonSimpleNotificationService client, ILogger<TopicPublisher> logger, IOptions<AWSSettings> settings)
+    public TopicPublisher(IAmazonSimpleNotificationService snsClient,
+        IOptions<AWSSettings> settings,
+        ILogger<TopicPublisher> logger)
     {
-        this.client = client;
+        this.snsClient = snsClient;
         this.logger = logger;
-        sNSSettings = settings.Value.SNS;
+        snsSettings = settings.Value.SNS;
     }
-    
-    /// <inheritdoc />
-    public async Task<bool> PublishToAssetModifiedTopic(string messageContents, ChangeType changeType, CancellationToken cancellationToken = default)
-    {
-        var attributeValue = new MessageAttributeValue()
-        {
-            StringValue = changeType.ToString(),
-            DataType = "String"
-        };
 
+    /// <inheritdoc />
+    public async Task<bool> PublishToAssetModifiedTopic(string messageContents, ChangeType changeType,
+        CancellationToken cancellationToken = default)
+    {
         var request = new PublishRequest
         {
-            TopicArn = sNSSettings.AssetModifiedNotificationTopicArn,
+            TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
             Message = messageContents,
-            MessageAttributes = new Dictionary<string, MessageAttributeValue>()
-            {
-                {"messageType", attributeValue}
-            }
+            MessageAttributes = GetMessageAttributes(changeType)
         };
 
         try
         {
-            var response = await client.PublishAsync(request, cancellationToken);
+            var response = await snsClient.PublishAsync(request, cancellationToken);
             return response.HttpStatusCode.IsSuccess();
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            logger.LogError(ex, "Error sending message to {Topic}", sNSSettings.AssetModifiedNotificationTopicArn);
+            logger.LogError(ex, "Error sending message to {Topic}", snsSettings.AssetModifiedNotificationTopicArn);
             return false;
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<AssetModifiedNotification> messages,
+        CancellationToken cancellationToken = default)
+    {
+        if (messages.Count == 1)
+        {
+            var singleMessage = messages[0];
+            return await PublishToAssetModifiedTopic(singleMessage.MessageContents, singleMessage.ChangeType,
+                cancellationToken);
+        }
+
+        const int maxSnsBatchSize = 10;
+        var allBatchSuccess = false;
+        var batchIdPrefix = Guid.NewGuid();
+        logger.LogDebug("Publishing SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
+            messages.Count);
+        var batchCount = 0;
+        foreach (var chunk in messages.Chunk(maxSnsBatchSize))
+        {
+            var bulkRequest = new PublishBatchRequest
+            {
+                TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
+                PublishBatchRequestEntries = chunk.Select(m => new PublishBatchRequestEntry
+                {
+                    MessageAttributes = GetMessageAttributes(m.ChangeType),
+                    Message = m.MessageContents,
+                    Id = $"{batchIdPrefix}_{batchCount++}",
+                }).ToList()
+            };
+
+            var response = await snsClient.PublishBatchAsync(bulkRequest, cancellationToken);
+            if (allBatchSuccess) allBatchSuccess = response.HttpStatusCode.IsSuccess();
+        }
+        
+        logger.LogDebug("Published SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
+            messages.Count);
+        return allBatchSuccess;
+    }
+
+    private static Dictionary<string, MessageAttributeValue> GetMessageAttributes(ChangeType changeType)
+    {
+        var attributeValue = new MessageAttributeValue
+        {
+            StringValue = changeType.ToString(),
+            DataType = "String"
+        };
+        return new Dictionary<string, MessageAttributeValue>
+        {
+            { "messageType", attributeValue }
+        };
     }
 }

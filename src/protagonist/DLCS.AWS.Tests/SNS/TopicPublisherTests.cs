@@ -1,109 +1,143 @@
-﻿using Amazon.SimpleNotificationService;
+﻿using System.Net;
+using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
 using DLCS.AWS.SNS;
 using DLCS.Model.Messaging;
+using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using Test.Helpers.Integration;
 
 namespace DLCS.AWS.Tests.SNS;
 
-[Collection(LocalStackCollection.CollectionName)]
-[Trait("Category", "Manual")]
 public class TopicPublisherTests
 {
     private readonly IAmazonSimpleNotificationService snsClient;
+    private readonly TopicPublisher sut;
 
-    public TopicPublisherTests(LocalStackFixture localStackFixture)
+    public TopicPublisherTests()
     {
-        snsClient = localStackFixture.AWSSNSFactory();
+        snsClient = A.Fake<IAmazonSimpleNotificationService>();
         
-        snsClient.CreateTopicAsync(new CreateTopicRequest("someTopic"));
-    }
-    
-    private TopicPublisher GetSut()
-    {
-        var settings = Options.Create(new AWSSettings()
+        var settings = Options.Create(new AWSSettings
         {
-            SNS = new SNSSettings()
-            {
-                AssetModifiedNotificationTopicArn = "arn:aws:sns:us-east-1:000000000000:someTopic"
-            }
+            SNS = new SNSSettings { AssetModifiedNotificationTopicArn = "arn:aws:sns:us-east-1:000000000000:knownTopic" }
         });
-        
-        return new TopicPublisher(snsClient, new NullLogger<TopicPublisher>(), settings);
+
+        sut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
     }
 
     [Fact]
-    public async Task PublishToTopic_SuccessfullyPublishesToTopic_WhenCalledWithMessage()
+    public async Task PublishToAssetModifiedTopic_SuccessfullyPublishesToTopic()
     {
-        // Arrange
-        var message = new
-        {
-            someValue = "something"
-        };
-        var sut = GetSut();
-
         // Act
-        var published = await sut.PublishToAssetModifiedTopic(JsonConvert.SerializeObject(message), ChangeType.Delete);
+        await sut.PublishToAssetModifiedTopic("message", ChangeType.Delete);
 
         // Assert
+        A.CallTo(() =>
+            snsClient.PublishAsync(
+                A<PublishRequest>.That.Matches(r =>
+                    r.Message == "message" && r.MessageAttributes["messageType"].StringValue == "Delete"),
+                A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task PublishToAssetModifiedTopicBatch_SuccessfullyPublishesSingleMessage_IfSingleItemInBatch()
+    {
+        // Arrange
+        var notification = new AssetModifiedNotification("message", ChangeType.Delete);
+
+        // Act
+        await sut.PublishToAssetModifiedTopic(new[] { notification });
+
+        // Assert
+        A.CallTo(() =>
+            snsClient.PublishAsync(
+                A<PublishRequest>.That.Matches(r =>
+                    r.Message == "message" && r.MessageAttributes["messageType"].StringValue == "Delete"),
+                A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task PublishToAssetModifiedTopicBatch_SuccessfullyPublishesSingleBatch()
+    {
+        // Arrange
+        var notification = new AssetModifiedNotification("message", ChangeType.Delete);
+        var notification2 = new AssetModifiedNotification("message", ChangeType.Delete);
+
+        // Act
+        await sut.PublishToAssetModifiedTopic(new[] { notification, notification2 });
+
+        // Assert
+        A.CallTo(() =>
+            snsClient.PublishBatchAsync(
+                A<PublishBatchRequest>.That.Matches(b => b.PublishBatchRequestEntries.All(r =>
+                                                             r.Message == "message" &&
+                                                             r.MessageAttributes["messageType"].StringValue ==
+                                                             "Delete") &&
+                                                         b.PublishBatchRequestEntries.Count == 2),
+                A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task PublishToAssetModifiedTopicBatch_SuccessfullyPublishesMultipleBatches()
+    {
+        // Arrange
+        var notifications = new List<AssetModifiedNotification>(15);
+        for (int x = 0; x < 15; x++)
+        {
+            notifications.Add(new AssetModifiedNotification(x < 10 ? "message" : "next", ChangeType.Delete));
+        } 
+
+        // Act
+        await sut.PublishToAssetModifiedTopic(notifications.ToArray());
+
+        // Assert
+        A.CallTo(() =>
+            snsClient.PublishBatchAsync(
+                A<PublishBatchRequest>.That.Matches(b => b.PublishBatchRequestEntries.All(r =>
+                                                             r.Message == "message" &&
+                                                             r.MessageAttributes["messageType"].StringValue ==
+                                                             "Delete") &&
+                                                         b.PublishBatchRequestEntries.Count == 10),
+                A<CancellationToken>._)).MustHaveHappened();
+        A.CallTo(() =>
+            snsClient.PublishBatchAsync(
+                A<PublishBatchRequest>.That.Matches(b => b.PublishBatchRequestEntries.All(r =>
+                                                             r.Message == "next" &&
+                                                             r.MessageAttributes["messageType"].StringValue ==
+                                                             "Delete") &&
+                                                         b.PublishBatchRequestEntries.Count == 5),
+                A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task PublishToAssetModifiedTopic_ReturnsTrue_IfPublishSuccess()
+    {
+        // Arrange
+        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._))
+            .Returns(new PublishResponse { HttpStatusCode = HttpStatusCode.OK });
+        
+        // Act
+        var published = await sut.PublishToAssetModifiedTopic("message", ChangeType.Delete);
+
+        // Assert
+        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._)).MustHaveHappened();
         published.Should().BeTrue();
     }
     
     [Fact]
-    public async Task PublishToTopic_FailsToRetrieveTopic_WhenTopicSettingIsNull()
+    public async Task PublishToAssetModifiedTopic_ReturnsFalse_IfPublishFailse()
     {
         // Arrange
-        var settings = Options.Create(new AWSSettings()
-        {
-            SNS = new SNSSettings()
-            {
-                AssetModifiedNotificationTopicArn = null
-            }
-        });
-
-        var sut = new TopicPublisher(snsClient, new NullLogger<TopicPublisher>(), settings);
-        
-        var message = new
-        {
-            someValue = "something"
-        };
-
-        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-        cancellationTokenSource.CancelAfter(100);
-        // Act
-        var published = await sut.PublishToAssetModifiedTopic(JsonConvert.SerializeObject(message), ChangeType.Delete, cancellationTokenSource.Token);
-
-        // Assert
-        published.Should().BeFalse();
-    }
-    
-    [Fact]
-    public async Task PublishToTopic_FailsToRetrieveTopic_WhenTopicSettingIsNotAValidTopic()
-    {
-        // Arrange
-        var settings = Options.Create(new AWSSettings()
-        {
-            SNS = new SNSSettings()
-            {
-                AssetModifiedNotificationTopicArn = "arn:aws:sns:us-east-1:000000000000:invalidTopic"
-            }
-        });
-
-        var sut = new TopicPublisher(snsClient, new NullLogger<TopicPublisher>(), settings);
-        
-        var message = new
-        {
-            someValue = "something"
-        };
+        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._))
+            .Returns(new PublishResponse { HttpStatusCode = HttpStatusCode.BadRequest });
         
         // Act
-        var published = await sut.PublishToAssetModifiedTopic(JsonConvert.SerializeObject(message), ChangeType.Delete);
+        var published = await sut.PublishToAssetModifiedTopic("message", ChangeType.Delete);
 
         // Assert
+        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._)).MustHaveHappened();
         published.Should().BeFalse();
     }
 }
