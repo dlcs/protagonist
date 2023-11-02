@@ -62,9 +62,24 @@ public class TopicPublisher : ITopicPublisher
         var batchIdPrefix = Guid.NewGuid();
         logger.LogDebug("Publishing SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
             messages.Count);
-        var batchCount = 0;
+        var batchNumber = 0;
         foreach (var chunk in messages.Chunk(maxSnsBatchSize))
         {
+            var success = await PublishBatchResponse(chunk, batchIdPrefix, batchNumber++, cancellationToken);
+            if (allBatchSuccess) allBatchSuccess = success;
+        }
+        
+        logger.LogDebug("Published SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
+            messages.Count);
+        return allBatchSuccess;
+    }
+
+    private async Task<bool> PublishBatchResponse(AssetModifiedNotification[] chunk, Guid batchIdPrefix, int batchNumber,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            int batchCount = 0;
             var bulkRequest = new PublishBatchRequest
             {
                 TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
@@ -72,17 +87,18 @@ public class TopicPublisher : ITopicPublisher
                 {
                     MessageAttributes = GetMessageAttributes(m.ChangeType),
                     Message = m.MessageContents,
-                    Id = $"{batchIdPrefix}_{batchCount++}",
+                    Id = $"{batchIdPrefix}_{batchNumber}_{batchCount++}",
                 }).ToList()
             };
 
             var response = await snsClient.PublishBatchAsync(bulkRequest, cancellationToken);
-            if (allBatchSuccess) allBatchSuccess = response.HttpStatusCode.IsSuccess();
+            return response.HttpStatusCode.IsSuccess();
         }
-        
-        logger.LogDebug("Published SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
-            messages.Count);
-        return allBatchSuccess;
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error publishing batch {BatchNumber} for {BatchPrefix}", batchNumber, batchIdPrefix);
+            return false;
+        }
     }
 
     private static Dictionary<string, MessageAttributeValue> GetMessageAttributes(ChangeType changeType)

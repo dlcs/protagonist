@@ -1,10 +1,8 @@
-using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
-using DLCS.Model.PathElements;
 
 namespace DLCS.Model.Messaging;
 
@@ -23,6 +21,7 @@ public interface IIngestNotificationSender
     /// </summary>
     /// <param name="assets">List of assets to ingest</param>
     /// <param name="isPriority">If true then assets are added to ingest queue</param>
+    /// <param name="cancellationToken">Current cancellationToken</param>
     Task<int> SendIngestAssetsRequest(IReadOnlyList<Asset> assets, bool isPriority,
         CancellationToken cancellationToken = default);
 
@@ -30,13 +29,7 @@ public interface IIngestNotificationSender
     /// Send an asset for immediate processing; the call blocks until complete.
     /// </summary>
     /// <param name="derivativesOnly">If true, only derivatives (e.g. thumbs) will be created</param>
+    /// <param name="cancellationToken">Current cancellationToken</param>
     Task<HttpStatusCode> SendImmediateIngestAssetRequest(Asset assetToIngest, bool derivativesOnly,
         CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Broadcast a change to the status of an Asset, for any subscribers.
-    /// </summary>
-    [Obsolete("Use IAssetNotificationSender instead")]
-    Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after,
-        CustomerPathElement? customerPathElement = null);
 }

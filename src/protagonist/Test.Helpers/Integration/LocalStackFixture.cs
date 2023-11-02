@@ -35,7 +35,10 @@ public class LocalStackFixture : IAsyncLifetime
     public const string TimebasedQueueName = "protagonist-timebased";
     public const string TranscodeCompleteQueueName = "protagonist-transcode-complete";
     public const string FileQueueName = "protagonist-file";
-
+    
+    // SNS Topic
+    public const string AssetModifiedNotificationTopicArn = "arn:aws:sns:us-east-1:000000000000:asset-modified-notifications";
+        
     public Func<IAmazonS3> AWSS3ClientFactory { get; private set; }
     public Func<IAmazonSQS> AWSSQSClientFactory { get; private set; }
     public Func<IAmazonSimpleNotificationService> AWSSNSFactory { get; private set; }
@@ -94,7 +97,7 @@ public class LocalStackFixture : IAsyncLifetime
 
         AWSSQSClientFactory = () => new AmazonSQSClient(new BasicAWSCredentials("foo", "bar"), sqsConfig);
 
-        var snsConfig = new AmazonSimpleNotificationServiceConfig()
+        var snsConfig = new AmazonSimpleNotificationServiceConfig
         {
             RegionEndpoint = RegionEndpoint.EUWest1,
             UseHttp = true,
@@ -123,6 +126,9 @@ public class LocalStackFixture : IAsyncLifetime
         await CreateQueue(amazonSQSClient, TimebasedQueueName);
         await CreateQueue(amazonSQSClient, TranscodeCompleteQueueName);
         await CreateQueue(amazonSQSClient, FileQueueName);
+
+        var amazonSNSClient = AWSSNSFactory();
+        await CreateTopic(amazonSNSClient, AssetModifiedNotificationTopicArn);
     }
 
     private async Task CreateQueue(IAmazonSQS amazonSQSClient, string queueName)
@@ -132,5 +138,11 @@ public class LocalStackFixture : IAsyncLifetime
         {
             ["VisibilityTimeout"] = "0"
         });
+    }
+
+    private async Task CreateTopic(IAmazonSimpleNotificationService amazonSNSClient, string topicArn)
+    {
+        var topicName = topicArn.Split(":")[^1];
+        var response = await amazonSNSClient.CreateTopicAsync(topicName);
     }
 }

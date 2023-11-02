@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -173,9 +174,10 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Post_DeleteImages_200_WithMatches()
     {
         // Arrange
-        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/deleteImages_1"));
-        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/deleteImages_2"));
-        await dbContext.Images.AddTestAsset(AssetId.FromString("99/2/deleteImages_3"), space: 2);
+        var reference = nameof(Post_DeleteImages_200_WithMatches);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/deleteImages_1"), ref1: reference);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/deleteImages_2"), ref1: reference);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/2/deleteImages_3"), space: 2, ref1: reference);
         await dbContext.SaveChangesAsync();
         
         const string newCustomerJson = @"{
@@ -192,5 +194,6 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        dbContext.Images.Count(i => i.Reference1 == reference).Should().Be(0);
     }
 }
