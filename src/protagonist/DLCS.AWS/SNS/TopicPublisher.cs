@@ -41,7 +41,7 @@ public class TopicPublisher : ITopicPublisher
         var batchNumber = 0;
         foreach (var chunk in messages.Chunk(maxSnsBatchSize))
         {
-            var success = await PublishBatchResponse(chunk, batchIdPrefix, batchNumber++, cancellationToken);
+            var success = await PublishBatch(chunk, batchIdPrefix, batchNumber++, cancellationToken);
             if (allBatchSuccess) allBatchSuccess = success;
         }
         
@@ -72,7 +72,7 @@ public class TopicPublisher : ITopicPublisher
         }
     }
 
-    private async Task<bool> PublishBatchResponse(AssetModifiedNotification[] chunk, Guid batchIdPrefix, int batchNumber,
+    private async Task<bool> PublishBatch(AssetModifiedNotification[] chunk, Guid batchIdPrefix, int batchNumber,
         CancellationToken cancellationToken)
     {
         try

@@ -5,7 +5,7 @@ namespace DLCS.AWS.SNS;
 public interface ITopicPublisher
 {
     /// <summary>
-    /// Asynchronously publishes a message to a Asset Modified SNS topic
+    /// Asynchronously publishes a message to an Asset Modified SNS topic
     /// </summary>
     /// <param name="messages">A collection of notifications to send</param>
     /// <param name="cancellationToken">Current cancellation token</param>
