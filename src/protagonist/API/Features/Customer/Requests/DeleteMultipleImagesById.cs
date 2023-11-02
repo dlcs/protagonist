@@ -29,18 +29,18 @@ public class DeleteMultipleImagesById : IRequest<int>
 public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleImagesById, int>
 {
     private readonly DlcsContext dlcsContext;
-    private readonly IAssetNotificationSender assetNotificationSender;
+    private readonly IIngestNotificationSender ingestNotificationSender;
     private readonly ILogger<DeleteMultipleImagesByIdHandler> logger;
     private readonly IPathCustomerRepository customerPathRepository;
 
     public DeleteMultipleImagesByIdHandler(
         DlcsContext dlcsContext,
-        IAssetNotificationSender assetNotificationSender,
+        IIngestNotificationSender ingestNotificationSender,
         IPathCustomerRepository customerPathRepository,
         ILogger<DeleteMultipleImagesByIdHandler> logger)
     {
         this.dlcsContext = dlcsContext;
-        this.assetNotificationSender = assetNotificationSender;
+        this.ingestNotificationSender = ingestNotificationSender;
         this.customerPathRepository = customerPathRepository;
         this.logger = logger;
     }
@@ -67,7 +67,7 @@ public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleIma
     {
         foreach (var asset in assets)
         {
-            await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Delete, asset, null, customerPathElement);
+            await ingestNotificationSender.SendAssetModifiedNotification(ChangeType.Delete, asset, null, customerPathElement);
         }
     }
 }

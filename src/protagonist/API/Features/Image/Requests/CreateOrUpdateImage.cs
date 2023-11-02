@@ -52,7 +52,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
     private readonly ISpaceRepository spaceRepository;
     private readonly IApiAssetRepository assetRepository;
     private readonly IBatchRepository batchRepository;
-    private readonly IAssetNotificationSender assetNotificationSender;
+    private readonly IIngestNotificationSender ingestNotificationSender;
     private readonly DlcsContext dlcsContext;
     private readonly AssetProcessor assetProcessor;
 
@@ -60,14 +60,14 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
         ISpaceRepository spaceRepository,
         IApiAssetRepository assetRepository,
         IBatchRepository batchRepository,
-        IAssetNotificationSender assetNotificationSender,
+        IIngestNotificationSender ingestNotificationSender,
         DlcsContext dlcsContext,
         AssetProcessor assetProcessor)
     {
         this.spaceRepository = spaceRepository;
         this.assetRepository = assetRepository;
         this.batchRepository = batchRepository;
-        this.assetNotificationSender = assetNotificationSender;
+        this.ingestNotificationSender = ingestNotificationSender;
         this.dlcsContext = dlcsContext;
         this.assetProcessor = assetProcessor;
     }
@@ -127,7 +127,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
         var existingAsset = processAssetResult.ExistingAsset;
         var assetAfterSave = modifyEntityResult.Entity;
         
-        await assetNotificationSender.SendAssetModifiedNotification(changeType, existingAsset, assetAfterSave);
+        await ingestNotificationSender.SendAssetModifiedNotification(changeType, existingAsset, assetAfterSave);
 
         if (processAssetResult.RequiresEngineNotification)
         {
@@ -167,7 +167,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
             {
                 // await call to engine, which processes synchronously (not a queue)
                 var statusCode =
-                    await assetNotificationSender.SendImmediateIngestAssetRequest(asset, false,
+                    await ingestNotificationSender.SendImmediateIngestAssetRequest(asset, false,
                         cancellationToken);
                 var success = statusCode is HttpStatusCode.Created or HttpStatusCode.OK;
 
@@ -177,7 +177,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
             {
                 // Queue record for ingestion
                 var success =
-                    await assetNotificationSender.SendIngestAssetRequest(asset, cancellationToken);
+                    await ingestNotificationSender.SendIngestAssetRequest(asset, cancellationToken);
 
                 return await GenerateFinalResult(success, "Unable to queue for processing",
                     HttpStatusCode.InternalServerError);

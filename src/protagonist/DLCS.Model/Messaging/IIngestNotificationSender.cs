@@ -10,7 +10,7 @@ namespace DLCS.Model.Messaging;
 /// <summary>
 /// Interface for transmitting notifications related to <see cref="Asset"/> 
 /// </summary>
-public interface IAssetNotificationSender
+public interface IIngestNotificationSender
 {
     /// <summary>
     /// Enqueue a message that an asset needs to be ingested.

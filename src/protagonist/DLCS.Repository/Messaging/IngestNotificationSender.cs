@@ -17,18 +17,18 @@ using Newtonsoft.Json.Serialization;
 
 namespace DLCS.Repository.Messaging;
 
-public class AssetNotificationSender : IAssetNotificationSender
+public class IngestNotificationSender : IIngestNotificationSender
 {
-    private readonly ILogger<AssetNotificationSender> logger;
+    private readonly ILogger<IngestNotificationSender> logger;
     private readonly IEngineClient engineClient;
     private readonly ICustomerQueueRepository customerQueueRepository;
     private readonly ITopicPublisher topicPublisher;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
-    public AssetNotificationSender(
+    public IngestNotificationSender(
         IEngineClient engineClient,
         ICustomerQueueRepository customerQueueRepository,
-        ILogger<AssetNotificationSender> logger,
+        ILogger<IngestNotificationSender> logger,
         ITopicPublisher topicPublisher)
     {
         this.engineClient = engineClient;

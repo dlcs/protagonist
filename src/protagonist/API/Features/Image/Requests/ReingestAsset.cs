@@ -25,16 +25,16 @@ public class ReingestAsset : IRequest<ModifyEntityResult<Asset>>
 
 public class ReingestAssetHandler : IRequestHandler<ReingestAsset, ModifyEntityResult<Asset>>
 {
-    private readonly IAssetNotificationSender assetNotificationSender;
+    private readonly IIngestNotificationSender ingestNotificationSender;
     private readonly IApiAssetRepository assetRepository;
     private readonly ILogger<ReingestAssetHandler> logger;
 
     public ReingestAssetHandler(
-        IAssetNotificationSender assetNotificationSender,
+        IIngestNotificationSender ingestNotificationSender,
         IApiAssetRepository assetRepository,
         ILogger<ReingestAssetHandler> logger)
     {
-        this.assetNotificationSender = assetNotificationSender;
+        this.ingestNotificationSender = ingestNotificationSender;
         this.assetRepository = assetRepository;
         this.logger = logger;
     }
@@ -48,8 +48,8 @@ public class ReingestAssetHandler : IRequestHandler<ReingestAsset, ModifyEntityR
         
         var asset = await MarkAssetAsIngesting(cancellationToken, existingAsset!);
         
-        await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Update, existingAsset, asset);
-        var statusCode = await assetNotificationSender.SendImmediateIngestAssetRequest(asset, false, cancellationToken);
+        await ingestNotificationSender.SendAssetModifiedNotification(ChangeType.Update, existingAsset, asset);
+        var statusCode = await ingestNotificationSender.SendImmediateIngestAssetRequest(asset, false, cancellationToken);
         
         if (statusCode.IsSuccess())
         {

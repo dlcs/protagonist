@@ -69,7 +69,7 @@ public class Startup
             .AddTransient<ClaimsPrincipal>(s => s.GetRequiredService<IHttpContextAccessor>().HttpContext.User)
             .AddCaching(cacheSettings)
             .AddDataAccess(configuration)
-            .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
+            .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
             .AddScoped<AssetProcessor>()
             .AddTransient<TimingHandler>()
             .AddValidatorsFromAssemblyContaining<Startup>()

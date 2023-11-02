@@ -23,18 +23,18 @@ public class DeleteAsset : IRequest<DeleteResult>
 
 public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
 {
-    private readonly IAssetNotificationSender assetNotificationSender;
+    private readonly IIngestNotificationSender ingestNotificationSender;
     private readonly IAssetRepository assetRepository;
     private readonly ILogger<DeleteAssetHandler> logger;
     private readonly IPathCustomerRepository customerPathRepository;
 
     public DeleteAssetHandler(
-        IAssetNotificationSender assetNotificationSender,
+        IIngestNotificationSender ingestNotificationSender,
         IAssetRepository assetRepository,
         IPathCustomerRepository customerPathRepository,
         ILogger<DeleteAssetHandler> logger)
     {
-        this.assetNotificationSender = assetNotificationSender;
+        this.ingestNotificationSender = ingestNotificationSender;
         this.assetRepository = assetRepository;
         this.customerPathRepository = customerPathRepository;
         this.logger = logger;
@@ -54,7 +54,7 @@ public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
         {
             var customerPathElement = await customerPathRepository.GetCustomerPathElement(request.AssetId.Customer.ToString());
             logger.LogDebug("Sending delete asset notification for {AssetId}", request.AssetId);
-            await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Delete,
+            await ingestNotificationSender.SendAssetModifiedNotification(ChangeType.Delete,
                 deleteResult.DeletedEntity, null, customerPathElement);
         }
         catch (Exception ex)
