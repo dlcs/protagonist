@@ -7,15 +7,6 @@ public interface ITopicPublisher
     /// <summary>
     /// Asynchronously publishes a message to a Asset Modified SNS topic
     /// </summary>
-    /// <param name="messageContents">The contents of the message</param>
-    /// <param name="changeType">The type of change that has happened</param>
-    /// <param name="cancellationToken">Current cancellation token</param>
-    public Task<bool> PublishToAssetModifiedTopic(string messageContents, ChangeType changeType,
-        CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Asynchronously publishes a message to a Asset Modified SNS topic
-    /// </summary>
     /// <param name="messages">A collection of notifications to send</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Boolean representing the overall success/failure status of all requests</returns>

@@ -22,30 +22,7 @@ public class TopicPublisher : ITopicPublisher
         this.logger = logger;
         snsSettings = settings.Value.SNS;
     }
-
-    /// <inheritdoc />
-    public async Task<bool> PublishToAssetModifiedTopic(string messageContents, ChangeType changeType,
-        CancellationToken cancellationToken = default)
-    {
-        var request = new PublishRequest
-        {
-            TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
-            Message = messageContents,
-            MessageAttributes = GetMessageAttributes(changeType)
-        };
-
-        try
-        {
-            var response = await snsClient.PublishAsync(request, cancellationToken);
-            return response.HttpStatusCode.IsSuccess();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error sending message to {Topic}", snsSettings.AssetModifiedNotificationTopicArn);
-            return false;
-        }
-    }
-
+    
     /// <inheritdoc />
     public async Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<AssetModifiedNotification> messages,
         CancellationToken cancellationToken = default)
@@ -53,8 +30,7 @@ public class TopicPublisher : ITopicPublisher
         if (messages.Count == 1)
         {
             var singleMessage = messages[0];
-            return await PublishToAssetModifiedTopic(singleMessage.MessageContents, singleMessage.ChangeType,
-                cancellationToken);
+            return await PublishToAssetModifiedTopic(singleMessage, cancellationToken);
         }
 
         const int maxSnsBatchSize = 10;
@@ -72,6 +48,28 @@ public class TopicPublisher : ITopicPublisher
         logger.LogDebug("Published SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
             messages.Count);
         return allBatchSuccess;
+    }
+    
+    private async Task<bool> PublishToAssetModifiedTopic(AssetModifiedNotification message,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new PublishRequest
+        {
+            TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
+            Message = message.MessageContents,
+            MessageAttributes = GetMessageAttributes(message.ChangeType)
+        };
+
+        try
+        {
+            var response = await snsClient.PublishAsync(request, cancellationToken);
+            return response.HttpStatusCode.IsSuccess();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error sending message to {Topic}", snsSettings.AssetModifiedNotificationTopicArn);
+            return false;
+        }
     }
 
     private async Task<bool> PublishBatchResponse(AssetModifiedNotification[] chunk, Guid batchIdPrefix, int batchNumber,

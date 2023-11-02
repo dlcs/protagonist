@@ -1,5 +1,4 @@
-﻿using System.Net;
-using Amazon.SimpleNotificationService;
+﻿using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
 using DLCS.AWS.SNS;
@@ -25,20 +24,6 @@ public class TopicPublisherTests
         });
 
         sut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
-    }
-
-    [Fact]
-    public async Task PublishToAssetModifiedTopic_SuccessfullyPublishesToTopic()
-    {
-        // Act
-        await sut.PublishToAssetModifiedTopic("message", ChangeType.Delete);
-
-        // Assert
-        A.CallTo(() =>
-            snsClient.PublishAsync(
-                A<PublishRequest>.That.Matches(r =>
-                    r.Message == "message" && r.MessageAttributes["messageType"].StringValue == "Delete"),
-                A<CancellationToken>._)).MustHaveHappened();
     }
     
     [Fact]
@@ -109,35 +94,5 @@ public class TopicPublisherTests
                                                              "Delete") &&
                                                          b.PublishBatchRequestEntries.Count == 5),
                 A<CancellationToken>._)).MustHaveHappened();
-    }
-    
-    [Fact]
-    public async Task PublishToAssetModifiedTopic_ReturnsTrue_IfPublishSuccess()
-    {
-        // Arrange
-        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._))
-            .Returns(new PublishResponse { HttpStatusCode = HttpStatusCode.OK });
-        
-        // Act
-        var published = await sut.PublishToAssetModifiedTopic("message", ChangeType.Delete);
-
-        // Assert
-        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._)).MustHaveHappened();
-        published.Should().BeTrue();
-    }
-    
-    [Fact]
-    public async Task PublishToAssetModifiedTopic_ReturnsFalse_IfPublishFailse()
-    {
-        // Arrange
-        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._))
-            .Returns(new PublishResponse { HttpStatusCode = HttpStatusCode.BadRequest });
-        
-        // Act
-        var published = await sut.PublishToAssetModifiedTopic("message", ChangeType.Delete);
-
-        // Assert
-        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._)).MustHaveHappened();
-        published.Should().BeFalse();
     }
 }
