@@ -12,8 +12,6 @@ using DLCS.Model.Messaging;
 using DLCS.Model.PathElements;
 using DLCS.Model.Processing;
 using Microsoft.Extensions.Logging;
-//using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 
 namespace DLCS.Repository.Messaging;
 

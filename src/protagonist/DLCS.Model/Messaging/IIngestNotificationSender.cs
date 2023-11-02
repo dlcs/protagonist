@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
@@ -35,6 +36,7 @@ public interface IIngestNotificationSender
     /// <summary>
     /// Broadcast a change to the status of an Asset, for any subscribers.
     /// </summary>
+    [Obsolete("Use IAssetNotificationSender instead")]
     Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after,
         CustomerPathElement? customerPathElement = null);
 }
