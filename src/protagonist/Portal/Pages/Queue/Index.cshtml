@@ -57,7 +57,7 @@
                         }
                         else
                         {
-                            <span>Processing</span>
+                            <div data-batch="@batchId" class="btn btn-sm btn-warning test-button">Test if superseded</div>
                         }
 
                         @if (batch.Finished > DateTime.MinValue)
@@ -89,3 +89,32 @@ else
     </div>
 }
 @await Component.InvokeAsync("Pager", new { values = Model.PagerValues })
+
+@section Scripts 
+{
+    <script>
+         $('.test-button').click(function() {
+            let batchId = $(this).data('batch');
+            let button = this;
+            $.ajax({
+                type: 'POST',
+                url: '@Url.Action("Test", "Batch")',
+                data: { 
+                    batch: batchId
+                },
+                success: function (data, status) { 
+                    if (data === true) {
+                        $(button).text('Superseded');
+                        $(button).removeClass('btn-warning');
+                        $(button).addClass('btn-primary');
+                    } 
+                    else {
+                        $(button).text('Not superseded');
+                        $(button).removeClass('btn-warning');
+                        $(button).addClass('btn-light');
+                    }
+                }    
+            });
+        });
+    </script>
+}
