@@ -34,7 +34,7 @@ public class TopicPublisher : ITopicPublisher
         }
 
         const int maxSnsBatchSize = 10;
-        var allBatchSuccess = false;
+        var allBatchSuccess = true;
         var batchIdPrefix = Guid.NewGuid();
         logger.LogDebug("Publishing SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
             messages.Count);
