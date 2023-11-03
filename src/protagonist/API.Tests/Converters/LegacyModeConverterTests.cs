@@ -99,7 +99,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_ModelIdSet_WhenNoModelId()
     {
         // Arrange
-        var hydraImage = new Image{ Id = "https://test/someId" };
+        var hydraImage = new Image{ Id = "https://test/someId", MediaType = "something"};
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
