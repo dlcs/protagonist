@@ -94,4 +94,17 @@ public class LegacyModeConverterTests
         convertedImage.MaxUnauthorised.Should().Be(null);
         convertedImage.Family.Should().Be(AssetFamily.Image);
     }
+    
+    [Fact]
+    public void VerifyAndConvertToModernFormat_ModelIdSet_WhenNoModelId()
+    {
+        // Arrange
+        var hydraImage = new Image{ Id = "https://test/someId", MediaType = "something"};
+        
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+
+        // Assert
+        convertedImage.ModelId.Should().Be("someId");
+    }
 }

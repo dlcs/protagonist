@@ -562,6 +562,43 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Post_CreateBatch_201_IfLegacyModeEnabledWithAtIdFieldSet()
+    {
+        const int customerId = 15;
+        const int space = 200;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""@id"": ""https://test/customers/15/spaces/200/images/one"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 200,
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var assetInDatabase = dbContext.Images.Where(a => a.Customer == customerId && a.Space == space);
+        assetInDatabase.Count().Should().Be(1);
+        assetInDatabase.ToList()[0].Id.Asset.Should().Be("one");
+    }
+    
+    [Fact]
     public async Task Post_CreateBatch_400_WithIdEmptyString()
     {
         const int customerId = 15;
