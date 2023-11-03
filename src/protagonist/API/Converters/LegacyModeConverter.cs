@@ -29,11 +29,11 @@ public static class LegacyModeConverter
             {
                   image.Family = AssetFamily.Image;
             }
-
-            if (image.ModelId is null && image.Id is not null)
-            {
-                image.ModelId = image.Id.GetLastPathElement();
-            }
+        }
+        
+        if (image.ModelId is null && image.Id is not null)
+        {
+            image.ModelId = image.Id.GetLastPathElement();
         }
 
         if (image.MaxUnauthorised is null or 0 && image.Roles.IsNullOrEmpty())
