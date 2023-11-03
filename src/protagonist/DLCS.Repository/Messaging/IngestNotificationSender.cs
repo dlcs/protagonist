@@ -2,39 +2,30 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.AWS.SNS;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
-using DLCS.Model.PathElements;
 using DLCS.Model.Processing;
 using Microsoft.Extensions.Logging;
-//using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 
 namespace DLCS.Repository.Messaging;
 
-public class AssetNotificationSender : IAssetNotificationSender
+public class IngestNotificationSender : IIngestNotificationSender
 {
-    private readonly ILogger<AssetNotificationSender> logger;
+    private readonly ILogger<IngestNotificationSender> logger;
     private readonly IEngineClient engineClient;
     private readonly ICustomerQueueRepository customerQueueRepository;
-    private readonly ITopicPublisher topicPublisher;
-    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
-    public AssetNotificationSender(
+    public IngestNotificationSender(
         IEngineClient engineClient,
         ICustomerQueueRepository customerQueueRepository,
-        ILogger<AssetNotificationSender> logger,
-        ITopicPublisher topicPublisher)
+        ILogger<IngestNotificationSender> logger)
     {
         this.engineClient = engineClient;
         this.logger = logger;
         this.customerQueueRepository = customerQueueRepository;
-        this.topicPublisher = topicPublisher;
     }
     
     public async Task<bool> SendIngestAssetRequest(Asset assetToIngest, CancellationToken cancellationToken = default)
@@ -89,47 +80,5 @@ public class AssetNotificationSender : IAssetNotificationSender
         var ingestAssetRequest = new IngestAssetRequest(assetToIngest, DateTime.UtcNow);
         var statusCode = await engineClient.SynchronousIngest(ingestAssetRequest, derivativesOnly, cancellationToken);
         return statusCode;
-    }
-
-    private async Task<bool> SendCleanupAssetRequest(Asset assetToCleanup, CustomerPathElement customerPathElement, CancellationToken cancellationToken = default)
-    {
-        var request = new CleanupAssetNotificationRequest()
-        {
-            Asset = assetToCleanup,
-            CustomerPathElement = customerPathElement
-        };
-        
-        return await topicPublisher.PublishToAssetModifiedTopic(JsonSerializer.Serialize(request, settings), ChangeType.Delete, cancellationToken);
-    }
-
-    public async Task SendAssetModifiedNotification(ChangeType changeType, Asset? before, Asset? after, CustomerPathElement? customerPathElement)
-    {
-        /*
-         * TODO - this should probably have a bulk implementation, assuming it handles bulk enqueuing of messages
-         * it's more efficient to do in batches rather than 1 at a time (like engine client)
-         */
-        switch (changeType)
-        {
-            case ChangeType.Create when before != null:
-                throw new ArgumentException("Asset Creation cannot have a before asset", nameof(before));
-            case ChangeType.Create when after == null:
-                throw new ArgumentException("Asset Creation must have an after asset", nameof(after));
-            case ChangeType.Update when before == null:
-                throw new ArgumentException("Asset Update must have a before asset", nameof(before));
-            case ChangeType.Update when after == null:
-                throw new ArgumentException("Asset Update must have an after asset", nameof(after));
-            case ChangeType.Delete when before == null:
-                throw new ArgumentException("Asset Delete must have a before asset", nameof(before));
-            case ChangeType.Delete when after != null:
-                throw new ArgumentException("Asset Delete cannot have an after asset", nameof(after));
-            case ChangeType.Delete when customerPathElement == null:
-                throw new ArgumentException("Asset Delete must have a customer path element", nameof(after));
-            case ChangeType.Delete:
-                await SendCleanupAssetRequest(before, customerPathElement);
-                break;
-            default:
-                logger.LogDebug("Message Bus: Asset Modified: {AssetId}", after?.Id ?? before.Id);
-                break;
-        }
     }
 }

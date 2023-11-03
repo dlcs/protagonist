@@ -3,6 +3,7 @@ using API.Auth;
 using API.Features.Image.Ingest;
 using API.Features.OriginStrategies.Credentials;
 using API.Infrastructure;
+using API.Infrastructure.Messaging;
 using API.Infrastructure.Validation;
 using API.Settings;
 using DLCS.Core.Caching;
@@ -69,7 +70,8 @@ public class Startup
             .AddTransient<ClaimsPrincipal>(s => s.GetRequiredService<IHttpContextAccessor>().HttpContext.User)
             .AddCaching(cacheSettings)
             .AddDataAccess(configuration)
-            .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
+            .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
+            .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
             .AddScoped<AssetProcessor>()
             .AddTransient<TimingHandler>()
             .AddValidatorsFromAssemblyContaining<Startup>()

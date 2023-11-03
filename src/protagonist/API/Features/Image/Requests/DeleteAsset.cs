@@ -1,5 +1,7 @@
-﻿using DLCS.Core;
+﻿using API.Infrastructure.Messaging;
+using DLCS.Core;
 using DLCS.Core.Types;
+using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Model.PathElements;
@@ -26,17 +28,14 @@ public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
     private readonly IAssetNotificationSender assetNotificationSender;
     private readonly IAssetRepository assetRepository;
     private readonly ILogger<DeleteAssetHandler> logger;
-    private readonly IPathCustomerRepository customerPathRepository;
 
     public DeleteAssetHandler(
         IAssetNotificationSender assetNotificationSender,
         IAssetRepository assetRepository,
-        IPathCustomerRepository customerPathRepository,
         ILogger<DeleteAssetHandler> logger)
     {
         this.assetNotificationSender = assetNotificationSender;
         this.assetRepository = assetRepository;
-        this.customerPathRepository = customerPathRepository;
         this.logger = logger;
     }
     
@@ -50,19 +49,23 @@ public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
             return deleteResult.Result;
         }
 
+        await RaiseNotification(request, deleteResult, cancellationToken);
+        return DeleteResult.Deleted;
+    }
+
+    private async Task RaiseNotification(DeleteAsset request, DeleteEntityResult<Asset> deleteResult,
+        CancellationToken cancellationToken)
+    {
         try
         {
-            var customerPathElement = await customerPathRepository.GetCustomerPathElement(request.AssetId.Customer.ToString());
+            var deleted = AssetModificationRecord.Delete(deleteResult.DeletedEntity!);
             logger.LogDebug("Sending delete asset notification for {AssetId}", request.AssetId);
-            await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Delete,
-                deleteResult.DeletedEntity, null, customerPathElement);
+            await assetNotificationSender.SendAssetModifiedMessage(deleted, cancellationToken);
         }
         catch (Exception ex)
         {
             // Don't return error because notification failed
             logger.LogWarning(ex, "Error raising delete notification for {AssetId}", request.AssetId);
         }
-
-        return DeleteResult.Deleted;
     }
 }

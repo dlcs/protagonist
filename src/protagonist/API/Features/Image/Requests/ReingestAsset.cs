@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using API.Features.Assets;
+using API.Infrastructure.Messaging;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Types;
@@ -25,15 +26,18 @@ public class ReingestAsset : IRequest<ModifyEntityResult<Asset>>
 
 public class ReingestAssetHandler : IRequestHandler<ReingestAsset, ModifyEntityResult<Asset>>
 {
+    private readonly IIngestNotificationSender ingestNotificationSender;
     private readonly IAssetNotificationSender assetNotificationSender;
     private readonly IApiAssetRepository assetRepository;
     private readonly ILogger<ReingestAssetHandler> logger;
 
     public ReingestAssetHandler(
+        IIngestNotificationSender ingestNotificationSender,
         IAssetNotificationSender assetNotificationSender,
         IApiAssetRepository assetRepository,
         ILogger<ReingestAssetHandler> logger)
     {
+        this.ingestNotificationSender = ingestNotificationSender;
         this.assetNotificationSender = assetNotificationSender;
         this.assetRepository = assetRepository;
         this.logger = logger;
@@ -47,9 +51,10 @@ public class ReingestAssetHandler : IRequestHandler<ReingestAsset, ModifyEntityR
         if (validationException != null) return validationException;
         
         var asset = await MarkAssetAsIngesting(cancellationToken, existingAsset!);
-        
-        await assetNotificationSender.SendAssetModifiedNotification(ChangeType.Update, existingAsset, asset);
-        var statusCode = await assetNotificationSender.SendImmediateIngestAssetRequest(asset, false, cancellationToken);
+
+        await assetNotificationSender.SendAssetModifiedMessage(AssetModificationRecord.Update(existingAsset!, asset),
+            cancellationToken);
+        var statusCode = await ingestNotificationSender.SendImmediateIngestAssetRequest(asset, false, cancellationToken);
         
         if (statusCode.IsSuccess())
         {
