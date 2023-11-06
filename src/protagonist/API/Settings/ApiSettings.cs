@@ -76,4 +76,9 @@ public class ApiSettings
         => CustomerOverrides.TryGetValue(Convert.ToString(customerId), out var settings) 
             ? settings.LegacySupport 
             : DefaultLegacySupport;
+    
+    /// <summary>
+    /// Whether the delivery channel feature is disabled
+    /// </summary>
+    public bool DeliveryChannelsDisabled { get; set; }
 }
