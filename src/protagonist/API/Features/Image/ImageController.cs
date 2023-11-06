@@ -5,6 +5,7 @@ using API.Features.Image.Validation;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core;
+using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using Hydra.Model;
@@ -135,6 +136,12 @@ public class ImageController : HydraController
         [FromBody] DLCS.HydraModel.Image hydraAsset,
         CancellationToken cancellationToken)
     {
+        if (apiSettings.DeliveryChannelsDisabled && !hydraAsset.DeliveryChannels.IsNullOrEmpty())
+        {
+            var assetId = new AssetId(customerId, spaceId, imageId);
+            return this.HydraProblem("Delivery channels are disabled", assetId.ToString(), 400, "Bad Request");
+        }
+        
         return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset, cancellationToken);
     }
 
