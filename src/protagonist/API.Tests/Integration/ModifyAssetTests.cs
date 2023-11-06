@@ -51,7 +51,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithLocalStack(storageFixture.LocalStackFixture)
-            .WithConfigValue("DeliveryChannelsDisabled", "True")
             .WithTestServices(services =>
             {
                 services.AddScoped<IEngineClient>(_ => EngineClient);

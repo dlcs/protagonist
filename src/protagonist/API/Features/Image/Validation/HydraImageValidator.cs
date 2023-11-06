@@ -33,7 +33,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
 
         // Other validation
         RuleFor(a => a.DeliveryChannels).Must(d => d.IsNullOrEmpty())
-            .When(_ => apiSettings.Value.DeliveryChannelsDisabled)
+            .When(_ => !apiSettings.Value.DeliveryChannelsEnabled)
             .WithMessage("Delivery channels are disabled");
         
         RuleForEach(a => a.DeliveryChannels)

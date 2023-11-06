@@ -78,7 +78,7 @@ public class ApiSettings
             : DefaultLegacySupport;
     
     /// <summary>
-    /// Whether the delivery channel feature is disabled
+    /// Whether the delivery channel feature is enabled
     /// </summary>
-    public bool DeliveryChannelsDisabled { get; set; }
+    public bool DeliveryChannelsEnabled { get; set; }
 }

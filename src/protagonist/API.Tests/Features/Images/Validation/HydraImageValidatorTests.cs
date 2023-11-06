@@ -13,7 +13,7 @@ public class HydraImageValidatorTests
 
     public HydraImageValidatorTests()
     {
-        var apiSettings = new ApiSettings();
+        var apiSettings = new ApiSettings() { DeliveryChannelsEnabled = true};
         sut = new HydraImageValidator(Options.Create(apiSettings));
     }
 
@@ -237,16 +237,16 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_ValidationError_WhenDeliveryChannelsDisabled()
     {
-        var apiSettings = new ApiSettings() { DeliveryChannelsDisabled = true};
+        var apiSettings = new ApiSettings();
         var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
-        var model = new DLCS.HydraModel.Image { DeliveryChannels = new[] { "iif-img" } };
+        var model = new DLCS.HydraModel.Image { DeliveryChannels = new[] { "iiif-img" } };
         var result = imageValidator.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     [Fact]
     public void DeliveryChannel_NoValidationError_WhenDeliveryChannelsDisabled()
     {
-        var apiSettings = new ApiSettings() { DeliveryChannelsDisabled = true};
+        var apiSettings = new ApiSettings();
         var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
         var model = new DLCS.HydraModel.Image();
         var result = imageValidator.TestValidate(model);
