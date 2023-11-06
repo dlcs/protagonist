@@ -483,12 +483,14 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var idRoot = $"99/1/{nameof(Get_BatchImages_200_IfImagesFound_SupportsQuery)}";
-        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}1"), batch: 4004, num1: 10);
-        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}2"), batch: 4004, num1: 9);
-        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}3"), batch: 4004, num1: 10);
+        var altSpaceRoot = $"99/2/{nameof(Get_BatchImages_200_IfImagesFound_SupportsQuery)}";
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}1"), batch: 4004, num1: 10, space: 1);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}2"), batch: 4004, num1: 9, space: 1);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}3"), batch: 4004, num1: 10, space: 1);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{altSpaceRoot}1"), batch: 4004, num1: 10, space: 2);
         await dbContext.SaveChangesAsync();
         
-        var q = @"{""number1"":10}";
+        var q = @"{""number1"":10,""space"":1}";
         var path = "customers/99/queue/batches/4004/images?q=" + q;
 
         // Act
