@@ -944,7 +944,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
         await dbContext.SaveChangesAsync();
 
-        // a batch of 3 images - 1 with Family, 1 with DC and 1 with both
+        // a batch of 4 images - 1 with Family, 1 with DC, 1 with both, and 1 without
         var hydraImageBody = @"{
     ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
     ""@type"": ""Collection"",
@@ -970,6 +970,12 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""family"": ""I"",
           ""space"": 2,
           ""mediaType"": ""image/tiff""
+        },
+        {
+          ""id"": ""four"",
+          ""origin"": ""https://example.org/foo.tiff"",
+          ""space"": 2,
+          ""mediaType"": ""image/tiff""
         }
     ]
 }";
@@ -992,7 +998,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Hydra batch received
         var hydraBatch = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.Batch>();
         hydraBatch.Completed.Should().Be(0);
-        hydraBatch.Count.Should().Be(3);
+        hydraBatch.Count.Should().Be(4);
         var batchId = hydraBatch.GetLastPathElementAsInt()!.Value;
         
         // Db batch exists (unnecessary?)
@@ -1001,7 +1007,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Images exist with Batch set + File marked as complete
         var images = dbContext.Images.Where(i => i.Customer == customerId && i.Space == 2).ToList();
-        images.Count.Should().Be(3);
+        images.Count.Should().Be(4);
         images.Should().AllSatisfy(a =>
         {
             a.Finished.Should().BeNull();
@@ -1015,14 +1021,15 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Customer Storage incremented
         var storage = await dbContext.CustomerStorages.SingleAsync(q => q.Customer == customerId && q.Space == 0);
-        storage.NumberOfStoredImages.Should().Be(3);
+        storage.NumberOfStoredImages.Should().Be(4);
 
         // Items queued for processing
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 3), true,
+                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 4), true,
                 A<CancellationToken>._)).MustHaveHappened();
     }
+    
     
     [Fact]
     public async Task Post_TestBatch_404_IfBatchNotFoundForCustomer()

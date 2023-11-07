@@ -59,7 +59,8 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         if (request.IsPriority)
         {
             if (request.Assets.Any(a =>
-                    a.Family != AssetFamily.Image && !a.HasDeliveryChannel(AssetDeliveryChannels.Image)))
+                    a.Family != AssetFamily.Image && !a.HasDeliveryChannel(AssetDeliveryChannels.Image) &&
+                    !MIMEHelper.IsImage(a.MediaType)))
             {
                 return ModifyEntityResult<Batch>.Failure("Priority queue only supports image assets",
                     WriteResult.FailedValidation);
@@ -91,7 +92,8 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
             {
                 logger.LogDebug("Processing asset {AssetId}", asset.Id);
                 var processAssetResult =
-                    await assetProcessor.Process(asset, false, true, true, cancellationToken: cancellationToken);
+                    await assetProcessor.Process(asset, false, true, true,
+                        cancellationToken: cancellationToken);
                 if (!processAssetResult.IsSuccess)
                 {
                     logger.LogDebug("Processing asset {AssetId} failed, aborting batch. Error: '{Error}'", asset.Id,
