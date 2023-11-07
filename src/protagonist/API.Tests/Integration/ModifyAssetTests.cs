@@ -62,6 +62,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             {
                 AllowAutoRedirect = false
             });
+        
         dbFixture.CleanUp();
     }
 
@@ -894,6 +895,34 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Patch_Asset_Fails_When_Delivery_Channels_Are_Disabled()
+    {
+        // Arrange 
+        var assetId = new AssetId(99, 1, $"{nameof(Patch_Asset_Fails_When_Delivery_Channels_Are_Disabled)}");
+
+        var testAsset = await dbContext.Images.AddTestAsset(assetId, family: AssetFamily.Image,
+            ref1: "I am string 1", origin: "https://images.org/image2.tiff");
+        await dbContext.SaveChangesAsync();
+
+        var hydraImageBody = @"{
+  ""@type"": ""Image"",
+  ""string1"": ""I am edited"",
+  ""deliveryChannels"": [
+        ""iiif-img""
+]
+}";                        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("Delivery channels are disabled");
     }
     
     [Fact]

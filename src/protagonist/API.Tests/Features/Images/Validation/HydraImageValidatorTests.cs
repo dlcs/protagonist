@@ -1,7 +1,9 @@
 ﻿using System;
 using API.Features.Image.Validation;
+using API.Settings;
 using DLCS.Model.Policies;
 using FluentValidation.TestHelper;
+using Microsoft.Extensions.Options;
 
 namespace API.Tests.Features.Images.Validation;
 
@@ -11,7 +13,8 @@ public class HydraImageValidatorTests
 
     public HydraImageValidatorTests()
     {
-        sut = new HydraImageValidator();
+        var apiSettings = new ApiSettings() { DeliveryChannelsEnabled = true};
+        sut = new HydraImageValidator(Options.Create(apiSettings));
     }
 
     [Theory]
@@ -223,10 +226,30 @@ public class HydraImageValidatorTests
     }
     
     [Fact]
-    public void DeliveryChannel_UnkonwValue()
+    public void DeliveryChannel_UnknownValue()
     {
         var model = new DLCS.HydraModel.Image { DeliveryChannels = new[] { "foo" } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
+    }
+    
+        
+    [Fact]
+    public void DeliveryChannel_ValidationError_WhenDeliveryChannelsDisabled()
+    {
+        var apiSettings = new ApiSettings();
+        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var model = new DLCS.HydraModel.Image { DeliveryChannels = new[] { "iiif-img" } };
+        var result = imageValidator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
+    }
+    [Fact]
+    public void DeliveryChannel_NoValidationError_WhenDeliveryChannelsDisabled()
+    {
+        var apiSettings = new ApiSettings();
+        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var model = new DLCS.HydraModel.Image();
+        var result = imageValidator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
 }

@@ -42,6 +42,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbContext = dbFixture.DbContext;
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
+            .WithConfigValue("DeliveryChannelsEnabled", "true")
             .WithTestServices(services =>
             {
                 services.AddScoped<IEngineClient>(_ => EngineClient);
