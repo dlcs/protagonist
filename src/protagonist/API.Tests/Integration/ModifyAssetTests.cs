@@ -1041,6 +1041,61 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // TODO - test for notification raised once implemented
     }
+    
+      [Fact]
+    public async Task Delete_RemovesAssetWithoutImageLocation_FromDb()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Delete_RemovesAssetAndAssociatedEntities_FromDb));
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 0L);
+        var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
+            sizeOfStored: 1000L, sizeOfThumbs: 1000L);
+        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
+            sizeOfStored: 2000L, sizeOfThumbs: 2000L);
+        var customerImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 0 && ec.Scope == "99" && ec.Type == KnownEntityCounters.CustomerImages);
+        var currentCustomerImageCount = customerImagesCounter.Next;
+        var spaceImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 99 && ec.Scope == "1" && ec.Type == KnownEntityCounters.SpaceImages);
+        var currentSpaceImagesCounter = spaceImagesCounter.Next;
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer(99).DeleteAsync(assetId.ToApiResourcePath());
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        
+        // Asset + Storage deleted
+        var dbAsset = await dbContext.Images.SingleOrDefaultAsync(i => i.Id == assetId);
+        dbAsset.Should().BeNull();
+        var dbLocation = await dbContext.ImageLocations.SingleOrDefaultAsync(i => i.Id == assetId);
+        dbLocation.Should().BeNull();
+
+        // CustomerStorage values reduced
+        await dbContext.Entry(customerSpaceStorage.Entity).ReloadAsync();
+        customerSpaceStorage.Entity.NumberOfStoredImages.Should().Be(99);
+        customerSpaceStorage.Entity.TotalSizeOfThumbnails.Should().Be(1000L);
+        customerSpaceStorage.Entity.TotalSizeOfStoredImages.Should().Be(600L);
+        
+        await dbContext.Entry(customerStorage.Entity).ReloadAsync();
+        customerStorage.Entity.NumberOfStoredImages.Should().Be(199);
+        customerStorage.Entity.TotalSizeOfThumbnails.Should().Be(2000L);
+        customerStorage.Entity.TotalSizeOfStoredImages.Should().Be(1600L);
+        
+        // EntityCounter for customer images reduced
+        var dbCustomerCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 0 && ec.Scope == "99" && ec.Type == KnownEntityCounters.CustomerImages);
+        dbCustomerCounter.Next.Should().Be(currentCustomerImageCount - 1);
+        
+        // EntityCounter for space images reduced
+        var dbSpaceCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 99 && ec.Scope == "1" && ec.Type == KnownEntityCounters.SpaceImages);
+        dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
+        
+        // TODO - test for notification raised once implemented
+    }
 
     [Fact]
     public async Task Reingest_404_IfAssetNotFound()

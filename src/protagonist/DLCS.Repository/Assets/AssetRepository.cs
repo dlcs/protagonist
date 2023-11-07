@@ -50,9 +50,13 @@ public class AssetRepository : AssetRepositoryCachingBase
             dlcsContext.Images.Remove(asset);
 
             // And related ImageLocation
-            var imageLocation = new ImageLocation { Id = assetId };
-            dlcsContext.ImageLocations.Attach(imageLocation);
-            dlcsContext.ImageLocations.Remove(imageLocation);
+            var imageLocation = await dlcsContext.ImageLocations.FindAsync(assetId);
+
+            if (imageLocation != null)
+            {
+                dlcsContext.ImageLocations.Remove(imageLocation);
+            }
+
             var customer = assetId.Customer;
             var space = assetId.Space;
             
