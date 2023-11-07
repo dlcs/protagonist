@@ -293,7 +293,7 @@ public class ApiAssetRepositoryTests
         var result = await sut.DeleteAsset(assetId);
         
         // Assert
-        result.Result.Should().Be(DeleteResult.NotFound);
+        result.Result.Should().Be(DeleteResult.Deleted);
     }
     
     [Fact]
