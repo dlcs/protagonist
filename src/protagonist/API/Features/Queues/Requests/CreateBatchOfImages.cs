@@ -55,17 +55,6 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
     public async Task<ModifyEntityResult<Batch>> Handle(CreateBatchOfImages request,
         CancellationToken cancellationToken)
     {
-        // TODO - we may need to support non-Image assets here 
-        if (request.IsPriority)
-        {
-            if (request.Assets.Any(a =>
-                    a.Family != AssetFamily.Image && !a.HasDeliveryChannel(AssetDeliveryChannels.Image)))
-            {
-                return ModifyEntityResult<Batch>.Failure("Priority queue only supports image assets",
-                    WriteResult.FailedValidation);
-            }
-        }
-        
         var (exists, missing) = await DoAllSpacesExist(request.CustomerId, request.Assets, cancellationToken);
         if (!exists)
         {
@@ -91,7 +80,8 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
             {
                 logger.LogDebug("Processing asset {AssetId}", asset.Id);
                 var processAssetResult =
-                    await assetProcessor.Process(asset, false, true, true, cancellationToken: cancellationToken);
+                    await assetProcessor.Process(asset, false, true, true, 
+                        request.IsPriority, cancellationToken: cancellationToken);
                 if (!processAssetResult.IsSuccess)
                 {
                     logger.LogDebug("Processing asset {AssetId} failed, aborting batch. Error: '{Error}'", asset.Id,
