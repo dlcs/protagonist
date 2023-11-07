@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.S3;
 using API.Client;
+using API.Infrastructure.Messaging;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
@@ -36,6 +37,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
+    private static readonly IAssetNotificationSender NotificationSender = A.Fake<IAssetNotificationSender>();
     private readonly IAmazonS3 amazonS3;
     private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
     
@@ -53,6 +55,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .WithLocalStack(storageFixture.LocalStackFixture)
             .WithTestServices(services =>
             {
+                services.AddSingleton<IAssetNotificationSender>(_ => NotificationSender);
                 services.AddScoped<IEngineClient>(_ => EngineClient);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
@@ -1038,8 +1041,10 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var dbSpaceCounter = await dbContext.EntityCounters.SingleAsync(ec =>
             ec.Customer == 99 && ec.Scope == "1" && ec.Type == KnownEntityCounters.SpaceImages);
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
-        
-        // TODO - test for notification raised once implemented
+
+        A.CallTo(() => NotificationSender.SendAssetModifiedMessage(
+            A<AssetModificationRecord>.That.Matches(r => r.ChangeType == ChangeType.Delete), 
+            A<CancellationToken>._)).MustHaveHappened();
     }
     
       [Fact]
@@ -1094,7 +1099,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ec.Customer == 99 && ec.Scope == "1" && ec.Type == KnownEntityCounters.SpaceImages);
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
         
-        // TODO - test for notification raised once implemented
+        A.CallTo(() => NotificationSender.SendAssetModifiedMessage(
+            A<AssetModificationRecord>.That.Matches(r => r.ChangeType == ChangeType.Delete), 
+            A<CancellationToken>._)).MustHaveHappened();
     }
 
     [Fact]
