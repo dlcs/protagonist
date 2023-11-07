@@ -99,7 +99,6 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
             request.AssetMustExist,
             request.AlwaysReingest,
             false,
-            false,
             async updatedAsset =>
             {
                 if (updatedAsset.Family == AssetFamily.Timebased)

@@ -46,8 +46,8 @@ public class AssetProcessor
     /// <param name="requiresReingestPreSave">Optional delegate for modifying asset prior to saving</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <param name="isPriorityQueue">Whether the request is for the priority queue or not</param>
-    public async Task<ProcessAssetResult> Process(Asset asset, bool mustExist, bool alwaysReingest, bool isBatchUpdate,
-        bool isPriorityQueue, Func<Asset, Task>? requiresReingestPreSave = null, 
+    public async Task<ProcessAssetResult> Process(Asset asset, bool mustExist, bool alwaysReingest, bool isBatchUpdate, 
+        Func<Asset, Task>? requiresReingestPreSave = null, 
         CancellationToken cancellationToken = default)
     {
         Asset? existingAsset;
@@ -96,20 +96,6 @@ public class AssetProcessor
             
             var updatedAsset = assetPreparationResult.UpdatedAsset!;
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
-            
-            // TODO - we may need to support non-Image assets here 
-            if (isPriorityQueue)
-            {
-                if (updatedAsset.Family != AssetFamily.Image && 
-                    !updatedAsset.HasDeliveryChannel(AssetDeliveryChannels.Image))
-                {
-                    return new ProcessAssetResult
-                    {
-                        Result = ModifyEntityResult<Asset>.Failure("Priority queue only supports image assets",
-                            WriteResult.FailedValidation)
-                    };
-                }
-            }
 
             if (existingAsset == null)
             {
