@@ -98,28 +98,6 @@ public class AssetRepository : AssetRepositoryCachingBase
             await entityCounterRepository.Decrement(0, KnownEntityCounters.CustomerImages, customer.ToString());
             return new DeleteEntityResult<Asset>(DeleteResult.Deleted, asset);
         }
-        catch (DbUpdateConcurrencyException dbEx)
-        {
-            bool notFound = true;
-            foreach (var entry in dbEx.Entries)
-            {
-                var databaseValues = await entry.GetDatabaseValuesAsync();
-                if (databaseValues != null)
-                {
-                    notFound = false;
-                }
-            }
-
-            if (notFound)
-            {
-                return new DeleteEntityResult<Asset>(DeleteResult.NotFound);
-            }
-            else
-            {
-                Logger.LogError(dbEx, "Concurrency exception deleting Asset {AssetId}", assetId);
-                return new DeleteEntityResult<Asset>(DeleteResult.Error);
-            }
-        }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error deleting asset {AssetId}", assetId);
