@@ -50,7 +50,7 @@ public class GetBatchImagesHandler : IRequestHandler<GetBatchImages, FetchEntity
             request,
             i => i
                 .Where(a => a.Customer == request.CustomerId && a.Batch == request.BatchId)
-                .ApplyAssetFilter(request.AssetFilter),
+                .ApplyAssetFilter(request.AssetFilter, true),
             images => images.AsOrderedAssetQuery(request),
             cancellationToken);
 
