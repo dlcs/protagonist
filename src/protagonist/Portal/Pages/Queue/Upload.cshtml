@@ -1,0 +1,50 @@
+﻿@page
+@model Portal.Pages.Queue.IndexModel;
+
+@{
+    ViewData["Title"] = "Upload";
+}
+
+@section header
+{
+    <link href="https://cdn.jsdelivr.net/npm/dropzone@5.9.2/dist/min/dropzone.min.css" rel="stylesheet" />
+    <link href="~/assets/dist/css/jquery-ui.min.css" rel="stylesheet" />
+    <link href="~/assets/dist/css/jquery-ui.structure.min.css" rel="stylesheet" />
+}
+
+
+<div>On this page you can upload a CSV of information about images for the DLCS to ingest.</div>
+<a href="https://legacyportal.dlcs.digirati.io/Support/sample.csv">Click here to download a sample .csv file.</a>
+<div class="alert alert-danger my-2" id="upload-error-box" role="alert" hidden>
+    <i class="me-2" data-feather="alert-circle"></i><strong>Error!</strong>
+    <ul class="my-1" id="errors">
+    </ul>
+</div>
+<div class="my-2">
+    <form action="@Url.Action("Upload", "CsvUpload", new { customer = 27, space = 1 })" class="dropzone" id="dropzoneForm"></form>
+</div>
+@section Scripts
+{
+    <script src="https://cdn.jsdelivr.net/npm/dropzone@5.9.2/dist/dropzone.min.js"></script>
+    <script src="~/assets/dist/js/jquery-ui.min.js"></script>
+    <script>
+        Dropzone.options.dropzoneForm = {
+            paramName: "file", 
+            maxFilesize: 10,
+            maxFiles: 32,
+            dictDefaultMessage: "Upload batches by dropping them here",
+            init: function() {
+                this.on('error', function(file, response) {
+                    var msgEl = $(file.previewElement).find('.dz-error-message'); 
+                    $("#upload-error-box #errors").empty();
+                    $("#upload-error-box").attr("hidden", false);
+                    response.errors.forEach(function (error) {
+                        $('#upload-error-box #errors').append(`<li>${error}</li>`);
+                    });
+                });
+                
+                window.pDropZone = this;
+            }
+        };
+    </script>
+}

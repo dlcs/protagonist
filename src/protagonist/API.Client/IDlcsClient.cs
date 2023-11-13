@@ -28,6 +28,7 @@ public interface IDlcsClient
     Task<HydraCollection<Image>> PatchImages(HydraCollection<Image> images, int spaceId);
     Task<HydraCollection<Batch>> GetBatches(string type, int page, int pageSize);
     Task<Batch> GetBatch(int batchId);
+    Task<Batch> CreateBatch(HydraCollection<Image> images);
     Task<HydraCollection<Image>> GetBatchImages(int batchId);
     Task<CustomerQueue> GetQueue();
 }
