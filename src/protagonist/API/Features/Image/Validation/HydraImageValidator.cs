@@ -1,8 +1,10 @@
-﻿using DLCS.Core;
+﻿using API.Settings;
+using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using FluentValidation;
+using Microsoft.Extensions.Options;
 
 namespace API.Features.Image.Validation;
 
@@ -11,7 +13,7 @@ namespace API.Features.Image.Validation;
 /// </summary>
 public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
 {
-    public HydraImageValidator()
+    public HydraImageValidator(IOptions<ApiSettings> apiSettings)
     {
         // Required fields
         RuleFor(a => a.MediaType).NotEmpty().WithMessage("Media type must be specified");
@@ -28,8 +30,12 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleFor(a => a.Batch).Empty().WithMessage("Should not include batch");
         RuleFor(a => a.Finished).Empty().WithMessage("Should not include finished");
         RuleFor(a => a.Created).Empty().WithMessage("Should not include created");
-        
+
         // Other validation
+        RuleFor(a => a.DeliveryChannels).Must(d => d.IsNullOrEmpty())
+            .When(_ => !apiSettings.Value.DeliveryChannelsEnabled)
+            .WithMessage("Delivery channels are disabled");
+        
         RuleForEach(a => a.DeliveryChannels)
             .Must(dc => AssetDeliveryChannels.All.Contains(dc))
             .WithMessage($"DeliveryChannel must be one of {AssetDeliveryChannels.AllString}");

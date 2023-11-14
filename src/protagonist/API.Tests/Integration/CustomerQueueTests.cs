@@ -42,6 +42,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbContext = dbFixture.DbContext;
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
+            .WithConfigValue("DeliveryChannelsEnabled", "true")
             .WithTestServices(services =>
             {
                 services.AddScoped<IEngineClient>(_ => EngineClient);
@@ -482,12 +483,14 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var idRoot = $"99/1/{nameof(Get_BatchImages_200_IfImagesFound_SupportsQuery)}";
-        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}1"), batch: 4004, num1: 10);
-        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}2"), batch: 4004, num1: 9);
-        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}3"), batch: 4004, num1: 10);
+        var altSpaceRoot = $"99/2/{nameof(Get_BatchImages_200_IfImagesFound_SupportsQuery)}";
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}1"), batch: 4004, num1: 10, space: 1);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}2"), batch: 4004, num1: 9, space: 1);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}3"), batch: 4004, num1: 10, space: 1);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{altSpaceRoot}1"), batch: 4004, num1: 10, space: 2);
         await dbContext.SaveChangesAsync();
         
-        var q = @"{""number1"":10}";
+        var q = @"{""number1"":10,""space"":1}";
         var path = "customers/99/queue/batches/4004/images?q=" + q;
 
         // Act
@@ -559,6 +562,43 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         // status code correct
         response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_201_IfLegacyModeEnabledWithAtIdFieldSet()
+    {
+        const int customerId = 15;
+        const int space = 200;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""@id"": ""https://test/customers/15/spaces/200/images/one"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 200,
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var assetInDatabase = dbContext.Images.Where(a => a.Customer == customerId && a.Space == space);
+        assetInDatabase.Count().Should().Be(1);
+        assetInDatabase.ToList()[0].Id.Asset.Should().Be("one");
     }
     
     [Fact]
@@ -906,7 +946,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
         await dbContext.SaveChangesAsync();
 
-        // a batch of 3 images - 1 with Family, 1 with DC and 1 with both
+        // a batch of 4 images - 1 with Family, 1 with DC, 1 with both, and 1 without
         var hydraImageBody = @"{
     ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
     ""@type"": ""Collection"",
@@ -932,6 +972,12 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""family"": ""I"",
           ""space"": 2,
           ""mediaType"": ""image/tiff""
+        },
+        {
+          ""id"": ""four"",
+          ""origin"": ""https://example.org/foo.tiff"",
+          ""space"": 2,
+          ""mediaType"": ""image/tiff""
         }
     ]
 }";
@@ -954,7 +1000,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Hydra batch received
         var hydraBatch = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.Batch>();
         hydraBatch.Completed.Should().Be(0);
-        hydraBatch.Count.Should().Be(3);
+        hydraBatch.Count.Should().Be(4);
         var batchId = hydraBatch.GetLastPathElementAsInt()!.Value;
         
         // Db batch exists (unnecessary?)
@@ -963,7 +1009,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Images exist with Batch set + File marked as complete
         var images = dbContext.Images.Where(i => i.Customer == customerId && i.Space == 2).ToList();
-        images.Count.Should().Be(3);
+        images.Count.Should().Be(4);
         images.Should().AllSatisfy(a =>
         {
             a.Finished.Should().BeNull();
@@ -977,14 +1023,15 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Customer Storage incremented
         var storage = await dbContext.CustomerStorages.SingleAsync(q => q.Customer == customerId && q.Space == 0);
-        storage.NumberOfStoredImages.Should().Be(3);
+        storage.NumberOfStoredImages.Should().Be(4);
 
         // Items queued for processing
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 3), true,
+                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 4), true,
                 A<CancellationToken>._)).MustHaveHappened();
     }
+    
     
     [Fact]
     public async Task Post_TestBatch_404_IfBatchNotFoundForCustomer()

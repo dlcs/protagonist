@@ -50,9 +50,13 @@ public class AssetRepository : AssetRepositoryCachingBase
             dlcsContext.Images.Remove(asset);
 
             // And related ImageLocation
-            var imageLocation = new ImageLocation { Id = assetId };
-            dlcsContext.ImageLocations.Attach(imageLocation);
-            dlcsContext.ImageLocations.Remove(imageLocation);
+            var imageLocation = await dlcsContext.ImageLocations.FindAsync(assetId);
+
+            if (imageLocation != null)
+            {
+                dlcsContext.ImageLocations.Remove(imageLocation);
+            }
+
             var customer = assetId.Customer;
             var space = assetId.Space;
             
@@ -93,28 +97,6 @@ public class AssetRepository : AssetRepositoryCachingBase
             await entityCounterRepository.Decrement(customer, KnownEntityCounters.SpaceImages, space.ToString());
             await entityCounterRepository.Decrement(0, KnownEntityCounters.CustomerImages, customer.ToString());
             return new DeleteEntityResult<Asset>(DeleteResult.Deleted, asset);
-        }
-        catch (DbUpdateConcurrencyException dbEx)
-        {
-            bool notFound = true;
-            foreach (var entry in dbEx.Entries)
-            {
-                var databaseValues = await entry.GetDatabaseValuesAsync();
-                if (databaseValues != null)
-                {
-                    notFound = false;
-                }
-            }
-
-            if (notFound)
-            {
-                return new DeleteEntityResult<Asset>(DeleteResult.NotFound);
-            }
-            else
-            {
-                Logger.LogError(dbEx, "Concurrency exception deleting Asset {AssetId}", assetId);
-                return new DeleteEntityResult<Asset>(DeleteResult.Error);
-            }
         }
         catch (Exception ex)
         {
