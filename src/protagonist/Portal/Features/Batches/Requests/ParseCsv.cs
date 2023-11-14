@@ -81,6 +81,7 @@ public class ParseCsvHandler : IRequestHandler<ParseCsv, ParseCsvResult>
             {
                 try
                 {
+                    
                     var record = csv.GetRecord<ImageIngestModel>();
                     if (record.AssetType.ToLower() != "image") continue;
                     if (distinctRows.ContainsKey(record.Line.Value)) continue;
@@ -117,9 +118,9 @@ public class ParseCsvHandler : IRequestHandler<ParseCsv, ParseCsvResult>
                 }
                 catch (TypeConverterException typeEx)
                 {
+                    var fieldIndex = typeEx.Context.Reader.CurrentIndex - 1;
                     var currentLine = csv.GetField(1);
-                    var fieldName = ImageIngestModel.FieldNames[typeEx.Context.Reader.CurrentIndex];
-                    readErrors.Add($"Line {currentLine}: could not parse {fieldName} value '{typeEx.Text}'");
+                    readErrors.Add($"Line {currentLine}: could not parse {ImageIngestModel.FieldNames[fieldIndex]} value ({typeEx.Text})");
                 }
                 catch (Exception ex)
                 {
