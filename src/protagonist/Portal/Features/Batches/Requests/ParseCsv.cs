@@ -23,25 +23,6 @@ using MissingFieldException = CsvHelper.MissingFieldException;
 
 namespace Portal.Features.Batches.Requests;
 
-public class ImageIngestModel
-{
-    [Index(0)] public string AssetType { get; set; }
-    [Index(1)] public int? Line { get; set; }
-    [Index(2)] public int Space { get; set; }
-    [Index(3)] public string Id { get; set; }
-    [Index(4)] public string Origin { get; set; }
-    [Index(5)] public string InitialOrigin { get; set; }
-    [Index(6)] public string String1 { get; set; }
-    [Index(7)] public string String2 { get; set; }
-    [Index(8)] public string String3 { get; set; }
-    [Index(9)] public string Tags { get; set; }
-    [Index(10)] public string Roles { get; set; }
-    [Index(11)] public int MaxUnauthorized { get; set; }
-    [Index(12)] public int? Number1 { get; set; }
-    [Index(13)] public int? Number2 { get; set; }
-    [Index(14)] public int? Number3 { get; set; }
-}
-
 public class ParseCsv : IRequest<ParseCsvResult>
 {
     public int? SpaceId { get; set; }
@@ -77,6 +58,7 @@ public class ParseCsvHandler : IRequestHandler<ParseCsv, ParseCsvResult>
     private readonly int customerId;
     private readonly int maxBatchSize;
     
+    
     public ParseCsvHandler(IDlcsClient dlcsClient, IOptions<PortalSettings> portalSettings, ILogger<ParseCsvHandler> logger, ClaimsPrincipal currentUser)
     {
         this.dlcsClient = dlcsClient;
@@ -97,7 +79,6 @@ public class ParseCsvHandler : IRequestHandler<ParseCsv, ParseCsvResult>
             csv.ReadHeader();
             while (csv.Read())
             {
-                var currentLine = csv.GetField(1);
                 try
                 {
                     var record = csv.GetRecord<ImageIngestModel>();
@@ -111,9 +92,11 @@ public class ParseCsvHandler : IRequestHandler<ParseCsv, ParseCsvResult>
                         String2 = record.String2,
                         String3 = record.String3,
                         Origin = record.Origin,
-                        //Tags = tags,
-                        //Roles = roles,
-                        MaxUnauthorised = record.MaxUnauthorized,
+                        Tags = record.Tags.Split(",",
+                            StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries),
+                        Roles = record.Roles.Split(",",
+                            StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries),
+                        MaxUnauthorised = record.MaxUnauthorized ?? -1,
                         Number1 = record.Number1,
                         Number2 = record.Number2,
                         Number3 = record.Number3,
@@ -122,38 +105,26 @@ public class ParseCsvHandler : IRequestHandler<ParseCsv, ParseCsvResult>
                         MediaType = "image/jp2"
                     });
                 }
-                catch (CsvHelperException csvEx)
+                catch (BadDataException badDataEx)
                 {
-                    var context = csvEx.Context;
-                    var fieldIndex = context.Reader.CurrentIndex;
-                    var readErrorPrefix = $"Line {currentLine}:";
-                    
-                    switch (csvEx)
-                    {
-                        case BadDataException badDataEx:
-                        {
-                            readErrors.Add($"{readErrorPrefix} field {context.Reader.HeaderRecord?[fieldIndex]} contains bad data");
-                            break;
-                        }
-                        case MissingFieldException:
-                        {
-                            if (context.Parser.Row != 1)
-                            {
-                                readErrors.Add($"{readErrorPrefix} field {fieldIndex} is missing");
-                            }
-                            break;
-                        }
-                        case TypeConverterException typeEx:
-                        {
-                            readErrors.Add($"{readErrorPrefix} could not parse {context.Reader.HeaderRecord?[fieldIndex]} value '{typeEx.Text}'");
-                            break;
-                        }
-                        case FieldValidationException validationEx:
-                        {
-                            readErrors.Add($"{readErrorPrefix} {validationEx.Message}'");
-                            break;
-                        }
-                    }
+                    return ParseCsvResult.Failure(
+                        $"CSV read error: bad data found in file at line {badDataEx.Context.Parser.Row}, row {badDataEx.Context.Reader.CurrentIndex}");
+                }
+                catch (MissingFieldException missingFieldEx)
+                {
+                    return ParseCsvResult.Failure(
+                        $"CSV read error: line {missingFieldEx.Context.Parser.Row} in file is missing fields");
+                }
+                catch (TypeConverterException typeEx)
+                {
+                    var currentLine = csv.GetField(1);
+                    var fieldName = ImageIngestModel.FieldNames[typeEx.Context.Reader.CurrentIndex];
+                    readErrors.Add($"Line {currentLine}: could not parse {fieldName} value '{typeEx.Text}'");
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error parsing CSV file");
+                    return ParseCsvResult.Failure("An error occured while parsing the CSV file");
                 }
             }
         }
@@ -174,29 +145,55 @@ public class ParseCsvHandler : IRequestHandler<ParseCsv, ParseCsvResult>
         var batches = images.Chunk(maxBatchSize).ToList();
         for (var i = 0; i < batches.Count; i++)
         {
-            var currentLine = maxBatchSize * i;
-            var lineRange = currentLine + (batches[i].Length - 1);
             var collection = new HydraCollection<Image>()
             {
                 Members = batches[i].ToArray()
             };
             try
             {
-                var response = await dlcsClient.CreateBatch(collection);
+                await dlcsClient.CreateBatch(collection);
             }
-            
             catch (DlcsException dlcsEx) // Forward errors from the API
             {
-                return ParseCsvResult.Failure($"DLCS Error: {dlcsEx.Message}");
+                // Get the range of images where the exception may have occured:
+                var imagesStart = (maxBatchSize * i) + 1;
+                var imagesEnd = (maxBatchSize * i) + batches[i].Length;
+                return ParseCsvResult.Failure($"DLCS Error in images {imagesStart}-{imagesEnd}: {dlcsEx.Message}");
             }
-            catch
+            catch(Exception ex)
             {
+                logger.LogError(ex, "Error posting batch to DLCS");
                 return ParseCsvResult.Failure($"DLCS Error: An error occurred while posting this batch to the DLCS");
             }
         }
         
         return ParseCsvResult.Success();
     }
+}
+
+public class ImageIngestModel
+{
+    public static readonly string[] FieldNames =
+    {
+        "Type", "Line", "Space", "ID", "Origin", "Reference1", "Reference2", "Reference3", "Tags", "Roles",
+        "MaxUnauthorised", "NumberReference1", "NumberReference2", "NumberReference3"
+    };
+    
+    [Index(0)] public string AssetType { get; set; }
+    [Index(1)] public int? Line { get; set; }
+    [Index(2)] public int Space { get; set; }
+    [Index(3)] public string Id { get; set; }
+    [Index(4)] public string Origin { get; set; }
+    [Index(5)] public string InitialOrigin { get; set; }
+    [Index(6)] public string String1 { get; set; }
+    [Index(7)] public string String2 { get; set; }
+    [Index(8)] public string String3 { get; set; }
+    [Index(9)] public string Tags { get; set; }
+    [Index(10)] public string Roles { get; set; }
+    [Index(11)] public int? MaxUnauthorized { get; set; }
+    [Index(12)] public int? Number1 { get; set; }
+    [Index(13)] public int? Number2 { get; set; }
+    [Index(14)] public int? Number3 { get; set; }
 }
 
 
