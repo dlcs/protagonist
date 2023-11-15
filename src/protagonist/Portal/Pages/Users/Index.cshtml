@@ -60,7 +60,7 @@
                 {
                     <tr>
                         <td>@m.Email</td>
-                        <td>@m.Created</td>
+                        <td>@m.Created.Value.ToString("yyyy-MM-dd hh:mm:ss")</td>
                         <td>@m.Enabled</td>
                         <td>
                             <a asp-controller="User" asp-action="Delete" asp-route-id="@m.Id"

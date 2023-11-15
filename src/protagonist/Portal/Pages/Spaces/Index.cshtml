@@ -51,7 +51,7 @@
         <tr>
             <th scope="row">@space.SpaceId</th>
             <td><a asp-page="/Spaces/Details" asp-route-id="@space.SpaceId">@space.Name</a></td>
-            <td>@space.Created</td>
+            <td>@space.Created.ToString("yyyy-MM-dd hh:mm:ss")</td>
         </tr>
     }
     </tbody>

@@ -52,7 +52,7 @@
         </div>
         @if (Model.Batch.Finished != null)
         {
-            <span>Completed: @Model.Batch.Finished</span>
+            <span>Completed: @Model.Batch.Finished.Value.ToString("yyyy-MM-dd hh:mm:ss")</span>
         }
         else
         {
