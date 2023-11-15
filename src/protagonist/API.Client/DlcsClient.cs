@@ -275,8 +275,6 @@ public class DlcsClient : IDlcsClient
     public async Task<Batch> CreateBatch(HydraCollection<Image> images)
     {
         var url = $"customers/{currentUser.GetCustomerId()}/queue";
-        //Console.WriteLine(await ApiBody(images).ReadAsStringAsync());
-        
         var response = await httpClient.PostAsync(url, ApiBody(images));
         var batch = await response.ReadAsHydraResponseAsync<Batch>(jsonSerializerSettings);
         return batch;

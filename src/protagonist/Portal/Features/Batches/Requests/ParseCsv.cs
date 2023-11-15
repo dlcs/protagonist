@@ -58,7 +58,6 @@ public class ParseCsvHandler : IRequestHandler<ParseCsv, ParseCsvResult>
     private readonly int customerId;
     private readonly int maxBatchSize;
     
-    
     public ParseCsvHandler(IDlcsClient dlcsClient, IOptions<PortalSettings> portalSettings, ILogger<ParseCsvHandler> logger, ClaimsPrincipal currentUser)
     {
         this.dlcsClient = dlcsClient;
@@ -81,13 +80,13 @@ public class ParseCsvHandler : IRequestHandler<ParseCsv, ParseCsvResult>
             {
                 try
                 {
-                    
                     var record = csv.GetRecord<ImageIngestModel>();
                     if (record.AssetType.ToLower() != "image") continue;
                     if (distinctRows.ContainsKey(record.Line.Value)) continue;
                     distinctRows.Add(record.Line.Value, new Image
                     {
                         CustomerId = customerId,
+                        ModelId = record.Id,
                         Space = record.Space,
                         String1 = record.String1,
                         String2 = record.String2,
