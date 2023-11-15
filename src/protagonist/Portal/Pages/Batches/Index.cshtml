@@ -1,6 +1,6 @@
 ﻿@page "{batch}"
 @using Hydra
-@using DLCS.Model.Assets
+@using Portal.Extensions
 @using AssetFamily = DLCS.HydraModel.AssetFamily
 @model Portal.Pages.Batches.Index
 
@@ -52,7 +52,7 @@
         </div>
         @if (Model.Batch.Finished != null)
         {
-            <span>Completed: @Model.Batch.Finished.Value.ToString("yyyy-MM-dd hh:mm:ss")</span>
+            <span>Completed: @Model.Batch.Finished.Value.GetDefaultTime()</span>
         }
         else
         {
