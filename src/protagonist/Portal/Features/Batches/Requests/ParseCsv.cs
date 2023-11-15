@@ -25,7 +25,6 @@ namespace Portal.Features.Batches.Requests;
 
 public class ParseCsv : IRequest<ParseCsvResult>
 {
-    public int? SpaceId { get; set; }
     public IFormFile File { get; set; }
 }
 
@@ -184,7 +183,7 @@ public class ImageIngestModel
     [Index(2)] public int Space { get; set; }
     [Index(3)] public string Id { get; set; }
     [Index(4)] public string Origin { get; set; }
-    [Index(5)] public string InitialOrigin { get; set; }
+    [Index(5), NullValues("")] public string? InitialOrigin { get; set; }
     [Index(6)] public string String1 { get; set; }
     [Index(7)] public string String2 { get; set; }
     [Index(8)] public string String3 { get; set; }
