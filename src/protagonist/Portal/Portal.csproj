@@ -60,9 +60,5 @@
     <ItemGroup>
       <Folder Include="wwwroot\img" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Compile Remove="Features\Batches\Requests\PostBatch.cs" />
-    </ItemGroup>
-
+    
 </Project>

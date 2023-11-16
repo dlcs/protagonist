@@ -13,14 +13,14 @@
 }
 
 <div>On this page you can upload a CSV of information about images for the DLCS to ingest.</div>
-<a href="https://legacyportal.dlcs.digirati.io/Support/sample.csv">Click here to download a sample .csv file.</a>
+<a href="/csv/sample.csv">Click here to download a sample .csv file.</a>
 <div class="alert alert-danger my-2" id="upload-error-box" role="alert" hidden>
     <i class="me-2" data-feather="alert-circle"></i><strong>Error!</strong>
     <ul class="my-1" id="errors">
     </ul>
 </div>
 <div class="my-2">
-    <form action="@Url.Action("Upload", "CsvUpload", new { customer = 27, space = 1 })" class="dropzone" id="dropzoneForm"></form>
+    <form action="@Url.Action("Upload", "CsvUpload")" class="dropzone" id="dropzoneForm"></form>
 </div>
 @section Scripts
 {
@@ -30,12 +30,13 @@
         Dropzone.options.dropzoneForm = {
             paramName: "file", 
             maxFilesize: 10,
-            maxFiles: 32,
+            uploadMultiple: false,
+            parallelUploads: 1,
             dictDefaultMessage: "Upload batches by dropping them here",
             init: function() {
                 let errorBox = $("#upload-error-box");
                 let errorList = $("#upload-error-box #errors");
-                
+           
                 this.on('error', function(file, response) {
                     let dropError = $(file.previewElement).find('.dz-error-message'); 
                     dropError.text("");
@@ -50,7 +51,6 @@
                     $(errorList).empty();
                     $(errorBox).attr("hidden", true);              
                 });
-                
                 window.pDropZone = this;
             }
         };

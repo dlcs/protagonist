@@ -23,41 +23,41 @@ using MissingFieldException = CsvHelper.MissingFieldException;
 
 namespace Portal.Features.Batches.Requests;
 
-public class ParseCsv : IRequest<ParseCsvResult>
+public class IngestFromCsv : IRequest<IngestFromCsvResult>
 {
     public IFormFile File { get; set; }
 }
 
-public class ParseCsvResult
+public class IngestFromCsvResult
 {
     [JsonIgnore] public bool IsSuccess { get; set; }
 
     public string[]? Errors { get; set; }
 
-    public static ParseCsvResult Failure(string[] errors)
+    public static IngestFromCsvResult Failure(string[] errors)
     {
-        return new ParseCsvResult { IsSuccess = false, Errors = errors };
+        return new IngestFromCsvResult { IsSuccess = false, Errors = errors };
     }
     
-    public static ParseCsvResult Failure(string error)
+    public static IngestFromCsvResult Failure(string error)
     {
-        return new ParseCsvResult { IsSuccess = false, Errors = new []{ error } };
+        return new IngestFromCsvResult { IsSuccess = false, Errors = new []{ error } };
     }
     
-    public static ParseCsvResult Success()
+    public static IngestFromCsvResult Success()
     {
-        return new ParseCsvResult { IsSuccess = true };
+        return new IngestFromCsvResult { IsSuccess = true };
     }
 }
 
-public class ParseCsvHandler : IRequestHandler<ParseCsv, ParseCsvResult>
+public class IngestFromCsvHandler : IRequestHandler<IngestFromCsv, IngestFromCsvResult>
 {
     private readonly IDlcsClient dlcsClient;
-    private readonly ILogger<ParseCsvHandler> logger;
+    private readonly ILogger<IngestFromCsvHandler> logger;
     private readonly int customerId;
     private readonly int maxBatchSize;
     
-    public ParseCsvHandler(IDlcsClient dlcsClient, IOptions<PortalSettings> portalSettings, ILogger<ParseCsvHandler> logger, ClaimsPrincipal currentUser)
+    public IngestFromCsvHandler(IDlcsClient dlcsClient, IOptions<PortalSettings> portalSettings, ILogger<IngestFromCsvHandler> logger, ClaimsPrincipal currentUser)
     {
         this.dlcsClient = dlcsClient;
         this.logger = logger;
@@ -65,17 +65,30 @@ public class ParseCsvHandler : IRequestHandler<ParseCsv, ParseCsvResult>
         maxBatchSize = portalSettings.Value.MaxBatchSize;
     }
 
-    public async Task<ParseCsvResult> Handle(ParseCsv request, CancellationToken cancellationToken)
+    public async Task<IngestFromCsvResult> Handle(IngestFromCsv request, CancellationToken cancellationToken)
+    {
+        var (distinctRows, readErrors) = await ParseCsv(request.File);
+
+        if (readErrors.Any())
+        {
+            return IngestFromCsvResult.Failure(readErrors.ToArray());   
+        }
+
+        var ingestFromCsvResult = await UploadImagesToDlcs(distinctRows);
+        return ingestFromCsvResult;
+    } 
+    
+    private async Task<(Dictionary<int, Image> distinctRows, List<string> readErrors)> ParseCsv(IFormFile csvFile)
     {
         var distinctRows = new Dictionary<int, Image>();
         var readErrors = new List<string>();
         
-        using (var stream = new StreamReader(request.File.OpenReadStream()))
+        using (var stream = new StreamReader(csvFile.OpenReadStream()))
         using (var csv = new CsvReader(stream, CultureInfo.InvariantCulture))
         {
-            csv.Read();
+            await csv.ReadAsync();
             csv.ReadHeader();
-            while (csv.Read())
+            while (await csv.ReadAsync())
             {
                 try
                 {
@@ -106,67 +119,69 @@ public class ParseCsvHandler : IRequestHandler<ParseCsv, ParseCsvResult>
                 }
                 catch (BadDataException badDataEx)
                 {
-                    return ParseCsvResult.Failure(
-                        $"CSV read error: bad data found in file at line {badDataEx.Context.Parser.Row}, row {badDataEx.Context.Reader.CurrentIndex}");
+                    readErrors.Add(
+                        $"CSV read error: bad data found in file at row {badDataEx.Context.Parser.Row}, column {badDataEx.Context.Reader.CurrentIndex}");
+                    break;
                 }
                 catch (MissingFieldException missingFieldEx)
                 {
-                    return ParseCsvResult.Failure(
-                        $"CSV read error: line {missingFieldEx.Context.Parser.Row} in file is missing fields");
+                    readErrors.Add(
+                        $"CSV read error: row {missingFieldEx.Context.Parser.Row} in file is missing columns");
+                    break;
                 }
                 catch (TypeConverterException typeEx)
                 {
-                    var fieldIndex = typeEx.Context.Reader.CurrentIndex - 1;
+                    var fieldIndex = typeEx.Context.Reader.CurrentIndex;
                     var currentLine = csv.GetField(1);
                     readErrors.Add($"Line {currentLine}: could not parse {ImageIngestModel.FieldNames[fieldIndex]} value ({typeEx.Text})");
                 }
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Error parsing CSV file");
-                    return ParseCsvResult.Failure("An error occured while parsing the CSV file");
+                    readErrors.Add("An error occured while parsing the CSV file");
                 }
             }
         }
         
-        // Return an error if parsing fails
-        if (readErrors.Any()) 
-        {
-            return ParseCsvResult.Failure(readErrors.ToArray());
-        }
-        
-        // Order images
+        return (distinctRows, readErrors);
+    }
+    
+    private async Task<IngestFromCsvResult> UploadImagesToDlcs(Dictionary<int, Image> distinctRows)
+    {
         var images = distinctRows
             .OrderBy(image => image.Key)
             .Select(image => image.Value)
             .ToList();
-        
-        // Split the read images into multiple batches if they surpass the maximum batch size
-        var batches = images.Chunk(maxBatchSize).ToList();
-        for (var i = 0; i < batches.Count; i++)
+
+
+        var batchIndex = 0;
+        foreach (var batch in images.Chunk(maxBatchSize))
         {
             var collection = new HydraCollection<Image>()
             {
-                Members = batches[i].ToArray()
+                Members = batch
             };
             try
             {
                 await dlcsClient.CreateBatch(collection);
             }
-            catch (DlcsException dlcsEx) // Forward errors from the API
+            catch (DlcsException dlcsEx)
             {
-                // Get the range of images where the exception may have occured:
-                var imagesStart = (maxBatchSize * i) + 1;
-                var imagesEnd = (maxBatchSize * i) + batches[i].Length;
-                return ParseCsvResult.Failure($"DLCS Error in images {imagesStart}-{imagesEnd}: {dlcsEx.Message}");
+                var imagesStart = maxBatchSize * batchIndex + 1;
+                var imagesEnd = maxBatchSize * batchIndex + batch.Length;
+                return IngestFromCsvResult.Failure($"DLCS Error in rows {imagesStart}-{imagesEnd}: {dlcsEx.Message}");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger.LogError(ex, "Error posting batch to DLCS");
-                return ParseCsvResult.Failure($"DLCS Error: An error occurred while posting this batch to the DLCS");
+                return IngestFromCsvResult.Failure(
+                    $"DLCS Error: An error occurred while posting this batch to the DLCS");
             }
+            
+            batchIndex++;
         }
         
-        return ParseCsvResult.Success();
+        return IngestFromCsvResult.Success();
     }
 }
 
@@ -174,10 +189,11 @@ public class ImageIngestModel
 {
     public static readonly string[] FieldNames =
     {
-        "Type", "Line", "Space", "ID", "Origin", "Reference1", "Reference2", "Reference3", "Tags", "Roles",
+        "Type", "Line", "Space", "ID", "Origin", "InitialOrigin", "Reference1", "Reference2", "Reference3", "Tags",
+        "Roles",
         "MaxUnauthorised", "NumberReference1", "NumberReference2", "NumberReference3"
     };
-    
+
     [Index(0)] public string AssetType { get; set; }
     [Index(1)] public int? Line { get; set; }
     [Index(2)] public int Space { get; set; }
@@ -194,5 +210,3 @@ public class ImageIngestModel
     [Index(13)] public int? Number2 { get; set; }
     [Index(14)] public int? Number3 { get; set; }
 }
-
-

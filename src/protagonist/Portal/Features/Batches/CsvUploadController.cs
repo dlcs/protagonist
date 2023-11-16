@@ -9,24 +9,22 @@ using Portal.Features.Batches.Requests;
 
 namespace Portal.Features.Batches;
 
+[Route("[controller]/[action]")]
 public class CsvUploadController : Controller
 {
-    private readonly ClaimsPrincipal currentUser;
     private readonly IMediator mediator;
     private readonly IDlcsClient dlcsClient;
 
-    public CsvUploadController(IMediator mediator, IDlcsClient dlcsClient, ClaimsPrincipal currentUser)
+    public CsvUploadController(IMediator mediator, IDlcsClient dlcsClient)
     {
         this.mediator = mediator;
         this.dlcsClient = dlcsClient;
-        this.currentUser = currentUser;
     }
 
     [HttpPost]
-    [Route("[controller]/{customer}/{space}/[action]")]
-    public async Task<IActionResult> Upload(int customer, int space, List<IFormFile> file)
+    public async Task<IActionResult> Upload(List<IFormFile> file)
     {
-        var request = await mediator.Send(new ParseCsv(){ File = file[0]});
+        var request = await mediator.Send(new IngestFromCsv(){ File = file[0]});
         
         if (!request.IsSuccess)
         {
