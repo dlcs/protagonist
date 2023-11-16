@@ -52,7 +52,7 @@
         </div>
         @if (Model.Batch.Finished != null)
         {
-            <span>Completed: @Model.Batch.Finished.Value.GetDefaultTime()</span>
+            <span>Completed: @Model.Batch.Finished.GetDefaultTime()</span>
         }
         else
         {

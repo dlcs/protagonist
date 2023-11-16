@@ -61,7 +61,7 @@
                 {
                     <tr>
                         <td>@m.Email</td>
-                        <td>@m.Created.Value.GetDefaultTime()</td>
+                        <td>@m.Created.GetDefaultTime()</td>
                         <td>@m.Enabled</td>
                         <td>
                             <a asp-controller="User" asp-action="Delete" asp-route-id="@m.Id"

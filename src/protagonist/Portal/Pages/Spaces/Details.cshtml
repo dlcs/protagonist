@@ -1,5 +1,6 @@
 ﻿@page "{id}"
 @using DLCS.HydraModel
+@using Portal.Extensions
 @model Portal.Pages.Spaces.Details
 
 @{
@@ -104,7 +105,7 @@
                     <td><a asp-page="/Images/Index"
                            asp-route-space="@Model.SpaceId"
                            asp-route-image="@image.GetLastPathElement()">@image.GetLastPathElement()</a></td>
-                    <td>@image.Created</td>
+                    <td>@image.Created.GetDefaultTime()</td>
                     @if (Model.SpacePageModel.IsManifestSpace)
                     {
                         <td>

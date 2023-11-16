@@ -54,7 +54,7 @@
                     <td>
                         @if (Model.QueueType == QueueType.Recent)
                         {
-                            <span>Completed: @batch.Finished.Value.GetDefaultTime()</span>
+                            <span>Completed: @batch.Finished.GetDefaultTime()</span>
                         }
                         else
                         {
