@@ -16,14 +16,14 @@ using Portal.Settings;
 
 namespace Portal.Features.Spaces;
 
-public class DropzoneController : Controller
+public class ImageDropzoneController : Controller
 {
     private readonly ClaimsPrincipal currentUser;
     private readonly IMediator mediator;
     private readonly IDlcsClient dlcsClient;
     private readonly PortalSettings portalSettings;
 
-    public DropzoneController(
+    public ImageDropzoneController(
         ClaimsPrincipal currentUser, 
         IMediator mediator,
         IDlcsClient dlcsClient,

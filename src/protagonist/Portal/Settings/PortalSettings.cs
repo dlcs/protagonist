@@ -24,4 +24,9 @@ public class PortalSettings
     /// This is for testing, it should be disabled in production.
     /// </summary>
     public bool PermitLocalDropZone { get; set; } = false;
+    
+    /// <summary>
+    /// The maximum number of images that can be POSTed in a single batch
+    /// </summary>
+    public int MaxBatchSize { get; set; } = 250;
 }

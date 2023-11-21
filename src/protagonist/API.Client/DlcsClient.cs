@@ -272,6 +272,14 @@ public class DlcsClient : IDlcsClient
         return jObject.SelectToken("success").Value<bool>();
     }
 
+    public async Task<Batch> CreateBatch(HydraCollection<Image> images)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/queue";
+        var response = await httpClient.PostAsync(url, ApiBody(images));
+        var batch = await response.ReadAsHydraResponseAsync<Batch>(jsonSerializerSettings);
+        return batch;
+    }
+
     public async Task<HydraCollection<Image>> GetBatchImages(int batchId)
     {
         var url = $"customers/{currentUser.GetCustomerId()}/queue/batches/{batchId}/images";
