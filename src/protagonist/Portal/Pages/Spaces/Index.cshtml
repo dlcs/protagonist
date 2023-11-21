@@ -1,4 +1,5 @@
 ﻿@page
+@using Portal.Extensions
 @model Portal.Pages.Spaces.Index
 
 @{
@@ -51,7 +52,7 @@
         <tr>
             <th scope="row">@space.SpaceId</th>
             <td><a asp-page="/Spaces/Details" asp-route-id="@space.SpaceId">@space.Name</a></td>
-            <td>@space.Created</td>
+            <td>@space.Created.GetDefaultTime()</td>
         </tr>
     }
     </tbody>

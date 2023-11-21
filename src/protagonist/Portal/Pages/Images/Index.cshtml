@@ -1,6 +1,7 @@
 @page "{space}/{image}"
 @using DLCS.Core.Strings
 @using Hydra
+@using Portal.Extensions
 @model Portal.Pages.Images.Index
 
 @{
@@ -30,7 +31,7 @@
                     <tbody>
                         <tr>
                             <td>Created</td>
-                            <td>@Model.Image.Created</td>
+                            <td>@Model.Image.Created.GetDefaultTime()</td>
                         </tr>
                         <tr>
                             <td>Batch</td>

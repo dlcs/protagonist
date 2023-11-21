@@ -1,6 +1,7 @@
 ﻿@page "{queueType}"
 @using DLCS.Core.Collections
 @using Hydra
+@using Portal.Extensions
 @using Portal.Features.Queue.Request
 @model Portal.Pages.Queue.IndexModel;
 
@@ -53,7 +54,7 @@
                     <td>
                         @if (Model.QueueType == QueueType.Recent)
                         {
-                            <span>Completed: @batch.Finished</span>
+                            <span>Completed: @batch.Finished.GetDefaultTime()</span>
                         }
                         else
                         {
