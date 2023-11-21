@@ -1,8 +1,8 @@
 ﻿@page
-@model Portal.Pages.Queue.IndexModel;
+@model Portal.Pages.Queue.UploadModel;
 
 @{
-    ViewData["Title"] = "Upload";
+    ViewData["Title"] = Model.SpaceId.HasValue ? $"Upload into Space {Model.SpaceId.Value}" : "Upload";
 }
 
 @section header
@@ -20,8 +20,9 @@
     </ul>
 </div>
 <div class="my-2">
-    <form action="@Url.Action("Upload", "CsvUpload")" class="dropzone" id="dropzoneForm"></form>
+    <form action="@Url.Action("Upload", "CsvUpload", new { space = Model.SpaceId })" class="dropzone" id="dropzoneForm"></form>
 </div>
+
 @section Scripts
 {
     <script src="https://cdn.jsdelivr.net/npm/dropzone@5.9.2/dist/dropzone.min.js"></script>

@@ -25,6 +25,7 @@ namespace Portal.Features.Batches.Requests;
 
 public class IngestFromCsv : IRequest<IngestFromCsvResult>
 {
+    public int? SpaceId { get; set; }
     public IFormFile File { get; set; }
 }
 
@@ -67,7 +68,7 @@ public class IngestFromCsvHandler : IRequestHandler<IngestFromCsv, IngestFromCsv
 
     public async Task<IngestFromCsvResult> Handle(IngestFromCsv request, CancellationToken cancellationToken)
     {
-        var (distinctRows, readErrors) = await ParseCsv(request.File);
+        var (distinctRows, readErrors) = await ParseCsv(request.SpaceId, request.File);
 
         if (readErrors.Any())
         {
@@ -78,7 +79,7 @@ public class IngestFromCsvHandler : IRequestHandler<IngestFromCsv, IngestFromCsv
         return ingestFromCsvResult;
     } 
     
-    private async Task<(Dictionary<int, Image> distinctRows, List<string> readErrors)> ParseCsv(IFormFile csvFile)
+    private async Task<(Dictionary<int, Image> distinctRows, List<string> readErrors)> ParseCsv(int? spaceId, IFormFile csvFile)
     {
         var distinctRows = new Dictionary<int, Image>();
         var readErrors = new List<string>();
@@ -95,6 +96,14 @@ public class IngestFromCsvHandler : IRequestHandler<IngestFromCsv, IngestFromCsv
                     var record = csv.GetRecord<ImageIngestModel>();
                     if (record.AssetType.ToLower() != "image") continue;
                     if (distinctRows.ContainsKey(record.Line.Value)) continue;
+                    
+                    if (spaceId.HasValue && spaceId != record.Space)
+                    {
+                        readErrors.Add(
+                            $"Line {record.Line}: Space value does not match current (Expected {spaceId}, got {record.Space})");
+                        continue;
+                    }
+                    
                     distinctRows.Add(record.Line.Value, new Image
                     {
                         CustomerId = customerId,

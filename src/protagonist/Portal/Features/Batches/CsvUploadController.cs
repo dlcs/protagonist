@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using API.Client;
 using MediatR;
@@ -13,18 +12,16 @@ namespace Portal.Features.Batches;
 public class CsvUploadController : Controller
 {
     private readonly IMediator mediator;
-    private readonly IDlcsClient dlcsClient;
 
-    public CsvUploadController(IMediator mediator, IDlcsClient dlcsClient)
+    public CsvUploadController(IMediator mediator)
     {
         this.mediator = mediator;
-        this.dlcsClient = dlcsClient;
     }
 
     [HttpPost]
-    public async Task<IActionResult> Upload(List<IFormFile> file)
+    public async Task<IActionResult> Upload(List<IFormFile> file, int? space)
     {
-        var request = await mediator.Send(new IngestFromCsv(){ File = file[0]});
+        var request = await mediator.Send(new IngestFromCsv(){ SpaceId = space, File = file[0]});
         
         if (!request.IsSuccess)
         {
