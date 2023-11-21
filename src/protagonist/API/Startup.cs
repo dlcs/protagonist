@@ -87,7 +87,7 @@ public class Startup
         services.AddDlcsBasicAuth(options =>
             {
                 options.Realm = "DLCS-API";
-                options.Salt = apiSettings.Salt;
+                options.Salt = apiSettings.ApiSalt;
             });
         
         services.AddCors(options =>

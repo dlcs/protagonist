@@ -66,7 +66,7 @@ public class PatchPortalUserHandler : IRequestHandler<PatchPortalUser, PatchPort
         }
         if (request.Password.HasText())
         {
-            dbUser.EncryptedPassword = encryption.Encrypt(String.Concat(settings.Salt, request.Password));
+            dbUser.EncryptedPassword = encryption.Encrypt(String.Concat(settings.LoginSalt, request.Password));
         }
         
         var i = await dbContext.SaveChangesAsync(cancellationToken);
@@ -84,7 +84,7 @@ public class PatchPortalUserHandler : IRequestHandler<PatchPortalUser, PatchPort
                 }
             };
         }
-
+        
         return new PatchPortalUserResult
         {
             Error = "Unable to Patch portal user."

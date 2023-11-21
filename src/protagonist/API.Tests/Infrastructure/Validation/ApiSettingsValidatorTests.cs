@@ -14,8 +14,8 @@ public class ApiSettingsValidatorTests
     [InlineData(" ")]
     public void Salt_Null(string salt)
     {
-        var settings = new ApiSettings { Salt = salt };
+        var settings = new ApiSettings { ApiSalt = salt };
         var result = sut.TestValidate(settings);
-        result.ShouldHaveValidationErrorFor(a => a.Salt);
+        result.ShouldHaveValidationErrorFor(a => a.ApiSalt);
     }
 }

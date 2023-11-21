@@ -24,7 +24,7 @@ public class ApiKeyGenerator
     public (string key, string secret) CreateApiKey(Customer customer)
     {
         var apiKey = Guid.NewGuid().ToString();
-        var apiSecret = encryption.GetApiSecret(customer, settings.Salt, apiKey);
+        var apiSecret = encryption.GetApiSecret(customer, settings.ApiSalt, apiKey);
 
         return (apiKey, apiSecret);
     }

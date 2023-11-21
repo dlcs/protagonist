@@ -15,7 +15,9 @@ public class ApiSettings
 
     public string PathBase { get; set; }
     
-    public string Salt { get; set; }
+    public string ApiSalt { get; set; }
+    
+    public string LoginSalt { get; set; }
     
     /// <summary>
     /// The default PageSize for endpoints that support paging 
