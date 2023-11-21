@@ -15,7 +15,6 @@
     </div>
 }
 
-
 @section header
 {
     <link href="https://cdn.jsdelivr.net/npm/dropzone@5.9.2/dist/min/dropzone.min.css" rel="stylesheet" />
@@ -27,6 +26,10 @@
       class="dropzone"
       id="dropzoneForm">
 </form>
+
+<div class="my-2">
+    <a asp-page="/queue/upload" asp-route-space="@Model.SpaceId">Upload as CSV</a>
+</div>
 
 <form method="post" asp-page-handler="Convert" id="manifestForm">
     <input type="hidden" value="@Model.SpaceId" name="spaceId">
