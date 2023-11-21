@@ -6,6 +6,6 @@ public class ApiSettingsValidator : AbstractValidator<ApiSettings>
 {
     public ApiSettingsValidator()
     {
-        RuleFor(a => a.Salt).NotEmpty();
+        RuleFor(a => a.ApiSalt).NotEmpty();
     }    
 }
