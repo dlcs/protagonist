@@ -64,6 +64,6 @@ A sample payload using `CompositeId` could be:
 
 ### Side effects
 
-If a PDF is resubmitted and has decreased in size, say from 200 -> 150 pages, there could still be orphaned images stored in S3. This number is likely to be negligable unless there are huge variations in size.
+If a PDF is resubmitted and has decreased in size, say from 200 -> 150 pages, there could still be orphaned images stored in S3. This number is likely to be negligable unless there are huge variations in size. A separate process could still identify orphans and delete them, e.g., an orphan check lambda runs after a PDF is processed.
 
 If a PDF has been reordered and an image is reingested directly via the DLCS (i.e. a direct `/reingest` call) between resubmitted PDF rasterization and DLCS batch completion then there could be a transient inconsistency in how that series of PDF images would look (e.g. when output via a NQ). This is highly unlikely and would shortly be consistent once the batch has successfully processed.
