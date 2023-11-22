@@ -10,7 +10,7 @@
     var linkId = TempData["new-signup-id"] as string;
     <div class="alert alert-success">
         <p>New signup link for <strong>@linkId</strong> created.</p>
-        <p><a asp-page="/account/signupfromlink" asp-route-id="@linkId"
+        <p><a asp-page="/account/signupfromlink" asp-route-signupCode="@linkId"
               class="btn btn-secondary btn-sm copylink">Copy link to clipboard <span data-feather="copy"></span></a></p>
     </div>
 }
