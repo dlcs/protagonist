@@ -97,7 +97,9 @@ public class SignupModel : PageModel
 
     private async Task<bool> EmailInUse(string inputEmail)
     {
-        return await dbContext.Users.AnyAsync(user => user.Email == inputEmail);
+        // get all locally for more string comparison support
+        var allUsers = await dbContext.Users.ToListAsync();
+        return allUsers.Any(user => user.Email.Equals(inputEmail, StringComparison.InvariantCultureIgnoreCase));
     }
     
     private async Task<bool> CustomerNameInUse(string inputDisplayName)
