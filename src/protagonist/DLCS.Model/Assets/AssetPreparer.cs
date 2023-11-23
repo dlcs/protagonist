@@ -250,12 +250,7 @@ public static class AssetPreparer
             {
                 return AssetPreparationResult.Failure("Batch cannot be edited.");
             }
-
-            if (updateAsset.ThumbnailPolicy != null && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
-            {
-                return AssetPreparationResult.Failure("ThumbnailPolicy cannot be edited.");
-            }
-
+            
             if (updateAsset.Family != null && updateAsset.Family != existingAsset.Family)
             {
                 return AssetPreparationResult.Failure("Family cannot be edited.");

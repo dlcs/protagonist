@@ -221,6 +221,20 @@ public class AssetPreparerTests
         // Assert
         result.RequiresReingest.Should().BeTrue();
     }
+    
+    [Fact]
+    public void PrepareAssetForUpsert_RequiresReingest_IfThumbnailPolicyChanged()
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "https://whatever", ThumbnailPolicy = "new-policy" };
+        var existingAsset = new Asset { Origin = "https://whatever", ThumbnailPolicy = "none" };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+
+        // Assert
+        result.RequiresReingest.Should().BeTrue();
+    }
 
     [Theory]
     [MemberData(nameof(DeliveryChannels))]
@@ -237,7 +251,7 @@ public class AssetPreparerTests
         // Assert
         result.RequiresReingest.Should().BeTrue(reason);
     }
-
+    
     [Theory]
     [InlineData("file", AssetFamily.File)]
     [InlineData("file,iiif-img", AssetFamily.Image)]
