@@ -46,11 +46,6 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
                 customerOriginStrategy, cancellationToken);
             ingestionContext.WithAssetFromOrigin(assetInBucket);
 
-            if (assetIngestorSizeCheck.DoesAssetFromOriginExceedAllowance(assetInBucket, asset))
-            {
-                return IngestResultStatus.StorageLimitExceeded;
-            }
-            
             var jobMetadata = GetJobMetadata(ingestionContext);
             var success =
                 await mediaTranscoder.InitiateTranscodeOperation(ingestionContext, jobMetadata, cancellationToken);
