@@ -78,6 +78,17 @@ public class AssetProcessor
                         )
                     };
                 }
+                
+                if (!counts.CanStoreAssetSize(0,0))
+                {
+                    return new ProcessAssetResult
+                    {
+                        Result = ModifyEntityResult<Asset>.Failure(
+                            $"The total size of stored images has exceeded your allowance: maximum is {counts.MaximumTotalSizeOfStoredImages}",
+                            WriteResult.StorageLimitExceeded
+                        )
+                    };
+                }
 
                 counts.CustomerStorage.NumberOfStoredImages++;
             }
