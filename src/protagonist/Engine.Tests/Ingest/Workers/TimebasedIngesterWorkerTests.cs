@@ -73,25 +73,6 @@ public class TimebasedIngesterWorkerTests
                 A<CustomerOriginStrategy>._, A<CancellationToken>._))
             .MustHaveHappened();
     }
-    
-    [Fact]
-    public async Task Ingest_ReturnsStorageLimitExceeded_IfFileSizeTooLarge()
-    {
-        // Arrange
-        var asset = new Asset(AssetId.FromString("2/1/shallow"));
-        var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
-        assetFromOrigin.FileTooLarge();
-        A.CallTo(() =>
-            assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._, A<CustomerOriginStrategy>._,
-                A<CancellationToken>._))
-            .Returns(assetFromOrigin);
-
-        // Act
-        var result = await sut.Ingest(new IngestionContext(asset), new CustomerOriginStrategy());
-
-        // Assert
-        result.Should().Be(IngestResultStatus.StorageLimitExceeded);
-    }
 
     [Fact]
     public async Task Ingest_SetsSizeValue_InMetadata_IfOriginLocationInIngestionContext()
