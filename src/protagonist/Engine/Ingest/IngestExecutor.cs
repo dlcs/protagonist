@@ -36,25 +36,25 @@ public class IngestExecutor
         var workers = workerBuilder.GetWorkers(asset);
         
         var context = new IngestionContext(asset);
+        var overallStatus = IngestResultStatus.Unknown;
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
         {
             var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
             context.WithPreIngestionAssetSize(preIngestionAssetSize);
+            
+            var counts = await storageRepository.GetStorageMetrics(asset.Customer, cancellationToken);
+            
+            if (!counts.CanStoreAssetSize(MinimumAssetSize, 0))
+            {
+                overallStatus = IngestResultStatus.StorageLimitExceeded;
+                asset.Error = "StoragePolicy size limit exceeded";
+            }
         }
         
         var postProcessors = new List<IAssetIngesterPostProcess>(workers.Count);
-        
-        var counts = await storageRepository.GetStorageMetrics(asset.Customer, cancellationToken);
-        
-        var overallStatus = IngestResultStatus.Unknown;
-        
-        if (!counts.CanStoreAssetSize(MinimumAssetSize, 0))
-        {
-            overallStatus = IngestResultStatus.StorageLimitExceeded;
-            asset.Error = "StoragePolicy size limit exceeded";
-        }
-        else
+
+        if (overallStatus != IngestResultStatus.StorageLimitExceeded)
         {
             foreach (var worker in workers)
             {
