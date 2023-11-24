@@ -150,7 +150,15 @@ public class DlcsClient : IDlcsClient
         var image = await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
         return image;
     }
-    
+
+    public async Task<ImageStorage> GetImageStorage(int requestSpaceId, string requestImageId)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/spaces/{requestSpaceId}/images/{requestImageId}/storage";
+        var response = await httpClient.GetAsync(url);
+        var imageStorage = await response.ReadAsHydraResponseAsync<ImageStorage>(jsonSerializerSettings);
+        return imageStorage;
+    }
+
     public async Task<HydraCollection<PortalUser>?> GetPortalUsers()
     {
         var url = $"customers/{currentUser.GetCustomerId()}/portalUsers";

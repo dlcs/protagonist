@@ -27,7 +27,36 @@
         <div class="col-md-8 col-sm-12">
             <div class="table-responsive">
                 <h4 class="h4">Details</h4>
-                <table class="table table-hover">
+                <div class="card bg-active mb-2">
+                    <table class="table table-active border-active m-0">
+                        <tbody class="">
+                            <tr>
+                                <td>Endpoint</td>
+                                <td><a href="@Model.Image.ImageService">@Model.Image.ImageService</a></td>
+                            </tr> 
+                            <tr>
+                                <td>API</td>
+                                <td><a href="@Model.Image.Id">@Model.Image.Id</a></td>
+                            </tr>
+                            <tr>
+                                <td>Family</td>
+                                <td>@Model.Image.Family</td>
+                            </tr>
+                            <tr>
+                                <td>Media Type</td>
+                                <td>@Model.Image.MediaType</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                @if (Model.ImageStorage != null)
+                {
+                    <div class="card p-2 mb-2">
+                        <div class="mb-2">Size (bytes): @Model.ImageStorage.Size</div>
+                        <div>Thumbnail Size (bytes): @Model.ImageStorage.ThumbnailSize</div>
+                    </div>
+                }
+                <table class="table">
                     <tbody>
                         <tr>
                             <td>Created</td>
@@ -108,19 +137,19 @@
             </div>
         </div>
         <div class="col-md-4 col-sm-12 d-flex flex-column">
-            @if (Model.Thumbnails != null)
+            @if (Model.ImageThumbnailService != null)
             {
-                <div class="row flex-grow-1">
-                    <div class="d-flex flex-column flew-grow-1">
+                <div class="row">
+                    <div class="d-flex flex-column">
                         @{
-                            var defaultThumbnail = Model.Thumbnails.Sizes.First();
+                            var defaultThumbnail = Model.ImageThumbnailService.Sizes.First();
                         }
                         <h4 class="h4">Thumbnail Preview</h4>
-                        <div class="d-flex justify-content-center align-items-center flex-grow-1">
-                            <img class="img-thumbnail rounded" id="thumbnail-preview" style="max-height: 256px;" src="@Model.CreateSrc(defaultThumbnail)">
+                        <div class="d-flex justify-content-center align-items-center" style="height: 352px">
+                            <img class="img-thumbnail rounded" id="thumbnail-preview" style="max-height: 300px;" src="@Model.CreateSrc(defaultThumbnail)">
                         </div>
                         <select class="form-select mb-4" multiple onchange="OnChangeThumbnail(this)" aria-label=".form-select">
-                            @foreach(var thumbnail in Model.Thumbnails.Sizes)
+                            @foreach(var thumbnail in Model.ImageThumbnailService.Sizes)
                             {
                                 <option value="@Model.CreateSrc(thumbnail)" selected="@(thumbnail == defaultThumbnail)">@thumbnail.Width x @thumbnail.Height</option>
                             }

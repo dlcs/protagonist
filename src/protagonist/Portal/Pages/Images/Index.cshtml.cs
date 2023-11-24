@@ -23,7 +23,8 @@ public class Index : PageModel
     private readonly IMediator mediator;
     private readonly DlcsSettings dlcsSettings;
     public Image Image { get; set; }
-    public ImageService3? Thumbnails { get; set; }
+    public ImageService3? ImageThumbnailService { get; set; }
+    public ImageStorage? ImageStorage { get; set; }
     public string SingleAssetManifest { get; set; }
     public string Customer { get; set; }
     
@@ -33,12 +34,13 @@ public class Index : PageModel
         this.dlcsSettings = dlcsSettings.Value;
         Customer = (currentUser.GetCustomerId() ?? -1).ToString();
     }
-
+    
     public async Task<IActionResult> OnGetAsync(int space, string image)
     {
         var imageResult = await mediator.Send(new GetImage{SpaceId = space, ImageId = image});
         Image = imageResult.Image;
-        Thumbnails = imageResult.ImageService;
+        ImageThumbnailService = imageResult.ImageThumbnailService;
+        ImageStorage = imageResult.ImageStorage;
         SingleAssetManifest = DlcsPathHelpers.GeneratePathFromTemplate(
             dlcsSettings.SingleAssetManifestTemplate,
             prefix: dlcsSettings.ResourceRoot.ToString(),

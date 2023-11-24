@@ -18,6 +18,7 @@ public interface IDlcsClient
     Task<IEnumerable<string>?> GetApiKeys();
     Task<ApiKey> CreateNewApiKey();
     Task<Image> GetImage(int requestSpaceId, string requestImageId);
+    Task<ImageStorage> GetImageStorage(int requestSpaceId, string requestImageId);
     Task<HydraCollection<PortalUser>?> GetPortalUsers();
     Task<PortalUser> CreatePortalUser(PortalUser portalUser);
     Task<bool> DeletePortalUser(string portalUserId);
