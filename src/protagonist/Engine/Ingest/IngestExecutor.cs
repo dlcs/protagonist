@@ -14,16 +14,20 @@ public class IngestExecutor
     private readonly IEngineAssetRepository assetRepository;
     private readonly ILogger<IngestExecutor> logger;
     private readonly IAssetIngestorSizeCheck assetIngestorSizeCheck;
+    private readonly IStorageRepository storageRepository;
+    private const int MinimumAssetSize = 100;
 
     public IngestExecutor(IWorkerBuilder workerBuilder, 
         IEngineAssetRepository assetRepository,
         IAssetIngestorSizeCheck assetIngestorSizeCheck,
+        IStorageRepository storageRepository,
         ILogger<IngestExecutor> logger)
     {
         this.workerBuilder = workerBuilder;
         this.assetRepository = assetRepository;
         this.logger = logger;
         this.assetIngestorSizeCheck = assetIngestorSizeCheck;
+        this.storageRepository = storageRepository;
     }
 
     public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy customerOriginStrategy,
@@ -41,26 +45,37 @@ public class IngestExecutor
         
         var postProcessors = new List<IAssetIngesterPostProcess>(workers.Count);
         
+        var counts = await storageRepository.GetStorageMetrics(asset.Customer, cancellationToken);
+        
         var overallStatus = IngestResultStatus.Unknown;
-        foreach (var worker in workers)
+        
+        if (!counts.CanStoreAssetSize(MinimumAssetSize, 0))
         {
-            if (worker is IAssetIngesterPostProcess process)
+            overallStatus = IngestResultStatus.StorageLimitExceeded;
+            asset.Error = "StoragePolicy size limit exceeded";
+        }
+        else
+        {
+            foreach (var worker in workers)
             {
-                postProcessors.Add(process);
-            }
+                if (worker is IAssetIngesterPostProcess process)
+                {
+                    postProcessors.Add(process);
+                }
 
-            logger.LogDebug("Calling {Worker} for {AssetId}..", worker.GetType(), asset.Id);
-            var result = await worker.Ingest(context, customerOriginStrategy, cancellationToken);
-            if (result is IngestResultStatus.Failed or IngestResultStatus.StorageLimitExceeded)
-            {
-                overallStatus = result;
-                break;
-            }
+                logger.LogDebug("Calling {Worker} for {AssetId}..", worker.GetType(), asset.Id);
+                var result = await worker.Ingest(context, customerOriginStrategy, cancellationToken);
+                if (result is IngestResultStatus.Failed or IngestResultStatus.StorageLimitExceeded)
+                {
+                    overallStatus = result;
+                    break;
+                }
 
-            // Don't overwrite a QueuedForProcessing result - this wins
-            if (overallStatus != IngestResultStatus.QueuedForProcessing)
-            {
-                overallStatus = result;
+                // Don't overwrite a QueuedForProcessing result - this wins
+                if (overallStatus != IngestResultStatus.QueuedForProcessing)
+                {
+                    overallStatus = result;
+                }
             }
         }
 
