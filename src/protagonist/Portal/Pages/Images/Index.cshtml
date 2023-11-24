@@ -5,7 +5,7 @@
 @model Portal.Pages.Images.Index
 
 @{
-    ViewData["Title"] = Model.Image.GetLastPathElement();
+    ViewData["Title"] = $"{Model.Customer}/{Model.Image.Space}/{Model.Image.GetLastPathElement()}";
 }
 
 @if (Model.Image.Error.HasText())
