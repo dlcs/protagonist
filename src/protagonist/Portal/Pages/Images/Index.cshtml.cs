@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using DLCS.Core;
@@ -12,7 +10,6 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
-using Portal.Features.Images.Requests;
 using Portal.Features.Spaces.Requests;
 
 namespace Portal.Pages.Images;
@@ -26,6 +23,7 @@ public class Index : PageModel
     public ImageService3? ImageThumbnailService { get; set; }
     public ImageStorage? ImageStorage { get; set; }
     public string SingleAssetManifest { get; set; }
+    public string UniversalViewerManifest  { get; set; }
     public string Customer { get; set; }
     
     public Index(IMediator mediator, ClaimsPrincipal currentUser, IOptions<DlcsSettings> dlcsSettings)
@@ -47,6 +45,7 @@ public class Index : PageModel
             customer: Customer,
             space: Image.Space.ToString(),
             assetPath: Image.ModelId);
+        UniversalViewerManifest = $"https://universalviewer.io/?manifest={SingleAssetManifest}"; 
         return Page();
     }
     
