@@ -45,12 +45,17 @@ public class Index : PageModel
             customer: Customer,
             space: Image.Space.ToString(),
             assetPath: Image.ModelId);
-        UniversalViewerManifest = $"https://universalviewer.io/?manifest={SingleAssetManifest}"; 
+        UniversalViewerManifest = CreateUniversalViewerUrl(SingleAssetManifest);
         return Page();
     }
     
     public string CreateSrc(Size size)
     {
         return $"{Image.ThumbnailImageService}/full/{size.Width},{size.Height}/0/default.jpg";
+    }
+    
+    public string CreateUniversalViewerUrl(string singleAssetManifest)
+    {
+        return $"https://universalviewer.io/?manifest={singleAssetManifest}"; 
     }
 }
