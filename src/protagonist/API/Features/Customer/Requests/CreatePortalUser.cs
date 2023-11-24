@@ -56,10 +56,10 @@ public class CreatePortalUserHandler : IRequestHandler<CreatePortalUser, CreateP
         {
             return new CreatePortalUserResult { Error = "Email address is invalid" };
         }
-
-        var userWithEmail = await dbContext.Users.SingleOrDefaultAsync(
-            u => u.Email == request.PortalUser.Email, cancellationToken: cancellationToken);
-        if (userWithEmail != null)
+        
+        var userWithEmail = await dbContext.Users.AnyAsync(
+            user => user.Email.ToLower() == request.PortalUser.Email.ToLower(), cancellationToken);
+        if (userWithEmail)
         {
             return new CreatePortalUserResult { Conflict = true, Error = "Email address already in use." };
         }

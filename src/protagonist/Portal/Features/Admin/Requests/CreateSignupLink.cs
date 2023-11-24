@@ -43,7 +43,7 @@ public class CreateSignupLinkHandler : IRequestHandler<CreateSignupLink, SignupL
             {
                 Id = KeyGenerator.GetUniqueKey(24),
                 Created = DateTime.UtcNow,
-                Expires = request.Expires,
+                Expires = request.Expires.ToUniversalTime(),
                 Note = request.Note
             };
             dbContext.SignupLinks.Add(newLink);

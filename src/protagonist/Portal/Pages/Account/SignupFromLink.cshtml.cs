@@ -97,7 +97,7 @@ public class SignupModel : PageModel
 
     private async Task<bool> EmailInUse(string inputEmail)
     {
-        return await dbContext.Users.AnyAsync(user => user.Email == inputEmail);
+        return await dbContext.Users.AnyAsync(user => user.Email.ToLower() == inputEmail.ToLower());
     }
     
     private async Task<bool> CustomerNameInUse(string inputDisplayName)
