@@ -1,5 +1,6 @@
 ﻿@page "{id}"
 @using DLCS.HydraModel
+@using DLCS.Web.Auth
 @using Portal.Extensions
 @model Portal.Pages.Spaces.Details
 
@@ -22,14 +23,16 @@
     <link href="~/assets/dist/css/jquery-ui.structure.min.css" rel="stylesheet" />
 }
 
-<form action="@Url.Action("Upload", "ImageDropzone", new { customer = Model.Customer, space = Model.SpaceId })"
-      class="dropzone"
-      id="dropzoneForm">
-</form>
-
-<div class="my-2">
-    <a asp-page="/queue/upload" asp-route-space="@Model.SpaceId">Upload as CSV</a>
-</div>
+@if (!User.IsInRole(ClaimsPrincipalUtils.Roles.Admin))
+{
+    <form action="@Url.Action("Upload", "ImageDropzone", new { customer = Model.Customer, space = Model.SpaceId })"
+          class="dropzone"
+          id="dropzoneForm">
+    </form>
+    <div class="my-2">
+        <a asp-page="/queue/upload" asp-route-space="@Model.SpaceId">Upload as CSV</a>
+    </div>
+}
 
 <form method="post" asp-page-handler="Convert" id="manifestForm">
     <input type="hidden" value="@Model.SpaceId" name="spaceId">
