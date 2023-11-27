@@ -45,7 +45,7 @@ public class IngestExecutor
             
             if (!counts.CanStoreAssetSize(MinimumAssetSize, 0))
             {
-                logger.LogDebug("Something informative");
+                logger.LogDebug("Storage policy exceeded for customer {CustomerId}", asset.Customer);
                 asset.Error = IngestErrors.StoragePolicyExceeded;
                 var dbResponse = await CompleteAssetInDatabase(context, true, cancellationToken);
                 return new IngestResult(asset, dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
