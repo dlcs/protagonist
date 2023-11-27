@@ -108,9 +108,7 @@ public static class AssetPreparer
             
             if (updateAsset.ThumbnailPolicy.HasText() && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
             {
-                // requiresReingest = true; NO, because we'll re-create thumbs on demand - "backfill"
-                // However, we can treat a PUT as always triggering reingest, whereas a PATCH does not,
-                // even if they are otherwise equivalent - see CreateOrUpdateImage
+                requiresReingest = true;
             }
 
             if (updateAsset.ImageOptimisationPolicy.HasText() &&
@@ -252,12 +250,7 @@ public static class AssetPreparer
             {
                 return AssetPreparationResult.Failure("Batch cannot be edited.");
             }
-
-            if (updateAsset.ThumbnailPolicy != null && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
-            {
-                return AssetPreparationResult.Failure("ThumbnailPolicy cannot be edited.");
-            }
-
+            
             if (updateAsset.Family != null && updateAsset.Family != existingAsset.Family)
             {
                 return AssetPreparationResult.Failure("Family cannot be edited.");
