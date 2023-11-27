@@ -2,6 +2,7 @@
 using DLCS.Model.Customers;
 using DLCS.Model.Storage;
 using Engine.Data;
+using Engine.Ingest.Models;
 
 namespace Engine.Ingest;
 
@@ -14,16 +15,20 @@ public class IngestExecutor
     private readonly IEngineAssetRepository assetRepository;
     private readonly ILogger<IngestExecutor> logger;
     private readonly IAssetIngestorSizeCheck assetIngestorSizeCheck;
+    private readonly IStorageRepository storageRepository;
+    private const int MinimumAssetSize = 100;
 
     public IngestExecutor(IWorkerBuilder workerBuilder, 
         IEngineAssetRepository assetRepository,
         IAssetIngestorSizeCheck assetIngestorSizeCheck,
+        IStorageRepository storageRepository,
         ILogger<IngestExecutor> logger)
     {
         this.workerBuilder = workerBuilder;
         this.assetRepository = assetRepository;
         this.logger = logger;
         this.assetIngestorSizeCheck = assetIngestorSizeCheck;
+        this.storageRepository = storageRepository;
     }
 
     public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy customerOriginStrategy,
@@ -32,35 +37,48 @@ public class IngestExecutor
         var workers = workerBuilder.GetWorkers(asset);
         
         var context = new IngestionContext(asset);
+        var overallStatus = IngestResultStatus.Unknown;
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
         {
+            var counts = await storageRepository.GetStorageMetrics(asset.Customer, cancellationToken);
+            
+            if (!counts.CanStoreAssetSize(MinimumAssetSize, 0))
+            {
+                logger.LogDebug("Something informative");
+                asset.Error = IngestErrors.StoragePolicyExceeded;
+                var dbResponse = await CompleteAssetInDatabase(context, true, cancellationToken);
+                return new IngestResult(asset, dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
+            }
+            
             var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
             context.WithPreIngestionAssetSize(preIngestionAssetSize);
         }
         
         var postProcessors = new List<IAssetIngesterPostProcess>(workers.Count);
-        
-        var overallStatus = IngestResultStatus.Unknown;
-        foreach (var worker in workers)
+
+        if (overallStatus != IngestResultStatus.StorageLimitExceeded)
         {
-            if (worker is IAssetIngesterPostProcess process)
+            foreach (var worker in workers)
             {
-                postProcessors.Add(process);
-            }
+                if (worker is IAssetIngesterPostProcess process)
+                {
+                    postProcessors.Add(process);
+                }
 
-            logger.LogDebug("Calling {Worker} for {AssetId}..", worker.GetType(), asset.Id);
-            var result = await worker.Ingest(context, customerOriginStrategy, cancellationToken);
-            if (result is IngestResultStatus.Failed or IngestResultStatus.StorageLimitExceeded)
-            {
-                overallStatus = result;
-                break;
-            }
+                logger.LogDebug("Calling {Worker} for {AssetId}..", worker.GetType(), asset.Id);
+                var result = await worker.Ingest(context, customerOriginStrategy, cancellationToken);
+                if (result is IngestResultStatus.Failed or IngestResultStatus.StorageLimitExceeded)
+                {
+                    overallStatus = result;
+                    break;
+                }
 
-            // Don't overwrite a QueuedForProcessing result - this wins
-            if (overallStatus != IngestResultStatus.QueuedForProcessing)
-            {
-                overallStatus = result;
+                // Don't overwrite a QueuedForProcessing result - this wins
+                if (overallStatus != IngestResultStatus.QueuedForProcessing)
+                {
+                    overallStatus = result;
+                }
             }
         }
 

@@ -1,5 +1,6 @@
 ﻿using DLCS.Model.Assets;
 using DLCS.Model.Customers;
+using DLCS.Model.Storage;
 using Engine.Data;
 using Engine.Ingest;
 using FakeItEasy;
@@ -14,13 +15,23 @@ public class IngestExecutorTests
     private readonly IngestExecutor sut;
     private readonly CustomerOriginStrategy customerOriginStrategy = new();
     private readonly IAssetIngestorSizeCheck assetSizeCheck;
+    private readonly IStorageRepository storageRepository;
 
     public IngestExecutorTests()
     {
         workerBuilder = A.Fake<IWorkerBuilder>();
         repo = A.Fake<IEngineAssetRepository>();
         assetSizeCheck = A.Fake<IAssetIngestorSizeCheck>();
-        sut = new IngestExecutor(workerBuilder, repo, assetSizeCheck, new NullLogger<IngestExecutor>());
+        storageRepository = A.Fake<IStorageRepository>();
+        
+        A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
+            .Returns(new AssetStorageMetric
+            {
+                Policy = new StoragePolicy{MaximumTotalSizeOfStoredImages = 1000, MaximumNumberOfStoredImages = 0},
+                CustomerStorage = new CustomerStorage{ TotalSizeOfStoredImages = 10}
+            });
+        
+        sut = new IngestExecutor(workerBuilder, repo, assetSizeCheck, storageRepository, new NullLogger<IngestExecutor>());
     }
 
     [Fact]
