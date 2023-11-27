@@ -33,42 +33,58 @@
         <a asp-page="/queue/upload" asp-route-space="@Model.SpaceId">Upload as CSV</a>
     </div>
 }
-  
-<form method="post" asp-page-handler="Convert" id="manifestForm">
-    <input type="hidden" value="@Model.SpaceId" name="spaceId">
-    @if (Model.SpacePageModel.IsManifestSpace)
-    {
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="toggleManifest" name="manifest-mode" checked>
-            <label class="form-check-label" for="toggleManifest">Space is IIIF Manifest</label>
-        </div>
-        <ul class="list-group list-group-horizontal" id="iiifConverter">
-            <li class="list-group-item"><img src="https://avatars.githubusercontent.com/u/5812589?s=100&v=4" height="20" alt="IIIF logo"/></li>
-            <li class="list-group-item"><a href="@Model.SpacePageModel.NamedQuery" target="_blank" rel="noopener noreferrer">IIIF Manifest <span data-feather="external-link"></span></a></li>
-            <li class="list-group-item"><a href="@Model.SpacePageModel.UniversalViewer" target="_blank" rel="noopener noreferrer">Universal Viewer <span data-feather="external-link"></span></a></li>
-            <li class="list-group-item"><a href="@Model.SpacePageModel.MiradorViewer" target="_blank" rel="noopener noreferrer">Mirador <span data-feather="external-link"></span></a></li>
-        </ul>
-    }
-    else
-    {
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="toggleManifest" name="manifest-mode">
-            <label class="form-check-label" for="toggleManifest">Space is IIIF Manifest</label>
-        </div>
-    }   
-</form>
 
-<div class="p-1">
-    <div>
-        Total size of Stored Images (GB): @Model.GetSizeInGb(Model.SpacePageModel.Storage.TotalSizeOfStoredImages)
+<div class="row pt-2">
+    <div class="col">
+        <form method="post" asp-page-handler="Convert" id="manifestForm">
+            <input type="hidden" value="@Model.SpaceId" name="spaceId">
+            @if (Model.SpacePageModel.IsManifestSpace)
+            {
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="toggleManifest" name="manifest-mode" checked>
+                    <label class="form-check-label" for="toggleManifest">Space is IIIF Manifest</label>
+                </div>
+                <ul class="list-group list-group-horizontal" id="iiifConverter">
+                    <li class="list-group-item"><img src="https://avatars.githubusercontent.com/u/5812589?s=100&v=4" height="20" alt="IIIF logo"/></li>
+                    <li class="list-group-item"><a href="@Model.SpacePageModel.NamedQuery" target="_blank" rel="noopener noreferrer">IIIF Manifest <span data-feather="external-link"></span></a></li>
+                    <li class="list-group-item"><a href="@Model.SpacePageModel.UniversalViewer" target="_blank" rel="noopener noreferrer">Universal Viewer <span data-feather="external-link"></span></a></li>
+                    <li class="list-group-item"><a href="@Model.SpacePageModel.MiradorViewer" target="_blank" rel="noopener noreferrer">Mirador <span data-feather="external-link"></span></a></li>
+                </ul>
+            }
+            else
+            {
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="toggleManifest" name="manifest-mode">
+                    <label class="form-check-label" for="toggleManifest">Space is IIIF Manifest</label>
+                </div>
+            }
+        </form>
     </div>
-    <div>
-        Total size of Thumbnails (GB): @Model.GetSizeInGb(Model.SpacePageModel.Storage.TotalSizeOfThumbnails)
-    </div>
-    <div class="small">
-        Last calculated: @Model.SpacePageModel.Storage.LastCalculated.GetDefaultTime()
-    </div>
-</div> 
+    @if (Model.SpacePageModel.Storage != null)
+    {
+        <div class="col d-flex flex-row-reverse">
+            <div class="small">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Total size of Stored Images (GB):</td>
+                            <td>@Model.GetSizeInGb(Model.SpacePageModel.Storage.TotalSizeOfStoredImages)</td>
+                        </tr>
+                        <tr>
+                            <td>Total size of Thumbnails (GB):</td>
+                            <td>@Model.GetSizeInGb(Model.SpacePageModel.Storage.TotalSizeOfThumbnails)</td>
+                        </tr>
+                        <tr>
+                            <td>Last Calculated:</td>
+                            <td>@Model.SpacePageModel.Storage.LastCalculated.GetDefaultTime()</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>    
+        </div>
+    }
+</div>
+
 
 @await Component.InvokeAsync("Pager", new { values = Model.PagerValues })
 
@@ -142,7 +158,6 @@
         }
         </tbody>
     </table>
-
 </form>
 
 @await Component.InvokeAsync("Pager", new { values = Model.PagerValues })
