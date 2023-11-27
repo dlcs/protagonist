@@ -10,8 +10,10 @@ public interface IDlcsClient
     Task<HydraCollection<Space>?> GetSpaces(int page, int pageSize, 
         string? orderBy = null, bool descending = false, int? customerId = null);
     Task<Space?> GetSpaceDetails(int spaceId);
+    Task<HydraCollection<Image>> GetSpaceImages(int spaceId);
     Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, 
         string? orderBy = null, bool descending = false);
+    Task<CustomerStorage?> GetSpaceStorage(int spaceId);
     Task<Space?> CreateSpace(Space newSpace);
     Task<Space?> PatchSpace(int spaceId, Space space);
     Task<IEnumerable<string>?> GetApiKeys();

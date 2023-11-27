@@ -110,7 +110,22 @@ public class DlcsClient : IDlcsClient
         var images = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>(jsonSerializerSettings);
         return images;
     }
-
+    
+    public async Task<CustomerStorage?> GetSpaceStorage(int spaceId)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/storage";
+        try
+        {
+            var response = await httpClient.GetAsync(url);
+            return await response.ReadAsHydraResponseAsync<CustomerStorage>(jsonSerializerSettings);
+        }
+        catch (Exception ex) 
+        {  
+            logger.LogError("Failed to deserialize storage for space {SpaceStorage}", spaceId);
+            return null;
+        }
+    }
+    
     public async Task<Space?> CreateSpace(Space newSpace)
     {
         var url = $"customers/{currentUser.GetCustomerId()}/spaces";

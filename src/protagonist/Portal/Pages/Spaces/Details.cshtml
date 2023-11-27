@@ -33,7 +33,7 @@
         <a asp-page="/queue/upload" asp-route-space="@Model.SpaceId">Upload as CSV</a>
     </div>
 }
-
+  
 <form method="post" asp-page-handler="Convert" id="manifestForm">
     <input type="hidden" value="@Model.SpaceId" name="spaceId">
     @if (Model.SpacePageModel.IsManifestSpace)
@@ -57,6 +57,18 @@
         </div>
     }   
 </form>
+
+<div class="p-1">
+    <div>
+        Total size of Stored Images (GB): @Model.GetSizeInGb(Model.SpacePageModel.Storage.TotalSizeOfStoredImages)
+    </div>
+    <div>
+        Total size of Thumbnails (GB): @Model.GetSizeInGb(Model.SpacePageModel.Storage.TotalSizeOfThumbnails)
+    </div>
+    <div class="small">
+        Last calculated: @Model.SpacePageModel.Storage.LastCalculated.GetDefaultTime()
+    </div>
+</div> 
 
 @await Component.InvokeAsync("Pager", new { values = Model.PagerValues })
 

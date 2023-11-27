@@ -10,6 +10,8 @@ public class SpacePageModel
     
     public HydraCollection<Image>? Images { get; set; }
     
+    public CustomerStorage? Storage { get; set; }
+    
     public Uri? UniversalViewer { get; set; }
     
     public Uri? NamedQuery { get; set; }
