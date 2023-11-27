@@ -1,4 +1,5 @@
 ﻿using DLCS.Model.Assets;
+using Engine.Ingest.Models;
 using Engine.Ingest.Persistence;
 using Engine.Settings;
 using Microsoft.Extensions.Options;
@@ -26,7 +27,7 @@ public abstract class AssetIngestorSizeCheckBase : IAssetIngestorSizeCheck
     {
         if (assetFromOrigin.FileExceedsAllowance)
         {
-            asset.Error = "StoragePolicy size limit exceeded";
+            asset.Error = IngestErrors.StoragePolicyExceeded;
             return true;
         }
 

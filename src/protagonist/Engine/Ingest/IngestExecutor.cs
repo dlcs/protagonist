@@ -2,6 +2,7 @@
 using DLCS.Model.Customers;
 using DLCS.Model.Storage;
 using Engine.Data;
+using Engine.Ingest.Models;
 
 namespace Engine.Ingest;
 
@@ -40,16 +41,18 @@ public class IngestExecutor
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
         {
-            var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
-            context.WithPreIngestionAssetSize(preIngestionAssetSize);
-            
             var counts = await storageRepository.GetStorageMetrics(asset.Customer, cancellationToken);
             
             if (!counts.CanStoreAssetSize(MinimumAssetSize, 0))
             {
-                overallStatus = IngestResultStatus.StorageLimitExceeded;
-                asset.Error = "StoragePolicy size limit exceeded";
+                logger.LogDebug("Something informative");
+                asset.Error = IngestErrors.StoragePolicyExceeded;
+                var dbResponse = await CompleteAssetInDatabase(context, true, cancellationToken);
+                return new IngestResult(asset, dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
             }
+            
+            var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
+            context.WithPreIngestionAssetSize(preIngestionAssetSize);
         }
         
         var postProcessors = new List<IAssetIngesterPostProcess>(workers.Count);
