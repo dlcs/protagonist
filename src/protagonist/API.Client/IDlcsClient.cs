@@ -10,7 +10,6 @@ public interface IDlcsClient
     Task<HydraCollection<Space>?> GetSpaces(int page, int pageSize, 
         string? orderBy = null, bool descending = false, int? customerId = null);
     Task<Space?> GetSpaceDetails(int spaceId);
-    Task<HydraCollection<Image>> GetSpaceImages(int spaceId);
     Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, 
         string? orderBy = null, bool descending = false);
     Task<Space?> CreateSpace(Space newSpace);
@@ -31,6 +30,6 @@ public interface IDlcsClient
     Task<Batch> GetBatch(int batchId);
     Task<Batch> CreateBatch(HydraCollection<Image> images);
     Task<bool> TestBatch(int batchId);
-    Task<HydraCollection<Image>> GetBatchImages(int batchId);
+    Task<HydraCollection<Image>> GetBatchImages(int batchId, int page, int pageSize);
     Task<CustomerQueue> GetQueue();
 }

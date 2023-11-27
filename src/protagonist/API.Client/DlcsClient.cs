@@ -288,9 +288,9 @@ public class DlcsClient : IDlcsClient
         return batch;
     }
 
-    public async Task<HydraCollection<Image>> GetBatchImages(int batchId)
+    public async Task<HydraCollection<Image>> GetBatchImages(int batchId, int page, int pageSize)
     {
-        var url = $"customers/{currentUser.GetCustomerId()}/queue/batches/{batchId}/images";
+        var url = $"customers/{currentUser.GetCustomerId()}/queue/batches/{batchId}/images?page={page}&pageSize={pageSize}";
         var response = await httpClient.GetAsync(url);
         var batchImages = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>(jsonSerializerSettings);
         return batchImages;      

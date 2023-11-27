@@ -17,6 +17,8 @@ namespace Portal.Features.Batches.Requests;
 public class GetBatch : IRequest<GetBatchResult>
 {
     public int BatchId { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
 }
 
 public class GetBatchResult
@@ -42,7 +44,7 @@ public class GetBatchHandler : IRequestHandler<GetBatch, GetBatchResult>
     public async Task<GetBatchResult> Handle(GetBatch request, CancellationToken cancellationToken)
     {
         var batch = await dlcsClient.GetBatch(request.BatchId);
-        var images = await dlcsClient.GetBatchImages(request.BatchId);
+        var images = await dlcsClient.GetBatchImages(request.BatchId, request.Page, request.PageSize);
         var thumbnails = new Dictionary<string, string>();
         
         foreach (var image in images.Members)

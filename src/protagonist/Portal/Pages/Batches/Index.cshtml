@@ -65,6 +65,7 @@
         }
     </div>
 </div>
+
 <div class="row m-1 justify-content-center">
     <div class="row">
         @foreach (var image in Model.Images.Members)
@@ -123,6 +124,8 @@
         }
     </div>
 </div>
+@await Component.InvokeAsync("Pager", new { values = Model.PagerValues })
+
 <div class="modal fade" id="superseded-status-modal" tabindex="-1" aria-labelledby="supersededStatusLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content">

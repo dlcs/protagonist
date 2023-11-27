@@ -7,8 +7,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Portal.Features.Batches.Requests;
-using Portal.Features.Spaces.Requests;
-
+using Portal.ViewComponents;
 
 namespace Portal.Pages.Batches;
 
@@ -19,18 +18,23 @@ public class Index : PageModel
     public Batch Batch { get; set; }
     public HydraCollection<Image> Images { get; set; }
     public Dictionary<string, string> Thumbnails { get; set; }
+    public PagerValues? PagerValues { get; private set; }
     
     public Index(IMediator mediator)
     {
         this.mediator = mediator;
     }
     
-    public async Task<IActionResult> OnGetAsync(int batch)
+    public async Task<IActionResult> OnGetAsync(
+        [FromRoute] int batch,
+        [FromQuery] int page = 1, 
+        [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize)
     {
-        var batchResult = await mediator.Send(new GetBatch{ BatchId = batch });
+        var batchResult = await mediator.Send(new GetBatch{ BatchId = batch, Page = page, PageSize = pageSize});
         Batch = batchResult.Batch;
         Images = batchResult.Images;
         Thumbnails = batchResult.Thumbnails;
+        PagerValues = new PagerValues(Images.TotalItems, page, pageSize, null, false);
         return Page();
     }
     

@@ -51,12 +51,14 @@ public class Index : PageModel
     {
         var spaces = await dlcsClient.GetSpaces(page, pageSize, orderBy, descending);
         PagerValues = new PagerValues(spaces.TotalItems, page, pageSize, orderBy, descending);
-        SpaceModels = spaces.Members.Select(s => new SpaceModel
-        {
-            SpaceId = s.ModelId ?? -1,
-            Name = s.Name,
-            Created = s.Created ?? DateTime.MinValue
-        });
+        SpaceModels = spaces.Members
+            .Select(s => new SpaceModel
+            {
+                SpaceId = s.ModelId ?? -1,
+                Name = s.Name,
+                Created = s.Created ?? DateTime.MinValue 
+            })
+            .OrderBy(space => space.SpaceId);
     }
 
     public async Task<IActionResult> OnPostAsync(string newSpaceName)
