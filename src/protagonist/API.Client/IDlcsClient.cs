@@ -13,11 +13,13 @@ public interface IDlcsClient
     Task<HydraCollection<Image>> GetSpaceImages(int spaceId);
     Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, 
         string? orderBy = null, bool descending = false);
+    Task<CustomerStorage?> GetSpaceStorage(int spaceId);
     Task<Space?> CreateSpace(Space newSpace);
     Task<Space?> PatchSpace(int spaceId, Space space);
     Task<IEnumerable<string>?> GetApiKeys();
     Task<ApiKey> CreateNewApiKey();
     Task<Image> GetImage(int requestSpaceId, string requestImageId);
+    Task<ImageStorage> GetImageStorage(int requestSpaceId, string requestImageId);
     Task<HydraCollection<PortalUser>?> GetPortalUsers();
     Task<PortalUser> CreatePortalUser(PortalUser portalUser);
     Task<bool> DeletePortalUser(string portalUserId);
@@ -30,6 +32,6 @@ public interface IDlcsClient
     Task<Batch> GetBatch(int batchId);
     Task<Batch> CreateBatch(HydraCollection<Image> images);
     Task<bool> TestBatch(int batchId);
-    Task<HydraCollection<Image>> GetBatchImages(int batchId);
+    Task<HydraCollection<Image>> GetBatchImages(int batchId, int page, int pageSize);
     Task<CustomerQueue> GetQueue();
 }

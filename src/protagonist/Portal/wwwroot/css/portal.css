@@ -221,3 +221,11 @@ img.iiifpreview {
   vertical-align: text-bottom;
   background-image: url("../img/iiif-logo-icon.png");
 }
+
+.uv-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  vertical-align: text-bottom;
+  background-image: url("../img/uv-logo-icon.png");
+}

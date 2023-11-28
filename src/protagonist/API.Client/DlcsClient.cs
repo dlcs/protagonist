@@ -110,7 +110,22 @@ public class DlcsClient : IDlcsClient
         var images = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>(jsonSerializerSettings);
         return images;
     }
-
+    
+    public async Task<CustomerStorage?> GetSpaceStorage(int spaceId)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/storage";
+        try
+        {
+            var response = await httpClient.GetAsync(url);
+            return await response.ReadAsHydraResponseAsync<CustomerStorage>(jsonSerializerSettings);
+        }
+        catch (Exception ex) 
+        {  
+            logger.LogError("Failed to deserialize storage for space {SpaceStorage}", spaceId);
+            return null;
+        }
+    }
+    
     public async Task<Space?> CreateSpace(Space newSpace)
     {
         var url = $"customers/{currentUser.GetCustomerId()}/spaces";
@@ -150,7 +165,15 @@ public class DlcsClient : IDlcsClient
         var image = await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
         return image;
     }
-    
+
+    public async Task<ImageStorage> GetImageStorage(int requestSpaceId, string requestImageId)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/spaces/{requestSpaceId}/images/{requestImageId}/storage";
+        var response = await httpClient.GetAsync(url);
+        var imageStorage = await response.ReadAsHydraResponseAsync<ImageStorage>(jsonSerializerSettings);
+        return imageStorage;
+    }
+
     public async Task<HydraCollection<PortalUser>?> GetPortalUsers()
     {
         var url = $"customers/{currentUser.GetCustomerId()}/portalUsers";
@@ -280,9 +303,9 @@ public class DlcsClient : IDlcsClient
         return batch;
     }
 
-    public async Task<HydraCollection<Image>> GetBatchImages(int batchId)
+    public async Task<HydraCollection<Image>> GetBatchImages(int batchId, int page, int pageSize)
     {
-        var url = $"customers/{currentUser.GetCustomerId()}/queue/batches/{batchId}/images";
+        var url = $"customers/{currentUser.GetCustomerId()}/queue/batches/{batchId}/images?page={page}&pageSize={pageSize}";
         var response = await httpClient.GetAsync(url);
         var batchImages = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>(jsonSerializerSettings);
         return batchImages;      

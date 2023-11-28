@@ -58,13 +58,15 @@ public class Details : PageModel
         {
             return NotFound();
         }
-
+     
+        var storage = await dlcsClient.GetSpaceStorage(SpaceId);
         var images = await dlcsClient.GetSpaceImages(page, pageSize, SpaceId, 
             orderBy ?? nameof(Image.Number1), descending);
         var model = new SpacePageModel
         {
             Space = space,
             Images = images,
+            Storage = storage,
             IsManifestSpace = space?.IsManifestSpace() ?? false
         };
 
@@ -165,5 +167,15 @@ public class Details : PageModel
         }
 
         return RedirectToPage("/spaces/details", new {id = spaceId});
+    }
+
+    public string GetSizeInGb(long? bytes)
+    {
+        if (bytes.HasValue)
+        {
+            return $"{(((Convert.ToDouble(bytes.Value) / 1024) / 1024) / 1024):0.00}";  
+        }
+
+        return "N/A";
     }
 }
