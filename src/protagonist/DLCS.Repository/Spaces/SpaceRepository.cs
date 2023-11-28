@@ -68,13 +68,7 @@ public class SpaceRepository : ISpaceRepository
     
     public async Task<Space?> GetSpace(int customerId, string name, CancellationToken cancellationToken)
     {
-        return await GetSpace(customerId, name, false, cancellationToken);
-    }
-    
-    public async Task<Space?> GetSpace(int customerId, string name, bool noCache, CancellationToken cancellationToken)
-    {
-        var space = await GetSpaceInternal(customerId, -1, cancellationToken, name, noCache: noCache);
-        return space;
+        return await GetSpaceInternal(customerId, -1, cancellationToken, name, noCache: false);
     }
 
     public async Task<Space> CreateSpace(int customer, string name, string? imageBucket, 
@@ -121,7 +115,9 @@ public class SpaceRepository : ISpaceRepository
         CancellationToken cancellationToken, string? name = null,
         bool withApproximateImageCount = false, bool noCache = false)
     {
-        var key = $"space:{customerId}/{name ?? spaceId.ToString()}";
+        var cacheId = name != null ? $"name:{name}" : $"id:{spaceId}";
+        
+        var key = $"space:{cacheId}";
         if (noCache)
         {
             appCache.Remove(key);
