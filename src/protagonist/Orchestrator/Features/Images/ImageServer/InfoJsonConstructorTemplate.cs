@@ -25,6 +25,8 @@ public abstract class InfoJsonConstructorTemplate<T> : IInfoJsonConstructor
     private readonly IThumbRepository thumbRepository;
     private readonly IIIIFAuthBuilder iiifAuthBuilder;
 
+    private readonly int[] UnlimitedMaxUnauthorizedValue = {-1, 0};
+
     protected InfoJsonConstructorTemplate(
         IImageServerClient imageServerClient,
         IThumbRepository thumbRepository,
@@ -130,7 +132,23 @@ public abstract class InfoJsonConstructorTemplate<T> : IInfoJsonConstructor
                 return Enumerable.Empty<Size>().ToList();
             }
 
-            return thumbs.Select(s => Size.FromArray(s)).ToList();
+            var thumbSizes = thumbs.Select(s => Size.FromArray(s)).ToList();
+
+            var imageMaxUnauthorized = orchestrationImage.MaxUnauthorised;
+
+            if (!UnlimitedMaxUnauthorizedValue.Contains(imageMaxUnauthorized))
+            {
+                for (int i = thumbSizes.Count - 1; i >= 0; i--)
+                {
+                    if (thumbSizes[i].Width > imageMaxUnauthorized)
+                    {
+                        thumbSizes.RemoveAt(i);
+                    }
+                }
+            }
+            
+            return thumbSizes;
+
         }
         catch (Exception ex)
         {
