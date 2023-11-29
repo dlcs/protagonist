@@ -11,7 +11,14 @@ public interface ISpaceRepository
     Task<Space?> GetSpace(int customerId, int spaceId, CancellationToken cancellationToken);
     
     Task<Space?> GetSpace(int customerId, int spaceId, bool noCache, CancellationToken cancellationToken);
-    
+
+    /// <summary>
+    /// Retrieves a space by name
+    /// </summary>
+    /// <param name="customerId">The customer to retrieve a space from</param>
+    /// <param name="name">The name of the space</param>
+    /// <param name="cancellationToken">The cancellation token</param>
+    /// <returns>A space, or null if it can't be found</returns>
     Task<Space?> GetSpace(int customerId, string name, CancellationToken cancellationToken);
 
     Task<Space> CreateSpace(int customer, string name, string? imageBucket, string[]? tags, string[]? roles,
