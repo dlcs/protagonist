@@ -49,7 +49,59 @@ public class InfoJson3ConstructorTest : InfoJson3Constructor
     }
     
     [Fact]
-    public void SetImageTileServiceSizes_UpdatesSize()
+    public void SetImageTileServiceSizes_UpdatesTileSize_WhenMultipleTiles()
+    {
+        // Arrange
+        var imageService = new ImageService3
+        {
+            Tiles = new List<Tile>{new Tile()
+                {
+                    Height = 400,
+                    Width = 400
+                },
+                new Tile() {
+                    Height = 600,
+                    Width = 600
+                }}
+        };
+
+        // Act
+        SetImageTileServiceSizes(imageService, 500);
+
+        // Assert
+        imageService.Tiles[0].Width.Should().Be(256);
+        imageService.Tiles[0].Height.Should().Be(256);
+        imageService.Tiles.Count.Should().Be(1);
+    }
+    
+    [Fact]
+    public void SetImageTileServiceSizes_DoesNotUpdateTileSize_WhenMultipleTilesSmaller()
+    {
+        // Arrange
+        var imageService = new ImageService3
+        {
+            Tiles = new List<Tile>{new Tile()
+                {
+                    Height = 400,
+                    Width = 400
+                },
+                new Tile() {
+                    Height = 300,
+                    Width = 300
+                }}
+        };
+
+        // Act
+        SetImageTileServiceSizes(imageService, 500);
+
+        // Assert
+        imageService.Tiles[0].Width.Should().Be(400);
+        imageService.Tiles[0].Height.Should().Be(400);
+        imageService.Tiles.Count.Should().Be(2);
+    }
+    
+    [Fact]
+    public void SetImageServiceSizes_UpdatesSize()
     {
         // Arrange
         var imageService = new ImageService3
@@ -67,7 +119,7 @@ public class InfoJson3ConstructorTest : InfoJson3Constructor
         imageService.Sizes[0].Width.Should().Be(512);
         imageService.Sizes[0].Height.Should().Be(512);
     }
-    
+
     [Fact]
     public void SetImageServiceStubId_UpdatesServiceStubId()
     {
