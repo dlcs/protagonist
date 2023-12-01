@@ -50,6 +50,23 @@ public class InfoJson2ConstructorTest : InfoJson2Constructor
     }
     
     [Fact]
+    public void SetImageTileServiceSizes_UpdatesTileSizeWhenTilesNull()
+    {
+        // Arrange
+        var imageService = new ImageService2
+        {
+            Tiles = null
+        };
+
+        // Act
+        SetImageTileServiceSizes(imageService, 500);
+
+        // Assert
+        imageService.Tiles[0].Width.Should().Be(256);
+        imageService.Tiles[0].Height.Should().Be(256);
+    }
+    
+    [Fact]
     public void SetImageTileServiceSizes_UpdatesTileSize_WhenMultipleTiles()
     {
         // Arrange
