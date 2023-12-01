@@ -56,9 +56,9 @@ public class InfoJson3Constructor : InfoJsonConstructorTemplate<ImageService3>
     protected override void SetImageServiceSizes(ImageService3 imageService, List<Size> sizes) 
         => imageService.Sizes = sizes;
 
-    protected override void SetImageTileServiceSizes(ImageService3 imageService, int maxUnauthorised)
+    protected override void SetImageTileServiceSizes(ImageService3? imageService, int maxUnauthorised)
     {
-        if (imageService.Tiles.Select(s => s.Width).Max() > maxUnauthorised)
+        if (imageService?.Tiles != null && imageService.Tiles.Select(s => s.Width).Max() > maxUnauthorised)
         {
             // This code is working out the max tiles size based on max unauthorised.
             // The tile size must be a power of 2 and less than maxUnauthorised
