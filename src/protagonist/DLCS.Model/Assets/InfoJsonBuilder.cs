@@ -105,7 +105,7 @@ public static class InfoJsonBuilder
     private static List<Size> GetSizesOrderedAscending(List<int[]> sizes)
         => sizes.OrderBy(wh => wh[0]).Select(wh => Size.FromArray(wh)).ToList();
 
-    private static List<Tile> GetTiles(int width, int height, int tileSize = 256)
+    public static List<Tile> GetTiles(int width, int height, int tileSize = 256)
     {
         var scaleFactors = GetScaleFactorSizes(width, height, tileSize);
         return new List<Tile>

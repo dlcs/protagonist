@@ -51,15 +51,15 @@ public class InfoJsonService
         var infoJsonKey = GetInfoJsonKey(orchestrationImage, version);
         await using var infoJson = await GetStoredInfoJson(infoJsonKey, cancellationToken);
 
-        // if (!infoJson.IsNull())
-        // {
-        //     // If info.json found in S3, return it
-        //     JsonLdBase deserialisedInfoJson = version == Version.V2
-        //         ? infoJson.FromJsonStream<ImageService2>()
-        //         : infoJson.FromJsonStream<ImageService3>();
-        //     logger.LogTrace("Found info.json version {Version} for {AssetId}", version, orchestrationImage.AssetId);
-        //     return new InfoJsonResponse(deserialisedInfoJson, false);
-        // }
+        if (!infoJson.IsNull())
+        {
+            // If info.json found in S3, return it
+            JsonLdBase deserialisedInfoJson = version == Version.V2
+                ? infoJson.FromJsonStream<ImageService2>()
+                : infoJson.FromJsonStream<ImageService3>();
+            logger.LogTrace("Found info.json version {Version} for {AssetId}", version, orchestrationImage.AssetId);
+            return new InfoJsonResponse(deserialisedInfoJson, false);
+        }
 
         // If not found, build new copy
         var infoJsonConstructor = infoJsonConstructorResolver(version);

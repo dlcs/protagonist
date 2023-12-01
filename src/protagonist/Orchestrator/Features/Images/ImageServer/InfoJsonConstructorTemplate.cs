@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using IIIF;
+using IIIF.ImageApi;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure.IIIF;
@@ -25,7 +26,7 @@ public abstract class InfoJsonConstructorTemplate<T> : IInfoJsonConstructor
     private readonly IThumbRepository thumbRepository;
     private readonly IIIIFAuthBuilder iiifAuthBuilder;
 
-    private readonly int[] UnlimitedMaxUnauthorizedValue = {-1, 0};
+    private readonly int[] unlimitedMaxUnauthorizedValue = {-1, 0};
 
     protected InfoJsonConstructorTemplate(
         IImageServerClient imageServerClient,
@@ -83,6 +84,11 @@ public abstract class InfoJsonConstructorTemplate<T> : IInfoJsonConstructor
                 await SetImageServiceAuthServices(imageService, orchestrationImage, cancellationToken);
             }
         }
+        
+        if (!unlimitedMaxUnauthorizedValue.Contains(orchestrationImage.MaxUnauthorised))
+        {
+            SetImageTileServiceSizes(imageService, orchestrationImage.MaxUnauthorised);
+        }
     }
 
     /// <summary>
@@ -105,6 +111,11 @@ public abstract class InfoJsonConstructorTemplate<T> : IInfoJsonConstructor
     /// Overwrite the "sizes" property on info.json with given sizes
     /// </summary>
     protected abstract void SetImageServiceSizes(T imageService, List<Size> sizes);
+    
+    /// <summary>
+    /// Overwrite the "sizes" property on info.json with given sizes
+    /// </summary>
+    protected abstract void SetImageTileServiceSizes(T imageService, int maxUnauthorised);
 
     protected async Task<IService?> GetAuth2Service(OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken)
@@ -131,24 +142,8 @@ public abstract class InfoJsonConstructorTemplate<T> : IInfoJsonConstructor
                 Logger.LogInformation("No thumbnails found for {Asset}", orchestrationImage.AssetId);
                 return Enumerable.Empty<Size>().ToList();
             }
-
-            var thumbSizes = thumbs.Select(s => Size.FromArray(s)).ToList();
-
-            var imageMaxUnauthorized = orchestrationImage.MaxUnauthorised;
-
-            if (!UnlimitedMaxUnauthorizedValue.Contains(imageMaxUnauthorized))
-            {
-                for (int i = thumbSizes.Count - 1; i >= 0; i--)
-                {
-                    if (thumbSizes[i].Width > imageMaxUnauthorized)
-                    {
-                        thumbSizes.RemoveAt(i);
-                    }
-                }
-            }
             
-            return thumbSizes;
-
+            return thumbs.Select(s => Size.FromArray(s)).ToList();
         }
         catch (Exception ex)
         {
