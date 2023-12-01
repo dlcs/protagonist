@@ -36,7 +36,7 @@ jobs:
           path: ~/sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
-      - name: Install SonarCloud scanners
+      - name: Install SonarCloud scanners and code coverage tools
         run: |
           dotnet tool install --global dotnet-sonarscanner
           dotnet tool install --global JetBrains.dotCover.GlobalTool
