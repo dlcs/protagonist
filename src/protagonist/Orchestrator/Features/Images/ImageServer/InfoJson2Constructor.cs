@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using IIIF;
 using IIIF.ImageApi;
@@ -61,18 +62,12 @@ public class InfoJson2Constructor : InfoJsonConstructorTemplate<ImageService2>
     protected override void SetImageServiceSizes(ImageService2 imageService, List<Size> sizes)
         => imageService.Sizes = sizes;
     
-    protected override void SetImageTileServiceSizes(ImageService2 imageService, int maxUnauthorised)
+    protected override void SetImageServiceTiles (ImageService2 imageService, OrchestrationImage orchestrationImage)
     {
-        if (imageService.Tiles == null || imageService.Tiles.Select(s => s.Width).Max() > maxUnauthorised)
+        if (imageService.Tiles.IsNullOrEmpty() || imageService.Tiles
+                .Select(s => s.Width).Max() > orchestrationImage.MaxUnauthorised)
         {
-            // This code is working out the max tiles size based on max unauthorised.
-            // The tile size must be a power of 2 and less than maxUnauthorised
-            // for example, if maxUnauthorised is 500, the tile size will be updated to 256
-            var tileSize =
-                Math.Pow(2, (int)Math.Log2(maxUnauthorised)); // Casting as it truncates
-
-            var tiles = InfoJsonBuilder.GetTiles(imageService.Width, imageService.Height,
-                (int)tileSize);
+            var tiles = GetTiles(orchestrationImage);
 
             imageService.Tiles = tiles;
         }

@@ -11,6 +11,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Auth.Entities;
 using IIIF;
+using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
 using IIIF.Serialisation;
@@ -195,6 +196,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse.Id.Should().Be($"http://localhost/iiif-img/v2/{namedId}");
         jsonResponse.Context.ToString().Should().Be("http://iiif.io/api/image/2/context.json");
         jsonResponse.Sizes.Should().BeEquivalentTo(expectedSizes);
+        jsonResponse.Tiles[0].Width.Should().Be(512);
 
         // With correct headers/status
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -228,6 +230,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var jsonResponse = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService2>();
         jsonResponse.Id.Should().Be($"http://localhost/iiif-img/v2/{namedId}",
             "Id property should not contain query parameters");
+        jsonResponse.Tiles[0].Width.Should().Be(512);
         
         // With correct headers/status
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -307,6 +310,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         infoJson.ProfileDescription.MaxArea.Should().BeNull();
         infoJson.ProfileDescription.MaxHeight.Should().BeNull();
         infoJson.ProfileDescription.MaxWidth.Should().Be(500);
+        infoJson.Tiles[0].Width.Should().Be(256);
     }
     
     [Fact]
@@ -336,8 +340,9 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         infoJson.MaxArea.Should().BeNull();
         infoJson.MaxHeight.Should().BeNull();
         infoJson.MaxWidth.Should().Be(500);
+        infoJson.Tiles[0].Width.Should().Be(256);
     }
-    
+
     [Fact]
     public async Task GetInfoJsonV2_ReturnsImageServerSizes_IfS3GetFails()
     {
@@ -375,7 +380,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .NotBe($"http://localhost/iiif-img/v2/{id}", "Stored Id is placeholder only");
         s3InfoJson["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
     }
-    
+
     [Fact]
     public async Task GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules()
     {
@@ -1630,6 +1635,11 @@ public class FakeImageServerClient : IImageServerClient
                 Profile = ImageService2.Level1Profile,
                 Protocol = ImageService2.Image2Protocol,
                 Context = ImageService2.Image2Context,
+                Tiles = new List<Tile>{new Tile()
+                {
+                    Height = 512,
+                    Width = 512
+                }},
                 Width = 100,
                 Height = 100,
                 Sizes = new List<Size> { new(100, 100), new(25, 25), new(1, 1) },
@@ -1641,6 +1651,11 @@ public class FakeImageServerClient : IImageServerClient
             Profile = ImageService3.Level1Profile,
             Protocol = ImageService3.ImageProtocol,
             Context = ImageService3.Image3Context,
+            Tiles = new List<Tile>{new Tile()
+            {
+                Height = 512,
+                Width = 512
+            }},
             Width = 100,
             Height = 100,
             Sizes = new List<Size> { new(100, 100), new(25, 25), new(1, 1) },
