@@ -1,4 +1,5 @@
 ﻿using CleanupHandler.Infrastructure;
+using DLCS.AWS.SSM;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -40,5 +41,9 @@ public class Program
             .UseSerilog((hostingContext, loggerConfiguration)
                 => loggerConfiguration
                     .ReadFrom.Configuration(hostingContext.Configuration)
-            );
+            )
+            .ConfigureAppConfiguration((context, builder) =>
+            {
+                builder.AddSystemsManager(context);
+            });
 }
