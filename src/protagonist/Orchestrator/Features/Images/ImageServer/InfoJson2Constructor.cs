@@ -1,8 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using IIIF;
+using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
@@ -57,6 +61,17 @@ public class InfoJson2Constructor : InfoJsonConstructorTemplate<ImageService2>
 
     protected override void SetImageServiceSizes(ImageService2 imageService, List<Size> sizes)
         => imageService.Sizes = sizes;
+    
+    protected override void SetImageServiceTiles (ImageService2 imageService, OrchestrationImage orchestrationImage)
+    {
+        if (imageService.Tiles.IsNullOrEmpty() || imageService.Tiles
+                .Select(s => s.Width).Max() > orchestrationImage.MaxUnauthorised)
+        {
+            var tiles = GetTiles(orchestrationImage);
+
+            imageService.Tiles = tiles;
+        }
+    }
 
     private async Task<List<IService>> GetAuthAllServices(OrchestrationImage orchestrationImage, CancellationToken cancellationToken)
     {

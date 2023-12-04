@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using IIIF;
+using IIIF.ImageApi;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure.IIIF;
@@ -81,6 +82,11 @@ public abstract class InfoJsonConstructorTemplate<T> : IInfoJsonConstructor
                 await SetImageServiceAuthServices(imageService, orchestrationImage, cancellationToken);
             }
         }
+        
+        if (orchestrationImage.MaxUnauthorised > 0)
+        {
+            SetImageServiceTiles (imageService, orchestrationImage);
+        }
     }
 
     /// <summary>
@@ -103,6 +109,13 @@ public abstract class InfoJsonConstructorTemplate<T> : IInfoJsonConstructor
     /// Overwrite the "sizes" property on info.json with given sizes
     /// </summary>
     protected abstract void SetImageServiceSizes(T imageService, List<Size> sizes);
+    
+    /// <summary>
+    /// Overwrite the "tiles" property on info.json with given tile sizes
+    /// </summary>
+    /// <param name="imageService">The image service</param>
+    /// <param name="orchestrationImage">The image being orchestrated</param>
+    protected abstract void SetImageServiceTiles (T imageService, OrchestrationImage orchestrationImage);
 
     protected async Task<IService?> GetAuth2Service(OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken)
@@ -129,7 +142,7 @@ public abstract class InfoJsonConstructorTemplate<T> : IInfoJsonConstructor
                 Logger.LogInformation("No thumbnails found for {Asset}", orchestrationImage.AssetId);
                 return Enumerable.Empty<Size>().ToList();
             }
-
+            
             return thumbs.Select(s => Size.FromArray(s)).ToList();
         }
         catch (Exception ex)
@@ -137,6 +150,19 @@ public abstract class InfoJsonConstructorTemplate<T> : IInfoJsonConstructor
             Logger.LogError(ex, "Error getting size for info.json for {Asset}", orchestrationImage.AssetId);
             return Enumerable.Empty<Size>().ToList();
         }
+    }
+    
+    protected static List<Tile> GetTiles(OrchestrationImage orchestrationImage)
+    {
+        // This code is working out the max tiles size based on max unauthorised.
+        // The tile size must be a power of 2 and less than maxUnauthorised
+        // for example, if maxUnauthorised is 500, the tile size will be updated to 256
+        var tileSize =
+            Math.Pow(2, (int)Math.Log2(orchestrationImage.MaxUnauthorised)); // Casting as it truncates
+
+        var tiles = InfoJsonBuilder.GetTiles(orchestrationImage.Width, orchestrationImage.Height,
+            (int)tileSize);
+        return tiles;
     }
 }
 
