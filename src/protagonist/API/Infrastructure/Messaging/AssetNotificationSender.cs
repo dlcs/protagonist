@@ -57,33 +57,32 @@ public class AssetNotificationSender : IAssetNotificationSender
         }
 
         // Send notifications generated in above method
-        await SendCleanupAssetRequest(changes[ChangeType.Delete], cancellationToken);
+        await SendAssetModifiedRequest(changes, cancellationToken);
     }
 
     private async Task<string?> GetSerialisedNotification(AssetModificationRecord notification)
     {
-        if (notification.ChangeType == ChangeType.Delete)
+        switch (notification.ChangeType)
         {
-            logger.LogDebug("Message Bus: Asset Deleted: {AssetId}", notification.Before!.Id);
-            return await GetSerialisedCleanupAssetNotification(notification.Before!);
+            case ChangeType.Create:
+                logger.LogDebug("Message Bus: Asset Created: {AssetId}", notification.After!.Id);
+                return await GetSerialisedAssetModifiedNotification(notification.After!);
+            case ChangeType.Delete:
+                logger.LogDebug("Message Bus: Asset Deleted: {AssetId}", notification.Before!.Id);
+                break;
+            case ChangeType.Update:
+                logger.LogDebug("Message Bus: Asset Modified: {AssetId}", notification.Before!.Id);
+                break;
         }
-        
-        if (notification.ChangeType == ChangeType.Create)
-        {
-            logger.LogDebug("Message Bus: Asset Created: {AssetId}", notification.After!.Id);
-        }
-        else if (notification.ChangeType == ChangeType.Update)
-        {
-            logger.LogDebug("Message Bus: Asset Modified: {AssetId}", notification.Before?.Id);
-        }
-        return null; 
+
+        return await GetSerialisedAssetModifiedNotification(notification.Before!);
     }
     
-    private async Task<string> GetSerialisedCleanupAssetNotification(Asset assetToCleanup)
+    private async Task<string> GetSerialisedAssetModifiedNotification(Asset assetToCleanup)
     {
         var customerPathElement = await GetCustomerPathElement(assetToCleanup.Customer);
         
-        var request = new CleanupAssetNotificationRequest
+        var request = new AssetModifiedNotificationRequest
         {
             Asset = assetToCleanup,
             CustomerPathElement = customerPathElement
@@ -101,11 +100,15 @@ public class AssetNotificationSender : IAssetNotificationSender
         return customerPathElement;
     }
     
-    private async Task<bool> SendCleanupAssetRequest(IList<string> change, CancellationToken cancellationToken)
+    private async Task<bool> SendAssetModifiedRequest(Dictionary<ChangeType, List<string>> change, CancellationToken cancellationToken)
     {
         if (change.IsNullOrEmpty()) return true;
 
-        var toSend = change.Select(n => new AssetModifiedNotification(n, ChangeType.Delete)).ToList();
+        var toSend = (
+            from keyPair 
+            in change 
+            from changeToSend 
+                in keyPair.Value select new AssetModifiedNotification(changeToSend, keyPair.Key)).ToList();
 
         return await topicPublisher.PublishToAssetModifiedTopic(toSend, cancellationToken);
     }

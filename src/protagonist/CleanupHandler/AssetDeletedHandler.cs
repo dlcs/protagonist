@@ -44,10 +44,10 @@ public class AssetDeletedHandler : IMessageHandler
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        CleanupAssetNotificationRequest? request;
+        AssetModifiedNotificationRequest? request;
         try
         {
-            request = message.GetMessageContents<CleanupAssetNotificationRequest>();
+            request = message.GetMessageContents<AssetModifiedNotificationRequest>();
         }
         catch (Exception ex)
         {

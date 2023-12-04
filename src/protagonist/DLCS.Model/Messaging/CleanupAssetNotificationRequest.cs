@@ -3,7 +3,7 @@ using DLCS.Model.PathElements;
 
 namespace DLCS.Model.Messaging;
 
-public class CleanupAssetNotificationRequest
+public class AssetModifiedNotificationRequest
 {
     public Asset? Asset { get; set; }
 
