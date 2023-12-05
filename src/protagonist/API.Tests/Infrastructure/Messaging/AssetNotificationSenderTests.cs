@@ -29,7 +29,7 @@ public class AssetNotificationSenderTests
     }
 
     [Fact]
-    public async Task SendAssetModifiedMessage_Single_Noop_IfUpdate()
+    public async Task SendAssetModifiedMessage_Single_SendsNotification_IfUpdate()
     {
         // Arrange
         var assetModifiedRecord =
@@ -41,11 +41,11 @@ public class AssetNotificationSenderTests
         // Assert
         A.CallTo(() =>
             topicPublisher.PublishToAssetModifiedTopic(A<IReadOnlyList<AssetModifiedNotification>>._,
-                A<CancellationToken>._)).MustNotHaveHappened();
+                A<CancellationToken>._)).MustHaveHappened();
     }
     
     [Fact]
-    public async Task SendAssetModifiedMessage_Single_Noop_IfCreate()
+    public async Task SendAssetModifiedMessage_Single_SendsNotification_IfCreate()
     {
         // Arrange
         var assetModifiedRecord = AssetModificationRecord.Create(new Asset(new AssetId(1, 2, "foo")));
@@ -56,7 +56,7 @@ public class AssetNotificationSenderTests
         // Assert
         A.CallTo(() =>
             topicPublisher.PublishToAssetModifiedTopic(A<IReadOnlyList<AssetModifiedNotification>>._,
-                A<CancellationToken>._)).MustNotHaveHappened();
+                A<CancellationToken>._)).MustHaveHappened();
     }
     
     [Fact]

@@ -281,7 +281,7 @@ public class AssetDeletedHandlerTests
     public async Task Handle_InvalidatesImagePath_IfDeliveryChannels()
     {
         // Arrange
-        var cleanupRequest = new CleanupAssetNotificationRequest()
+        var cleanupRequest = new AssetModifiedNotificationRequest()
         {
             Asset = new Asset()
             {
@@ -357,7 +357,7 @@ public class AssetDeletedHandlerTests
     public async Task Handle_InvalidatesImagePath_IfImageAssetFamily()
     {
         // Arrange
-        var cleanupRequest = new CleanupAssetNotificationRequest()
+        var cleanupRequest = new AssetModifiedNotificationRequest()
         {
             Asset = new Asset()
             {
@@ -400,7 +400,7 @@ public class AssetDeletedHandlerTests
     public async Task Handle_DoesNotCreateInvalidation_IfFileAssetFamily()
     {
         // Arrange
-        var cleanupRequest = new CleanupAssetNotificationRequest()
+        var cleanupRequest = new AssetModifiedNotificationRequest()
         {
             Asset = new Asset()
             {
@@ -439,7 +439,7 @@ public class AssetDeletedHandlerTests
     public async Task Handle_ReturnsFalse_IfInvalidationFails()
     {
         // Arrange
-        var cleanupRequest = new CleanupAssetNotificationRequest()
+        var cleanupRequest = new AssetModifiedNotificationRequest()
         {
             Asset = new Asset()
             {
@@ -471,7 +471,7 @@ public class AssetDeletedHandlerTests
     
     private QueueMessage CreateMinimalQueueMessage()
     {
-        var cleanupRequest = new CleanupAssetNotificationRequest()
+        var cleanupRequest = new AssetModifiedNotificationRequest()
         {
             Asset = new Asset()
             {
