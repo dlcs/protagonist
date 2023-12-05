@@ -118,15 +118,10 @@ public class AssetNotificationSender : IAssetNotificationSender
     {
         if (change.IsNullOrEmpty()) return true;
 
-        var toSend = new List<AssetModifiedNotification>();
-
-        foreach (var keyPair in change)
-        {
-            foreach (var changeToSend in keyPair.Value)
-            {
-                toSend.Add(new AssetModifiedNotification(changeToSend, keyPair.Key));
-            }
-        }
+        var toSend = change
+            .SelectMany(kvp => kvp.Value
+                .Select(v => new AssetModifiedNotification(v, kvp.Key)))
+            .ToList();
         
         return await topicPublisher.PublishToAssetModifiedTopic(toSend, cancellationToken);
     }
