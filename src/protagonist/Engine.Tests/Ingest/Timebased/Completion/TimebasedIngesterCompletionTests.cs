@@ -85,7 +85,7 @@ public class TimebasedIngesterCompletionTests
             }
         });
         A.CallTo(() => bucketWriter.CopyLargeObject(A<ObjectInBucket>._, A<ObjectInBucket>._,
-                A<Func<long, Task<bool>>>._, A<bool>._, A<string?>._, A<CancellationToken>._))
+                A<Func<long, Task<bool>>>._, A<string?>._, A<CancellationToken>._))
             .Returns(new LargeObjectCopyResult(status));
         
         // Act
