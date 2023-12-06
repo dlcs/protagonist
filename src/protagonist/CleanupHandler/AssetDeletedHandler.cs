@@ -65,7 +65,14 @@ public class AssetDeletedHandler : IMessageHandler
         DeleteFromNas(request.Asset.Id);
         await DeleteFromOriginBucket(request.Asset.Id);
 
-        return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
+        if (!handlerSettings.DisableCacheInvalidation)
+        {
+            return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
+        }
+    
+
+        logger.LogDebug("Cache invalidation disabled");
+        return true;
     }
 
     private async Task DeleteFromOriginBucket(AssetId assetId)
@@ -88,7 +95,7 @@ public class AssetDeletedHandler : IMessageHandler
             logger.LogDebug("No Cloudfront distribution id configured - Cloudfront will not be invalidated");
             return true;
         }
-        
+
         var invalidationUriList = new List<string>();
         var idList = new List<string>()
         {
