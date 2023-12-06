@@ -65,7 +65,13 @@ public class AssetDeletedHandler : IMessageHandler
         DeleteFromNas(request.Asset.Id);
         await DeleteFromOriginBucket(request.Asset.Id);
 
-        return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
+        if (!handlerSettings.DisableCacheInvalidation)
+        {
+            return await InvalidateContentDeliveryNetwork(request.Asset);
+        }
+
+        logger.LogDebug("Cache invalidation disabled");
+        return true;
     }
 
     private async Task DeleteFromOriginBucket(AssetId assetId)
