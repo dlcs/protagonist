@@ -52,7 +52,6 @@ public static class ServiceCollectionX
     /// </summary>
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
         => services
-           // .AddDlcsContext(configuration)
             .AddSingleton<ICustomerRepository, DapperCustomerRepository>();
 
     /// <summary>
