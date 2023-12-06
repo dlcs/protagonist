@@ -18,5 +18,5 @@ public class CleanupHandlerSettings
     /// <summary>
     /// cache config
     /// </summary>
-    public CacheSettings CacheSettings { get; set; } = new();
+    public CacheSettings Caching { get; set; } = new();
 }
