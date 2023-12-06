@@ -38,7 +38,6 @@ public static class ServiceCollectionX
             .AddTransient(typeof(SqsListener<>))
             .AddSingleton<ICacheInvalidator, CloudfrontInvalidator>()
             .AddSingleton<SqsQueueUtilities>()
-            .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
             .SetupAWS(configuration, hostEnvironment)
             .WithAmazonS3()
             .WithAmazonCloudfront()
