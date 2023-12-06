@@ -1,4 +1,5 @@
 ﻿using DLCS.AWS.Settings;
+using DLCS.Core.Caching;
 
 namespace CleanupHandler.Infrastructure;
 
@@ -13,4 +14,9 @@ public class CleanupHandlerSettings
     /// AWS config
     /// </summary>
     public AWSSettings AWS { get; set; }
+
+    /// <summary>
+    /// cache config
+    /// </summary>
+    public CacheSettings CacheSettings { get; set; } = new();
 }

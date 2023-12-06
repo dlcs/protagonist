@@ -7,6 +7,7 @@ using DLCS.Core.Exceptions;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
 using Microsoft.Extensions.Logging;
@@ -25,12 +26,14 @@ public class AssetDeletedHandler : IMessageHandler
     private readonly IFileSystem fileSystem;
     private readonly ILogger<AssetDeletedHandler> logger;
     private readonly ICacheInvalidator cacheInvalidator;
+    private readonly ICustomerRepository customerRepository;
 
     public AssetDeletedHandler(
         IStorageKeyGenerator storageKeyGenerator,
         IBucketWriter bucketWriter,
         ICacheInvalidator cacheInvalidator,
         IFileSystem fileSystem,
+        ICustomerRepository customerRepository,
         IOptions<CleanupHandlerSettings> handlerSettings,
         ILogger<AssetDeletedHandler> logger)
     {
@@ -40,6 +43,7 @@ public class AssetDeletedHandler : IMessageHandler
         this.cacheInvalidator = cacheInvalidator;
         this.logger = logger;
         this.handlerSettings = handlerSettings.Value;
+        this.customerRepository = customerRepository;
     }
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
@@ -88,7 +92,21 @@ public class AssetDeletedHandler : IMessageHandler
             return true;
         }
 
+        var customer = await customerRepository.GetCustomer(asset.Customer);
+
+        if (customer == null)
+        {
+            logger.LogError("No customer found for asset. {@Request}", 
+                asset);
+            return false;
+        }
+
         var invalidationUriList = new List<string>();
+        var idList = new List<string>()
+        {
+            asset.Id.ToString(),
+            $"{customer.Name}/{asset.Id.Space}/{asset.Id.Asset}"
+        };
         
         if (asset.DeliveryChannels.IsNullOrEmpty())
         {
@@ -97,7 +115,8 @@ public class AssetDeletedHandler : IMessageHandler
         }
         else
         {
-            invalidationUriList = SetDeliveryChannelInvalidations(asset.Id!, asset.DeliveryChannels.ToList());
+            invalidationUriList = SetDeliveryChannelInvalidations(asset.Id!, 
+                asset.DeliveryChannels.ToList(), idList);
         }
         
         if (!asset.Family.HasValue)
@@ -109,9 +128,12 @@ public class AssetDeletedHandler : IMessageHandler
         {
             if (asset.Family == AssetFamily.Image)
             {
-                invalidationUriList.Add($"/iiif-manifest/{asset.Id}");
-                invalidationUriList.Add($"/iiif-manifest/v2/{asset.Id}");
-                invalidationUriList.Add($"/iiif-manifest/v3/{asset.Id}");
+                foreach (var id in idList)
+                {
+                    invalidationUriList.Add($"/iiif-manifest/{id}");
+                    invalidationUriList.Add($"/iiif-manifest/v2/{id}");
+                    invalidationUriList.Add($"/iiif-manifest/v3/{id}");
+                }
             }
         }
         
@@ -123,27 +145,32 @@ public class AssetDeletedHandler : IMessageHandler
         return true;
     }
 
-    private static List<string> SetDeliveryChannelInvalidations(AssetId assetId, List<string> deliveryChannels)
+    private static List<string> SetDeliveryChannelInvalidations(AssetId assetId, List<string> deliveryChannels,
+        List<string> idList)
     {
         List<string> invalidationUriList = new List<string>();
+
         foreach (var deliveryChannel in deliveryChannels)
         {
-            switch (deliveryChannel)
+            foreach (var id in idList)
             {
-                case AssetDeliveryChannels.Image:
-                    invalidationUriList.Add($"/iiif-img/{assetId}/*");
-                    invalidationUriList.Add($"/iiif-img/v2/{assetId}/*");
-                    invalidationUriList.Add($"/iiif-img/v3/{assetId}/*");
-                    invalidationUriList.Add($"/thumbs/{assetId}/*");
-                    invalidationUriList.Add($"/thumbs/v2/{assetId}/*");
-                    invalidationUriList.Add($"/thumbs/v3/{assetId}/*");
-                    break;
-                case AssetDeliveryChannels.File:
-                    invalidationUriList.Add($"/file/{assetId}");
-                    break;
-                case AssetDeliveryChannels.Timebased:
-                    invalidationUriList.Add($"/iiif-av/{assetId}/*");
-                    break;
+                switch (deliveryChannel)
+                {
+                    case AssetDeliveryChannels.Image:
+                        invalidationUriList.Add($"/iiif-img/{id}/*");
+                        invalidationUriList.Add($"/iiif-img/v2/{id}/*");
+                        invalidationUriList.Add($"/iiif-img/v3/{id}/*");
+                        invalidationUriList.Add($"/thumbs/{id}/*");
+                        invalidationUriList.Add($"/thumbs/v2/{id}/*");
+                        invalidationUriList.Add($"/thumbs/v3/{id}/*");
+                        break;
+                    case AssetDeliveryChannels.File:
+                        invalidationUriList.Add($"/file/{id}");
+                        break;
+                    case AssetDeliveryChannels.Timebased:
+                        invalidationUriList.Add($"/iiif-av/{id}/*");
+                        break;
+                }
             }
         }
 

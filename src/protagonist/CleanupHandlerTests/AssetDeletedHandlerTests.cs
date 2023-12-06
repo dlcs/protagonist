@@ -9,6 +9,7 @@ using DLCS.AWS.Settings;
 using DLCS.AWS.SQS;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using DLCS.Model.PathElements;
 using FakeItEasy;
@@ -26,6 +27,7 @@ public class AssetDeletedHandlerTests
     private readonly FakeFileSystem fakeFileSystem;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly ICacheInvalidator cacheInvalidator;
+    private readonly ICustomerRepository customerRepository;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
     public AssetDeletedHandlerTests()
@@ -47,10 +49,16 @@ public class AssetDeletedHandlerTests
         bucketWriter = A.Fake<IBucketWriter>();
         fakeFileSystem = new FakeFileSystem();
         cacheInvalidator = A.Fake<ICacheInvalidator>();
+        customerRepository = A.Fake<ICustomerRepository>();
+
+        A.CallTo(() => customerRepository.GetCustomer(A<int>._)).Returns(new Customer()
+        {
+            Name = "someName"
+        });
     }
 
     private AssetDeletedHandler GetSut()
-        => new(storageKeyGenerator, bucketWriter, cacheInvalidator ,fakeFileSystem, Options.Create(handlerSettings),
+        => new(storageKeyGenerator, bucketWriter, cacheInvalidator ,fakeFileSystem,  customerRepository, Options.Create(handlerSettings),
             new NullLogger<AssetDeletedHandler>());
 
     [Fact]
@@ -326,6 +334,11 @@ public class AssetDeletedHandlerTests
         // invalidates av
         A.CallTo(() =>
             cacheInvalidator.InvalidateCdnCache(A<List<string>>.That.Contains("/iiif-av/1/99/foo/*"),
+                A<CancellationToken>._)).MustHaveHappened();
+        
+        // invalidates with name
+        A.CallTo(() =>
+            cacheInvalidator.InvalidateCdnCache(A<List<string>>.That.Contains("/iiif-img/someName/99/foo/*"), 
                 A<CancellationToken>._)).MustHaveHappened();
     }
 
