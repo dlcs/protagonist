@@ -1,7 +1,5 @@
 ﻿using CleanupHandler.Infrastructure;
 using DLCS.AWS.SSM;
-using DLCS.Core.Caching;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -38,9 +36,6 @@ public class Program
                 services
                     .Configure<CleanupHandlerSettings>(hostContext.Configuration)
                     .AddAws(hostContext.Configuration, hostContext.HostingEnvironment)
-                    .AddCaching(hostContext.Configuration.GetSection(
-                        "CacheSettings").Get<CacheSettings>() ?? new CacheSettings())
-                    .AddDataAccess(hostContext.Configuration)
                     .AddQueueMonitoring();
             })
             .UseSerilog((hostingContext, loggerConfiguration)

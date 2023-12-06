@@ -33,7 +33,6 @@ public class AssetDeletedHandler : IMessageHandler
         IBucketWriter bucketWriter,
         ICacheInvalidator cacheInvalidator,
         IFileSystem fileSystem,
-        ICustomerRepository customerRepository,
         IOptions<CleanupHandlerSettings> handlerSettings,
         ILogger<AssetDeletedHandler> logger)
     {
@@ -68,7 +67,7 @@ public class AssetDeletedHandler : IMessageHandler
         DeleteFromNas(request.Asset.Id);
         await DeleteFromOriginBucket(request.Asset.Id);
 
-        return await InvalidateContentDeliveryNetwork(request.Asset);
+        return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
     }
 
     private async Task DeleteFromOriginBucket(AssetId assetId)
@@ -84,28 +83,19 @@ public class AssetDeletedHandler : IMessageHandler
         await bucketWriter.DeleteFolder(storageKey, true);
     }
 
-    private async Task<bool> InvalidateContentDeliveryNetwork(Asset asset)
+    private async Task<bool> InvalidateContentDeliveryNetwork(Asset asset, string customerName)
     {
         if (string.IsNullOrEmpty(handlerSettings.AWS.Cloudfront.DistributionId))
         {
             logger.LogDebug("No Cloudfront distribution id configured - Cloudfront will not be invalidated");
             return true;
         }
-
-        var customer = await customerRepository.GetCustomer(asset.Customer);
-
-        if (customer == null)
-        {
-            logger.LogError("No customer found for asset. {@Request}", 
-                asset);
-            return false;
-        }
-
+        
         var invalidationUriList = new List<string>();
         var idList = new List<string>()
         {
             asset.Id.ToString(),
-            $"{customer.Name}/{asset.Id.Space}/{asset.Id.Asset}"
+            $"{customerName}/{asset.Id.Space}/{asset.Id.Asset}"
         };
         
         if (asset.DeliveryChannels.IsNullOrEmpty())

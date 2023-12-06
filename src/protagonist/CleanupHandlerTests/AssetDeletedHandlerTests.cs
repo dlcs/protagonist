@@ -27,7 +27,6 @@ public class AssetDeletedHandlerTests
     private readonly FakeFileSystem fakeFileSystem;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly ICacheInvalidator cacheInvalidator;
-    private readonly ICustomerRepository customerRepository;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
     public AssetDeletedHandlerTests()
@@ -49,16 +48,10 @@ public class AssetDeletedHandlerTests
         bucketWriter = A.Fake<IBucketWriter>();
         fakeFileSystem = new FakeFileSystem();
         cacheInvalidator = A.Fake<ICacheInvalidator>();
-        customerRepository = A.Fake<ICustomerRepository>();
-
-        A.CallTo(() => customerRepository.GetCustomer(A<int>._)).Returns(new Customer()
-        {
-            Name = "someName"
-        });
     }
 
     private AssetDeletedHandler GetSut()
-        => new(storageKeyGenerator, bucketWriter, cacheInvalidator ,fakeFileSystem,  customerRepository, Options.Create(handlerSettings),
+        => new(storageKeyGenerator, bucketWriter, cacheInvalidator ,fakeFileSystem, Options.Create(handlerSettings),
             new NullLogger<AssetDeletedHandler>());
 
     [Fact]
@@ -296,7 +289,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 DeliveryChannels = new[] {"iiif-img","iiif-av", "file" }
             },
-            CustomerPathElement = new CustomerPathElement(99, "stuff")
+            CustomerPathElement = new CustomerPathElement(99, "someName")
         };
 
         var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
