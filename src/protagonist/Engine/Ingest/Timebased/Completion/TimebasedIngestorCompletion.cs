@@ -38,8 +38,6 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
             return false;
         }
 
-        var assetIsOpen = !asset.RequiresAuth;
-
         var errors = new List<string>();
         var transcodeSuccess = true;
         
@@ -50,7 +48,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
                 $"Transcode failed with status: {transcodeResult.State}. Error: {transcodeResult.ErrorCode ?? "unknown"}");
         }
 
-        var copyTasks = CopyTranscodeOutputs(transcodeResult, errors, asset, assetIsOpen, cancellationToken);
+        var copyTasks = CopyTranscodeOutputs(transcodeResult, errors, asset, cancellationToken);
 
         await DeleteInputFile(transcodeResult);
         
@@ -85,8 +83,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
     }
 
     private List<Task<LargeObjectCopyResult>> CopyTranscodeOutputs(TranscodeResult transcodeResult,
-        List<string> errors, Asset asset, bool assetIsOpen,
-        CancellationToken cancellationToken)
+        List<string> errors, Asset asset, CancellationToken cancellationToken)
     {
         bool dimensionsUpdated = false;
         var transcodeOutputs = transcodeResult.Outputs;
@@ -107,7 +104,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
             dimensionsUpdated = true;
 
             // Move assets from elastic transcoder-output bucket to main bucket
-            copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, asset.Id, assetIsOpen, cancellationToken));
+            copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, asset.Id, cancellationToken));
         }
 
         return copyTasks;
@@ -171,7 +168,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
     }
 
     private async Task<LargeObjectCopyResult> CopyTranscodeOutputToStorage(TranscodeOutput transcodeOutput,
-        AssetId assetId, bool assetIsOpen, CancellationToken cancellationToken)
+        AssetId assetId, CancellationToken cancellationToken)
     {
         var source = storageKeyGenerator.GetTimebasedOutputLocation(transcodeOutput.Key);
         var destination =
@@ -179,8 +176,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
                 TranscoderTemplates.GetFinalDestinationKey(transcodeOutput.Key));
 
         var copyResult =
-            await bucketWriter.CopyLargeObject(source, destination, destIsPublic: assetIsOpen,
-                token: cancellationToken);
+            await bucketWriter.CopyLargeObject(source, destination, token: cancellationToken);
 
         if (copyResult.Result == LargeObjectStatus.Success)
         {

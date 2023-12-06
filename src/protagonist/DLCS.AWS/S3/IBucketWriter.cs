@@ -19,13 +19,12 @@ public interface IBucketWriter
     /// <param name="source">Bucket where object is currently stored.</param>
     /// <param name="destination">Target bucket where object is to be stored.</param>
     /// <param name="verifySize">Function to verify objectSize prior to copying. Not copied if false returned.</param>
-    /// <param name="destIsPublic">If true the copied object is given public access rights</param>
     /// <param name="contentType">ContentType to set on uploaded object</param>
     /// <param name="token">Cancellation token</param>
     /// <returns>ResultStatus signifying success or failure alongside ContentSize</returns>
     /// <remarks>See https://docs.aws.amazon.com/AmazonS3/latest/dev/CopyingObjctsUsingLLNetMPUapi.html </remarks>
     public Task<LargeObjectCopyResult> CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
-        Func<long, Task<bool>>? verifySize = null, bool destIsPublic = false, string? contentType = null, 
+        Func<long, Task<bool>>? verifySize = null, string? contentType = null, 
         CancellationToken token = default);
 
     /// <summary>

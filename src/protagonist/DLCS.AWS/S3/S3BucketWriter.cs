@@ -52,13 +52,12 @@ public class S3BucketWriter : IBucketWriter
     /// <param name="source">Bucket where object is currently stored.</param>
     /// <param name="destination">Target bucket where object is to be stored.</param>
     /// <param name="verifySize">Function to verify objectSize prior to copying. Not copied if false returned.</param>
-    /// <param name="destIsPublic">If true the copied object is given public access rights</param>
     /// <param name="contentType">ContentType to set on uploaded object</param>
     /// <param name="token">Cancellation token</param>
     /// <returns>ResultStatus signifying success or failure alongside ContentSize</returns>
     /// <remarks>See https://docs.aws.amazon.com/AmazonS3/latest/dev/CopyingObjctsUsingLLNetMPUapi.html </remarks>
     public async Task<LargeObjectCopyResult> CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
-        Func<long, Task<bool>>? verifySize = null, bool destIsPublic = false, string? contentType = null,
+        Func<long, Task<bool>>? verifySize = null, string? contentType = null,
         CancellationToken token = default)
     {
         long? objectSize = null;
@@ -92,7 +91,7 @@ public class S3BucketWriter : IBucketWriter
             var numberOfParts = Convert.ToInt32(objectSize / partSize);
             var copyResponses = new List<CopyPartResponse>(numberOfParts);
 
-            var uploadId = await InitiateMultipartUpload(destination, destIsPublic, contentType);
+            var uploadId = await InitiateMultipartUpload(destination, contentType);
 
             long bytePosition = 0;
             for (int i = 1; bytePosition < objectSize; i++)
@@ -328,17 +327,10 @@ public class S3BucketWriter : IBucketWriter
         }
     }
 
-    private async Task<string> InitiateMultipartUpload(ObjectInBucket destination, bool makeTargetPublic,
-        string? contentType)
+    private async Task<string> InitiateMultipartUpload(ObjectInBucket destination, string? contentType)
     {
         var request = new InitiateMultipartUploadRequest
             { BucketName = destination.Bucket, Key = destination.Key, ContentType = contentType };
-
-        if (makeTargetPublic)
-        {
-            logger.LogInformation("Object {TargetObject} will have PublicRead ACL", destination);
-            request.CannedACL = S3CannedACL.PublicRead;
-        }
 
         var response = await s3Client.InitiateMultipartUploadAsync(request);
         return response.UploadId;

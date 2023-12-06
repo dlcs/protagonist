@@ -108,7 +108,7 @@ public class TestBucketWriter : IBucketWriter
     }
 
     public async Task<LargeObjectCopyResult> CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
-        Func<long, Task<bool>> verifySize = null, bool destIsPublic = false, string? contentType = null,
+        Func<long, Task<bool>> verifySize = null, string? contentType = null,
         CancellationToken token = default)
     {
         Operations[destination.Key] = new BucketObject { Bucket = destination.Bucket, ContentType = contentType };
