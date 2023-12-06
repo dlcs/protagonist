@@ -14,9 +14,4 @@ public class CleanupHandlerSettings
     /// AWS config
     /// </summary>
     public AWSSettings AWS { get; set; }
-
-    /// <summary>
-    /// cache config
-    /// </summary>
-    public CacheSettings Caching { get; set; } = new();
 }
