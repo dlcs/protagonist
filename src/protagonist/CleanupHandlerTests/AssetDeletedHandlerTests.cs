@@ -436,6 +436,46 @@ public class AssetDeletedHandlerTests
     }
     
     [Fact]
+    public async Task Handle_DoesNotCreateInvalidation_IfDisableInvalidationFlagSet()
+    {
+        // Arrange
+        var cleanupRequest = new AssetModifiedNotificationRequest()
+        {
+            Asset = new Asset()
+            {
+                Id = new AssetId(1, 99, "foo"),
+                Family = AssetFamily.Image
+            },
+            CustomerPathElement = new CustomerPathElement(99, "stuff")
+        };
+        
+        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
+        
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonNode.Parse(serialized)!.AsObject()
+
+        };
+        handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
+        handlerSettings.DisableCacheInvalidation = true;
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+
+        // Assert
+        response.Should().BeTrue();
+
+        // File deleted from local disk
+        fakeFileSystem.DeletedFiles.Should().ContainSingle(s => s == "/nas/1/99/foo/foo.jp2");
+
+        // does not invalidate
+        A.CallTo(() =>
+            cacheInvalidator.InvalidateCdnCache(A<List<string>>._,
+                A<CancellationToken>._)).MustNotHaveHappened();
+    }
+    
+    [Fact]
     public async Task Handle_ReturnsFalse_IfInvalidationFails()
     {
         // Arrange
