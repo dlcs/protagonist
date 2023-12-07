@@ -63,7 +63,8 @@ public class AssetNotificationSenderTests
     public async Task SendAssetModifiedMessage_Single_SendsNotification_IfDelete()
     {
         // Arrange
-        var assetModifiedRecord = AssetModificationRecord.Delete(new Asset(new AssetId(1, 2, "foo")));
+        var assetModifiedRecord = AssetModificationRecord.Delete(new Asset(new AssetId(1, 2, "foo")), 
+            new List<string>() { "cdn" });
         const string customerName = "uno";
         A.CallTo(() => customerPathRepository.GetCustomerPathElement("1"))
             .Returns(new CustomerPathElement(1, customerName));
@@ -82,9 +83,12 @@ public class AssetNotificationSenderTests
     [Fact]
     public async Task SendAssetModifiedMessage_Multiple_SendsNotification_IfDelete()
     {
+        var deleteFrom = new List<string>() { "cdn" };
         // Arrange
-        var assetModifiedRecord = AssetModificationRecord.Delete(new Asset(new AssetId(1, 2, "foo")));
-        var assetModifiedRecord2 = AssetModificationRecord.Delete(new Asset(new AssetId(1, 2, "bar")));
+        var assetModifiedRecord = AssetModificationRecord.Delete(new Asset(new AssetId(1, 2, "foo")), 
+            deleteFrom);
+        var assetModifiedRecord2 = AssetModificationRecord.Delete(new Asset(new AssetId(1, 2, "bar")),
+            deleteFrom);
         var updates = new List<AssetModificationRecord> { assetModifiedRecord, assetModifiedRecord2 };
         const string customerName = "uno";
         A.CallTo(() => customerPathRepository.GetCustomerPathElement("1"))

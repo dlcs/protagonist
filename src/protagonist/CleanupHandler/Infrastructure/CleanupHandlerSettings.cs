@@ -13,9 +13,4 @@ public class CleanupHandlerSettings
     /// AWS config
     /// </summary>
     public AWSSettings AWS { get; set; }
-    
-    /// <summary>
-    /// Used to disable cache invalidation
-    /// </summary>
-    public bool DisableCacheInvalidation { get; set; }
 }
