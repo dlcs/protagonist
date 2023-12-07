@@ -288,7 +288,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 DeliveryChannels = new[] {"iiif-img","iiif-av", "file" }
             },
-            CustomerPathElement = new CustomerPathElement(99, "stuff")
+            CustomerPathElement = new CustomerPathElement(99, "someName")
         };
 
         var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
@@ -326,6 +326,11 @@ public class AssetDeletedHandlerTests
         // invalidates av
         A.CallTo(() =>
             cacheInvalidator.InvalidateCdnCache(A<List<string>>.That.Contains("/iiif-av/1/99/foo/*"),
+                A<CancellationToken>._)).MustHaveHappened();
+        
+        // invalidates with name
+        A.CallTo(() =>
+            cacheInvalidator.InvalidateCdnCache(A<List<string>>.That.Contains("/iiif-img/someName/99/foo/*"), 
                 A<CancellationToken>._)).MustHaveHappened();
     }
 

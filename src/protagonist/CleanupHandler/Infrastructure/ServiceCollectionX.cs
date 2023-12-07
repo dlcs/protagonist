@@ -1,5 +1,4 @@
-﻿using Amazon.CloudFront;
-using DLCS.AWS.Cloudfront;
+﻿using DLCS.AWS.Cloudfront;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
