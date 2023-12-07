@@ -12,6 +12,7 @@ using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace CleanupHandler;
 
@@ -26,6 +27,7 @@ public class AssetDeletedHandler : IMessageHandler
     private readonly IFileSystem fileSystem;
     private readonly ILogger<AssetDeletedHandler> logger;
     private readonly ICacheInvalidator cacheInvalidator;
+    private const string CdnInvalidationIdentifier = "cdn";
 
     public AssetDeletedHandler(
         IStorageKeyGenerator storageKeyGenerator,
@@ -45,10 +47,10 @@ public class AssetDeletedHandler : IMessageHandler
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        AssetModifiedNotificationRequest? request;
+        AssetDeletedNotificationRequest? request;
         try
         {
-            request = message.GetMessageContents<AssetModifiedNotificationRequest>();
+            request = message.GetMessageContents<AssetDeletedNotificationRequest>();
         }
         catch (Exception ex)
         {
@@ -65,12 +67,12 @@ public class AssetDeletedHandler : IMessageHandler
         DeleteFromNas(request.Asset.Id);
         await DeleteFromOriginBucket(request.Asset.Id);
 
-        if (!handlerSettings.DisableCacheInvalidation)
+        if (request.DeleteFrom.Contains(CdnInvalidationIdentifier))
         {
             return await InvalidateContentDeliveryNetwork(request.Asset);
         }
 
-        logger.LogDebug("Cache invalidation disabled");
+        Log.Debug("cdn invalidation not specified for {Asset}", request.Asset.Id);
         return true;
     }
 

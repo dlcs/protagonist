@@ -1,4 +1,5 @@
-﻿using API.Converters;
+﻿using System.Collections.Generic;
+using API.Converters;
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
@@ -89,6 +90,7 @@ public class CustomerImagesController : HydraController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteImages(
         [FromRoute] int customerId,
+        [FromQuery] string? deleteFrom,
         [FromBody] HydraCollection<IdentifierOnly> imageIdentifiers,
         [FromServices] ImageIdListValidator validator,
         CancellationToken cancellationToken = default)
@@ -98,11 +100,14 @@ public class CustomerImagesController : HydraController
         {
             return this.ValidationFailed(validationResult);
         }
+        
+        var additionalDeletion = deleteFrom != null ? deleteFrom.Split(',').ToList() : new List<string>();
 
         return await HandleHydraRequest(async () =>
         {
             var request =
-                new DeleteMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(), customerId);
+                new DeleteMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(),
+                    customerId, additionalDeletion);
             var deletedRows = await Mediator.Send(request, cancellationToken);
 
             if (deletedRows == 0)
