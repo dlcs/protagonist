@@ -26,7 +26,6 @@ public class AssetDeletedHandler : IMessageHandler
     private readonly IFileSystem fileSystem;
     private readonly ILogger<AssetDeletedHandler> logger;
     private readonly ICacheInvalidator cacheInvalidator;
-    private readonly ICustomerRepository customerRepository;
 
     public AssetDeletedHandler(
         IStorageKeyGenerator storageKeyGenerator,
@@ -42,7 +41,6 @@ public class AssetDeletedHandler : IMessageHandler
         this.cacheInvalidator = cacheInvalidator;
         this.logger = logger;
         this.handlerSettings = handlerSettings.Value;
-        this.customerRepository = customerRepository;
     }
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)

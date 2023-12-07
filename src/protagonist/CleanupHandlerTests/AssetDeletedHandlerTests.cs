@@ -9,7 +9,6 @@ using DLCS.AWS.Settings;
 using DLCS.AWS.SQS;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using DLCS.Model.PathElements;
 using FakeItEasy;

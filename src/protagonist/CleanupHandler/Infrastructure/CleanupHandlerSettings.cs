@@ -1,5 +1,4 @@
 ﻿using DLCS.AWS.Settings;
-using DLCS.Core.Caching;
 
 namespace CleanupHandler.Infrastructure;
 
