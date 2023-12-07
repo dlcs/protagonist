@@ -15,11 +15,14 @@ public class DeleteMultipleImagesById : IRequest<int>
 {
     public IReadOnlyCollection<string> AssetIds { get; }
     public int CustomerId { get; }
+    
+    public List<string> DeleteFrom { get; }
 
-    public DeleteMultipleImagesById(IReadOnlyCollection<string> assetIds, int customerId)
+    public DeleteMultipleImagesById(IReadOnlyCollection<string> assetIds, int customerId, List<string> deleteFrom)
     {
         AssetIds = assetIds;
         CustomerId = customerId;
+        DeleteFrom = deleteFrom;
     }
 }
 
@@ -48,7 +51,7 @@ public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleIma
         logger.LogInformation("Deleted {DeletedRows} assets from a requested {RequestedRows}", rowCount,
             request.AssetIds.Count);
         
-        await RaiseModifiedNotifications(assetsFromDatabase, cancellationToken);
+        await RaiseModifiedNotifications(assetsFromDatabase, request.DeleteFrom, cancellationToken);
         return assetsFromDatabase.Count;
     }
     
@@ -75,9 +78,9 @@ public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleIma
         }
     }
 
-    private async Task RaiseModifiedNotifications(List<Asset> assets, CancellationToken cancellationToken)
+    private async Task RaiseModifiedNotifications(List<Asset> assets, List<string> deleteFrom, CancellationToken cancellationToken)
     {
-        var changeSet = assets.Select(AssetModificationRecord.Delete).ToList();
+        var changeSet = assets.Select(a => AssetModificationRecord.Delete(a, deleteFrom)).ToList();
         await assetNotificationSender.SendAssetModifiedMessage(changeSet, cancellationToken);
     }
 }

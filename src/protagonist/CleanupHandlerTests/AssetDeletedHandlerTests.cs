@@ -288,6 +288,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 DeliveryChannels = new[] {"iiif-img","iiif-av", "file" }
             },
+            DeleteFrom = new List<string>() {"cdn"},
             CustomerPathElement = new CustomerPathElement(99, "someName")
         };
 
@@ -369,6 +370,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
             },
+            DeleteFrom = new List<string>() {"cdn"},
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         
@@ -405,13 +407,14 @@ public class AssetDeletedHandlerTests
     public async Task Handle_DoesNotCreateInvalidation_IfFileAssetFamily()
     {
         // Arrange
-        var cleanupRequest = new AssetModifiedNotificationRequest()
+        var cleanupRequest = new AssetDeletedNotificationRequest()
         {
             Asset = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.File
             },
+            DeleteFrom = new List<string>() {"cdn"},
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         
@@ -441,16 +444,17 @@ public class AssetDeletedHandlerTests
     }
     
     [Fact]
-    public async Task Handle_DoesNotCreateInvalidation_IfDisableInvalidationFlagSet()
+    public async Task Handle_DoesNotCreateInvalidation_IfDeleteFromDoesNotContainCdn()
     {
         // Arrange
-        var cleanupRequest = new AssetModifiedNotificationRequest()
+        var cleanupRequest = new AssetDeletedNotificationRequest()
         {
             Asset = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
             },
+            DeleteFrom = new List<string>() {"notCdn"},
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         
@@ -484,13 +488,14 @@ public class AssetDeletedHandlerTests
     public async Task Handle_ReturnsFalse_IfInvalidationFails()
     {
         // Arrange
-        var cleanupRequest = new AssetModifiedNotificationRequest()
+        var cleanupRequest = new AssetDeletedNotificationRequest()
         {
             Asset = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
             },
+            DeleteFrom = new List<string>() {"cdn"},
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
 
@@ -516,12 +521,13 @@ public class AssetDeletedHandlerTests
     
     private QueueMessage CreateMinimalQueueMessage()
     {
-        var cleanupRequest = new AssetModifiedNotificationRequest()
+        var cleanupRequest = new AssetDeletedNotificationRequest()
         {
             Asset = new Asset()
             {
                 Id = new AssetId(1, 99, "foo")
             },
+            DeleteFrom = new List<string>() {"cdn"},
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         var serialized = JsonSerializer.Serialize(cleanupRequest, settings);

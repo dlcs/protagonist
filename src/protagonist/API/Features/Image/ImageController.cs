@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
 using API.Converters;
 using API.Features.Image.Requests;
 using API.Features.Image.Validation;
@@ -153,9 +154,11 @@ public class ImageController : HydraController
     [ProducesResponseType((int)HttpStatusCode.NotFound)]
     [HttpDelete]
     public async Task<IActionResult> DeleteAsset([FromRoute] int customerId, [FromRoute] int spaceId,
-        [FromRoute] string imageId, CancellationToken cancellationToken)
+        [FromRoute] string imageId, [FromQuery] string? deleteFrom, CancellationToken cancellationToken)
     {
-        var deleteRequest = new DeleteAsset(customerId, spaceId, imageId);
+        var additionalDeletion = deleteFrom != null ? deleteFrom.Split(',').ToList() : new List<string>();
+        
+        var deleteRequest = new DeleteAsset(customerId, spaceId, imageId, additionalDeletion);
         var result = await Mediator.Send(deleteRequest, cancellationToken);
 
         return result switch
