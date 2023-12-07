@@ -53,9 +53,11 @@ public class Details : PageModel
         }
         
         SpaceId = id;
+        
         var space = await dlcsClient.GetSpaceDetails(SpaceId);
         if (space == null)
         {
+            TempData["error-404-message"] = "The requested space was not found";
             return NotFound();
         }
      

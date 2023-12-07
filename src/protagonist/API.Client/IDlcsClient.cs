@@ -18,7 +18,7 @@ public interface IDlcsClient
     Task<Space?> PatchSpace(int spaceId, Space space);
     Task<IEnumerable<string>?> GetApiKeys();
     Task<ApiKey> CreateNewApiKey();
-    Task<Image> GetImage(int requestSpaceId, string requestImageId);
+    Task<Image?> GetImage(int requestSpaceId, string requestImageId);
     Task<ImageStorage> GetImageStorage(int requestSpaceId, string requestImageId);
     Task<HydraCollection<PortalUser>?> GetPortalUsers();
     Task<PortalUser> CreatePortalUser(PortalUser portalUser);
@@ -29,7 +29,7 @@ public interface IDlcsClient
     Task<Image> PatchImage(Image image, int spaceId, string imageId);
     Task<HydraCollection<Image>> PatchImages(HydraCollection<Image> images, int spaceId);
     Task<HydraCollection<Batch>> GetBatches(string type, int page, int pageSize);
-    Task<Batch> GetBatch(int batchId);
+    Task<Batch?> GetBatch(int batchId);
     Task<Batch> CreateBatch(HydraCollection<Image> images);
     Task<bool> TestBatch(int batchId);
     Task<HydraCollection<Image>> GetBatchImages(int batchId, int page, int pageSize);

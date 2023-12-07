@@ -14,7 +14,7 @@ using Microsoft.Extensions.Options;
 
 namespace Portal.Features.Batches.Requests;
 
-public class GetBatch : IRequest<GetBatchResult>
+public class GetBatch : IRequest<GetBatchResult?>
 {
     public int BatchId { get; set; }
     public int Page { get; set; }
@@ -28,7 +28,7 @@ public class GetBatchResult
     public Dictionary<string, string> Thumbnails { get; set; }
 }
 
-public class GetBatchHandler : IRequestHandler<GetBatch, GetBatchResult>
+public class GetBatchHandler : IRequestHandler<GetBatch, GetBatchResult?>
 {
     private readonly DlcsSettings dlcsSettings;
     private readonly IDlcsClient dlcsClient;
@@ -41,9 +41,14 @@ public class GetBatchHandler : IRequestHandler<GetBatch, GetBatchResult>
         customerId = (currentUser.GetCustomerId() ?? -1).ToString();
     }
 
-    public async Task<GetBatchResult> Handle(GetBatch request, CancellationToken cancellationToken)
+    public async Task<GetBatchResult?> Handle(GetBatch request, CancellationToken cancellationToken)
     {
         var batch = await dlcsClient.GetBatch(request.BatchId);
+        if (batch == null)
+        {
+            return null;
+        }
+        
         var images = await dlcsClient.GetBatchImages(request.BatchId, request.Page, request.PageSize);
         var thumbnails = new Dictionary<string, string>();
         

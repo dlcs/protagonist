@@ -36,6 +36,12 @@ public class Index : PageModel
     public async Task<IActionResult> OnGetAsync(int space, string image)
     {
         var imageResult = await mediator.Send(new GetImage{SpaceId = space, ImageId = image});
+        if (imageResult == null)
+        {
+            TempData["error-404-message"] = "The requested image was not found";
+            return NotFound();
+        }
+        
         Image = imageResult.Image;
         ImageThumbnailService = imageResult.ImageThumbnailService;
         ImageStorage = imageResult.ImageStorage;

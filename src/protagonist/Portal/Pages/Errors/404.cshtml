@@ -1,0 +1,22 @@
+﻿@page
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="d-flex align-items-center justify-content-center flex-grow-1" style="margin-bottom:72px;">
+    <div class="text-center">
+        <h1 class="display-1 fw-bold">404</h1>
+        @if (TempData["error-404-message"] != null)
+        {
+            <p class="lead">
+                @TempData["error-404-message"]
+            </p>
+        }
+        else
+        {
+            <p class="lead">
+                The requested resource was not found
+            </p>  
+        }
+    </div>
+</div>

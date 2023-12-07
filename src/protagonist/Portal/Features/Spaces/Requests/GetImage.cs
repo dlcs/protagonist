@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Portal.Features.Spaces.Requests;
 
-public class GetImage : IRequest<GetImageResult>
+public class GetImage : IRequest<GetImageResult?>
 {
     public int SpaceId { get; set; }
     public string ImageId { get; set; }
@@ -24,7 +24,7 @@ public class GetImageResult
     public ImageStorage? ImageStorage { get; set; }
 }
 
-public class GetImageHandler : IRequestHandler<GetImage, GetImageResult>
+public class GetImageHandler : IRequestHandler<GetImage, GetImageResult?>
 {
     private readonly ILogger<DlcsClient> logger;
     private readonly IDlcsClient dlcsClient;
@@ -37,9 +37,14 @@ public class GetImageHandler : IRequestHandler<GetImage, GetImageResult>
         this.httpClient = httpClient;
     }
     
-    public async Task<GetImageResult> Handle(GetImage request, CancellationToken cancellationToken)
+    public async Task<GetImageResult?> Handle(GetImage request, CancellationToken cancellationToken)
     {
         var image = await dlcsClient.GetImage(request.SpaceId, request.ImageId);
+        if (image == null)
+        {
+            return null;
+        }
+        
         var imageStorage = await GetImageStorage(image);
         var thumbnailService = await GetImageThumbnailService(image);
         return new GetImageResult() { 
