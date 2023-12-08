@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Amazon.S3;
 using API.Client;
 using DLCS.AWS.S3;
@@ -71,9 +72,13 @@ public class Startup
             .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(opts =>
             {
-                opts.AccessDeniedPath = new PathString("/Error/403");
+                opts.Events.OnRedirectToAccessDenied = context =>
+                {
+                    context.Response.StatusCode = 403;
+                    return Task.CompletedTask;
+                };
             });
-
+        
         services
             .AddHttpContextAccessor()
             .AddSingleton<IEncryption, SHA256>()
