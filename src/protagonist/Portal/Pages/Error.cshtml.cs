@@ -19,10 +19,18 @@ public class ErrorModel : PageModel
             return BadRequest();
         }
 
-        var customMessage = TempData["error-page-message"];
-        Message = customMessage != null ? customMessage.ToString() : GetDefaultErrorMessage(code);
+        var customMessage = GetErrorMessageIfSet();
+        Message = customMessage ?? GetDefaultErrorMessage(code);
         Code = code;
         return Page();
+    }
+    
+    public string? GetErrorMessageIfSet()
+    {
+        var customMessage = TempData["error-page-message"];
+        // Ensure that TempData flags this value for deletion once it's been read
+        TempData.Save();
+        return customMessage?.ToString();
     }
     
     public string GetDefaultErrorMessage(HttpStatusCode code)
