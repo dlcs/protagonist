@@ -1,5 +1,5 @@
 ﻿@page "{code}"
-@using System.Net
+@using Microsoft.AspNetCore.WebUtilities;
 @model ErrorModel
 @{
     ViewData["Title"] = "Error";
@@ -16,12 +16,9 @@
         }
         else
         {
-            if (Model.Code == HttpStatusCode.NotFound)
-            {
-                <p class="lead">
-                    The requested resource was not found
-                </p>  
-            }
+            <p class="lead">
+                @ReasonPhrases.GetReasonPhrase((int)Model.Code)
+            </p>    
         }
     </div>
 </div>

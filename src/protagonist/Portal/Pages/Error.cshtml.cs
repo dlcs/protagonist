@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -10,9 +11,10 @@ public class ErrorModel : PageModel
         
     public IActionResult OnGet(HttpStatusCode code)
     {
+        // Return Bad Request if an invalid status code is provided
         if (code == 0)
         {
-            return NotFound();
+            return BadRequest();
         }
 
         Code = code;

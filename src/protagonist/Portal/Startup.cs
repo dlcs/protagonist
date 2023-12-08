@@ -48,6 +48,7 @@ public class Startup
         {
             opts.Conventions.AllowAnonymousToFolder("/Account");
             opts.Conventions.AllowAnonymousToPage("/AccessDenied");
+            opts.Conventions.AllowAnonymousToPage("/Exception");
             opts.Conventions.AllowAnonymousToPage("/Error");
             opts.Conventions.AllowAnonymousToPage("/Index");
             opts.Conventions.AllowAnonymousToPage("/Features");

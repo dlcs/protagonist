@@ -24,7 +24,8 @@ public class BasicAccessTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("/Account/Login")]
     [InlineData("/Account/SignedOut")]
     [InlineData("/AccessDenied")]
-    [InlineData("/Error")]
+    [InlineData("/Exception")]
+    [InlineData("/Error/404")]
     [InlineData("/")]
     public async Task Get_AnonymousPages_ReturnsSuccessAndCorrectContentType(string url)
     {
