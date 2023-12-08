@@ -47,7 +47,6 @@ public class Startup
         services.AddRazorPages(opts =>
         {
             opts.Conventions.AllowAnonymousToFolder("/Account");
-            opts.Conventions.AllowAnonymousToPage("/AccessDenied");
             opts.Conventions.AllowAnonymousToPage("/Exception");
             opts.Conventions.AllowAnonymousToPage("/Error");
             opts.Conventions.AllowAnonymousToPage("/Index");
@@ -72,7 +71,7 @@ public class Startup
             .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(opts =>
             {
-                opts.AccessDeniedPath = new PathString("/AccessDenied");
+                opts.AccessDeniedPath = new PathString("/Error/403");
             });
 
         services

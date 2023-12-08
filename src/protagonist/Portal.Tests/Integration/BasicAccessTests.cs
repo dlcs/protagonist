@@ -23,7 +23,6 @@ public class BasicAccessTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Theory]
     [InlineData("/Account/Login")]
     [InlineData("/Account/SignedOut")]
-    [InlineData("/AccessDenied")]
     [InlineData("/Exception")]
     [InlineData("/Error/404")]
     [InlineData("/")]

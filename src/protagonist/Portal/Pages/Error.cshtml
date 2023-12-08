@@ -8,17 +8,8 @@
 <div class="d-flex align-items-center justify-content-center flex-grow-1" style="margin-bottom:72px;">
     <div class="text-center">
         <h1 class="display-1 fw-bold">@((int)Model.Code)</h1>
-        @if (TempData["error-page-message"] != null)
-        {
-            <p class="lead">
-                @TempData["error-page-message"]
-            </p>
-        }
-        else
-        {
-            <p class="lead">
-                @ReasonPhrases.GetReasonPhrase((int)Model.Code)
-            </p>    
-        }
+        <p class="lead">
+            @Model.Message
+        </p>    
     </div>
 </div>
