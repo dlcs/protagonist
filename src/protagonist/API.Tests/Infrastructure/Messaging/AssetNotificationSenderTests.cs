@@ -64,7 +64,7 @@ public class AssetNotificationSenderTests
     {
         // Arrange
         var assetModifiedRecord = AssetModificationRecord.Delete(new Asset(new AssetId(1, 2, "foo")), 
-            new List<string>() { "cdn" });
+            ImageCacheType.Cdn);
         const string customerName = "uno";
         A.CallTo(() => customerPathRepository.GetCustomerPathElement("1"))
             .Returns(new CustomerPathElement(1, customerName));
@@ -83,7 +83,7 @@ public class AssetNotificationSenderTests
     [Fact]
     public async Task SendAssetModifiedMessage_Multiple_SendsNotification_IfDelete()
     {
-        var deleteFrom = new List<string>() { "cdn" };
+        var deleteFrom = ImageCacheType.Cdn;
         // Arrange
         var assetModifiedRecord = AssetModificationRecord.Delete(new Asset(new AssetId(1, 2, "foo")), 
             deleteFrom);

@@ -67,7 +67,7 @@ public class AssetDeletedHandler : IMessageHandler
         DeleteFromNas(request.Asset.Id);
         await DeleteFromOriginBucket(request.Asset.Id);
 
-        if (request.DeleteFrom.Contains(CdnInvalidationIdentifier))
+        if (request.DeleteFrom.HasFlag(ImageCacheType.Cdn))
         {
             return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
         }

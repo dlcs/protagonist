@@ -281,15 +281,15 @@ public class AssetDeletedHandlerTests
     public async Task Handle_InvalidatesImagePath_IfDeliveryChannels()
     {
         // Arrange
-        var cleanupRequest = new AssetModifiedNotificationRequest()
+        var cleanupRequest = new AssetDeletedNotificationRequest()
         {
             Asset = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 DeliveryChannels = new[] {"iiif-img","iiif-av", "file" }
             },
-            DeleteFrom = new List<string>() {"cdn"},
-            CustomerPathElement = new CustomerPathElement(99, "someName")
+            DeleteFrom = ImageCacheType.Cdn,
+            CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
 
         var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
@@ -297,7 +297,6 @@ public class AssetDeletedHandlerTests
         var queueMessage = new QueueMessage
         {
             Body = JsonNode.Parse(serialized)!.AsObject()
-
         };
         handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
         A.CallTo(() => cacheInvalidator.InvalidateCdnCache(A<List<string>>._, 
@@ -363,7 +362,7 @@ public class AssetDeletedHandlerTests
     public async Task Handle_InvalidatesImagePath_IfImageAssetFamily()
     {
         // Arrange
-        var cleanupRequest = new AssetModifiedNotificationRequest()
+        var cleanupRequest = new AssetDeletedNotificationRequest()
         {
             Asset = new Asset()
             {
@@ -414,7 +413,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.File
             },
-            DeleteFrom = new List<string>() {"cdn"},
+            DeleteFrom = ImageCacheType.Cdn,
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         
@@ -423,7 +422,6 @@ public class AssetDeletedHandlerTests
         var queueMessage = new QueueMessage
         {
             Body = JsonNode.Parse(serialized)!.AsObject()
-
         };
         handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
 
@@ -454,7 +452,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
             },
-            DeleteFrom = new List<string>() {"notCdn"},
+            DeleteFrom = ImageCacheType.None,
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         
@@ -463,10 +461,8 @@ public class AssetDeletedHandlerTests
         var queueMessage = new QueueMessage
         {
             Body = JsonNode.Parse(serialized)!.AsObject()
-
         };
         handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
-        handlerSettings.DisableCacheInvalidation = true;
 
         // Act
         var sut = GetSut();
@@ -483,7 +479,7 @@ public class AssetDeletedHandlerTests
             cacheInvalidator.InvalidateCdnCache(A<List<string>>._,
                 A<CancellationToken>._)).MustNotHaveHappened();
     }
-    
+
     [Fact]
     public async Task Handle_ReturnsFalse_IfInvalidationFails()
     {
@@ -495,7 +491,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
             },
-            DeleteFrom = new List<string>() {"cdn"},
+            DeleteFrom = ImageCacheType.Cdn,
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
 
@@ -504,7 +500,6 @@ public class AssetDeletedHandlerTests
         var queueMessage = new QueueMessage
         {
             Body = JsonNode.Parse(serialized)!.AsObject()
-
         };
         handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
         
@@ -527,7 +522,7 @@ public class AssetDeletedHandlerTests
             {
                 Id = new AssetId(1, 99, "foo")
             },
-            DeleteFrom = new List<string>() {"cdn"},
+            DeleteFrom = ImageCacheType.Cdn,
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         var serialized = JsonSerializer.Serialize(cleanupRequest, settings);

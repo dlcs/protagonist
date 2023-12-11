@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using DLCS.Core.Guard;
+﻿using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 
@@ -14,9 +13,9 @@ public class AssetModificationRecord
     public Asset? Before { get; }
     public Asset? After { get; }
     
-    public List<string>? DeleteFrom { get; }
+    public ImageCacheType? DeleteFrom { get; }
  
-    private AssetModificationRecord(ChangeType changeType, Asset? before, Asset? after, List<string>? deleteFrom)
+    private AssetModificationRecord(ChangeType changeType, Asset? before, Asset? after, ImageCacheType? deleteFrom)
     {
         ChangeType = changeType;
         Before = before;
@@ -24,7 +23,7 @@ public class AssetModificationRecord
         DeleteFrom = deleteFrom;
     }
 
-    public static AssetModificationRecord Delete(Asset before, List<string> deleteFrom) 
+    public static AssetModificationRecord Delete(Asset before, ImageCacheType deleteFrom) 
         => new(ChangeType.Delete, before.ThrowIfNull(nameof(before)), null, deleteFrom.ThrowIfNull(nameof(deleteFrom)));
     
     public static AssetModificationRecord Update(Asset before, Asset after)

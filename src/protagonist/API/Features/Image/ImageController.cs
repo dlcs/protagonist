@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Net;
+﻿using System.Net;
 using API.Converters;
 using API.Features.Image.Requests;
 using API.Features.Image.Validation;
@@ -7,8 +6,10 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.Core;
 using DLCS.Core.Collections;
+using DLCS.Core.Enum;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
+using DLCS.Model.Assets;
 using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -156,7 +157,7 @@ public class ImageController : HydraController
     public async Task<IActionResult> DeleteAsset([FromRoute] int customerId, [FromRoute] int spaceId,
         [FromRoute] string imageId, [FromQuery] string? deleteFrom, CancellationToken cancellationToken)
     {
-        var additionalDeletion = deleteFrom != null ? deleteFrom.Split(',').ToList() : new List<string>();
+        var additionalDeletion = ImageCacheTypeConverter.ConvertToImageCacheType(deleteFrom, ',');
         
         var deleteRequest = new DeleteAsset(customerId, spaceId, imageId, additionalDeletion);
         var result = await Mediator.Send(deleteRequest, cancellationToken);

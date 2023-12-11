@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using API.Infrastructure.Messaging;
+﻿using API.Infrastructure.Messaging;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
@@ -15,7 +14,7 @@ public class AssetModificationRecordTests
         var asset = new Asset { Id = new AssetId(1, 2, "foo") };
         
         // Act
-        var notification = AssetModificationRecord.Delete(asset, new List<string>() { "cdn" });
+        var notification = AssetModificationRecord.Delete(asset, ImageCacheType.Cdn);
         
         // Assert
         notification.ChangeType.Should().Be(ChangeType.Delete);

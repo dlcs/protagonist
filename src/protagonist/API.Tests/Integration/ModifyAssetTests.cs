@@ -12,6 +12,7 @@ using API.Infrastructure.Messaging;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
+using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
@@ -1043,7 +1044,69 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
 
         A.CallTo(() => NotificationSender.SendAssetModifiedMessage(
-            A<AssetModificationRecord>.That.Matches(r => r.ChangeType == ChangeType.Delete), 
+            A<AssetModificationRecord>.That.Matches(r => r.ChangeType == ChangeType.Delete && r.DeleteFrom == ImageCacheType.None), 
+            A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+        [Fact]
+    public async Task Delete_NotifiesForCdnAndInternalCacheRemoval_FromAssetNotified()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Delete_RemovesAssetAndAssociatedEntities_FromDb));
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.ImageLocations.AddTestImageLocation(assetId);
+        await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 100L);
+        var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
+            sizeOfStored: 1000L, sizeOfThumbs: 1000L);
+        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
+            sizeOfStored: 2000L, sizeOfThumbs: 2000L);
+        var customerImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 0 && ec.Scope == "99" && ec.Type == KnownEntityCounters.CustomerImages);
+        var currentCustomerImageCount = customerImagesCounter.Next;
+        var spaceImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 99 && ec.Scope == "1" && ec.Type == KnownEntityCounters.SpaceImages);
+        var currentSpaceImagesCounter = spaceImagesCounter.Next;
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer(99).DeleteAsync($"{assetId.ToApiResourcePath()}?deleteFrom=cdn,internalCache");
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        
+        // Asset, Location + Storage deleted
+        var dbAsset = await dbContext.Images.SingleOrDefaultAsync(i => i.Id == assetId);
+        dbAsset.Should().BeNull();
+        var dbLocation = await dbContext.ImageLocations.SingleOrDefaultAsync(i => i.Id == assetId);
+        dbLocation.Should().BeNull();
+        
+        var dbStorage = await dbContext.ImageStorages.SingleOrDefaultAsync(i => i.Id == assetId);
+        dbStorage.Should().BeNull();
+        
+        // CustomerStorage values reduced
+        await dbContext.Entry(customerSpaceStorage.Entity).ReloadAsync();
+        customerSpaceStorage.Entity.NumberOfStoredImages.Should().Be(99);
+        customerSpaceStorage.Entity.TotalSizeOfThumbnails.Should().Be(900L);
+        customerSpaceStorage.Entity.TotalSizeOfStoredImages.Should().Be(600L);
+        
+        await dbContext.Entry(customerStorage.Entity).ReloadAsync();
+        customerStorage.Entity.NumberOfStoredImages.Should().Be(199);
+        customerStorage.Entity.TotalSizeOfThumbnails.Should().Be(1900L);
+        customerStorage.Entity.TotalSizeOfStoredImages.Should().Be(1600L);
+        
+        // EntityCounter for customer images reduced
+        var dbCustomerCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 0 && ec.Scope == "99" && ec.Type == KnownEntityCounters.CustomerImages);
+        dbCustomerCounter.Next.Should().Be(currentCustomerImageCount - 1);
+        
+        // EntityCounter for space images reduced
+        var dbSpaceCounter = await dbContext.EntityCounters.SingleAsync(ec =>
+            ec.Customer == 99 && ec.Scope == "1" && ec.Type == KnownEntityCounters.SpaceImages);
+        dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
+
+        A.CallTo(() => NotificationSender.SendAssetModifiedMessage(
+            A<AssetModificationRecord>.That.Matches(r => r.ChangeType == ChangeType.Delete && 
+                                                         (int)r.DeleteFrom == 12), 
             A<CancellationToken>._)).MustHaveHappened();
     }
     

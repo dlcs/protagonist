@@ -1,11 +1,8 @@
-﻿using System.Collections.Generic;
-using API.Infrastructure.Messaging;
+﻿using API.Infrastructure.Messaging;
 using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Model;
 using DLCS.Model.Assets;
-using DLCS.Model.Messaging;
-using DLCS.Model.PathElements;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -18,9 +15,9 @@ public class DeleteAsset : IRequest<DeleteResult>
 {
     public AssetId AssetId { get; }
     
-    public List<string> DeleteFrom { get; }
+    public ImageCacheType DeleteFrom { get; }
 
-    public DeleteAsset(int customer, int space, string imageId, List<string> deleteFrom)
+    public DeleteAsset(int customer, int space, string imageId, ImageCacheType deleteFrom)
     {
         AssetId = new AssetId(customer, space, imageId);
         DeleteFrom = deleteFrom;
