@@ -27,7 +27,6 @@ public class AssetDeletedHandler : IMessageHandler
     private readonly IFileSystem fileSystem;
     private readonly ILogger<AssetDeletedHandler> logger;
     private readonly ICacheInvalidator cacheInvalidator;
-    private const string CdnInvalidationIdentifier = "cdn";
 
     public AssetDeletedHandler(
         IStorageKeyGenerator storageKeyGenerator,
@@ -50,7 +49,7 @@ public class AssetDeletedHandler : IMessageHandler
         AssetDeletedNotificationRequest? request;
         try
         {
-            request = message.GetMessageContents<AssetDeletedNotificationRequest>();
+            request = message.GetMessageContents<AssetModifiedNotificationRequest>();
         }
         catch (Exception ex)
         {
@@ -90,7 +89,7 @@ public class AssetDeletedHandler : IMessageHandler
         await bucketWriter.DeleteFolder(storageKey, true);
     }
 
-    private async Task<bool> InvalidateContentDeliveryNetwork(Asset asset, string customerName)
+    private async Task<bool> InvalidateContentDeliveryNetwork(Asset asset)
     {
         if (string.IsNullOrEmpty(handlerSettings.AWS.Cloudfront.DistributionId))
         {

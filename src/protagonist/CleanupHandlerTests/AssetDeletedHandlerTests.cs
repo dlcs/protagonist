@@ -281,7 +281,7 @@ public class AssetDeletedHandlerTests
     public async Task Handle_InvalidatesImagePath_IfDeliveryChannels()
     {
         // Arrange
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new AssetModifiedNotificationRequest()
         {
             Asset = new Asset()
             {
@@ -297,6 +297,7 @@ public class AssetDeletedHandlerTests
         var queueMessage = new QueueMessage
         {
             Body = JsonNode.Parse(serialized)!.AsObject()
+
         };
         handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
         A.CallTo(() => cacheInvalidator.InvalidateCdnCache(A<List<string>>._, 
@@ -422,6 +423,7 @@ public class AssetDeletedHandlerTests
         var queueMessage = new QueueMessage
         {
             Body = JsonNode.Parse(serialized)!.AsObject()
+
         };
         handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
 
@@ -500,6 +502,7 @@ public class AssetDeletedHandlerTests
         var queueMessage = new QueueMessage
         {
             Body = JsonNode.Parse(serialized)!.AsObject()
+
         };
         handlerSettings.AWS.Cloudfront.DistributionId = "someValue";
         
