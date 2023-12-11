@@ -289,7 +289,7 @@ public class AssetDeletedHandlerTests
                 DeliveryChannels = new[] {"iiif-img","iiif-av", "file" }
             },
             DeleteFrom = ImageCacheType.Cdn,
-            CustomerPathElement = new CustomerPathElement(99, "stuff")
+            CustomerPathElement = new CustomerPathElement(99, "someName")
         };
 
         var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
