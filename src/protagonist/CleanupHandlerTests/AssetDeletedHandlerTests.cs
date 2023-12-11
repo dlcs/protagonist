@@ -288,7 +288,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 DeliveryChannels = new[] {"iiif-img","iiif-av", "file" }
             },
-            DeleteFrom = new List<string>() {"cdn"},
+            DeleteFrom = ImageCacheType.Cdn,
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
 
@@ -364,7 +364,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
             },
-            DeleteFrom = new List<string>() {"cdn"},
+            DeleteFrom = ImageCacheType.Cdn,
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         
@@ -407,7 +407,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.File
             },
-            DeleteFrom = new List<string>() {"cdn"},
+            DeleteFrom = ImageCacheType.Cdn,
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         
@@ -446,7 +446,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
             },
-            DeleteFrom = new List<string>() {"notCdn"},
+            DeleteFrom = ImageCacheType.None,
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         
@@ -485,7 +485,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
             },
-            DeleteFrom = new List<string>() {"cdn"},
+            DeleteFrom = ImageCacheType.Cdn,
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
 
@@ -516,7 +516,7 @@ public class AssetDeletedHandlerTests
             {
                 Id = new AssetId(1, 99, "foo")
             },
-            DeleteFrom = new List<string>() {"cdn"},
+            DeleteFrom = ImageCacheType.Cdn,
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         var serialized = JsonSerializer.Serialize(cleanupRequest, settings);

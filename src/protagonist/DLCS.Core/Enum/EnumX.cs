@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
@@ -76,5 +77,19 @@ public static class EnumX
             field.GetCustomAttribute<DescriptionAttribute>()?.Description == description);
         
         return isValid;
+    }
+    
+    /// <summary>
+    /// Converts a list of strings into an enum with flags representation
+    /// </summary>
+    /// <param name="enumFlagsAsList">The list to convert</param>
+    /// <typeparam name="T">The type of the enum to convert</typeparam>
+    /// <returns>An enum</returns>
+    public static T ToEnumFlags<T>(this List<string> enumFlagsAsList) where T : struct, System.Enum
+    {
+        T flags;
+        var commaSeparatedFlags = string.Join(",", enumFlagsAsList.Select(s => s.GetEnumFromString<T>()));
+        System.Enum.TryParse(commaSeparatedFlags, out flags);
+        return flags;
     }
 }
