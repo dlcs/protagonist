@@ -7,7 +7,6 @@ using DLCS.Core.Exceptions;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
 using Microsoft.Extensions.Logging;
@@ -27,7 +26,6 @@ public class AssetDeletedHandler : IMessageHandler
     private readonly IFileSystem fileSystem;
     private readonly ILogger<AssetDeletedHandler> logger;
     private readonly ICacheInvalidator cacheInvalidator;
-    private const string CdnInvalidationIdentifier = "cdn";
 
     public AssetDeletedHandler(
         IStorageKeyGenerator storageKeyGenerator,
@@ -69,7 +67,7 @@ public class AssetDeletedHandler : IMessageHandler
 
         if (request.DeleteFrom.HasFlag(ImageCacheType.Cdn))
         {
-            return await InvalidateContentDeliveryNetwork(request.Asset);
+            return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
         }
 
         Log.Debug("cdn invalidation not specified for {Asset}", request.Asset.Id);
