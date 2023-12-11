@@ -369,7 +369,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
             },
-            DeleteFrom = new List<string>() {"cdn"},
+            DeleteFrom = ImageCacheType.Cdn,
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         
