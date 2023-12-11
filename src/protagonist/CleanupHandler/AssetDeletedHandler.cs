@@ -27,7 +27,6 @@ public class AssetDeletedHandler : IMessageHandler
     private readonly IFileSystem fileSystem;
     private readonly ILogger<AssetDeletedHandler> logger;
     private readonly ICacheInvalidator cacheInvalidator;
-    private const string CdnInvalidationIdentifier = "cdn";
 
     public AssetDeletedHandler(
         IStorageKeyGenerator storageKeyGenerator,
