@@ -281,7 +281,7 @@ public class AssetDeletedHandlerTests
     public async Task Handle_InvalidatesImagePath_IfDeliveryChannels()
     {
         // Arrange
-        var cleanupRequest = new AssetModifiedNotificationRequest()
+        var cleanupRequest = new AssetDeletedNotificationRequest()
         {
             Asset = new Asset()
             {
@@ -370,7 +370,7 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
             },
-            DeleteFrom = new List<string>() {"cdn"},
+            DeleteFrom = ImageCacheType.Cdn,
             CustomerPathElement = new CustomerPathElement(99, "stuff")
         };
         

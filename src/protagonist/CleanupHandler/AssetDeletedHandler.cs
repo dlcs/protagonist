@@ -49,7 +49,7 @@ public class AssetDeletedHandler : IMessageHandler
         AssetDeletedNotificationRequest? request;
         try
         {
-            request = message.GetMessageContents<AssetModifiedNotificationRequest>();
+            request = message.GetMessageContents<AssetDeletedNotificationRequest>();
         }
         catch (Exception ex)
         {
@@ -89,7 +89,7 @@ public class AssetDeletedHandler : IMessageHandler
         await bucketWriter.DeleteFolder(storageKey, true);
     }
 
-    private async Task<bool> InvalidateContentDeliveryNetwork(Asset asset)
+    private async Task<bool> InvalidateContentDeliveryNetwork(Asset asset, string customerName)
     {
         if (string.IsNullOrEmpty(handlerSettings.AWS.Cloudfront.DistributionId))
         {
