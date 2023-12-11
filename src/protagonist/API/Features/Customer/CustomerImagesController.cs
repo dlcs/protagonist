@@ -3,7 +3,6 @@ using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
 using API.Settings;
-using DLCS.Core.Enum;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using Hydra.Collections;
