@@ -71,8 +71,7 @@ public class AssetDeletedHandler : IMessageHandler
         {
             return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
         }
-    
-
+        
         Log.Debug("cdn invalidation not specified for {Asset}", request.Asset.Id);
         return true;
     }

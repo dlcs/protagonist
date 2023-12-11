@@ -83,8 +83,9 @@ public class AssetNotificationSenderTests
     [Fact]
     public async Task SendAssetModifiedMessage_Multiple_SendsNotification_IfDelete()
     {
-        var deleteFrom = ImageCacheType.Cdn;
         // Arrange
+        var deleteFrom = ImageCacheType.Cdn;
+        
         var assetModifiedRecord = AssetModificationRecord.Delete(new Asset(new AssetId(1, 2, "foo")), 
             deleteFrom);
         var assetModifiedRecord2 = AssetModificationRecord.Delete(new Asset(new AssetId(1, 2, "bar")),

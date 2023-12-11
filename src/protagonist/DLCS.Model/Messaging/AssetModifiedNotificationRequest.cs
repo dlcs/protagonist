@@ -11,6 +11,5 @@ public class AssetDeletedNotificationRequest
 
     public CustomerPathElement? CustomerPathElement { get; set; }
     
-    [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
     public ImageCacheType DeleteFrom { get; set; }
 }
