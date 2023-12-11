@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using API.Converters;
+﻿using API.Converters;
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.Core.Enum;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using Hydra.Collections;
@@ -100,8 +100,8 @@ public class CustomerImagesController : HydraController
         {
             return this.ValidationFailed(validationResult);
         }
-        
-        var additionalDeletion = deleteFrom != null ? deleteFrom.Split(',').ToList() : new List<string>();
+
+        var additionalDeletion = ImageCacheTypeConverter.ConvertToImageCacheType(deleteFrom, ',');
 
         return await HandleHydraRequest(async () =>
         {

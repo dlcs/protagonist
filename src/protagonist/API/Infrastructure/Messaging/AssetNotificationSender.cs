@@ -71,14 +71,14 @@ public class AssetNotificationSender : IAssetNotificationSender
         if (notification.ChangeType == ChangeType.Delete)
         {
             logger.LogDebug("Message Bus: Asset Deleted: {AssetId}", notification.Before!.Id);
-            return await GetSerialisedAssetDeletedNotification(notification.Before!, notification.DeleteFrom!);
+            return await GetSerialisedAssetDeletedNotification(notification.Before!, notification.DeleteFrom ?? ImageCacheType.None);
         }
         
         logger.LogDebug("Message Bus: Asset Modified: {AssetId}", notification.Before!.Id);
         return await GetSerialisedAssetUpdatedNotification(notification.Before!, notification.After!);
     }
     
-    private async Task<string> GetSerialisedAssetDeletedNotification(Asset modifiedAsset, List<string> deleteFrom)
+    private async Task<string> GetSerialisedAssetDeletedNotification(Asset modifiedAsset, ImageCacheType deleteFrom)
     {
         var customerPathElement = await GetCustomerPathElement(modifiedAsset.Customer);
         
