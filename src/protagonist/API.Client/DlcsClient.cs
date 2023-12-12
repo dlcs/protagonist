@@ -78,20 +78,12 @@ public class DlcsClient : IDlcsClient
         return space;
     }
 
-    public async Task<Space?> GetSpaceDetails(int spaceId)
+    public async Task<Space> GetSpaceDetails(int spaceId)
     {
         var url = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}";
-        try
-        {
-            var response = await httpClient.GetAsync(url);
-            var space = await response.ReadAsHydraResponseAsync<Space>(jsonSerializerSettings);
-            return space;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError("Failed to retrieve space {SpaceId}", spaceId);
-            return null;
-        }
+        var response = await httpClient.GetAsync(url);
+        var space = await response.ReadAsHydraResponseAsync<Space>(jsonSerializerSettings);
+        return space;
     }
 
     public Task<HydraCollection<Image>> GetSpaceImages(int spaceId)
@@ -166,20 +158,12 @@ public class DlcsClient : IDlcsClient
         return apiKey;
     }
 
-    public async Task<Image?> GetImage(int requestSpaceId, string requestImageId)
+    public async Task<Image> GetImage(int requestSpaceId, string requestImageId)
     {
         var url = $"customers/{currentUser.GetCustomerId()}/spaces/{requestSpaceId}/images/{requestImageId}";
-        try
-        {
-            var response = await httpClient.GetAsync(url);
-            var image = await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
-            return image;
-        }
-        catch
-        {
-            logger.LogError("Failed to retrieve image {SpaceId}/{ImageId}", requestSpaceId, requestImageId);
-            return null;
-        }
+        var response = await httpClient.GetAsync(url);
+        var image = await response.ReadAsHydraResponseAsync<Image>(jsonSerializerSettings);
+        return image;
     }
 
     public async Task<ImageStorage> GetImageStorage(int requestSpaceId, string requestImageId)
@@ -295,20 +279,12 @@ public class DlcsClient : IDlcsClient
         return batches; 
     }
 
-    public async Task<Batch?> GetBatch(int batchId)
+    public async Task<Batch> GetBatch(int batchId)
     {
         var url = $"customers/{currentUser.GetCustomerId()}/queue/batches/{batchId}";
-        try
-        {
-            var response = await httpClient.GetAsync(url);
-            var batch = await response.ReadAsHydraResponseAsync<Batch>(jsonSerializerSettings);
-            return batch;
-        }
-        catch
-        {
-            logger.LogError("Failed to retrieve batch {BatchId}", batchId);
-            return null;
-        }
+        var response = await httpClient.GetAsync(url);
+        var batch = await response.ReadAsHydraResponseAsync<Batch>(jsonSerializerSettings);
+        return batch;  
     }
     
     public async Task<bool> TestBatch(int batchId)

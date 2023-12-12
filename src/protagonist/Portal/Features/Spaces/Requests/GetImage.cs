@@ -1,10 +1,12 @@
 using System;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
 using DLCS.HydraModel;
+using DLCS.Web.Auth;
 using IIIF.ImageApi.V3;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -26,22 +28,30 @@ public class GetImageResult
 
 public class GetImageHandler : IRequestHandler<GetImage, GetImageResult?>
 {
-    private readonly ILogger<DlcsClient> logger;
+    private readonly ILogger<GetImageHandler> logger;
     private readonly IDlcsClient dlcsClient;
     private readonly HttpClient httpClient;
+    private readonly string customerId;
 
-    public GetImageHandler(IDlcsClient dlcsClient, HttpClient httpClient, ILogger<DlcsClient> logger)
+    public GetImageHandler(IDlcsClient dlcsClient, HttpClient httpClient, ILogger<GetImageHandler> logger, ClaimsPrincipal currentUser)
     {
         this.logger = logger;
         this.dlcsClient = dlcsClient;
         this.httpClient = httpClient;
+        customerId = (currentUser.GetCustomerId() ?? -1).ToString();
     }
     
     public async Task<GetImageResult?> Handle(GetImage request, CancellationToken cancellationToken)
     {
-        var image = await dlcsClient.GetImage(request.SpaceId, request.ImageId);
-        if (image == null)
+        Image image;
+        try
         {
+            image = await dlcsClient.GetImage(request.SpaceId, request.ImageId);
+        }
+        catch(DlcsException ex)
+        {
+            logger.LogError("Failed to retrieve image {CustomerId}/{SpaceId}/{ImageId} from API",
+                customerId, request.SpaceId, request.ImageId);
             return null;
         }
         

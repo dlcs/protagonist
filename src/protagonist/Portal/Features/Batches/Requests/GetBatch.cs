@@ -10,6 +10,7 @@ using DLCS.HydraModel;
 using DLCS.Web.Auth;
 using Hydra.Collections;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Portal.Features.Batches.Requests;
@@ -32,20 +33,32 @@ public class GetBatchHandler : IRequestHandler<GetBatch, GetBatchResult?>
 {
     private readonly DlcsSettings dlcsSettings;
     private readonly IDlcsClient dlcsClient;
+    private readonly ILogger<GetBatchHandler> logger;
     private readonly string customerId;
     
-    public GetBatchHandler(IDlcsClient dlcsClient, ClaimsPrincipal currentUser, IOptions<DlcsSettings> dlcsSettings)
+    public GetBatchHandler(
+        IDlcsClient dlcsClient, 
+        ClaimsPrincipal currentUser, 
+        IOptions<DlcsSettings> dlcsSettings, 
+        ILogger<GetBatchHandler> logger)
     {
         this.dlcsClient = dlcsClient;
+        this.logger = logger;
         this.dlcsSettings = dlcsSettings.Value;
         customerId = (currentUser.GetCustomerId() ?? -1).ToString();
     }
 
     public async Task<GetBatchResult?> Handle(GetBatch request, CancellationToken cancellationToken)
     {
-        var batch = await dlcsClient.GetBatch(request.BatchId);
-        if (batch == null)
+        Batch batch;
+        try
         {
+            batch = await dlcsClient.GetBatch(request.BatchId);
+        }
+        catch
+        {
+            logger.LogError("Failed to retrieve batch {CustomerId}/queue/batches/{BatchId} from API",
+                customerId, request.BatchId);
             return null;
         }
         
