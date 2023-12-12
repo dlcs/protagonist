@@ -57,7 +57,7 @@ public class Details : PageModel
         var space = await dlcsClient.GetSpaceDetails(SpaceId);
         if (space == null)
         {
-            TempData["error-page-message"] = "The requested space was not found";
+            TempData[PageConstants.TempErrorMessageKey] = "The requested space was not found";
             return NotFound();
         }
      

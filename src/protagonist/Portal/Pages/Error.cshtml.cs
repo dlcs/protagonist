@@ -27,7 +27,7 @@ public class ErrorModel : PageModel
     
     public string? GetErrorMessageIfSet()
     {
-        var customMessage = TempData["error-page-message"];
+        var customMessage = TempData[PageConstants.TempErrorMessageKey];
         // Ensure that TempData flags this value for deletion once it's been read
         TempData.Save();
         return customMessage?.ToString();

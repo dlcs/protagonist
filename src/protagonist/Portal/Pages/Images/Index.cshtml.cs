@@ -38,7 +38,7 @@ public class Index : PageModel
         var imageResult = await mediator.Send(new GetImage{SpaceId = space, ImageId = image});
         if (imageResult == null)
         {
-            TempData["error-page-message"] = "The requested image was not found";
+            TempData[PageConstants.TempErrorMessageKey] = "The requested image was not found";
             return NotFound();
         }
         

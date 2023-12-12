@@ -33,7 +33,7 @@ public class Index : PageModel
         var batchResult = await mediator.Send(new GetBatch{ BatchId = batch, Page = page, PageSize = pageSize});
         if (batchResult == null)
         {
-            TempData["error-page-message"] = "The requested batch was not found";
+            TempData[PageConstants.TempErrorMessageKey] = "The requested batch was not found";
             return NotFound();
         }
         
