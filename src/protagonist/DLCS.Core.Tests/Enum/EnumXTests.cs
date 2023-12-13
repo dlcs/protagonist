@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using DLCS.Core.Enum;
 using FluentAssertions;
@@ -124,6 +125,26 @@ public class EnumXTests
         result.Should().Be(false);
     }
     
+    [Fact]
+    public void ToEnumFlags_ConvertsListToFlags_WhenCalledCorrectly()
+    {
+        // Arrange
+        var enumList = new List<string>()
+        {
+            "BlackBear",
+            "BrownBearDesc"
+        };
+        
+        // Act
+        var result = enumList.ToEnumFlags<TestFlagEnum>();
+        
+        // Assert
+        result.HasFlag(TestFlagEnum.BlackBear).Should().BeTrue();
+        result.HasFlag(TestFlagEnum.BrownBear).Should().BeFalse();
+        result.HasFlag(TestFlagEnum.PolarBear).Should().BeFalse();
+        result.HasFlag(TestFlagEnum.BrownBearFromDescription).Should().BeTrue();
+    }
+
     public enum TestEnum
     {
         Unknown, 
@@ -135,5 +156,18 @@ public class EnumXTests
         
         [Description("BrownBear")]
         BrownBearFromDescription = 3
+    }
+    
+    [Flags]
+    public enum TestFlagEnum
+    {
+        BlackBear = 0,
+        
+        BrownBear = 1,
+        
+        [Description("BrownBearDesc")]
+        BrownBearFromDescription = 2,
+        
+        PolarBear = 4
     }
 }

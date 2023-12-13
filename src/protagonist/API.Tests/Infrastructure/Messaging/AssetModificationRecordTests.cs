@@ -14,7 +14,7 @@ public class AssetModificationRecordTests
         var asset = new Asset { Id = new AssetId(1, 2, "foo") };
         
         // Act
-        var notification = AssetModificationRecord.Delete(asset);
+        var notification = AssetModificationRecord.Delete(asset, ImageCacheType.Cdn);
         
         // Assert
         notification.ChangeType.Should().Be(ChangeType.Delete);

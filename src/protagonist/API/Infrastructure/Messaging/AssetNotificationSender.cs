@@ -65,24 +65,38 @@ public class AssetNotificationSender : IAssetNotificationSender
         if (notification.ChangeType == ChangeType.Create)
         {
             logger.LogDebug("Message Bus: Asset Created: {AssetId}", notification.After!.Id);
-            return await GetSerialisedAssetModifiedNotification(notification.After!);
+            return await GetSerialisedAssetCreatedNotification(notification.After!);
         }
         
         if (notification.ChangeType == ChangeType.Delete)
         {
             logger.LogDebug("Message Bus: Asset Deleted: {AssetId}", notification.Before!.Id);
-            return await GetSerialisedAssetModifiedNotification(notification.Before!);
+            return await GetSerialisedAssetDeletedNotification(notification.Before!, notification.DeleteFrom ?? ImageCacheType.None);
         }
         
         logger.LogDebug("Message Bus: Asset Modified: {AssetId}", notification.Before!.Id);
         return await GetSerialisedAssetUpdatedNotification(notification.Before!, notification.After!);
     }
     
-    private async Task<string> GetSerialisedAssetModifiedNotification(Asset modifiedAsset)
+    private async Task<string> GetSerialisedAssetDeletedNotification(Asset modifiedAsset, ImageCacheType deleteFrom)
     {
         var customerPathElement = await GetCustomerPathElement(modifiedAsset.Customer);
         
-        var request = new AssetModifiedNotificationRequest
+        var request = new AssetDeletedNotificationRequest
+        {
+            Asset = modifiedAsset,
+            CustomerPathElement = customerPathElement,
+            DeleteFrom = deleteFrom
+        };
+
+        return JsonSerializer.Serialize(request, settings);
+    }
+    
+    private async Task<string> GetSerialisedAssetCreatedNotification(Asset modifiedAsset)
+    {
+        var customerPathElement = await GetCustomerPathElement(modifiedAsset.Customer);
+        
+        var request = new AssetCreatedNotificationRequest()
         {
             Asset = modifiedAsset,
             CustomerPathElement = customerPathElement

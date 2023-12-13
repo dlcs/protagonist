@@ -7,11 +7,11 @@ using DLCS.Core.Exceptions;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace CleanupHandler;
 
@@ -45,10 +45,10 @@ public class AssetDeletedHandler : IMessageHandler
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        AssetModifiedNotificationRequest? request;
+        AssetDeletedNotificationRequest? request;
         try
         {
-            request = message.GetMessageContents<AssetModifiedNotificationRequest>();
+            request = message.GetMessageContents<AssetDeletedNotificationRequest>();
         }
         catch (Exception ex)
         {
@@ -65,7 +65,13 @@ public class AssetDeletedHandler : IMessageHandler
         DeleteFromNas(request.Asset.Id);
         await DeleteFromOriginBucket(request.Asset.Id);
 
-        return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
+        if (request.DeleteFrom.HasFlag(ImageCacheType.Cdn))
+        {
+            return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
+        }
+
+        Log.Debug("cdn invalidation not specified for {Asset}", request.Asset.Id);
+        return true;
     }
 
     private async Task DeleteFromOriginBucket(AssetId assetId)

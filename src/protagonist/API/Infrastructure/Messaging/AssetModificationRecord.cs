@@ -12,20 +12,23 @@ public class AssetModificationRecord
     public ChangeType ChangeType { get; }
     public Asset? Before { get; }
     public Asset? After { get; }
-
-    private AssetModificationRecord(ChangeType changeType, Asset? before, Asset? after)
+    
+    public ImageCacheType? DeleteFrom { get; }
+ 
+    private AssetModificationRecord(ChangeType changeType, Asset? before, Asset? after, ImageCacheType? deleteFrom)
     {
         ChangeType = changeType;
         Before = before;
         After = after;
+        DeleteFrom = deleteFrom;
     }
 
-    public static AssetModificationRecord Delete(Asset before) 
-        => new(ChangeType.Delete, before.ThrowIfNull(nameof(before)), null);
+    public static AssetModificationRecord Delete(Asset before, ImageCacheType deleteFrom) 
+        => new(ChangeType.Delete, before.ThrowIfNull(nameof(before)), null, deleteFrom.ThrowIfNull(nameof(deleteFrom)));
     
     public static AssetModificationRecord Update(Asset before, Asset after)
-        => new(ChangeType.Update, before.ThrowIfNull(nameof(before)), after.ThrowIfNull(nameof(after)));
+        => new(ChangeType.Update, before.ThrowIfNull(nameof(before)), after.ThrowIfNull(nameof(after)), null);
 
     public static AssetModificationRecord Create(Asset after) 
-        => new(ChangeType.Create, null, after.ThrowIfNull(nameof(after)));
+        => new(ChangeType.Create, null, after.ThrowIfNull(nameof(after)), null);
 }

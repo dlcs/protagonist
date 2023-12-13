@@ -153,9 +153,11 @@ public class ImageController : HydraController
     [ProducesResponseType((int)HttpStatusCode.NotFound)]
     [HttpDelete]
     public async Task<IActionResult> DeleteAsset([FromRoute] int customerId, [FromRoute] int spaceId,
-        [FromRoute] string imageId, CancellationToken cancellationToken)
+        [FromRoute] string imageId, [FromQuery] string? deleteFrom, CancellationToken cancellationToken)
     {
-        var deleteRequest = new DeleteAsset(customerId, spaceId, imageId);
+        var additionalDeletion = ImageCacheTypeConverter.ConvertToImageCacheType(deleteFrom, ',');
+        
+        var deleteRequest = new DeleteAsset(customerId, spaceId, imageId, additionalDeletion);
         var result = await Mediator.Send(deleteRequest, cancellationToken);
 
         return result switch

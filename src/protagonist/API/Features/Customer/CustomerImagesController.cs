@@ -89,6 +89,7 @@ public class CustomerImagesController : HydraController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteImages(
         [FromRoute] int customerId,
+        [FromQuery] string? deleteFrom,
         [FromBody] HydraCollection<IdentifierOnly> imageIdentifiers,
         [FromServices] ImageIdListValidator validator,
         CancellationToken cancellationToken = default)
@@ -99,10 +100,13 @@ public class CustomerImagesController : HydraController
             return this.ValidationFailed(validationResult);
         }
 
+        var additionalDeletion = ImageCacheTypeConverter.ConvertToImageCacheType(deleteFrom, ',');
+
         return await HandleHydraRequest(async () =>
         {
             var request =
-                new DeleteMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(), customerId);
+                new DeleteMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(),
+                    customerId, additionalDeletion);
             var deletedRows = await Mediator.Send(request, cancellationToken);
 
             if (deletedRows == 0)
