@@ -18,19 +18,39 @@ jobs:
     env:
       BUILD_CONFIG: "Release"
       SOLUTION: "protagonist.sln"
-    steps:
+    steps:   
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          distribution: 'zulu' # Alternative distribution options are available.
       - id: checkout
         uses: actions/checkout@v4
       - id: setup-dotnet
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "6.0.x"
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v3
+        with:
+          path: ~/sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Install SonarCloud scanners and code coverage tools
+        run: |
+          dotnet tool install --global dotnet-sonarscanner
+          dotnet tool install --global JetBrains.dotCover.GlobalTool
       - id: restore-dotnet-dependencies
         run: dotnet restore $SOLUTION
       - id: build-dotnet
-        run: dotnet build $SOLUTION --configuration $BUILD_CONFIG --no-restore
-      - id: test-dotnet
-        run: dotnet test $SOLUTION --filter 'Category!=Manual' --configuration $BUILD_CONFIG --no-restore --no-build --verbosity normal
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          dotnet-sonarscanner begin /k:"dlcs_protagonist" /o:"dlcs" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.dotcover.reportsPaths=dotCover.Output.html
+          dotnet build $SOLUTION --configuration $BUILD_CONFIG --no-restore
+          dotnet dotcover test --dcReportType=HTML --filter 'Category!=Manual' --configuration $BUILD_CONFIG --no-restore --no-build --verbosity normal
+          dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
   build-push-orchestrator:
     runs-on: ubuntu-latest
