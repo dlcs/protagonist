@@ -55,9 +55,9 @@ public class GetBatchHandler : IRequestHandler<GetBatch, GetBatchResult?>
         {
             batch = await dlcsClient.GetBatch(request.BatchId);
         }
-        catch
+        catch(DlcsException ex)
         {
-            logger.LogError("Failed to retrieve batch {CustomerId}/queue/batches/{BatchId} from API",
+            logger.LogError(ex, "Failed to retrieve batch {CustomerId}/queue/batches/{BatchId} from API",
                 customerId, request.BatchId);
             return null;
         }

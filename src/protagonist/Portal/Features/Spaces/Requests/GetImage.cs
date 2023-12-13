@@ -50,7 +50,7 @@ public class GetImageHandler : IRequestHandler<GetImage, GetImageResult?>
         }
         catch(DlcsException ex)
         {
-            logger.LogError("Failed to retrieve image {CustomerId}/{SpaceId}/{ImageId} from API",
+            logger.LogError(ex, "Failed to retrieve image {CustomerId}/{SpaceId}/{ImageId} from API",
                 customerId, request.SpaceId, request.ImageId);
             return null;
         }

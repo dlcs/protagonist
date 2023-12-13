@@ -63,9 +63,9 @@ public class Details : PageModel
         {
             space = await dlcsClient.GetSpaceDetails(SpaceId);
         }
-        catch
+        catch(DlcsException ex)
         {
-            logger.LogError("Failed to retrieve space {CustomerId}/{SpaceId} from API", Customer, SpaceId);
+            logger.LogError(ex, "Failed to retrieve space {CustomerId}/{SpaceId} from API", Customer, SpaceId);
             TempData[PageConstants.TempErrorMessageKey] = "The requested space was not found";
             return NotFound();
         }
