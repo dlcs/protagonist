@@ -2,7 +2,8 @@
 
 body {
   font-size: .875rem;
-  font-family: "Public Sans", sans-serif
+  font-family: "Public Sans", sans-serif;
+  height: 100vh !important;
 }
 
 .feather {

@@ -9,7 +9,7 @@ public interface IDlcsClient
 {
     Task<HydraCollection<Space>?> GetSpaces(int page, int pageSize, 
         string? orderBy = null, bool descending = false, int? customerId = null);
-    Task<Space?> GetSpaceDetails(int spaceId);
+    Task<Space> GetSpaceDetails(int spaceId);
     Task<HydraCollection<Image>> GetSpaceImages(int spaceId);
     Task<HydraCollection<Image>> GetSpaceImages(int page, int pageSize, int spaceId, 
         string? orderBy = null, bool descending = false);

@@ -11,6 +11,7 @@ using DLCS.HydraModel;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Portal.Features.Spaces.Models;
 using Portal.Settings;
@@ -22,6 +23,7 @@ namespace Portal.Pages.Spaces;
 public class Details : PageModel
 {
     private readonly IDlcsClient dlcsClient;
+    private readonly ILogger<Details> logger;
     public DlcsSettings DlcsSettings { get; }
     private readonly PortalSettings portalSettings;
     public SpacePageModel SpacePageModel { get; set; }
@@ -31,11 +33,13 @@ public class Details : PageModel
 
     public Details(
         IDlcsClient dlcsClient,
+        ILogger<Details> logger,
         IOptions<DlcsSettings> dlcsSettings,
         IOptions<PortalSettings> portalSettings,
         ClaimsPrincipal currentUser)
     {
         this.dlcsClient = dlcsClient;
+        this.logger = logger;
         DlcsSettings = dlcsSettings.Value;
         this.portalSettings = portalSettings.Value;
         Customer = (currentUser.GetCustomerId() ?? -1).ToString();
@@ -53,9 +57,16 @@ public class Details : PageModel
         }
         
         SpaceId = id;
-        var space = await dlcsClient.GetSpaceDetails(SpaceId);
-        if (space == null)
+
+        Space? space;
+        try
         {
+            space = await dlcsClient.GetSpaceDetails(SpaceId);
+        }
+        catch(DlcsException ex)
+        {
+            logger.LogError(ex, "Failed to retrieve space {CustomerId}/{SpaceId} from API", Customer, SpaceId);
+            TempData[PageConstants.TempErrorMessageKey] = "The requested space was not found";
             return NotFound();
         }
      

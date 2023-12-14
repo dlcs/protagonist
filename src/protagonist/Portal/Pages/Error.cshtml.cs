@@ -1,27 +1,41 @@
-using System.Diagnostics;
+﻿using System;
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace Portal.Pages;
 
-[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-[IgnoreAntiforgeryToken]
 public class ErrorModel : PageModel
 {
-    public string RequestId { get; set; }
+    public HttpStatusCode Code { get; set; }
 
-    public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
-
-    private readonly ILogger<ErrorModel> _logger;
-
-    public ErrorModel(ILogger<ErrorModel> logger)
+    public string? Message { get; set; }
+        
+    public IActionResult OnGet(HttpStatusCode code)
     {
-        _logger = logger;
+        // Return Bad Request if an invalid status code is provided
+        if (!Enum.IsDefined(typeof(HttpStatusCode), code))
+        {
+            return BadRequest();
+        }
+
+        var customMessage = GetErrorMessageIfSet();
+        Message = customMessage ?? GetDefaultErrorMessage(code);
+        Code = code;
+        return Page();
     }
-
-    public void OnGet()
+    
+    public string? GetErrorMessageIfSet()
     {
-        RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+        var customMessage = TempData[PageConstants.TempErrorMessageKey];
+        // Ensure that TempData flags this value for deletion once it's been read
+        TempData.Save();
+        return customMessage?.ToString();
+    }
+    
+    public string GetDefaultErrorMessage(HttpStatusCode code)
+    {
+        return ReasonPhrases.GetReasonPhrase((int)code);
     }
 }

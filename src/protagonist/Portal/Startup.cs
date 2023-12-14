@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Amazon.S3;
 using API.Client;
 using DLCS.AWS.S3;
@@ -47,7 +48,7 @@ public class Startup
         services.AddRazorPages(opts =>
         {
             opts.Conventions.AllowAnonymousToFolder("/Account");
-            opts.Conventions.AllowAnonymousToPage("/AccessDenied");
+            opts.Conventions.AllowAnonymousToPage("/Exception");
             opts.Conventions.AllowAnonymousToPage("/Error");
             opts.Conventions.AllowAnonymousToPage("/Index");
             opts.Conventions.AllowAnonymousToPage("/Features");
@@ -71,9 +72,13 @@ public class Startup
             .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(opts =>
             {
-                opts.AccessDeniedPath = new PathString("/AccessDenied");
+                opts.Events.OnRedirectToAccessDenied = context =>
+                {
+                    context.Response.StatusCode = 403;
+                    return Task.CompletedTask;
+                };
             });
-
+        
         services
             .AddHttpContextAccessor()
             .AddSingleton<IEncryption, SHA256>()
@@ -118,7 +123,8 @@ public class Startup
         }
         else
         {
-            app.UseExceptionHandler("/Error");
+            app.UseExceptionHandler("/Exception");
+            app.UseStatusCodePagesWithReExecute("/Error/{0}");
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
         }

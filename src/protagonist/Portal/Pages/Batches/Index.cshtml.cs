@@ -31,6 +31,12 @@ public class Index : PageModel
         [FromQuery] int pageSize = PagerViewComponent.DefaultPageSize)
     {
         var batchResult = await mediator.Send(new GetBatch{ BatchId = batch, Page = page, PageSize = pageSize});
+        if (batchResult == null)
+        {
+            TempData[PageConstants.TempErrorMessageKey] = "The requested batch was not found";
+            return NotFound();
+        }
+        
         Batch = batchResult.Batch;
         Images = batchResult.Images;
         Thumbnails = batchResult.Thumbnails;

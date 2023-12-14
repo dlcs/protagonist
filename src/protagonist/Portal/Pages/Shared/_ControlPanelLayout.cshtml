@@ -25,7 +25,7 @@
     <link href="~/css/portal.css" rel="stylesheet"/>
     @await RenderSectionAsync("header", false)
 </head>
-<body>
+<body class="d-flex flex-column">
 
     <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
         <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="/">DLCS Portal</a>
@@ -37,75 +37,73 @@
         </ul>
     </header>
 
-    <div class="container-fluid">
-        <div class="row">
-            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
-                <div class="position-sticky pt-3">
-                    <ul class="nav flex-column">
+    <div class="container-fluid h-100">
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <navlink href="/" icon="home">Home</navlink>
+                    </li>
+                    <li class="nav-item">
+                        <navlink href="/spaces" icon="folder">Spaces</navlink>
+                    </li>
+                    @if (!User.IsInRole(ClaimsPrincipalUtils.Roles.Admin))
+                    {
                         <li class="nav-item">
-                            <navlink href="/" icon="home">Home</navlink>
+                            <a href="#queue-submenu" data-bs-toggle="collapse" class="nav-link">
+                                <span data-feather="list"></span><span class="ms-1">Queue</span><span data-feather="chevron-right" class="float-end me-2"></span>
+                            </a>
+                            <ul class="nav collapse ms-4 ps-2" id="queue-submenu" data-bs-parent="#queue-submenu">
+                                <li class="w-100">
+                                    <navlink href="/queue/active" icon="activity">Active</navlink>
+                                </li>
+                                <li class="w-100">
+                                    <navlink href="/queue/recent" icon="clock">Recent</navlink>
+                                </li>
+                            </ul>
                         </li>
                         <li class="nav-item">
-                            <navlink href="/spaces" icon="folder">Spaces</navlink>
+                            <navlink href="/queue/upload" icon="file-plus">Upload</navlink>
                         </li>
-                        @if (!User.IsInRole(ClaimsPrincipalUtils.Roles.Admin))
-                        {
-                            <li class="nav-item">
-                                <a href="#queue-submenu" data-bs-toggle="collapse" class="nav-link">
-                                    <span data-feather="list"></span><span class="ms-1">Queue</span><span data-feather="chevron-right" class="float-end me-2"></span>
-                                </a>
-                                <ul class="nav collapse ms-4 ps-2" id="queue-submenu" data-bs-parent="#queue-submenu">
-                                    <li class="w-100">
-                                        <navlink href="/queue/active" icon="activity">Active</navlink>
+                    }
+                    <li class="nav-item">
+                        <navlink href="/users" icon="users">Users</navlink>
+                    </li>
+                    <li class="nav-item">
+                        <navlink href="/keys" icon="key">API Keys</navlink>
+                    </li>
+                        
+                    @if (User.IsInRole(ClaimsPrincipalUtils.Roles.Admin))
+                    {
+                        <li class="nav-item">
+                            <navlink href="/admin" icon="settings">Admin</navlink>
+                            @if (Context.Request.Path.StartsWithSegments("/admin", StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                <ul>
+                                    <li class="nav-item">
+                                        <navlink href="/admin/signups">Signup links</navlink>
                                     </li>
-                                    <li class="w-100">
-                                        <navlink href="/queue/recent" icon="clock">Recent</navlink>
+                                    <li class="nav-item">
+                                        <navlink href="/admin/customers">Accounts</navlink>
                                     </li>
                                 </ul>
-                            </li>
-                            <li class="nav-item">
-                                <navlink href="/queue/upload" icon="file-plus">Upload</navlink>
-                            </li>
-                        }
-                        <li class="nav-item">
-                            <navlink href="/users" icon="users">Users</navlink>
+                            }
                         </li>
-                        <li class="nav-item">
-                            <navlink href="/keys" icon="key">API Keys</navlink>
-                        </li>
-                        
-                        @if (User.IsInRole(ClaimsPrincipalUtils.Roles.Admin))
-                        {
-                            <li class="nav-item">
-                                <navlink href="/admin" icon="settings">Admin</navlink>
-                                @if (Context.Request.Path.StartsWithSegments("/admin", StringComparison.InvariantCultureIgnoreCase))
-                                {
-                                    <ul>
-                                        <li class="nav-item">
-                                            <navlink href="/admin/signups">Signup links</navlink>
-                                        </li>
-                                        <li class="nav-item">
-                                            <navlink href="/admin/customers">Accounts</navlink>
-                                        </li>
-                                    </ul>
-                                }
-                            </li>
-                        }
-                    </ul>
-                </div>
-            </nav>
+                    }
+                </ul>
+            </div>
+        </nav>
 
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 ">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">@ViewData["Title"]</h1>
-                </div>
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 h-100 d-flex flex-column">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">@ViewData["Title"]</h1>
+            </div>
 
-                @RenderBody()
+            @RenderBody()
 
-            </main>
-        </div>
+        </main>
     </div>
-
+    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
     <script src="~/assets/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js" integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>

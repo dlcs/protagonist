@@ -78,7 +78,7 @@ public class DlcsClient : IDlcsClient
         return space;
     }
 
-    public async Task<Space?> GetSpaceDetails(int spaceId)
+    public async Task<Space> GetSpaceDetails(int spaceId)
     {
         var url = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}";
         var response = await httpClient.GetAsync(url);
