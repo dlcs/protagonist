@@ -320,4 +320,25 @@ public class ThumbnailCalculatorTests
         result.Ideal.Width.Should().Be(250);
         result.Ideal.Height.Should().Be(450);
     }
+    
+    [Fact]
+    public void GetCandidates_ReturnsCorrectIdealSize_IfLargerThanAvailableSizes()
+    {
+        var imageRequest = new ImageRequest
+        {
+            Size = new SizeParameter
+            {
+                Width = 802,
+                Height = 401,
+                Confined = true,
+            }
+        };
+        
+        // Act
+        var result = (ResizableSize)ThumbnailCalculator.GetCandidate(landscapeSizes, imageRequest, true);
+        
+        result.KnownSize.Should().BeFalse();
+        result.Ideal.Width.Should().Be(802);
+        result.Ideal.Height.Should().Be(401);
+    }
 }
