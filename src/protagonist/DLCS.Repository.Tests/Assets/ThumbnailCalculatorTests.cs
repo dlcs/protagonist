@@ -291,7 +291,7 @@ public class ThumbnailCalculatorTests
         };
         
         // Act
-        var result = (ResizableSize)ThumbnailCalculator.GetCandidate(portraitSizes, imageRequest, true);
+        var result = (ResizableSize)ThumbnailCalculator.GetCandidate(landscapeSizes, imageRequest, true);
         
         // Assert
         result.KnownSize.Should().BeFalse();
