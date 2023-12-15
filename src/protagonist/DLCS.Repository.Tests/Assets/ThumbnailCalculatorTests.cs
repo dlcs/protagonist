@@ -13,7 +13,8 @@ public class ThumbnailCalculatorTests
 {
     private readonly List<Size> landscapeSizes;
     private readonly List<Size> portraitSizes;
-
+    private readonly List<Size> squareSizes;
+    
     public ThumbnailCalculatorTests()
     {
         portraitSizes = new List<Size>
@@ -28,6 +29,12 @@ public class ThumbnailCalculatorTests
             new(800, 400),
             new(400, 200),
             new(200, 100),
+        };
+        
+        squareSizes = new List<Size>()
+        {
+            new Size(200, 200),
+            new Size(500, 500)
         };
     }
     
@@ -337,8 +344,29 @@ public class ThumbnailCalculatorTests
         // Act
         var result = (ResizableSize)ThumbnailCalculator.GetCandidate(landscapeSizes, imageRequest, true);
         
+        // Assert
         result.KnownSize.Should().BeFalse();
         result.Ideal.Width.Should().Be(802);
         result.Ideal.Height.Should().Be(401);
+    }
+
+    [Fact]
+    public void GetCandidates_ReturnsCorrectLongestEdge_IfSquare()
+    {
+        var imageRequest = new ImageRequest
+        {
+            Size = new SizeParameter
+            {
+                Width = 200,
+                Height = 500,
+                Confined = true,
+            }
+        };
+        
+        // Act
+        var result = (ResizableSize)ThumbnailCalculator.GetCandidate(squareSizes, imageRequest, true);
+        
+        // Assert
+        result.LongestEdge.Should().Be(200);
     }
 }

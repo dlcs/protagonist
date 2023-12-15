@@ -25,13 +25,16 @@ public static class ThumbnailCalculator
 
     private static SizeCandidate GetLongestEdge(List<Size> sizes, ImageRequest imageRequest)
     {
-        if (imageRequest.Size.Width > 0 && imageRequest.Size.Height > 0)
+        var requestWidth = imageRequest.Size.Width ?? 0;
+        var requestHeight = imageRequest.Size.Height ?? 0;
+        
+        if (requestWidth > 0 && requestHeight > 0)
         {
             // get the longest dimension of the requested size
-            var max = Math.Max(imageRequest.Size.Width ?? 0, imageRequest.Size.Height ?? 0);
+            var max = Math.Max(requestWidth, requestHeight);
             var foundExactSize = sizes.Exists(s => 
-                s.Height == imageRequest.Size.Height &&
-                s.Width == imageRequest.Size.Width);
+                s.Width == requestWidth &&
+                s.Height == requestHeight);
 
             // We found a size that matches the request exactly, so we'll go with that
             if (foundExactSize)
@@ -44,27 +47,27 @@ public static class ThumbnailCalculator
             {
                 // Pick the first thumbnail size as a reference for shape
                 var shape = sizes.First().GetShape();
-                var confinedSizeFound = false;
 
-                switch (shape)
-                {
-                    // If this is a landscape image, max should match its width
-                    case ImageShape.Landscape:
-                        confinedSizeFound = sizes.Exists(s => s.Width == max && imageRequest.Size.Height >= s.Height);
-                        break;
-                    // For portrait images, max should match its height
-                    case ImageShape.Portrait:
-                        confinedSizeFound = sizes.Exists(s => s.Height == max && imageRequest.Size.Width >= s.Width);
-                        break;
-                    // Lastly, for square images, max should match both dimensions
-                    case ImageShape.Square:
-                        confinedSizeFound = sizes.Exists(s => s.Height == max && s.Width == max);
-                        break;
-                }
-                
-                if (confinedSizeFound)
+                // If this is a landscape image, max should match its width
+                if (shape == ImageShape.Landscape 
+                    && sizes.Exists(s => s.Width == max && requestHeight >= s.Height))
                 {
                     return new SizeCandidate(max);
+                }
+                // For portrait images, max should match its height
+                else if (shape == ImageShape.Portrait
+                    && sizes.Exists(s => s.Height == max && requestWidth >= s.Width))
+                {
+                    return new SizeCandidate(max);
+                }
+                // Lastly, for square images, min should match both dimensions instead
+                else if (shape == ImageShape.Square)
+                {
+                    var min = Math.Min(requestWidth, requestHeight);
+                    if (sizes.Exists(s => s.Width == min))
+                    {
+                        return new SizeCandidate(min);
+                    }
                 }
             }
             
@@ -79,11 +82,11 @@ public static class ThumbnailCalculator
 
         // we need to know the sizes of things...
         int? longestEdge = null;
-        if (imageRequest.Size.Width > 0)
+        if (requestWidth > 0)
         {
             foreach (var size in sizes)
             {
-                if (size.Width == imageRequest.Size.Width)
+                if (size.Width == requestWidth)
                 {
                     longestEdge = size.MaxDimension;
                     break;
@@ -91,11 +94,11 @@ public static class ThumbnailCalculator
             }
         }
 
-        if (imageRequest.Size.Height > 0)
+        if (requestHeight > 0)
         {
             foreach (var size in sizes)
             {
-                if (size.Height == imageRequest.Size.Height)
+                if (size.Height == requestHeight)
                 {
                     longestEdge = size.MaxDimension;
                     break;
