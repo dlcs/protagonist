@@ -25,11 +25,21 @@ public static class ThumbnailCalculator
 
     private static SizeCandidate GetLongestEdge(List<Size> sizes, ImageRequest imageRequest)
     {
-        // get the longest dimension of the requested size
-        var max = Math.Max(imageRequest.Size.Width ?? 0, imageRequest.Size.Height ?? 0);
-        
         if (imageRequest.Size.Width > 0 && imageRequest.Size.Height > 0)
         {
+            // get the longest dimension of the requested size
+            var max = Math.Max(imageRequest.Size.Width ?? 0, imageRequest.Size.Height ?? 0);
+            var foundExactSize = sizes.Exists(s => 
+                s.Height == imageRequest.Size.Height &&
+                s.Width == imageRequest.Size.Width);
+
+            // We found a size that matches the request exactly, so we'll go with that
+            if (foundExactSize)
+            {
+                return new SizeCandidate(max);
+            }
+            
+            // If the image is confined, are there any sizes that fit?
             if (imageRequest.Size.Confined)
             {
                 // Pick the first thumbnail size as a reference for shape
@@ -52,16 +62,14 @@ public static class ThumbnailCalculator
                         break;
                 }
                 
-                if (confinedSizeFound) return new SizeCandidate(max);
+                if (confinedSizeFound)
+                {
+                    return new SizeCandidate(max);
+                }
             }
             
-            var foundExactSize = sizes.Exists(s => 
-                s.Height == imageRequest.Size.Height &&
-                s.Width == imageRequest.Size.Width);
-        
-            return foundExactSize ?
-                new SizeCandidate(max) :
-                new SizeCandidate();
+            // Otherwise, resize
+            return new SizeCandidate();
         }
         
         if (imageRequest.Size.Max)
