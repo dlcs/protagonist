@@ -687,6 +687,48 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         Guid.TryParse(assetInDatabase.ToList()[1].Id.Asset, out _).Should().BeTrue();
         assetInDatabase.ToList()[2].Id.Asset.Should().Be("someId");
     }
+    
+    [Fact]
+    public async Task Post_CreateBatch_400_WithInvalidIdsSet()
+    {
+        const int customerId = 15;
+        const int space = 4;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""id"": ""some\id"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 4,
+          ""family"": ""T"",
+          ""mediaType"": ""video/mp4""
+        },
+        {
+          ""id"": ""some Id"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 4,
+          ""family"": ""T"",
+          ""mediaType"": ""video/mp4""
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 
     [Fact]
     public async Task Post_CreateBatch_400_IfSpaceNotFound()
