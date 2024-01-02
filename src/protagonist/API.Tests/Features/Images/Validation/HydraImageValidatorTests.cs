@@ -320,7 +320,7 @@ public class HydraImageValidatorTests
         {
             DeliveryChannelsEnabled = true, 
             RestrictedAssetIdCharacters = "", 
-            DisableStrictAssetIdChecks = true
+            DisableStrictAssetIdChecks = false
         };
         var validator = new HydraImageValidator(Options.Create(apiSettings));
         
