@@ -66,7 +66,7 @@ public class ImageController : HydraController
     /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
     /// <returns>The created or updated Hydra Image object for the Asset</returns>
     /// <remarks>
-    /// Sample requests:
+    /// Sample request:
     ///
     ///     PUT: /customers/1/spaces/1/images/my-image
     ///     {
@@ -75,13 +75,6 @@ public class ImageController : HydraController
     ///         "origin": "https://example.text/.../image.jpeg",
     ///         "mediaType": "image/jpeg",
     ///         "string1": "my-metadata"
-    ///     }
-    ///
-    ///     PUT: /customers/1/spaces/1/images/my-image
-    ///     {
-    ///         "@type":"Image",
-    ///         "family": "I",
-    ///         "file": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAM...."
     ///     }
     /// </remarks>
     [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))]
@@ -107,6 +100,8 @@ public class ImageController : HydraController
             hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
         }
         
+        hydraAsset.ModelId = imageId;
+
         var validationResult = await validator.ValidateAsync(hydraAsset, cancellationToken);
         if (!validationResult.IsValid)
         {
@@ -212,9 +207,8 @@ public class ImageController : HydraController
     }
 
     /// <summary>
-    /// <para>Ingest specified file bytes to DLCS.
-    /// "File" property should be base64 encoded image.</para>
-    /// <para>This route is now deprecated. <see cref="PutImage"/> should be used instead.</para>
+    /// Ingest specified file bytes to DLCS. Only "I" family assets are accepted.
+    /// "File" property should be base64 encoded image. 
     /// </summary>
     /// <remarks>
     /// Sample request:
@@ -242,7 +236,8 @@ public class ImageController : HydraController
             "Warning: POST /customers/{CustomerId}/spaces/{SpaceId}/images/{ImageId} was called. This route is deprecated.",
             customerId, spaceId, imageId);
         
-        return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, cancellationToken);
+
+        return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset, cancellationToken);
     }
 
     /// <summary>

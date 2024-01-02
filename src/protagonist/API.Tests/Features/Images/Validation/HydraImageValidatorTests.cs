@@ -13,7 +13,7 @@ public class HydraImageValidatorTests
 
     public HydraImageValidatorTests()
     {
-        var apiSettings = new ApiSettings() { DeliveryChannelsEnabled = true};
+        var apiSettings = new ApiSettings() { DeliveryChannelsEnabled = true, RestrictedAssetIdCharacters = "\\ "};
         sut = new HydraImageValidator(Options.Create(apiSettings));
     }
 
@@ -251,5 +251,55 @@ public class HydraImageValidatorTests
         var model = new DLCS.HydraModel.Image();
         var result = imageValidator.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
+    }
+    
+    [Theory]
+    [InlineData("some id")]
+    [InlineData("some\\id")]
+    public void Id_HasValidationErrors_WhenCalledWithRestrictedCharacters(string id)
+    {
+        var model = new DLCS.HydraModel.Image
+        {
+            ModelId = id,
+            MediaType = "image/jpeg",
+            ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.ModelId);
+    }
+    
+    [Fact]
+    public void Id_HasNoValidationErrors_WhenCalledWithoutRestrictedCharacters()
+    {
+        var model = new DLCS.HydraModel.Image
+        {
+            ModelId = "someId",
+            MediaType = "image/jpeg",
+            ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.ModelId);
+    }
+    
+    [Fact]
+    public void Id_HasNoValidationErrors_WhenCalledWithStrictAssetIdDisabled ()
+    {
+        var model = new DLCS.HydraModel.Image
+        {
+            ModelId = "some Id",
+            MediaType = "image/jpeg",
+            ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId
+        };
+        
+        var apiSettings = new ApiSettings()
+        {
+            DeliveryChannelsEnabled = true, 
+            RestrictedAssetIdCharacters = "\\ ", 
+            DisableStrictAssetIdChecks = true
+        };
+        var validator = new HydraImageValidator(Options.Create(apiSettings));
+        
+        var result = validator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.ModelId);
     }
 }

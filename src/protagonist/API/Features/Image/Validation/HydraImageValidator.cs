@@ -35,7 +35,14 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleFor(a => a.DeliveryChannels).Must(d => d.IsNullOrEmpty())
             .When(_ => !apiSettings.Value.DeliveryChannelsEnabled)
             .WithMessage("Delivery channels are disabled");
-        
+
+        if (!apiSettings.Value.DisableStrictAssetIdChecks)
+        {
+            RuleFor(a => a.ModelId).Must(id => id.IndexOfAny(apiSettings.Value.RestrictedAssetIdCharacters.ToCharArray()) == -1)
+                .When(asset => !asset.ModelId.IsNullOrEmpty())
+                .WithMessage("Asset id contains a restricted character");
+        }
+
         RuleForEach(a => a.DeliveryChannels)
             .Must(dc => AssetDeliveryChannels.All.Contains(dc))
             .WithMessage($"DeliveryChannel must be one of {AssetDeliveryChannels.AllString}");
