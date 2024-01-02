@@ -275,7 +275,7 @@ public class ImageRequestHandlerTests
     {
         // Arrange
         var context = new DefaultHttpContext();
-        context.Request.Path = "/iiif-img/2/2/test-image/full/!100,150/0/default.jpg";
+        context.Request.Path = "/iiif-img/2/2/test-image/full/!150,150/0/default.jpg";
 
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         var assetId = new AssetId(2, 2, "test-image");
@@ -293,7 +293,7 @@ public class ImageRequestHandlerTests
             
         // Assert
         result.Target.Should().Be(ProxyDestination.Thumbs);
-        result.Path.Should().Be("thumbs/2/2/test-image/full/!100,150/0/default.jpg");
+        result.Path.Should().Be("thumbs/2/2/test-image/full/!150,150/0/default.jpg");
     }
 
     [Fact]
@@ -301,7 +301,7 @@ public class ImageRequestHandlerTests
     {
         // Arrange
         var context = new DefaultHttpContext();
-        context.Request.Path = "/iiif-img/2/2/test-image/full/!100,150/0/default.jpg";
+        context.Request.Path = "/iiif-img/2/2/test-image/full/!150,150/0/default.jpg";
 
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
         var assetId = new AssetId(2, 2, "test-image");
@@ -318,7 +318,7 @@ public class ImageRequestHandlerTests
             
         // Assert
         result.Target.Should().Be(ProxyDestination.Thumbs);
-        result.Path.Should().Be("thumbs/2/2/test-image/full/!100,150/0/default.jpg");
+        result.Path.Should().Be("thumbs/2/2/test-image/full/!150,150/0/default.jpg");
     }
     
     [Theory]
