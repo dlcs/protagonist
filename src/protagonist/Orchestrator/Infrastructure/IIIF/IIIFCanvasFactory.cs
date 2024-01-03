@@ -67,6 +67,11 @@ public class IIIFCanvasFactory
                 Label = new LanguageMap("en", $"Canvas {counter}"),
                 Width = i.Width,
                 Height = i.Height,
+                Metadata = GetImageMetadata(i)
+                    .Select(m => 
+                        new LabelValuePair(new LanguageMap("none", m.Key), 
+                            new LanguageMap("none", m.Value)))
+                    .ToList(),
                 Items = new AnnotationPage
                 {
                     Id = $"{canvasId}/page",
@@ -81,7 +86,7 @@ public class IIIFCanvasFactory
                             Format = "image/jpeg",
                             Width = thumbnailSizes.MaxDerivativeSize.Width,
                             Height = thumbnailSizes.MaxDerivativeSize.Height,
-                            Service = GetImageServices(i, customerPathElement, authProbeServices)
+                            Service = GetImageServices(i, customerPathElement, authProbeServices),
                         }
                     }.AsListOf<IAnnotation>()
                 }.AsList()
@@ -124,18 +129,26 @@ public class IIIFCanvasFactory
                 Label = new MetaDataValue($"Canvas {counter}"),
                 Width = i.Width,
                 Height = i.Height,
+                Metadata = GetImageMetadata(i)
+                    .Select(m => new IIIF2.Metadata()
+                    {
+                        Label = new MetaDataValue(m.Key),
+                        Value = new MetaDataValue(m.Value)
+                    })
+                    .ToList(),
                 Images = new ImageAnnotation
                 {
                     Id = string.Concat(fullyQualifiedImageId, "/imageanno/0"),
                     On = canvasId,
                     Resource = new IIIF2.ImageResource
                     {
+                        
                         Id = GetFullQualifiedImagePath(i, customerPathElement,
                             thumbnailSizes.MaxDerivativeSize, false),
                         Width = thumbnailSizes.MaxDerivativeSize.Width,
                         Height = thumbnailSizes.MaxDerivativeSize.Height,
                         Service = GetImageServices(i, customerPathElement, null)
-                    }
+                    },
                 }.AsList()
             };
 
@@ -313,7 +326,20 @@ public class IIIFCanvasFactory
             return authServiceToAdd.AsListOf<IService>();
         }
     }
-
+    
+    private Dictionary<string, string> GetImageMetadata(Asset asset)
+    {
+        return new Dictionary<string, string>()
+        {
+            { "String 1", asset.Reference1 ?? string.Empty },
+            { "String 2", asset.Reference2 ?? string.Empty },
+            { "String 3", asset.Reference3 ?? string.Empty },
+            { "Number 1", (asset.NumberReference1 ?? 0).ToString() },
+            { "Number 2", (asset.NumberReference2 ?? 0).ToString() },
+            { "Number 3", (asset.NumberReference3 ?? 0).ToString() },
+        };
+    }
+    
     /// <summary>
     /// Class containing details of available thumbnail sizes
     /// </summary>
