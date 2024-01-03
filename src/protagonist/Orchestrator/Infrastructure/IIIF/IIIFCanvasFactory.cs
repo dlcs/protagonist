@@ -36,7 +36,8 @@ public class IIIFCanvasFactory
     private readonly IPolicyRepository policyRepository;
     private readonly OrchestratorSettings orchestratorSettings;
     private readonly Dictionary<string, ThumbnailPolicy> thumbnailPolicies = new();
-
+    private const string MetadataLanguage = "none";
+    
     public IIIFCanvasFactory(
         IAssetPathGenerator assetPathGenerator,
         IOptions<OrchestratorSettings> orchestratorSettings,
@@ -69,8 +70,8 @@ public class IIIFCanvasFactory
                 Height = i.Height,
                 Metadata = GetImageMetadata(i)
                     .Select(m => 
-                        new LabelValuePair(new LanguageMap("none", m.Key), 
-                            new LanguageMap("none", m.Value)))
+                        new LabelValuePair(new LanguageMap(MetadataLanguage, m.Key), 
+                            new LanguageMap(MetadataLanguage, m.Value)))
                     .ToList(),
                 Items = new AnnotationPage
                 {
@@ -86,7 +87,7 @@ public class IIIFCanvasFactory
                             Format = "image/jpeg",
                             Width = thumbnailSizes.MaxDerivativeSize.Width,
                             Height = thumbnailSizes.MaxDerivativeSize.Height,
-                            Service = GetImageServices(i, customerPathElement, authProbeServices),
+                            Service = GetImageServices(i, customerPathElement, authProbeServices)
                         }
                     }.AsListOf<IAnnotation>()
                 }.AsList()
@@ -142,7 +143,6 @@ public class IIIFCanvasFactory
                     On = canvasId,
                     Resource = new IIIF2.ImageResource
                     {
-                        
                         Id = GetFullQualifiedImagePath(i, customerPathElement,
                             thumbnailSizes.MaxDerivativeSize, false),
                         Width = thumbnailSizes.MaxDerivativeSize.Width,
@@ -337,6 +337,8 @@ public class IIIFCanvasFactory
             { "Number 1", (asset.NumberReference1 ?? 0).ToString() },
             { "Number 2", (asset.NumberReference2 ?? 0).ToString() },
             { "Number 3", (asset.NumberReference3 ?? 0).ToString() },
+            { "Tags", asset.Tags ?? string.Empty },
+            { "Roles", asset.Roles ?? string.Empty }
         };
     }
     
