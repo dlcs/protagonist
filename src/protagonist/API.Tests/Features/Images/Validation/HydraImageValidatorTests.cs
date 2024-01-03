@@ -280,29 +280,7 @@ public class HydraImageValidatorTests
         var result = sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.ModelId);
     }
-    
-    [Fact]
-    public void Id_HasNoValidationErrors_WhenCalledWithStrictAssetIdDisabled()
-    {
-        var model = new DLCS.HydraModel.Image
-        {
-            ModelId = "some Id",
-            MediaType = "image/jpeg",
-            ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId
-        };
-        
-        var apiSettings = new ApiSettings()
-        {
-            DeliveryChannelsEnabled = true, 
-            RestrictedAssetIdCharacters = "\\ ", 
-            DisableStrictAssetIdChecks = true
-        };
-        var validator = new HydraImageValidator(Options.Create(apiSettings));
-        
-        var result = validator.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(a => a.ModelId);
-    }
-    
+
     [Theory]
     [InlineData("some id")]
     [InlineData("some\\id")]
@@ -319,8 +297,7 @@ public class HydraImageValidatorTests
         var apiSettings = new ApiSettings()
         {
             DeliveryChannelsEnabled = true, 
-            RestrictedAssetIdCharacters = "", 
-            DisableStrictAssetIdChecks = false
+            RestrictedAssetIdCharacters = ""
         };
         var validator = new HydraImageValidator(Options.Create(apiSettings));
         

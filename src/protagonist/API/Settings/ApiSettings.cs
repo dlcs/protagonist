@@ -83,11 +83,6 @@ public class ApiSettings
     /// Whether the delivery channel feature is enabled
     /// </summary>
     public bool DeliveryChannelsEnabled { get; set; }
-    
-    /// <summary>
-    /// Whether strict checks on the asset id are disabled
-    /// </summary>
-    public bool DisableStrictAssetIdChecks { get; set; }
 
     /// <summary>
     /// Characters that are not allowed in an asset id
