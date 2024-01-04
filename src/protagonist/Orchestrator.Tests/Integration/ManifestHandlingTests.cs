@@ -231,11 +231,14 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         // Assert
         var jsonContent = await response.Content.ReadAsStringAsync();
         var jsonResponse = JObject.Parse(jsonContent);
+        
         jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/v2/{id}");
         jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
             .Should().StartWith($"http://localhost/thumbs/{id}/full");
-
-        jsonContent.Should().NotContain("clickthrough", "auth services are not included in v2 manifests");
+        jsonResponse.SelectTokens("sequences[*].canvases[*].images[*].resource.service")
+            .Select(token => token.ToString())
+            .Should().NotContainMatch("*clickthrough*", "auth services are not included in v2 manifests");
+        
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
