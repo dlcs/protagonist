@@ -90,8 +90,8 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
     {
         TrySetContentTypeForBinary(originResponse, asset);
         var extension = GetFileExtension(originResponse);
-        
-        var targetPath = $"{Path.Join(destinationTemplate, asset.Id.Asset)}.{extension}";
+
+        var targetPath = $"{Path.Join(destinationTemplate, asset.Id.Asset.Replace('(', '_').Replace(')', '_'))}.{extension}";
 
         var received = await fileSaver.SaveResponseToDisk(asset.Id, originResponse, targetPath,
             cancellationToken);

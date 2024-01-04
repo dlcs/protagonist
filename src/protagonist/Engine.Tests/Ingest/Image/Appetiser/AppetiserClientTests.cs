@@ -42,7 +42,7 @@ public class AppetiserClientTests
             ImageIngest = new ImageIngestSettings
             {
                 ScratchRoot = "scratch/",
-                DestinationTemplate = "dest/",
+                DestinationTemplate ="{root}{customer}/{space}/{image}/output",
                 SourceTemplate = "source/",
                 ThumbsTemplate = "thumb/"
             }
@@ -76,6 +76,21 @@ public class AppetiserClientTests
 
         // Assert
         A.CallTo(() => fileSystem.CreateDirectory(A<string>._)).MustHaveHappenedTwiceExactly();
+        A.CallTo(() => fileSystem.DeleteDirectory(A<string>._, true, true)).MustHaveHappenedTwiceExactly();
+    }
+    
+    [Fact]
+    public async Task ProcessImage_UpdatesContextBasedOnImageIdWithBrackets()
+    {
+        // Arrange
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        var context = GetIngestionContext(assetId: "1/2/some(id)");
+
+        // Act
+        await sut.ProcessImage(context);
+
+        // Assert
+        A.CallTo(() => fileSystem.CreateDirectory( "scratch/1/2/some_id_/output")).MustHaveHappenedOnceExactly();
         A.CallTo(() => fileSystem.DeleteDirectory(A<string>._, true, true)).MustHaveHappenedTwiceExactly();
     }
 
@@ -212,7 +227,7 @@ public class AppetiserClientTests
         // Assert
         bucketWriter
             .ShouldHaveKey("1/2/test")
-            .WithFilePath("dest/test.jp2")
+            .WithFilePath("scratch/1/2/test/outputtest.jp2")
             .WithContentType("image/jp2");
         context.ImageLocation.S3.Should().Be(expected);
         context.StoredObjects.Should().NotBeEmpty();
