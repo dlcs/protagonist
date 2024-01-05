@@ -1,10 +1,21 @@
 namespace Engine.Ingest.Image.Appetiser;
 
+public enum ResponseType
+{
+    SuccessResponse,
+    ErrorResponse
+}
+
 /// <summary>
 /// Response model for receiving requests back from Appetiser.
 /// </summary>
-public class AppetiserResponseModel
+public class AppetiserResponseModel : AppetiserResponse
 {
+    public AppetiserResponseModel()
+    {
+        ResponseType = ResponseType.SuccessResponse;
+    }
+    
     public string ImageId { get; set; }
     public string JobId { get; set; }
     public string Optimisation { get; set; }

@@ -54,8 +54,19 @@ public class AppetiserClient : IImageProcessor
             var flags = new ImageProcessorFlags(context, GetJP2FilePath(context.AssetId, false));
             logger.LogDebug("Got flags '{Flags}' for {AssetId}", flags, context.AssetId);
             var responseModel = await CallImageProcessor(context, flags);
-            await ProcessResponse(context, responseModel, flags);
-            return true;
+
+            if (responseModel is AppetiserResponseModel successResponse)
+            {
+                await ProcessResponse(context, successResponse, flags);
+                return true;
+            }
+            else if (responseModel is AppetiserResponseErrorModel failResponse)
+            {
+                context.Asset.Error = $"Appetiser Error: {failResponse.Message}";
+                return false;
+            }
+
+            return false;
         }
         catch (Exception e)
         {
@@ -87,7 +98,7 @@ public class AppetiserClient : IImageProcessor
         return (dest, thumb);
     }
 
-    private async Task<AppetiserResponseModel> CallImageProcessor(IngestionContext context,
+    private async Task<AppetiserResponse> CallImageProcessor(IngestionContext context,
         ImageProcessorFlags processorFlags)
     {
         // call tizer/appetiser
@@ -102,10 +113,19 @@ public class AppetiserClient : IImageProcessor
         }
 
         using var response = await httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
         // TODO - it's possible to get a 200 when appetiser doesn't do anything, e.g. body not understood
-        var responseModel = await response.Content.ReadFromJsonAsync<AppetiserResponseModel>();
+        AppetiserResponse? responseModel = null;
+        
+        if (response.IsSuccessStatusCode)
+        {
+            responseModel = await response.Content.ReadFromJsonAsync<AppetiserResponseModel>();
+        }
+        else
+        {
+            responseModel = await response.Content.ReadFromJsonAsync<AppetiserResponseErrorModel>();
+        }
+
         return responseModel;
     }
 
