@@ -18,7 +18,7 @@ internal static class ImageIngestionHelpers
         // source is the main folder for storing downloaded image
         var assetId = new AssetId(asset.Id.Customer, asset.Id.Space,
             asset.Id.Asset.Replace("(", imageIngest.OpenBracketReplacement)
-                .Replace(")", imageIngest.CloseBracketReplacement));;
+                .Replace(")", imageIngest.CloseBracketReplacement));
         var source = TemplatedFolders.GenerateFolderTemplate(imageIngest.SourceTemplate, assetId, root: root);
         return source;
     }

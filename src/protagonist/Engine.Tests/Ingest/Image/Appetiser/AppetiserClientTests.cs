@@ -80,7 +80,7 @@ public class AppetiserClientTests
     }
     
     [Fact]
-    public async Task ProcessImage_UpdatesContextBasedOnImageIdWithBrackets()
+    public async Task ProcessImage_ChangesFileSavedLocationBasedOnImageIdWithBrackets()
     {
         // Arrange
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));

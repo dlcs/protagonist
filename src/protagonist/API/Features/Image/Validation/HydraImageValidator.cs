@@ -38,7 +38,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         
         RuleFor(a => a.ModelId).Must(id => id.IndexOfAny(apiSettings.Value.RestrictedAssetIdCharacters.ToCharArray()) == -1)
             .When(asset => !asset.ModelId.IsNullOrEmpty())
-            .WithMessage("Asset id contains a restricted character");
+            .WithMessage($"Asset id contains at least one of the following restricted characters - {apiSettings.Value.RestrictedAssetIdCharacters}");
 
             RuleForEach(a => a.DeliveryChannels)
             .Must(dc => AssetDeliveryChannels.All.Contains(dc))

@@ -99,9 +99,12 @@ public class ImageController : HydraController
         {
             hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
         }
-        
-        hydraAsset.ModelId = imageId;
 
+        if (hydraAsset.ModelId == null)
+        {
+            hydraAsset.ModelId = imageId;
+        }
+        
         var validationResult = await validator.ValidateAsync(hydraAsset, cancellationToken);
         if (!validationResult.IsValid)
         {
