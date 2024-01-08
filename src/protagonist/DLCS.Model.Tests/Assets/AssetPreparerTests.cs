@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using FluentAssertions;
 using Xunit;
@@ -27,7 +28,7 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_NotSuccessful_IfChangeFinished_AndAllowNonApiUpdatesFalse()
     {
         // Arrange
-        var updateAsset = new Asset { Finished = DateTime.Now };
+        var updateAsset = new Asset { Finished = DateTime.Now, Id = new AssetId(1, 1, "100")  };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
@@ -40,7 +41,7 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_NotSuccessful_IfChangeError_AndAllowNonApiUpdatesFalse()
     {
         // Arrange
-        var updateAsset = new Asset { Error = "change" };
+        var updateAsset = new Asset { Error = "change", Id = new AssetId(1, 1, "100") };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
@@ -169,7 +170,7 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_RequiresReingestTrue_IfExistingAssetNull()
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "https://whatever" };
+        var updateAsset = new Asset { Origin = "https://whatever", Id = new AssetId(1, 1, "100")  };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
@@ -184,7 +185,7 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_NotSuccessful_IfRequiresReingest_ButNoOrigin(string origin)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = origin };
+        var updateAsset = new Asset { Origin = origin, Id = new AssetId(1, 1, "100")  };
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
@@ -263,7 +264,7 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_SetsAssetFamilyIfNotSet(string dc, AssetFamily expected)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "required", DeliveryChannels = dc.Split(",") };
+        var updateAsset = new Asset { Origin = "required", DeliveryChannels = dc.Split(","), Id = new AssetId(1, 1, "100")  };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
@@ -280,7 +281,7 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_SetsAssetFamily_FromMediaType_IfFamilyAndDeliveryChannelNotSet(string mediaType, AssetFamily expected)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "required", MediaType = mediaType };
+        var updateAsset = new Asset { Origin = "required", MediaType = mediaType, Id = new AssetId(1, 1, "100")  };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
@@ -298,7 +299,12 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_ChangesAssetFamilyIfSet_New(string dc, AssetFamily current, AssetFamily expected)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "required", DeliveryChannels = dc.Split(","), Family = current};
+        var updateAsset = new Asset { 
+            Origin = "required", 
+            DeliveryChannels = dc.Split(","), 
+            Family = current, 
+            Id = new AssetId(1, 1, "100")
+        };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
