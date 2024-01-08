@@ -22,12 +22,12 @@ public class AssetProcessorTest
 
     public AssetProcessorTest()
     {
-        var dlcsSettings = new DlcsSettings();
+        var apiSettings = new ApiSettings();
         storageRepository = A.Fake<IStorageRepository>();
         policyRepository = A.Fake<IPolicyRepository>();
         assetRepository = A.Fake<IApiAssetRepository>();
 
-        sut = new AssetProcessor(assetRepository, storageRepository, policyRepository, Options.Create(dlcsSettings));
+        sut = new AssetProcessor(assetRepository, storageRepository, policyRepository, Options.Create(apiSettings));
     }
     
     [Fact]

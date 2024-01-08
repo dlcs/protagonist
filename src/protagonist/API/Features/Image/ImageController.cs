@@ -235,6 +235,7 @@ public class ImageController : HydraController
         [FromServices] HydraImageValidator validator,
         CancellationToken cancellationToken)
     {
+
         logger.LogWarning(
             "Warning: POST /customers/{CustomerId}/spaces/{SpaceId}/images/{ImageId} was called. This route is deprecated.",
             customerId, spaceId, imageId);
