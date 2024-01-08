@@ -230,7 +230,7 @@ public class ImageController : HydraController
         CancellationToken cancellationToken)
     {
         logger.LogWarning(
-            "Warning: A deprecated route (POST /spaces/{Space}/images/{Image}) was called by customer {Customer}",
+            "Warning: POST /customers/{CustomerId}/spaces/{SpaceId}/images/{ImageId} was called. This route is deprecated.",
             spaceId, imageId, customerId);
         
         var validationResult = await validator.ValidateAsync(hydraAsset, cancellationToken);
