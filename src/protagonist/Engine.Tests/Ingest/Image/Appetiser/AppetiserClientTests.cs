@@ -83,7 +83,6 @@ public class AppetiserClientTests
     public async Task ProcessImage_False_IfImageProcessorCallFails()
     {
         // Arrange
-        // Arrange
         var imageProcessorResponse = new AppetiserResponseErrorModel()
         {
             Message = "error",

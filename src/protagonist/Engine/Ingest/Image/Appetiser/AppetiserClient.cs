@@ -98,7 +98,7 @@ public class AppetiserClient : IImageProcessor
         return (dest, thumb);
     }
 
-    private async Task<AppetiserResponse> CallImageProcessor(IngestionContext context,
+    private async Task<IAppetiserResponse> CallImageProcessor(IngestionContext context,
         ImageProcessorFlags processorFlags)
     {
         // call tizer/appetiser
@@ -113,9 +113,8 @@ public class AppetiserClient : IImageProcessor
         }
 
         using var response = await httpClient.SendAsync(request);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
-        // TODO - it's possible to get a 200 when appetiser doesn't do anything, e.g. body not understood
-        AppetiserResponse? responseModel = null;
+        
+        IAppetiserResponse? responseModel;
         
         if (response.IsSuccessStatusCode)
         {

@@ -1,6 +1,5 @@
 ﻿namespace Engine.Ingest.Image.Appetiser;
 
-public class AppetiserResponse
+public interface IAppetiserResponse
 {
-    public ResponseType ResponseType { get; init; }  
 }
