@@ -193,7 +193,7 @@ public class AppetiserClient : IImageProcessor
         UpdateImageDimensions(context.Asset, responseModel);
 
         // Process output: upload derivative/original to DLCS storage if required and set Location + Storage on context 
-        await ProcessOriginImage(context, processorFlags, modifiedAssetId);
+        await ProcessOriginImage(context, processorFlags);
 
         // Create new thumbnails + update Storage on context
         await CreateNewThumbs(context, responseModel, modifiedAssetId);
@@ -205,7 +205,7 @@ public class AppetiserClient : IImageProcessor
         asset.Width = responseModel.Width;
     }
 
-    private async Task ProcessOriginImage(IngestionContext context, ImageProcessorFlags processorFlags, AssetId modifiedAssetId)
+    private async Task ProcessOriginImage(IngestionContext context, ImageProcessorFlags processorFlags)
     {
         var asset = context.Asset;
         var imageIngestSettings = engineSettings.ImageIngest!;
@@ -230,7 +230,7 @@ public class AppetiserClient : IImageProcessor
         RegionalisedObjectInBucket targetStorageLocation;
         if (processorFlags.OriginIsImageServerReady)
         {
-            targetStorageLocation = storageKeyGenerator.GetStoredOriginalLocation(modifiedAssetId);
+            targetStorageLocation = storageKeyGenerator.GetStoredOriginalLocation(context.AssetId);
             if (context.StoredObjects.ContainsKey(targetStorageLocation))
             {
                 // Target is image-server ready and should be stored in DLCS but it has already been copied (as part of  
@@ -244,8 +244,8 @@ public class AppetiserClient : IImageProcessor
         else
         {
             // Location for derivative
-            targetStorageLocation = storageKeyGenerator.GetStorageLocation(modifiedAssetId);
-            logger.LogDebug("Asset {AssetId} derivative will be stored in DLCS storage", modifiedAssetId);
+            targetStorageLocation = storageKeyGenerator.GetStorageLocation(context.AssetId);
+            logger.LogDebug("Asset {AssetId} derivative will be stored in DLCS storage", context.AssetId);
         }
 
         var imageServerFile = processorFlags.ImageServerFilePath;
