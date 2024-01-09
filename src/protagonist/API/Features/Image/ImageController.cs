@@ -231,15 +231,9 @@ public class ImageController : HydraController
     {
         logger.LogWarning(
             "Warning: POST /customers/{CustomerId}/spaces/{SpaceId}/images/{ImageId} was called. This route is deprecated.",
-            spaceId, imageId, customerId);
+            customerId, spaceId, imageId);
         
-        var validationResult = await validator.ValidateAsync(hydraAsset, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            return this.ValidationFailed(validationResult);
-        }
-        
-        return await PutOrPatchAssetWithFileBytes(customerId, spaceId, imageId, hydraAsset, cancellationToken);
+        return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, cancellationToken);
     }
 
     /// <summary>
