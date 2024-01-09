@@ -60,11 +60,13 @@ public class ImageController : HydraController
     /// PUT requests always trigger reingesting of asset - in general batch processing should be preferred.
     ///
     /// Image + File assets are ingested synchronously. Timebased assets are ingested asynchronously.
+    ///
+    /// "File" property should be base64 encoded image, if included. Only "I" family assets are accepted.
     /// </summary>
     /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
     /// <returns>The created or updated Hydra Image object for the Asset</returns>
     /// <remarks>
-    /// Sample request:
+    /// Sample requests:
     ///
     ///     PUT: /customers/1/spaces/1/images/my-image
     ///     {
@@ -73,6 +75,13 @@ public class ImageController : HydraController
     ///         "origin": "https://example.text/.../image.jpeg",
     ///         "mediaType": "image/jpeg",
     ///         "string1": "my-metadata"
+    ///     }
+    ///
+    ///     PUT: /customers/1/spaces/1/images/my-image
+    ///     {
+    ///         "@type":"Image",
+    ///         "family": "I",
+    ///         "file": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAM...."
     ///     }
     /// </remarks>
     [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))]
@@ -83,6 +92,7 @@ public class ImageController : HydraController
     [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(ProblemDetails))]
     [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(ProblemDetails))]
     [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(ProblemDetails))]
+    [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000, ValueLengthLimit = 100_000_000)]
     [HttpPut]
     public async Task<IActionResult> PutImage(
         [FromRoute] int customerId,
@@ -204,8 +214,9 @@ public class ImageController : HydraController
     }
 
     /// <summary>
-    /// Ingest specified file bytes to DLCS. Only "I" family assets are accepted.
-    /// "File" property should be base64 encoded image. 
+    /// <para>Ingest specified file bytes to DLCS. Only "I" family assets are accepted.
+    /// "File" property should be base64 encoded image.</para>
+    /// <para>This route is now deprecated. <see cref="PutImage"/> should be used instead.</para>
     /// </summary>
     /// <remarks>
     /// Sample request:
