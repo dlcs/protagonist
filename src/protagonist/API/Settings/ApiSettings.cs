@@ -89,7 +89,7 @@ public class ApiSettings
     /// <summary>
     /// Characters that are not allowed in an asset id
     /// </summary>
-    public char[]? RestrictedAssetIdCharacters => 
+    public char[] RestrictedAssetIdCharacters => 
         restrictedAssetIdCharacters.Length != 0 ? restrictedAssetIdCharacters 
             : RestrictedAssetIdCharacterString.ToCharArray();
 
