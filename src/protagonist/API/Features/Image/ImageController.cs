@@ -102,11 +102,9 @@ public class ImageController : HydraController
         [FromServices] HydraImageValidator validator,
         CancellationToken cancellationToken)
     {
-        var assetContainsFile = hydraAsset.File != null;
-        
-        if (apiSettings.LegacyModeEnabledForSpace(customerId, spaceId) && !assetContainsFile)
+        if (apiSettings.LegacyModeEnabledForSpace(customerId, spaceId))
         {
-            hydraAsset = (ImageWithFile)LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
+            hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
         }
         
         var validationResult = await validator.ValidateAsync(hydraAsset, cancellationToken);
@@ -115,7 +113,7 @@ public class ImageController : HydraController
             return this.ValidationFailed(validationResult);
         }
 
-        if (assetContainsFile)
+        if (!hydraAsset.File.IsNullOrEmpty())
         {
             return await PutOrPatchAssetWithFileBytes(customerId, spaceId, imageId, hydraAsset, cancellationToken);
         }
@@ -293,13 +291,13 @@ public class ImageController : HydraController
     { 
         const string errorTitle = "POST of Asset bytes failed";
         var assetId = new AssetId(customerId, spaceId, imageId);
-        if (hydraAsset.File == null || hydraAsset.File.Length == 0)
+        if (hydraAsset.File!.Length == 0)
         {
             return this.HydraProblem("No file bytes in request body", assetId.ToString(),
                 (int?)HttpStatusCode.BadRequest, errorTitle);
         }
         
-        var saveRequest = new HostAssetAtOrigin(assetId, hydraAsset.File, hydraAsset.MediaType!);
+        var saveRequest = new HostAssetAtOrigin(assetId, hydraAsset.File!, hydraAsset.MediaType!);
 
         var result = await Mediator.Send(saveRequest, cancellationToken);
         if (string.IsNullOrEmpty(result.Origin))
