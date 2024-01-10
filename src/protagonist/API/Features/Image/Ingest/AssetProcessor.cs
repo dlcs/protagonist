@@ -27,12 +27,12 @@ public class AssetProcessor
         IApiAssetRepository assetRepository,
         IStorageRepository storageRepository,
         IPolicyRepository policyRepository,
-        IOptions<ApiSettings> apiSettings)
+        IOptionsMonitor<ApiSettings> apiSettings)
     {
         this.assetRepository = assetRepository;
         this.storageRepository = storageRepository;
         this.policyRepository = policyRepository;
-        this.settings = apiSettings.Value;
+        settings = apiSettings.CurrentValue;
     }
 
     /// <summary>
