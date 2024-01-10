@@ -10,6 +10,7 @@ using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using FakeItEasy;
 using Microsoft.Extensions.Options;
+using Test.Helpers.Settings;
 
 namespace API.Tests.Features.Images.Ingest;
 
@@ -26,8 +27,10 @@ public class AssetProcessorTest
         storageRepository = A.Fake<IStorageRepository>();
         policyRepository = A.Fake<IPolicyRepository>();
         assetRepository = A.Fake<IApiAssetRepository>();
+        
+        var optionsMonitor = OptionsHelpers.GetOptionsMonitor(apiSettings);
 
-        sut = new AssetProcessor(assetRepository, storageRepository, policyRepository, Options.Create(apiSettings));
+        sut = new AssetProcessor(assetRepository, storageRepository, policyRepository, optionsMonitor);
     }
     
     [Fact]
