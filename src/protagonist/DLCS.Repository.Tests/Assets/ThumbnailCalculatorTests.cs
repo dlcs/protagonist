@@ -373,7 +373,7 @@ public class ThumbnailCalculatorTests
     }
 
     [Fact]
-    public void GetCandidates_SelectsCorrectShortestEdge_IfConfined_ForLandscapeImage()
+    public void GetCandidates_ReturnsEmptyLongestEdge_IfConfined_ForLandscapeImage_IfSmallDimensionTooSmall()
     {
         // Arrange
         var imageRequest = new ImageRequest
@@ -390,11 +390,12 @@ public class ThumbnailCalculatorTests
         var result = ThumbnailCalculator.GetCandidate(landscapeSizes, imageRequest, false);
         
         //Assert
-        result.LongestEdge.Should().NotBe(800);
+        result.KnownSize.Should().BeFalse();
+        result.LongestEdge.Should().BeNull();
     }
     
     [Fact]
-    public void GetCandidates_SelectsCorrectShortestEdge_IfConfined_ForPortraitImage()
+    public void GetCandidates_ReturnsEmptyLongestEdge_IfConfined_ForPortraitImage_IfSmallDimensionTooSmall()
     {
         // Arrange
         var imageRequest = new ImageRequest
@@ -411,6 +412,7 @@ public class ThumbnailCalculatorTests
         var result = ThumbnailCalculator.GetCandidate(portraitSizes, imageRequest, false);
         
         //Assert
-        result.LongestEdge.Should().NotBe(800);
+        result.KnownSize.Should().BeFalse();
+        result.LongestEdge.Should().BeNull();
     }
 }
