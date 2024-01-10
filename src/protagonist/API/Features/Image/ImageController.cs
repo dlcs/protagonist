@@ -61,7 +61,7 @@ public class ImageController : HydraController
     ///
     /// Image + File assets are ingested synchronously. Timebased assets are ingested asynchronously.
     ///
-    /// "File" property should be base64 encoded image, if included. Only "I" family assets are accepted.
+    /// "File" property should be base64 encoded image, if included.
     /// </summary>
     /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
     /// <returns>The created or updated Hydra Image object for the Asset</returns>
@@ -212,7 +212,7 @@ public class ImageController : HydraController
     }
 
     /// <summary>
-    /// <para>Ingest specified file bytes to DLCS. Only "I" family assets are accepted.
+    /// <para>Ingest specified file bytes to DLCS.
     /// "File" property should be base64 encoded image.</para>
     /// <para>This route is now deprecated. <see cref="PutImage"/> should be used instead.</para>
     /// </summary>
