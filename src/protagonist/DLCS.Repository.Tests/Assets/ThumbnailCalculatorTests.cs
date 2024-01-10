@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DLCS.Model.Assets;
 using DLCS.Repository.Assets;
 using FluentAssertions;
@@ -12,7 +13,8 @@ public class ThumbnailCalculatorTests
 {
     private readonly List<Size> landscapeSizes;
     private readonly List<Size> portraitSizes;
-
+    private readonly List<Size> squareSizes;
+    
     public ThumbnailCalculatorTests()
     {
         portraitSizes = new List<Size>
@@ -28,12 +30,18 @@ public class ThumbnailCalculatorTests
             new(400, 200),
             new(200, 100),
         };
+        
+        squareSizes = new List<Size>()
+        {
+            new Size(200, 200),
+            new Size(500, 500)
+        };
     }
-
+    
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void GetCandidates_ReturnsCorrectLongestEdge_IfSizeAndHeightProvided(bool resize)
+    public void GetCandidates_ReturnsCorrectLongestEdge_IfConfinedAndSizeAndHeightProvided(bool resize)
     {
         // Arrange
         var imageRequest = new ImageRequest
@@ -41,7 +49,8 @@ public class ThumbnailCalculatorTests
             Size = new SizeParameter
             {
                 Width = 110,
-                Height = 200
+                Height = 200,
+                Confined = true
             }
         };
         
@@ -229,5 +238,181 @@ public class ThumbnailCalculatorTests
         result.SmallerSize.Height.Should().Be(195);
         result.SmallerSize.Width.Should().Be(200);
         result.LargerSize.Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetCandidates_ReturnsTrueForKnownSize_IfConfined_ForLandscapeImage()
+    {
+        // Arrange
+        var imageRequest = new ImageRequest
+        {
+            Size = new SizeParameter
+            {
+                Width = 400,
+                Height = 250,
+                Confined = true
+            }
+        };
+        
+        // Act
+        var result = ThumbnailCalculator.GetCandidate(landscapeSizes, imageRequest, false);
+        
+        // Assert
+        result.KnownSize.Should().BeTrue();
+        result.LongestEdge.Should().Be(400);
+    }
+    
+    [Fact]
+    public void GetCandidates_ReturnsTrueForKnownSize_IfConfined_ForPortraitImage()
+    {
+        // Arrange
+        var imageRequest = new ImageRequest
+        {
+            Size = new SizeParameter
+            {
+                Width = 250,
+                Height = 400,
+                Confined = true
+            }
+        };
+        
+        // Act
+        var result = ThumbnailCalculator.GetCandidate(portraitSizes, imageRequest, false);
+        
+        // Assert
+        result.KnownSize.Should().BeTrue();
+        result.LongestEdge.Should().Be(400);
+    }
+     
+    [Fact]
+    public void GetCandidates_ReturnsCorrectIdealSize_ForResizedLandscapeImage()
+    {
+        // Arrange
+        var imageRequest = new ImageRequest
+        {
+            Size = new SizeParameter
+            {
+                Width = 450,
+                Height = 250,
+            }
+        };
+        
+        // Act
+        var result = (ResizableSize)ThumbnailCalculator.GetCandidate(landscapeSizes, imageRequest, true);
+        
+        // Assert
+        result.KnownSize.Should().BeFalse();
+        result.Ideal.Width.Should().Be(450);
+        result.Ideal.Height.Should().Be(250);
+    }
+
+    [Fact]
+    public void GetCandidates_ReturnsCorrectIdealSize_ForResizedPortraitImage()
+    {
+        // Arrange
+        var imageRequest = new ImageRequest
+        {
+            Size = new SizeParameter
+            {
+                Width = 250,
+                Height = 450,
+            }
+        };
+        
+        // Act
+        var result = (ResizableSize)ThumbnailCalculator.GetCandidate(portraitSizes, imageRequest, true);
+        
+        // Assert
+        result.KnownSize.Should().BeFalse();
+        result.Ideal.Width.Should().Be(250);
+        result.Ideal.Height.Should().Be(450);
+    }
+    
+    [Fact]
+    public void GetCandidates_ReturnsCorrectIdealSize_IfLargerThanAvailableSizes()
+    {
+        // Arrange
+        var imageRequest = new ImageRequest
+        {
+            Size = new SizeParameter
+            {
+                Width = 802,
+                Height = 401,
+                Confined = true,
+            }
+        };
+        
+        // Act
+        var result = (ResizableSize)ThumbnailCalculator.GetCandidate(landscapeSizes, imageRequest, true);
+        
+        // Assert
+        result.KnownSize.Should().BeFalse();
+        result.Ideal.Width.Should().Be(802);
+        result.Ideal.Height.Should().Be(401);
+    }
+
+    [Fact]
+    public void GetCandidates_ReturnsCorrectLongestEdge_IfSquare()
+    {
+        // Arrange
+        var imageRequest = new ImageRequest
+        {
+            Size = new SizeParameter
+            {
+                Width = 200,
+                Height = 500,
+                Confined = true,
+            }
+        };
+        
+        // Act
+        var result = (ResizableSize)ThumbnailCalculator.GetCandidate(squareSizes, imageRequest, true);
+        
+        // Assert
+        result.LongestEdge.Should().Be(200);
+    }
+
+    [Fact]
+    public void GetCandidates_ReturnsEmptyLongestEdge_IfConfined_ForLandscapeImage_IfSmallDimensionTooSmall()
+    {
+        // Arrange
+        var imageRequest = new ImageRequest
+        {
+            Size = new SizeParameter
+            {
+                Width = 800,
+                Height = 350,
+                Confined = true,
+            }
+        };
+        
+        //Act
+        var result = ThumbnailCalculator.GetCandidate(landscapeSizes, imageRequest, false);
+        
+        //Assert
+        result.KnownSize.Should().BeFalse();
+        result.LongestEdge.Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetCandidates_ReturnsEmptyLongestEdge_IfConfined_ForPortraitImage_IfSmallDimensionTooSmall()
+    {
+        // Arrange
+        var imageRequest = new ImageRequest
+        {
+            Size = new SizeParameter
+            {
+                Width = 350,
+                Height = 800,
+                Confined = true,
+            }
+        };
+        
+        //Act
+        var result = ThumbnailCalculator.GetCandidate(portraitSizes, imageRequest, false);
+        
+        //Assert
+        result.KnownSize.Should().BeFalse();
+        result.LongestEdge.Should().BeNull();
     }
 }
