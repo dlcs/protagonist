@@ -83,7 +83,17 @@ public class AppetiserClientTests
     public async Task ProcessImage_False_IfImageProcessorCallFails()
     {
         // Arrange
-        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        var imageProcessorResponse = new AppetiserResponseErrorModel()
+        {
+            Message = "error",
+            Status = "some status"
+        };
+
+        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
+            HttpStatusCode.InternalServerError);
+        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        
+        httpHandler.SetResponse(response);
         var context = GetIngestionContext();
 
         // Act
@@ -93,6 +103,7 @@ public class AppetiserClientTests
         httpHandler.CallsMade.Should().ContainSingle(s => s == "http://image-processor/convert");
         result.Should().BeFalse();
         context.Asset.Should().NotBeNull();
+        context.Asset.Error.Should().Be("Appetiser Error: error");
     }
 
     [Theory]
