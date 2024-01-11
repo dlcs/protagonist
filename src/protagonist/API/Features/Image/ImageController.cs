@@ -241,7 +241,7 @@ public class ImageController : HydraController
             customerId, spaceId, imageId);
         
 
-        return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset, cancellationToken);
+        return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, cancellationToken);
     }
 
     /// <summary>
