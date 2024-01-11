@@ -266,10 +266,9 @@ public class AppetiserClient : IImageProcessor
         SetAssetLocation(targetStorageLocation);
     }
 
-    private async Task CreateNewThumbs(IngestionContext context, AppetiserResponseModel responseModel, 
-        AssetId modifiedAssetId)
+    private async Task CreateNewThumbs(IngestionContext context, AppetiserResponseModel responseModel, AssetId modifiedAssetId)
     {
-        SetThumbsOnDiskLocation(context, responseModel, modifiedAssetId);
+        SetThumbsOnDiskLocation(responseModel, modifiedAssetId);
 
         await thumbCreator.CreateNewThumbs(context.Asset, responseModel.Thumbs.ToList());
 
@@ -277,8 +276,7 @@ public class AppetiserClient : IImageProcessor
         context.WithStorage(thumbnailSize: thumbSize);
     }
 
-    private void SetThumbsOnDiskLocation(IngestionContext context, AppetiserResponseModel responseModel, 
-        AssetId modifiedAssetId)
+    private void SetThumbsOnDiskLocation(AppetiserResponseModel responseModel, AssetId modifiedAssetId)
     {
         // Update the location of all thumbs to be full path on disk, relative to orchestrator
         var partialTemplate = TemplatedFolders.GenerateFolderTemplate(engineSettings.ImageIngest.ThumbsTemplate,
