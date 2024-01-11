@@ -1,5 +1,6 @@
 ﻿using API.Features.Assets;
 using API.Infrastructure.Requests;
+using API.Settings;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Settings;
@@ -20,18 +21,18 @@ public class AssetProcessor
     private readonly IPolicyRepository policyRepository;
     private readonly IApiAssetRepository assetRepository;
     private readonly IStorageRepository storageRepository;
-    private readonly DlcsSettings settings;
+    private readonly ApiSettings settings;
     
     public AssetProcessor(
         IApiAssetRepository assetRepository,
         IStorageRepository storageRepository,
         IPolicyRepository policyRepository,
-        IOptions<DlcsSettings> dlcsSettings)
+        IOptionsMonitor<ApiSettings> apiSettings)
     {
         this.assetRepository = assetRepository;
         this.storageRepository = storageRepository;
         this.policyRepository = policyRepository;
-        this.settings = dlcsSettings.Value;
+        settings = apiSettings.CurrentValue;
     }
 
     /// <summary>
@@ -94,7 +95,7 @@ public class AssetProcessor
             }
 
             var assetPreparationResult =
-                AssetPreparer.PrepareAssetForUpsert(existingAsset, asset, false, isBatchUpdate);
+                AssetPreparer.PrepareAssetForUpsert(existingAsset, asset, false, isBatchUpdate, settings.RestrictedAssetIdCharacters);
 
             if (!assetPreparationResult.Success)
             {
@@ -110,7 +111,7 @@ public class AssetProcessor
 
             if (existingAsset == null)
             {
-                var preset = settings.IngestDefaults.GetPresets((char)updatedAsset.Family!,
+                var preset = settings.DLCS.IngestDefaults.GetPresets((char)updatedAsset.Family!,
                     updatedAsset.MediaType ?? string.Empty);
                 var deliveryChannelChanged = SetDeliveryChannel(updatedAsset, preset);
                 if (deliveryChannelChanged)

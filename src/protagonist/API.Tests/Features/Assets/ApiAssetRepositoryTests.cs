@@ -28,6 +28,7 @@ public class ApiAssetRepositoryTests
     private readonly DlcsContext contextForTests;
     private readonly DlcsContext dbContext;
     private readonly ApiAssetRepository sut;
+    private readonly char[] restrictedCharacters = Array.Empty<char>();
 
     public ApiAssetRepositoryTests(DlcsDatabaseFixture dbFixture)
     {
@@ -71,7 +72,7 @@ public class ApiAssetRepositoryTests
             DeliveryChannels = Array.Empty<string>()
         };
     
-        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false, restrictedCharacters);
         result.Success.Should().BeTrue();
 
         await sut.Save(newAsset, false, CancellationToken.None);
@@ -92,7 +93,7 @@ public class ApiAssetRepositoryTests
             DeliveryChannels = Array.Empty<string>()
         };
     
-        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false, restrictedCharacters);
         result.Success.Should().BeTrue();
 
         // Act
@@ -127,7 +128,7 @@ public class ApiAssetRepositoryTests
             new EntityCounter { Customer = 10120, Scope = "99", Next = 10, Type = "space-images" });
         await contextForTests.SaveChangesAsync();
     
-        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false, restrictedCharacters);
         result.Success.Should().BeTrue();
 
         // Act
@@ -155,7 +156,7 @@ public class ApiAssetRepositoryTests
             Reference1 = "I am new", Origin = "https://example.org/image1.tiff", DeliveryChannels = Array.Empty<string>()
         };
     
-        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false, restrictedCharacters);
         result.Success.Should().BeTrue();
 
         await sut.Save(result.UpdatedAsset!, false, CancellationToken.None);
@@ -185,7 +186,7 @@ public class ApiAssetRepositoryTests
             Space = 1
         };
         
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, patch, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, patch, false, false, restrictedCharacters);
         result.Success.Should().BeTrue();
     
         // Act
@@ -195,7 +196,7 @@ public class ApiAssetRepositoryTests
         dbAsset.Entity.Reference1.Should().Be("I am changed");
         dbAsset.Entity.Reference2.Should().Be("I am original 2");
     }
-    
+
     [Fact]
     public async Task AssetRepository_Saves_Existing_Asset_DoesNotIncrementCounters()
     {
@@ -220,7 +221,7 @@ public class ApiAssetRepositoryTests
             Space = 1
         };
         
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, patch, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, patch, false, false, restrictedCharacters);
         result.Success.Should().BeTrue();
     
         // Act
@@ -256,7 +257,7 @@ public class ApiAssetRepositoryTests
             Space = 1
         };
         
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, patch, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, patch, false, false, restrictedCharacters);
         result.Success.Should().BeTrue();
     
         // Act
@@ -265,6 +266,51 @@ public class ApiAssetRepositoryTests
         await contextForTests.Entry(dbAsset.Entity).ReloadAsync();
         dbAsset.Entity.Reference1.Should().Be("I am changed");
         dbAsset.Entity.Reference2.Should().Be("I am original 2");
+    }
+    
+    [Fact]
+    public async Task AssetRepository_SavesExistingAsset_WithRestrictedCharters()
+    {
+        // Arrange
+        var assetId = AssetId.FromString($"100/10/id with restricted characters");
+        var dbAsset =
+            await contextForTests.Images.AddTestAsset(assetId, ref1: "I am original 1",
+                ref2: "I am original 2");
+        await contextForTests.SaveChangesAsync();
+
+        var existingAsset = await dbContext.Images.FirstAsync(a => a.Id == assetId);
+        var patch = new Asset
+        {
+            Id = assetId,
+            Reference1 = "I am changed",
+            Customer = 99,
+            Space = 1
+        };
+        
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, patch, false, false, new []{' '});
+        result.Success.Should().BeTrue();
+    
+        // Act
+        await sut.Save(existingAsset, true, CancellationToken.None);
+
+        await contextForTests.Entry(dbAsset.Entity).ReloadAsync();
+        dbAsset.Entity.Reference1.Should().Be("I am changed");
+        dbAsset.Entity.Reference2.Should().Be("I am original 2");
+    }
+    
+    [Fact]
+    public async Task AssetRepository_FailsToSaveAsset_WhichHasRestrictedCharacters()
+    {
+        var assetId = AssetId.FromString("100/10/id with restricted characters 2");
+        var newAsset = new Asset(assetId)
+        {
+            Reference1 = "I am new", Origin = "https://example.org/image1.tiff",
+            DeliveryChannels = Array.Empty<string>()
+        };
+    
+        var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false, new []{' '});
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().Be("Asset id contains at least one of the following restricted characters. Valid values are:  ");
     }
 
     [Fact]

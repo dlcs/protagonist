@@ -7,9 +7,11 @@ using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Repository.Strategy.Utils;
 using Engine.Ingest;
 using Engine.Ingest.Persistence;
+using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers;
+using Test.Helpers.Settings;
 
 namespace Engine.Tests.Ingest.Persistence;
 
@@ -28,10 +30,25 @@ public class AssetToDiskTests
         // For unit-test only s3ambient will be mocked
         customerOriginStrategy = A.Fake<IOriginStrategy>();
         OriginStrategyResolver resolver = _ => customerOriginStrategy;
+
+        var engineSettings = new EngineSettings()
+        {
+            ImageIngest = new ImageIngestSettings()
+            {
+                OpenBracketReplacement = "_",
+                CloseBracketReplacement = "_"
+            }
+        };
+        var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
+        
         
         var originFetched = new OriginFetcher(null, resolver);
 
-        sut = new AssetToDisk(originFetched, customerStorageRepository, fileSaver, new NullLogger<AssetToDisk>());
+        sut = new AssetToDisk(originFetched, 
+            customerStorageRepository, 
+            fileSaver,   
+            optionsMonitor, 
+            new NullLogger<AssetToDisk>());
     }
 
     [Theory]

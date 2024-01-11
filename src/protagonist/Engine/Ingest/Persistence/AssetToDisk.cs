@@ -7,6 +7,8 @@ using DLCS.Model.Customers;
 using DLCS.Model.Storage;
 using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.Utils;
+using Engine.Settings;
+using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest.Persistence;
 
@@ -33,17 +35,20 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
 {
     private readonly OriginFetcher originFetcher;
     private readonly IFileSaver fileSaver;
+    private readonly EngineSettings engineSettings;
     private readonly ILogger<AssetToDisk> logger;
 
     public AssetToDisk(
         OriginFetcher originFetcher,
         IStorageRepository storageRepository,
         IFileSaver fileSaver,
+        IOptionsMonitor<EngineSettings> engineOptions,
         ILogger<AssetToDisk> logger) : base(storageRepository)
     {
         this.originFetcher = originFetcher;
         this.fileSaver = fileSaver;
         this.logger = logger;
+        this.engineSettings = engineOptions.CurrentValue;
     }
     
     /// <summary>
@@ -90,8 +95,12 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
     {
         TrySetContentTypeForBinary(originResponse, asset);
         var extension = GetFileExtension(originResponse);
-        
-        var targetPath = $"{Path.Join(destinationTemplate, asset.Id.Asset)}.{extension}";
+
+        var path = Path.Join(destinationTemplate,
+            asset.Id.Asset.Replace("(", engineSettings.ImageIngest.OpenBracketReplacement)
+                .Replace(")", engineSettings.ImageIngest.CloseBracketReplacement));
+
+        var targetPath = $"{path}.{extension}";
 
         var received = await fileSaver.SaveResponseToDisk(asset.Id, originResponse, targetPath,
             cancellationToken);

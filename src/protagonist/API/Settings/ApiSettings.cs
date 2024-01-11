@@ -6,6 +6,9 @@ namespace API.Settings;
 
 public class ApiSettings
 {
+    private char[] restrictedAssetIdCharacters = Array.Empty<char>();
+    private string restrictedAssetIdCharacterString = "";
+    
     /// <summary>
     /// The base URI of DLCS to hand-off requests to.
     /// </summary>
@@ -83,4 +86,22 @@ public class ApiSettings
     /// Whether the delivery channel feature is enabled
     /// </summary>
     public bool DeliveryChannelsEnabled { get; set; }
+
+    /// <summary>
+    /// Characters that are not allowed in an asset id
+    /// </summary>
+    public char[] RestrictedAssetIdCharacters => restrictedAssetIdCharacters;
+
+    /// <summary>
+    /// A string of characters not allowed in an asset id
+    /// </summary>
+    public string RestrictedAssetIdCharacterString
+    {
+        get => restrictedAssetIdCharacterString;
+        set
+        {
+            restrictedAssetIdCharacterString = value;
+            restrictedAssetIdCharacters = restrictedAssetIdCharacterString.ToCharArray();
+        }
+    }
 }

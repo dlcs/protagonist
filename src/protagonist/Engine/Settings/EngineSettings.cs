@@ -95,6 +95,17 @@ public class ImageIngestSettings
     public bool OrchestrateImageAfterIngest { get; set; }
 
     /// <summary>
+    /// The character to use when replacing an open bracket character
+    /// </summary>
+    public string OpenBracketReplacement { get; set; } = "_";
+    
+    /// <summary>
+    /// The character to use when replacing a closing bracket character
+    /// </summary>
+    public string CloseBracketReplacement { get; set; } = "_";
+    
+
+    /// <summary>
     /// Get the root folder, if forImageProcessor will ensure that it is compatible with needs of image-processor
     /// sidecar.
     /// </summary>

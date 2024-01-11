@@ -76,7 +76,8 @@ public static class AssetPreparer
         Asset? existingAsset,
         Asset updateAsset,
         bool allowNonApiUpdates,
-        bool isBatchUpdate)
+        bool isBatchUpdate,
+        char[]? disallowedCharacters)
     {
         bool requiresReingest = existingAsset == null;
         
@@ -87,7 +88,7 @@ public static class AssetPreparer
         }
 
         // Validate there are no issues
-        var prepareAssetForUpsert = ValidateRequests(existingAsset, updateAsset, allowNonApiUpdates, isBatchUpdate);
+        var prepareAssetForUpsert = ValidateRequests(existingAsset, updateAsset, allowNonApiUpdates, isBatchUpdate, disallowedCharacters);
         if (prepareAssetForUpsert != null) return prepareAssetForUpsert;
 
         bool reCalculateFamily = false;
@@ -151,8 +152,16 @@ public static class AssetPreparer
     }
 
     private static AssetPreparationResult? ValidateRequests(Asset? existingAsset, Asset updateAsset,
-        bool allowNonApiUpdates, bool isBatchUpdate)
+        bool allowNonApiUpdates, bool isBatchUpdate, char[]? disallowedCharacters)
     {
+        if (existingAsset == null)
+        {
+            if (updateAsset.Id.Asset.IndexOfAny(disallowedCharacters) != -1)
+            {
+                return AssetPreparationResult.Failure($"Asset id contains at least one of the following restricted characters. Valid values are: {new string(disallowedCharacters)}");
+            }
+        }
+        
         if (existingAsset is { NotForDelivery: true })
         {
             // We can relax this later but for now, you cannot use the API

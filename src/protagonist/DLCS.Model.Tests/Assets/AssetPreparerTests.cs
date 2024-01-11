@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using FluentAssertions;
 using Xunit;
@@ -8,6 +9,8 @@ namespace DLCS.Model.Tests.Assets;
 
 public class AssetPreparerTests
 {
+    private readonly char[] restrictedCharacters = Array.Empty<char>();
+    
     [Fact]
     public void PrepareAssetForUpsert_NotSuccessful_IfExistingAssetIsNotForDelivery()
     {
@@ -15,7 +18,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { NotForDelivery = true };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, new Asset(), false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, new Asset(), false, false, restrictedCharacters);
         
         // Assert
         result.Success.Should().BeFalse();
@@ -25,10 +28,10 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_NotSuccessful_IfChangeFinished_AndAllowNonApiUpdatesFalse()
     {
         // Arrange
-        var updateAsset = new Asset { Finished = DateTime.Now };
+        var updateAsset = new Asset { Finished = DateTime.Now, Id = new AssetId(1, 1, "100")  };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
         
         // Assert
         result.Success.Should().BeFalse();
@@ -38,10 +41,10 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_NotSuccessful_IfChangeError_AndAllowNonApiUpdatesFalse()
     {
         // Arrange
-        var updateAsset = new Asset { Error = "change" };
+        var updateAsset = new Asset { Error = "change", Id = new AssetId(1, 1, "100") };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
         
         // Assert
         result.Success.Should().BeFalse();
@@ -60,7 +63,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { MediaType = mediaType, DeliveryChannels = dc.Split(","), Duration = 99 };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
         
         // Assert
         result.Success.Should().BeFalse();
@@ -77,7 +80,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { MediaType = mediaType, DeliveryChannels = new[] { "file" }, Duration = 99 };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
         
         // Assert
         result.Success.Should().BeTrue();
@@ -99,7 +102,7 @@ public class AssetPreparerTests
         };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
         
         // Assert
         result.Success.Should().BeFalse();
@@ -117,7 +120,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { DeliveryChannels = dc.Split(","), MediaType = mediaType, Width = 99 };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
         
         // Assert
         result.Success.Should().BeTrue();
@@ -139,7 +142,7 @@ public class AssetPreparerTests
         };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
         
         // Assert
         result.Success.Should().BeFalse();
@@ -157,7 +160,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { DeliveryChannels = dc.Split(","), MediaType = mediaType, Height = 99 };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
         
         // Assert
         result.Success.Should().BeTrue();
@@ -167,10 +170,10 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_RequiresReingestTrue_IfExistingAssetNull()
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "https://whatever" };
+        var updateAsset = new Asset { Origin = "https://whatever", Id = new AssetId(1, 1, "100")  };
 
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
 
         // Assert
         result.RequiresReingest.Should().BeTrue();
@@ -182,10 +185,10 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_NotSuccessful_IfRequiresReingest_ButNoOrigin(string origin)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = origin };
+        var updateAsset = new Asset { Origin = origin, Id = new AssetId(1, 1, "100")  };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
         
         // Assert
         result.Success.Should().BeFalse();
@@ -202,7 +205,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { Origin = "foo", Batch = 24 };
 
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, isBatchUpdate);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, isBatchUpdate, restrictedCharacters);
         
         // Assert
         result.Success.Should().Be(expectedSuccess);
@@ -216,7 +219,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { Origin = "https://wherever" };
         
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
         
         // Assert
         result.RequiresReingest.Should().BeTrue();
@@ -230,7 +233,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { Origin = "https://whatever", ThumbnailPolicy = "none" };
 
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
 
         // Assert
         result.RequiresReingest.Should().BeTrue();
@@ -246,7 +249,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { Origin = "https://whatever", DeliveryChannels = existing };
 
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
 
         // Assert
         result.RequiresReingest.Should().BeTrue(reason);
@@ -261,10 +264,10 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_SetsAssetFamilyIfNotSet(string dc, AssetFamily expected)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "required", DeliveryChannels = dc.Split(",") };
+        var updateAsset = new Asset { Origin = "required", DeliveryChannels = dc.Split(","), Id = new AssetId(1, 1, "100")  };
 
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
 
         // Assert
         result.UpdatedAsset.Family.Should().Be(expected);
@@ -278,10 +281,10 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_SetsAssetFamily_FromMediaType_IfFamilyAndDeliveryChannelNotSet(string mediaType, AssetFamily expected)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "required", MediaType = mediaType };
+        var updateAsset = new Asset { Origin = "required", MediaType = mediaType, Id = new AssetId(1, 1, "100")  };
 
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
 
         // Assert
         result.UpdatedAsset.Family.Should().Be(expected);
@@ -296,10 +299,15 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_ChangesAssetFamilyIfSet_New(string dc, AssetFamily current, AssetFamily expected)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "required", DeliveryChannels = dc.Split(","), Family = current};
+        var updateAsset = new Asset { 
+            Origin = "required", 
+            DeliveryChannels = dc.Split(","), 
+            Family = current, 
+            Id = new AssetId(1, 1, "100")
+        };
 
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
 
         // Assert
         result.UpdatedAsset.Family.Should().Be(expected);
@@ -319,7 +327,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { Family = current, DeliveryChannels = new[] { "fake" } };
 
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
 
         // Assert
         result.UpdatedAsset.Family.Should().Be(expected);
@@ -335,7 +343,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { Origin = "https://whatever", DeliveryChannels = existing };
 
         // Act
-        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false);
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
 
         // Assert
         result.RequiresReingest.Should().BeFalse();

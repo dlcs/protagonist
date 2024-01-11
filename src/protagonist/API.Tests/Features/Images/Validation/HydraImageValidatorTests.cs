@@ -13,7 +13,7 @@ public class HydraImageValidatorTests
 
     public HydraImageValidatorTests()
     {
-        var apiSettings = new ApiSettings() { DeliveryChannelsEnabled = true};
+        var apiSettings = new ApiSettings() { DeliveryChannelsEnabled = true, RestrictedAssetIdCharacterString = "\\ "};
         sut = new HydraImageValidator(Options.Create(apiSettings));
     }
 
