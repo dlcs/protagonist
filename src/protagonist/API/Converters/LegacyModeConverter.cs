@@ -17,7 +17,8 @@ public static class LegacyModeConverter
     /// </summary>
     /// <param name="image">The image to convert</param>
     /// <returns>A converted image</returns>
-    public static Image VerifyAndConvertToModernFormat(Image image)
+    public static T VerifyAndConvertToModernFormat<T>(T image)
+        where T : Image
     {
         if (image.MediaType.IsNullOrEmpty())
         {

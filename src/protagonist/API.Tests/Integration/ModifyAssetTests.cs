@@ -320,6 +320,40 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
     }
     
+    [Fact]
+    public async Task Put_NewImageAsset_Creates_Asset_WithImageBytesProvided()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_Creates_Asset_WithImageBytesProvided));
+        var hydraBody = await File.ReadAllTextAsync("Direct_Bytes_Upload.json");
+        var hydraJson = JsonConvert.DeserializeObject<ImageWithFile>(hydraBody);
+        
+        A.CallTo(() =>
+            EngineClient.SynchronousIngest(
+                A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                A<CancellationToken>._))
+        .Returns(HttpStatusCode.OK);
+        
+        // Act
+        var content = new StringContent(hydraBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PostAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        
+        // The asset was created and has the correct media type
+        var asset = await dbContext.Images.FindAsync(assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MediaType.Should().Be(hydraJson.MediaType);
+        
+        // The image was saved to S3 with correct header
+        var item = await amazonS3.GetObjectAsync(LocalStackFixture.OriginBucketName, assetId.ToString());
+        item.Headers.ContentType.Should().Be(hydraJson.MediaType, "Media type set on stored asset");
+        var storedBytes = StreamToBytes(item.ResponseStream);
+        storedBytes.Should().BeEquivalentTo(hydraJson.File, "Correct file bytes stored");
+    }
+    
     [Fact(Skip = "Is this an expected behaviour?")]
     public async Task Put_SetsError_IfEngineRequestFails()
     {

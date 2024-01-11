@@ -12,6 +12,7 @@ using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Image;
@@ -24,11 +25,14 @@ namespace API.Features.Image;
 public class ImageController : HydraController
 {
     private readonly ApiSettings apiSettings;
+    private readonly ILogger<ImagesController> logger;
     
     public ImageController(
         IMediator mediator,
-        IOptions<ApiSettings> options) : base(options.Value, mediator)
+        IOptions<ApiSettings> options, 
+        ILogger<ImagesController> logger) : base(options.Value, mediator)
     {
+        this.logger = logger;
         apiSettings = options.Value;
     }
 
@@ -56,11 +60,13 @@ public class ImageController : HydraController
     /// PUT requests always trigger reingesting of asset - in general batch processing should be preferred.
     ///
     /// Image + File assets are ingested synchronously. Timebased assets are ingested asynchronously.
+    ///
+    /// "File" property should be base64 encoded image, if included.
     /// </summary>
     /// <param name="hydraAsset">The body of the request contains the Asset in Hydra JSON-LD form (Image class)</param>
     /// <returns>The created or updated Hydra Image object for the Asset</returns>
     /// <remarks>
-    /// Sample request:
+    /// Sample requests:
     ///
     ///     PUT: /customers/1/spaces/1/images/my-image
     ///     {
@@ -69,6 +75,13 @@ public class ImageController : HydraController
     ///         "origin": "https://example.text/.../image.jpeg",
     ///         "mediaType": "image/jpeg",
     ///         "string1": "my-metadata"
+    ///     }
+    ///
+    ///     PUT: /customers/1/spaces/1/images/my-image
+    ///     {
+    ///         "@type":"Image",
+    ///         "family": "I",
+    ///         "file": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAM...."
     ///     }
     /// </remarks>
     [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))]
@@ -79,12 +92,13 @@ public class ImageController : HydraController
     [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(ProblemDetails))]
     [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(ProblemDetails))]
     [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(ProblemDetails))]
+    [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000, ValueLengthLimit = 100_000_000)]
     [HttpPut]
     public async Task<IActionResult> PutImage(
         [FromRoute] int customerId,
         [FromRoute] int spaceId,
         [FromRoute] string imageId,
-        [FromBody] DLCS.HydraModel.Image hydraAsset,
+        [FromBody] ImageWithFile hydraAsset,
         [FromServices] HydraImageValidator validator,
         CancellationToken cancellationToken)
     {
@@ -98,7 +112,11 @@ public class ImageController : HydraController
         {
             return this.ValidationFailed(validationResult);
         }
-         
+
+        if (!hydraAsset.File.IsNullOrEmpty())
+        {
+            return await PutOrPatchAssetWithFileBytes(customerId, spaceId, imageId, hydraAsset, cancellationToken);
+        }
         
         return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset, cancellationToken);
     }
@@ -194,8 +212,9 @@ public class ImageController : HydraController
     }
 
     /// <summary>
-    /// Ingest specified file bytes to DLCS. Only "I" family assets are accepted.
-    /// "File" property should be base64 encoded image. 
+    /// <para>Ingest specified file bytes to DLCS.
+    /// "File" property should be base64 encoded image.</para>
+    /// <para>This route is now deprecated. <see cref="PutImage"/> should be used instead.</para>
     /// </summary>
     /// <remarks>
     /// Sample request:
@@ -219,32 +238,11 @@ public class ImageController : HydraController
         [FromServices] HydraImageValidator validator,
         CancellationToken cancellationToken)
     {
-        var validationResult = await validator.ValidateAsync(hydraAsset, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            return this.ValidationFailed(validationResult);
-        }
+        logger.LogWarning(
+            "Warning: POST /customers/{CustomerId}/spaces/{SpaceId}/images/{ImageId} was called. This route is deprecated.",
+            customerId, spaceId, imageId);
         
-        const string errorTitle = "POST of Asset bytes failed";
-        var assetId = new AssetId(customerId, spaceId, imageId);
-        if (hydraAsset.File == null || hydraAsset.File.Length == 0)
-        {
-            return this.HydraProblem("No file bytes in request body", assetId.ToString(),
-                (int?)HttpStatusCode.BadRequest, errorTitle);
-        }
-
-        var saveRequest = new HostAssetAtOrigin(assetId, hydraAsset.File, hydraAsset.MediaType!);
-
-        var result = await Mediator.Send(saveRequest, cancellationToken);
-        if (string.IsNullOrEmpty(result.Origin))
-        {
-            return this.HydraProblem("Could not save uploaded file", assetId.ToString(), 500, errorTitle);
-        }
-
-        hydraAsset.Origin = result.Origin;
-        hydraAsset.File = null;
-
-        return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset, cancellationToken);
+        return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, cancellationToken);
     }
 
     /// <summary>
@@ -286,5 +284,30 @@ public class ImageController : HydraController
             asset => asset.ToHydra(GetUrlRoots()),
             assetId.ToString(),
             "Upsert asset failed", cancellationToken);
+    }
+    
+    private async Task<IActionResult> PutOrPatchAssetWithFileBytes(int customerId, int spaceId, string imageId,
+        ImageWithFile hydraAsset, CancellationToken cancellationToken)
+    { 
+        const string errorTitle = "POST of Asset bytes failed";
+        var assetId = new AssetId(customerId, spaceId, imageId);
+        if (hydraAsset.File!.Length == 0)
+        {
+            return this.HydraProblem("No file bytes in request body", assetId.ToString(),
+                (int?)HttpStatusCode.BadRequest, errorTitle);
+        }
+        
+        var saveRequest = new HostAssetAtOrigin(assetId, hydraAsset.File!, hydraAsset.MediaType!);
+
+        var result = await Mediator.Send(saveRequest, cancellationToken);
+        if (string.IsNullOrEmpty(result.Origin))
+        {
+            return this.HydraProblem("Could not save uploaded file", assetId.ToString(), 500, errorTitle);
+        }
+
+        hydraAsset.Origin = result.Origin;
+        hydraAsset.File = null;
+
+        return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset, cancellationToken);
     }
 }
