@@ -36,7 +36,8 @@ public class IIIFCanvasFactory
     private readonly IPolicyRepository policyRepository;
     private readonly OrchestratorSettings orchestratorSettings;
     private readonly Dictionary<string, ThumbnailPolicy> thumbnailPolicies = new();
-
+    private const string MetadataLanguage = "none";
+    
     public IIIFCanvasFactory(
         IAssetPathGenerator assetPathGenerator,
         IOptions<OrchestratorSettings> orchestratorSettings,
@@ -67,6 +68,11 @@ public class IIIFCanvasFactory
                 Label = new LanguageMap("en", $"Canvas {counter}"),
                 Width = i.Width,
                 Height = i.Height,
+                Metadata = GetImageMetadata(i)
+                    .Select(m => 
+                        new LabelValuePair(new LanguageMap(MetadataLanguage, m.Key), 
+                            new LanguageMap(MetadataLanguage, m.Value)))
+                    .ToList(),
                 Items = new AnnotationPage
                 {
                     Id = $"{canvasId}/page",
@@ -124,6 +130,13 @@ public class IIIFCanvasFactory
                 Label = new MetaDataValue($"Canvas {counter}"),
                 Width = i.Width,
                 Height = i.Height,
+                Metadata = GetImageMetadata(i)
+                    .Select(m => new IIIF2.Metadata()
+                    {
+                        Label = new MetaDataValue(m.Key),
+                        Value = new MetaDataValue(m.Value)
+                    })
+                    .ToList(),
                 Images = new ImageAnnotation
                 {
                     Id = string.Concat(fullyQualifiedImageId, "/imageanno/0"),
@@ -135,7 +148,7 @@ public class IIIFCanvasFactory
                         Width = thumbnailSizes.MaxDerivativeSize.Width,
                         Height = thumbnailSizes.MaxDerivativeSize.Height,
                         Service = GetImageServices(i, customerPathElement, null)
-                    }
+                    },
                 }.AsList()
             };
 
@@ -313,7 +326,22 @@ public class IIIFCanvasFactory
             return authServiceToAdd.AsListOf<IService>();
         }
     }
-
+    
+    private Dictionary<string, string> GetImageMetadata(Asset asset)
+    {
+        return new Dictionary<string, string>()
+        {
+            { "String 1", asset.Reference1 ?? string.Empty },
+            { "String 2", asset.Reference2 ?? string.Empty },
+            { "String 3", asset.Reference3 ?? string.Empty },
+            { "Number 1", (asset.NumberReference1 ?? 0).ToString() },
+            { "Number 2", (asset.NumberReference2 ?? 0).ToString() },
+            { "Number 3", (asset.NumberReference3 ?? 0).ToString() },
+            { "Tags", asset.Tags ?? string.Empty },
+            { "Roles", asset.Roles ?? string.Empty }
+        };
+    }
+    
     /// <summary>
     /// Class containing details of available thumbnail sizes
     /// </summary>

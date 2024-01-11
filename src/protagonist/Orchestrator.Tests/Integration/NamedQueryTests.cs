@@ -266,13 +266,16 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Act
         var response = await httpClient.GetAsync(path);
+        var test = response.Content.ReadAsStringAsync();
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var jsonContent = await response.Content.ReadAsStringAsync();
         var jsonResponse = JObject.Parse(jsonContent);
-        jsonContent.Should().NotContain("clickthrough", "auth services are not included in v2 manifests");
+        jsonResponse.SelectTokens("sequences[*].canvases[*].images[*].resource.service")
+            .Select(token => token.ToString())
+            .Should().NotContainMatch("*clickthrough*", "auth services are not included in v2 manifests");
         jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(3);
     }
     

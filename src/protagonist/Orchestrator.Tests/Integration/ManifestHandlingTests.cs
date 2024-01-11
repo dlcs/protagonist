@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -8,6 +9,7 @@ using IIIF.Auth.V2;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
 using IIIF.Presentation.V3.Annotation;
+using IIIF.Presentation.V3.Strings;
 using IIIF.Serialisation;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
@@ -213,7 +215,86 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
     }
+
+    [Fact]
+    public async Task Get_V3ManifestForImage_ReturnsManifest_WithCustomFields()
+    {
+        // Arrange
+        const string defaultLanguage = "none"; 
+        var id = AssetId.FromString($"99/1/{nameof(Get_V3ManifestForImage_ReturnsManifest_WithCustomFields)}");
+        var namedId = $"test/1/{nameof(Get_V3ManifestForImage_ReturnsManifest_WithCustomFields)}";
+        var asset = await dbFixture.DbContext.Images.AddTestAsset(id, 
+            origin: "testorigin",
+            ref1: "string-example-1",
+            ref2: "string-example-2",
+            ref3: "string-example-3",
+            num1: 1,
+            num2: 2,
+            num3: 3);
+        await dbFixture.DbContext.SaveChangesAsync();
         
+        var path = $"iiif-manifest/{namedId}";
+        
+        // Act
+        var response = await httpClient.GetAsync(path);
+      
+        // Assert
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        var metadata = jsonResponse.SelectToken("items[0].metadata")
+            .ToObject<List<LabelValuePair>>()
+            .ToDictionary(
+                lvp => lvp.Label[defaultLanguage][0],
+                lvp => lvp.Value[defaultLanguage][0]);
+        
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        metadata.Should().NotBeNullOrEmpty();
+        metadata.Should().Contain("String 1", asset.Entity.Reference1);
+        metadata.Should().Contain("String 2", asset.Entity.Reference2);
+        metadata.Should().Contain("String 3", asset.Entity.Reference3);
+        metadata.Should().Contain("Number 1", asset.Entity.NumberReference1.ToString());
+        metadata.Should().Contain("Number 2", asset.Entity.NumberReference2.ToString());
+        metadata.Should().Contain("Number 3", asset.Entity.NumberReference3.ToString());
+    }
+    
+    [Fact]
+    public async Task Get_V2ManifestForImage_ReturnsManifest_WithCustomFields()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_V2ManifestForImage_ReturnsManifest_WithCustomFields)}");
+        var namedId = $"test/1/{nameof(Get_V2ManifestForImage_ReturnsManifest_WithCustomFields)}";
+        var asset = await dbFixture.DbContext.Images.AddTestAsset(id, 
+            origin: "testorigin",
+            ref1: "string-example-1",
+            ref2: "string-example-2",
+            ref3: "string-example-3",
+            num1: 1,
+            num2: 2,
+            num3: 3);
+        await dbFixture.DbContext.SaveChangesAsync();
+        
+        var path = $"iiif-manifest/v2/{namedId}";
+        
+        // Act
+        var response = await httpClient.GetAsync(path);
+      
+        // Assert
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        var metadata = jsonResponse.SelectToken("sequences[0].canvases[0].metadata")
+            .ToObject<List<IIIF.Presentation.V2.Metadata>>()
+            .ToDictionary(
+                m => m.Label.LanguageValues[0].Value,
+                m => m.Value.LanguageValues[0].Value);
+        
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        metadata.Should().NotBeNullOrEmpty();
+        metadata.Should().Contain("String 1", asset.Entity.Reference1);
+        metadata.Should().Contain("String 2", asset.Entity.Reference2);
+        metadata.Should().Contain("String 3", asset.Entity.Reference3);
+        metadata.Should().Contain("Number 1", asset.Entity.NumberReference1.ToString());
+        metadata.Should().Contain("Number 2", asset.Entity.NumberReference2.ToString());
+        metadata.Should().Contain("Number 3", asset.Entity.NumberReference3.ToString());
+    }
+    
     [Fact]
     public async Task Get_V2ManifestForRestrictedImage_ReturnsManifest_WithoutAuthServices()
     {
@@ -231,11 +312,14 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         // Assert
         var jsonContent = await response.Content.ReadAsStringAsync();
         var jsonResponse = JObject.Parse(jsonContent);
+        
         jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/v2/{id}");
         jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
             .Should().StartWith($"http://localhost/thumbs/{id}/full");
-
-        jsonContent.Should().NotContain("clickthrough", "auth services are not included in v2 manifests");
+        jsonResponse.SelectTokens("sequences[*].canvases[*].images[*].resource.service")
+            .Select(token => token.ToString())
+            .Should().NotContainMatch("*clickthrough*", "auth services are not included in v2 manifests");
+        
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
