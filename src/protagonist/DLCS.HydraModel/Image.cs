@@ -201,9 +201,10 @@ public class Image : DlcsResource
     public string[]? DeliveryChannels { get; set; }
 
     [RdfProperty(Description = "Delivery channel specifying how the asset will be available.",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = true)]
+    
     [JsonProperty(Order = 141, PropertyName = "wcDeliveryChannels")]
-    public string[]? WcDeliveryChannels => DeliveryChannels;
+    public string[]? WcDeliveryChannels { set => DeliveryChannels = value; }
     
     [RdfProperty(Description = "The role or roles that a user must possess to view this image above maxUnauthorised. " +
                                "These are URIs of roles e.g., https://api.dlcs.io/customers/1/roles/requiresRegistration",
