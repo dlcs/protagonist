@@ -547,7 +547,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("wcDeliveryChannels")]
     public async Task Put_New_Asset_Supports_DeliveryChannels_Aliases(string deliveryChannelAlias)
     {
-        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Supports_DeliveryChannels_Aliases));
+        var assetId = new AssetId(99, 1, $"{nameof(Put_New_Asset_Supports_DeliveryChannels_Aliases)}-{deliveryChannelAlias}");
         var hydraImageBody = $@"{{
           ""@type"": ""Image"",
           ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
