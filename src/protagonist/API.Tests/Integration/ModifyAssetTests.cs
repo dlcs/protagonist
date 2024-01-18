@@ -571,6 +571,34 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Put_New_Asset_Ignores_DeliveryChannels()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Ignores_DeliveryChannels));
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+          ""family"": ""I"",
+          ""mediaType"": ""image/tiff"",
+          ""deliveryChannels"": [""file""]
+        }}";
+
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var asset = await dbContext.Images.FindAsync(assetId);
+        asset.DeliveryChannels.Should().NotBeEquivalentTo("file");
+    }
+    
+    [Fact]
     public async Task Put_New_Asset_Preserves_InitialOrigin()
     {
         var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Preserves_InitialOrigin));
