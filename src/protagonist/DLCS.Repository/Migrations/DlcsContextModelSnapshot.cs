@@ -252,6 +252,29 @@ namespace DLCS.Repository.Migrations
                     b.ToTable("CustomHeaders");
                 });
 
+            modelBuilder.Entity("DLCS.Model.Assets.ImageDeliveryChannel", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ImageId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Policy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ImageDeliveryChannels");
+                });
+
             modelBuilder.Entity("DLCS.Model.Assets.ImageLocation", b =>
                 {
                     b.Property<string>("Id")
@@ -566,6 +589,47 @@ namespace DLCS.Repository.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Policies.DeliveryChannelPolicy", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Customer")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Space")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("DisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MediaType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("PolicyCreated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PolicyData")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("PolicyModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id", "Customer", "Space")
+                        .HasName("DeliveryChannelPolicy_pkey");
+
+                    b.ToTable("DeliveryChannelPolicies");
                 });
 
             modelBuilder.Entity("DLCS.Model.Policies.ImageOptimisationPolicy", b =>

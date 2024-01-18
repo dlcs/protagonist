@@ -74,6 +74,10 @@ public partial class DlcsContext : DbContext
     public virtual DbSet<ThumbnailPolicy> ThumbnailPolicies { get; set; }
     public virtual DbSet<User> Users { get; set; }
     
+    public virtual DbSet<DeliveryChannelPolicy> DeliveryChannelPolicies { get; set; }
+    
+    public virtual DbSet<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
+
     public virtual DbSet<SignupLink> SignupLinks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -629,6 +633,46 @@ public partial class DlcsContext : DbContext
                 TechnicalDetails = new[] { "use-original" }
             }
         );
+        
+        modelBuilder.Entity<DeliveryChannelPolicy>(entity =>
+        {
+            entity.HasKey(e => new { e.Id, e.Customer, e.Space })
+                .HasName("DeliveryChannelPolicy_pkey");
+            
+            entity.Property(e => e.Id).HasMaxLength(500);
+            
+            entity.Property(e => e.PolicyModified).HasColumnType("timestamp with time zone")
+                .IsRequired();
+
+            entity.Property(e => e.PolicyModified).HasColumnType("timestamp with time zone")
+                .IsRequired();
+
+            entity.Property(e => e.MediaType)
+                .IsRequired()
+                .HasMaxLength(100);
+            
+            entity.Property(e => e.Channel)
+                .IsRequired()
+                .HasMaxLength(100);
+            
+            entity.Property(e => e.PolicyData)
+                .HasMaxLength(1000);
+        });
+        
+        modelBuilder.Entity<ImageDeliveryChannel>(entity =>
+        {
+            entity.Property(e => e.Id).HasMaxLength(100);
+            
+            entity.Property(e => e.ImageId)
+                .IsRequired()
+                .HasConversion(
+                    aId => aId.ToString(),
+                    id => AssetId.FromString(id));
+            
+            entity.Property(e => e.Channel)
+                .IsRequired()
+                .HasMaxLength(100);
+        });
         
         OnModelCreatingPartial(modelBuilder);
     }
