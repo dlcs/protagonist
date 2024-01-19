@@ -1,6 +1,8 @@
 ﻿#nullable disable
 
 using System;
+using System.Collections.Generic;
+using DLCS.Model.Assets;
 
 namespace DLCS.Model.Policies;
 
@@ -9,7 +11,12 @@ public class DeliveryChannelPolicy
     /// <summary>
     /// Identifier for the policy, e.g. "thumbs", "file-pdf" or a GUId etc
     /// </summary>
-    public string Id { get; set; }
+    public int Id { get; set; }
+    
+    /// <summary>
+    /// The name of the policy
+    /// </summary>
+    public string Name { get; set; }
     
     /// <summary>
     /// Friendly name for policy
@@ -36,7 +43,6 @@ public class DeliveryChannelPolicy
     /// </summary>
     public string MediaType { get; set; }
     
-    
     /// <summary>
     /// When the policy was created
     /// </summary>
@@ -51,4 +57,9 @@ public class DeliveryChannelPolicy
     /// The custom policy 
     /// </summary>
     public string PolicyData { get; set; }
+    
+    /// <summary>
+    /// List of delivery channels attached to the image
+    /// </summary>
+    public virtual List<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
 }

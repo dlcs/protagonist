@@ -111,6 +111,11 @@ public class Asset
     /// </summary>
     [NotMapped]
     public ThumbnailPolicy? FullThumbnailPolicy { get; private set; }
+    
+    /// <summary>
+    /// A list of image delivery channels attached to this asset
+    /// </summary>
+    public virtual ICollection<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
 
     /// <summary>
     /// Full image optimisation policy object for Asset

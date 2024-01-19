@@ -1,6 +1,7 @@
 ﻿#nullable disable
 
 using DLCS.Core.Types;
+using DLCS.Model.Policies;
 
 namespace DLCS.Model.Assets;
 
@@ -12,17 +13,21 @@ public class ImageDeliveryChannel
     public string Id { get; set; }
     
     /// <summary>
-    /// The asset id this policy is assigned to
+    /// The image id for the attached asset
     /// </summary>
     public AssetId ImageId { get; set; }
     
+    public Asset Asset { get; set; }
+
     /// <summary>
-    /// The channel that the policy applies to i.e.: iiif-img
+    /// The channel this policy applies to
     /// </summary>
     public string Channel { get; set; }
     
+    public DeliveryChannelPolicy DeliveryChannelPolicy { get; set; }
+    
     /// <summary>
-    /// A string denoting an internal default policy, or a link to a custom policy
+    /// The delivery channel policy id for the attached delivery channel policy
     /// </summary>
-    public string Policy { get; set; }
+    public int DeliveryChannelPolicyId { get; set; }
 }

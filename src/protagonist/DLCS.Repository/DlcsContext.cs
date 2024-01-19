@@ -636,10 +636,13 @@ public partial class DlcsContext : DbContext
         
         modelBuilder.Entity<DeliveryChannelPolicy>(entity =>
         {
-            entity.HasKey(e => new { e.Id, e.Customer, e.Space })
-                .HasName("DeliveryChannelPolicy_pkey");
+            entity.HasIndex(e => new { e.Name, e.Customer, e.Space }).IsUnique();
+
+            entity.Property(e => e.Name).IsRequired();
+            entity.Property(e => e.Customer).IsRequired();
+            entity.Property(e => e.Space).IsRequired();
             
-            entity.Property(e => e.Id).HasMaxLength(500);
+            entity.Property(e => e.Name).HasMaxLength(500);
             
             entity.Property(e => e.PolicyModified).HasColumnType("timestamp with time zone")
                 .IsRequired();
@@ -661,19 +664,26 @@ public partial class DlcsContext : DbContext
         
         modelBuilder.Entity<ImageDeliveryChannel>(entity =>
         {
+            entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasMaxLength(100);
+
+            entity.Property(e => e.Channel).IsRequired();
             
             entity.Property(e => e.ImageId)
                 .IsRequired()
                 .HasConversion(
                     aId => aId.ToString(),
                     id => AssetId.FromString(id));
+
+            entity.HasOne(e => e.Asset)
+                .WithMany(e => e.ImageDeliveryChannels)
+                .HasForeignKey(e => e.ImageId);
             
-            entity.Property(e => e.Channel)
-                .IsRequired()
-                .HasMaxLength(100);
+            entity.HasOne(e => e.DeliveryChannelPolicy)
+                .WithMany(e => e.ImageDeliveryChannels)
+                .HasForeignKey(e => e.DeliveryChannelPolicyId);
         });
-        
+
         OnModelCreatingPartial(modelBuilder);
     }
 

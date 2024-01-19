@@ -260,17 +260,20 @@ namespace DLCS.Repository.Migrations
 
                     b.Property<string>("Channel")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
+
+                    b.Property<int>("DeliveryChannelPolicyId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("ImageId")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Policy")
-                        .HasColumnType("text");
+                        .HasColumnType("character varying(500)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeliveryChannelPolicyId");
+
+                    b.HasIndex("ImageId");
 
                     b.ToTable("ImageDeliveryChannels");
                 });
@@ -593,20 +596,19 @@ namespace DLCS.Repository.Migrations
 
             modelBuilder.Entity("DLCS.Model.Policies.DeliveryChannelPolicy", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<int>("Customer")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    b.Property<int>("Space")
-                        .HasColumnType("integer");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Channel")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Customer")
+                        .HasColumnType("integer");
 
                     b.Property<string>("DisplayName")
                         .HasColumnType("text");
@@ -615,6 +617,11 @@ namespace DLCS.Repository.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("PolicyCreated")
                         .HasColumnType("timestamp with time zone");
@@ -626,8 +633,13 @@ namespace DLCS.Repository.Migrations
                     b.Property<DateTime>("PolicyModified")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("Id", "Customer", "Space")
-                        .HasName("DeliveryChannelPolicy_pkey");
+                    b.Property<int>("Space")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name", "Customer", "Space")
+                        .IsUnique();
 
                     b.ToTable("DeliveryChannelPolicies");
                 });
@@ -991,6 +1003,35 @@ namespace DLCS.Repository.Migrations
                     b.HasKey("Name", "Metric");
 
                     b.ToTable("MetricThresholds");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.ImageDeliveryChannel", b =>
+                {
+                    b.HasOne("DLCS.Model.Policies.DeliveryChannelPolicy", "DeliveryChannelPolicy")
+                        .WithMany("ImageDeliveryChannels")
+                        .HasForeignKey("DeliveryChannelPolicyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DLCS.Model.Assets.Asset", "Asset")
+                        .WithMany("ImageDeliveryChannels")
+                        .HasForeignKey("ImageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Asset");
+
+                    b.Navigation("DeliveryChannelPolicy");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.Asset", b =>
+                {
+                    b.Navigation("ImageDeliveryChannels");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Policies.DeliveryChannelPolicy", b =>
+                {
+                    b.Navigation("ImageDeliveryChannels");
                 });
 #pragma warning restore 612, 618
         }
