@@ -48,8 +48,6 @@ Wellcome DDS as a client doesn't see any difference.
 ## Step 3 - Reimplement DDS against `wcDeliveryChannels`
 
  - [Reimplement Wellcome DDS against wcDeliveryChannels Property](https://github.com/dlcs/protagonist/issues/615)
- - [Update Wellcome iiif-builder to store thumb sizes differently in Manifestations table](https://github.com/dlcs/protagonist/issues/633)
- - [Update Wellcome iiif-builder to read image sizes from DLCS](https://github.com/dlcs/protagonist/issues/632)
 
 In Wellcome DDS, replace all C# properties and other usages of `DeliveryChannels` with `WcDeliveryChannels`, and use `.wcDeliveryChannels` on all DLCS API calls.
 
@@ -84,6 +82,8 @@ Wellcome, the only user of `wcDeliveryChannels`, carries on fine, no change in b
 ## Step 7 - Rewrite Wellcome against the new API
 
  - [Rewrite DDS (iiif-builder) delivery channel use against prototype documentation](https://github.com/dlcs/protagonist/issues/617)
+ - [Update Wellcome iiif-builder to store thumb sizes differently in Manifestations table](https://github.com/dlcs/protagonist/issues/633)
+ - [Update Wellcome iiif-builder to read image sizes from DLCS](https://github.com/dlcs/protagonist/issues/632)
 
 This can't yet be tested. New code at Wellcome uses the `deliveryChannels` property on the API as if it were a brand new feature.
 Rewrite DDS against new DLCS DeliveryChannel API in `iiif-builder:develop` branch.
