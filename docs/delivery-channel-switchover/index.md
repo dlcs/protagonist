@@ -106,6 +106,8 @@ These resources and features are all independent of the old behaviour.
  - Make a file policy
  - Set up all the defaults
 
+ (are the above reflected below...) 
+
  - [Modify DB Schema: add tables for delivery channels](https://github.com/dlcs/protagonist/issues/618)
  - [Create a set of defaultDeliveryChannels for customer 0](https://github.com/dlcs/protagonist/issues/619)
  - [API endpoints to manage default delivery channels and delivery channel policies](https://github.com/dlcs/protagonist/issues/634)
