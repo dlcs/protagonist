@@ -111,6 +111,8 @@ The old 2023 delivery channel behaviour is kept, Engine uses it throughout this 
 At the DLCS API level, convert incoming `OldDeliveryChannels`, `ImageOptimisationPolicy` and `ThumbnailPolicy` setter calls (from Wellcome) into equivalent new Delivery Channel resources, and convert the getters. 
 This means we are no longer using the `OldDeliveryChannels` internally; strip all that code out.
 
+What is the relationship of this task to [Convert existing ‘IOP’,‘ThumbnailPolicy’ and ‘DeliveryChannel’ values from Images table into ImageDeliveryChannels table](https://github.com/dlcs/protagonist/issues/620) ?
+
 API, Engine, Orchestrator all use the full **new DeliveryChannels as per docs**, but the API will translate the incoming old property settings from Wellcome into their new equivalents, and emulate the old properties. **Is that actually possible?**
 
 _This can't be just simple getter and setter interception as there are three fields that need to be evaluated together; has to happen on persistence._
