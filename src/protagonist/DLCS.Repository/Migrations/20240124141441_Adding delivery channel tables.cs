@@ -19,12 +19,12 @@ namespace DLCS.Repository.Migrations
                     Name = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     DisplayName = table.Column<string>(type: "text", nullable: true),
                     Customer = table.Column<int>(type: "integer", nullable: false),
-                    Space = table.Column<int>(type: "integer", nullable: false),
                     Channel = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     MediaType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    System = table.Column<bool>(type: "boolean", nullable: false),
                     PolicyCreated = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     PolicyModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    PolicyData = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true)
+                    PolicyData = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -32,10 +32,33 @@ namespace DLCS.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "DefaultDeliveryChannelPolicies",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Customer = table.Column<int>(type: "integer", nullable: false),
+                    Space = table.Column<int>(type: "integer", nullable: false),
+                    MediaType = table.Column<string>(type: "text", nullable: true),
+                    DeliveryChannelPolicyId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DefaultDeliveryChannelPolicies", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_DefaultDeliveryChannelPolicies_DeliveryChannelPolicies_Deli~",
+                        column: x => x.DeliveryChannelPolicyId,
+                        principalTable: "DeliveryChannelPolicies",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ImageDeliveryChannels",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Id = table.Column<int>(type: "integer", maxLength: 100, nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ImageId = table.Column<string>(type: "character varying(500)", nullable: false),
                     Channel = table.Column<string>(type: "text", nullable: false),
                     DeliveryChannelPolicyId = table.Column<int>(type: "integer", nullable: false)
@@ -58,9 +81,14 @@ namespace DLCS.Repository.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_DeliveryChannelPolicies_Name_Customer_Space",
+                name: "IX_DefaultDeliveryChannelPolicies_DeliveryChannelPolicyId",
+                table: "DefaultDeliveryChannelPolicies",
+                column: "DeliveryChannelPolicyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DeliveryChannelPolicies_Customer_Name",
                 table: "DeliveryChannelPolicies",
-                columns: new[] { "Name", "Customer", "Space" },
+                columns: new[] { "Customer", "Name" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -76,6 +104,9 @@ namespace DLCS.Repository.Migrations
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "DefaultDeliveryChannelPolicies");
+
             migrationBuilder.DropTable(
                 name: "ImageDeliveryChannels");
 

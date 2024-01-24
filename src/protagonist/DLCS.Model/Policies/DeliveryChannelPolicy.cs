@@ -27,12 +27,7 @@ public class DeliveryChannelPolicy
     /// Customer that this policy is for
     /// </summary>
     public int Customer { get; set; }
-    
-    /// <summary>
-    /// Space that this policy is for
-    /// </summary>
-    public int Space { get; set; }
-    
+
     /// <summary>
     /// The channel this policy applies to i.e.: iiif-img, iiif-av, etc
     /// </summary>
@@ -42,6 +37,8 @@ public class DeliveryChannelPolicy
     /// A wildcard string used to help match against a media type
     /// </summary>
     public string MediaType { get; set; }
+    
+    public bool System { get; set; }
     
     /// <summary>
     /// When the policy was created

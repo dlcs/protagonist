@@ -10,7 +10,7 @@ public class ImageDeliveryChannel
     /// <summary>
     /// Unique identifier
     /// </summary>
-    public string Id { get; set; }
+    public int Id { get; set; }
     
     /// <summary>
     /// The image id for the attached asset
