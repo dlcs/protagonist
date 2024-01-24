@@ -57,11 +57,7 @@ In Wellcome DDS, replace all C# properties and other usages of `DeliveryChannels
 It's as if `.deliveryChannels` had never existed. But otherwise, everything else is the same, still no functional changes in DDS client, or Protagonist server.
 
 
-## Step 5 - Separate old and new functionality 
-
-[Refactor DLCS throughout (API, Engine, Orchestrator, Portal](https://github.com/dlcs/protagonist/issues/713)
- 
- ...to use `OldDeliveryChannels` property from Hydra API for old delivery channel behaviour.
+## Step 5 - Replace DeliveryChannels property with new version   
 
 Replace the `string[] DeliveryChannels` property on the Hydra Image API class in the DLCS with `DeliveryChannel[] DeliveryChannels` as per the new documentation. Nothing will be calling this any more. All old calls still get routed to `OldDeliveryChannels` and protagonist processes them as before.
 
@@ -75,6 +71,7 @@ Replace the `string[] DeliveryChannels` property on the Hydra Image API class in
     
     // removed:  public string[]? WcDeliveryChannels { ... }
 ```
+
 
 ## Step 6 - Deploy this Protagonist
 
