@@ -58,14 +58,22 @@ It's as if `.deliveryChannels` had never existed. But otherwise, everything else
 
 
 
+## Step 5 - Thumb generation spike
+
+
+ - [SPIKE for #256 - can we run thumb-making image server as an Engine sidecar?](https://github.com/dlcs/protagonist/issues/658)
 
 
 
-
-## Step 5 - Replace DeliveryChannels property with new version   
+## Step 6 - Replace DeliveryChannels property with new version   
 
 Replace the `string[] DeliveryChannels` property on the Hydra Image API class in the DLCS with `DeliveryChannel[] DeliveryChannels` as per the new documentation. Nothing will be calling this any more. All old calls still get routed to `OldDeliveryChannels` via `.wcDeliveryChannels` on hydra JSON.
 
+Leave that property intact on the Hydra class, but ALL use of it within the DLCS is now for removal, as the new behaviour is implemented. We'll come back to deal with this property in a later step (emulation).
+
+We also, during the process, need to remove all usage of ImageOptimisationPolicy and ThumbnailPolicy.
+
+We don't necessarily have to have a specific task to rip it all out before introducing the new DeliveryChannels, might be better to replace bit by bit, so we can see what the old code is doing in places as we implement the new. But the old code will never more be executed.
 
 ```
     [JsonProperty(PropertyName = "deliveryChannels")]
@@ -77,9 +85,7 @@ Replace the `string[] DeliveryChannels` property on the Hydra Image API class in
     // removed:  public string[]? WcDeliveryChannels { ... }
 ```
 
-This means we are no longer using the `OldDeliveryChannels` internally; strip all that code out.
-
-(we cannot deploy `develop` protagonist for a while now)
+(we cannot deploy `develop` protagonist for a while now, because `wcDeliveryChannels`, `ImageOptimisationPolicy` and `ThumbnailPolicy` are stubs that don't get used _for now_).
 
 
 ## Steps 6..n - Implement new DeliveryChannels in Protagonist
@@ -100,21 +106,32 @@ These resources and features are all independent of the old behaviour.
  (are the above reflected below...) 
 
  - [Modify DB Schema: add tables for delivery channels](https://github.com/dlcs/protagonist/issues/618)
- - [Create a set of defaultDeliveryChannels for customer 0](https://github.com/dlcs/protagonist/issues/619)
- - [API endpoints to manage default delivery channels and delivery channel policies](https://github.com/dlcs/protagonist/issues/634)
- - [SPIKE for #256 - can we run thumb-making image server as an Engine sidecar?](https://github.com/dlcs/protagonist/issues/658)
- - [Using a sidecar Cantaloupe for thumbs delivery channel ingest](https://github.com/dlcs/protagonist/issues/256)
- - [Create new "work-page-friendly" thumbnail policy for Wellcome and reingest images](https://github.com/dlcs/protagonist/issues/635)
- - [How do iiif-av policies become Elastic Transcoder settings?](https://github.com/dlcs/protagonist/issues/709)
- - [Cleanup Handler use of Delivery Channels](https://github.com/dlcs/protagonist/issues/691)
- - [Investigate issues with CMYK JPEGs, incompatible gifs and other Appetiser issues](https://github.com/dlcs/protagonist/issues/684)
- - [Ensure s.json thumb sizes are emitted in sizes from named query manifests and single-asset manifests](https://github.com/dlcs/protagonist/issues/631)
- - [Complete handling of thumbs delivery channel](https://github.com/dlcs/protagonist/issues/629)
- - [Create "unofficial" thumbs even when no thumbs channel specified](https://github.com/dlcs/protagonist/issues/627)
+ 
+ REFINE
+ - [Create and Implement "global" DeliveryChannelPolicies and DefaultDeliveryChannels](https://github.com/dlcs/protagonist/issues/619)
  - [Implement default deliveryChannels and retire DLCS:IngestDefaults appSetting](https://github.com/dlcs/protagonist/issues/625)
+
+ - [API endpoints to manage default delivery channels and delivery channel policies](https://github.com/dlcs/protagonist/issues/634)
  - [Update API to receive and emit full DeliveryChannel information](https://github.com/dlcs/protagonist/issues/624)
+ 
  - [Update logic for determining if an Asset has a particular deliveryChannel](https://github.com/dlcs/protagonist/issues/621)
  - [Update Engine HydrateAssetPolicies() method for delivery channel model](https://github.com/dlcs/protagonist/issues/622)
+
+ - [Using a sidecar Cantaloupe for thumbs delivery channel ingest](https://github.com/dlcs/protagonist/issues/256)
+ - [Create new "work-page-friendly" thumbnail policy for Wellcome and reingest images](https://github.com/dlcs/protagonist/issues/635)
+
+ - [How do iiif-av policies become Elastic Transcoder settings?](https://github.com/dlcs/protagonist/issues/709)
+
+ - [Cleanup Handler use of Delivery Channels](https://github.com/dlcs/protagonist/issues/691)
+ 
+ - [Ensure s.json thumb sizes are emitted in sizes from named query manifests and single-asset manifests](https://github.com/dlcs/protagonist/issues/631)
+
+ - [Complete handling of thumbs delivery channel](https://github.com/dlcs/protagonist/issues/629) 
+ - [Create "unofficial" thumbs even when no thumbs channel specified](https://github.com/dlcs/protagonist/issues/627)
+
+
+
+ - [Investigate issues with CMYK JPEGs, incompatible gifs and other Appetiser issues](https://github.com/dlcs/protagonist/issues/684)
 
 ### QUESTION
 
