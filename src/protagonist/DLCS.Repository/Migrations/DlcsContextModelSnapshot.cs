@@ -597,13 +597,11 @@ namespace DLCS.Repository.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("DLCS.Model.DeliveryChannels.DefaultDeliveryChannelPolicy", b =>
+            modelBuilder.Entity("DLCS.Model.DeliveryChannels.DefaultDeliveryChannel", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Customer")
                         .HasColumnType("integer");
@@ -612,7 +610,9 @@ namespace DLCS.Repository.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("MediaType")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<int>("Space")
                         .HasColumnType("integer");
@@ -621,7 +621,10 @@ namespace DLCS.Repository.Migrations
 
                     b.HasIndex("DeliveryChannelPolicyId");
 
-                    b.ToTable("DefaultDeliveryChannelPolicies");
+                    b.HasIndex("Customer", "Space", "MediaType", "DeliveryChannelPolicyId")
+                        .IsUnique();
+
+                    b.ToTable("DefaultDeliveryChannels");
                 });
 
             modelBuilder.Entity("DLCS.Model.Policies.DeliveryChannelPolicy", b =>
@@ -637,32 +640,25 @@ namespace DLCS.Repository.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("Customer")
                         .HasColumnType("integer");
 
                     b.Property<string>("DisplayName")
                         .HasColumnType("text");
 
-                    b.Property<string>("MediaType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<DateTime>("Modified")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<DateTime>("PolicyCreated")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("PolicyData")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime>("PolicyModified")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("text");
 
                     b.Property<bool>("System")
                         .HasColumnType("boolean");
@@ -1055,7 +1051,7 @@ namespace DLCS.Repository.Migrations
                     b.Navigation("DeliveryChannelPolicy");
                 });
 
-            modelBuilder.Entity("DLCS.Model.DeliveryChannels.DefaultDeliveryChannelPolicy", b =>
+            modelBuilder.Entity("DLCS.Model.DeliveryChannels.DefaultDeliveryChannel", b =>
                 {
                     b.HasOne("DLCS.Model.Policies.DeliveryChannelPolicy", "DeliveryChannelPolicy")
                         .WithMany()

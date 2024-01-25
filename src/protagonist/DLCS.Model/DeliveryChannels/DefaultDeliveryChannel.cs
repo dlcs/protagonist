@@ -1,12 +1,13 @@
 ﻿#nullable disable
 
+using System;
 using DLCS.Model.Policies;
 
 namespace DLCS.Model.DeliveryChannels;
 
-public class DefaultDeliveryChannelPolicy
+public class DefaultDeliveryChannel
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     
     public int Customer { get; set; }
     

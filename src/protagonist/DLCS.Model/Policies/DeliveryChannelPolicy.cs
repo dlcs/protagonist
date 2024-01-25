@@ -33,22 +33,17 @@ public class DeliveryChannelPolicy
     /// </summary>
     public string Channel { get; set; }
     
-    /// <summary>
-    /// A wildcard string used to help match against a media type
-    /// </summary>
-    public string MediaType { get; set; }
-    
     public bool System { get; set; }
     
     /// <summary>
     /// When the policy was created
     /// </summary>
-    public DateTime PolicyCreated { get; set; }
+    public DateTime Created { get; set; }
     
     /// <summary>
     /// When the policy was last modified
     /// </summary>
-    public DateTime PolicyModified { get; set; }
+    public DateTime Modified { get; set; }
     
     /// <summary>
     /// The custom policy 

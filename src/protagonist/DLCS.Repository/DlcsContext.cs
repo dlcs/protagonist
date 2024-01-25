@@ -76,7 +76,7 @@ public partial class DlcsContext : DbContext
     public virtual DbSet<User> Users { get; set; }
     public virtual DbSet<DeliveryChannelPolicy> DeliveryChannelPolicies { get; set; }
     public virtual DbSet<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
-    public virtual DbSet<DefaultDeliveryChannelPolicy> DefaultDeliveryChannelPolicies { get; set; }
+    public virtual DbSet<DefaultDeliveryChannel> DefaultDeliveryChannels { get; set; }
 
     public virtual DbSet<SignupLink> SignupLinks { get; set; }
 
@@ -639,28 +639,20 @@ public partial class DlcsContext : DbContext
             entity.Property(e => e.Name).IsRequired();
             entity.Property(e => e.Customer).IsRequired();
             entity.Property(e => e.System).IsRequired();
-            entity.Property(e => e.PolicyData).IsRequired();
 
             entity.HasIndex(e => new { e.Customer, e.Name }).IsUnique();
 
             entity.Property(e => e.Name).HasMaxLength(500);
             
-            entity.Property(e => e.PolicyModified).HasColumnType("timestamp with time zone")
+            entity.Property(e => e.Modified).HasColumnType("timestamp with time zone")
                 .IsRequired();
 
-            entity.Property(e => e.PolicyModified).HasColumnType("timestamp with time zone")
+            entity.Property(e => e.Modified).HasColumnType("timestamp with time zone")
                 .IsRequired();
 
-            entity.Property(e => e.MediaType)
-                .IsRequired()
-                .HasMaxLength(100);
-            
             entity.Property(e => e.Channel)
                 .IsRequired()
                 .HasMaxLength(100);
-            
-            entity.Property(e => e.PolicyData)
-                .HasMaxLength(1000);
         });
         
         modelBuilder.Entity<ImageDeliveryChannel>(entity =>
@@ -681,12 +673,14 @@ public partial class DlcsContext : DbContext
                 .HasForeignKey(e => e.ImageId);
         });
 
-        modelBuilder.Entity<DefaultDeliveryChannelPolicy>(entity =>
+        modelBuilder.Entity<DefaultDeliveryChannel>(entity =>
         {
-            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new {e.Customer, e.Space, e.MediaType, e.DeliveryChannelPolicyId}).IsUnique();
             entity.Property(e => e.Customer).IsRequired();
             entity.Property(e => e.Space).IsRequired();
             entity.Property(e => e.DeliveryChannelPolicyId).IsRequired();
+            
+            entity.Property(e => e.MediaType).IsRequired().HasMaxLength(255);
         });
 
         OnModelCreatingPartial(modelBuilder);

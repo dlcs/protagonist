@@ -20,11 +20,10 @@ namespace DLCS.Repository.Migrations
                     DisplayName = table.Column<string>(type: "text", nullable: true),
                     Customer = table.Column<int>(type: "integer", nullable: false),
                     Channel = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    MediaType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     System = table.Column<bool>(type: "boolean", nullable: false),
-                    PolicyCreated = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    PolicyModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    PolicyData = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false)
+                    Created = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Modified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    PolicyData = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -32,21 +31,20 @@ namespace DLCS.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "DefaultDeliveryChannelPolicies",
+                name: "DefaultDeliveryChannels",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Customer = table.Column<int>(type: "integer", nullable: false),
                     Space = table.Column<int>(type: "integer", nullable: false),
-                    MediaType = table.Column<string>(type: "text", nullable: true),
+                    MediaType = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     DeliveryChannelPolicyId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DefaultDeliveryChannelPolicies", x => x.Id);
+                    table.PrimaryKey("PK_DefaultDeliveryChannels", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DefaultDeliveryChannelPolicies_DeliveryChannelPolicies_Deli~",
+                        name: "FK_DefaultDeliveryChannels_DeliveryChannelPolicies_DeliveryCha~",
                         column: x => x.DeliveryChannelPolicyId,
                         principalTable: "DeliveryChannelPolicies",
                         principalColumn: "Id",
@@ -81,8 +79,14 @@ namespace DLCS.Repository.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_DefaultDeliveryChannelPolicies_DeliveryChannelPolicyId",
-                table: "DefaultDeliveryChannelPolicies",
+                name: "IX_DefaultDeliveryChannels_Customer_Space_MediaType_DeliveryCh~",
+                table: "DefaultDeliveryChannels",
+                columns: new[] { "Customer", "Space", "MediaType", "DeliveryChannelPolicyId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DefaultDeliveryChannels_DeliveryChannelPolicyId",
+                table: "DefaultDeliveryChannels",
                 column: "DeliveryChannelPolicyId");
 
             migrationBuilder.CreateIndex(
@@ -105,7 +109,7 @@ namespace DLCS.Repository.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "DefaultDeliveryChannelPolicies");
+                name: "DefaultDeliveryChannels");
 
             migrationBuilder.DropTable(
                 name: "ImageDeliveryChannels");
