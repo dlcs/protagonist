@@ -20,7 +20,7 @@ For AV it will always pass `null` for ImageOptimisationPolicy, and Engine will u
 
 ## Step 1 - handle wcDeliveryChannels
 
- - [Rename Hydra API deliveryChannels property in 2023 Protagonist to wcDeliveryChannels](https://github.com/dlcs/protagonist/pull/707)
+ - [Rename Hydra API deliveryChannels property in 2023 Protagonist to wcDeliveryChannels](https://github.com/dlcs/protagonist/issues/614)
 
 `Image` hydra object has `DeliveryChannels`, `WcDeliveryChannels` and `OldDeliveryChannels`, all `string[]`
 
@@ -67,6 +67,8 @@ It's as if `.deliveryChannels` had never existed. But otherwise, everything else
 
 ## Step 6 - Replace DeliveryChannels property with new version   
 
+- [Replace string[] DeliveryChannels with DeliveryChannel[] DeliveryChannels](https://github.com/dlcs/protagonist/issues/717)
+  
 Replace the `string[] DeliveryChannels` property on the Hydra Image API class in the DLCS with `DeliveryChannel[] DeliveryChannels` as per the new documentation. Nothing will be calling this any more. All old calls still get routed to `OldDeliveryChannels` via `.wcDeliveryChannels` on hydra JSON.
 
 Leave that property intact on the Hydra class, but ALL use of it within the DLCS is now for removal, as the new behaviour is implemented. We'll come back to deal with this property in a later step (emulation).
@@ -95,42 +97,33 @@ Implement new DeliveryChannel behaviour in DLCS in `protagonist:develop` branch,
 That is, make `deliveryChannels` work as described there, and the rest of the new API and resources.
 These resources and features are all independent of the old behaviour.
 
- - Set up all the customer 0 default policies, Wellcome Customer 2 copies of those policies
- - Make a `../video-default` DeliveryChannelPolicy with the policyData "video-mp4-720p"
- - Make a `../audio-default` DeliveryChannelPolicy with the policyData "audio-mp3-128"
- - Make a image policy for JP2s
- - Make a thumb policy of `["!1024,1024", "!400,400", "!200,200", "!100,100"]`
- - Make a file policy
- - Set up all the defaults
 
- (are the above reflected below...) 
 
- - [Modify DB Schema: add tables for delivery channels](https://github.com/dlcs/protagonist/issues/618)
- 
- REFINE
- - [Create and Implement "global" DeliveryChannelPolicies and DefaultDeliveryChannels](https://github.com/dlcs/protagonist/issues/619)
+ - [Modify DB Schema: add tables for delivery channels](https://github.com/dlcs/protagonist/issues/618) 
+ - [Create "global" DeliveryChannelPolicies and DefaultDeliveryChannels](https://github.com/dlcs/protagonist/issues/619)
+ - [Customer Creation allocates correct DeliveryChannelPolicies and DefaultDeliveryChannels](https://github.com/dlcs/protagonist/issues/716)
  - [Implement default deliveryChannels and retire DLCS:IngestDefaults appSetting](https://github.com/dlcs/protagonist/issues/625)
 
  - [API endpoints to manage default delivery channels and delivery channel policies](https://github.com/dlcs/protagonist/issues/634)
+  
  - [Update API to receive and emit full DeliveryChannel information](https://github.com/dlcs/protagonist/issues/624)
  
  - [Update logic for determining if an Asset has a particular deliveryChannel](https://github.com/dlcs/protagonist/issues/621)
  - [Update Engine HydrateAssetPolicies() method for delivery channel model](https://github.com/dlcs/protagonist/issues/622)
 
  - [Using a sidecar Cantaloupe for thumbs delivery channel ingest](https://github.com/dlcs/protagonist/issues/256)
- - [Create new "work-page-friendly" thumbnail policy for Wellcome and reingest images](https://github.com/dlcs/protagonist/issues/635)
-
+ 
  - [How do iiif-av policies become Elastic Transcoder settings?](https://github.com/dlcs/protagonist/issues/709)
+ - (includes actually doing it)
 
  - [Cleanup Handler use of Delivery Channels](https://github.com/dlcs/protagonist/issues/691)
  
  - [Ensure s.json thumb sizes are emitted in sizes from named query manifests and single-asset manifests](https://github.com/dlcs/protagonist/issues/631)
 
- - [Complete handling of thumbs delivery channel](https://github.com/dlcs/protagonist/issues/629) 
+ - [Complete handling of thumbs delivery channel](https://github.com/dlcs/protagonist/issues/629)
+
+
  - [Create "unofficial" thumbs even when no thumbs channel specified](https://github.com/dlcs/protagonist/issues/627)
-
-
-
  - [Investigate issues with CMYK JPEGs, incompatible gifs and other Appetiser issues](https://github.com/dlcs/protagonist/issues/684)
 
 ### QUESTION
@@ -177,7 +170,12 @@ This should be demonstrated to produce the same results as the "emulated" versio
 ## Step n+2 - Deploy DDS develop (appendix A) to production
 
 
-## Step n+3 - Remove "emulation" and old properties
+## Step n+3
+
+ - [Make sure Wellcome has correct DeliveryChannelPolicies and DefaultDeliveryChannels](https://github.com/dlcs/protagonist/issues/718)
+ - [Create new "work-page-friendly" thumbnail policy for Wellcome and reingest images](https://github.com/dlcs/protagonist/issues/635)
+
+## Step n+4 - Remove "emulation" and old properties
 
  - [Drop IOP and ThumbnailPolicy columns from Asset](https://github.com/dlcs/protagonist/issues/623)
  - Drop OldDeliveryChannels (WcDeliveryChannels)
