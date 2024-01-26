@@ -90,9 +90,9 @@ namespace DLCS.Repository.Migrations
                 column: "DeliveryChannelPolicyId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DeliveryChannelPolicies_Customer_Name",
+                name: "IX_DeliveryChannelPolicies_Customer_Name_Channel",
                 table: "DeliveryChannelPolicies",
-                columns: new[] { "Customer", "Name" },
+                columns: new[] { "Customer", "Name", "Channel" },
                 unique: true);
 
             migrationBuilder.CreateIndex(

@@ -665,7 +665,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Customer", "Name")
+                    b.HasIndex("Customer", "Name", "Channel")
                         .IsUnique();
 
                     b.ToTable("DeliveryChannelPolicies");

@@ -640,7 +640,7 @@ public partial class DlcsContext : DbContext
             entity.Property(e => e.Customer).IsRequired();
             entity.Property(e => e.System).IsRequired();
 
-            entity.HasIndex(e => new { e.Customer, e.Name }).IsUnique();
+            entity.HasIndex(e => new { e.Customer, e.Name, e.Channel }).IsUnique();
 
             entity.Property(e => e.Name).HasMaxLength(500);
             
