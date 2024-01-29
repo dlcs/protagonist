@@ -115,7 +115,7 @@ public class Asset
     /// <summary>
     /// A list of image delivery channels attached to this asset
     /// </summary>
-    public virtual ICollection<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
+    public ICollection<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
 
     /// <summary>
     /// Full image optimisation policy object for Asset

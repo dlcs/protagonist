@@ -657,7 +657,6 @@ public partial class DlcsContext : DbContext
         
         modelBuilder.Entity<ImageDeliveryChannel>(entity =>
         {
-            entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasMaxLength(100);
 
             entity.Property(e => e.Channel).IsRequired();
