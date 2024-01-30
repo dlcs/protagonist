@@ -6,3 +6,4 @@
 4. [Storage Use Tracking](0003-storage-use-tracking.md)
 5. [Dependabot Process](0004-dependabot-upgrade-process.md)
 6. [Optimised Origin](0005-optimised-origin.md)
+7. [Engine ImageServer](0006-engine-imageserver.md)
