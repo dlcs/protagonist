@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    [Migration("20240130152650_Populating delivery channel tables with defaults")]
+    [Migration("20240201171503_Populating delivery channel tables with defaults")]
     partial class Populatingdeliverychanneltableswithdefaults
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -627,48 +627,6 @@ namespace DLCS.Repository.Migrations
                         .IsUnique();
 
                     b.ToTable("DefaultDeliveryChannels");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("12534ee0-ba9f-4e4a-9bc1-d0a7123e7359"),
-                            Customer = 1,
-                            DeliveryChannelPolicyId = 1,
-                            MediaType = "image/*",
-                            Space = 0
-                        },
-                        new
-                        {
-                            Id = new Guid("563cb716-495c-49b1-a4a8-8351c78ec6e9"),
-                            Customer = 1,
-                            DeliveryChannelPolicyId = 3,
-                            MediaType = "image/*",
-                            Space = 0
-                        },
-                        new
-                        {
-                            Id = new Guid("96e9353e-1b16-4028-b986-0a47c1a6ea77"),
-                            Customer = 1,
-                            DeliveryChannelPolicyId = 4,
-                            MediaType = "application/*",
-                            Space = 0
-                        },
-                        new
-                        {
-                            Id = new Guid("0373c1e9-5e62-4c05-8295-23de029e0cd6"),
-                            Customer = 1,
-                            DeliveryChannelPolicyId = 5,
-                            MediaType = "audio/*",
-                            Space = 0
-                        },
-                        new
-                        {
-                            Id = new Guid("9cf9cb13-3c3c-4411-8196-a51b40718296"),
-                            Customer = 1,
-                            DeliveryChannelPolicyId = 6,
-                            MediaType = "video/*",
-                            Space = 0
-                        });
                 });
 
             modelBuilder.Entity("DLCS.Model.Policies.DeliveryChannelPolicy", b =>
@@ -713,88 +671,6 @@ namespace DLCS.Repository.Migrations
                         .IsUnique();
 
                     b.ToTable("DeliveryChannelPolicies");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Channel = "iiif-img",
-                            Created = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4365),
-                            Customer = 1,
-                            DisplayName = "A default image policy",
-                            Modified = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4367),
-                            Name = "default",
-                            System = true
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Channel = "iiif-img",
-                            Created = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4369),
-                            Customer = 1,
-                            DisplayName = "Use original at Image Server",
-                            Modified = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4369),
-                            Name = "use-original",
-                            System = true
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Channel = "thumbs",
-                            Created = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4370),
-                            Customer = 1,
-                            DisplayName = "A default thumbs policy",
-                            Modified = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4370),
-                            Name = "default",
-                            PolicyData = "[\"!1024,1024\", \"!400,400\", \"!200,200\", \"!100,100\"]",
-                            System = false
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Channel = "file",
-                            Created = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4372),
-                            Customer = 1,
-                            DisplayName = "No transformations",
-                            Modified = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4372),
-                            Name = "none",
-                            System = true
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Channel = "iiif-av",
-                            Created = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4373),
-                            Customer = 1,
-                            DisplayName = "A default audio policy",
-                            Modified = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4374),
-                            Name = "default-audio",
-                            PolicyData = "[\"audio-aac-192\"]",
-                            System = false
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Channel = "iiif-av",
-                            Created = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4375),
-                            Customer = 1,
-                            DisplayName = "A default video policy",
-                            Modified = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4375),
-                            Name = "default-video",
-                            PolicyData = "[\"video-mp4-720p\"]",
-                            System = false
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Channel = "none",
-                            Created = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4376),
-                            Customer = 1,
-                            DisplayName = "Empty channel",
-                            Modified = new DateTime(2024, 1, 30, 15, 26, 50, 723, DateTimeKind.Utc).AddTicks(4376),
-                            Name = "none",
-                            System = true
-                        });
                 });
 
             modelBuilder.Entity("DLCS.Model.Policies.ImageOptimisationPolicy", b =>
