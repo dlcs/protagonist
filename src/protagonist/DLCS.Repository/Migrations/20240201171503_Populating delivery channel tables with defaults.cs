@@ -39,8 +39,7 @@ namespace DLCS.Repository.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql(@"
-TRUNCATE ""DeliveryChannelPolicies""
-TRUNCATE ""DefaultDeliveryChannels""
+TRUNCATE ""ImageDeliveryChannels"", ""DefaultDeliveryChannels"", ""DeliveryChannelPolicies""  RESTART IDENTITY;
 ");
         }
     }
