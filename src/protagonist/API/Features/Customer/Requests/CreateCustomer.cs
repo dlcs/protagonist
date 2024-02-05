@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using DLCS.Model;
 using DLCS.Model.Auth;
+using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Processing;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
@@ -44,15 +45,21 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
     private readonly DlcsContext dbContext;
     private readonly IEntityCounterRepository entityCounterRepository;
     private readonly IAuthServicesRepository authServicesRepository;
+    private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
+    private readonly IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository;
 
     public CreateCustomerHandler(
         DlcsContext dbContext,
         IEntityCounterRepository entityCounterRepository,
-        IAuthServicesRepository authServicesRepository)
+        IAuthServicesRepository authServicesRepository,
+        IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository,
+        IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository)
     {
         this.dbContext = dbContext;
         this.entityCounterRepository = entityCounterRepository;
         this.authServicesRepository = authServicesRepository;
+        this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
+        this.defaultDeliveryChannelRepository = defaultDeliveryChannelRepository;
     }
 
     public async Task<CreateCustomerResult> Handle(CreateCustomer request, CancellationToken cancellationToken)
@@ -97,6 +104,10 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
             new Queue { Customer = result.Customer.Id, Name = QueueNames.Priority, Size = 0 }
         );
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        await deliveryChannelPolicyRepository.AddDeliveryChannelCustomerPolicies(result.Customer.Id, cancellationToken);
+        await defaultDeliveryChannelRepository.AddCustomerDefaultDeliveryChannels(result.Customer.Id,
+            cancellationToken);
         
         // [UpdateCustomerBehaviour] - customer has already been saved.
         // The problem here is that we have had:

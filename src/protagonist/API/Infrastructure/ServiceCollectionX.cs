@@ -12,6 +12,7 @@ using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
+using DLCS.Model.DeliveryChannels;
 using DLCS.Model.PathElements;
 using DLCS.Model.Policies;
 using DLCS.Model.Processing;
@@ -21,6 +22,7 @@ using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
+using DLCS.Repository.DeliveryChannels;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;
@@ -99,6 +101,8 @@ public static class ServiceCollectionX
             .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
             .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
+            .AddScoped<IDeliveryChannelPolicyRepository, DeliveryChannelPolicyRepository>()
+            .AddScoped<IDefaultDeliveryChannelRepository, DefaultDeliveryChannelRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>
