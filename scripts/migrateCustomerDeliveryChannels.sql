@@ -88,7 +88,7 @@ FROM (SELECT "DeliveryChannelPolicies"."Id", DDC2."Customer"
       WHERE "Name" = 'default'
         AND "MediaType" = 'image/*'
         AND "Channel" = 'thumbs'
-        AND "DeliveryChannelPolicyId" = 3) -- is this correct? - will always be 3 as it's set on a migration, but could be made more flexible with a SELECT
+        AND "DeliveryChannelPolicyId" = 3)
          as DCP
 WHERE DDC."Customer" = DCP."Customer"
   AND DDC."Customer" <> 1
