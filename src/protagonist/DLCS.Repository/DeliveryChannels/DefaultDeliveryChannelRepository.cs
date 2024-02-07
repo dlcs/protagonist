@@ -23,6 +23,7 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
     private readonly DlcsContext dlcsContext;
     private const int SystemCustomerId = 1;
     private const int SystemSpaceId = 0;
+    const string AppCacheKey = "DefaultDeliveryChannels";
 
     public DefaultDeliveryChannelRepository(
         IAppCache appCache,
@@ -56,10 +57,16 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
             
             await dlcsContext.DefaultDeliveryChannels.AddRangeAsync(updatedPolicies, cancellationToken);
             
-            await dlcsContext.SaveChangesAsync(cancellationToken);
+            var updated = await dlcsContext.SaveChangesAsync(cancellationToken);
+
+            if (updated > 0)
+            {
+                appCache.Remove(AppCacheKey);
+            }
         }
         catch (Exception e)
         {
+            dlcsContext.ChangeTracker.Clear();
             logger.LogError(e, "Error adding delivery channel policies to customer {Customer}", customerId);
             return false;
         }
@@ -69,8 +76,7 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
     
     private async Task<List<DefaultDeliveryChannel>> GetDefaultDeliveryChannelsForSystemCustomer(CancellationToken cancellationToken)
     {
-        const string key = "DefaultDeliveryChannels";
-        return await appCache.GetOrAddAsync(key, async () =>
+        return await appCache.GetOrAddAsync(AppCacheKey, async () =>
         {
             logger.LogDebug("Refreshing DefaultDeliveryChannels from database");
             var defaultDeliveryChannels =

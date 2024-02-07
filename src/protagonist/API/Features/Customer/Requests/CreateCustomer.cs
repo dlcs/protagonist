@@ -105,10 +105,42 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         );
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        await deliveryChannelPolicyRepository.AddDeliveryChannelCustomerPolicies(result.Customer.Id, cancellationToken);
-        await defaultDeliveryChannelRepository.AddCustomerDefaultDeliveryChannels(result.Customer.Id,
+        dbContext.ChangeTracker.Clear();
+
+
+        var deliveryChannelPoliciesCreated = await deliveryChannelPolicyRepository.AddDeliveryChannelCustomerPolicies(result.Customer.Id, 
             cancellationToken);
+        var defaultDeliveryChannelsCreated = await defaultDeliveryChannelRepository.AddCustomerDefaultDeliveryChannels(result.Customer.Id,
+            cancellationToken);
+
+        if (deliveryChannelPoliciesCreated && defaultDeliveryChannelsCreated) return result;
         
+        if (!defaultDeliveryChannelsCreated)
+        {
+            var policies = await dbContext.DeliveryChannelPolicies.Where(
+                p => p.Customer == result.Customer.Id).ToListAsync(cancellationToken);
+            dbContext.DeliveryChannelPolicies.RemoveRange(policies);
+        }
+            
+        dbContext.AuthServices.Remove(clickThrough);
+        dbContext.AuthServices.Remove(logout);
+        dbContext.Roles.Remove(clickthroughRole);
+            
+        await entityCounterRepository.Remove(result.Customer.Id, KnownEntityCounters.CustomerSpaces,
+            result.Customer.Id.ToString(), result.Customer.Id - 1);
+
+        dbContext.Customers.Remove(result.Customer);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+            
+        result = new CreateCustomerResult()
+        {
+            ErrorMessages = new List<string>()
+            {
+                "Failed to create customer"
+            }
+        };
+
         // [UpdateCustomerBehaviour] - customer has already been saved.
         // The problem here is that we have had:
         // - some direct use of dbContext

@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -6,6 +7,7 @@ using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using Hydra.Collections;
 using Microsoft.EntityFrameworkCore;
@@ -65,12 +67,14 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Create_Customer_Test()
     {
         // arrange
+        await EnsureAdminCustomerCreated();
+        
         // Need to create an entity counter global for customers
-        var expectedNewCustomerId = 1;
+        var expectedNewCustomerId = 2;
 
         var customerCounter = await dbContext.EntityCounters.SingleOrDefaultAsync(ec
             => ec.Customer == 0 && ec.Scope == "0" && ec.Type == "customer");
-        customerCounter.Should().BeNull();
+         customerCounter.Should().BeNull();
         // this is true atm but Seed data might change this.
         // The counter should be created on first use, see below
 
@@ -146,6 +150,9 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var priorityQueue =
             await dbContext.Queues.SingleAsync(q => q.Customer == expectedNewCustomerId && q.Name == "priority");
         priorityQueue.Size.Should().Be(0);
+        
+        dbContext.DeliveryChannelPolicies.Count(d => d.Customer == newDbCustomer.Id).Should().Be(3);
+        dbContext.DefaultDeliveryChannels.Count(d => d.Customer == newDbCustomer.Id).Should().Be(5);
     }
 
     [Fact]
@@ -166,7 +173,72 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
-    
+    [Fact]
+    public async Task NewlyCreatedCustomer_RollsBackSuccessfully_WhenDeliveryChannelsNotCreatedSuccessfully()
+    {
+        // Arrange 
+        await EnsureAdminCustomerCreated();
+
+        const int expectedCustomerId = 2;
+
+        var url = $"/customers";
+        const string customerJson = @"{
+  ""name"": ""apiTest2"",
+  ""displayName"": ""testing api customer 2""
+    }";
+        var content = new StringContent(customerJson, Encoding.UTF8, "application/json");
+
+        // customer 99 is added by the test context, so remove it
+        var nextCustomerId = dbContext.Customers.Where(c => c.Id != 99).Max(c => c.Id) + 1;
+
+        dbContext.DeliveryChannelPolicies.Add(new DeliveryChannelPolicy()
+        {
+            Id = 250,
+            DisplayName = "A default audio policy",
+            Name = "default-audio",
+            Customer = expectedCustomerId,
+            Channel = "iiif-av",
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow,
+            PolicyData = null,
+            System = false
+        }); // creates a duplicate policy, causing an error
+
+        await dbContext.SaveChangesAsync();
+
+
+        // Act
+        var response = await httpClient.AsAdmin(1).PostAsync(url, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        dbContext.DeliveryChannelPolicies.Count(d => d.Customer == nextCustomerId).Should().Be(0);
+        dbContext.DefaultDeliveryChannels.Count(d => d.Customer == nextCustomerId).Should().Be(0);
+        dbContext.Customers.FirstOrDefault(c => c.Id == nextCustomerId).Should().Be(null);
+        dbContext.EntityCounters.Count(e => e.Customer == nextCustomerId).Should().Be(0);
+        dbContext.Roles.Count(r => r.Customer == nextCustomerId).Should().Be(0);
+    }
+
+    private async Task EnsureAdminCustomerCreated()
+    {
+        var adminCustomer = await dbContext.Customers.SingleOrDefaultAsync(c => c.Id == 1);
+        if (adminCustomer == null)
+        {
+            // Setup a customer 1, which is required for the customer in delivery channels
+            dbContext.Customers.Add(new DLCS.Model.Customers.Customer()
+            {
+                Id = 1,
+                Name = "admin",
+                DisplayName = "admin customer",
+                Created = DateTime.UtcNow,
+                Keys = new[] { "some", "keys" },
+                Administrator = true,
+                AcceptedAgreement = true
+            });
+            dbContext.SaveChanges();
+        }
+    }
+
     [Fact] 
     public async Task CreateNewCustomer_Returns400_IfNameStartsWithVersion()
     {

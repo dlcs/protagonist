@@ -19,6 +19,7 @@ public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
     private readonly CacheSettings cacheSettings;
     private readonly ILogger<DeliveryChannelPolicyRepository> logger;
     private readonly DlcsContext dlcsContext;
+    const string AppCacheKey = "DeliveryChannelPolicies";
     
     public DeliveryChannelPolicyRepository(
         IAppCache appCache,
@@ -78,11 +79,12 @@ public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
 
             if (updated > 0)
             {
-                appCache.Remove("DeliveryChannelPolicies"); // db updated, so need to reset the cache
+                appCache.Remove(AppCacheKey);
             }
         }
         catch (Exception e)
         {
+            dlcsContext.ChangeTracker.Clear();
             logger.LogError(e, "Error adding delivery channel policies to customer {Customer}", customerId);
             return false;
         }
@@ -92,8 +94,7 @@ public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
 
     private Task<List<DeliveryChannelPolicy>> GetDeliveryChannelPolicies(CancellationToken cancellationToken)
     {
-        const string key = "DeliveryChannelPolicies";
-        return appCache.GetOrAddAsync(key, async () =>
+        return appCache.GetOrAddAsync(AppCacheKey, async () =>
         {
             logger.LogDebug("Refreshing DeliveryChannelPolicies from database");
             var deliveryChannelPolicies =

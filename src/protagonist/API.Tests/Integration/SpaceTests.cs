@@ -442,6 +442,24 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
             return spaceTestCustomer.Id;
         }
         
+        var adminCustomer = await dbContext.Customers.SingleOrDefaultAsync(c => c.Id == 1);
+
+        if (adminCustomer == null)
+        {
+            // Setup a customer 1, which is required for the customer
+            dbContext.Customers.Add(new DLCS.Model.Customers.Customer()
+            {
+                Id = 1,
+                Name = "admin",
+                DisplayName = "admin customer",
+                Created = DateTime.UtcNow,
+                Keys = new[] { "some", "keys" },
+                Administrator = true,
+                AcceptedAgreement = true
+            });
+            dbContext.SaveChanges();
+        }
+
         string spaceTestCustomerJson = $@"{{
   ""@type"": ""Customer"",
   ""name"": ""{customerName}"",
