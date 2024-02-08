@@ -1,7 +1,5 @@
 BEGIN TRANSACTION;
 
-ALTER SEQUENCE "DeliveryChannelPolicies_Id_seq" RESTART WITH 8;
-
 INSERT INTO "DeliveryChannelPolicies" ("Name", "DisplayName", "Customer", "Channel", "System", "Created", "Modified",
                                        "PolicyData")
 SELECT TP."Id",
