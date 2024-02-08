@@ -66,19 +66,14 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Create_Customer_Test()
     {
-        // arrange
-        await EnsureAdminCustomerCreated();
-        
         // Need to create an entity counter global for customers
         var expectedNewCustomerId = 2;
 
         var customerCounter = await dbContext.EntityCounters.SingleOrDefaultAsync(ec
             => ec.Customer == 0 && ec.Scope == "0" && ec.Type == "customer");
-         customerCounter.Should().BeNull();
-        // this is true atm but Seed data might change this.
-        // The counter should be created on first use, see below
+         customerCounter.Should().NotBeNull();
 
-        const string newCustomerJson = @"{
+         const string newCustomerJson = @"{
   ""@type"": ""Customer"",
   ""name"": ""my-new-customer"",
   ""displayName"": ""My New Customer""
@@ -176,9 +171,6 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task NewlyCreatedCustomer_RollsBackSuccessfully_WhenDeliveryChannelsNotCreatedSuccessfully()
     {
-        // Arrange 
-        await EnsureAdminCustomerCreated();
-
         const int expectedCustomerId = 2;
 
         var url = $"/customers";
@@ -187,10 +179,7 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
   ""displayName"": ""testing api customer 2""
     }";
         var content = new StringContent(customerJson, Encoding.UTF8, "application/json");
-
-        // customer 99 is added by the test context, so remove it
-        var nextCustomerId = dbContext.Customers.Where(c => c.Id != 99).Max(c => c.Id) + 1;
-
+        
         dbContext.DeliveryChannelPolicies.Add(new DeliveryChannelPolicy()
         {
             Id = 250,
@@ -212,11 +201,11 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
-        dbContext.DeliveryChannelPolicies.Count(d => d.Customer == nextCustomerId).Should().Be(0);
-        dbContext.DefaultDeliveryChannels.Count(d => d.Customer == nextCustomerId).Should().Be(0);
-        dbContext.Customers.FirstOrDefault(c => c.Id == nextCustomerId).Should().Be(null);
-        dbContext.EntityCounters.Count(e => e.Customer == nextCustomerId).Should().Be(0);
-        dbContext.Roles.Count(r => r.Customer == nextCustomerId).Should().Be(0);
+        dbContext.DeliveryChannelPolicies.Count(d => d.Customer == expectedCustomerId).Should().Be(1); //difference of 1 due to delivery channel added above
+        dbContext.DefaultDeliveryChannels.Count(d => d.Customer == expectedCustomerId).Should().Be(0);
+        dbContext.Customers.FirstOrDefault(c => c.Id == expectedCustomerId).Should().BeNull();
+        dbContext.EntityCounters.Count(e => e.Customer == expectedCustomerId).Should().Be(0);
+        dbContext.Roles.Count(r => r.Customer == expectedCustomerId).Should().Be(0);
     }
 
     private async Task EnsureAdminCustomerCreated()

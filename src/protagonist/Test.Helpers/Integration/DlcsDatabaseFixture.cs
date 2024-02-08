@@ -46,7 +46,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
     /// </summary>
     public void CleanUp()
     {
-        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Spaces\" WHERE \"Customer\" != 99");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Spaces\" WHERE \"Customer\" != 99 AND \"Id\" != 1");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"StoragePolicies\" WHERE \"Id\" not in ('default', 'small', 'medium')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
@@ -64,7 +64,6 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space-images' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'customer-images' AND \"Scope\" != '99'");
-        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'customer' AND \"Scope\" != '99'");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DeliveryChannelPolicies\" WHERE \"Customer\" <> 1");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DefaultDeliveryChannels\" WHERE \"Customer\" <> 1");
         DbContext.ChangeTracker.Clear();
@@ -75,6 +74,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
     private async Task SeedCustomer()
     {
         const int customer = 99;
+        const int adminCustomer = 1;
         await DbContext.Customers.AddAsync(new Customer
         {
             Created = DateTime.UtcNow,
@@ -83,6 +83,25 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             Name = "test",
             Keys = Array.Empty<string>()
         });
+        await DbContext.Customers.AddAsync(new Customer()
+        {
+            Id = adminCustomer,
+            Name = "admin",
+            DisplayName = "admin customer",
+            Created = DateTime.UtcNow,
+            Keys = new[] { "some", "keys" },
+            Administrator = true,
+            AcceptedAgreement = true
+        });
+
+        await DbContext.EntityCounters.AddAsync(new EntityCounter()
+        {
+            Customer = 0,
+            Next = 2,
+            Scope = "0",
+            Type = "customer"
+        });
+        
         await DbContext.StoragePolicies.AddRangeAsync(new StoragePolicy
             {
                 Id = "default",

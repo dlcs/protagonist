@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Data;
 using DLCS.Model;
 using DLCS.Model.Auth;
 using DLCS.Model.DeliveryChannels;
@@ -71,6 +72,9 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         await EnsureCustomerNamesNotTaken(request, result, cancellationToken);
         if (result.ErrorMessages.Any()) return result;
         
+        await using var transaction = 
+            await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        
         var newModelId = await GetIdForNewCustomer();
         result.Customer = await CreateCustomer(request, cancellationToken, newModelId);
 
@@ -103,36 +107,18 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
             new Queue { Customer = result.Customer.Id, Name = QueueNames.Default, Size = 0 },
             new Queue { Customer = result.Customer.Id, Name = QueueNames.Priority, Size = 0 }
         );
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        dbContext.ChangeTracker.Clear();
-
 
         var deliveryChannelPoliciesCreated = await deliveryChannelPolicyRepository.AddDeliveryChannelCustomerPolicies(result.Customer.Id, 
             cancellationToken);
         var defaultDeliveryChannelsCreated = await defaultDeliveryChannelRepository.AddCustomerDefaultDeliveryChannels(result.Customer.Id,
             cancellationToken);
 
-        if (deliveryChannelPoliciesCreated && defaultDeliveryChannelsCreated) return result;
-        
-        if (!defaultDeliveryChannelsCreated)
+        if (deliveryChannelPoliciesCreated && defaultDeliveryChannelsCreated)
         {
-            var policies = await dbContext.DeliveryChannelPolicies.Where(
-                p => p.Customer == result.Customer.Id).ToListAsync(cancellationToken);
-            dbContext.DeliveryChannelPolicies.RemoveRange(policies);
+            await transaction.CommitAsync(cancellationToken);
+            return result;
         }
-            
-        dbContext.AuthServices.Remove(clickThrough);
-        dbContext.AuthServices.Remove(logout);
-        dbContext.Roles.Remove(clickthroughRole);
-            
-        await entityCounterRepository.Remove(result.Customer.Id, KnownEntityCounters.CustomerSpaces,
-            result.Customer.Id.ToString(), result.Customer.Id - 1);
-
-        dbContext.Customers.Remove(result.Customer);
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-            
+        
         result = new CreateCustomerResult()
         {
             ErrorMessages = new List<string>()
@@ -140,6 +126,9 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
                 "Failed to create customer"
             }
         };
+        
+        await transaction.RollbackAsync(cancellationToken);
+        
 
         // [UpdateCustomerBehaviour] - customer has already been saved.
         // The problem here is that we have had:
