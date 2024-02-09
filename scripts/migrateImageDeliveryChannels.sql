@@ -2,17 +2,16 @@ BEGIN TRANSACTION;
 
 -- convert image defaults
 INSERT INTO "ImageDeliveryChannels" ("ImageId", "Channel", "DeliveryChannelPolicyId")
-SELECT images."Id",
+SELECT "Id",
        'iiif-img',
        (SELECT "DeliveryChannelPolicies"."Id"
         from "DeliveryChannelPolicies"
         WHERE ("DeliveryChannelPolicies"."Customer", "Channel", "DeliveryChannelPolicies"."Name") =
               (1, 'iiif-img', 'default'))
-FROM (SELECT *
-      FROM "Images"
+FROM "Images"
       WHERE "Images"."DeliveryChannels" LIKE '%iiif-img%'
         AND "Images"."ImageOptimisationPolicy" <> 'use-original'
-        AND "NotForDelivery" = false) AS images
+        AND "NotForDelivery" = false
 UNION
 SELECT I."Id", 'thumbs', DCP."Id"
 FROM "Images" as I
@@ -25,17 +24,16 @@ WHERE I."DeliveryChannels" LIKE '%iiif-img%'
 
 -- convert image use original
 INSERT INTO "ImageDeliveryChannels" ("ImageId", "Channel", "DeliveryChannelPolicyId")
-SELECT images."Id",
+SELECT "Id",
        'iiif-img',
        (SELECT "DeliveryChannelPolicies"."Id"
         from "DeliveryChannelPolicies"
         WHERE ("DeliveryChannelPolicies"."Customer", "Channel", "DeliveryChannelPolicies"."Name") =
               (1, 'iiif-img', 'use-original'))
-FROM (SELECT *
-      FROM "Images" as I
+FROM "Images" as I
       WHERE I."DeliveryChannels" LIKE '%iiif-img%'
         AND I."ImageOptimisationPolicy" = 'use-original'
-        AND "NotForDelivery" = false) AS images
+        AND "NotForDelivery" = false
 UNION
 SELECT "Images"."Id", 'thumbs', DCP."Id"
 FROM "Images"
