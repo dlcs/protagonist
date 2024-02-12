@@ -10,8 +10,6 @@ using DLCS.Repository.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using NuGet.Protocol;
-using Z.EntityFramework.Extensions;
 
 namespace API.Features.Customer.Requests;
 
