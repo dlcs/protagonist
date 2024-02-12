@@ -64,8 +64,6 @@ public class Space : DlcsResource
     [JsonProperty(Order = 14, PropertyName = "approximateNumberOfImages")]
     public long? ApproximateNumberOfImages { get; set; }
     
-    
-
     [RdfProperty(Description = "Default roles that will be applied to images in this space",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 20, PropertyName = "defaultRoles")]
@@ -76,6 +74,12 @@ public class Space : DlcsResource
     [JsonProperty(Order = 22, PropertyName = "images")]
     public string? Images { get; set; }
 
+    [HydraLink(Description = "Collection of default delivery channels. Assets without any delivery channels specified will be served by those" +
+                             " configured here. See the DeliveryChannels topic.",
+    Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 23, PropertyName = "defaultDeliveryChannels")]
+    public string? DefaultDeliveryChannels { get; set; }
+    
     [HydraLink(Description = "Metadata options for the space", // TOOD- what exactly?
         Range = "vocab:Metadata", ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 24, PropertyName = "metadata")]
