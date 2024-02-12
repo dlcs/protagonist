@@ -197,6 +197,11 @@ public class Image : DlcsResource
     
     [RdfProperty(Description = "Delivery channel specifying how the asset will be available.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 140, PropertyName = "deliveryChannels")]
+    public DeliveryChannel[]? DeliveryChannels { get; set; }
+    
+    [RdfProperty(Description = "Delivery channel specifying how the asset will be available.",
+        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 141, PropertyName = "wcDeliveryChannels")]
     public string[]? WcDeliveryChannels { get; set; }
     
