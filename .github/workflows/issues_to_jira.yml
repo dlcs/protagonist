@@ -1,5 +1,5 @@
 name: Sync GitHub issues to Jira
-on: [issues, issue_comment, pull_request, workflow_dispatch]
+on: [issues, issue_comment]
 
 jobs:
   sync-issues:
