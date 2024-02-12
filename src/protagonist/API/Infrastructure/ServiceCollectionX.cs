@@ -102,7 +102,6 @@ public static class ServiceCollectionX
             .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
             .AddScoped<IDeliveryChannelPolicyRepository, DeliveryChannelPolicyRepository>()
-            .AddScoped<IDefaultDeliveryChannelRepository, DefaultDeliveryChannelRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>

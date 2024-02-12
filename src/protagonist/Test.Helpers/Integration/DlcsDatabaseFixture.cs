@@ -46,6 +46,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
     /// </summary>
     public void CleanUp()
     {
+        DbContext.Database.ExecuteSqlRaw("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Spaces\" WHERE \"Customer\" != 99 AND \"Id\" != 1");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"StoragePolicies\" WHERE \"Id\" not in ('default', 'small', 'medium')");

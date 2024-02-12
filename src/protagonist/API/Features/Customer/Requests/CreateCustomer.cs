@@ -3,11 +3,15 @@ using System.Data;
 using DLCS.Model;
 using DLCS.Model.Auth;
 using DLCS.Model.DeliveryChannels;
+using DLCS.Model.Policies;
 using DLCS.Model.Processing;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using NuGet.Protocol;
+using Z.EntityFramework.Extensions;
 
 namespace API.Features.Customer.Requests;
 
@@ -47,20 +51,23 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
     private readonly IEntityCounterRepository entityCounterRepository;
     private readonly IAuthServicesRepository authServicesRepository;
     private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
-    private readonly IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository;
+    private readonly ILogger<CreateCustomerHandler> logger;
+    private const int SystemCustomerId = 1;
+    private const int SystemSpaceId = 0;
 
     public CreateCustomerHandler(
         DlcsContext dbContext,
         IEntityCounterRepository entityCounterRepository,
         IAuthServicesRepository authServicesRepository,
         IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository,
-        IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository)
+        IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository,
+        ILogger<CreateCustomerHandler> logger)
     {
         this.dbContext = dbContext;
         this.entityCounterRepository = entityCounterRepository;
         this.authServicesRepository = authServicesRepository;
         this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
-        this.defaultDeliveryChannelRepository = defaultDeliveryChannelRepository;
+        this.logger = logger;
     }
 
     public async Task<CreateCustomerResult> Handle(CreateCustomer request, CancellationToken cancellationToken)
@@ -110,8 +117,10 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
 
         var deliveryChannelPoliciesCreated = await deliveryChannelPolicyRepository.AddDeliveryChannelCustomerPolicies(result.Customer.Id, 
             cancellationToken);
-        var defaultDeliveryChannelsCreated = await defaultDeliveryChannelRepository.AddCustomerDefaultDeliveryChannels(result.Customer.Id,
-            cancellationToken);
+        // var defaultDeliveryChannelsCreated = await defaultDeliveryChannelRepository.AddCustomerDefaultDeliveryChannels(result.Customer.Id,
+        //     cancellationToken);
+
+        var defaultDeliveryChannelsCreated = await AddCustomerDefaultDeliveryChannels(result.Customer.Id, cancellationToken);
 
         if (deliveryChannelPoliciesCreated && defaultDeliveryChannelsCreated)
         {
@@ -196,5 +205,54 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         } while (existingCustomerWithId != null);
 
         return newModelId;
+    }
+    
+    private async Task<bool> AddCustomerDefaultDeliveryChannels(int customerId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await dbContext.DefaultDeliveryChannels.Where(
+                p => p.Customer == SystemCustomerId &&
+                     p.Space == SystemSpaceId).InsertFromQueryAsync("\"DefaultDeliveryChannels\"", defaultDeliveryChannel => new DefaultDeliveryChannel
+            {
+                Id = Guid.NewGuid(), 
+                DeliveryChannelPolicyId =  defaultDeliveryChannel.DeliveryChannelPolicyId,
+                MediaType = defaultDeliveryChannel.MediaType,
+                Customer = customerId,
+                Space = defaultDeliveryChannel.Space
+            }, cancellationToken);
+
+
+          var customerSpecificPolicies = new Dictionary<string, (DeliveryChannelPolicy deliveryChannelPolicy, int initialPolicyNumber)>
+          {
+              {
+                  "audio", (deliveryChannelPolicyRepository.GetDeliveryChannelPolicy(customerId,
+                      "default-audio", "iiif-av", cancellationToken).Result!, 5) // 5 = customer 1 iiif-av audio policy
+              },
+              {
+                  "video", (deliveryChannelPolicyRepository.GetDeliveryChannelPolicy(customerId,
+                      "default-video", "iiif-av", cancellationToken).Result!, 6) // 6 = customer 1 iiif-av video policy
+              },
+              { "thumbs", (deliveryChannelPolicyRepository.GetDeliveryChannelPolicy(customerId,
+                  "default", "thumbs", cancellationToken).Result!, 3 )} // 3 = customer 1 default thumbs policy
+          };
+
+          foreach (var customerPolicy in customerSpecificPolicies)
+          {
+              await dbContext.DefaultDeliveryChannels.AsNoTracking().Where(d => d.Customer == customerId &&
+                      d.Space == SystemSpaceId &&
+                      d.DeliveryChannelPolicyId == customerPolicy.Value.initialPolicyNumber)
+                  .UpdateFromQueryAsync(d => new DefaultDeliveryChannel()
+                      { DeliveryChannelPolicyId = customerPolicy.Value.deliveryChannelPolicy.Id }, cancellationToken);
+          }
+        }
+        catch (Exception e)
+        {
+            dbContext.ChangeTracker.Clear();
+            logger.LogError(e, "Error adding delivery channel policies to customer {Customer}", customerId);
+            return false;
+        }
+
+        return true;
     }
 }
