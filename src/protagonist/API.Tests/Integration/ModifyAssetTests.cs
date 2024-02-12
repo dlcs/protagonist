@@ -542,18 +542,16 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
-    [Theory]
-    [InlineData("deliveryChannels")]
-    [InlineData("wcDeliveryChannels")]
-    public async Task Put_New_Asset_Supports_DeliveryChannels_Aliases(string deliveryChannelAlias)
+    [Fact]
+    public async Task Put_New_Asset_Supports_WcDeliveryChannels()
     {
-        var assetId = new AssetId(99, 1, $"{nameof(Put_New_Asset_Supports_DeliveryChannels_Aliases)}-{deliveryChannelAlias}");
+        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Supports_WcDeliveryChannels));
         var hydraImageBody = $@"{{
           ""@type"": ""Image"",
           ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
           ""family"": ""I"",
           ""mediaType"": ""image/tiff"",
-          ""{deliveryChannelAlias}"": [""file""]
+          ""wcDeliveryChannels"": [""file""]
         }}";
 
         A.CallTo(() =>

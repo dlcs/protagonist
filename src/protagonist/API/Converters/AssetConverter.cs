@@ -56,7 +56,7 @@ public static class AssetConverter
             MediaType = dbAsset.MediaType,
             Family = (AssetFamily)dbAsset.Family,
             Roles = dbAsset.RolesList.ToArray(),
-            DeliveryChannels = dbAsset.DeliveryChannels
+            WcDeliveryChannels = dbAsset.DeliveryChannels
         };
         
         if (dbAsset.Batch > 0)
@@ -270,9 +270,9 @@ public static class AssetConverter
             asset.MediaType = hydraImage.MediaType;
         }
         
-        if (hydraImage.DeliveryChannels != null)
+        if (hydraImage.WcDeliveryChannels != null)
         {
-            asset.DeliveryChannels = hydraImage.DeliveryChannels.OrderBy(dc => dc).Select(dc => dc.ToLower()).ToArray();
+            asset.DeliveryChannels = hydraImage.WcDeliveryChannels.OrderBy(dc => dc).Select(dc => dc.ToLower()).ToArray();
         }
 
         var thumbnailPolicy = hydraImage.ThumbnailPolicy.GetLastPathElement("thumbnailPolicies/");

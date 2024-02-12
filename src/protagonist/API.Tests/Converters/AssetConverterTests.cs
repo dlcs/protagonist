@@ -133,7 +133,7 @@ public class AssetConverterTests
             MaxUnauthorised = 400,
             MediaType = mediaType,
             ThumbnailPolicy = thumbnailPolicy,
-            DeliveryChannels = deliveryChannel
+            WcDeliveryChannels = deliveryChannel
         };
 
         var asset = hydraImage.ToDlcsModel(1);
@@ -174,7 +174,7 @@ public class AssetConverterTests
         {
             Id = AssetApiId,
             Space = 99,
-            DeliveryChannels = deliveryChannel
+            WcDeliveryChannels = deliveryChannel
         };
         
         // Act
