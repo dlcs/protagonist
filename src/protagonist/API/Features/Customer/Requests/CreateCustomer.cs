@@ -58,7 +58,6 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         IEntityCounterRepository entityCounterRepository,
         IAuthServicesRepository authServicesRepository,
         IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository,
-        IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository,
         ILogger<CreateCustomerHandler> logger)
     {
         this.dbContext = dbContext;
