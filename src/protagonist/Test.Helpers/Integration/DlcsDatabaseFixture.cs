@@ -29,7 +29,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
     public DlcsDatabaseFixture()
     {
         var postgresBuilder = new TestcontainersBuilder<PostgreSqlTestcontainer>()
-            .WithDatabase(new PostgreSqlTestcontainerConfiguration("postgres:12-alpine")
+            .WithDatabase(new PostgreSqlTestcontainerConfiguration("postgres:13-alpine")
             {
                 Database = "db",
                 Password = "postgres_pword",
@@ -46,7 +46,6 @@ public class DlcsDatabaseFixture : IAsyncLifetime
     /// </summary>
     public void CleanUp()
     {
-        DbContext.Database.ExecuteSqlRaw("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Spaces\" WHERE \"Customer\" != 99 AND \"Id\" != 1");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"StoragePolicies\" WHERE \"Id\" not in ('default', 'small', 'medium')");
@@ -205,7 +204,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         // Create new DlcsContext using connection string for Postgres container
         DbContext = new DlcsContext(
             new DbContextOptionsBuilder<DlcsContext>()
-                .UseNpgsql(postgresContainer.ConnectionString).Options
+                .UseNpgsql(postgresContainer.ConnectionString, builder => builder.SetPostgresVersion(13, 0)).Options
         );
         DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
     }
