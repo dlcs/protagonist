@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Reflection;
 using API.Features.Assets;
+using API.Features.Customer.Requests;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
@@ -12,7 +13,6 @@ using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
-using DLCS.Model.DeliveryChannels;
 using DLCS.Model.PathElements;
 using DLCS.Model.Policies;
 using DLCS.Model.Processing;
@@ -22,7 +22,6 @@ using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
-using DLCS.Repository.DeliveryChannels;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;
@@ -101,7 +100,7 @@ public static class ServiceCollectionX
             .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
             .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
-            .AddScoped<IDeliveryChannelPolicyRepository, DeliveryChannelPolicyRepository>()
+            .AddScoped<DapperNewCustomerDeliveryChannelRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>
