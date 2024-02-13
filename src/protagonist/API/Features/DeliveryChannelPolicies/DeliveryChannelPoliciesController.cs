@@ -1,4 +1,6 @@
 ﻿
+using API.Features.DeliveryChannelPolicies.Converters;
+using API.Features.DeliveryChannelPolicies.Requests;
 using API.Features.DeliveryChannelPolicies.Validation;
 using API.Infrastructure;
 using API.Settings;
@@ -21,24 +23,30 @@ public class DeliveryChannelPoliciesController : HydraController
         IMediator mediator,
         IOptions<ApiSettings> options) : base(options.Value, mediator)
     {
+        
     }
-
+    
     [HttpGet]
-    public async Task<IActionResult> GetPolicyCollections(int customerId)
+    public async Task<IActionResult> GetDeliveryChannelPolicyCollections(
+        [FromRoute] int customerId,
+        CancellationToken cancellationToken)
     {
         throw new NotImplementedException();     
     }
 
-    [HttpGet("{channelId}")]
-    public async Task<IActionResult> GetPolicyCollection(int customerId, string channelId)
+    [HttpGet("{channelName}")]
+    public async Task<IActionResult> GetDeliveryChannelPolicyCollection(
+        [FromRoute] int customerId,
+        [FromRoute] string channelId,
+        CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }    
     
-    [HttpPost("{channelId}")]
-    public async Task<IActionResult> PostPolicy(
+    [HttpPost("{channelName}")]
+    public async Task<IActionResult> PostDeliveryChannelPolicy(
         [FromRoute] int customerId,
-        [FromRoute] string channelId,
+        [FromRoute] string channelName,
         [FromBody] DeliveryChannelPolicy hydraDeliveryChannelPolicy,
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
@@ -53,21 +61,28 @@ public class DeliveryChannelPoliciesController : HydraController
         throw new NotImplementedException();       
     }
     
-    [HttpGet("{channelId}/{policyId}")]
-    [ProducesResponseType(200, Type = typeof(DLCS.HydraModel.DeliveryChannelPolicy))]
-    public async Task<IActionResult> GetPolicy(
+    [HttpGet("{channelName}/{policyName}")]
+    public async Task<IActionResult> GetDeliveryChannelPolicy(
         [FromRoute] int customerId,
-        [FromRoute] string channelId,
-        [FromRoute] string policyId)
+        [FromRoute] string channelName,
+        [FromRoute] string policyName,
+        CancellationToken cancellationToken)
     { 
-        throw new NotImplementedException();
+        var getDeliveryChannelPolicy = new GetDeliveryChannelPolicy(customerId, channelName, policyName );
+
+        return await HandleFetch(
+            getDeliveryChannelPolicy,
+            policy => policy.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Get delivery channel policy failed",
+            cancellationToken: cancellationToken
+        );
     }
     
-    [HttpPost("{channelId}/{policyId}")]
-    public async Task<IActionResult> PutPolicy(
+    [HttpPost("{channelName}/{policyName}")]
+    public async Task<IActionResult> PutDeliveryChannelPolicy(
         [FromRoute] int customerId,
-        [FromRoute] string channelId,
-        [FromRoute] string policyId,
+        [FromRoute] string channelName,
+        [FromRoute] string policyName,
         [FromBody] DeliveryChannelPolicy hydraDeliveryChannelPolicy,
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
@@ -82,11 +97,11 @@ public class DeliveryChannelPoliciesController : HydraController
         throw new NotImplementedException();     
     }
     
-    [HttpPatch("{channelId}/{policyId}")]
-    public async Task<IActionResult> PatchPolicy(
+    [HttpPatch("{channelId}/{policyName}")]
+    public async Task<IActionResult> PatchDeliveryChannelPolicy(
         [FromRoute] int customerId,
-        [FromRoute] string channelId,
-        [FromRoute] string policyId,
+        [FromRoute] string channelName,
+        [FromRoute] string policyName,
         [FromBody] DeliveryChannelPolicy hydraDeliveryChannelPolicy,
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
@@ -101,8 +116,12 @@ public class DeliveryChannelPoliciesController : HydraController
         throw new NotImplementedException();     
     } 
     
-    [HttpDelete("{channelId}/{policyId}")]
-    public async Task<IActionResult> DeletePolicy(int customerId, string channelId, string policyId)
+    [HttpDelete("{channelId}/{policyName}")]
+    public async Task<IActionResult> DeleteDeliveryChannelPolicy(
+        [FromRoute] int customerId,
+        [FromRoute] string channelName,
+        [FromRoute] string policyName,
+        CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     } 
