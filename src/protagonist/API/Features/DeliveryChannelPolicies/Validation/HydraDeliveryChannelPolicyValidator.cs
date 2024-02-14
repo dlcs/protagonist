@@ -32,7 +32,7 @@ public class HydraDeliveryChannelPolicyValidator : AbstractValidator<DLCS.HydraM
                 .Empty().WithMessage("'Channel' cannot be modified in a PATCH operation");         
         });
         RuleFor(p => p.Channel)
-            .Must(c => allowedDeliveryChannels.Contains(c))
+            .Must(c => c == null || allowedDeliveryChannels.Contains(c))
             .WithMessage(p => $"'{p.Channel}' is not a supported delivery channel");
         RuleFor(p => p.PolicyModified)
             .Empty().WithMessage(c => $"'policyModified' is not permitted");

@@ -9,14 +9,14 @@ namespace API.Features.DeliveryChannelPolicies.Requests;
 public class GetDeliveryChannelPolicy: IRequest<FetchEntityResult<DeliveryChannelPolicy>>
 {
     public int CustomerId { get; }
-    public string ChannelName { get; set; }
-    public string PolicyName { get; set; }
+    public string DeliveryChannelName { get; set; }
+    public string DeliveryChannelPolicyName { get; set; }
     
-    public GetDeliveryChannelPolicy(int customerId, string channelName, string policyName)
+    public GetDeliveryChannelPolicy(int customerId, string deliveryChannelName, string deliveryChannelPolicyName)
     {
         CustomerId = customerId;
-        ChannelName = channelName;
-        PolicyName = policyName;
+        DeliveryChannelName = deliveryChannelName;
+        DeliveryChannelPolicyName = deliveryChannelPolicyName;
     }
 }
 
@@ -35,8 +35,8 @@ public class GetDeliveryChannelPolicyHandler : IRequestHandler<GetDeliveryChanne
             .AsNoTracking()
             .SingleOrDefaultAsync(p => 
                 p.Customer == request.CustomerId && 
-                p.Channel == request.ChannelName &&
-                p.Name == request.PolicyName,
+                p.Channel == request.DeliveryChannelName &&
+                p.Name == request.DeliveryChannelPolicyName,
                 cancellationToken);
         
         return deliveryChannelPolicy == null 

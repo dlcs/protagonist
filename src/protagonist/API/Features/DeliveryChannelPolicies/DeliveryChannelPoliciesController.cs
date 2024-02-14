@@ -34,7 +34,8 @@ public class DeliveryChannelPoliciesController : HydraController
         throw new NotImplementedException();     
     }
 
-    [HttpGet("{channelName}")]
+    [HttpGet]
+    [Route("{channelName}")]
     public async Task<IActionResult> GetDeliveryChannelPolicyCollection(
         [FromRoute] int customerId,
         [FromRoute] string channelId,
@@ -43,10 +44,11 @@ public class DeliveryChannelPoliciesController : HydraController
         throw new NotImplementedException();
     }    
     
-    [HttpPost("{channelName}")]
+    [HttpPost]
+    [Route("{channelName}")]
     public async Task<IActionResult> PostDeliveryChannelPolicy(
         [FromRoute] int customerId,
-        [FromRoute] string channelName,
+        [FromRoute] string deliveryChannelName,
         [FromBody] DeliveryChannelPolicy hydraDeliveryChannelPolicy,
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
@@ -61,14 +63,16 @@ public class DeliveryChannelPoliciesController : HydraController
         throw new NotImplementedException();       
     }
     
-    [HttpGet("{channelName}/{policyName}")]
+    [HttpGet]
+    [Route("{channelName}/{policyName}")]
     public async Task<IActionResult> GetDeliveryChannelPolicy(
         [FromRoute] int customerId,
-        [FromRoute] string channelName,
-        [FromRoute] string policyName,
+        [FromRoute] string deliveryChannelName,
+        [FromRoute] string deliveryChannelPolicyName,
         CancellationToken cancellationToken)
     { 
-        var getDeliveryChannelPolicy = new GetDeliveryChannelPolicy(customerId, channelName, policyName );
+        var getDeliveryChannelPolicy =
+            new GetDeliveryChannelPolicy(customerId, deliveryChannelName, deliveryChannelPolicyName);
 
         return await HandleFetch(
             getDeliveryChannelPolicy,
@@ -78,11 +82,12 @@ public class DeliveryChannelPoliciesController : HydraController
         );
     }
     
-    [HttpPost("{channelName}/{policyName}")]
+    [HttpPost]
+    [Route("{channelName}/{policyName}")]
     public async Task<IActionResult> PutDeliveryChannelPolicy(
         [FromRoute] int customerId,
-        [FromRoute] string channelName,
-        [FromRoute] string policyName,
+        [FromRoute] string deliveryChannelName,
+        [FromRoute] string deliveryChannelPolicyName,
         [FromBody] DeliveryChannelPolicy hydraDeliveryChannelPolicy,
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
@@ -97,11 +102,12 @@ public class DeliveryChannelPoliciesController : HydraController
         throw new NotImplementedException();     
     }
     
-    [HttpPatch("{channelId}/{policyName}")]
+    [HttpPatch]
+    [Route("{channelId}/{policyName}")]
     public async Task<IActionResult> PatchDeliveryChannelPolicy(
         [FromRoute] int customerId,
-        [FromRoute] string channelName,
-        [FromRoute] string policyName,
+        [FromRoute] string deliveryChannelName,
+        [FromRoute] string deliveryChannelPolicyName,
         [FromBody] DeliveryChannelPolicy hydraDeliveryChannelPolicy,
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
@@ -116,13 +122,16 @@ public class DeliveryChannelPoliciesController : HydraController
         throw new NotImplementedException();     
     } 
     
-    [HttpDelete("{channelId}/{policyName}")]
+    [HttpDelete]
+    [Route("{channelId}/{policyName}")]
     public async Task<IActionResult> DeleteDeliveryChannelPolicy(
         [FromRoute] int customerId,
-        [FromRoute] string channelName,
-        [FromRoute] string policyName,
-        CancellationToken cancellationToken)
+        [FromRoute] string deliveryChannelName,
+        [FromRoute] string deliveryChannelPolicyName)
     {
-        throw new NotImplementedException();
+        var deleteDeliveryChannelPolicy =
+            new DeleteDeliveryChannelPolicy(customerId, deliveryChannelName, deliveryChannelPolicyName);
+
+        return await HandleDelete(deleteDeliveryChannelPolicy);
     } 
 }
