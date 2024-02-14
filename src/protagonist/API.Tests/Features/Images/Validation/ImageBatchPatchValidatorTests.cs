@@ -137,10 +137,10 @@ public class ImageBatchPatchValidatorTests
     {
         var model = new HydraCollection<Image> { Members = new[]
         {
-            new Image { DeliveryChannels = new []{"iiif-img","thumbs"}}
+            new Image { WcDeliveryChannels = new []{"iiif-img","thumbs"}}
         } };
         var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("Members[0].DeliveryChannels");
+        result.ShouldHaveValidationErrorFor("Members[0].WcDeliveryChannels");
     }
     
     [Fact]

@@ -152,7 +152,7 @@ public class ImageController : HydraController
         [FromBody] DLCS.HydraModel.Image hydraAsset,
         CancellationToken cancellationToken)
     {
-        if (!apiSettings.DeliveryChannelsEnabled && !hydraAsset.DeliveryChannels.IsNullOrEmpty())
+        if (!apiSettings.DeliveryChannelsEnabled && !hydraAsset.WcDeliveryChannels.IsNullOrEmpty())
         {
             var assetId = new AssetId(customerId, spaceId, imageId);
             return this.HydraProblem("Delivery channels are disabled", assetId.ToString(), 400, "Bad Request");

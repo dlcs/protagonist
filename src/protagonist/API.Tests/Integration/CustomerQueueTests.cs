@@ -997,14 +997,14 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""id"": ""one"",
           ""origin"": ""https://example.org/foo.jpg"",
           ""space"": 2,
-          ""deliveryChannels"": [""iiif-img""],
+          ""wcDeliveryChannels"": [""iiif-img""],
           ""family"": ""I"",
           ""mediaType"": ""image/jpeg""
         },
         {
           ""id"": ""two"",
           ""origin"": ""https://example.org/foo.png"",
-          ""deliveryChannels"": [""iiif-img""],
+          ""wcDeliveryChannels"": [""iiif-img""],
           ""space"": 2,
           ""mediaType"": ""image/png""
         },

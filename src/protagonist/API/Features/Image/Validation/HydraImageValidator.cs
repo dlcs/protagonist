@@ -18,7 +18,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         // Required fields
         RuleFor(a => a.MediaType).NotEmpty().WithMessage("Media type must be specified");
 
-        When(a => !a.DeliveryChannels.IsNullOrEmpty(), DeliveryChannelDependantValidation)
+        When(a => !a.WcDeliveryChannels.IsNullOrEmpty(), DeliveryChannelDependantValidation)
             .Otherwise(() =>
             {
                 RuleFor(a => a.Width).Empty().WithMessage("Should not include width");
@@ -32,11 +32,11 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleFor(a => a.Created).Empty().WithMessage("Should not include created");
 
         // Other validation
-        RuleFor(a => a.DeliveryChannels).Must(d => d.IsNullOrEmpty())
+        RuleFor(a => a.WcDeliveryChannels).Must(d => d.IsNullOrEmpty())
             .When(_ => !apiSettings.Value.DeliveryChannelsEnabled)
             .WithMessage("Delivery channels are disabled");
 
-        RuleForEach(a => a.DeliveryChannels)
+        RuleForEach(a => a.WcDeliveryChannels)
             .Must(dc => AssetDeliveryChannels.All.Contains(dc))
             .WithMessage($"DeliveryChannel must be one of {AssetDeliveryChannels.AllString}");
     }
@@ -46,7 +46,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
     {
         RuleFor(a => a.ImageOptimisationPolicy)
             .Must(iop => !KnownImageOptimisationPolicy.IsNoOpIdentifier(iop))
-            .When(a => !a.DeliveryChannels.ContainsOnly(AssetDeliveryChannels.File))
+            .When(a => !a.WcDeliveryChannels.ContainsOnly(AssetDeliveryChannels.File))
             .WithMessage(
                 $"ImageOptimisationPolicy {KnownImageOptimisationPolicy.NoneId} only valid for 'file' delivery channel");
 
@@ -54,23 +54,23 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .Empty()
             .WithMessage("Should not include width")
             .Unless(a =>
-                a.DeliveryChannels.ContainsOnly(AssetDeliveryChannels.File) && !MIMEHelper.IsAudio(a.MediaType));
+                a.WcDeliveryChannels.ContainsOnly(AssetDeliveryChannels.File) && !MIMEHelper.IsAudio(a.MediaType));
         
         RuleFor(a => a.Height)
             .Empty()
             .WithMessage("Should not include height")
             .Unless(a => 
-                a.DeliveryChannels.ContainsOnly(AssetDeliveryChannels.File) && !MIMEHelper.IsAudio(a.MediaType));
+                a.WcDeliveryChannels.ContainsOnly(AssetDeliveryChannels.File) && !MIMEHelper.IsAudio(a.MediaType));
         
         RuleFor(a => a.Duration)
             .Empty()
             .WithMessage("Should not include duration")
             .Unless(a =>
-                a.DeliveryChannels.ContainsOnly(AssetDeliveryChannels.File) && !MIMEHelper.IsImage(a.MediaType));
+                a.WcDeliveryChannels.ContainsOnly(AssetDeliveryChannels.File) && !MIMEHelper.IsImage(a.MediaType));
 
         RuleFor(a => a.ImageOptimisationPolicy)
             .Must(iop => !KnownImageOptimisationPolicy.IsUseOriginalIdentifier(iop))
-            .When(a => !a.DeliveryChannels!.Contains(AssetDeliveryChannels.Image))
+            .When(a => !a.WcDeliveryChannels!.Contains(AssetDeliveryChannels.Image))
             .WithMessage(
                 $"ImageOptimisationPolicy '{KnownImageOptimisationPolicy.UseOriginalId}' only valid for image delivery-channel");
     }
