@@ -33,6 +33,6 @@ public class DeliveryChannelClass: Class
     {
         SupportedOperations = CommonOperations.GetStandardResourceOperations(
             operationId, "Delivery Channel", Id,
-            "GET", "POST", "PUT");
+            "GET", "POST", "PUT", "PATCH", "DELETE");
     }
 }
