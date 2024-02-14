@@ -39,6 +39,6 @@ public class DefaultDeliveryChannelClass: Class
     {
         SupportedOperations = CommonOperations.GetStandardResourceOperations(
             operationId, "Default Delivery Channel", Id,
-            "GET", "POST", "PUT");
+            "GET", "POST", "PUT", "DELETE");
     }
 }
