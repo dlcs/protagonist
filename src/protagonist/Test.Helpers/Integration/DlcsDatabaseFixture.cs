@@ -29,7 +29,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
     public DlcsDatabaseFixture()
     {
         var postgresBuilder = new TestcontainersBuilder<PostgreSqlTestcontainer>()
-            .WithDatabase(new PostgreSqlTestcontainerConfiguration("postgres:12-alpine")
+            .WithDatabase(new PostgreSqlTestcontainerConfiguration("postgres:13-alpine")
             {
                 Database = "db",
                 Password = "postgres_pword",
@@ -64,6 +64,8 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space-images' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'customer-images' AND \"Scope\" != '99'");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DeliveryChannelPolicies\" WHERE \"Customer\" <> 1");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DefaultDeliveryChannels\" WHERE \"Customer\" <> 1");
         DbContext.ChangeTracker.Clear();
     }
 
@@ -72,6 +74,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
     private async Task SeedCustomer()
     {
         const int customer = 99;
+        const int adminCustomer = 1;
         await DbContext.Customers.AddAsync(new Customer
         {
             Created = DateTime.UtcNow,
@@ -80,6 +83,25 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             Name = "test",
             Keys = Array.Empty<string>()
         });
+        await DbContext.Customers.AddAsync(new Customer()
+        {
+            Id = adminCustomer,
+            Name = "admin",
+            DisplayName = "admin customer",
+            Created = DateTime.UtcNow,
+            Keys = new[] { "some", "keys" },
+            Administrator = true,
+            AcceptedAgreement = true
+        });
+
+        await DbContext.EntityCounters.AddAsync(new EntityCounter()
+        {
+            Customer = 0,
+            Next = 2,
+            Scope = "0",
+            Type = "customer"
+        });
+        
         await DbContext.StoragePolicies.AddRangeAsync(new StoragePolicy
             {
                 Id = "default",
@@ -182,7 +204,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         // Create new DlcsContext using connection string for Postgres container
         DbContext = new DlcsContext(
             new DbContextOptionsBuilder<DlcsContext>()
-                .UseNpgsql(postgresContainer.ConnectionString).Options
+                .UseNpgsql(postgresContainer.ConnectionString, builder => builder.SetPostgresVersion(13, 0)).Options
         );
         DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
     }

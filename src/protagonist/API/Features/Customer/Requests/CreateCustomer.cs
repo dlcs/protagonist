@@ -1,6 +1,9 @@
 using System.Collections.Generic;
+using System.Data;
 using DLCS.Model;
 using DLCS.Model.Auth;
+using DLCS.Model.DeliveryChannels;
+using DLCS.Model.Policies;
 using DLCS.Model.Processing;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
@@ -44,15 +47,18 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
     private readonly DlcsContext dbContext;
     private readonly IEntityCounterRepository entityCounterRepository;
     private readonly IAuthServicesRepository authServicesRepository;
+    private readonly DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository;
 
     public CreateCustomerHandler(
         DlcsContext dbContext,
         IEntityCounterRepository entityCounterRepository,
-        IAuthServicesRepository authServicesRepository)
+        IAuthServicesRepository authServicesRepository,
+        DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository)
     {
         this.dbContext = dbContext;
         this.entityCounterRepository = entityCounterRepository;
         this.authServicesRepository = authServicesRepository;
+        this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
     }
 
     public async Task<CreateCustomerResult> Handle(CreateCustomer request, CancellationToken cancellationToken)
@@ -63,6 +69,9 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         
         await EnsureCustomerNamesNotTaken(request, result, cancellationToken);
         if (result.ErrorMessages.Any()) return result;
+        
+        await using var transaction = 
+            await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         
         var newModelId = await GetIdForNewCustomer();
         result.Customer = await CreateCustomer(request, cancellationToken, newModelId);
@@ -96,8 +105,28 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
             new Queue { Customer = result.Customer.Id, Name = QueueNames.Default, Size = 0 },
             new Queue { Customer = result.Customer.Id, Name = QueueNames.Priority, Size = 0 }
         );
+
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        var deliveryChannelPoliciesCreated = await deliveryChannelPolicyRepository.SeedDeliveryChannelsData(result.Customer.Id);
+
+        if (deliveryChannelPoliciesCreated)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return result;
+        }
         
+        result = new CreateCustomerResult()
+        {
+            ErrorMessages = new List<string>()
+            {
+                "Failed to create customer"
+            }
+        };
+        
+        await transaction.RollbackAsync(cancellationToken);
+        
+
         // [UpdateCustomerBehaviour] - customer has already been saved.
         // The problem here is that we have had:
         // - some direct use of dbContext

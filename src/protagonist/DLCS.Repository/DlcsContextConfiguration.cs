@@ -58,6 +58,6 @@ public static class DlcsContextConfiguration
 
     private static void SetupOptions(IConfiguration configuration,
         DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseNpgsql(configuration.GetConnectionString(ConnectionStringKey));
+        => optionsBuilder.UseNpgsql(configuration.GetConnectionString(ConnectionStringKey), builder => builder.SetPostgresVersion(13, 0));
 
 }

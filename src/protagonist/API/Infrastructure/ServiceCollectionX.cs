@@ -1,6 +1,8 @@
 ﻿using System.IO;
 using System.Reflection;
 using API.Features.Assets;
+using API.Features.Customer;
+using API.Features.Customer.Requests;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
@@ -99,6 +101,7 @@ public static class ServiceCollectionX
             .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
             .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
+            .AddScoped<DapperNewCustomerDeliveryChannelRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>
