@@ -10,9 +10,11 @@ namespace DLCS.HydraModel;
     UriTemplate = "/customers/{0}/deliveryChannelPolicies/{1}/{2}")]
 public class DeliveryChannelPolicy : DlcsResource
 {
+    [JsonIgnore]
+    public int CustomerId { get; set; }
+    
     public DeliveryChannelPolicy()
     {
-        
     }
     
     public DeliveryChannelPolicy(string baseUrl)
@@ -40,10 +42,15 @@ public class DeliveryChannelPolicy : DlcsResource
     [JsonProperty(Order = 13, PropertyName = "policyData")]
     public string? PolicyData { get; set; }
 
+    [RdfProperty(Description = "The date this policy was created.",
+        Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 14, PropertyName = "policyCreated")]
+    public DateTime? Created { get; set; }  
+    
     [RdfProperty(Description = "The date this policy was last modified.",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 14, PropertyName = "policyModified")]
-    public DateTime? PolicyModified { get; set; }   
+    public DateTime? Modified { get; set; }   
 }
 
 public class DeliveryChannelPolicyClass: Class

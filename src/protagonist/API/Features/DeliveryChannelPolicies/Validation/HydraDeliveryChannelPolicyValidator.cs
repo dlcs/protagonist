@@ -34,7 +34,9 @@ public class HydraDeliveryChannelPolicyValidator : AbstractValidator<DLCS.HydraM
         RuleFor(p => p.Channel)
             .Must(c => c == null || allowedDeliveryChannels.Contains(c))
             .WithMessage(p => $"'{p.Channel}' is not a supported delivery channel");
-        RuleFor(p => p.PolicyModified)
+        RuleFor(p => p.Modified)
             .Empty().WithMessage(c => $"'policyModified' is not permitted");
+        RuleFor(p => p.Created)
+            .Empty().WithMessage(c => $"'policyCreated' is not permitted");
     }
 }

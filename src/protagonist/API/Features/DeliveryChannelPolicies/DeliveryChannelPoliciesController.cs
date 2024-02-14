@@ -35,17 +35,17 @@ public class DeliveryChannelPoliciesController : HydraController
     }
 
     [HttpGet]
-    [Route("{channelName}")]
+    [Route("{deliveryChannelName}")]
     public async Task<IActionResult> GetDeliveryChannelPolicyCollection(
         [FromRoute] int customerId,
-        [FromRoute] string channelId,
+        [FromRoute] string deliveryChannelName,
         CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }    
     
     [HttpPost]
-    [Route("{channelName}")]
+    [Route("{deliveryChannelName}")]
     public async Task<IActionResult> PostDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
@@ -53,6 +53,8 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
     {
+        hydraDeliveryChannelPolicy.Channel = deliveryChannelName; // Channel
+        
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "post"), cancellationToken);
         if (!validationResult.IsValid)
@@ -60,11 +62,17 @@ public class DeliveryChannelPoliciesController : HydraController
             return this.ValidationFailed(validationResult);
         }
         
-        throw new NotImplementedException();       
+        hydraDeliveryChannelPolicy.CustomerId = customerId;
+        var request = new CreateDeliveryChannelPolicy(customerId, hydraDeliveryChannelPolicy.ToDlcsModel());
+        
+        return await HandleUpsert(request, 
+            s => s.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to create delivery channel policy",
+            cancellationToken: cancellationToken);
     }
     
     [HttpGet]
-    [Route("{channelName}/{policyName}")]
+    [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
     public async Task<IActionResult> GetDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
@@ -83,7 +91,7 @@ public class DeliveryChannelPoliciesController : HydraController
     }
     
     [HttpPost]
-    [Route("{channelName}/{policyName}")]
+    [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
     public async Task<IActionResult> PutDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
@@ -92,6 +100,8 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
     {
+        hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
+        hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "put"), cancellationToken);
         if (!validationResult.IsValid)
@@ -103,7 +113,7 @@ public class DeliveryChannelPoliciesController : HydraController
     }
     
     [HttpPatch]
-    [Route("{channelId}/{policyName}")]
+    [Route("{deliveryChannelId}/{deliveryChannelPolicyName}")]
     public async Task<IActionResult> PatchDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
@@ -123,7 +133,7 @@ public class DeliveryChannelPoliciesController : HydraController
     } 
     
     [HttpDelete]
-    [Route("{channelId}/{policyName}")]
+    [Route("{deliveryChannelId}/{deliveryChannelPolicyName}")]
     public async Task<IActionResult> DeleteDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,

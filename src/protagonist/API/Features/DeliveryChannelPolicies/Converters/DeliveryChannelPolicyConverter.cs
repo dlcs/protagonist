@@ -12,7 +12,22 @@ public static class DeliveryChannelPolicyConverter
             DisplayName = deliveryChannelPolicy.DisplayName,
             Channel = deliveryChannelPolicy.Channel,
             PolicyData = deliveryChannelPolicy.PolicyData,
-            PolicyModified = deliveryChannelPolicy.Modified,
+            Created = deliveryChannelPolicy.Created,
+            Modified = deliveryChannelPolicy.Modified,
+        };
+    }
+    
+    public static DLCS.Model.Policies.DeliveryChannelPolicy ToDlcsModel(
+        this DLCS.HydraModel.DeliveryChannelPolicy hydraDeliveryChannelPolicy)
+    {
+        return new DLCS.Model.Policies.DeliveryChannelPolicy()
+        {
+            Name = hydraDeliveryChannelPolicy.Name,
+            DisplayName = hydraDeliveryChannelPolicy.DisplayName,
+            Channel = hydraDeliveryChannelPolicy.Channel,
+            PolicyData = hydraDeliveryChannelPolicy.PolicyData,
+            Created = hydraDeliveryChannelPolicy.Created.Value, // todo: deal with the nullable values here
+            Modified = hydraDeliveryChannelPolicy.Modified.Value 
         };
     }
 }
