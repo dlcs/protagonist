@@ -50,6 +50,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"StoragePolicies\" WHERE \"Id\" not in ('default', 'small', 'medium')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DeliveryChannelPolicies\" WHERE \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw(
             "DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" not in ('fast-higher', 'video-max', 'audio-max', 'cust-default')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
@@ -163,6 +164,15 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             {
                 Id = "cust-default", Name = "Customer Scoped", TechnicalDetails = new[] { "default" },
                 Global = false, Customer = 99
+            });
+        await DbContext.DeliveryChannelPolicies.AddAsync(new DeliveryChannelPolicy()
+            {
+                Customer = 99,
+                Name = "example-thumbs-policy",
+                DisplayName = "Example Thumbnail Policy",
+                Channel = "thumbs",
+                PolicyData = "{[\"!1024,1024\",\"!400,400\",\"!200,200\",\"!100,100\"]}",
+                System = false,
             });
         await DbContext.AuthServices.AddAsync(new AuthService
         {
