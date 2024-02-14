@@ -14,25 +14,31 @@ public class HydraDeliveryChannelPolicyValidator : AbstractValidator<DLCS.HydraM
         RuleFor(p => p.Id)
             .Empty()
             .WithMessage(p => $"DLCS must allocate named origin strategy id, but id {p.Id} was supplied");
+        RuleFor(p => p.CustomerId)
+            .Empty()
+            .WithMessage("Should not include user id");
         RuleSet("post", () =>
         {
+            RuleFor(c => c.Name)
+                .NotEmpty().WithMessage("'name' is required");        
             RuleFor(c => c.Channel)
-                .Empty().WithMessage("'name' is required");         
+                .NotEmpty().WithMessage("'channel' is required"); 
         });
         RuleSet("put", () =>
         {
-            RuleFor(c => c.Channel)
+            RuleFor(c => c.Name)
                 .NotEmpty().WithMessage("'name' is not permitted");         
         });
         RuleSet("patch", () =>
         {
             RuleFor(c => c.Channel)
-                .Empty().WithMessage("'Name' cannot be modified in a PATCH operation");         
+                .Empty().WithMessage("'name' cannot be modified in a PATCH operation");         
             RuleFor(c => c.Channel)
-                .Empty().WithMessage("'Channel' cannot be modified in a PATCH operation");         
+                .Empty().WithMessage("'channel' cannot be modified in a PATCH operation");         
         });
         RuleFor(p => p.Channel)
-            .Must(c => c == null || allowedDeliveryChannels.Contains(c))
+            .Must(c => allowedDeliveryChannels.Contains(c))
+            .When(p => p != null)
             .WithMessage(p => $"'{p.Channel}' is not a supported delivery channel");
         RuleFor(p => p.Modified)
             .Empty().WithMessage(c => $"'policyModified' is not permitted");

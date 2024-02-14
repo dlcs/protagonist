@@ -53,7 +53,7 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
     {
-        hydraDeliveryChannelPolicy.Channel = deliveryChannelName; // Channel
+        hydraDeliveryChannelPolicy.Channel = deliveryChannelName; // Model channel should be from path
         
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "post"), cancellationToken);

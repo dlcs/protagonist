@@ -51,8 +51,8 @@ public class CreateDeliveryChannelPolicyHandler : IRequestHandler<CreateDelivery
             DisplayName = request.DeliveryChannelPolicy.DisplayName,
             Channel = request.DeliveryChannelPolicy.Channel,
             System = false,
-            Modified = DateTime.Now,
-            Created = DateTime.Now, 
+            Modified = DateTime.UtcNow,
+            Created = DateTime.UtcNow,
             PolicyData = request.DeliveryChannelPolicy.PolicyData,
         };
         

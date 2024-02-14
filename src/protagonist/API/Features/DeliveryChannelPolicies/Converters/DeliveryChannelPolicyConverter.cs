@@ -8,6 +8,7 @@ public static class DeliveryChannelPolicyConverter
     {
         return new DLCS.HydraModel.DeliveryChannelPolicy(baseUrl)
         {
+            CustomerId = deliveryChannelPolicy.Customer,
             Name = deliveryChannelPolicy.Name,
             DisplayName = deliveryChannelPolicy.DisplayName,
             Channel = deliveryChannelPolicy.Channel,
@@ -22,12 +23,17 @@ public static class DeliveryChannelPolicyConverter
     {
         return new DLCS.Model.Policies.DeliveryChannelPolicy()
         {
+            Customer = hydraDeliveryChannelPolicy.CustomerId,
             Name = hydraDeliveryChannelPolicy.Name,
             DisplayName = hydraDeliveryChannelPolicy.DisplayName,
             Channel = hydraDeliveryChannelPolicy.Channel,
             PolicyData = hydraDeliveryChannelPolicy.PolicyData,
-            Created = hydraDeliveryChannelPolicy.Created.Value, // todo: deal with the nullable values here
-            Modified = hydraDeliveryChannelPolicy.Modified.Value 
+            Created = hydraDeliveryChannelPolicy.Created.HasValue // find a better way to deal with these 
+                ? hydraDeliveryChannelPolicy.Created.Value
+                : DateTime.MinValue,
+            Modified = hydraDeliveryChannelPolicy.Modified.HasValue
+                ? hydraDeliveryChannelPolicy.Modified.Value
+                : DateTime.MinValue,
         };
     }
 }
