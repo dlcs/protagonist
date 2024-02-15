@@ -44,12 +44,13 @@ public class CreateDeliveryChannelPolicyHandler : IRequestHandler<CreateDelivery
                 WriteResult.Conflict);
         }
         
+        // todo: validate channel + policyData
         var newDeliveryChannelPolicy = new DeliveryChannelPolicy()
         {
-            Customer = request.DeliveryChannelPolicy.Customer,
+            Customer = request.CustomerId,
             Name = request.DeliveryChannelPolicy.Name,
             DisplayName = request.DeliveryChannelPolicy.DisplayName,
-            Channel = request.DeliveryChannelPolicy.Channel,
+            Channel = request.DeliveryChannelPolicy.Channel, 
             System = false,
             Modified = DateTime.UtcNow,
             Created = DateTime.UtcNow,

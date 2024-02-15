@@ -86,11 +86,10 @@ public class DeliveryChannelPoliciesController : HydraController
             getDeliveryChannelPolicy,
             policy => policy.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Get delivery channel policy failed",
-            cancellationToken: cancellationToken
-        );
+            cancellationToken: cancellationToken);
     }
     
-    [HttpPost]
+    [HttpPut]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
     public async Task<IActionResult> PutDeliveryChannelPolicy(
         [FromRoute] int customerId,
@@ -102,6 +101,7 @@ public class DeliveryChannelPoliciesController : HydraController
     {
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
+        
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "put"), cancellationToken);
         if (!validationResult.IsValid)
@@ -109,7 +109,13 @@ public class DeliveryChannelPoliciesController : HydraController
             return this.ValidationFailed(validationResult);
         }
         
-        throw new NotImplementedException();     
+        var updateDeliveryChannelPolicy =
+            new UpdateDeliveryChannelPolicy(customerId, hydraDeliveryChannelPolicy.ToDlcsModel());
+
+        return await HandleUpsert(updateDeliveryChannelPolicy, 
+            s => s.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to update delivery channel policy",
+            cancellationToken: cancellationToken);
     }
     
     [HttpPatch]
@@ -122,6 +128,9 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
     {
+        hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
+        hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
+        
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "patch"), cancellationToken);
         if (!validationResult.IsValid)
