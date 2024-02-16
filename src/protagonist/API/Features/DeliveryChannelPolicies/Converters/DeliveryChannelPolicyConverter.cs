@@ -6,12 +6,10 @@ public static class DeliveryChannelPolicyConverter
         this DLCS.Model.Policies.DeliveryChannelPolicy deliveryChannelPolicy,
         string baseUrl)
     {
-        return new DLCS.HydraModel.DeliveryChannelPolicy(baseUrl)
+        return new DLCS.HydraModel.DeliveryChannelPolicy(baseUrl, deliveryChannelPolicy.Customer,
+            deliveryChannelPolicy.Channel, deliveryChannelPolicy.Name)
         {
-            CustomerId = deliveryChannelPolicy.Customer,
-            Name = deliveryChannelPolicy.Name,
             DisplayName = deliveryChannelPolicy.DisplayName,
-            Channel = deliveryChannelPolicy.Channel,
             PolicyData = deliveryChannelPolicy.PolicyData,
             Created = deliveryChannelPolicy.Created,
             Modified = deliveryChannelPolicy.Modified,

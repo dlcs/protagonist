@@ -17,9 +17,12 @@ public class DeliveryChannelPolicy : DlcsResource
     {
     }
     
-    public DeliveryChannelPolicy(string baseUrl)
+    public DeliveryChannelPolicy(string baseUrl, int customerId, string channelName, string name)
     {
-        Init(baseUrl, false);
+        CustomerId = customerId;
+        Channel = channelName;
+        Name = name;
+        Init(baseUrl, true, customerId, channelName, name);
     }
     
     [RdfProperty(Description = "The URL-friendly name of this delivery channel policy.", 
@@ -49,7 +52,7 @@ public class DeliveryChannelPolicy : DlcsResource
     
     [RdfProperty(Description = "The date this policy was last modified.",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 14, PropertyName = "policyModified")]
+    [JsonProperty(Order = 15, PropertyName = "policyModified")]
     public DateTime? Modified { get; set; }   
 }
 
