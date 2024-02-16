@@ -74,7 +74,7 @@ public class CustomerDefaultDeliveryChannelsController : HydraController
     /// <returns>A Hydra JSON-LD default delivery channel object</returns>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> CreateCustomerDefaultDeliveryChannel([FromRoute] int customerId, 
+    public async Task<IActionResult> CreateCustomerDefaultDeliveryChannel([FromRoute] int customerId,
         [FromBody]DefaultDeliveryChannel defaultDeliveryChannel,
         [FromServices] HydraDefaultDeliveryChannelValidator validator,
         CancellationToken cancellationToken)
@@ -99,35 +99,52 @@ public class CustomerDefaultDeliveryChannelsController : HydraController
         }
     }
     
+    /// <summary>
+    /// Create a single default delivery channel
+    /// </summary>
+    /// <returns>A Hydra JSON-LD default delivery channel object</returns>
+    [HttpPut("{defaultDeliveryChannelId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateCustomerDefaultDeliveryChannel([FromRoute] int customerId,
+        [FromBody]DefaultDeliveryChannel defaultDeliveryChannel,
+        [FromServices] HydraDefaultDeliveryChannelValidator validator,
+        string defaultDeliveryChannelId,
+        CancellationToken cancellationToken)
+    {
+
+        defaultDeliveryChannel.Id = defaultDeliveryChannelId;
+        
+        var validationResult = await validator.ValidateAsync(defaultDeliveryChannel, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
+        
+        var command = new UpdateCustomerDefaultDeliveryChannel(customerId, defaultDeliveryChannel.ToDlcsModelWithoutPolicy( 0, customerId));
+
+        return await HandleUpsert(command, 
+            ch => ch.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to update Default Delivery Channel",
+            cancellationToken: cancellationToken);
+    }
+    
     // /// <summary>
-    // /// Create a single default delivery channel
+    // /// Get an individual customer accessible default delivery channel (customer specific + system)
     // /// </summary>
     // /// <returns>A Hydra JSON-LD default delivery channel object</returns>
-    // [HttpPut("{defaultDeliveryChannelId}")]
+    // [HttpDelete("{defaultDeliveryChannelId}")]
     // [ProducesResponseType(StatusCodes.Status200OK)]
-    // public async Task<IActionResult> UpdateCustomerDefaultDeliveryChannel([FromRoute] int customerId,
-    //     [FromBody]DefaultDeliveryChannel defaultDeliveryChannel,
-    //     [FromServices] HydraDefaultDeliveryChannelValidator validator,
+    // public async Task<IActionResult> DeleteCustomerDefaultDeliveryChannel(
+    //     string defaultDeliveryChannelId,
     //     CancellationToken cancellationToken)
     // {
-    //     var command = new UpdateCustomerDefaultDeliveryChannel(customerId, defaultDeliveryChannel);
-    //     
-    //     // var validationResult = await validator.ValidateAsync(customHeaderChanges, cancellationToken);
-    //     // if (!validationResult.IsValid)
-    //     // {
-    //     //     return this.ValidationFailed(validationResult);
-    //     // }
-    //     
-    //     command.Customer = customerId;
-    //     
-    //     
-    //     
-    //     customHeaderChanges.ModelId = customHeaderId;
-    //     var request = new UpdateCustomHeader(customerId, customHeaderChanges.ToDlcsModel());
-    //     
-    //     return await HandleUpsert(request, 
-    //         ch => ch.ToHydra(GetUrlRoots().BaseUrl),
-    //         errorTitle: "Failed to update Custom Header",
-    //         cancellationToken: cancellationToken);
+    //     var getCustomerDefaultDeliveryChannel = new DeleteCustomerDefaultDeliveryChannel(defaultDeliveryChannelId);
+    //
+    //     return await HandleFetch(
+    //         getCustomerDefaultDeliveryChannel,
+    //         policy => policy.ToHydra(GetUrlRoots().BaseUrl),
+    //         errorTitle: "Get default delivery channel failed",
+    //         cancellationToken: cancellationToken
+    //     );
     // }
 }
