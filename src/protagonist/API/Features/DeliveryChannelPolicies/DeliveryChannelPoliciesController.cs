@@ -1,13 +1,17 @@
-﻿using API.Features.DeliveryChannelPolicies.Converters;
+﻿using System.Collections.Generic;
+using API.Features.DeliveryChannelPolicies.Converters;
 using API.Features.DeliveryChannelPolicies.Requests;
 using API.Features.DeliveryChannelPolicies.Validation;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
+using DLCS.Web.Requests;
 using FluentValidation;
+using Hydra.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -36,10 +40,39 @@ public class DeliveryChannelPoliciesController : HydraController
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDeliveryChannelPolicyCollections(
-        [FromRoute] int customerId,
-        CancellationToken cancellationToken)
+        [FromRoute] int customerId)
     {
-        throw new NotImplementedException();
+        var baseUrl = Request.GetDisplayUrl(Request.Path);
+
+        var hydraPolicyCollections = new List<HydraNestedCollection<DeliveryChannelPolicy>>()
+        {
+            new(baseUrl, "iif-img" )
+            {
+                Title = "Policies for IIIF Image service delivery",
+            },
+            new(baseUrl, "iif-thumbs")
+            {
+                Title = "Policies for thumbnails as IIIF Image Services",
+            },
+            new(baseUrl, "iif-av")
+            {
+                Title = "Policies for Audio and Video delivery",
+            },
+            new(baseUrl, "file")
+            {
+                Title = "Policies for File delivery",
+            }
+        };
+        
+        var result = new HydraCollection<HydraNestedCollection<DeliveryChannelPolicy>>()
+        {
+            WithContext = true,
+            Members = hydraPolicyCollections.ToArray(),
+            TotalItems = hydraPolicyCollections.Count,
+            Id = Request.GetJsonLdId()
+        };
+
+        return new OkObjectResult(result);
     }
 
     [HttpGet]
@@ -50,7 +83,14 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromRoute] string deliveryChannelName,
         CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var request = new GetDeliveryChannelPolicies(customerId, deliveryChannelName);
+        
+        return await HandleListFetch<DLCS.Model.Policies.DeliveryChannelPolicy, GetDeliveryChannelPolicies, DeliveryChannelPolicy>(
+            request,
+            p => p.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to get delivery channel policies",
+            cancellationToken: cancellationToken
+        );
     }    
     
     [HttpPost]
