@@ -37,7 +37,7 @@ When Engine is given an asset with:
  }
 ```
 
-...then Engine _looks up_ "video-mp4-720p" and sees, in some form, "Transcode with "System preset: 'Mp4 HLS 720p'; Extension: 'mp4'" so it calls Elastic Transcoder with that information.
+...then Engine _looks up_ "video-mp4-720p" and sees, in some form, `"Transcode with "System preset: 'Mp4 HLS 720p'; Extension: 'mp4'"`, so it calls Elastic Transcoder with that information.
 
 This RFC is to discuss where this data is stored within protagonist
 

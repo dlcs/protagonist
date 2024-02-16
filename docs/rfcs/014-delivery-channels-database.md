@@ -85,7 +85,7 @@ These will act as a template and be copied (not referenced) for new customers wh
 
 ## Creating new delivery channels
 
-customer creates custom av policy
+Customer creates custom av policy
 
 ```
 POST /{base}/customers/20/deliveryChannelPolicies/iiif-av
@@ -104,7 +104,7 @@ This produces a row in DeliveryChannelPolicies
 | 1  | 20       | iiif-av | specific-mp4 | a specific policy for mp4 | 0      | (now)         | (now)          | [\"video-mp4-1080p\"] |
 ```
 
-And there's now a DeliveryChannelPolicy resource at /customers/20/deliveryChannelPolicies/iiif-av/specific-mp4 that would look like this:
+And there's now a DeliveryChannelPolicy resource at `/customers/20/deliveryChannelPolicies/iiif-av/specific-mp4` that would look like this:
 ```
 {
     "@id": "https://api.dlcs.io/customers/20/deliveryChannelPolicies/iiif-av/specific-mp4",
@@ -141,7 +141,8 @@ POST /{base}/customers/20/spaces/5/defaultDeliveryChannels
    "policy": "https://api.dlcs.io/customers/20/deliveryChannelPolicies/iiif-av/specific-mp4",
    "mediaType": "video/*"
 }
-```#
+```
+
 This creates a row in DefaultDeliveryChannels:
 ```
 | Customer | Space | MediaType    | DeliveryChannelPolicyId |
