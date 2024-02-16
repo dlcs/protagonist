@@ -36,10 +36,19 @@ public class UpdateDeliveryChannelPolicyHandler : IRequestHandler<UpdateDelivery
             p.Channel == request.DeliveryChannelPolicy.Channel &&
             p.Name == request.DeliveryChannelPolicy.Name,
             cancellationToken);
-        
-        if (existingDeliveryChannelPolicy == null)
+
+        if (existingDeliveryChannelPolicy != null)
         {
-            // todo: validate channel + policydata
+            existingDeliveryChannelPolicy.DisplayName = request.DeliveryChannelPolicy.DisplayName;
+            existingDeliveryChannelPolicy.Modified = DateTime.UtcNow;
+            existingDeliveryChannelPolicy.PolicyData = request.DeliveryChannelPolicy.PolicyData;
+            
+            await dbContext.SaveChangesAsync(cancellationToken); 
+    
+            return ModifyEntityResult<DeliveryChannelPolicy>.Success(existingDeliveryChannelPolicy);
+        }
+        else
+        {
             var newDeliveryChannelPolicy = new DeliveryChannelPolicy()
             {
                 Customer = request.CustomerId,
@@ -57,17 +66,5 @@ public class UpdateDeliveryChannelPolicyHandler : IRequestHandler<UpdateDelivery
             
             return ModifyEntityResult<DeliveryChannelPolicy>.Success(newDeliveryChannelPolicy, WriteResult.Created);
         }
-        
-        existingDeliveryChannelPolicy.DisplayName = request.DeliveryChannelPolicy.DisplayName;
-        
-        // todo: validate channel + policyData
-        existingDeliveryChannelPolicy.Channel = request.DeliveryChannelPolicy.Channel;
-        existingDeliveryChannelPolicy.PolicyData = request.DeliveryChannelPolicy.PolicyData;
-        
-        existingDeliveryChannelPolicy.Modified = DateTime.UtcNow;
-        
-        await dbContext.SaveChangesAsync(cancellationToken); 
-    
-        return ModifyEntityResult<DeliveryChannelPolicy>.Success(existingDeliveryChannelPolicy);
     }
 }

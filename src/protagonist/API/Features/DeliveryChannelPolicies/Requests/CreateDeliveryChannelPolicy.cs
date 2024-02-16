@@ -40,11 +40,10 @@ public class CreateDeliveryChannelPolicyHandler : IRequestHandler<CreateDelivery
         if (nameInUse)
         {
             return ModifyEntityResult<DeliveryChannelPolicy>.Failure(
-                $"A policy for delivery channel '{request.DeliveryChannelPolicy.Channel}' called '{request.DeliveryChannelPolicy.Name}' already exists" , 
+                $"A {request.DeliveryChannelPolicy.Channel}' policy called '{request.DeliveryChannelPolicy.Name}' already exists" , 
                 WriteResult.Conflict);
         }
         
-        // todo: validate channel + policyData
         var newDeliveryChannelPolicy = new DeliveryChannelPolicy()
         {
             Customer = request.CustomerId,
