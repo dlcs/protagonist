@@ -6,6 +6,7 @@ namespace DLCS.Model.Assets;
 
 public static class AssetDeliveryChannels
 {
+    
     public const string Image = "iiif-img";
     public const string Thumbnails = "thumbs";
     public const string Timebased = "iiif-av";
