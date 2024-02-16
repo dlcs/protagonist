@@ -1,4 +1,5 @@
-﻿using API.Infrastructure.Requests;
+﻿using API.Features.DeliveryChannelPolicies.Validation;
+using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Policies;
 using DLCS.Repository;
@@ -42,6 +43,13 @@ public class CreateDeliveryChannelPolicyHandler : IRequestHandler<CreateDelivery
             return ModifyEntityResult<DeliveryChannelPolicy>.Failure(
                 $"A {request.DeliveryChannelPolicy.Channel}' policy called '{request.DeliveryChannelPolicy.Name}' already exists" , 
                 WriteResult.Conflict);
+        }
+             
+        if(!PolicyDataValidator.Validate(request.DeliveryChannelPolicy.PolicyData, request.DeliveryChannelPolicy.Channel))
+        {
+            return ModifyEntityResult<DeliveryChannelPolicy>.Failure(
+                $"'policyData' contains bad JSON or invalid data", 
+                WriteResult.FailedValidation);
         }
         
         var newDeliveryChannelPolicy = new DeliveryChannelPolicy()

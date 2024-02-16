@@ -1,4 +1,5 @@
-﻿using API.Infrastructure.Requests;
+﻿using API.Features.DeliveryChannelPolicies.Validation;
+using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Policies;
 using DLCS.Repository;
@@ -31,6 +32,13 @@ public class UpdateDeliveryChannelPolicyHandler : IRequestHandler<UpdateDelivery
     
     public async Task<ModifyEntityResult<DeliveryChannelPolicy>> Handle(UpdateDeliveryChannelPolicy request, CancellationToken cancellationToken)
     {
+        if(!PolicyDataValidator.Validate(request.DeliveryChannelPolicy.PolicyData, request.DeliveryChannelPolicy.Channel))
+        {
+            return ModifyEntityResult<DeliveryChannelPolicy>.Failure(
+                $"'policyData' contains bad JSON or invalid data", 
+                WriteResult.FailedValidation);
+        }
+        
         var existingDeliveryChannelPolicy = await dbContext.DeliveryChannelPolicies.SingleOrDefaultAsync(p => 
             p.Customer == request.CustomerId &&
             p.Channel == request.DeliveryChannelPolicy.Channel &&

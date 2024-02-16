@@ -1,6 +1,4 @@
-﻿
-using System.Collections.Generic;
-using API.Features.DeliveryChannelPolicies.Converters;
+﻿using API.Features.DeliveryChannelPolicies.Converters;
 using API.Features.DeliveryChannelPolicies.Requests;
 using API.Features.DeliveryChannelPolicies.Validation;
 using API.Infrastructure;
@@ -22,7 +20,12 @@ namespace API.Features.DeliveryChannelPolicies;
 [ApiController]
 public class DeliveryChannelPoliciesController : HydraController
 {
-    private readonly string[] allowedDeliveryChannels = {"iiif-img", "iiif-av", "thumbs"};
+    private readonly string[] allowedDeliveryChannels =
+    {
+        AssetDeliveryChannels.Image,
+        AssetDeliveryChannels.Timebased,
+        AssetDeliveryChannels.Thumbnails
+    };
     
     public DeliveryChannelPoliciesController(
         IMediator mediator,

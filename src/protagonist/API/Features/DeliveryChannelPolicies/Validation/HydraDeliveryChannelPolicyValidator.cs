@@ -20,12 +20,18 @@ public class HydraDeliveryChannelPolicyValidator : AbstractValidator<DLCS.HydraM
             RuleFor(p => p.Name)
                 .NotEmpty()
                 .WithMessage("'name' is required");
+            RuleFor(p => p.PolicyData)
+                .NotEmpty()
+                .WithMessage("'policyData' is required");
         });
         RuleSet("put-patch", () =>
         {
             RuleFor(p => p.Name)
                 .Empty()
                 .WithMessage("'name' should be set in the URL");
+            RuleFor(p => p.PolicyData)
+                .NotEmpty()
+                .WithMessage("'policyData' is required");
         }); 
         RuleFor(p => p.Channel)
             .Empty()
