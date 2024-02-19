@@ -1,4 +1,5 @@
 using System;
+using System.Formats.Asn1;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -171,14 +172,16 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task NewlyCreatedCustomer_RollsBackSuccessfully_WhenDeliveryChannelsNotCreatedSuccessfully()
     {
-        const int expectedCustomerId = 2;
+        var expectedCustomerId = (int)dbContext.EntityCounters.Single(c => c.Type == "customer" && c.Scope == "0" && c.Customer == 0).Next;
 
         const string url = "/customers";
         const string customerJson = @"{
-  ""name"": ""apiTest2"",
+  ""name"": ""customerApiTest2"",
   ""displayName"": ""testing api customer 2""
     }";
         var content = new StringContent(customerJson, Encoding.UTF8, "application/json");
+
+        var test = dbContext.EntityCounters.Single(c => c.Type == "customer" && c.Scope == "0" && c.Customer == 0).Next;
         
         dbContext.DeliveryChannelPolicies.Add(new DLCS.Model.Policies.DeliveryChannelPolicy()
         {
