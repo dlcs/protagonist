@@ -1,11 +1,10 @@
-﻿using API.Features.DefaultDeliveryChannels.Converters;
-using API.Infrastructure.Requests;
+﻿using API.Infrastructure.Requests;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace API.Features.DefaultDeliveryChannels.Requests;
+namespace API.Features.DeliveryChannels.Requests;
 
 public class GetCustomerDefaultDeliveryChannel : IRequest<FetchEntityResult<DefaultDeliveryChannel>>
 {

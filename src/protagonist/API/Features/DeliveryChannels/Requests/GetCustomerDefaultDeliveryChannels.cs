@@ -5,17 +5,19 @@ using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace API.Features.DefaultDeliveryChannels.Requests;
+namespace API.Features.DeliveryChannels.Requests;
 
 public class GetCustomerDefaultDeliveryChannels: IRequest<FetchEntityResult<PageOf<DefaultDeliveryChannel>>>, IPagedRequest
 {
     public int Page { get; set; }
     public int PageSize { get; set; }
     public int Customer { get; }
+    public int Space { get; }
     
-    public GetCustomerDefaultDeliveryChannels(int customer)
+    public GetCustomerDefaultDeliveryChannels(int customer, int space)
     {
         Customer = customer;
+        Space = space;
     }
 }
 
@@ -44,10 +46,9 @@ public class GetCustomerDefaultDeliveryChannelsHandler : IRequestHandler<GetCust
 
     private static Func<IQueryable<DefaultDeliveryChannel>, IQueryable<DefaultDeliveryChannel>> GetFilterForRequest(GetCustomerDefaultDeliveryChannels request)
     {
-        Func<IQueryable<DefaultDeliveryChannel>, IQueryable<DefaultDeliveryChannel>> filter =
-             defaultDeliveryChannels => defaultDeliveryChannels.Include(d => d.DeliveryChannelPolicy)
-                 .Where(d => d.Customer == request.Customer && 
-                             d.Space == 0);
-        return filter;
+        return defaultDeliveryChannels => defaultDeliveryChannels
+            .Include(d => d.DeliveryChannelPolicy)
+            .Where(d => d.Customer == request.Customer && 
+                        d.Space == request.Space);
     }
 }

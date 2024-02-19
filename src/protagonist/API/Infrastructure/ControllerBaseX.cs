@@ -160,6 +160,7 @@ public static class ControllerBaseX
             WriteResult.Created => controller.HydraCreated(hydraBuilder(entityResult.Entity)),
             WriteResult.NotFound => controller.HydraNotFound(entityResult.Error),
             WriteResult.Error => controller.HydraProblem(entityResult.Error, instance, 500, errorTitle),
+            WriteResult.BadRequest => controller.HydraProblem(entityResult.Error, instance, 400, errorTitle),
             WriteResult.Conflict => controller.HydraProblem(entityResult.Error, instance, 409, 
                 $"{errorTitle}: Conflict"),
             WriteResult.FailedValidation => controller.HydraProblem(entityResult.Error, instance, 400,

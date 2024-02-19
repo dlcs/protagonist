@@ -1,6 +1,6 @@
 ﻿using DLCS.Model.DeliveryChannels;
 
-namespace API.Features.DefaultDeliveryChannels.Converters;
+namespace API.Features.DeliveryChannels.Converters;
 
 public static class DefaultDeliveryChannelConverters
 {
@@ -25,15 +25,13 @@ public static class DefaultDeliveryChannelConverters
     /// </summary>
     public static DefaultDeliveryChannel ToDlcsModelWithoutPolicy(this DLCS.HydraModel.DefaultDeliveryChannel hydraDefaultDeliveryChannel, int space, int customerId)
     {
-        
-        
         return new DefaultDeliveryChannel()
         {
             Id = Guid.TryParse(hydraDefaultDeliveryChannel.Id!, out var defaultDeliveryChannelGuid) 
                 ? defaultDeliveryChannelGuid : throw new ArgumentException("Could not parse id into guid"),
             Customer = customerId,
             Space = space,
-            MediaType = hydraDefaultDeliveryChannel.MediaType
+            MediaType = hydraDefaultDeliveryChannel.MediaType,
         };
     }
 
