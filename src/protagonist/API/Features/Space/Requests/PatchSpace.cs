@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Net;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Strings;

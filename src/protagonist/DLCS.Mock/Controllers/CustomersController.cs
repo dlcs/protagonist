@@ -5,7 +5,6 @@ using DLCS.Mock.ApiApp;
 using Hydra.Collections;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 
 namespace DLCS.Mock.Controllers;

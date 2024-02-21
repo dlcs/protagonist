@@ -1,9 +1,7 @@
 ﻿using System.Linq;
 using DLCS.Web.IIIF;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
-using Xunit;
 using Presi = IIIF.Presentation;
 
 namespace DLCS.Web.Tests.IIIF;

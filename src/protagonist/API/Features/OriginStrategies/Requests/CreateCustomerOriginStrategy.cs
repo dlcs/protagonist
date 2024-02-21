@@ -1,10 +1,7 @@
 ﻿using System.Text.Json;
 using API.Features.OriginStrategies.Credentials;
 using API.Infrastructure.Requests;
-using DLCS.AWS.S3;
-using DLCS.AWS.S3.Models;
 using DLCS.Core;
-using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Repository;
 using MediatR;

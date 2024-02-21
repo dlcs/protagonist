@@ -1,6 +1,4 @@
-﻿using API.Exceptions;
-
-namespace API.Features.NamedQueries.Converters;
+﻿namespace API.Features.NamedQueries.Converters;
 
 public static class NamedQueryConverter
 {

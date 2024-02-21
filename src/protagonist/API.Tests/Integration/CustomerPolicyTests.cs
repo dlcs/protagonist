@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
-using DLCS.Repository;
 using Hydra.Collections;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;

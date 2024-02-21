@@ -1,7 +1,5 @@
 ﻿using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Web.Tests.Requests.AssetDelivery;
 

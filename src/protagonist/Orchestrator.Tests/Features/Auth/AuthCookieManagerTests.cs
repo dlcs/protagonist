@@ -2,12 +2,10 @@
 using System.Linq;
 using DLCS.Repository.Auth;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Orchestrator.Features.Auth;
 using Orchestrator.Settings;
-using Xunit;
 
 namespace Orchestrator.Tests.Features.Auth;
 

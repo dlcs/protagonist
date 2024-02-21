@@ -5,9 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Web.Handlers;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
-using Xunit;
 
 namespace DLCS.Web.Tests.Handlers;
 

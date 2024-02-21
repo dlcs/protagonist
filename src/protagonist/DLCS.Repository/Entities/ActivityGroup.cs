@@ -1,6 +1,6 @@
-﻿using System;
+﻿#nullable disable
 
-#nullable disable
+using System;
 
 namespace DLCS.Repository.Entities;
 

@@ -1,7 +1,5 @@
 ﻿using System.IO;
 using DLCS.Core.Streams;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Core.Tests.Guard;
 

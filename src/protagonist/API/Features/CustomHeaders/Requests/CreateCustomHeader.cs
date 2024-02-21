@@ -3,7 +3,6 @@ using DLCS.Core;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Repository;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.CustomHeaders.Requests;
 

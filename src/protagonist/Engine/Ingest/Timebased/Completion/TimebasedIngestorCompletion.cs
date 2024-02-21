@@ -1,5 +1,4 @@
-﻿using System.Text;
-using DLCS.AWS.ElasticTranscoder;
+﻿using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.S3;
 using DLCS.Core.Types;

@@ -2,16 +2,13 @@
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Repository.Strategy;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers.Http;
-using Xunit;
 
 namespace DLCS.Repository.Tests.Strategy;
 

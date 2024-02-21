@@ -4,9 +4,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using DLCS.Web.Response;
-using FluentAssertions;
 using Newtonsoft.Json;
-using Xunit;
 
 namespace DLCS.Web.Tests.Response;
 

@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
-using System.Threading.Tasks;
 using DLCS.AWS.SQS;
 using DLCS.Core.Settings;
 using DLCS.Core.Types;
@@ -11,12 +10,10 @@ using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository.Messaging;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Test.Helpers.Http;
-using Xunit;
 
 namespace DLCS.Repository.Tests.Messaging;
 

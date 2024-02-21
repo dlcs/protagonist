@@ -1,7 +1,5 @@
 ﻿using System;
 using DLCS.Core.Encryption;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Core.Tests.Encryption;
 

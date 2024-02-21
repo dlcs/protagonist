@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Core.Collections;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Core.Tests.Collections;
 

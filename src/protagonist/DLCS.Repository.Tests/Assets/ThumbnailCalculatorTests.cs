@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using DLCS.Model.Assets;
 using DLCS.Repository.Assets;
-using FluentAssertions;
 using IIIF;
 using IIIF.ImageApi;
-using Xunit;
 
 namespace DLCS.Repository.Tests.Assets;
 

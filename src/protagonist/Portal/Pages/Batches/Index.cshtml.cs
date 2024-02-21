@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using DLCS.Core;
 using DLCS.HydraModel;
 using Hydra.Collections;
 using MediatR;

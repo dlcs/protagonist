@@ -1,5 +1,4 @@
-﻿using System;
-using DLCS.Repository;
+﻿using DLCS.Repository;
 using Microsoft.Extensions.Configuration;
 
 var configuration = new ConfigurationBuilder()

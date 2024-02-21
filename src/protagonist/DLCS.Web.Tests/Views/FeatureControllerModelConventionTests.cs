@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using DLCS.Web.Views;
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Project.Features.Home;
-using Xunit;
 
 namespace DLCS.Web.Tests.Views
 {

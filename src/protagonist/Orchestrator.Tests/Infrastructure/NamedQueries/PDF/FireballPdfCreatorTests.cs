@@ -6,24 +6,19 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
-using DLCS.Model.Storage;
 using FakeItEasy;
 using FizzWare.NBuilder;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.NamedQueries.PDF;
 using Orchestrator.Settings;
 using Test.Helpers.Http;
-using Xunit;
 
 namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF;
 

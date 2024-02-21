@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Caching;
-using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using LazyCache;

@@ -1,8 +1,6 @@
 ﻿using System;
 using DLCS.Web.Auth;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
-using Xunit;
 
 namespace DLCS.Web.Tests.Auth;
 
