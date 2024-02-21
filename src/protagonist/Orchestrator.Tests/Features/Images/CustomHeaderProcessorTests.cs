@@ -2,11 +2,9 @@
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.CustomHeaders;
-using FluentAssertions;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images;
 using Orchestrator.Infrastructure.ReverseProxy;
-using Xunit;
 
 namespace Orchestrator.Tests.Features.Images;
 

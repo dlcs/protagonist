@@ -1,12 +1,12 @@
-﻿using API.Infrastructure.Requests;
+﻿using API.Features.OriginStrategies.Credentials;
+using API.Infrastructure.Requests;
 using DLCS.Core;
+using DLCS.Core.Enum;
+using DLCS.Core.Strings;
 using DLCS.Model.Customers;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using API.Features.OriginStrategies.Credentials;
-using DLCS.Core.Enum;
-using DLCS.Core.Strings;
 
 namespace API.Features.OriginStrategies.Requests;
 

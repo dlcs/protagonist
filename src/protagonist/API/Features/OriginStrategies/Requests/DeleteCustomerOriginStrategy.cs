@@ -1,8 +1,5 @@
 ﻿using API.Features.OriginStrategies.Credentials;
-using DLCS.AWS.S3;
-using DLCS.AWS.S3.Models;
 using DLCS.Core;
-using DLCS.Model.Customers;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

@@ -13,7 +13,6 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Stubbery;
-using Test.Helpers;
 using Test.Helpers.Integration;
 
 namespace Orchestrator.Tests.Integration;

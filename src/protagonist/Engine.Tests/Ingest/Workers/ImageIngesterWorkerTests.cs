@@ -9,7 +9,6 @@ using Engine.Settings;
 using Engine.Tests.Ingest.File;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
-using Test.Helpers;
 using Test.Helpers.Settings;
 
 namespace Engine.Tests.Ingest.Workers;

@@ -3,8 +3,6 @@ using System.Threading.Tasks;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using FakeItEasy;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Web.Tests.Requests.AssetDelivery;
 

@@ -3,7 +3,6 @@ using System.Linq;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.NamedQueries.Parsing;
 using FakeItEasy;

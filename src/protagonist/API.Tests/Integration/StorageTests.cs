@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using Test.Helpers.Integration;

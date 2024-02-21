@@ -1,10 +1,7 @@
 ﻿using System.Net;
 using System.Text.Json.Nodes;
-using Amazon.S3;
-using Amazon.S3.Model;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Newtonsoft.Json.Linq;
 using Test.Helpers.Integration;
 using Thumbs.Tests.Integration.Infrastructure;
 

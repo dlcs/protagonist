@@ -2,7 +2,6 @@
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.PathElements;
 using DLCS.Repository.Assets;
 using LazyCache.Mocks;
 using Microsoft.EntityFrameworkCore;

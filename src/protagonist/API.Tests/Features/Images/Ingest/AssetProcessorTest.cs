@@ -3,13 +3,11 @@ using System.Threading.Tasks;
 using API.Features.Assets;
 using API.Features.Image.Ingest;
 using API.Settings;
-using DLCS.Core.Settings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using FakeItEasy;
-using Microsoft.Extensions.Options;
 using Test.Helpers.Settings;
 
 namespace API.Tests.Features.Images.Ingest;

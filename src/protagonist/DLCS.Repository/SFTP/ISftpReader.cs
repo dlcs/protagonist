@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Renci.SshNet;
 
-
 namespace DLCS.Repository.SFTP;
 
 public interface ISftpReader

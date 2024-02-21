@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Collections;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Core.Tests.Collections;
 

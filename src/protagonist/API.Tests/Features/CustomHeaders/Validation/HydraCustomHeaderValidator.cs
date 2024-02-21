@@ -1,6 +1,5 @@
 ﻿using System;
 using API.Features.CustomHeaders.Validation;
-using API.Features.CustomHeaders.Converters;
 using DLCS.HydraModel;
 using FluentValidation.TestHelper;
 

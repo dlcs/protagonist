@@ -1,6 +1,6 @@
 ﻿ using FluentValidation;
 
-namespace API.Features.CustomHeaders.Validation;
+ namespace API.Features.CustomHeaders.Validation;
 
 
 public class HydraCustomHeaderValidator : AbstractValidator<DLCS.HydraModel.CustomHeader>

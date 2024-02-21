@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using DLCS.Core;
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model;

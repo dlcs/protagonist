@@ -7,7 +7,6 @@ using DLCS.Repository.Customers;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Test.Helpers.Integration;
 using Test.Helpers.Settings;
 

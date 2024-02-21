@@ -1,34 +1,21 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
-using DLCS.AWS.S3;
-using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
-using DLCS.Model.Messaging;
 using DLCS.Repository;
-using DLCS.Repository.Messaging;
-using FakeItEasy;
-using FluentAssertions;
 using Hydra.Collections;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
-using Xunit;
-using AssetFamily = DLCS.Model.Assets.AssetFamily;
 
 namespace API.Tests.Integration;
 

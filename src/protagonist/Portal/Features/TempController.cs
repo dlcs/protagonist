@@ -2,7 +2,6 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.AWS.Settings;
-using DLCS.Core.Settings;
 using DLCS.Repository;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

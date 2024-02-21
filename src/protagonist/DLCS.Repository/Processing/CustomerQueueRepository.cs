@@ -1,10 +1,8 @@
 using System;
-using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Processing;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Processing;

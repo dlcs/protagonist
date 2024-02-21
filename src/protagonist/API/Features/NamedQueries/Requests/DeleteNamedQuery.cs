@@ -1,6 +1,4 @@
-﻿using API.Infrastructure.Requests;
-using DLCS.Core;
-using DLCS.Model.Messaging;
+﻿using DLCS.Core;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

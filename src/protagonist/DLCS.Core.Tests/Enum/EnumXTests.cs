@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using DLCS.Core.Enum;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Core.Tests.Enum;
 

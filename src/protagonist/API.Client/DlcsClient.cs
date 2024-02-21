@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading.Tasks;
 using DLCS.HydraModel;
 using DLCS.Web.Auth;
-using DLCS.Web.Response;
 using Hydra;
 using Hydra.Collections;
 using Microsoft.Extensions.Logging;

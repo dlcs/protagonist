@@ -7,13 +7,11 @@ using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Strings;
 using DLCS.HydraModel;
 using DLCS.Repository;
-using FluentAssertions;
 using Hydra;
 using Hydra.Collections;
 using Microsoft.EntityFrameworkCore;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
-using Xunit;
 
 namespace API.Tests.Integration;
 

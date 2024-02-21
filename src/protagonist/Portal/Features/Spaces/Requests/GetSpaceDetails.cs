@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Linq.Dynamic.Core;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,13 +7,11 @@ using DLCS.Core;
 using DLCS.Core.Settings;
 using DLCS.HydraModel;
 using DLCS.Web.Auth;
-using Hydra.Collections;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Portal.Features.Spaces.Models;
 using Portal.Settings;
-using Image = DLCS.HydraModel.Image;
 
 namespace Portal.Features.Spaces.Requests;
 

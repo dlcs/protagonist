@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using System.Data;
 using DLCS.Model;
 using DLCS.Model.Auth;
-using DLCS.Model.DeliveryChannels;
-using DLCS.Model.Policies;
 using DLCS.Model.Processing;
 using DLCS.Repository;
 using DLCS.Repository.Entities;

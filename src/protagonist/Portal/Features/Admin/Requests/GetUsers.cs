@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Customers;
 using DLCS.Repository;
-using DLCS.Repository.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

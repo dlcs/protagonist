@@ -1,7 +1,6 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using DLCS.Core.Collections;
 using DLCS.Web.Response;
 using Hydra;
 using Hydra.Model;

@@ -9,7 +9,6 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.PathElements;
 using IIIF;
-using IIIF.Auth.V2;
 using IIIF.Presentation;
 using IIIF.Presentation.V2.Strings;
 using IIIF.Presentation.V3.Strings;
@@ -113,7 +112,7 @@ public class IIIFManifestBuilder
         return manifest;
     }
 
-    private async Task<Dictionary<AssetId, AuthProbeService2>?> GetProbeServices(IReadOnlyCollection<Asset> assets, CancellationToken cancellationToken)
+    private async Task<Dictionary<AssetId, IIIFAuth2.AuthProbeService2>?> GetProbeServices(IReadOnlyCollection<Asset> assets, CancellationToken cancellationToken)
     {
         var assetsRequiringAuth = assets.Where(a => a.RequiresAuth && !string.IsNullOrEmpty(a.Roles)).ToList();
 
@@ -125,14 +124,14 @@ public class IIIFManifestBuilder
 
         // This is doing a lot - batch the requests up?
         var sw = Stopwatch.StartNew();
-        var probeServices = new Dictionary<AssetId, AuthProbeService2>(assetsRequiringAuthCount);
+        var probeServices = new Dictionary<AssetId, IIIFAuth2.AuthProbeService2>(assetsRequiringAuthCount);
         var taskList = new List<Task>(assetsRequiringAuthCount);
         foreach (var asset in assetsRequiringAuth)
         {
             taskList.Add(authBuilder.GetAuthServicesForAsset(asset.Id, asset.RolesList.ToList(), cancellationToken)
                 .ContinueWith(antecedent =>
                     {
-                        if (antecedent.Result is AuthProbeService2 probeService2)
+                        if (antecedent.Result is IIIFAuth2.AuthProbeService2 probeService2)
                             probeServices[asset.Id] = probeService2;
                     },
                     TaskContinuationOptions.OnlyOnRanToCompletion));
@@ -146,10 +145,10 @@ public class IIIFManifestBuilder
         return probeServices;
     }
     
-    private static List<IService> GetDistinctAccessServices(Dictionary<AssetId, AuthProbeService2>? probeServices)
+    private static List<IService> GetDistinctAccessServices(Dictionary<AssetId, IIIFAuth2.AuthProbeService2>? probeServices)
     {
         var accessServices = probeServices!
-            .SelectMany(kvp => kvp.Value.Service?.OfType<AuthAccessService2>() ?? Array.Empty<AuthAccessService2>())
+            .SelectMany(kvp => kvp.Value.Service?.OfType<IIIFAuth2.AuthAccessService2>() ?? Array.Empty<IIIFAuth2.AuthAccessService2>())
             .DistinctBy(accessService => accessService.Id)
             .Cast<IService>()
             .ToList();

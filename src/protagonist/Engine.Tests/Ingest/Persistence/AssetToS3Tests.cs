@@ -8,7 +8,6 @@ using DLCS.Model.Storage;
 using Engine.Ingest;
 using Engine.Ingest.Persistence;
 using Engine.Settings;
-using Engine.Tests.Integration;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers;

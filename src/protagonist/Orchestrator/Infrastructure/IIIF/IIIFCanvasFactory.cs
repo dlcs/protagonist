@@ -20,7 +20,6 @@ using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Options;
 using Orchestrator.Settings;
-using Presi = IIIF.Presentation;
 using ImageApi = IIIF.ImageApi;
 using IIIF2 = IIIF.Presentation.V2;
 using IIIF3 = IIIF.Presentation.V3;

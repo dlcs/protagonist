@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
 using DLCS.Core.Types;
-using FluentAssertions;
 using IIIF.ImageApi;
 using Orchestrator.Settings;
-using Xunit;
 
 namespace Orchestrator.Tests.Settings;
 

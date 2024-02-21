@@ -2,11 +2,9 @@
 using API.Features.Queues.Validation;
 using API.Settings;
 using DLCS.HydraModel;
-using DLCS.Model.Assets;
 using FluentValidation.TestHelper;
 using Hydra.Collections;
 using Microsoft.Extensions.Options;
-using AssetFamily = DLCS.HydraModel.AssetFamily;
 
 namespace API.Tests.Features.Queues.Validation;
 

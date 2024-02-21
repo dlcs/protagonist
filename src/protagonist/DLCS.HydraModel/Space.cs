@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using DLCS.Core.Collections;
-using DLCS.Core.Strings;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
