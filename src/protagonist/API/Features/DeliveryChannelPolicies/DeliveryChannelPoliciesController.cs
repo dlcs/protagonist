@@ -11,7 +11,6 @@ using FluentValidation;
 using Hydra.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -46,19 +45,19 @@ public class DeliveryChannelPoliciesController : HydraController
 
         var hydraPolicyCollections = new List<HydraNestedCollection<DeliveryChannelPolicy>>()
         {
-            new(baseUrl, "iif-img" )
+            new(baseUrl, AssetDeliveryChannels.Image)
             {
                 Title = "Policies for IIIF Image service delivery",
             },
-            new(baseUrl, "iif-thumbs")
+            new(baseUrl, AssetDeliveryChannels.Thumbnails)
             {
                 Title = "Policies for thumbnails as IIIF Image Services",
             },
-            new(baseUrl, "iif-av")
+            new(baseUrl, AssetDeliveryChannels.Timebased)
             {
                 Title = "Policies for Audio and Video delivery",
             },
-            new(baseUrl, "file")
+            new(baseUrl, AssetDeliveryChannels.File)
             {
                 Title = "Policies for File delivery",
             }
@@ -83,6 +82,12 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromRoute] string deliveryChannelName,
         CancellationToken cancellationToken)
     {
+        if (!AssetDeliveryChannels.All.Contains(deliveryChannelName))
+        {
+            return this.HydraProblem($"'{deliveryChannelName}' is not a valid delivery channel", null,
+                400, "Invalid delivery channel");
+        }
+
         var request = new GetDeliveryChannelPolicies(customerId, deliveryChannelName);
         
         return await HandleListFetch<DLCS.Model.Policies.DeliveryChannelPolicy, GetDeliveryChannelPolicies, DeliveryChannelPolicy>(
@@ -95,6 +100,8 @@ public class DeliveryChannelPoliciesController : HydraController
     
     [HttpPost]
     [Route("{deliveryChannelName}")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> PostDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
@@ -127,6 +134,8 @@ public class DeliveryChannelPoliciesController : HydraController
     
     [HttpGet]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
@@ -145,6 +154,9 @@ public class DeliveryChannelPoliciesController : HydraController
     
     [HttpPut]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> PutDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
@@ -181,6 +193,9 @@ public class DeliveryChannelPoliciesController : HydraController
     
     [HttpPatch]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> PatchDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
@@ -220,6 +235,8 @@ public class DeliveryChannelPoliciesController : HydraController
     
     [HttpDelete]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
