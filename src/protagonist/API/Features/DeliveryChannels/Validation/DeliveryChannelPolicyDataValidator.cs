@@ -3,7 +3,7 @@ using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using IIIF.ImageApi;
 
-namespace API.Features.DeliveryChannelPolicies.Validation;
+namespace API.Features.DeliveryChannels.Validation;
 
 public class DeliveryChannelPolicyDataValidator
 {

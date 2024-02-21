@@ -1,4 +1,4 @@
-﻿namespace API.Features.DeliveryChannelPolicies.Converters;
+﻿namespace API.Features.DeliveryChannels.Converters;
 
 public static class DeliveryChannelPolicyConverter
 {

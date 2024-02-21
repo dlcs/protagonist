@@ -1,4 +1,4 @@
-﻿using API.Features.DeliveryChannelPolicies.Validation;
+﻿using API.Features.DeliveryChannels.Validation;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Strings;
@@ -7,7 +7,7 @@ using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace API.Features.DeliveryChannelPolicies.Requests;
+namespace API.Features.DeliveryChannels.Requests;
 
 public class PatchDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryChannelPolicy>>
 {

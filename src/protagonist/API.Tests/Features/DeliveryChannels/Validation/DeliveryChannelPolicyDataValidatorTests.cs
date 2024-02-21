@@ -1,4 +1,4 @@
-﻿using API.Features.DeliveryChannelPolicies.Validation;
+﻿using API.Features.DeliveryChannels.Validation;
 
 namespace API.Tests.Features.DeliveryChannelPolicies.Validation;
 

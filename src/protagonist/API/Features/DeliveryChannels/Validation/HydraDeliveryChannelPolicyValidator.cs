@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace API.Features.DeliveryChannelPolicies.Validation;
+namespace API.Features.DeliveryChannels.Validation;
 
 /// <summary>
 /// Validator for model sent to POST /deliveryChannelPolicies and PUT/PATCH /deliveryChannelPolicies/{id}

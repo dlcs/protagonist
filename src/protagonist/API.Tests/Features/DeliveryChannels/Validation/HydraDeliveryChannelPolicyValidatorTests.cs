@@ -1,5 +1,5 @@
 ﻿using System;
-using API.Features.DeliveryChannelPolicies.Validation;
+using API.Features.DeliveryChannels.Validation;
 using DLCS.HydraModel;
 using FluentValidation.TestHelper;
 

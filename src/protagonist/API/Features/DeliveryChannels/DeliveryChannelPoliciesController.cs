@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using API.Features.DeliveryChannelPolicies.Converters;
-using API.Features.DeliveryChannelPolicies.Requests;
-using API.Features.DeliveryChannelPolicies.Validation;
+using API.Features.DeliveryChannels.Converters;
+using API.Features.DeliveryChannels.Requests;
+using API.Features.DeliveryChannels.Validation;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
-namespace API.Features.DeliveryChannelPolicies;
+namespace API.Features.DeliveryChannels;
 
 /// <summary>
 /// DLCS REST API Operations for delivery channel policies

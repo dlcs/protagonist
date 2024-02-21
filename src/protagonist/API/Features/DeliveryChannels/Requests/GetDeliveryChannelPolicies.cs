@@ -5,7 +5,7 @@ using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace API.Features.DeliveryChannelPolicies.Requests;
+namespace API.Features.DeliveryChannels.Requests;
 
 public class GetDeliveryChannelPolicies: IRequest<FetchEntityResult<IReadOnlyCollection<DeliveryChannelPolicy>>>
 {
