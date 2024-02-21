@@ -5,15 +5,9 @@ using IIIF.ImageApi;
 
 namespace API.Features.DeliveryChannelPolicies.Validation;
 
-public static class PolicyDataValidator
+public class DeliveryChannelPolicyDataValidator
 {
-    private static string[] validTimeBasedFormats =
-    {
-        "video-mp4-720p", 
-        "audio-mp3-128"
-    };
-    
-    public static bool Validate(string policyDataJson, string channel)
+    public bool Validate(string policyDataJson, string channel)
     {
         return channel switch
         {
@@ -23,7 +17,7 @@ public static class PolicyDataValidator
         };
     }
     
-    private static string[]? ParseJsonPolicyData(string policyDataJson)
+    private string[]? ParseJsonPolicyData(string policyDataJson)
     {
         string[]? policyData;
         try
@@ -38,7 +32,7 @@ public static class PolicyDataValidator
         return policyData;
     }
     
-    private static bool ValidateThumbnailPolicyData(string policyDataJson)
+    private bool ValidateThumbnailPolicyData(string policyDataJson)
     {
         var policyData = ParseJsonPolicyData(policyDataJson);
         
@@ -62,15 +56,16 @@ public static class PolicyDataValidator
         return !isInvalid;
     }
 
-    private static bool ValidateTimeBasedPolicyData(string policyDataJson)
+    private bool ValidateTimeBasedPolicyData(string policyDataJson)
     {
         var policyData = ParseJsonPolicyData(policyDataJson);
         
-        if (policyData.IsNullOrEmpty())
+        // For now, we only expect a single string value
+        if (policyData == null || policyData.Length != 1)
         {
             return false;
         }
-        
-        return validTimeBasedFormats.Contains(policyData[0]);
+
+        return true;
     }
 }

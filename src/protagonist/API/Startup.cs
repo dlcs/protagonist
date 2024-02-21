@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using API.Auth;
+using API.Features.DeliveryChannelPolicies.Validation;
 using API.Features.Image.Ingest;
 using API.Features.OriginStrategies.Credentials;
 using API.Infrastructure;
@@ -74,6 +75,7 @@ public class Startup
             .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
             .AddScoped<AssetProcessor>()
             .AddTransient<TimingHandler>()
+            .AddTransient<DeliveryChannelPolicyDataValidator>()
             .AddValidatorsFromAssemblyContaining<Startup>()
             .ConfigureMediatR()
             .AddNamedQueriesCore()

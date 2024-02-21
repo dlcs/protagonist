@@ -32,10 +32,12 @@ public class PatchDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryCh
 public class PatchDeliveryChannelPolicyHandler : IRequestHandler<PatchDeliveryChannelPolicy, ModifyEntityResult<DeliveryChannelPolicy>>
 {
     private readonly DlcsContext dbContext;
+    private readonly DeliveryChannelPolicyDataValidator policyDataValidator;
     
-    public PatchDeliveryChannelPolicyHandler(DlcsContext dbContext)
+    public PatchDeliveryChannelPolicyHandler(DlcsContext dbContext, DeliveryChannelPolicyDataValidator policyDataValidator)
     {
         this.dbContext = dbContext;
+        this.policyDataValidator = policyDataValidator;
     }
 
     public async Task<ModifyEntityResult<DeliveryChannelPolicy>> Handle(PatchDeliveryChannelPolicy request,
@@ -66,7 +68,7 @@ public class PatchDeliveryChannelPolicyHandler : IRequestHandler<PatchDeliveryCh
         {
             existingDeliveryChannelPolicy.PolicyData = request.PolicyData;
             
-            if(!PolicyDataValidator.Validate(request.PolicyData, existingDeliveryChannelPolicy.Channel))
+            if(!policyDataValidator.Validate(request.PolicyData, existingDeliveryChannelPolicy.Channel))
             {
                 return ModifyEntityResult<DeliveryChannelPolicy>.Failure(
                     $"'policyData' contains bad JSON or invalid data", 
