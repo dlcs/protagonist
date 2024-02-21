@@ -50,7 +50,6 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Customers\" WHERE \"Id\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"StoragePolicies\" WHERE \"Id\" not in ('default', 'small', 'medium')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"ThumbnailPolicies\" WHERE \"Id\" != 'default'");
-        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DeliveryChannelPolicies\" WHERE \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw(
             "DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" not in ('fast-higher', 'video-max', 'audio-max', 'cust-default')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
@@ -65,7 +64,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space-images' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'customer-images' AND \"Scope\" != '99'");
-        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DeliveryChannelPolicies\" WHERE \"Customer\" <> 1");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DeliveryChannelPolicies\" WHERE \"Customer\" not in ('1','99')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DefaultDeliveryChannels\" WHERE \"Customer\" <> 1");
         DbContext.ChangeTracker.Clear();
     }
