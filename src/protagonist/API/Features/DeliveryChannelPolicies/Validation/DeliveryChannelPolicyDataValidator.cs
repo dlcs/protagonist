@@ -61,7 +61,7 @@ public class DeliveryChannelPolicyDataValidator
         var policyData = ParseJsonPolicyData(policyDataJson);
         
         // For now, we only expect a single string value
-        if (policyData == null || policyData.Length != 1)
+        if (policyData == null || policyData.Length != 1 || string.IsNullOrEmpty((policyData[0]))) 
         {
             return false;
         }
