@@ -185,7 +185,7 @@ public class DeliveryChannelPoliciesController : HydraController
         }
 
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
-            policy => policy.IncludeRuleSets("default", "put-patch"), cancellationToken);
+            policy => policy.IncludeRuleSets("default", "put"), cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
@@ -230,7 +230,7 @@ public class DeliveryChannelPoliciesController : HydraController
         }
         
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
-            policy => policy.IncludeRuleSets("default", "put-patch"), cancellationToken);
+            policy => policy.IncludeRuleSets("default", "patch"), cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
