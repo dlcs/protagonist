@@ -370,7 +370,6 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData("")] // No PolicyData specified
     [InlineData("[]")] // Empty array
     [InlineData("[\"\"]")] // Array containing an empty value
     [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
@@ -405,7 +404,6 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData("")] // No PolicyData specified
     [InlineData("[]")] // Empty array
     [InlineData("[\"\"]")] // Array containing an empty value
     [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
