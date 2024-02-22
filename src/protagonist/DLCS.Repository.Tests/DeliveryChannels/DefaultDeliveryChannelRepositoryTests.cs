@@ -34,17 +34,26 @@ public class DefaultDeliveryChannelRepositoryTests
             PolicyData = null,
             Name = "space-specific-image",
             Channel = "iiif-img",
-            Customer = 1,
+            Customer = 2,
             Id = 260
         });
 
        dbContext.DefaultDeliveryChannels.Add(new DefaultDeliveryChannel
         {
             Space = 2,
-            Customer = 1,
+            Customer = 2,
             DeliveryChannelPolicyId = newPolicy.Entity.Id,
             MediaType = "image/tiff"
         });
+       
+       dbContext.DefaultDeliveryChannels.Add(new DefaultDeliveryChannel
+       {
+           Space = 0,
+           Customer = 2,
+           DeliveryChannelPolicyId = 1,
+           MediaType = "image/*"
+       });
+       
        dbContext.SaveChanges();
     }
 
@@ -52,26 +61,22 @@ public class DefaultDeliveryChannelRepositoryTests
     public void GetDefaultDeliveryChannelsForCustomer_ReturnsAllDefaultDeliveryChannels_WhenCalledWithSpaceWithoutSpecificChannels()
     {
         // Arrange and Act
-        var channels = sut.GetDefaultDeliveryChannelsForCustomer(1, 1);
+        var channels = sut.GetDefaultDeliveryChannelsForCustomer(2, 1);
 
         // Assert
-        channels.Count.Should().Be(5);
+        channels.Count.Should().Be(1);
         channels.Count(x => x.DeliveryChannelPolicy.Channel == "iiif-img").Should().Be(1);
-        channels.Count(x => x.DeliveryChannelPolicy.Channel == "iiif-av").Should().Be(2);
-        channels.Count(x => x.DeliveryChannelPolicy.Channel == "thumbs").Should().Be(1);
     }
     
     [Fact]
     public void GetDefaultDeliveryChannelsForCustomer_ReturnsAlls_WhenCalledWithSpaceWithSpecificChannels()
     {
         // Arrange and Act
-        var channels = sut.GetDefaultDeliveryChannelsForCustomer(1, 2);
+        var channels = sut.GetDefaultDeliveryChannelsForCustomer(2, 2);
 
         // Assert
-        channels.Count.Should().Be(6);
+        channels.Count.Should().Be(2);
         channels.Count(x => x.DeliveryChannelPolicy.Channel == "iiif-img").Should().Be(2);
-        channels.Count(x => x.DeliveryChannelPolicy.Channel == "iiif-av").Should().Be(2);
-        channels.Count(x => x.DeliveryChannelPolicy.Channel == "thumbs").Should().Be(1);
     }
     
     [Fact]
