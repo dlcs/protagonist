@@ -170,7 +170,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
                 Name = "example-thumbs-policy",
                 DisplayName = "Example Thumbnail Policy",
                 Channel = "thumbs",
-                PolicyData = "{[\"!1024,1024\",\"!400,400\",\"!200,200\",\"!100,100\"]}",
+                PolicyData = "[\"!1024,1024\",\"!400,400\",\"!200,200\",\"!100,100\"]",
                 System = false,
             });
         await DbContext.AuthServices.AddAsync(new AuthService
