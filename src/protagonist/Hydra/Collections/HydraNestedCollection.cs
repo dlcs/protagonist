@@ -1,5 +1,4 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace Hydra.Collections;
 
@@ -14,7 +13,7 @@ public class HydraNestedCollection<T> : HydraCollection<T>
     
     public HydraNestedCollection(string baseUrl, string id)
     {
-        Id = new Uri(new Uri(baseUrl), id).ToString();
+        Id = $"{baseUrl}/{id}";
     }
 
     [JsonProperty(Order = 10, PropertyName = "title")]

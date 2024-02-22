@@ -26,12 +26,8 @@ public static class DeliveryChannelPolicyConverter
             DisplayName = hydraDeliveryChannelPolicy.DisplayName,
             Channel = hydraDeliveryChannelPolicy.Channel,
             PolicyData = hydraDeliveryChannelPolicy.PolicyData,
-            Created = hydraDeliveryChannelPolicy.Created.HasValue // find a better way to deal with these 
-                ? hydraDeliveryChannelPolicy.Created.Value
-                : DateTime.MinValue,
-            Modified = hydraDeliveryChannelPolicy.Modified.HasValue
-                ? hydraDeliveryChannelPolicy.Modified.Value
-                : DateTime.MinValue,
+            Created = hydraDeliveryChannelPolicy.Created ?? DateTime.MinValue,
+            Modified = hydraDeliveryChannelPolicy.Modified ?? DateTime.MinValue
         };
     }
 }
