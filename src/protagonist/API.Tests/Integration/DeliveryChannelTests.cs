@@ -108,6 +108,27 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
+    [Fact]
+    public async Task Post_DeliveryChannelPolicy_400_IfNameInvalid()
+    {
+        // Arrange
+        const int customerId = 88;
+        const string newDeliveryChannelPolicyJson = @"{
+            ""name"": ""foo bar"",
+            ""displayName"": ""Invalid Policy"",
+            ""policyData"": ""[\""audio-mp3-128\""]""
+        }";
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
+
+        // Act
+        var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
     [Theory]
     [InlineData("")] // No PolicyData specified
     [InlineData("[]")] // Empty array
@@ -218,6 +239,26 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
+    [Fact]
+    public async Task Put_DeliveryChannelPolicy_400_IfNameInvalid()
+    {
+        // Arrange
+        const int customerId = 88;
+        const string newDeliveryChannelPolicyJson = @"{
+            ""displayName"": ""Invalid Policy"",
+            ""policyData"": ""[\""audio-mp3-128\""]""r
+        }";
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av/FooBar";
+
+        // Act
+        var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
     [Theory]
     [InlineData("")] // No PolicyData specified
     [InlineData("[]")] // Empty array
@@ -303,7 +344,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         var policy = new DLCS.Model.Policies.DeliveryChannelPolicy()
         {
             Customer = customerId,
-            Name = "put-av-policy-3",
+            Name = "put-av-policy",
             DisplayName = "My IIIF-AV Policy 3",
             Channel = "iiif-av",
             PolicyData = "[\"audio-mp3-128\"]"

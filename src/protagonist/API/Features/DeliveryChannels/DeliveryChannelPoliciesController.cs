@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using API.Features.DeliveryChannels.Converters;
 using API.Features.DeliveryChannels.Requests;
 using API.Features.DeliveryChannels.Validation;
@@ -115,6 +116,12 @@ public class DeliveryChannelPoliciesController : HydraController
                 400, "Invalid delivery channel policy");
         }
         
+        if (!IsValidName(hydraDeliveryChannelPolicy.Name))
+        {
+            return this.HydraProblem($"'The name specified for this delivery channel policy is invalid", null,
+                400, "Invalid delivery channel policy");   
+        }
+        
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "post"), cancellationToken);
         if (!validationResult.IsValid)
@@ -170,14 +177,20 @@ public class DeliveryChannelPoliciesController : HydraController
             return this.HydraProblem($"'{deliveryChannelName}' is not a valid/permitted delivery channel", null,
                 400, "Invalid delivery channel policy");
         }
-        
+      
+        if (!IsValidName(deliveryChannelPolicyName))
+        {
+            return this.HydraProblem($"'The name specified for this delivery channel policy is invalid", null,
+                400, "Invalid delivery channel policy");   
+        }
+
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "put-patch"), cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
         }
-
+        
         hydraDeliveryChannelPolicy.CustomerId = customerId;
         hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
@@ -208,6 +221,12 @@ public class DeliveryChannelPoliciesController : HydraController
         {
             return this.HydraProblem($"'{deliveryChannelName}' is not a valid/permitted delivery channel", null,
                 400, "Invalid delivery channel policy");
+        }
+        
+        if (!IsValidName(deliveryChannelPolicyName))
+        {
+            return this.HydraProblem($"The name specified for this delivery channel policy is invalid", null,
+                400, "Invalid delivery channel policy");   
         }
         
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
@@ -262,5 +281,11 @@ public class DeliveryChannelPoliciesController : HydraController
     private bool IsPermittedDeliveryChannel(string deliveryChannelPolicyName)
     {
         return allowedDeliveryChannels.Contains(deliveryChannelPolicyName);
+    }
+    
+    private bool IsValidName(string? inputName)
+    {
+        const string regex = "[\\sA-Z]"; // Delivery channel policy names should not contain capital letters or spaces
+        return !(string.IsNullOrEmpty(inputName) || Regex.IsMatch(inputName, regex));
     }
 }
