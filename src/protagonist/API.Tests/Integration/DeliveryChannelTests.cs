@@ -198,6 +198,26 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         foundPolicy.PolicyData.Should().Be("[\"audio-mp3-256\"]");
     }
     
+    [Fact]
+    public async Task Put_DeliveryChannelPolicy_400_IfChannelInvalid()
+    {
+        // Arrange
+        const int customerId = 88;
+        const string newDeliveryChannelPolicyJson = @"{
+            ""displayName"": ""Invalid Policy"",
+            ""policyData"": ""[\""audio-mp3-128\""]""
+        }";
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/foo/put-invalid-channel-policy";
+
+        // Act
+        var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
     [Theory]
     [InlineData("")] // No PolicyData specified
     [InlineData("[]")] // Empty array
@@ -308,6 +328,76 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         foundPolicy.PolicyData.Should().Be("[\"audio-mp3-256\"]");
     }
     
+    [Theory]
+    [InlineData("")] // No PolicyData specified
+    [InlineData("[]")] // Empty array
+    [InlineData("[\"\"]")] // Array containing an empty value
+    [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
+    [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
+    public async Task Patch_DeliveryChannelPolicy_400_IfThumbsPolicyDataInvalid(string policyData)
+    {
+        // Arrange
+        const int customerId = 88;
+        
+        var newDeliveryChannelPolicyJson = $@"{{
+            ""policyData"": ""{policyData}""
+        }}";
+        var path = $"customers/{customerId}/deliveryChannelPolicies/thumbs/patch-invalid-thumbs";
+        var policy = new DLCS.Model.Policies.DeliveryChannelPolicy()
+        {
+            Customer = customerId,
+            Name = "patch-invalid-thumbs",
+            DisplayName = "Valid Policy (Thumbs Policy Data)",
+            Channel = "thumbs",
+            PolicyData = "[\"100,100\"]"
+        };
+        
+        await dbContext.DeliveryChannelPolicies.AddAsync(policy);
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PatchAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Theory]
+    [InlineData("")] // No PolicyData specified
+    [InlineData("[]")] // Empty array
+    [InlineData("[\"\"]")] // Array containing an empty value
+    [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
+    [InlineData(@"[\""transcode-policy\""")] // Invalid JSON
+    public async Task Patch_DeliveryChannelPolicy_400_IfAvPolicyDataInvalid(string policyData)
+    {
+        // Arrange
+        const int customerId = 88;
+        
+        var newDeliveryChannelPolicyJson = $@"{{
+            ""policyData"": ""{policyData}""
+        }}";
+        var policy = new DLCS.Model.Policies.DeliveryChannelPolicy()
+        {
+            Customer = customerId,
+            Name = "patch-invalid-iiif-av",
+            DisplayName = "Valid Policy (IIIF-AV Policy Data)",
+            Channel = "iiif-av",
+            PolicyData = "[\"100,100\"]"
+        };
+        var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av/patch-invalid-iiif-av";
+
+        await dbContext.DeliveryChannelPolicies.AddAsync(policy);
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PatchAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
     [Fact]
     public async Task Delete_DeliveryChannelPolicy_204()
     {
@@ -337,6 +427,20 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         policyExists.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task Delete_DeliveryChannelPolicy_404_IfNotFound()
+    {
+        // Arrange
+        const int customerId = 88;
+        var path = $"customers/{customerId}/deliveryChannelPolicies/thumbs/foo";
+        
+        // Act
+        var response = await httpClient.AsCustomer(customerId).DeleteAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
     [Fact]
     public async Task Get_DeliveryChannelPolicyCollections_200()
     {
