@@ -92,24 +92,35 @@ public class HydraDeliveryChannelPolicyValidatorTests
     }
     
     [Fact]
-    public void NewDeliveryChannelPolicy_CannotHave_Name_OnPutOrPatch()
+    public void NewDeliveryChannelPolicy_CannotHave_Name_OnPut()
     {
         var policy = new DeliveryChannelPolicy()
         {
             Name = "my-delivery-channel-policy"
         };
-        var result = sut.TestValidate(policy, p => p.IncludeRuleSets("default", "put-patch"));
+        var result = sut.TestValidate(policy, p => p.IncludeRuleSets("default", "put"));
         result.ShouldHaveValidationErrorFor(p => p.Name);
     }
     
     [Fact]
-    public void NewDeliveryChannelPolicy_Requires_PolicyData_OnPutOrPatch()
+    public void NewDeliveryChannelPolicy_CannotHave_Name_OnPatch()
+    {
+        var policy = new DeliveryChannelPolicy()
+        {
+            Name = "my-delivery-channel-policy"
+        };
+        var result = sut.TestValidate(policy, p => p.IncludeRuleSets("default", "patch"));
+        result.ShouldHaveValidationErrorFor(p => p.Name);
+    }
+    
+    [Fact]
+    public void NewDeliveryChannelPolicy_Requires_PolicyData_OnPut()
     {
         var policy = new DeliveryChannelPolicy()
         {
             PolicyData = null,
         };
-        var result = sut.TestValidate(policy, p => p.IncludeRuleSets("default", "put-patch"));
+        var result = sut.TestValidate(policy, p => p.IncludeRuleSets("default", "put"));
         result.ShouldHaveValidationErrorFor(p => p.PolicyData);
     }
 }
