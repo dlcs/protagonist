@@ -130,3 +130,9 @@ While the names of these policies can technically be anything, the following con
 _NOTE:_ the value should also be lowercase
 
 Finally, this format can be extended with additional information, for example `System preset: Generic 480p 4:3`, could become `video-mp4-480p-4:3` if there was already a `System preset: Generic 480p 16:9` used.
+
+## Location of settings
+
+These settings will be located in the engine as a single source of truth.
+
+For the API, an API call in engine will be made available to the API to retrieve the valid values.  These should be retrieved at the point the policies are required (i.e.: uploading media), rather than on startup and should be cached for a period of time.
