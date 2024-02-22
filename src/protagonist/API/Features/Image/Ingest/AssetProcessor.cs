@@ -218,6 +218,7 @@ public class AssetProcessor
 
         var completedMatch = new List<DeliveryChannelPolicy>();
         
+        // order by descending so that we add space specific policies first
         foreach (var key in perChannelWithSpace.OrderByDescending(p => p.Key.space))
         {
             var matchedToDefault = MatchedAgainstDictionary(mediaType, key.Value);
