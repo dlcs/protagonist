@@ -1,4 +1,6 @@
-﻿using API.Features.Assets;
+﻿using System.Collections.Generic;
+using System.IO.Enumeration;
+using API.Features.Assets;
 using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Core;
@@ -6,6 +8,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.Settings;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
+using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using Microsoft.Extensions.Options;
@@ -21,17 +24,20 @@ public class AssetProcessor
     private readonly IPolicyRepository policyRepository;
     private readonly IApiAssetRepository assetRepository;
     private readonly IStorageRepository storageRepository;
+    private readonly IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository;
     private readonly ApiSettings settings;
     
     public AssetProcessor(
         IApiAssetRepository assetRepository,
         IStorageRepository storageRepository,
         IPolicyRepository policyRepository,
+        IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository,
         IOptionsMonitor<ApiSettings> apiSettings)
     {
         this.assetRepository = assetRepository;
         this.storageRepository = storageRepository;
         this.policyRepository = policyRepository;
+        this.defaultDeliveryChannelRepository = defaultDeliveryChannelRepository;
         settings = apiSettings.CurrentValue;
     }
 
@@ -181,10 +187,91 @@ public class AssetProcessor
         if (updatedAsset.DeliveryChannels.IsNullOrEmpty())
         {
             updatedAsset.DeliveryChannels = preset.DeliveryChannel;
+        }
+        
+        // Creation, set image delivery channels to default values for media type, if not already set
+        if (updatedAsset.ImageDeliveryChannels.IsNullOrEmpty())
+        {
+            updatedAsset.ImageDeliveryChannels = new List<ImageDeliveryChannel>();
+            
+            var matchedDeliveryChannels =
+                MatchedDeliveryChannelDictionary(updatedAsset.MediaType!, updatedAsset.Space, updatedAsset.Customer);
+
+            foreach (var deliveryChannel in matchedDeliveryChannels)
+            {
+                updatedAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+                {
+                    ImageId = updatedAsset.Id,
+                    DeliveryChannelPolicyId = deliveryChannel.Id,
+                    Channel = deliveryChannel.Channel
+                });
+            }
             return true;
         }
 
         return false;
+    }
+    
+    private List<DeliveryChannelPolicy> MatchedDeliveryChannelDictionary(string mediaType, int space, int customerId)
+    {
+        var perChannelWithSpace = AssembleDefaultDeliveryChannelMatchDictionary(customerId, space);
+
+        var completedMatch = new List<DeliveryChannelPolicy>();
+        
+        foreach (var key in perChannelWithSpace.OrderByDescending(p => p.Key.space))
+        {
+            var matchedToDefault = MatchedAgainstDictionary(mediaType, key.Value);
+
+            if (matchedToDefault != null)
+            {
+                if (completedMatch.All(m => m.Channel != key.Key.channel))
+                {
+                    completedMatch.Add(matchedToDefault);
+                }
+            }
+        }
+
+        return completedMatch;
+    }
+
+    private Dictionary<(string channel, int space), List<DefaultDeliveryChannel>> AssembleDefaultDeliveryChannelMatchDictionary(int customerId, int space)
+    {
+        var perChannelWithSpace = new Dictionary<(string channel, int space), List<DefaultDeliveryChannel>>();
+
+        var defaultDeliveryChannelPoliciesForSpace =
+            defaultDeliveryChannelRepository.GetDefaultDeliveryChannelsForCustomer(customerId, space);
+
+        foreach (var defaultDeliveryChannel in defaultDeliveryChannelPoliciesForSpace)
+        {
+            if (!perChannelWithSpace.ContainsKey((defaultDeliveryChannel.DeliveryChannelPolicy.Channel, defaultDeliveryChannel.Space)))
+            {
+                perChannelWithSpace.Add((defaultDeliveryChannel.DeliveryChannelPolicy.Channel, defaultDeliveryChannel.Space), 
+                    new List<DefaultDeliveryChannel> { defaultDeliveryChannel });
+            }
+            else
+            {
+                perChannelWithSpace[(defaultDeliveryChannel.DeliveryChannelPolicy.Channel, defaultDeliveryChannel.Space)]
+                    .Add(defaultDeliveryChannel);
+            }
+        }
+
+        return perChannelWithSpace;
+    }
+
+
+    private DeliveryChannelPolicy? MatchedAgainstDictionary(string mediaType, List<DefaultDeliveryChannel> matchedList)
+    {
+        var matched = new List<DefaultDeliveryChannel>();
+
+        foreach (var defaultDeliveryChannelToMatch in matchedList)
+        {
+            if (FileSystemName.MatchesSimpleExpression(defaultDeliveryChannelToMatch.MediaType, mediaType))
+            {
+                matched.Add(defaultDeliveryChannelToMatch);
+            };
+        }
+        
+        return matched.Count == 0 ? null : matched.MaxBy(m => m.MediaType)!.DeliveryChannelPolicy;
     }
     
     private async Task<bool> SelectThumbnailPolicy(Asset asset, IngestPresets ingestPresets)
@@ -201,13 +288,14 @@ public class AssetProcessor
     private async Task<bool> SelectImageOptimisationPolicy(Asset asset, IngestPresets ingestPresets)
     {
         bool changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);;
-
+        
         if (MIMEHelper.IsImage(asset.MediaType) && asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
         {
             changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
         }
-        else if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased) && (MIMEHelper.IsAudio(asset.MediaType) || 
-                                                                               MIMEHelper.IsVideo(asset.MediaType)))
+        else if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased) &&
+                 (MIMEHelper.IsAudio(asset.MediaType) ||
+                  MIMEHelper.IsVideo(asset.MediaType)))
         {
             changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
         }

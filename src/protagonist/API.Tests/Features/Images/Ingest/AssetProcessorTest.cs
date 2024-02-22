@@ -5,6 +5,7 @@ using API.Features.Image.Ingest;
 using API.Settings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using FakeItEasy;
@@ -18,6 +19,7 @@ public class AssetProcessorTest
     private readonly IPolicyRepository policyRepository;
     private readonly IApiAssetRepository assetRepository;
     private readonly IStorageRepository storageRepository;
+    private readonly IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository;
 
     public AssetProcessorTest()
     {
@@ -25,10 +27,11 @@ public class AssetProcessorTest
         storageRepository = A.Fake<IStorageRepository>();
         policyRepository = A.Fake<IPolicyRepository>();
         assetRepository = A.Fake<IApiAssetRepository>();
+        defaultDeliveryChannelRepository = A.Fake<IDefaultDeliveryChannelRepository>();
         
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(apiSettings);
 
-        sut = new AssetProcessor(assetRepository, storageRepository, policyRepository, optionsMonitor);
+        sut = new AssetProcessor(assetRepository, storageRepository, policyRepository, defaultDeliveryChannelRepository, optionsMonitor);
     }
     
     [Fact]

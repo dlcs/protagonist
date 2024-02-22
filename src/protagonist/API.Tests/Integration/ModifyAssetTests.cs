@@ -14,6 +14,7 @@ using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
@@ -74,7 +75,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_NewImageAsset_Creates_Asset()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_Creates_Asset));
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -89,18 +92,162 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
-        
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = await dbContext.Images.FindAsync(assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ThumbnailPolicy.Should().Be("default");
         asset.ImageOptimisationPolicy.Should().Be("fast-higher");
+        asset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img");
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
     }
     
+    [Fact]
+    public async Task Put_NewImageAsset_Creates_Asset_WithCustomDefaultDeliveryChannel()
+    {
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var newPolicy = await dbContext.DeliveryChannelPolicies.AddAsync(new DeliveryChannelPolicy()
+        {
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow,
+            DisplayName = "test policy - space specific",
+            PolicyData = null,
+            Name = "space-specific-image",
+            Channel = "iiif-img",
+            Customer = customerAndSpace.customer,
+            Id = 260
+        });
+
+        await dbContext.DefaultDeliveryChannels.AddAsync(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel
+        {
+            Space = customerAndSpace.space,
+            Customer = customerAndSpace.customer,
+            DeliveryChannelPolicyId = newPolicy.Entity.Id,
+            MediaType = "image/tiff"
+        });
+
+        await dbContext.SaveChangesAsync();
+
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff""
+}}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MaxUnauthorised.Should().Be(-1);
+        asset.ThumbnailPolicy.Should().Be("default");
+        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
+        asset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
+                                                                x.DeliveryChannelPolicyId == newPolicy.Entity.Id);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
+    }
+    
+     [Fact]
+    public async Task Put_NewImageAsset_Creates_Asset_WhileIgnoringCustomDefaultDeliveryChannel()
+    {
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var newPolicy = await dbContext.DeliveryChannelPolicies.AddAsync(new DeliveryChannelPolicy()
+        {
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow,
+            DisplayName = "test policy - space specific",
+            PolicyData = null,
+            Name = "space-specific-image",
+            Channel = "iiif-img",
+            Customer = customerAndSpace.customer,
+            Id = 260
+        });
+
+        await dbContext.DefaultDeliveryChannels.AddAsync(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel
+        {
+            Space = customerAndSpace.space + 1,
+            Customer = customerAndSpace.customer,
+            DeliveryChannelPolicyId = newPolicy.Entity.Id,
+            MediaType = "image/tiff"
+        });
+
+        await dbContext.SaveChangesAsync();
+
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff""
+}}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MaxUnauthorised.Should().Be(-1);
+        asset.ThumbnailPolicy.Should().Be("default");
+        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
+        asset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
+                                                                x.DeliveryChannelPolicyId == 1);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
+    }
+
+    private async Task<(int customer, int space)> CreateCustomerAndSpace()
+    {
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""api-test-asset-1"",
+  ""displayName"": ""My New Customer for asset""
+}";
+        var customerContent = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+        var customerResponse = await httpClient.AsAdmin().PostAsync("/customers", customerContent);
+        var customer = await customerResponse.ReadAsHydraResponseAsync<Customer>();
+        var customerId = int.Parse(customer.Id!.Split('/').Last());
+        
+        const string newSpaceJson = @"{
+  ""@type"": ""Space"",
+  ""name"": ""Test Space""
+}";
+        var spaceContent = new StringContent(newSpaceJson, Encoding.UTF8, "application/json");
+        var spacePostUrl = $"/customers/{customerId}/spaces";
+        var spaceResponse = await httpClient.AsCustomer(customerId).PostAsync(spacePostUrl, spaceContent);
+        var space = await spaceResponse.ReadAsHydraResponseAsync<Space>();
+        var spaceId = int.Parse(space.Id!.Split('/').Last());
+
+        return (customerId, spaceId);
+    }
+
     [Fact]
     public async Task Put_NewImageAsset_BadRequest_WhenCalledWithInvalidId()
     {
