@@ -37,6 +37,10 @@ public class DeliveryChannelPoliciesController : HydraController
         
     }
     
+    /// <summary>
+    /// Get a collection of nested DeliveryChannelPolicy collections, sorted by channel
+    /// </summary>
+    /// <returns>HydraCollection of DeliveryChannelPolicy HydraCollection</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDeliveryChannelPolicyCollections(
@@ -75,6 +79,10 @@ public class DeliveryChannelPoliciesController : HydraController
         return new OkObjectResult(result);
     }
 
+    /// <summary>
+    /// Get a collection of the customer's delivery channel policies for a specific channel
+    /// </summary>
+    /// <returns>HydraCollection of DeliveryChannelPolicy</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [Route("{deliveryChannelName}")]
@@ -83,7 +91,7 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromRoute] string deliveryChannelName,
         CancellationToken cancellationToken)
     {
-        if (!IsValidDeliveryChannel(deliveryChannelName))
+        if (!AssetDeliveryChannels.IsValidChannel(deliveryChannelName))
         {
             return this.HydraProblem($"'{deliveryChannelName}' is not a valid delivery channel", null,
                 400, "Invalid delivery channel");
@@ -99,6 +107,19 @@ public class DeliveryChannelPoliciesController : HydraController
         );
     }    
     
+    /// <summary>
+    /// Create a new policy for a specified delivery channel
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST: /customers/1/deliveryChannelPolicies/iiif-av
+    ///     {
+    ///         "name": "my-video-policy"
+    ///         "displayName": "My Video Policy",
+    ///         "policyData": "["video-mp4-720p"]"
+    ///     }
+    /// </remarks>
     [HttpPost]
     [Route("{deliveryChannelName}")]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -114,12 +135,6 @@ public class DeliveryChannelPoliciesController : HydraController
         {
             return this.HydraProblem($"'{deliveryChannelName}' is not a valid/permitted delivery channel", null,
                 400, "Invalid delivery channel policy");
-        }
-        
-        if (!IsValidName(hydraDeliveryChannelPolicy.Name))
-        {
-            return this.HydraProblem($"'The name specified for this delivery channel policy is invalid", null,
-                400, "Invalid delivery channel policy");   
         }
         
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
@@ -139,6 +154,10 @@ public class DeliveryChannelPoliciesController : HydraController
             cancellationToken: cancellationToken);
     }
     
+    /// <summary>
+    /// Get a delivery channel policy belonging to a customer
+    /// </summary>
+    /// <returns>DeliveryChannelPolicy</returns>
     [HttpGet]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -159,6 +178,19 @@ public class DeliveryChannelPoliciesController : HydraController
             cancellationToken: cancellationToken);
     }
     
+    /// <summary>
+    /// Create or update a specified customer delivery channel policy - "name" must be specified in URI
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     PUT: /customers/1/deliveryChannelPolicies/iiif-av/my-video-policy
+    ///     {
+    ///         "displayName": "My Updated Video Policy",
+    ///         "policyData": "["video-mp4-720p"]"
+    ///     }
+    /// </remarks>
+    /// <returns>DeliveryChannelPolicy</returns>
     [HttpPut]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -177,13 +209,10 @@ public class DeliveryChannelPoliciesController : HydraController
             return this.HydraProblem($"'{deliveryChannelName}' is not a valid/permitted delivery channel", null,
                 400, "Invalid delivery channel policy");
         }
-      
-        if (!IsValidName(deliveryChannelPolicyName))
-        {
-            return this.HydraProblem($"'The name specified for this delivery channel policy is invalid", null,
-                400, "Invalid delivery channel policy");   
-        }
-
+        
+        hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
+        hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
+        
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "put"), cancellationToken);
         if (!validationResult.IsValid)
@@ -192,8 +221,6 @@ public class DeliveryChannelPoliciesController : HydraController
         }
         
         hydraDeliveryChannelPolicy.CustomerId = customerId;
-        hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
-        hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         
         var updateDeliveryChannelPolicy =
             new UpdateDeliveryChannelPolicy(customerId, hydraDeliveryChannelPolicy.ToDlcsModel());
@@ -204,6 +231,18 @@ public class DeliveryChannelPoliciesController : HydraController
             cancellationToken: cancellationToken);
     }
     
+    /// <summary>
+    /// Update the supplied fields for a specified customer delivery channel policy
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     PATCH: /customers/1/deliveryChannelPolicies/iiif-av/my-video-policy
+    ///     {
+    ///         "displayName": "My Updated Video Policy"
+    ///     }
+    /// </remarks>
+    /// <returns>DeliveryChannelPolicy</returns>
     [HttpPatch]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -223,11 +262,8 @@ public class DeliveryChannelPoliciesController : HydraController
                 400, "Invalid delivery channel policy");
         }
         
-        if (!IsValidName(deliveryChannelPolicyName))
-        {
-            return this.HydraProblem($"The name specified for this delivery channel policy is invalid", null,
-                400, "Invalid delivery channel policy");   
-        }
+        hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
+        hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
         
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "patch"), cancellationToken);
@@ -237,8 +273,6 @@ public class DeliveryChannelPoliciesController : HydraController
         }
         
         hydraDeliveryChannelPolicy.CustomerId = customerId;
-        hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
-        hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
         
         var patchDeliveryChannelPolicy = new PatchDeliveryChannelPolicy(customerId, deliveryChannelName, deliveryChannelPolicyName)
             {
@@ -252,6 +286,10 @@ public class DeliveryChannelPoliciesController : HydraController
             cancellationToken: cancellationToken);    
     } 
     
+        
+    /// <summary>
+    /// Delete a specified delivery channel policy
+    /// </summary>
     [HttpDelete]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
@@ -273,19 +311,8 @@ public class DeliveryChannelPoliciesController : HydraController
         return await HandleDelete(deleteDeliveryChannelPolicy);
     }
     
-    private bool IsValidDeliveryChannel(string deliveryChannelPolicyName)
-    {
-        return AssetDeliveryChannels.All.Contains(deliveryChannelPolicyName);
-    }
-    
     private bool IsPermittedDeliveryChannel(string deliveryChannelPolicyName)
     {
         return allowedDeliveryChannels.Contains(deliveryChannelPolicyName);
-    }
-    
-    private bool IsValidName(string? inputName)
-    {
-        const string regex = "[\\sA-Z]"; // Delivery channel policy names should not contain capital letters or spaces
-        return !(string.IsNullOrEmpty(inputName) || Regex.IsMatch(inputName, regex));
     }
 }

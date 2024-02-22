@@ -75,7 +75,7 @@ public class Startup
             .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
             .AddScoped<AssetProcessor>()
             .AddTransient<TimingHandler>()
-            .AddTransient<DeliveryChannelPolicyDataValidator>()
+            .AddSingleton<DeliveryChannelPolicyDataValidator>()
             .AddValidatorsFromAssemblyContaining<Startup>()
             .ConfigureMediatR()
             .AddNamedQueriesCore()

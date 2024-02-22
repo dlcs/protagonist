@@ -42,4 +42,10 @@ public static class AssetDeliveryChannels
     /// </summary>
     public static bool HasSingleDeliveryChannel(this Asset asset, string deliveryChannel) 
         => asset.DeliveryChannels.ContainsOnly(deliveryChannel);
+    
+    /// <summary>
+    /// Checks if string is a valid delivery channel
+    /// </summary>
+    public static bool IsValidChannel(string deliveryChannel) => 
+        All.Contains(deliveryChannel);
 }

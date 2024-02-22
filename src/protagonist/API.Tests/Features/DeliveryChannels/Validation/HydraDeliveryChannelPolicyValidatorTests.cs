@@ -41,7 +41,7 @@ public class HydraDeliveryChannelPolicyValidatorTests
     {
         var policy = new DeliveryChannelPolicy()
         {
-            Channel = "iif-img"
+            Channel = "iiif-img"
         };
         var result = sut.TestValidate(policy);
         result.ShouldHaveValidationErrorFor(p => p.Channel);
