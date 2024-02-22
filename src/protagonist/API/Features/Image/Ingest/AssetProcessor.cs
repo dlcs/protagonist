@@ -117,28 +117,10 @@ public class AssetProcessor
 
             if (existingAsset == null)
             {
-                var preset = settings.DLCS.IngestDefaults.GetPresets((char)updatedAsset.Family!,
-                    updatedAsset.MediaType ?? string.Empty);
-                var deliveryChannelChanged = SetDeliveryChannel(updatedAsset, preset);
+                var deliveryChannelChanged = SetDeliveryChannel(updatedAsset);
                 if (deliveryChannelChanged)
                 {
                     requiresEngineNotification = true;
-                }
-                
-                var imagePolicyChanged = await SelectImageOptimisationPolicy(updatedAsset, preset);
-                if (imagePolicyChanged)
-                {
-                    // NB the AssetPreparer has already inspected image policy, but this will pick up
-                    // a change from default.
-                    requiresEngineNotification = true;
-                }
-
-                var thumbnailPolicyChanged = await SelectThumbnailPolicy(updatedAsset, preset);
-                if (thumbnailPolicyChanged)
-                {
-                    // We won't alter the value of requiresEngineNotification
-                    // TODO thumbs will be backfilled.
-                    // This could be a config setting.
                 }
             }
 
@@ -181,14 +163,8 @@ public class AssetProcessor
         }
     }
 
-    private bool SetDeliveryChannel(Asset updatedAsset, IngestPresets preset)
+    private bool SetDeliveryChannel(Asset updatedAsset)
     {
-        // Creation, set DeliveryChannel to default value for Family, if not already set
-        if (updatedAsset.DeliveryChannels.IsNullOrEmpty())
-        {
-            updatedAsset.DeliveryChannels = preset.DeliveryChannel;
-        }
-        
         // Creation, set image delivery channels to default values for media type, if not already set
         if (updatedAsset.ImageDeliveryChannels.IsNullOrEmpty())
         {

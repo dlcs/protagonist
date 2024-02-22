@@ -100,8 +100,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
-        asset.ThumbnailPolicy.Should().Be("default");
-        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img");
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
@@ -157,8 +155,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
-        asset.ThumbnailPolicy.Should().Be("default");
-        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
                                                                 x.DeliveryChannelPolicyId == newPolicy.Entity.Id);
@@ -215,8 +211,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
-        asset.ThumbnailPolicy.Should().Be("default");
-        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
                                                                 x.DeliveryChannelPolicyId == 1);
@@ -325,8 +319,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("image/tiff");
         asset.Family.Should().Be(AssetFamily.Image);
-        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
-        asset.ThumbnailPolicy.Should().Be("default");
     }
     
     [Fact]
@@ -360,8 +352,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("image/unknown");
         asset.Family.Should().Be(AssetFamily.Image);
-        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
-        asset.ThumbnailPolicy.Should().Be("default");
     }
     
     [Theory]
@@ -580,8 +570,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = await dbContext.Images.FindAsync(assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
-        asset.ThumbnailPolicy.Should().BeEmpty();
-        asset.ImageOptimisationPolicy.Should().Be("audio-max");
     }
     
     [Fact]
@@ -611,8 +599,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = await dbContext.Images.FindAsync(assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
-        asset.ThumbnailPolicy.Should().BeEmpty();
-        asset.ImageOptimisationPolicy.Should().Be("video-max");
     }
     
     [Fact]
