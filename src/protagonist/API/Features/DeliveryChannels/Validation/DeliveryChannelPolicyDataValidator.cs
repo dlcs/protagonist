@@ -24,7 +24,7 @@ public class DeliveryChannelPolicyDataValidator
         {
             policyData = JsonSerializer.Deserialize<string[]>(policyDataJson);
         }
-        catch(JsonException ex)
+        catch(JsonException)
         {
             return null;
         }

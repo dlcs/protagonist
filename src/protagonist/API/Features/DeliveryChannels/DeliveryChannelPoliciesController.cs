@@ -44,39 +44,13 @@ public class DeliveryChannelPoliciesController : HydraController
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDeliveryChannelPolicyCollections(
-        [FromRoute] int customerId)
+        [FromRoute] int customerId,
+        CancellationToken cancellationToken)
     {
-        var baseUrl = Request.GetDisplayUrl(Request.Path);
+        var request = new GetDeliveryChannelPolicyCollections(customerId, Request.GetDisplayUrl(Request.Path), Request.GetJsonLdId());
+        var result = await Mediator.Send(request, cancellationToken);
 
-        var hydraPolicyCollections = new List<HydraNestedCollection<DeliveryChannelPolicy>>()
-        {
-            new(baseUrl, AssetDeliveryChannels.Image)
-            {
-                Title = "Policies for IIIF Image service delivery",
-            },
-            new(baseUrl, AssetDeliveryChannels.Thumbnails)
-            {
-                Title = "Policies for thumbnails as IIIF Image Services",
-            },
-            new(baseUrl, AssetDeliveryChannels.Timebased)
-            {
-                Title = "Policies for Audio and Video delivery",
-            },
-            new(baseUrl, AssetDeliveryChannels.File)
-            {
-                Title = "Policies for File delivery",
-            }
-        };
-        
-        var result = new HydraCollection<HydraNestedCollection<DeliveryChannelPolicy>>()
-        {
-            WithContext = true,
-            Members = hydraPolicyCollections.ToArray(),
-            TotalItems = hydraPolicyCollections.Count,
-            Id = Request.GetJsonLdId()
-        };
-
-        return new OkObjectResult(result);
+        return Ok(result);
     }
 
     /// <summary>
