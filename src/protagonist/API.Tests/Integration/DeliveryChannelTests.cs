@@ -159,7 +159,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     [InlineData("")] // No PolicyData specified
     [InlineData("[]")] // Empty array
     [InlineData("[\"\"]")] // Array containing an empty value
-    [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
+    [InlineData(@"[\""transcode-policy-1\"",\""\""]")] // Invalid data
     [InlineData(@"[\""transcode-policy\""")] // Invalid JSON
     public async Task Post_DeliveryChannelPolicy_400_IfAvPolicyDataInvalid(string policyData)
     {
@@ -299,7 +299,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     [InlineData("")] // No PolicyData specified
     [InlineData("[]")] // Empty array
     [InlineData("[\"\"]")] // Array containing an empty value
-    [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
+    [InlineData(@"[\""transcode-policy-1\"",\""\""]")] // Invalid data
     [InlineData(@"[\""transcode-policy\""")] // Invalid JSON
     public async Task Put_DeliveryChannelPolicy_400_IfAvPolicyDataInvalid(string policyData)
     {
@@ -406,7 +406,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     [Theory]
     [InlineData("[]")] // Empty array
     [InlineData("[\"\"]")] // Array containing an empty value
-    [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
+    [InlineData(@"[\""transcode-policy-1\"",\""\""]")] // Invalid data
     [InlineData(@"[\""transcode-policy\""")] // Invalid JSON
     public async Task Patch_DeliveryChannelPolicy_400_IfAvPolicyDataInvalid(string policyData)
     {

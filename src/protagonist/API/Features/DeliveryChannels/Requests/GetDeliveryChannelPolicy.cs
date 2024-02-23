@@ -9,8 +9,8 @@ namespace API.Features.DeliveryChannels.Requests;
 public class GetDeliveryChannelPolicy: IRequest<FetchEntityResult<DeliveryChannelPolicy>>
 {
     public int CustomerId { get; }
-    public string DeliveryChannelName { get; set; }
-    public string DeliveryChannelPolicyName { get; set; }
+    public string DeliveryChannelName { get; }
+    public string DeliveryChannelPolicyName { get; }
     
     public GetDeliveryChannelPolicy(int customerId, string deliveryChannelName, string deliveryChannelPolicyName)
     {

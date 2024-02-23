@@ -9,8 +9,8 @@ namespace API.Features.DeliveryChannels.Requests;
 public class DeleteDeliveryChannelPolicy: IRequest<ResultMessage<DeleteResult>>
 {
     public int CustomerId { get; }
-    public string DeliveryChannelName { get; set; }
-    public string DeliveryChannelPolicyName { get; set; }
+    public string DeliveryChannelName { get; }
+    public string DeliveryChannelPolicyName { get; }
     
     public DeleteDeliveryChannelPolicy(int customerId, string deliveryChannelName, string deliveryChannelPolicyName)
     {
@@ -32,6 +32,7 @@ public class DeleteDeliveryChannelPolicyHandler : IRequestHandler<DeleteDelivery
     public async Task<ResultMessage<DeleteResult>> Handle(DeleteDeliveryChannelPolicy request, CancellationToken cancellationToken)
     {
         var policy = await dbContext.DeliveryChannelPolicies.SingleOrDefaultAsync(p =>
+            p.Customer == request.CustomerId &&
             p.Name == request.DeliveryChannelPolicyName &&
             p.Channel == request.DeliveryChannelName,
             cancellationToken);

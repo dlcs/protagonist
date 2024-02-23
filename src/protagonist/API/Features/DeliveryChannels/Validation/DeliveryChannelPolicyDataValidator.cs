@@ -40,32 +40,26 @@ public class DeliveryChannelPolicyDataValidator
         {
             return false;
         }
-        
-        var isInvalid = false;
-        
+
         foreach (var sizeValue in policyData)
         {
-            try { SizeParameter.Parse(sizeValue); }
+            try
+            {
+                SizeParameter.Parse(sizeValue);
+            }
             catch
             {
-                isInvalid = true;
-                break;
+                return false;
             }
         }
-        
-        return !isInvalid;
+
+        return true;
     }
 
     private bool ValidateTimeBasedPolicyData(string policyDataJson)
     {
         var policyData = ParseJsonPolicyData(policyDataJson);
-        
-        // For now, we only expect a single string value
-        if (policyData == null || policyData.Length != 1 || string.IsNullOrEmpty((policyData[0]))) 
-        {
-            return false;
-        }
 
-        return true;
+        return !(policyData.IsNullOrEmpty() || policyData.Any(string.IsNullOrEmpty));
     }
 }

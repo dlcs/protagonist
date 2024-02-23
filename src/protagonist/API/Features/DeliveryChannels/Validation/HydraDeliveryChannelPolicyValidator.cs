@@ -23,7 +23,6 @@ public class HydraDeliveryChannelPolicyValidator : AbstractValidator<DLCS.HydraM
                 .WithMessage("'name' is required");
             RuleFor(p => p.Name)
                 .Must(IsValidName!)
-                .When(p => !string.IsNullOrEmpty(p.Name))
                 .WithMessage("'name' is invalid");
             RuleFor(p => p.PolicyData)
                 .NotEmpty()
@@ -47,6 +46,7 @@ public class HydraDeliveryChannelPolicyValidator : AbstractValidator<DLCS.HydraM
     private bool IsValidName(string inputName)
     {
         const string regex = "[\\sA-Z]"; // Delivery channel policy names should not contain capital letters or spaces
+        if (string.IsNullOrEmpty(inputName)) return false;
         return !(Regex.IsMatch(inputName, regex));
     }
 }

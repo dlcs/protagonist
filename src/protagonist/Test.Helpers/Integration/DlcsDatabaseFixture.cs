@@ -64,7 +64,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space-images' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'customer-images' AND \"Scope\" != '99'");
-        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DeliveryChannelPolicies\" WHERE \"Customer\" not in ('1','99')");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DeliveryChannelPolicies\" WHERE \"Customer\" not in (1,99)");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DefaultDeliveryChannels\" WHERE \"Customer\" <> 1");
         DbContext.ChangeTracker.Clear();
     }

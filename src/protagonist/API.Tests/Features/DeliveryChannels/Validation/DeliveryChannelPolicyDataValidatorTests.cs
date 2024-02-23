@@ -69,8 +69,8 @@ public class DeliveryChannelPolicyDataValidatorTests
     public void PolicyDataValidator_ReturnsTrue_ForValidAvPolicy()
     {
         // Arrange
-        var policyData = "[\"media-format-quality\"]"; // For now, any single string value is accepted - this will need
-                                                       // to be rewritten once the API requires a valid transcoder policy
+        var policyData = "[\"media-format-quality\"]"; // For now, any single string values are accepted - this will need
+                                                       // to be rewritten once the API requires policies that exist
                                                        
         // Act
         var result = sut.Validate(policyData, "iiif-av");
@@ -79,12 +79,11 @@ public class DeliveryChannelPolicyDataValidatorTests
         result.Should().BeTrue();
     }
     
-    [Fact]
-    public void PolicyDataValidator_ReturnsFalse_ForBadAvPolicy()
+    [Theory]
+    [InlineData("[\"\"]")]
+    [InlineData("[\"policy-1\",\"\"]")]
+    public void PolicyDataValidator_ReturnsFalse_ForBadAvPolicy(string policyData)
     {
-        // Arrange
-        var policyData = "[\"policy-1\",\"policy-2\"]";
-        
         // Arrange and Act
         var result = sut.Validate(policyData, "iiif-av");
         

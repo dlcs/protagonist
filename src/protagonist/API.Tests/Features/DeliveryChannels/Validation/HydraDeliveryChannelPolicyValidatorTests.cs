@@ -37,17 +37,6 @@ public class HydraDeliveryChannelPolicyValidatorTests
     }
     
     [Fact]
-    public void NewDeliveryChannelPolicy_CannotHave_Channel()
-    {
-        var policy = new DeliveryChannelPolicy()
-        {
-            Channel = "iiif-img"
-        };
-        var result = sut.TestValidate(policy);
-        result.ShouldHaveValidationErrorFor(p => p.Channel);
-    }
-    
-    [Fact]
     public void NewDeliveryChannelPolicy_CannotHave_PolicyCreated()
     {
         var policy = new DeliveryChannelPolicy()
@@ -89,28 +78,6 @@ public class HydraDeliveryChannelPolicyValidatorTests
         };
         var result = sut.TestValidate(policy, p => p.IncludeRuleSets("default", "post"));
         result.ShouldHaveValidationErrorFor(p => p.PolicyData);
-    }
-    
-    [Fact]
-    public void NewDeliveryChannelPolicy_CannotHave_Name_OnPut()
-    {
-        var policy = new DeliveryChannelPolicy()
-        {
-            Name = "my-delivery-channel-policy"
-        };
-        var result = sut.TestValidate(policy, p => p.IncludeRuleSets("default", "put"));
-        result.ShouldHaveValidationErrorFor(p => p.Name);
-    }
-    
-    [Fact]
-    public void NewDeliveryChannelPolicy_CannotHave_Name_OnPatch()
-    {
-        var policy = new DeliveryChannelPolicy()
-        {
-            Name = "my-delivery-channel-policy"
-        };
-        var result = sut.TestValidate(policy, p => p.IncludeRuleSets("default", "patch"));
-        result.ShouldHaveValidationErrorFor(p => p.Name);
     }
     
     [Fact]
