@@ -42,16 +42,16 @@ public class UpdateCustomHeaderHandler : IRequestHandler<UpdateCustomerDefaultDe
     {
         var convertedDeliveryChannel = request.DefaultDeliveryChannel.ToDlcsModelWithoutPolicy(request.Space, request.Customer);
         
-        var defaultDeliveryChannels = await dbContext.DefaultDeliveryChannels.SingleOrDefaultAsync(
+        var defaultDeliveryChannel = await dbContext.DefaultDeliveryChannels.SingleOrDefaultAsync(
             d => d.Customer == request.Customer && d.Id == convertedDeliveryChannel.Id, cancellationToken);
         
-        if (defaultDeliveryChannels == null)
+        if (defaultDeliveryChannel == null)
         {
             return ModifyEntityResult<UpdateDefaultDeliveryChannelResult>.Failure($"Couldn't find a default delivery channel with the id {request.DefaultDeliveryChannel.Id}",
                 WriteResult.NotFound);
         }
 
-        defaultDeliveryChannels.MediaType = request.DefaultDeliveryChannel.MediaType;
+        defaultDeliveryChannel.MediaType = request.DefaultDeliveryChannel.MediaType;
 
         if (request.DefaultDeliveryChannel.Policy != null)
         {
@@ -69,7 +69,7 @@ public class UpdateCustomHeaderHandler : IRequestHandler<UpdateCustomerDefaultDe
                                                 p.Channel == request.DefaultDeliveryChannel.Channel &&
                                                 p.Name == request.DefaultDeliveryChannel.Policy);
 
-                defaultDeliveryChannels.DeliveryChannelPolicyId = deliveryChannelPolicy.Id;
+                defaultDeliveryChannel.DeliveryChannelPolicyId = deliveryChannelPolicy.Id;
             }
             catch (InvalidOperationException)
             {
@@ -77,7 +77,7 @@ public class UpdateCustomHeaderHandler : IRequestHandler<UpdateCustomerDefaultDe
             }
         }
 
-        var updatedDefaultDeliveryChannel =  dbContext.DefaultDeliveryChannels.Update(defaultDeliveryChannels);
+        var updatedDefaultDeliveryChannel =  dbContext.DefaultDeliveryChannels.Update(defaultDeliveryChannel);
 
         await dbContext.SaveChangesAsync(cancellationToken); 
         
@@ -85,7 +85,7 @@ public class UpdateCustomHeaderHandler : IRequestHandler<UpdateCustomerDefaultDe
         {
             DefaultDeliveryChannel = updatedDefaultDeliveryChannel.Entity
         };
-        
+
         return ModifyEntityResult<UpdateDefaultDeliveryChannelResult>.Success(updated);
     }
 }

@@ -21,5 +21,9 @@ public class HydraDefaultDeliveryChannelValidator : AbstractValidator<DLCS.Hydra
         RuleFor(d => d.MediaType)
             .NotEmpty()
             .WithMessage("A media type is required");
+        
+        RuleFor(d => d.MediaType)
+            .Must(x => x != null && !x.Contains('?'))
+            .WithMessage("'?' is a forbidden character");
     }
 }

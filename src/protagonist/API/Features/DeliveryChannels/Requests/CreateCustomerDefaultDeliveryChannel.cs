@@ -5,6 +5,7 @@ using DLCS.HydraModel;
 using DLCS.Model.Policies;
 using DLCS.Repository;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.DeliveryChannels.Requests;
 
@@ -42,6 +43,19 @@ public class CreateCustomerDefaultDeliveryChannelHandler : IRequestHandler<Creat
     public async Task<ModifyEntityResult<CreateDefaultDeliveryChannelResult>> Handle(
         CreateCustomerDefaultDeliveryChannel request, CancellationToken cancellationToken)
     {
+        var existingPolicy = await dbContext.DefaultDeliveryChannels.AnyAsync(p => 
+                p.Customer == request.Customer &&
+                p.MediaType == request.DefaultDeliveryChannel.MediaType &&
+                p.Space == request.Space,
+            cancellationToken);
+
+        if (existingPolicy)
+        {
+            return ModifyEntityResult<CreateDefaultDeliveryChannelResult>.Failure(
+                "Attempting to create a policy that already exists" , 
+                WriteResult.Conflict);
+        }
+        
         var defaultDeliveryChannel = new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel()
         {
             Customer = request.Customer,

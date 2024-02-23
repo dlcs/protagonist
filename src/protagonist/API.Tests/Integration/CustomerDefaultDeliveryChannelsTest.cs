@@ -203,6 +203,31 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         data.Description.Should().Be("Failed to find linked delivery channel policy");
     }
     
+    [Fact]
+    public async Task Post_CreateDefaultDeliveryChannelWhichAlreadyExists_409()
+    {
+        // Arrange
+        const int customerId = 1;
+        var path = $"customers/{customerId}/defaultDeliveryChannels";
+
+        string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
+        {
+            MediaType = "image/*",
+            Policy = "default",
+            Channel = "iiif-img"
+        });
+        
+        // Act
+        var content = new StringContent(newDefaultDeliveryChannelJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        var data = JsonConvert.DeserializeObject<Error>(await response.Content.ReadAsStringAsync());
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        data.Description.Should().Be("Attempting to create a policy that already exists");
+    }
+    
     [Theory]
     [InlineData("audio/mp3", "audio/*", "https://api.dlcs.io/customers/2/deliveryChannelPolicies/iiif-av/default-audio", "iiif-av")]
     [InlineData("video/mp4", "video/*", "default-video", "iiif-av")]

@@ -13,8 +13,8 @@ public static class DefaultDeliveryChannelConverters
         {   
             Policy = defaultDeliveryChannel.DeliveryChannelPolicy.System ? defaultDeliveryChannel.DeliveryChannelPolicy.Name : GetFullyQualifiedPolicyName(defaultDeliveryChannel, baseUrl),
             Channel = defaultDeliveryChannel.DeliveryChannelPolicy.Channel,
-            MediaType = defaultDeliveryChannel.MediaType,
-            Id = defaultDeliveryChannel.Id.ToString() //todo: change this to a URL
+            MediaType = defaultDeliveryChannel.MediaType, 
+            Id = $"{baseUrl}/{defaultDeliveryChannel.Customer}/defaultDeliveryChannels/{defaultDeliveryChannel.Id.ToString()}"
         };
             
         return hydra;
