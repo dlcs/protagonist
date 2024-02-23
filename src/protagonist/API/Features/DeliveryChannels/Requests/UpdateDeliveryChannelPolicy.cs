@@ -24,23 +24,14 @@ public class UpdateDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryC
 public class UpdateDeliveryChannelPolicyHandler : IRequestHandler<UpdateDeliveryChannelPolicy, ModifyEntityResult<DeliveryChannelPolicy>>
 {
     private readonly DlcsContext dbContext;
-    private readonly DeliveryChannelPolicyDataValidator policyDataValidator;
     
     public UpdateDeliveryChannelPolicyHandler(DlcsContext dbContext, DeliveryChannelPolicyDataValidator policyDataValidator)
     {
         this.dbContext = dbContext;
-        this.policyDataValidator = policyDataValidator;
     }
     
     public async Task<ModifyEntityResult<DeliveryChannelPolicy>> Handle(UpdateDeliveryChannelPolicy request, CancellationToken cancellationToken)
     {
-        if(!policyDataValidator.Validate(request.DeliveryChannelPolicy.PolicyData, request.DeliveryChannelPolicy.Channel))
-        {
-            return ModifyEntityResult<DeliveryChannelPolicy>.Failure(
-                $"'policyData' contains bad JSON or invalid data", 
-                WriteResult.FailedValidation);
-        }
-        
         var existingDeliveryChannelPolicy = await dbContext.DeliveryChannelPolicies.SingleOrDefaultAsync(p => 
             p.Customer == request.CustomerId &&
             p.Channel == request.DeliveryChannelPolicy.Channel &&

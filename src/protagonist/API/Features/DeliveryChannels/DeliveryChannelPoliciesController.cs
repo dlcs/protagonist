@@ -24,12 +24,6 @@ namespace API.Features.DeliveryChannels;
 [ApiController]
 public class DeliveryChannelPoliciesController : HydraController
 {
-    private readonly string[] allowedDeliveryChannels =
-    {
-        AssetDeliveryChannels.Thumbnails,
-        AssetDeliveryChannels.Timebased,
-    };
-    
     public DeliveryChannelPoliciesController(
         IMediator mediator,
         IOptions<ApiSettings> options) : base(options.Value, mediator)
@@ -71,9 +65,9 @@ public class DeliveryChannelPoliciesController : HydraController
                 400, "Invalid delivery channel");
         }
 
-        var request = new GetDeliveryChannelPolicies(customerId, deliveryChannelName);
+        var request = new GetPoliciesFromDeliveryChannel(customerId, deliveryChannelName);
         
-        return await HandleListFetch<DLCS.Model.Policies.DeliveryChannelPolicy, GetDeliveryChannelPolicies, DeliveryChannelPolicy>(
+        return await HandleListFetch<DLCS.Model.Policies.DeliveryChannelPolicy, GetPoliciesFromDeliveryChannel, DeliveryChannelPolicy>(
             request,
             p => p.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to get delivery channel policies",
@@ -105,11 +99,7 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
     {
-        if(!IsPermittedDeliveryChannel(deliveryChannelName))
-        {
-            return this.HydraProblem($"'{deliveryChannelName}' is not a valid/permitted delivery channel", null,
-                400, "Invalid delivery channel policy");
-        }
+        hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         
         var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "post"), cancellationToken);
@@ -119,7 +109,6 @@ public class DeliveryChannelPoliciesController : HydraController
         }
         
         hydraDeliveryChannelPolicy.CustomerId = customerId;
-        hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         var request = new CreateDeliveryChannelPolicy(customerId, hydraDeliveryChannelPolicy.ToDlcsModel());
         
         return await HandleUpsert(request, 
@@ -178,12 +167,6 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
     {
-        if(!IsPermittedDeliveryChannel(deliveryChannelName))
-        {
-            return this.HydraProblem($"'{deliveryChannelName}' is not a valid/permitted delivery channel", null,
-                400, "Invalid delivery channel policy");
-        }
-        
         hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         
@@ -230,12 +213,6 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromServices] HydraDeliveryChannelPolicyValidator validator,
         CancellationToken cancellationToken)
     {
-        if(!IsPermittedDeliveryChannel(deliveryChannelName))
-        {
-            return this.HydraProblem($"'{deliveryChannelName}' is not a valid/permitted delivery channel", null,
-                400, "Invalid delivery channel policy");
-        }
-        
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
         
@@ -247,12 +224,10 @@ public class DeliveryChannelPoliciesController : HydraController
         }
         
         hydraDeliveryChannelPolicy.CustomerId = customerId;
-        
-        var patchDeliveryChannelPolicy = new PatchDeliveryChannelPolicy(customerId, deliveryChannelName, deliveryChannelPolicyName)
-            {
-                DisplayName = hydraDeliveryChannelPolicy.DisplayName,
-                PolicyData = hydraDeliveryChannelPolicy.PolicyData
-            };
+
+        var patchDeliveryChannelPolicy =
+            new PatchDeliveryChannelPolicy(customerId, deliveryChannelName, deliveryChannelPolicyName,
+                hydraDeliveryChannelPolicy.DisplayName, hydraDeliveryChannelPolicy.PolicyData);
         
         return await HandleUpsert(patchDeliveryChannelPolicy, 
             s => s.ToHydra(GetUrlRoots().BaseUrl),
@@ -273,20 +248,9 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromRoute] string deliveryChannelName,
         [FromRoute] string deliveryChannelPolicyName)
     {
-        if(!IsPermittedDeliveryChannel(deliveryChannelName))
-        {
-            return this.HydraProblem($"'{deliveryChannelName}' is not a valid/permitted delivery channel", null,
-                400, "Invalid delivery channel policy");
-        }
-        
         var deleteDeliveryChannelPolicy =
             new DeleteDeliveryChannelPolicy(customerId, deliveryChannelName, deliveryChannelPolicyName);
 
         return await HandleDelete(deleteDeliveryChannelPolicy);
-    }
-    
-    private bool IsPermittedDeliveryChannel(string deliveryChannelPolicyName)
-    {
-        return allowedDeliveryChannels.Contains(deliveryChannelPolicyName);
     }
 }

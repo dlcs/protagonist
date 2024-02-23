@@ -11,7 +11,7 @@ public class HydraDeliveryChannelPolicyValidatorTests
     
     public HydraDeliveryChannelPolicyValidatorTests()
     {
-        sut = new HydraDeliveryChannelPolicyValidator();
+        sut = new HydraDeliveryChannelPolicyValidator(new DeliveryChannelPolicyDataValidator());
     }
     
     [Fact]

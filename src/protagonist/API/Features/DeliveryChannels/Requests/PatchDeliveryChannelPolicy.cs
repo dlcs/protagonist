@@ -21,23 +21,23 @@ public class PatchDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryCh
 
     public string? PolicyData { get; set; }
     
-    public PatchDeliveryChannelPolicy(int customerId, string channel, string name)
+    public PatchDeliveryChannelPolicy(int customerId, string channel, string name, string? displayName, string? policyData)
     {
         CustomerId = customerId;
         Channel = channel;
         Name = name;
+        DisplayName = displayName;
+        PolicyData = policyData;
     }
 }
 
 public class PatchDeliveryChannelPolicyHandler : IRequestHandler<PatchDeliveryChannelPolicy, ModifyEntityResult<DeliveryChannelPolicy>>
 {
     private readonly DlcsContext dbContext;
-    private readonly DeliveryChannelPolicyDataValidator policyDataValidator;
     
     public PatchDeliveryChannelPolicyHandler(DlcsContext dbContext, DeliveryChannelPolicyDataValidator policyDataValidator)
     {
         this.dbContext = dbContext;
-        this.policyDataValidator = policyDataValidator;
     }
 
     public async Task<ModifyEntityResult<DeliveryChannelPolicy>> Handle(PatchDeliveryChannelPolicy request,
@@ -58,35 +58,26 @@ public class PatchDeliveryChannelPolicyHandler : IRequestHandler<PatchDeliveryCh
         
         var hasBeenChanged = false;
             
-        if (request.DisplayName.HasText())
+        if (request.DisplayName != null)
         {
             existingDeliveryChannelPolicy.DisplayName = request.DisplayName;
             hasBeenChanged = true;
         }
             
-        if (request.PolicyData.HasText()) 
+        if (request.PolicyData != null) 
         {
             existingDeliveryChannelPolicy.PolicyData = request.PolicyData;
-            
-            if(!policyDataValidator.Validate(request.PolicyData, existingDeliveryChannelPolicy.Channel))
-            {
-                return ModifyEntityResult<DeliveryChannelPolicy>.Failure(
-                    $"'policyData' contains bad JSON or invalid data", 
-                    WriteResult.FailedValidation);
-            }
-            
             hasBeenChanged = true;
         }
             
         if (hasBeenChanged)
         {
             existingDeliveryChannelPolicy.Modified = DateTime.UtcNow;
-        }
-        
-        var rowCount = await dbContext.SaveChangesAsync(cancellationToken);
-        if (rowCount == 0)
-        {
-            return ModifyEntityResult<DeliveryChannelPolicy>.Failure("Unable to patch delivery channel policy", WriteResult.Error);
+            var rowCount = await dbContext.SaveChangesAsync(cancellationToken);
+            if (rowCount == 0)
+            {
+                return ModifyEntityResult<DeliveryChannelPolicy>.Failure("Unable to patch delivery channel policy", WriteResult.Error);
+            }
         }
         
         return ModifyEntityResult<DeliveryChannelPolicy>.Success(existingDeliveryChannelPolicy);

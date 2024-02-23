@@ -7,19 +7,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.DeliveryChannels.Requests;
 
-public class GetDeliveryChannelPolicies: IRequest<FetchEntityResult<IReadOnlyCollection<DeliveryChannelPolicy>>>
+public class GetPoliciesFromDeliveryChannel: IRequest<FetchEntityResult<IReadOnlyCollection<DeliveryChannelPolicy>>>
 {
     public int CustomerId { get; }
     public string DeliveryChannelName { get; }
     
-    public GetDeliveryChannelPolicies(int customerId, string deliveryChannelName)
+    public GetPoliciesFromDeliveryChannel(int customerId, string deliveryChannelName)
     {
         CustomerId = customerId;
         DeliveryChannelName = deliveryChannelName;
     }
 }
 
-public class GetDeliveryChannelPoliciesHandler : IRequestHandler<GetDeliveryChannelPolicies, FetchEntityResult<IReadOnlyCollection<DeliveryChannelPolicy>>>
+public class GetDeliveryChannelPoliciesHandler : IRequestHandler<GetPoliciesFromDeliveryChannel, FetchEntityResult<IReadOnlyCollection<DeliveryChannelPolicy>>>
 {
     private readonly DlcsContext dbContext;
     
@@ -28,7 +28,7 @@ public class GetDeliveryChannelPoliciesHandler : IRequestHandler<GetDeliveryChan
         this.dbContext = dbContext;
     }
     
-    public async Task<FetchEntityResult<IReadOnlyCollection<DeliveryChannelPolicy>>> Handle(GetDeliveryChannelPolicies request, CancellationToken cancellationToken)
+    public async Task<FetchEntityResult<IReadOnlyCollection<DeliveryChannelPolicy>>> Handle(GetPoliciesFromDeliveryChannel request, CancellationToken cancellationToken)
     {
         var deliveryChannelPolicies = await dbContext.DeliveryChannelPolicies
             .AsNoTracking()

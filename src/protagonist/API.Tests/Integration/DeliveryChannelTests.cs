@@ -109,6 +109,36 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Fact]
+    public async Task Post_DeliveryChannelPolicy_409_IfNameTaken()
+    {
+        // Arrange
+        const int customerId = 88;
+        const string newDeliveryChannelPolicyJson = @"{
+            ""name"": ""post-existing-policy"",
+            ""policyData"": ""[\""100,100\""]""
+        }";
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/thumbs";
+        var policy = new DLCS.Model.Policies.DeliveryChannelPolicy()
+        {
+            Customer = customerId,
+            Name = "post-existing-policy",
+            Channel = "thumbs",
+            PolicyData = "[\"100,100\"]"
+        };
+        
+        await dbContext.DeliveryChannelPolicies.AddAsync(policy);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+    
+    [Fact]
     public async Task Post_DeliveryChannelPolicy_400_IfNameInvalid()
     {
         // Arrange
