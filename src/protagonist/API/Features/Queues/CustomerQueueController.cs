@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using API.Converters;
+using API.Features.Image;
 using API.Features.Queues.Converters;
 using API.Features.Queues.Requests;
 using API.Features.Queues.Validation;
@@ -102,8 +103,12 @@ public class CustomerQueueController : HydraController
             return this.ValidationFailed(validationResult);
         }
 
+        var assetsBeforeProcessing = images.Members!
+            .Select(i => new AssetBeforeProcessing() { Asset = i.ToDlcsModel(customerId), 
+                DeliveryChannels = i.DeliveryChannels }).ToList();
+
         var request =
-            new CreateBatchOfImages(customerId, images.Members!.Select(i => i.ToDlcsModel(customerId)).ToList());
+            new CreateBatchOfImages(customerId, assetsBeforeProcessing);
 
         return await HandleUpsert(request,
             batch => batch.ToHydra(GetUrlRoots().BaseUrl),
@@ -182,10 +187,13 @@ public class CustomerQueueController : HydraController
         {
             return this.ValidationFailed(validationResult);
         }
+        
+        var assetsBeforeProcessing = images.Members!
+            .Select(i => new AssetBeforeProcessing() { Asset = i.ToDlcsModel(customerId), 
+                DeliveryChannels = i.DeliveryChannels }).ToList();
 
         var request =
-            new CreateBatchOfImages(customerId, images.Members!.Select(i => i.ToDlcsModel(customerId)).ToList(),
-                QueueNames.Priority);
+            new CreateBatchOfImages(customerId, assetsBeforeProcessing, QueueNames.Priority);
 
         return await HandleUpsert(request,
             batch => batch.ToHydra(GetUrlRoots().BaseUrl),

@@ -1,13 +1,13 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using DLCS.Core.Caching;
 using DLCS.Model.DeliveryChannels;
+using DLCS.Repository;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DLCS.Repository.DeliveryChannels;
+namespace API.Features.DeliveryChannels;
 
 public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepository
 {
@@ -30,16 +30,20 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
     
     public List<DefaultDeliveryChannel> GetDefaultDeliveryChannelsForCustomer(int customerId, int space)
     {
-        var key = $"defaultDeliveryChannels:{customerId}:{space}";
+        var key = $"defaultDeliveryChannels:{customerId}";
         
-        return appCache.GetOrAdd(key, () =>
+        var defaultDeliveryChannels = appCache.GetOrAdd(key, () =>
         {
             logger.LogDebug("Refreshing {CacheKey} from database", key);
 
-            var defaultDeliveryChannels = dlcsContext.DefaultDeliveryChannels.Include(d => d.DeliveryChannelPolicy)
-                .Where(d => d.Customer == customerId && (d.Space == space || d.Space == 0)).ToList();
+            var defaultDeliveryChannels = dlcsContext.DefaultDeliveryChannels
+                .AsNoTracking()
+                .Include(d => d.DeliveryChannelPolicy)
+                .Where(d => d.Customer == customerId);
 
             return defaultDeliveryChannels;
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
+
+        return defaultDeliveryChannels.Where(d => d.Space == space || d.Space == 0).ToList();
     }
 }

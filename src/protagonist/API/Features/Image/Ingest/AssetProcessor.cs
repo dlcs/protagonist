@@ -7,6 +7,7 @@ using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Settings;
 using DLCS.Core.Strings;
+using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
@@ -21,30 +22,31 @@ namespace API.Features.Image.Ingest;
 /// </summary>
 public class AssetProcessor
 {
-    private readonly IPolicyRepository policyRepository;
     private readonly IApiAssetRepository assetRepository;
     private readonly IStorageRepository storageRepository;
     private readonly IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository;
+    private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
     private readonly ApiSettings settings;
+    private const string None = "none";
     
     public AssetProcessor(
         IApiAssetRepository assetRepository,
         IStorageRepository storageRepository,
-        IPolicyRepository policyRepository,
         IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository,
+        IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository,
         IOptionsMonitor<ApiSettings> apiSettings)
     {
         this.assetRepository = assetRepository;
         this.storageRepository = storageRepository;
-        this.policyRepository = policyRepository;
         this.defaultDeliveryChannelRepository = defaultDeliveryChannelRepository;
+        this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
         settings = apiSettings.CurrentValue;
     }
 
     /// <summary>
     /// Process an asset - including validation and handling Update or Insert logic and get ready for ingestion
     /// </summary>
-    /// <param name="asset">Asset sent to API</param>
+    /// <param name="assetBeforeProcessing">Asset sent to API</param>
     /// <param name="mustExist">If true, then only Update operations are supported</param>
     /// <param name="alwaysReingest">If true, then engine will be notified</param>
     /// <param name="isBatchUpdate">
@@ -53,14 +55,14 @@ public class AssetProcessor
     /// <param name="requiresReingestPreSave">Optional delegate for modifying asset prior to saving</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <param name="isPriorityQueue">Whether the request is for the priority queue or not</param>
-    public async Task<ProcessAssetResult> Process(Asset asset, bool mustExist, bool alwaysReingest, bool isBatchUpdate, 
+    public async Task<ProcessAssetResult> Process(AssetBeforeProcessing assetBeforeProcessing, bool mustExist, bool alwaysReingest, bool isBatchUpdate, 
         Func<Asset, Task>? requiresReingestPreSave = null, 
         CancellationToken cancellationToken = default)
     {
         Asset? existingAsset;
         try
         {
-            existingAsset = await assetRepository.GetAsset(asset.Id, noCache: true);
+            existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, noCache: true);
             if (existingAsset == null)
             {
                 if (mustExist)
@@ -74,7 +76,7 @@ public class AssetProcessor
                     };
                 }
 
-                var counts = await storageRepository.GetStorageMetrics(asset.Customer, cancellationToken);
+                var counts = await storageRepository.GetStorageMetrics(assetBeforeProcessing.Asset.Customer, cancellationToken);
                 if (!counts.CanStoreAsset())
                 {
                     return new ProcessAssetResult
@@ -101,7 +103,7 @@ public class AssetProcessor
             }
 
             var assetPreparationResult =
-                AssetPreparer.PrepareAssetForUpsert(existingAsset, asset, false, isBatchUpdate, settings.RestrictedAssetIdCharacters);
+                AssetPreparer.PrepareAssetForUpsert(existingAsset, assetBeforeProcessing.Asset, false, isBatchUpdate, settings.RestrictedAssetIdCharacters);
 
             if (!assetPreparationResult.Success)
             {
@@ -117,10 +119,24 @@ public class AssetProcessor
 
             if (existingAsset == null)
             {
-                var deliveryChannelChanged = SetDeliveryChannel(updatedAsset);
-                if (deliveryChannelChanged)
+                try
                 {
-                    requiresEngineNotification = true;
+                    var deliveryChannelChanged =
+                        SetImageDeliveryChannels(updatedAsset, assetBeforeProcessing.DeliveryChannels);
+                    if (deliveryChannelChanged)
+                    {
+                        requiresEngineNotification = true;
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    return new ProcessAssetResult
+                    {
+                        Result = ModifyEntityResult<Asset>.Failure(
+                            "Failed to match delivery channel policy",
+                            WriteResult.Error
+                        )
+                    };
                 }
             }
 
@@ -143,7 +159,7 @@ public class AssetProcessor
             // Restore fields that are not persisted but are required
             if (updatedAsset.InitialOrigin.HasText())
             {
-                assetAfterSave.InitialOrigin = asset.InitialOrigin;
+                assetAfterSave.InitialOrigin = assetBeforeProcessing.Asset.InitialOrigin;
             }
 
             return new ProcessAssetResult
@@ -163,15 +179,14 @@ public class AssetProcessor
         }
     }
 
-    private bool SetDeliveryChannel(Asset updatedAsset)
+    private bool SetImageDeliveryChannels(Asset updatedAsset, DeliveryChannel[]? deliveryChannels)
     {
+        updatedAsset.ImageDeliveryChannels = new List<ImageDeliveryChannel>();
         // Creation, set image delivery channels to default values for media type, if not already set
-        if (updatedAsset.ImageDeliveryChannels.IsNullOrEmpty())
+        if (deliveryChannels == null)
         {
-            updatedAsset.ImageDeliveryChannels = new List<ImageDeliveryChannel>();
-            
             var matchedDeliveryChannels =
-                MatchedDeliveryChannelDictionary(updatedAsset.MediaType!, updatedAsset.Space, updatedAsset.Customer);
+                MatchedDeliveryChannels(updatedAsset.MediaType!, updatedAsset.Space, updatedAsset.Customer);
 
             foreach (var deliveryChannel in matchedDeliveryChannels)
             {
@@ -185,144 +200,64 @@ public class AssetProcessor
             return true;
         }
 
-        return false;
-    }
-    
-    private List<DeliveryChannelPolicy> MatchedDeliveryChannelDictionary(string mediaType, int space, int customerId)
-    {
-        var perChannelWithSpace = AssembleDefaultDeliveryChannelMatchDictionary(customerId, space);
+        if (deliveryChannels.Any(d => d.Channel == AssetDeliveryChannels.None))
+        {
+            var deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(updatedAsset.Customer,
+                AssetDeliveryChannels.None, None);
+            
+            updatedAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+                {
+                    ImageId = updatedAsset.Id,
+                    DeliveryChannelPolicyId = deliveryChannelPolicy.Id,
+                    Channel = AssetDeliveryChannels.File
+                });
+            
+            return false;
+        }
 
+        foreach (var deliveryChannel in deliveryChannels)
+        {
+            DeliveryChannelPolicy deliveryChannelPolicy = null!;
+            
+            deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(
+                updatedAsset.Customer,
+                deliveryChannel.Channel,
+                deliveryChannel.Policy);
+
+            updatedAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+            {
+                ImageId = updatedAsset.Id,
+                DeliveryChannelPolicyId = deliveryChannelPolicy.Id,
+                Channel = deliveryChannel.Channel
+            });
+        }
+            
+        return true;
+    }
+
+
+    private List<DeliveryChannelPolicy> MatchedDeliveryChannels(string mediaType, int space, int customerId)
+    {
         var completedMatch = new List<DeliveryChannelPolicy>();
         
-        // order by descending so that we add space specific policies first
-        foreach (var key in perChannelWithSpace.OrderByDescending(p => p.Key.space))
+        var defaultDeliveryChannels =
+            defaultDeliveryChannelRepository.GetDefaultDeliveryChannelsForCustomer(customerId, space);
+        
+        foreach (var defaultDeliveryChannel in defaultDeliveryChannels.OrderByDescending(v => v.Space).ThenByDescending(c => c.MediaType.Length))
         {
-            var matchedToDefault = MatchedAgainstDictionary(mediaType, key.Value);
 
-            if (matchedToDefault != null)
+            if (completedMatch.Any(d => d.Channel == defaultDeliveryChannel.DeliveryChannelPolicy.Channel))
             {
-                if (completedMatch.All(m => m.Channel != key.Key.channel))
-                {
-                    completedMatch.Add(matchedToDefault);
-                }
+                continue;
+            }
+
+            if (FileSystemName.MatchesSimpleExpression(defaultDeliveryChannel.MediaType, mediaType))
+            {
+                completedMatch.Add(defaultDeliveryChannel.DeliveryChannelPolicy);
             }
         }
 
         return completedMatch;
-    }
-
-    private Dictionary<(string channel, int space), List<DefaultDeliveryChannel>> AssembleDefaultDeliveryChannelMatchDictionary(int customerId, int space)
-    {
-        var perChannelWithSpace = new Dictionary<(string channel, int space), List<DefaultDeliveryChannel>>();
-
-        var defaultDeliveryChannelPoliciesForSpace =
-            defaultDeliveryChannelRepository.GetDefaultDeliveryChannelsForCustomer(customerId, space);
-
-        foreach (var defaultDeliveryChannel in defaultDeliveryChannelPoliciesForSpace)
-        {
-            if (!perChannelWithSpace.ContainsKey((defaultDeliveryChannel.DeliveryChannelPolicy.Channel, defaultDeliveryChannel.Space)))
-            {
-                perChannelWithSpace.Add((defaultDeliveryChannel.DeliveryChannelPolicy.Channel, defaultDeliveryChannel.Space), 
-                    new List<DefaultDeliveryChannel> { defaultDeliveryChannel });
-            }
-            else
-            {
-                perChannelWithSpace[(defaultDeliveryChannel.DeliveryChannelPolicy.Channel, defaultDeliveryChannel.Space)]
-                    .Add(defaultDeliveryChannel);
-            }
-        }
-
-        return perChannelWithSpace;
-    }
-
-
-    private DeliveryChannelPolicy? MatchedAgainstDictionary(string mediaType, List<DefaultDeliveryChannel> matchedList)
-    {
-        var matched = new List<DefaultDeliveryChannel>();
-
-        foreach (var defaultDeliveryChannelToMatch in matchedList)
-        {
-            if (FileSystemName.MatchesSimpleExpression(defaultDeliveryChannelToMatch.MediaType, mediaType))
-            {
-                matched.Add(defaultDeliveryChannelToMatch);
-            };
-        }
-        
-        return matched.Count == 0 ? null : matched.MaxBy(m => m.MediaType)!.DeliveryChannelPolicy;
-    }
-    
-    private async Task<bool> SelectThumbnailPolicy(Asset asset, IngestPresets ingestPresets)
-    {
-        bool changed = false; 
-        if (MIMEHelper.IsImage(asset.MediaType))
-        {
-            changed = await SetThumbnailPolicy(ingestPresets.ThumbnailPolicy, asset);
-        }
-
-        return changed;
-    }
-
-    private async Task<bool> SelectImageOptimisationPolicy(Asset asset, IngestPresets ingestPresets)
-    {
-        bool changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);;
-        
-        if (MIMEHelper.IsImage(asset.MediaType) && asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
-        {
-            changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
-        }
-        else if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased) &&
-                 (MIMEHelper.IsAudio(asset.MediaType) ||
-                  MIMEHelper.IsVideo(asset.MediaType)))
-        {
-            changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
-        }
-
-        return changed;
-    }
-
-    private async Task<bool> SetImagePolicy(string? defaultKey, Asset asset)
-    {
-        string? incomingPolicy = asset.ImageOptimisationPolicy;
-        ImageOptimisationPolicy? policy = null;
-        if (incomingPolicy.HasText())
-        {
-            policy = await policyRepository.GetImageOptimisationPolicy(incomingPolicy, asset.Customer);
-        }
-
-        if (policy == null && defaultKey.HasText())
-        {
-            // The asset doesn't have a valid ImageOptimisationPolicy
-            // This is adapted from Deliverator, but there wasn't a way of 
-            // taking the policy from the incoming PUT. There now is.
-            var imagePolicy = await policyRepository.GetImageOptimisationPolicy(defaultKey, asset.Customer);
-            if (imagePolicy != null)
-            {
-                asset.ImageOptimisationPolicy = imagePolicy.Id;
-            }
-        }
-
-        return asset.ImageOptimisationPolicy != incomingPolicy;
-    }
-    
-    private async Task<bool> SetThumbnailPolicy(string defaultPolicy, Asset asset)
-    {
-        string? incomingPolicy = asset.ThumbnailPolicy;
-        ThumbnailPolicy? policy = null;
-        if (incomingPolicy.HasText())
-        {
-            policy = await policyRepository.GetThumbnailPolicy(incomingPolicy);
-        }
-
-        if (policy == null)
-        {
-            var thumbnailPolicy = await policyRepository.GetThumbnailPolicy(defaultPolicy);
-            if (thumbnailPolicy != null)
-            {
-                asset.ThumbnailPolicy = thumbnailPolicy.Id;
-            }
-        }
-
-        return asset.ThumbnailPolicy != incomingPolicy;
     }
 }
 

@@ -2,6 +2,7 @@
 using System.Reflection;
 using API.Features.Assets;
 using API.Features.Customer;
+using API.Features.DeliveryChannels;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
@@ -23,7 +24,6 @@ using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
-using DLCS.Repository.DeliveryChannels;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;

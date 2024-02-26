@@ -1,18 +1,20 @@
 ﻿using System;
 using System.Linq;
+using API.Features.DeliveryChannels;
+using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Caching;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
-using DLCS.Repository.DeliveryChannels;
+using DLCS.Repository;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Test.Helpers.Integration;
 
-namespace DLCS.Repository.Tests.DeliveryChannels;
+namespace API.Tests.Features.DeliveryChannels;
 
 [Trait("Category", "Database")]
-[Collection(DatabaseCollection.CollectionName)]
+[Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
 public class DefaultDeliveryChannelRepositoryTests
 {
     private readonly DlcsContext dbContext;
@@ -69,7 +71,7 @@ public class DefaultDeliveryChannelRepositoryTests
     }
     
     [Fact]
-    public void GetDefaultDeliveryChannelsForCustomer_ReturnsAlls_WhenCalledWithSpaceWithSpecificChannels()
+    public void GetDefaultDeliveryChannelsForCustomer_ReturnsAll_WhenCalledWithSpaceWithSpecificChannels()
     {
         // Arrange and Act
         var channels = sut.GetDefaultDeliveryChannelsForCustomer(2, 2);

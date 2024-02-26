@@ -10,6 +10,7 @@ public static class AssetDeliveryChannels
     public const string Thumbnails = "thumbs";
     public const string Timebased = "iiif-av";
     public const string File = "file";
+    public const string None = "none";
 
     /// <summary>
     /// All possible delivery channels

@@ -123,7 +123,14 @@ public class ImagesController : HydraController
             try
             {
                 var asset = hydraImage.ToDlcsModel(customerId, spaceId);
-                var request = new CreateOrUpdateImage(asset, "PATCH");
+                
+                var assetBeforeProcessing = new AssetBeforeProcessing()
+                {
+                    Asset = asset,
+                    DeliveryChannels = hydraImage.DeliveryChannels
+                };
+
+                var request = new CreateOrUpdateImage(assetBeforeProcessing, "PATCH");
                 var result = await Mediator.Send(request, cancellationToken);
                 if (result.Entity != null)
                 {

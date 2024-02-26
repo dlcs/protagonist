@@ -161,6 +161,51 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
     }
     
+    [Fact]
+    public async Task Put_NewImageAsset_Creates_AssetWithSpecifiedDeliveryChannels()
+    {
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff"",
+   ""deliveryChannels"": [
+{{
+    ""channel"":""iiif-img"",
+    ""policy"":""default""
+ }}, 
+{{
+    ""channel"":""thumbs"",
+    ""policy"":""https://some.url/customers/{customerAndSpace.customer}/deliveryChannelPolicies/thumbs/default""
+ }}
+] 
+}}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        var stuff = await response.Content.ReadAsStringAsync();
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MaxUnauthorised.Should().Be(-1);
+        asset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img");
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
+    }
+    
      [Fact]
     public async Task Put_NewImageAsset_Creates_Asset_WhileIgnoringCustomDefaultDeliveryChannel()
     {
