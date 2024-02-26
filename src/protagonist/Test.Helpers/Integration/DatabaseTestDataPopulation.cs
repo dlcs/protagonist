@@ -8,7 +8,6 @@ using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.DeliveryChannels;
-using DLCS.Model.Policies;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
