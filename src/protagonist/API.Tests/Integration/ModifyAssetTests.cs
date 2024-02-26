@@ -341,6 +341,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_whenMediaTypeAndFamilyNotSetWithLegacyEnabled));
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
@@ -360,10 +361,14 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         
-        var asset = await dbContext.Images.FindAsync(assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(i => i.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("image/tiff");
         asset.Family.Should().Be(AssetFamily.Image);
+        asset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
+                                                                x.DeliveryChannelPolicyId == 1);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
     }
     
     [Fact]
@@ -374,6 +379,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_whenMediaTypeAndFamilyNotSetWithLegacyEnabled));
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
@@ -393,10 +399,14 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         
-        var asset = await dbContext.Images.FindAsync(assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(i => i.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("image/unknown");
         asset.Family.Should().Be(AssetFamily.Image);
+        asset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
+                                                                x.DeliveryChannelPolicyId == 1);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
     }
     
     [Theory]
@@ -592,6 +602,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Put_NewAudioAsset_Creates_Asset()
     {
         var assetId = new AssetId(99, 1, nameof(Put_NewAudioAsset_Creates_Asset));
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(99);
+        await dbContext.SaveChangesAsync();
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.mp4"",
@@ -612,15 +624,20 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = await dbContext.Images.FindAsync(assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
+        asset.ImageDeliveryChannels.Count.Should().Be(1);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
+                                                                x.DeliveryChannelPolicyId == 5);
     }
     
     [Fact]
     public async Task Put_NewVideoAsset_Creates_Asset()
     {
         var assetId = new AssetId(99, 1, nameof(Put_NewVideoAsset_Creates_Asset));
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(99);
+        await dbContext.SaveChangesAsync();
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.mp4"",
@@ -641,9 +658,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = await dbContext.Images.FindAsync(assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
+        asset.ImageDeliveryChannels.Count.Should().Be(1);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
+                                                                x.DeliveryChannelPolicyId == 6);
     }
     
     [Fact]

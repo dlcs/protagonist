@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
+using DLCS.Model.DeliveryChannels;
+using DLCS.Model.Policies;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
@@ -118,6 +121,16 @@ public static class DatabaseTestDataPopulation
             Id = id, Name = name ?? id.ToString(), Keys = Array.Empty<string>(), 
             DisplayName = displayName ?? id.ToString(), Created = DateTime.UtcNow
         });
+
+    public static Task AddTestDefaultDeliveryChannels(this DbSet<DefaultDeliveryChannel> defaultDeliveryChannels,
+        int customerId) =>
+        defaultDeliveryChannels.AddRangeAsync(defaultDeliveryChannels.Where(d => d.Customer == 1 && d.Space == 0).Select(x => new  DefaultDeliveryChannel()
+        {
+            Customer = customerId,
+            Space = x.Space,
+            MediaType = x.MediaType,
+            DeliveryChannelPolicyId = x.DeliveryChannelPolicyId
+        } ));
 
     public static ValueTask<EntityEntry<User>> AddTestUser(this DbSet<User> users,
         int customer, string email, string password = "password123") => users.AddAsync(new User
