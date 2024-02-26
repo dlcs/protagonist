@@ -104,6 +104,7 @@ public static class ServiceCollectionX
             .AddScoped<IPolicyRepository, PolicyRepository>()
             .AddScoped<DapperNewCustomerDeliveryChannelRepository>()
             .AddScoped<IDefaultDeliveryChannelRepository, DefaultDeliveryChannelRepository>()
+            .AddScoped<IDeliveryChannelPolicyRepository, DeliveryChannelPolicyRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>
