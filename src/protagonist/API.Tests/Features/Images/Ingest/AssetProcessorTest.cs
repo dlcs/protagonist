@@ -23,7 +23,6 @@ public class AssetProcessorTest
     private readonly AssetProcessor sut;
     private readonly IApiAssetRepository assetRepository;
     private readonly IStorageRepository storageRepository;
-    private readonly IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository;
     private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
 
     public AssetProcessorTest()
@@ -31,7 +30,7 @@ public class AssetProcessorTest
         var apiSettings = new ApiSettings();
         storageRepository = A.Fake<IStorageRepository>();
         assetRepository = A.Fake<IApiAssetRepository>();
-        defaultDeliveryChannelRepository = A.Fake<IDefaultDeliveryChannelRepository>();
+        var defaultDeliveryChannelRepository = A.Fake<IDefaultDeliveryChannelRepository>();
         deliveryChannelPolicyRepository = A.Fake<IDeliveryChannelPolicyRepository>();
         
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(apiSettings);

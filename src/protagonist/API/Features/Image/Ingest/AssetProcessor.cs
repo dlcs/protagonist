@@ -200,7 +200,7 @@ public class AssetProcessor
             return true;
         }
 
-        if (deliveryChannels.Any(d => d.Channel == AssetDeliveryChannels.None))
+        if (deliveryChannels.Count(d => d.Channel == AssetDeliveryChannels.None) == 1)
         {
             var deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(updatedAsset.Customer,
                 AssetDeliveryChannels.None, None);
@@ -209,7 +209,7 @@ public class AssetProcessor
                 {
                     ImageId = updatedAsset.Id,
                     DeliveryChannelPolicyId = deliveryChannelPolicy.Id,
-                    Channel = AssetDeliveryChannels.File
+                    Channel = AssetDeliveryChannels.None
                 });
             
             return false;
