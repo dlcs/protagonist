@@ -1,4 +1,4 @@
-﻿namespace API.Features.Image;
+namespace API.Features.Image;
 
 public class AssetBeforeProcessing
 {
