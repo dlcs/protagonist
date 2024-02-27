@@ -3,6 +3,7 @@ using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Policies;
 using DLCS.Repository;
+using DLCS.Repository.Exceptions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,19 +33,6 @@ public class CreateDeliveryChannelPolicyHandler : IRequestHandler<CreateDelivery
     
     public async Task<ModifyEntityResult<DeliveryChannelPolicy>> Handle(CreateDeliveryChannelPolicy request, CancellationToken cancellationToken)
     {
-        var nameInUse = await dbContext.DeliveryChannelPolicies.AnyAsync(p => 
-            p.Customer == request.CustomerId &&
-            p.Channel == request.DeliveryChannelPolicy.Channel &&
-            p.Name == request.DeliveryChannelPolicy.Name,
-            cancellationToken);
-        
-        if (nameInUse)
-        {
-            return ModifyEntityResult<DeliveryChannelPolicy>.Failure(
-                $"A {request.DeliveryChannelPolicy.Channel}' policy called '{request.DeliveryChannelPolicy.Name}' already exists" , 
-                WriteResult.Conflict);
-        }
-        
         var newDeliveryChannelPolicy = new DeliveryChannelPolicy()
         {
             Customer = request.CustomerId,
@@ -58,8 +46,17 @@ public class CreateDeliveryChannelPolicyHandler : IRequestHandler<CreateDelivery
         };
         
         await dbContext.DeliveryChannelPolicies.AddAsync(newDeliveryChannelPolicy, cancellationToken);
-        await dbContext.SaveChangesAsync(cancellationToken); 
-        
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.GetDatabaseError() is UniqueConstraintError)
+        {
+            return ModifyEntityResult<DeliveryChannelPolicy>.Failure(
+                $"A {request.DeliveryChannelPolicy.Channel}' policy called '{request.DeliveryChannelPolicy.Name}' already exists",
+                WriteResult.Conflict);
+        }
+
         return ModifyEntityResult<DeliveryChannelPolicy>.Success(newDeliveryChannelPolicy, WriteResult.Created);
     }
 }

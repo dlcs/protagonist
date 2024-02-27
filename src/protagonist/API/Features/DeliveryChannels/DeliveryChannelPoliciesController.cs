@@ -65,9 +65,9 @@ public class DeliveryChannelPoliciesController : HydraController
                 400, "Invalid delivery channel");
         }
 
-        var request = new GetPoliciesFromDeliveryChannel(customerId, deliveryChannelName);
+        var request = new GetPoliciesForDeliveryChannel(customerId, deliveryChannelName);
         
-        return await HandleListFetch<DLCS.Model.Policies.DeliveryChannelPolicy, GetPoliciesFromDeliveryChannel, DeliveryChannelPolicy>(
+        return await HandleListFetch<DLCS.Model.Policies.DeliveryChannelPolicy, GetPoliciesForDeliveryChannel, DeliveryChannelPolicy>(
             request,
             p => p.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to get delivery channel policies",

@@ -17,9 +17,9 @@ public class PatchDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryCh
     
     public string Name { get; }
     
-    public string? DisplayName { get; set; }
+    public string? DisplayName { get; }
 
-    public string? PolicyData { get; set; }
+    public string? PolicyData { get; }
     
     public PatchDeliveryChannelPolicy(int customerId, string channel, string name, string? displayName, string? policyData)
     {
