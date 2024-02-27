@@ -180,7 +180,7 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }";
         var content = new StringContent(customerJson, Encoding.UTF8, "application/json");
         
-        dbContext.DeliveryChannelPolicies.Add(new DeliveryChannelPolicy()
+        dbContext.DeliveryChannelPolicies.Add(new DLCS.Model.Policies.DeliveryChannelPolicy()
         {
             Id = 250,
             DisplayName = "A default audio policy",

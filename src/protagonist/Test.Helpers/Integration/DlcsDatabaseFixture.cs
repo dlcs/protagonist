@@ -64,7 +64,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space-images' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'customer-images' AND \"Scope\" != '99'");
-        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DeliveryChannelPolicies\" WHERE \"Customer\" <> 1");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DeliveryChannelPolicies\" WHERE \"Customer\" not in (1,99)");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DefaultDeliveryChannels\" WHERE \"Customer\" <> 1");
         DbContext.ChangeTracker.Clear();
     }
@@ -163,6 +163,15 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             {
                 Id = "cust-default", Name = "Customer Scoped", TechnicalDetails = new[] { "default" },
                 Global = false, Customer = 99
+            });
+        await DbContext.DeliveryChannelPolicies.AddAsync(new DeliveryChannelPolicy()
+            {
+                Customer = 99,
+                Name = "example-thumbs-policy",
+                DisplayName = "Example Thumbnail Policy",
+                Channel = "thumbs",
+                PolicyData = "[\"!1024,1024\",\"!400,400\",\"!200,200\",\"!100,100\"]",
+                System = false,
             });
         await DbContext.AuthServices.AddAsync(new AuthService
         {
