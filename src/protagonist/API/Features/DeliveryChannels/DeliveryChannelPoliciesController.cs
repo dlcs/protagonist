@@ -43,8 +43,19 @@ public class DeliveryChannelPoliciesController : HydraController
     {
         var request = new GetDeliveryChannelPolicyCollections(customerId, Request.GetDisplayUrl(Request.Path), Request.GetJsonLdId());
         var result = await Mediator.Send(request, cancellationToken);
-
-        return Ok(result);
+        var policyCollections = new HydraCollection<HydraNestedCollection<DeliveryChannelPolicy>>()
+        {
+            WithContext = true,
+            Members = result.Select(c => 
+                new HydraNestedCollection<DeliveryChannelPolicy>(request.BaseUrl, c.Key)
+                {
+                    Title = c.Value,
+                }).ToArray(),
+            TotalItems = result.Count,
+            Id = request.JsonLdId,
+        }; 
+        
+        return Ok(policyCollections);
     }
 
     /// <summary>

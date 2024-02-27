@@ -1,12 +1,11 @@
-﻿using DLCS.Model.Assets;
-using DLCS.Model.Policies;
+﻿using System.Collections.Generic;
+using DLCS.Model.Assets;
 using DLCS.Repository;
-using Hydra.Collections;
 using MediatR;
 
 namespace API.Features.DeliveryChannels.Requests;
 
-public class GetDeliveryChannelPolicyCollections: IRequest<HydraCollection<HydraNestedCollection<DeliveryChannelPolicy>>>
+public class GetDeliveryChannelPolicyCollections: IRequest<Dictionary<string,string>>
 {
     public int CustomerId { get; }
     public string BaseUrl { get; }
@@ -20,7 +19,7 @@ public class GetDeliveryChannelPolicyCollections: IRequest<HydraCollection<Hydra
     }
 }
 
-public class GetDeliveryChannelPolicyCollectionsHandler : IRequestHandler<GetDeliveryChannelPolicyCollections, HydraCollection<HydraNestedCollection<DeliveryChannelPolicy>>>
+public class GetDeliveryChannelPolicyCollectionsHandler : IRequestHandler<GetDeliveryChannelPolicyCollections, Dictionary<string,string>>
 {
     private readonly DlcsContext dbContext;
     
@@ -29,34 +28,16 @@ public class GetDeliveryChannelPolicyCollectionsHandler : IRequestHandler<GetDel
         this.dbContext = dbContext;
     }
     
-    public async Task<HydraCollection<HydraNestedCollection<DeliveryChannelPolicy>>> Handle(GetDeliveryChannelPolicyCollections request, CancellationToken cancellationToken)
+    public async Task<Dictionary<string,string>> Handle(GetDeliveryChannelPolicyCollections request, CancellationToken cancellationToken)
     {
-        var policyCollections = new HydraNestedCollection<DeliveryChannelPolicy>[]
+        var policyCollections = new Dictionary<string, string>()
         {
-            new(request.BaseUrl, AssetDeliveryChannels.Image)
-            {
-                Title = "Policies for IIIF Image service delivery",
-            },
-            new(request.BaseUrl, AssetDeliveryChannels.Thumbnails)
-            {
-                Title = "Policies for thumbnails as IIIF Image Services",
-            },
-            new(request.BaseUrl, AssetDeliveryChannels.Timebased)
-            {
-                Title = "Policies for Audio and Video delivery",
-            },
-            new(request.BaseUrl, AssetDeliveryChannels.File)
-            {
-                Title = "Policies for File delivery",
-            }
+            {AssetDeliveryChannels.Image, "Policies for IIIF Image service delivery"},
+            {AssetDeliveryChannels.Thumbnails, "Policies for thumbnails as IIIF Image Services"},
+            {AssetDeliveryChannels.Timebased, "Policies for Audio and Video delivery"},
+            {AssetDeliveryChannels.File, "Policies for File delivery"}
         };
-        
-        return new HydraCollection<HydraNestedCollection<DeliveryChannelPolicy>>()
-        {
-            WithContext = true,
-            Members = policyCollections,
-            TotalItems = policyCollections.Length,
-            Id = request.JsonLdId,
-        };
+
+        return policyCollections;
     }
 }
