@@ -66,7 +66,6 @@ public class AssetProcessorTest
     {
         // Arrange
         A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._)).Returns<Asset?>(null);
- 
         A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
             .Returns(new AssetStorageMetric
             {
