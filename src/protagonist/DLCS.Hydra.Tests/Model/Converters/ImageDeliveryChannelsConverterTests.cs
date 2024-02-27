@@ -8,7 +8,7 @@ namespace DLCS.Hydra.Tests.Model.Converters;
 public class ImageDeliveryChannelsConverterTests
 {
     [Fact]
-    public async Task DeliveryChannelsConverter_Supports_Basic_Channels()
+    public void DeliveryChannelsConverter_Supports_Basic_Channels()
     {
         var hydraAssetBody = @"{
             ""@type"": ""Image"",
@@ -42,7 +42,7 @@ public class ImageDeliveryChannelsConverterTests
     }
     
     [Fact]
-    public async Task DeliveryChannelsConverter_Supports_Complex_Channels()
+    public void DeliveryChannelsConverter_Supports_Complex_Channels()
     {
         var hydraAssetBody = @"{
           ""@type"": ""Image"",
@@ -89,7 +89,7 @@ public class ImageDeliveryChannelsConverterTests
     }
     
     [Fact]
-    public async Task DeliveryChannelsConverter_Supports_Mixed_Channels()
+    public void DeliveryChannelsConverter_Supports_Mixed_Channels()
     {
         var hydraAssetBody = @"{
           ""@type"": ""Image"",
