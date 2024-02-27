@@ -50,17 +50,63 @@ public class ImageDeliveryChannelsConverterTests
           ""family"": ""I"",
           ""mediaType"": ""image/tiff"",
             ""deliveryChannels"": [
-                ""iiif-img"",
+                {
+                  ""channel"": ""iiif-img"",
+                  ""policy"": ""default""
+                },
                 {
                   ""channel"": ""thumbs"",
-                  ""policy"": ""my-thumbs-policy""
-                    
+                  ""policy"": ""my-thumbs-policy""   
                 },
                 {
                   ""channel"": ""file"",
                   ""policy"": ""none""
                 }
               ],
+        }";
+        
+        var deliveryChannel = JsonConvert.DeserializeObject<Image>(hydraAssetBody);
+        
+        deliveryChannel!.DeliveryChannels!.Length.Should().Be(3);
+        deliveryChannel!.DeliveryChannels!.Should().BeEquivalentTo(new DeliveryChannel[]
+        {
+            new()
+            {
+                Channel = "iiif-img",
+                Policy = "default"
+            },
+            new()
+            {
+                Channel = "thumbs",
+                Policy = "my-thumbs-policy"
+            },
+            new()
+            {
+                Channel = "file",
+                Policy = "none"
+            }
+        });
+    }
+    
+    [Fact]
+    public async Task DeliveryChannelsConverter_Supports_Mixed_Channels()
+    {
+        var hydraAssetBody = @"{
+          ""@type"": ""Image"",
+          ""origin"": ""https://example.org/asset.tiff"",
+          ""family"": ""I"",
+          ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+                ""iiif-img"",
+                {
+                  ""channel"": ""thumbs"",
+                  ""policy"": ""my-thumbs-policy""   
+                },
+                {
+                  ""channel"": ""file"",
+                  ""policy"": ""none""
+                }
+              ]
         }";
         
         var deliveryChannel = JsonConvert.DeserializeObject<Image>(hydraAssetBody);
