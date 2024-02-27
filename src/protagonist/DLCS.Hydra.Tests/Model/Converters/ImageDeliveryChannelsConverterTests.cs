@@ -41,7 +41,6 @@ public class ImageDeliveryChannelsConverterTests
         });
     }
     
-    
     [Fact]
     public async Task DeliveryChannelsConverter_Supports_Complex_Channels()
     {
@@ -51,10 +50,7 @@ public class ImageDeliveryChannelsConverterTests
           ""family"": ""I"",
           ""mediaType"": ""image/tiff"",
             ""deliveryChannels"": [
-                {
-                  ""channel"": ""iiif-img"",
-                  ""policy"": ""default""
-                },
+                ""iiif-img"",
                 {
                   ""channel"": ""thumbs"",
                   ""policy"": ""my-thumbs-policy""
@@ -75,7 +71,7 @@ public class ImageDeliveryChannelsConverterTests
             new()
             {
                 Channel = "iiif-img",
-                Policy = "default"
+                Policy = null
             },
             new()
             {
