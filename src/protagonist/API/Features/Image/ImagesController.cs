@@ -7,6 +7,7 @@ using API.Features.Space.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Strings;
+using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests;
 using Hydra.Collections;
@@ -124,7 +125,8 @@ public class ImagesController : HydraController
             {
                 var asset = hydraImage.ToDlcsModel(customerId, spaceId);
 
-                var assetBeforeProcessing = new AssetBeforeProcessing(asset, hydraImage.DeliveryChannels);
+                var assetBeforeProcessing = new AssetBeforeProcessing(asset, (hydraImage.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
+                    .Select(d => new DeliveryChannelBeforeProcessing(d.Channel, d.Policy)).ToArray());
 
                 var request = new CreateOrUpdateImage(assetBeforeProcessing, "PATCH");
                 var result = await Mediator.Send(request, cancellationToken);

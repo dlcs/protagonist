@@ -1,6 +1,7 @@
 ﻿using System;
 using API.Features.Image.Validation;
 using API.Settings;
+using DLCS.HydraModel;
 using DLCS.Model.Policies;
 using FluentValidation.TestHelper;
 using Microsoft.Extensions.Options;
@@ -233,9 +234,8 @@ public class HydraImageValidatorTests
         result.ShouldHaveValidationErrorFor(a => a.WcDeliveryChannels);
     }
     
-        
     [Fact]
-    public void DeliveryChannel_ValidationError_WhenDeliveryChannelsDisabled()
+    public void WcDeliveryChannel_ValidationError_WhenDeliveryChannelsDisabled()
     {
         var apiSettings = new ApiSettings();
         var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
@@ -243,13 +243,70 @@ public class HydraImageValidatorTests
         var result = imageValidator.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.WcDeliveryChannels);
     }
+    
     [Fact]
-    public void DeliveryChannel_NoValidationError_WhenDeliveryChannelsDisabled()
+    public void WcDeliveryChannel_NoValidationError_WhenDeliveryChannelsDisabled()
     {
         var apiSettings = new ApiSettings();
         var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
         var model = new DLCS.HydraModel.Image();
         var result = imageValidator.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.WcDeliveryChannels);
+    }
+    
+    [Fact]
+    public void DeliveryChannel_ValidationError_WhenNoneAndMoreDeliveryChannels()
+    {
+        var apiSettings = new ApiSettings();
+        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var model = new DLCS.HydraModel.Image { DeliveryChannels = new[]
+        {
+            new DeliveryChannel()
+            {
+                Channel = "none"
+            },
+            new DeliveryChannel()
+            {
+                Channel = "file"
+            }
+        } };
+        var result = imageValidator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
+    }
+    
+    [Fact]
+    public void DeliveryChannel_NoValidationError_WhenDeliveryChannelsWithNoNone()
+    {
+        var apiSettings = new ApiSettings();
+        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var model = new DLCS.HydraModel.Image { DeliveryChannels = new[]
+        {
+            new DeliveryChannel()
+            {
+                Channel = "iiif-img"
+            },
+            new DeliveryChannel()
+            {
+                Channel = "File"
+            }
+        } };
+        var result = imageValidator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
+    }
+    
+    [Fact]
+    public void DeliveryChannel_ValidationError_WhenOnlyNone()
+    {
+        var apiSettings = new ApiSettings();
+        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var model = new DLCS.HydraModel.Image { DeliveryChannels = new[]
+        {
+            new DeliveryChannel()
+            {
+                Channel = "none"
+            }
+        } };
+        var result = imageValidator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
 }

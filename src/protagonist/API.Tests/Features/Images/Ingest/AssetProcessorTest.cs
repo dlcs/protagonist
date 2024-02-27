@@ -23,13 +23,14 @@ public class AssetProcessorTest
     private readonly IApiAssetRepository assetRepository;
     private readonly IStorageRepository storageRepository;
     private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
+    private readonly IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository;
 
     public AssetProcessorTest()
     {
         var apiSettings = new ApiSettings();
         storageRepository = A.Fake<IStorageRepository>();
         assetRepository = A.Fake<IApiAssetRepository>();
-        var defaultDeliveryChannelRepository = A.Fake<IDefaultDeliveryChannelRepository>();
+        defaultDeliveryChannelRepository = A.Fake<IDefaultDeliveryChannelRepository>();
         deliveryChannelPolicyRepository = A.Fake<IDeliveryChannelPolicyRepository>();
         
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(apiSettings);
@@ -95,34 +96,31 @@ public class AssetProcessorTest
                 Policy = new StoragePolicy{MaximumTotalSizeOfStoredImages = 1000, MaximumNumberOfStoredImages = 10000},
                 CustomerStorage = new CustomerStorage{ TotalSizeOfStoredImages = 10}
             });
-        
+
         var assetBeforeProcessing = new AssetBeforeProcessing(new Asset()
-        {
-            Id = new AssetId(1, 1, "asset"),
-            MediaType = "image/jpg",
-            Origin = "https://some/origin"
-        }, 
-            new [] {
-            new DeliveryChannel()
-            {
-                Channel = "none"
-            }
-        })
-        {
-            Asset = new Asset()
             {
                 Id = new AssetId(1, 1, "asset"),
                 MediaType = "image/jpg",
                 Origin = "https://some/origin"
             },
-            DeliveryChannels = new []
+            new[]
             {
-                new DeliveryChannel()
-                {
-                    Channel = "none"
-                }
-            }
-        };
+                new DeliveryChannelBeforeProcessing("none", null)
+            });
+        
+        
+        // {
+        //     Asset = new Asset()
+        //     {
+        //         Id = new AssetId(1, 1, "asset"),
+        //         MediaType = "image/jpg",
+        //         Origin = "https://some/origin"
+        //     },
+        //     DeliveryChannelsBeforeProcessing = new []
+        //     {
+        //         new DeliveryChannelBeforeProcessing("none", null)
+        //     }
+        // };
         
         // Act
         var result = await sut.Process(assetBeforeProcessing, false, false, false);
@@ -156,17 +154,9 @@ public class AssetProcessorTest
             Origin = "https://some/origin"
         }, 
             new [] {
-            new DeliveryChannel()
-            {
-                Channel = "iiif-img",
-                Policy = "somePolicy"
-            },
-            new DeliveryChannel()
-            {
-                Channel = "thumbs",
-                Policy = "somePolicy"
-            }
-        });
+            new DeliveryChannelBeforeProcessing("iiif-img", "somePolicy"),
+            new DeliveryChannelBeforeProcessing("thumbs", "somePolicy")
+            });
 
         // Act
         var result = await sut.Process(assetBeforeProcessing, false, false, false);
@@ -211,16 +201,75 @@ public class AssetProcessorTest
             Origin = "https://some/origin"
         }, new []
         {
-            new DeliveryChannel()
+            new DeliveryChannelBeforeProcessing("iiif-img", "somePolicy"),
+            new DeliveryChannelBeforeProcessing("thumbs", "somePolicy")
+        });
+        
+        // Act
+        var result = await sut.Process(assetBeforeProcessing, false, false, false);
+        
+        // Assert
+        result.Result.IsSuccess.Should().BeFalse();
+        result.Result.Error.Should().Be("Failed to match delivery channel policy");
+    }
+    
+    [Fact]
+    public async Task Process_ProcessesImage_WhenDeliveryPolicyMatchedFromChannel()
+    {
+        // Arrange
+        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._)).Returns<Asset?>(null);
+
+        A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
+            .Returns(new AssetStorageMetric
             {
-                Channel = "iiif-img",
-                Policy = "somePolicy"
-            },
-            new DeliveryChannel()
+                Policy = new StoragePolicy{MaximumTotalSizeOfStoredImages = 1000, MaximumNumberOfStoredImages = 10000},
+                CustomerStorage = new CustomerStorage{ TotalSizeOfStoredImages = 10}
+            });
+
+        var assetBeforeProcessing = new AssetBeforeProcessing(new Asset()
+        {
+            Id = new AssetId(1, 1, "asset"),
+            MediaType = "image/jpg",
+            Origin = "https://some/origin"
+        }, new []
+        {
+            new DeliveryChannelBeforeProcessing("iiif-img", null)
+        });
+        
+        // Act
+        var result = await sut.Process(assetBeforeProcessing, false, false, false);
+        
+        // Assert
+        result.Result.IsSuccess.Should().BeTrue();
+
+        A.CallTo(() => defaultDeliveryChannelRepository.MatchDeliveryChannelPolicyForChannel(A<string>._, A<int>._, A<int>._, A<string>._))
+            .MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Process_FailsToProcessesImage_WhenDeliveryPolicyNotMatchedFromChannel()
+    {
+        // Arrange
+        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._)).Returns<Asset?>(null);
+
+        A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
+            .Returns(new AssetStorageMetric
             {
-                Channel = "thumbs",
-                Policy = "somePolicy"
-            }
+                Policy = new StoragePolicy{MaximumTotalSizeOfStoredImages = 1000, MaximumNumberOfStoredImages = 10000},
+                CustomerStorage = new CustomerStorage{ TotalSizeOfStoredImages = 10}
+            });
+        
+        A.CallTo(() => defaultDeliveryChannelRepository.MatchDeliveryChannelPolicyForChannel(A<string>._, A<int>._, A<int>._, A<string>._))
+            .Throws<InvalidOperationException>();
+        
+        var assetBeforeProcessing = new AssetBeforeProcessing(new Asset()
+        {
+            Id = new AssetId(1, 1, "asset"),
+            MediaType = "image/jpg",
+            Origin = "https://some/origin"
+        }, new []
+        {
+            new DeliveryChannelBeforeProcessing("iiif-img", null)
         });
         
         // Act

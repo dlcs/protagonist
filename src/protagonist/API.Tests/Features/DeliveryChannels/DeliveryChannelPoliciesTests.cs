@@ -1,8 +1,12 @@
 ﻿using System;
 using API.Features.DeliveryChannels;
 using API.Tests.Integration.Infrastructure;
+using DLCS.Core.Caching;
 using DLCS.Model.Policies;
 using DLCS.Repository;
+using LazyCache.Mocks;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Test.Helpers.Integration;
 
 namespace API.Tests.Features.DeliveryChannels;
@@ -17,7 +21,7 @@ public class DeliveryChannelPoliciesTests
     public DeliveryChannelPoliciesTests(DlcsDatabaseFixture dbFixture)
     {
         dbContext = dbFixture.DbContext;
-        sut = new DeliveryChannelPolicyRepository( dbFixture.DbContext);
+        sut = new DeliveryChannelPolicyRepository(new MockCachingService() ,new NullLogger<DeliveryChannelPolicyRepository>(), Options.Create(new CacheSettings()), dbFixture.DbContext);
 
         dbFixture.CleanUp();
         
@@ -62,7 +66,7 @@ public class DeliveryChannelPoliciesTests
     }
     
     [Fact]
-    public void RetrieveDeliveryChannelPolicy_RetrieveNneExistentPolicy()
+    public void RetrieveDeliveryChannelPolicy_RetrieveNonExistentPolicy()
     {
         // Arrange and Act
         Action action = () =>  sut.RetrieveDeliveryChannelPolicy(2, "notAChannel", "notAPolicy");

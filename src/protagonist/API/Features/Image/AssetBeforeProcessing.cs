@@ -1,16 +1,16 @@
-﻿using DLCS.HydraModel;
-
-namespace API.Features.Image;
+﻿namespace API.Features.Image;
 
 public class AssetBeforeProcessing
 {
-    public AssetBeforeProcessing(DLCS.Model.Assets.Asset asset, DeliveryChannel[]? deliveryChannels)
+    public AssetBeforeProcessing(DLCS.Model.Assets.Asset asset, DeliveryChannelBeforeProcessing[] deliveryChannelsBeforeProcessing)
     {
         Asset = asset;
-        DeliveryChannels = deliveryChannels;
+        DeliveryChannelsBeforeProcessing = deliveryChannelsBeforeProcessing;
     }
     
     public DLCS.Model.Assets.Asset Asset { get; init; }
 
-    public DeliveryChannel[]? DeliveryChannels { get; init; }
+    public DeliveryChannelBeforeProcessing[] DeliveryChannelsBeforeProcessing { get; init; }
 }
+
+public record DeliveryChannelBeforeProcessing(string? Channel, string? Policy);

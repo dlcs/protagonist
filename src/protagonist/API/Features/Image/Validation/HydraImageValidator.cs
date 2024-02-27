@@ -25,6 +25,8 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
                 RuleFor(a => a.Height).Empty().WithMessage("Should not include height");
                 RuleFor(a => a.Duration).Empty().WithMessage("Should not include duration");
             });
+        
+        When(a => !a.DeliveryChannels.IsNullOrEmpty(), ImageDeliveryChannelDependantValidation);
 
         // System edited fields
         RuleFor(a => a.Batch).Empty().WithMessage("Should not include batch");
@@ -39,6 +41,14 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleForEach(a => a.WcDeliveryChannels)
             .Must(dc => AssetDeliveryChannels.All.Contains(dc))
             .WithMessage($"DeliveryChannel must be one of {AssetDeliveryChannels.AllString}");
+    }
+
+    private void ImageDeliveryChannelDependantValidation()
+    {
+        RuleFor(a => a.DeliveryChannels)
+            .Must(d => d.All(d => d.Channel != AssetDeliveryChannels.None))
+            .When(a => a.DeliveryChannels!.Length > 1)
+            .WithMessage("If \"none\" is the specified channel, then no other delivery channels are allowed");
     }
 
     // Validation rules that depend on DeliveryChannel being populated

@@ -276,7 +276,8 @@ public class ImageController : HydraController
         // See https://github.com/dlcs/protagonist/issues/338
         var method = hydraAsset is ImageWithFile ? "PUT" : Request.Method;
 
-        var assetBeforeProcessing = new AssetBeforeProcessing(asset, hydraAsset.DeliveryChannels);
+        var assetBeforeProcessing = new AssetBeforeProcessing(asset, (hydraAsset.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
+            .Select(d => new DeliveryChannelBeforeProcessing(d.Channel, d.Policy)).ToArray());
 
         var createOrUpdateRequest = new CreateOrUpdateImage(assetBeforeProcessing, method);
 

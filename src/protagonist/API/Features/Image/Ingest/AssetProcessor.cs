@@ -1,12 +1,10 @@
 ﻿using System.Collections.Generic;
-using System.IO.Enumeration;
 using API.Features.Assets;
 using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
-using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
@@ -121,7 +119,7 @@ public class AssetProcessor
                 try
                 {
                     var deliveryChannelChanged =
-                        SetImageDeliveryChannels(updatedAsset, assetBeforeProcessing.DeliveryChannels);
+                        SetImageDeliveryChannels(updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
                     if (deliveryChannelChanged)
                     {
                         requiresEngineNotification = true;
@@ -178,14 +176,14 @@ public class AssetProcessor
         }
     }
 
-    private bool SetImageDeliveryChannels(Asset updatedAsset, DeliveryChannel[]? deliveryChannels)
+    private bool SetImageDeliveryChannels(Asset updatedAsset, IList<DeliveryChannelBeforeProcessing> deliveryChannels)
     {
         updatedAsset.ImageDeliveryChannels = new List<ImageDeliveryChannel>();
         // Creation, set image delivery channels to default values for media type, if not already set
         if (deliveryChannels.IsNullOrEmpty())
         {
             var matchedDeliveryChannels =
-                MatchedDeliveryChannels(updatedAsset.MediaType!, updatedAsset.Space, updatedAsset.Customer);
+                defaultDeliveryChannelRepository.MatchedDeliveryChannels(updatedAsset.MediaType!, updatedAsset.Space, updatedAsset.Customer);
 
             foreach (var deliveryChannel in matchedDeliveryChannels)
             {
@@ -203,7 +201,7 @@ public class AssetProcessor
         {
             var deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(updatedAsset.Customer,
                 AssetDeliveryChannels.None, None);
-            
+
             updatedAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
                 {
                     ImageId = updatedAsset.Id,
@@ -216,10 +214,20 @@ public class AssetProcessor
 
         foreach (var deliveryChannel in deliveryChannels)
         {
-            var deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(
-                updatedAsset.Customer,
-                deliveryChannel.Channel,
-                deliveryChannel.Policy);
+            DeliveryChannelPolicy deliveryChannelPolicy;
+            
+            if (deliveryChannel.Policy.IsNullOrEmpty())
+            {
+                deliveryChannelPolicy = defaultDeliveryChannelRepository.MatchDeliveryChannelPolicyForChannel(
+                    updatedAsset.MediaType!, updatedAsset.Space, updatedAsset.Customer, deliveryChannel.Channel);
+            }
+            else
+            {
+                deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(
+                    updatedAsset.Customer,
+                    deliveryChannel.Channel!,
+                    deliveryChannel.Policy);
+            }
 
             updatedAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
             {
@@ -230,30 +238,6 @@ public class AssetProcessor
         }
             
         return true;
-    }
-    
-    private List<DeliveryChannelPolicy> MatchedDeliveryChannels(string mediaType, int space, int customerId)
-    {
-        var completedMatch = new List<DeliveryChannelPolicy>();
-        
-        var defaultDeliveryChannels =
-            defaultDeliveryChannelRepository.GetDefaultDeliveryChannelsForCustomer(customerId, space);
-        
-        foreach (var defaultDeliveryChannel in defaultDeliveryChannels.OrderByDescending(v => v.Space).ThenByDescending(c => c.MediaType.Length))
-        {
-
-            if (completedMatch.Any(d => d.Channel == defaultDeliveryChannel.DeliveryChannelPolicy.Channel))
-            {
-                continue;
-            }
-
-            if (FileSystemName.MatchesSimpleExpression(defaultDeliveryChannel.MediaType, mediaType))
-            {
-                completedMatch.Add(defaultDeliveryChannel.DeliveryChannelPolicy);
-            }
-        }
-
-        return completedMatch;
     }
 }
 

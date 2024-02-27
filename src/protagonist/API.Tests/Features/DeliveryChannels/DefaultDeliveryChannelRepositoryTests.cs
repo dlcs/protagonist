@@ -90,4 +90,46 @@ public class DefaultDeliveryChannelRepositoryTests
         // Assert
         channels.Count.Should().Be(0);
     }
+    
+    [Fact]
+    public void MatchedDeliveryChannels_ReturnsAllDeliveryChanelPolicies_WhenCalled()
+    {
+        // Arrange and Act
+        var matches = sut.MatchedDeliveryChannels("image/tiff", 1, 2);
+
+        // Assert
+        matches.Count.Should().Be(1);
+        matches.Count(x => x.Channel == "iiif-img").Should().Be(1);
+    }
+    
+    [Fact]
+    public void MatchedDeliveryChannels_ShouldNotMatchAnything_WhenCalledWithInvalidMediaType()
+    {
+        // Arrange and Act
+        var matches = sut.MatchedDeliveryChannels("notValid/tiff", 1, 2);
+
+        // Assert
+        matches.Count.Should().Be(0);
+    }
+    
+    [Fact]
+    public void MatchDeliveryChannelPolicyForChannel_MatchesDeliveryChannel_WhenMatchAvailable()
+    {
+        // Arrange and Act
+        var matches = sut.MatchDeliveryChannelPolicyForChannel("image/tiff", 1, 2, "iiif-img");
+
+        // Assert
+        matches.Should().NotBeNull();
+    }
+    
+    [Fact]
+    public void MatchDeliveryChannelPolicyForChannel_ThrowsException_WhenNotMatched()
+    {
+        // Arrange and Act
+        Action action = () => sut.MatchDeliveryChannelPolicyForChannel("notMatched/tiff", 1, 2, "iiif-img");
+
+        // Assert
+        action.Should().ThrowExactly<InvalidOperationException>();
+
+    }
 }

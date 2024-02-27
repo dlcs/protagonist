@@ -7,6 +7,7 @@ using API.Features.Queues.Validation;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Strings;
+using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.Processing;
 using Hydra.Collections;
@@ -104,7 +105,8 @@ public class CustomerQueueController : HydraController
         }
 
         var assetsBeforeProcessing = images.Members!
-            .Select(i => new AssetBeforeProcessing(i.ToDlcsModel(customerId), i.DeliveryChannels)).ToList();
+            .Select(i => new AssetBeforeProcessing(i.ToDlcsModel(customerId), (i.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
+                .Select(d => new DeliveryChannelBeforeProcessing(d.Channel, d.Policy)).ToArray())).ToList();
 
         var request =
             new CreateBatchOfImages(customerId, assetsBeforeProcessing);
@@ -188,7 +190,8 @@ public class CustomerQueueController : HydraController
         }
         
         var assetsBeforeProcessing = images.Members!
-            .Select(i => new AssetBeforeProcessing(i.ToDlcsModel(customerId), i.DeliveryChannels)).ToList();
+            .Select(i => new AssetBeforeProcessing(i.ToDlcsModel(customerId), (i.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
+                .Select(d => new DeliveryChannelBeforeProcessing(d.Channel, d.Policy)).ToArray())).ToList();
 
         var request =
             new CreateBatchOfImages(customerId, assetsBeforeProcessing, QueueNames.Priority);

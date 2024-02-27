@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.IO.Enumeration;
 using DLCS.Core.Caching;
 using DLCS.Model.DeliveryChannels;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
@@ -45,5 +47,45 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
 
         return defaultDeliveryChannels.Where(d => d.Space == space || d.Space == 0).ToList();
+    }
+    
+    public List<DeliveryChannelPolicy> MatchedDeliveryChannels(string mediaType, int space, int customerId)
+    {
+        var completedMatch = new List<DeliveryChannelPolicy>();
+        
+        var defaultDeliveryChannels = GetDefaultDeliveryChannelsForCustomer(customerId, space);
+        
+        foreach (var defaultDeliveryChannel in defaultDeliveryChannels.OrderByDescending(v => v.Space).ThenByDescending(c => c.MediaType.Length))
+        {
+
+            if (completedMatch.Any(d => d.Channel == defaultDeliveryChannel.DeliveryChannelPolicy.Channel))
+            {
+                continue;
+            }
+
+            if (FileSystemName.MatchesSimpleExpression(defaultDeliveryChannel.MediaType, mediaType))
+            {
+                completedMatch.Add(defaultDeliveryChannel.DeliveryChannelPolicy);
+            }
+        }
+
+        return completedMatch;
+    }
+
+    public DeliveryChannelPolicy 
+        MatchDeliveryChannelPolicyForChannel(string mediaType, int space, int customerId, string? channel)
+    {
+        var defaultDeliveryChannels = GetDefaultDeliveryChannelsForCustomer(customerId, space)
+            .Where(d => d.DeliveryChannelPolicy.Channel == channel);
+        
+        foreach (var defaultDeliveryChannel in defaultDeliveryChannels.OrderByDescending(v => v.Space).ThenByDescending(c => c.MediaType.Length))
+        {
+            if (FileSystemName.MatchesSimpleExpression(defaultDeliveryChannel.MediaType, mediaType))
+            {
+                return defaultDeliveryChannel.DeliveryChannelPolicy;
+            }
+        }
+
+        throw new InvalidOperationException($"Failed to match media type {mediaType} to channel {channel}");
     }
 }
