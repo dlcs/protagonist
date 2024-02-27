@@ -108,20 +108,6 @@ public class AssetProcessorTest
                 new DeliveryChannelBeforeProcessing("none", null)
             });
         
-        
-        // {
-        //     Asset = new Asset()
-        //     {
-        //         Id = new AssetId(1, 1, "asset"),
-        //         MediaType = "image/jpg",
-        //         Origin = "https://some/origin"
-        //     },
-        //     DeliveryChannelsBeforeProcessing = new []
-        //     {
-        //         new DeliveryChannelBeforeProcessing("none", null)
-        //     }
-        // };
-        
         // Act
         var result = await sut.Process(assetBeforeProcessing, false, false, false);
         

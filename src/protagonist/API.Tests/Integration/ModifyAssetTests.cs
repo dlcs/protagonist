@@ -14,7 +14,6 @@ using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
-using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
@@ -110,7 +109,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         var customerAndSpace = await CreateCustomerAndSpace();
 
-        var newPolicy = await dbContext.DeliveryChannelPolicies.AddAsync(new DeliveryChannelPolicy()
+        var newPolicy = await dbContext.DeliveryChannelPolicies.AddAsync(new DLCS.Model.Policies.DeliveryChannelPolicy()
         {
             Created = DateTime.UtcNow,
             Modified = DateTime.UtcNow,
@@ -211,7 +210,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         var customerAndSpace = await CreateCustomerAndSpace();
 
-        var newPolicy = await dbContext.DeliveryChannelPolicies.AddAsync(new DeliveryChannelPolicy()
+        var newPolicy = await dbContext.DeliveryChannelPolicies.AddAsync(new DLCS.Model.Policies.DeliveryChannelPolicy()
         {
             Created = DateTime.UtcNow,
             Modified = DateTime.UtcNow,
