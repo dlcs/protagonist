@@ -5,7 +5,6 @@ using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Core;
 using DLCS.Core.Collections;
-using DLCS.Core.Settings;
 using DLCS.Core.Strings;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
@@ -46,7 +45,7 @@ public class AssetProcessor
     /// <summary>
     /// Process an asset - including validation and handling Update or Insert logic and get ready for ingestion
     /// </summary>
-    /// <param name="assetBeforeProcessing">Asset sent to API</param>
+    /// <param name="assetBeforeProcessing">Details needed to create assets</param>
     /// <param name="mustExist">If true, then only Update operations are supported</param>
     /// <param name="alwaysReingest">If true, then engine will be notified</param>
     /// <param name="isBatchUpdate">
@@ -183,7 +182,7 @@ public class AssetProcessor
     {
         updatedAsset.ImageDeliveryChannels = new List<ImageDeliveryChannel>();
         // Creation, set image delivery channels to default values for media type, if not already set
-        if (deliveryChannels == null)
+        if (deliveryChannels.IsNullOrEmpty())
         {
             var matchedDeliveryChannels =
                 MatchedDeliveryChannels(updatedAsset.MediaType!, updatedAsset.Space, updatedAsset.Customer);
@@ -217,9 +216,7 @@ public class AssetProcessor
 
         foreach (var deliveryChannel in deliveryChannels)
         {
-            DeliveryChannelPolicy deliveryChannelPolicy = null!;
-            
-            deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(
+            var deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(
                 updatedAsset.Customer,
                 deliveryChannel.Channel,
                 deliveryChannel.Policy);
@@ -234,8 +231,7 @@ public class AssetProcessor
             
         return true;
     }
-
-
+    
     private List<DeliveryChannelPolicy> MatchedDeliveryChannels(string mediaType, int space, int customerId)
     {
         var completedMatch = new List<DeliveryChannelPolicy>();

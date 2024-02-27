@@ -104,8 +104,7 @@ public class CustomerQueueController : HydraController
         }
 
         var assetsBeforeProcessing = images.Members!
-            .Select(i => new AssetBeforeProcessing() { Asset = i.ToDlcsModel(customerId), 
-                DeliveryChannels = i.DeliveryChannels }).ToList();
+            .Select(i => new AssetBeforeProcessing(i.ToDlcsModel(customerId), i.DeliveryChannels)).ToList();
 
         var request =
             new CreateBatchOfImages(customerId, assetsBeforeProcessing);
@@ -189,8 +188,7 @@ public class CustomerQueueController : HydraController
         }
         
         var assetsBeforeProcessing = images.Members!
-            .Select(i => new AssetBeforeProcessing() { Asset = i.ToDlcsModel(customerId), 
-                DeliveryChannels = i.DeliveryChannels }).ToList();
+            .Select(i => new AssetBeforeProcessing(i.ToDlcsModel(customerId), i.DeliveryChannels)).ToList();
 
         var request =
             new CreateBatchOfImages(customerId, assetsBeforeProcessing, QueueNames.Priority);

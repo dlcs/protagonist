@@ -9,7 +9,6 @@ using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;
-using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using FakeItEasy;
 using Test.Helpers.Settings;
@@ -51,10 +50,7 @@ public class AssetProcessorTest
                 CustomerStorage = new CustomerStorage{ TotalSizeOfStoredImages = 10}
             });
         
-        var assetBeforeProcessing = new AssetBeforeProcessing()
-        {
-            Asset = new Asset()
-        };
+        var assetBeforeProcessing = new AssetBeforeProcessing(new Asset(), null);
         
         // Act
         var result = await sut.Process(assetBeforeProcessing, false, false, false);
@@ -77,10 +73,7 @@ public class AssetProcessorTest
                 CustomerStorage = new CustomerStorage{ TotalSizeOfStoredImages = 10}
             });
 
-        var assetBeforeProcessing = new AssetBeforeProcessing()
-        {
-            Asset = new Asset()
-        };
+        var assetBeforeProcessing = new AssetBeforeProcessing(new Asset(), null);
         
         // Act
         var result = await sut.Process(assetBeforeProcessing, false, false, false);
@@ -103,7 +96,18 @@ public class AssetProcessorTest
                 CustomerStorage = new CustomerStorage{ TotalSizeOfStoredImages = 10}
             });
         
-        var assetBeforeProcessing = new AssetBeforeProcessing()
+        var assetBeforeProcessing = new AssetBeforeProcessing(new Asset()
+        {
+            Id = new AssetId(1, 1, "asset"),
+            MediaType = "image/jpg",
+            Origin = "https://some/origin"
+        }, 
+            new [] {
+            new DeliveryChannel()
+            {
+                Channel = "none"
+            }
+        })
         {
             Asset = new Asset()
             {
@@ -144,29 +148,25 @@ public class AssetProcessorTest
                 Policy = new StoragePolicy{MaximumTotalSizeOfStoredImages = 1000, MaximumNumberOfStoredImages = 10000},
                 CustomerStorage = new CustomerStorage{ TotalSizeOfStoredImages = 10}
             });
-        
-        var assetBeforeProcessing = new AssetBeforeProcessing()
+
+        var assetBeforeProcessing = new AssetBeforeProcessing(new Asset()
         {
-            Asset = new Asset()
+            Id = new AssetId(1, 1, "asset"),
+            MediaType = "image/jpg",
+            Origin = "https://some/origin"
+        }, 
+            new [] {
+            new DeliveryChannel()
             {
-                Id = new AssetId(1, 1, "asset"),
-                MediaType = "image/jpg",
-                Origin = "https://some/origin"
+                Channel = "iiif-img",
+                Policy = "somePolicy"
             },
-            DeliveryChannels = new []
+            new DeliveryChannel()
             {
-                new DeliveryChannel()
-                {
-                    Channel = "iiif-img",
-                    Policy = "somePolicy"
-                },
-                new DeliveryChannel()
-                {
-                    Channel = "thumbs",
-                    Policy = "somePolicy"
-                }
+                Channel = "thumbs",
+                Policy = "somePolicy"
             }
-        };
+        });
 
         // Act
         var result = await sut.Process(assetBeforeProcessing, false, false, false);
@@ -204,28 +204,24 @@ public class AssetProcessorTest
         A.CallTo(() => deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(A<int>._, A<string>._, A<string>._))
             .Throws<InvalidOperationException>();
         
-        var assetBeforeProcessing = new AssetBeforeProcessing()
+        var assetBeforeProcessing = new AssetBeforeProcessing(new Asset()
         {
-            Asset = new Asset()
+            Id = new AssetId(1, 1, "asset"),
+            MediaType = "image/jpg",
+            Origin = "https://some/origin"
+        }, new []
+        {
+            new DeliveryChannel()
             {
-                Id = new AssetId(1, 1, "asset"),
-                MediaType = "image/jpg",
-                Origin = "https://some/origin"
+                Channel = "iiif-img",
+                Policy = "somePolicy"
             },
-            DeliveryChannels = new []
+            new DeliveryChannel()
             {
-                new DeliveryChannel()
-                {
-                    Channel = "iiif-img",
-                    Policy = "somePolicy"
-                },
-                new DeliveryChannel()
-                {
-                    Channel = "thumbs",
-                    Policy = "somePolicy"
-                }
+                Channel = "thumbs",
+                Policy = "somePolicy"
             }
-        };
+        });
         
         // Act
         var result = await sut.Process(assetBeforeProcessing, false, false, false);
