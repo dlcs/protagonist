@@ -1,4 +1,5 @@
-﻿using API.Features.DeliveryChannels.Validation;
+﻿using System;
+using API.Features.DeliveryChannels.Validation;
 using DLCS.HydraModel;
 using FluentValidation.TestHelper;
 
@@ -19,11 +20,7 @@ public class HydraDefaultDeliveryChannelValidatorTests
     [InlineData("stuff/?")]
     public void MediaType_NullEmptyOrInvalid(string mediaType)
     {
-        var model = new DefaultDeliveryChannel
-        {
-            MediaType = mediaType,
-            Channel = "iiif-test"
-        };
+        var model = new DefaultDeliveryChannel("", 1, "iiif-test", null, mediaType, Guid.NewGuid().ToString(), 0);
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.MediaType);
     }
@@ -33,11 +30,7 @@ public class HydraDefaultDeliveryChannelValidatorTests
     [InlineData("")]
     public void Channel_NullOrEmpty(string channel)
     {
-        var model = new DefaultDeliveryChannel
-        {
-            MediaType = "image/*",
-            Channel = channel
-        };
+        var model = new DefaultDeliveryChannel("", 1, channel, null, "image/*", Guid.NewGuid().ToString(), 0);
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Channel);
     }

@@ -9,21 +9,20 @@ public static class DefaultDeliveryChannelConverters
     /// </summary>
     public static DLCS.HydraModel.DefaultDeliveryChannel ToHydra(this DefaultDeliveryChannel defaultDeliveryChannel, string baseUrl)
     {
-        var hydra = new DLCS.HydraModel.DefaultDeliveryChannel()
-        {   
-            Policy = defaultDeliveryChannel.DeliveryChannelPolicy.System ? defaultDeliveryChannel.DeliveryChannelPolicy.Name : GetFullyQualifiedPolicyName(defaultDeliveryChannel, baseUrl),
-            Channel = defaultDeliveryChannel.DeliveryChannelPolicy.Channel,
-            MediaType = defaultDeliveryChannel.MediaType, 
-            Id = $"{baseUrl}/customers/{defaultDeliveryChannel.Customer}/defaultDeliveryChannels/{defaultDeliveryChannel.Id.ToString()}"
-        };
-            
-        return hydra;
+        var policy = defaultDeliveryChannel.DeliveryChannelPolicy.System
+            ? defaultDeliveryChannel.DeliveryChannelPolicy.Name
+            : GetFullyQualifiedPolicyName(defaultDeliveryChannel, baseUrl);
+
+        return new DLCS.HydraModel.DefaultDeliveryChannel(baseUrl, defaultDeliveryChannel.Customer,
+            defaultDeliveryChannel.DeliveryChannelPolicy.Channel, policy, defaultDeliveryChannel.MediaType,
+            defaultDeliveryChannel.Id.ToString(), defaultDeliveryChannel.Space);
     }
     
     /// <summary>
     /// Convert Hydra DefaultDeliveryChannel entity to EF resource
     /// </summary>
-    public static DefaultDeliveryChannel ToDlcsModelWithoutPolicy(this DLCS.HydraModel.DefaultDeliveryChannel hydraDefaultDeliveryChannel, int space, int customerId)
+    public static DefaultDeliveryChannel ToDlcsModelWithoutPolicy(
+        this DLCS.HydraModel.DefaultDeliveryChannel hydraDefaultDeliveryChannel, int space, int customerId)
     {
         return new DefaultDeliveryChannel()
         {
@@ -37,6 +36,6 @@ public static class DefaultDeliveryChannelConverters
 
     private static string? GetFullyQualifiedPolicyName(DefaultDeliveryChannel defaultDeliveryChannel, string baseUrl)
     {
-        return $"{baseUrl}customers/{defaultDeliveryChannel.Customer}/deliveryChannels/{defaultDeliveryChannel.DeliveryChannelPolicy.Channel}/{defaultDeliveryChannel.DeliveryChannelPolicy.Name}";
+        return $"{baseUrl}/customers/{defaultDeliveryChannel.Customer}/deliveryChannelPolicies/{defaultDeliveryChannel.DeliveryChannelPolicy.Channel}/{defaultDeliveryChannel.DeliveryChannelPolicy.Name}";
     }
 }
