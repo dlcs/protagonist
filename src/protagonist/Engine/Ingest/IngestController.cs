@@ -2,7 +2,9 @@
 using System.Text.Json;
 using DLCS.Model.Messaging;
 using Engine.Ingest.Models;
+using Engine.Settings;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest;
 
@@ -11,10 +13,12 @@ public class IngestController : Controller
 {
     private readonly IAssetIngester ingester;
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
+    private TimebasedIngestSettings timebasedIngestSettings;
 
-    public IngestController(IAssetIngester ingester)
+    public IngestController(IAssetIngester ingester, IOptions<EngineSettings> engineSettings)
     {
         this.ingester = ingester;
+        timebasedIngestSettings = engineSettings.Value.TimebasedIngest;
     }
 
     /// <summary>
@@ -50,6 +54,16 @@ public class IngestController : Controller
         var result = await ingester.Ingest(message, cancellationToken);
 
         return ConvertToStatusCode(message, result.Status);
+    }
+    
+    /// <summary>
+    /// Synchronously ingest an asset 
+    /// </summary>
+    [HttpGet]
+    [Route("allowed-av")]
+    public async Task<IActionResult> Return(CancellationToken cancellationToken)
+    {
+        return Ok(timebasedIngestSettings.DeliveryChannelMappings.Keys);
     }
 
     private IActionResult ConvertToStatusCode(object message, IngestResultStatus result)

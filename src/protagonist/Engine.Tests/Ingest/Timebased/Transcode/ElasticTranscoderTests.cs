@@ -26,7 +26,7 @@ public class ElasticTranscoderTests
         {
             TimebasedIngest = new TimebasedIngestSettings
             {
-                TranscoderMappings = new Dictionary<string, string>
+                DeliveryChannelMappings = new Dictionary<string, string>
                 {
                     ["Standard WebM"] = "my-custom-preset",
                 },
