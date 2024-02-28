@@ -176,11 +176,11 @@ public class AssetProcessor
         }
     }
 
-    private bool SetImageDeliveryChannels(Asset updatedAsset, IList<DeliveryChannelBeforeProcessing> deliveryChannels)
+    private bool SetImageDeliveryChannels(Asset updatedAsset, IList<DeliveryChannelsBeforeProcessing> deliveryChannelsBeforeProcessing)
     {
         updatedAsset.ImageDeliveryChannels = new List<ImageDeliveryChannel>();
         // Creation, set image delivery channels to default values for media type, if not already set
-        if (deliveryChannels.IsNullOrEmpty())
+        if (deliveryChannelsBeforeProcessing.IsNullOrEmpty())
         {
             var matchedDeliveryChannels =
                 defaultDeliveryChannelRepository.MatchedDeliveryChannels(updatedAsset.MediaType!, updatedAsset.Space, updatedAsset.Customer);
@@ -197,7 +197,7 @@ public class AssetProcessor
             return true;
         }
 
-        if (deliveryChannels.Count(d => d.Channel == AssetDeliveryChannels.None) == 1)
+        if (deliveryChannelsBeforeProcessing.Count(d => d.Channel == AssetDeliveryChannels.None) == 1)
         {
             var deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(updatedAsset.Customer,
                 AssetDeliveryChannels.None, None);
@@ -212,7 +212,7 @@ public class AssetProcessor
             return false;
         }
 
-        foreach (var deliveryChannel in deliveryChannels)
+        foreach (var deliveryChannel in deliveryChannelsBeforeProcessing)
         {
             DeliveryChannelPolicy deliveryChannelPolicy;
             

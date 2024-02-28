@@ -104,7 +104,7 @@ public class AssetProcessorTest
             },
             new[]
             {
-                new DeliveryChannelBeforeProcessing("none", null)
+                new DeliveryChannelsBeforeProcessing("none", null)
             });
         
         // Act
@@ -139,8 +139,8 @@ public class AssetProcessorTest
             Origin = "https://some/origin"
         }, 
             new [] {
-            new DeliveryChannelBeforeProcessing("iiif-img", "somePolicy"),
-            new DeliveryChannelBeforeProcessing("thumbs", "somePolicy")
+            new DeliveryChannelsBeforeProcessing("iiif-img", "somePolicy"),
+            new DeliveryChannelsBeforeProcessing("thumbs", "somePolicy")
             });
 
         // Act
@@ -186,8 +186,8 @@ public class AssetProcessorTest
             Origin = "https://some/origin"
         }, new []
         {
-            new DeliveryChannelBeforeProcessing("iiif-img", "somePolicy"),
-            new DeliveryChannelBeforeProcessing("thumbs", "somePolicy")
+            new DeliveryChannelsBeforeProcessing("iiif-img", "somePolicy"),
+            new DeliveryChannelsBeforeProcessing("thumbs", "somePolicy")
         });
         
         // Act
@@ -218,7 +218,7 @@ public class AssetProcessorTest
             Origin = "https://some/origin"
         }, new []
         {
-            new DeliveryChannelBeforeProcessing("iiif-img", null)
+            new DeliveryChannelsBeforeProcessing("iiif-img", null)
         });
         
         // Act
@@ -254,7 +254,7 @@ public class AssetProcessorTest
             Origin = "https://some/origin"
         }, new []
         {
-            new DeliveryChannelBeforeProcessing("iiif-img", null)
+            new DeliveryChannelsBeforeProcessing("iiif-img", null)
         });
         
         // Act

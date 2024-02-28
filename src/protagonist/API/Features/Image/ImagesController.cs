@@ -125,8 +125,10 @@ public class ImagesController : HydraController
             {
                 var asset = hydraImage.ToDlcsModel(customerId, spaceId);
 
-                var assetBeforeProcessing = new AssetBeforeProcessing(asset, (hydraImage.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
-                    .Select(d => new DeliveryChannelBeforeProcessing(d.Channel, d.Policy)).ToArray());
+                var deliveryChannelsBeforeProcessing = (hydraImage.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
+                    .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.Policy)).ToArray();
+
+                var assetBeforeProcessing = new AssetBeforeProcessing(asset, deliveryChannelsBeforeProcessing);
 
                 var request = new CreateOrUpdateImage(assetBeforeProcessing, "PATCH");
                 var result = await Mediator.Send(request, cancellationToken);

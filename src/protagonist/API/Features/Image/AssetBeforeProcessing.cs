@@ -2,7 +2,7 @@
 
 public class AssetBeforeProcessing
 {
-    public AssetBeforeProcessing(DLCS.Model.Assets.Asset asset, DeliveryChannelBeforeProcessing[] deliveryChannelsBeforeProcessing)
+    public AssetBeforeProcessing(DLCS.Model.Assets.Asset asset, DeliveryChannelsBeforeProcessing[] deliveryChannelsBeforeProcessing)
     {
         Asset = asset;
         DeliveryChannelsBeforeProcessing = deliveryChannelsBeforeProcessing;
@@ -10,7 +10,7 @@ public class AssetBeforeProcessing
     
     public DLCS.Model.Assets.Asset Asset { get; init; }
 
-    public DeliveryChannelBeforeProcessing[] DeliveryChannelsBeforeProcessing { get; init; }
+    public DeliveryChannelsBeforeProcessing[] DeliveryChannelsBeforeProcessing { get; init; }
 }
 
-public record DeliveryChannelBeforeProcessing(string? Channel, string? Policy);
+public record DeliveryChannelsBeforeProcessing(string? Channel, string? Policy);
