@@ -1,4 +1,5 @@
 using System;
+using DLCS.HydraModel.Converters;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -198,6 +199,7 @@ public class Image : DlcsResource
     [RdfProperty(Description = "Delivery channel specifying how the asset will be available.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 140, PropertyName = "deliveryChannels")]
+    [JsonConverter(typeof(ImageDeliveryChannelsConverter))]
     public DeliveryChannel[]? DeliveryChannels { get; set; }
     
     [RdfProperty(Description = "Delivery channel specifying how the asset will be available.",
