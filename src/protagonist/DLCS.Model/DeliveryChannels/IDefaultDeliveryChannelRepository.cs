@@ -6,14 +6,6 @@ namespace DLCS.Model.DeliveryChannels;
 public interface IDefaultDeliveryChannelRepository
 {
     /// <summary>
-    /// Gets the default delivery channels that belong to a customer and space
-    /// </summary>
-    /// <param name="customer">The customer to retrieve for</param>
-    /// <param name="space">The space to retrieve for</param>
-    /// <returns>A list of default delivery channels</returns>
-    public List<DefaultDeliveryChannel> GetDefaultDeliveryChannelsForCustomer(int customer, int space);
-
-    /// <summary>
     /// Matches delivery channels based on the media type
     /// </summary>
     /// <param name="mediaType">The media type to match with</param>

@@ -104,9 +104,7 @@ public class CustomerQueueController : HydraController
             return this.ValidationFailed(validationResult);
         }
 
-        var assetsBeforeProcessing = images.Members!
-            .Select(i => new AssetBeforeProcessing(i.ToDlcsModel(customerId), (i.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
-                .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.Policy)).ToArray())).ToList();
+        var assetsBeforeProcessing = CreateAssetsBeforeProcessing(customerId, images);
 
         var request =
             new CreateBatchOfImages(customerId, assetsBeforeProcessing);
@@ -116,7 +114,7 @@ public class CustomerQueueController : HydraController
             errorTitle: "Create batch failed",
             cancellationToken: cancellationToken);
     }
-    
+
     /// <summary>
     /// Updates assets for legacy mode compatibility and mints GUIDs if no ID set
     /// </summary>
@@ -189,9 +187,7 @@ public class CustomerQueueController : HydraController
             return this.ValidationFailed(validationResult);
         }
         
-        var assetsBeforeProcessing = images.Members!
-            .Select(i => new AssetBeforeProcessing(i.ToDlcsModel(customerId), (i.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
-                .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.Policy)).ToArray())).ToList();
+        var assetsBeforeProcessing = CreateAssetsBeforeProcessing(customerId, images);
 
         var request =
             new CreateBatchOfImages(customerId, assetsBeforeProcessing, QueueNames.Priority);
@@ -391,5 +387,14 @@ public class CustomerQueueController : HydraController
             batch => batch.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Get recent batches failed",
             cancellationToken: cancellationToken);
+    }
+    
+    private static List<AssetBeforeProcessing> CreateAssetsBeforeProcessing(int customerId, HydraCollection<DLCS.HydraModel.Image> images)
+    {
+        var assetsBeforeProcessing = images.Members!
+            .Select(i => new AssetBeforeProcessing(i.ToDlcsModel(customerId),
+                (i.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
+                .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.Policy)).ToArray())).ToList();
+        return assetsBeforeProcessing;
     }
 }

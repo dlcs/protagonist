@@ -23,7 +23,7 @@ public class DefaultDeliveryChannelRepositoryTests
     public DefaultDeliveryChannelRepositoryTests(DlcsDatabaseFixture dbFixture)
     {
         dbContext = dbFixture.DbContext;
-        sut = new DefaultDeliveryChannelRepository(new MockCachingService(),new  NullLogger<DefaultDeliveryChannelRepository>(), 
+        sut = new DefaultDeliveryChannelRepository(new MockCachingService(), new NullLogger<DefaultDeliveryChannelRepository>(), 
             Options.Create(new CacheSettings()), dbFixture.DbContext);
 
         dbFixture.CleanUp();
@@ -60,39 +60,7 @@ public class DefaultDeliveryChannelRepositoryTests
     }
 
     [Fact]
-    public void GetDefaultDeliveryChannelsForCustomer_ReturnsAllDefaultDeliveryChannels_WhenCalledWithSpaceWithoutSpecificChannels()
-    {
-        // Arrange and Act
-        var channels = sut.GetDefaultDeliveryChannelsForCustomer(2, 1);
-
-        // Assert
-        channels.Count.Should().Be(1);
-        channels.Count(x => x.DeliveryChannelPolicy.Channel == "iiif-img").Should().Be(1);
-    }
-    
-    [Fact]
-    public void GetDefaultDeliveryChannelsForCustomer_ReturnsAll_WhenCalledWithSpaceWithSpecificChannels()
-    {
-        // Arrange and Act
-        var channels = sut.GetDefaultDeliveryChannelsForCustomer(2, 2);
-
-        // Assert
-        channels.Count.Should().Be(2);
-        channels.Count(x => x.DeliveryChannelPolicy.Channel == "iiif-img").Should().Be(2);
-    }
-    
-    [Fact]
-    public void GetDefaultDeliveryChannelsForCustomer_ReturnsNothing_WhenCalledWithInvalidCustomer()
-    {
-        // Arrange and Act
-        var channels = sut.GetDefaultDeliveryChannelsForCustomer(3, 1);
-
-        // Assert
-        channels.Count.Should().Be(0);
-    }
-    
-    [Fact]
-    public void MatchedDeliveryChannels_ReturnsAllDeliveryChanelPolicies_WhenCalled()
+    public void MatchedDeliveryChannels_ReturnsAllDeliveryChannelPolicies_WhenCalled()
     {
         // Arrange and Act
         var matches = sut.MatchedDeliveryChannels("image/tiff", 1, 2);
@@ -130,6 +98,5 @@ public class DefaultDeliveryChannelRepositoryTests
 
         // Assert
         action.Should().ThrowExactly<InvalidOperationException>();
-
     }
 }

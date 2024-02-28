@@ -29,8 +29,49 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
         cacheSettings = cacheOptions.Value;
         this.dlcsContext = dlcsContext;
     }
+
+    public List<DeliveryChannelPolicy> MatchedDeliveryChannels(string mediaType, int space, int customerId)
+    {
+        var completedMatch = new List<DeliveryChannelPolicy>();
+        
+        var orderedDefaultDeliveryChannels = OrderedDefaultDeliveryChannels(space, customerId);
+        
+        foreach (var defaultDeliveryChannel in orderedDefaultDeliveryChannels)
+        {
+            if (completedMatch.Any(d => d.Channel == defaultDeliveryChannel.DeliveryChannelPolicy.Channel))
+            {
+                continue;
+            }
+
+            if (FileSystemName.MatchesSimpleExpression(defaultDeliveryChannel.MediaType, mediaType))
+            {
+                completedMatch.Add(defaultDeliveryChannel.DeliveryChannelPolicy);
+            }
+        }
+
+        return completedMatch;
+    }
+
+    public DeliveryChannelPolicy MatchDeliveryChannelPolicyForChannel(
+        string mediaType, 
+        int space, 
+        int customerId, 
+        string? channel)
+    {
+        var orderedDeliveryChannelPolicies = OrderedDefaultDeliveryChannels(space, customerId, channel);
+        
+        foreach (var defaultDeliveryChannel in orderedDeliveryChannelPolicies)
+        {
+            if (FileSystemName.MatchesSimpleExpression(defaultDeliveryChannel.MediaType, mediaType))
+            {
+                return defaultDeliveryChannel.DeliveryChannelPolicy;
+            }
+        }
+
+        throw new InvalidOperationException($"Failed to match media type {mediaType} to channel {channel}");
+    }
     
-    public List<DefaultDeliveryChannel> GetDefaultDeliveryChannelsForCustomer(int customerId, int space)
+    private List<DefaultDeliveryChannel> GetDefaultDeliveryChannelsForCustomer(int customerId, int space)
     {
         var key = $"defaultDeliveryChannels:{customerId}";
         
@@ -49,43 +90,12 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
         return defaultDeliveryChannels.Where(d => d.Space == space || d.Space == 0).ToList();
     }
     
-    public List<DeliveryChannelPolicy> MatchedDeliveryChannels(string mediaType, int space, int customerId)
-    {
-        var completedMatch = new List<DeliveryChannelPolicy>();
-        
-        var defaultDeliveryChannels = GetDefaultDeliveryChannelsForCustomer(customerId, space);
-        
-        foreach (var defaultDeliveryChannel in defaultDeliveryChannels.OrderByDescending(v => v.Space).ThenByDescending(c => c.MediaType.Length))
-        {
-
-            if (completedMatch.Any(d => d.Channel == defaultDeliveryChannel.DeliveryChannelPolicy.Channel))
-            {
-                continue;
-            }
-
-            if (FileSystemName.MatchesSimpleExpression(defaultDeliveryChannel.MediaType, mediaType))
-            {
-                completedMatch.Add(defaultDeliveryChannel.DeliveryChannelPolicy);
-            }
-        }
-
-        return completedMatch;
-    }
-
-    public DeliveryChannelPolicy 
-        MatchDeliveryChannelPolicyForChannel(string mediaType, int space, int customerId, string? channel)
+    private List<DefaultDeliveryChannel> OrderedDefaultDeliveryChannels(int space, int customerId, string? channel = null)
     {
         var defaultDeliveryChannels = GetDefaultDeliveryChannelsForCustomer(customerId, space)
-            .Where(d => d.DeliveryChannelPolicy.Channel == channel);
-        
-        foreach (var defaultDeliveryChannel in defaultDeliveryChannels.OrderByDescending(v => v.Space).ThenByDescending(c => c.MediaType.Length))
-        {
-            if (FileSystemName.MatchesSimpleExpression(defaultDeliveryChannel.MediaType, mediaType))
-            {
-                return defaultDeliveryChannel.DeliveryChannelPolicy;
-            }
-        }
+            .Where(d => channel == null || d.DeliveryChannelPolicy.Channel == channel);
 
-        throw new InvalidOperationException($"Failed to match media type {mediaType} to channel {channel}");
+        return defaultDeliveryChannels.OrderByDescending(v => v.Space)
+            .ThenByDescending(c => c.MediaType.Length).ToList();
     }
 }

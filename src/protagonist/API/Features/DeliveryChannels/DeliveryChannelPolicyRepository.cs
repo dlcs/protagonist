@@ -15,7 +15,7 @@ public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
     private readonly CacheSettings cacheSettings;
     private readonly ILogger<DeliveryChannelPolicyRepository> logger;
     private readonly DlcsContext dlcsContext;
-    private const int DefaultCustomer = 1;
+    private const int AdminCustomer = 1;
 
     public DeliveryChannelPolicyRepository(
         IAppCache appCache,
@@ -39,7 +39,7 @@ public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
 
             var defaultDeliveryChannels = dlcsContext.DeliveryChannelPolicies
                 .AsNoTracking()
-                .Where(d => d.Customer == customerId || d.Customer == DefaultCustomer);
+                .Where(d => d.Customer == customerId || d.Customer == AdminCustomer);
 
             return defaultDeliveryChannels;
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long)); 
@@ -50,7 +50,7 @@ public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
              p.Channel == channel &&
              p.Name == policy
                  .Split('/', StringSplitOptions.None).Last()) ||
-            (p.Customer == DefaultCustomer &&
+            (p.Customer == AdminCustomer &&
              p.System == true &&
              p.Channel == channel &&
              p.Name == policy));
