@@ -65,7 +65,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         data.MediaType.Should().Be(mediaType);
-        data.Id.Should().Be(defaultDeliveryChannel.Id.ToString());
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{defaultDeliveryChannel.Id.ToString()}");
     }
     
     [Fact]
@@ -145,7 +145,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         data.MediaType.Should().Be(mediaType);
-        data.Id.Should().Be(dbEntry.Id.ToString());
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{dbEntry.Id.ToString()}");
         dbEntry.DeliveryChannelPolicyId.Should().Be(policy.Id);
     }
     
@@ -282,7 +282,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         data.MediaType.Should().Be(mediaType);
-        data.Id.Should().Be(dbEntry.Id.ToString());
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{dbEntry.Id.ToString()}");
         modifiedDbEntry.DeliveryChannelPolicy.Name.Should().Be(policyName.Split("/", StringSplitOptions.None).Last());
     }
     

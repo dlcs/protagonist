@@ -14,7 +14,7 @@ public static class DefaultDeliveryChannelConverters
             Policy = defaultDeliveryChannel.DeliveryChannelPolicy.System ? defaultDeliveryChannel.DeliveryChannelPolicy.Name : GetFullyQualifiedPolicyName(defaultDeliveryChannel, baseUrl),
             Channel = defaultDeliveryChannel.DeliveryChannelPolicy.Channel,
             MediaType = defaultDeliveryChannel.MediaType, 
-            Id = $"{baseUrl}/{defaultDeliveryChannel.Customer}/defaultDeliveryChannels/{defaultDeliveryChannel.Id.ToString()}"
+            Id = $"{baseUrl}/customers/{defaultDeliveryChannel.Customer}/defaultDeliveryChannels/{defaultDeliveryChannel.Id.ToString()}"
         };
             
         return hydra;
@@ -37,6 +37,6 @@ public static class DefaultDeliveryChannelConverters
 
     private static string? GetFullyQualifiedPolicyName(DefaultDeliveryChannel defaultDeliveryChannel, string baseUrl)
     {
-        return $"{baseUrl}/{defaultDeliveryChannel.Customer}/deliveryChannels/{defaultDeliveryChannel.DeliveryChannelPolicy.Channel}/{defaultDeliveryChannel.DeliveryChannelPolicy.Name}";
+        return $"{baseUrl}customers/{defaultDeliveryChannel.Customer}/deliveryChannels/{defaultDeliveryChannel.DeliveryChannelPolicy.Channel}/{defaultDeliveryChannel.DeliveryChannelPolicy.Name}";
     }
 }

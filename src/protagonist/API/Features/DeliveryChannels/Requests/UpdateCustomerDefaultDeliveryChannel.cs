@@ -57,13 +57,12 @@ public class UpdateCustomHeaderHandler : IRequestHandler<UpdateCustomerDefaultDe
         {
             try
             {
-                var deliveryChannelPolicy = dbContext.DeliveryChannelPolicies.SingleOrDefault(p =>
+                var deliveryChannelPolicy = dbContext.DeliveryChannelPolicies.Single(p =>
                                                 p.Customer == request.Customer &&
                                                 p.System == false &&
                                                 p.Channel == request.DefaultDeliveryChannel.Channel &&
                                                 p.Name == request.DefaultDeliveryChannel.Policy!
-                                                    .Split('/', StringSplitOptions.None).Last()) ??
-                                            dbContext.DeliveryChannelPolicies.Single(p =>
+                                                    .Split('/', StringSplitOptions.None).Last() ||
                                                 p.Customer == 1 &&
                                                 p.System == true &&
                                                 p.Channel == request.DefaultDeliveryChannel.Channel &&
