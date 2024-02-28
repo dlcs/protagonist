@@ -58,9 +58,9 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
         int customerId, 
         string? channel)
     {
-        var orderedDeliveryChannelPolicies = OrderedDefaultDeliveryChannels(space, customerId, channel);
+        var orderedDefaultDeliveryChannels = OrderedDefaultDeliveryChannels(space, customerId, channel);
         
-        foreach (var defaultDeliveryChannel in orderedDeliveryChannelPolicies)
+        foreach (var defaultDeliveryChannel in orderedDefaultDeliveryChannels)
         {
             if (FileSystemName.MatchesSimpleExpression(defaultDeliveryChannel.MediaType, mediaType))
             {
