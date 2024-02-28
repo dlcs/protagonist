@@ -1,8 +1,6 @@
-﻿using System.IO.Enumeration;
-using API.Infrastructure.Requests;
+﻿using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.HydraModel;
-using DLCS.Model.Policies;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
