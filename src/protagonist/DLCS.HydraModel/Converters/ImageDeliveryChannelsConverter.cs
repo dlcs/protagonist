@@ -4,14 +4,15 @@ using Newtonsoft.Json;
 
 namespace DLCS.HydraModel.Converters;
 
-public class ImageDeliveryChannelsConverter : JsonConverter
+public class ImageDeliveryChannelsConverter : JsonConverter<DeliveryChannel[]>
 {
-    public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, DeliveryChannel[]? value, JsonSerializer serializer)
     {
-        serializer.Serialize(writer, value); // Serialize values normally
+        serializer.Serialize(writer, value); // Serialize the values normally
     }
 
-    public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+    public override DeliveryChannel[]? ReadJson(JsonReader reader, Type objectType, DeliveryChannel[]? existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
     {
         List<DeliveryChannel> deliveryChannels = new();
         
@@ -47,10 +48,5 @@ public class ImageDeliveryChannelsConverter : JsonConverter
         }
         
         return deliveryChannels.ToArray();
-    }
-    
-    public override bool CanConvert(Type objectType)
-    {
-        return objectType == typeof(string[]) || objectType == typeof(DeliveryChannel[]);
     }
 }
