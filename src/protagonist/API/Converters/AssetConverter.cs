@@ -75,6 +75,15 @@ public static class AssetConverter
             image.ImageOptimisationPolicy =
                 $"{urlRoots.BaseUrl}/imageOptimisationPolicies/{dbAsset.ImageOptimisationPolicy}";
         }
+        
+        if (!dbAsset.ImageDeliveryChannels.IsNullOrEmpty())
+        {
+            image.DeliveryChannels = dbAsset.ImageDeliveryChannels.Select(c => new DeliveryChannel()
+            {
+                Channel = c.Channel,
+                Policy = c.DeliveryChannelPolicy.Name
+            }).ToArray();
+        }
 
         return image;
     }
