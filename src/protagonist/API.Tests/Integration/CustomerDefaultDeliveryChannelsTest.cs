@@ -84,7 +84,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
     }
     
     [Fact]
-    public async Task Get_RetrieveANonGuidDefaultDeliveryChannelForCustomer_404()
+    public async Task Get_RetrieveANonGuidDefaultDeliveryChannelForCustomer_400()
     {
         // Arrange
         const int customerId = 1;
@@ -95,7 +95,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         var response = await httpClient.AsCustomer(customerId).GetAsync(path);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
     [Theory]
@@ -130,6 +130,9 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         // Act
         var content = new StringContent(newDefaultDeliveryChannelJson, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        var test = await response.Content.ReadAsStringAsync();
+        
         var data = await response.ReadAsHydraResponseAsync<DefaultDeliveryChannel>();
 
         var dbEntry =

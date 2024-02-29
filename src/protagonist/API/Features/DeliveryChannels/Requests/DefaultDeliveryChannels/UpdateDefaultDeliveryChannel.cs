@@ -1,4 +1,5 @@
-﻿using API.Infrastructure.Requests;
+﻿using API.Features.DeliveryChannels.Helpers;
+using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Repository;
@@ -47,10 +48,13 @@ public class UpdateDefaultDeliveryChannelResult
 public class UpdateDefaultDeliveryChannelHandler : IRequestHandler<UpdateDefaultDeliveryChannel, ModifyEntityResult<UpdateDefaultDeliveryChannelResult>>
 {  
     private readonly DlcsContext dbContext;
+    private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
 
-    public UpdateDefaultDeliveryChannelHandler(DlcsContext dbContext)
+    public UpdateDefaultDeliveryChannelHandler(DlcsContext dbContext, 
+        IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository)
     {
         this.dbContext = dbContext;
+        this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
     }
     
     public async Task<ModifyEntityResult<UpdateDefaultDeliveryChannelResult>> Handle(UpdateDefaultDeliveryChannel request, CancellationToken cancellationToken)
@@ -69,18 +73,12 @@ public class UpdateDefaultDeliveryChannelHandler : IRequestHandler<UpdateDefault
         
         try
         {
-            var deliveryChannelPolicy = dbContext.DeliveryChannelPolicies.Single(p =>
-                                            p.Customer == request.Customer &&
-                                            p.System == false &&
-                                            p.Channel == request.Channel &&
-                                            p.Name == request.Policy!
-                                                .Split('/', StringSplitOptions.None).Last() ||
-                                            p.Customer == 1 &&
-                                            p.System == true &&
-                                            p.Channel == request.Channel &&
-                                            p.Name == request.Policy);
+            var deliveryChannelPolicy = dbContext.DeliveryChannelPolicies.RetrieveDeliveryChannel(
+                request.Customer, 
+                request.Channel,
+                request.Policy);
 
-            defaultDeliveryChannel.DeliveryChannelPolicyId = deliveryChannelPolicy.Id;
+                defaultDeliveryChannel.DeliveryChannelPolicyId = deliveryChannelPolicy.Id;
         }
         catch (InvalidOperationException)
         {

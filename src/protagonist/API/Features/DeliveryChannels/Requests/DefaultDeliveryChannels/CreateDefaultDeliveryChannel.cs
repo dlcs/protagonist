@@ -1,6 +1,8 @@
-﻿using API.Infrastructure.Requests;
+﻿using API.Features.DeliveryChannels.Helpers;
+using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.DeliveryChannels;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Exceptions;
 using MediatR;
@@ -32,17 +34,25 @@ public class CreateDefaultDeliveryChannel : IRequest<ModifyEntityResult<CreateDe
 
 public class CreateDefaultDeliveryChannelResult
 {
-    public DefaultDeliveryChannel? DefaultDeliveryChannel { get; init; }
+    public CreateDefaultDeliveryChannelResult(DefaultDeliveryChannel defaultDeliveryChannel)
+    {
+        DefaultDeliveryChannel = defaultDeliveryChannel;
+    }
+
+    public DefaultDeliveryChannel DefaultDeliveryChannel { get; init; }
 }
 
 public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefaultDeliveryChannel,
     ModifyEntityResult<CreateDefaultDeliveryChannelResult>>
 {
     private readonly DlcsContext dbContext;
+    private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
 
-    public CreateDefaultDeliveryChannelHandler(DlcsContext dbContext)
+    public CreateDefaultDeliveryChannelHandler(DlcsContext dbContext, 
+        IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository)
     {
         this.dbContext = dbContext;
+        this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
     }
 
     public async Task<ModifyEntityResult<CreateDefaultDeliveryChannelResult>> Handle(
@@ -54,20 +64,14 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
             Space = request.Space,
             MediaType = request.MediaType
         };
-        
-        
+
         try
         {
-            var deliveryChannelPolicy = dbContext.DeliveryChannelPolicies.Single(p =>
-                                            p.Customer == request.Customer &&
-                                            p.System == false &&
-                                            p.Channel == request.Channel &&
-                                            p.Name == request.Policy!.Split('/', StringSplitOptions.None).Last() || 
-                                            p.Customer == 1 &&
-                                            p.System == true &&
-                                            p.Channel == request.Channel &&
-                                            p.Name == request.Policy);
-
+            var deliveryChannelPolicy = dbContext.DeliveryChannelPolicies.RetrieveDeliveryChannel(
+                request.Customer, 
+                request.Channel, 
+                request.Policy);
+                    
             defaultDeliveryChannel.DeliveryChannelPolicyId = deliveryChannelPolicy.Id;
         }
         catch (InvalidOperationException)
@@ -75,7 +79,7 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
             return ModifyEntityResult<CreateDefaultDeliveryChannelResult>.Failure("Failed to find linked delivery channel policy", WriteResult.BadRequest);
         }
 
-        var returnedDeliveryChannel = dbContext.DefaultDeliveryChannels.Add(defaultDeliveryChannel);
+        var returnedDefaultDeliveryChannel = dbContext.DefaultDeliveryChannels.Add(defaultDeliveryChannel);
 
         try
         {
@@ -88,10 +92,7 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
                 WriteResult.Conflict);
         }
 
-        var created = new CreateDefaultDeliveryChannelResult()
-        {
-            DefaultDeliveryChannel = returnedDeliveryChannel.Entity
-        };
+        var created = new CreateDefaultDeliveryChannelResult(returnedDefaultDeliveryChannel.Entity);
 
         return ModifyEntityResult<CreateDefaultDeliveryChannelResult>.Success(created, WriteResult.Created);
     }
