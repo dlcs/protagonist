@@ -84,7 +84,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
     }
     
     [Fact]
-    public async Task Get_RetrieveANonGuidDefaultDeliveryChannelForCustomer_500() // should this be 400 instead?
+    public async Task Get_RetrieveANonGuidDefaultDeliveryChannelForCustomer_404()
     {
         // Arrange
         const int customerId = 1;
@@ -95,7 +95,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         var response = await httpClient.AsCustomer(customerId).GetAsync(path);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
     
     [Theory]
@@ -225,7 +225,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        data.Description.Should().Be("Attempting to create a policy that already exists");
+        data.Description.Should().Be("A default delivery channel for the requested media type 'image/*' already exists");
     }
     
     [Theory]

@@ -1,5 +1,5 @@
 ﻿using API.Features.DeliveryChannels.Converters;
-using API.Features.DeliveryChannels.Requests;
+using API.Features.DeliveryChannels.Requests.DefaultDeliveryChannels;
 using API.Features.DeliveryChannels.Validation;
 using API.Infrastructure;
 using API.Settings;
@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 namespace API.Features.DeliveryChannels;
 
 /// <summary>
-/// DLCS REST API Operations for Custom Headers
+/// DLCS REST API Operations for Default Delivery Channels
 /// </summary>
 [Route("/customers/{customerId}/defaultDeliveryChannels")]
 [ApiController]
@@ -37,9 +37,9 @@ public class CustomerDefaultDeliveryChannelsController : HydraController
     public async Task<IActionResult> GetCustomerDefaultDeliveryChannels([FromRoute] int customerId,
         CancellationToken cancellationToken)
     {
-        var getCustomerDefaultDeliveryChannels = new GetCustomerDefaultDeliveryChannels(customerId, DefaultSpace);
+        var getCustomerDefaultDeliveryChannels = new GetDefaultDeliveryChannels(customerId, DefaultSpace);
 
-        return await HandlePagedFetch<DLCS.Model.DeliveryChannels.DefaultDeliveryChannel, GetCustomerDefaultDeliveryChannels,
+        return await HandlePagedFetch<DLCS.Model.DeliveryChannels.DefaultDeliveryChannel, GetDefaultDeliveryChannels,
             DefaultDeliveryChannel>(
             getCustomerDefaultDeliveryChannels,
             policy => policy.ToHydra(GetUrlRoots().BaseUrl),
@@ -52,14 +52,14 @@ public class CustomerDefaultDeliveryChannelsController : HydraController
     /// Get an individual customer accessible default delivery channel (customer specific + system)
     /// </summary>
     /// <returns>A Hydra JSON-LD default delivery channel object</returns>
-    [HttpGet("{defaultDeliveryChannelId}")]
+    [HttpGet("{defaultDeliveryChannelId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetCustomerDefaultDeliveryChannel(
-        string defaultDeliveryChannelId,
+        Guid defaultDeliveryChannelId,
         CancellationToken cancellationToken)
     {
-        var getCustomerDefaultDeliveryChannel = new GetCustomerDefaultDeliveryChannel(defaultDeliveryChannelId);
+        var getCustomerDefaultDeliveryChannel = new GetDefaultDeliveryChannel(defaultDeliveryChannelId);
 
         return await HandleFetch(
             getCustomerDefaultDeliveryChannel,
@@ -87,11 +87,15 @@ public class CustomerDefaultDeliveryChannelsController : HydraController
             return this.ValidationFailed(validationResult);
         }
         
-        var command = new CreateCustomerDefaultDeliveryChannel(customerId,  DefaultSpace, defaultDeliveryChannel);
+        var command = new CreateDefaultDeliveryChannel(customerId,  
+            DefaultSpace,             
+            defaultDeliveryChannel.Policy,
+            defaultDeliveryChannel.Channel,
+            defaultDeliveryChannel.MediaType);
         
         return await HandleUpsert(command, 
             s => s.DefaultDeliveryChannel.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to create origin strategy",
+            errorTitle: "Failed to create Default Delivery Channel",
             cancellationToken: cancellationToken);
     }
     
@@ -99,23 +103,26 @@ public class CustomerDefaultDeliveryChannelsController : HydraController
     /// Update a default delivery channel
     /// </summary>
     /// <returns>A Hydra JSON-LD default delivery channel object</returns>
-    [HttpPut("{defaultDeliveryChannelId}")]
+    [HttpPut("{defaultDeliveryChannelId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> UpdateCustomerDefaultDeliveryChannel([FromRoute] int customerId,
         [FromBody]DefaultDeliveryChannel defaultDeliveryChannel,
         [FromServices] HydraDefaultDeliveryChannelValidator validator,
-        string defaultDeliveryChannelId,
+        Guid defaultDeliveryChannelId,
         CancellationToken cancellationToken)
     {
-
         var validationResult = await validator.ValidateAsync(defaultDeliveryChannel, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
         }
-        defaultDeliveryChannel.Id = defaultDeliveryChannelId;
-        
-        var command = new UpdateCustomerDefaultDeliveryChannel(customerId, DefaultSpace, defaultDeliveryChannel);
+
+        var command = new UpdateDefaultDeliveryChannel(customerId, 
+            DefaultSpace, 
+            defaultDeliveryChannel.Policy,
+            defaultDeliveryChannel.Channel,
+            defaultDeliveryChannel.MediaType, 
+            defaultDeliveryChannelId);
 
         return await HandleUpsert(command, 
             ch => ch.DefaultDeliveryChannel.ToHydra(GetUrlRoots().BaseUrl),
@@ -127,15 +134,15 @@ public class CustomerDefaultDeliveryChannelsController : HydraController
     /// Get an individual customer accessible default delivery channel (customer specific + system)
     /// </summary>
     /// <returns>A Hydra JSON-LD default delivery channel object</returns>
-    [HttpDelete("{defaultDeliveryChannelId}")]
+    [HttpDelete("{defaultDeliveryChannelId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteCustomerDefaultDeliveryChannel([FromRoute] int customerId,
-        string defaultDeliveryChannelId,
+        Guid defaultDeliveryChannelId,
         CancellationToken cancellationToken)
     {
-        var deleteCustomerDefaultDeliveryChannel = new DeleteCustomerDefaultDeliveryChannel(customerId, defaultDeliveryChannelId);
+        var deleteCustomerDefaultDeliveryChannel = new DeleteDefaultDeliveryChannel(customerId, defaultDeliveryChannelId);
     
         return await HandleDelete(
             deleteCustomerDefaultDeliveryChannel,

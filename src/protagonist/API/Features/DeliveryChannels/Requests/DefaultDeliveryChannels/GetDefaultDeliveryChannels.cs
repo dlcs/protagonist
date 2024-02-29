@@ -5,46 +5,46 @@ using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace API.Features.DeliveryChannels.Requests;
+namespace API.Features.DeliveryChannels.Requests.DefaultDeliveryChannels;
 
-public class GetCustomerDefaultDeliveryChannels: IRequest<FetchEntityResult<PageOf<DefaultDeliveryChannel>>>, IPagedRequest
+public class GetDefaultDeliveryChannels: IRequest<FetchEntityResult<PageOf<DefaultDeliveryChannel>>>, IPagedRequest
 {
     public int Page { get; set; }
     public int PageSize { get; set; }
     public int Customer { get; }
     public int Space { get; }
     
-    public GetCustomerDefaultDeliveryChannels(int customer, int space)
+    public GetDefaultDeliveryChannels(int customer, int space)
     {
         Customer = customer;
         Space = space;
     }
 }
 
-public class GetCustomerDefaultDeliveryChannelsHandler : IRequestHandler<GetCustomerDefaultDeliveryChannels,
+public class GetDefaultDeliveryChannelsHandler : IRequestHandler<GetDefaultDeliveryChannels,
     FetchEntityResult<PageOf<DefaultDeliveryChannel>>>
 {
     private readonly DlcsContext dlcsContext;
 
-    public GetCustomerDefaultDeliveryChannelsHandler(DlcsContext dlcsContext)
+    public GetDefaultDeliveryChannelsHandler(DlcsContext dlcsContext)
     {
         this.dlcsContext = dlcsContext;
     }
 
-    public async Task<FetchEntityResult<PageOf<DefaultDeliveryChannel>>> Handle(GetCustomerDefaultDeliveryChannels request,
+    public async Task<FetchEntityResult<PageOf<DefaultDeliveryChannel>>> Handle(GetDefaultDeliveryChannels request,
         CancellationToken cancellationToken)
     {
         var filter = GetFilterForRequest(request);
 
         var result = await dlcsContext.DefaultDeliveryChannels.AsNoTracking().CreatePagedResult(request,
             filter,
-            q => q.OrderBy(i => i.Id),
+            q => q.OrderBy(i => i.MediaType),
             cancellationToken: cancellationToken);
 
         return FetchEntityResult<PageOf<DefaultDeliveryChannel>>.Success(result);
     }
 
-    private static Func<IQueryable<DefaultDeliveryChannel>, IQueryable<DefaultDeliveryChannel>> GetFilterForRequest(GetCustomerDefaultDeliveryChannels request)
+    private static Func<IQueryable<DefaultDeliveryChannel>, IQueryable<DefaultDeliveryChannel>> GetFilterForRequest(GetDefaultDeliveryChannels request)
     {
         return defaultDeliveryChannels => defaultDeliveryChannels
             .Include(d => d.DeliveryChannelPolicy)

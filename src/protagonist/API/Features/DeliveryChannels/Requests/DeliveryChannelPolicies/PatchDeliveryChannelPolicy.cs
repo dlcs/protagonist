@@ -1,13 +1,12 @@
 ﻿using API.Features.DeliveryChannels.Validation;
 using API.Infrastructure.Requests;
 using DLCS.Core;
-using DLCS.Core.Strings;
 using DLCS.Model.Policies;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace API.Features.DeliveryChannels.Requests;
+namespace API.Features.DeliveryChannels.Requests.DeliveryChannelPolicies;
 
 public class PatchDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryChannelPolicy>>
 {

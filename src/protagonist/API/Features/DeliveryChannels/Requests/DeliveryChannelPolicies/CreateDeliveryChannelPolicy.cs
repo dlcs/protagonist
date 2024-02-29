@@ -7,7 +7,7 @@ using DLCS.Repository.Exceptions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace API.Features.DeliveryChannels.Requests;
+namespace API.Features.DeliveryChannels.Requests.DeliveryChannelPolicies;
 
 public class CreateDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryChannelPolicy>>
 {
