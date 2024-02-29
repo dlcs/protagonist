@@ -106,5 +106,8 @@ public class AssetRepository : AssetRepositoryCachingBase
     }
 
     protected override async Task<Asset?> GetAssetFromDatabase(AssetId assetId) =>
-        await dlcsContext.Images.AsNoTracking().SingleOrDefaultAsync(i => i.Id == assetId);
+        await dlcsContext.Images.AsNoTracking()
+            .Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(i => i.DeliveryChannelPolicy)
+            .SingleOrDefaultAsync(i => i.Id == assetId);
 }
