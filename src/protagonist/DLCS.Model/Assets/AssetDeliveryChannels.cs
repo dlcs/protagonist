@@ -55,7 +55,7 @@ public static class AssetDeliveryChannels
     /// Checks if a delivery channel is valid for a given media type
     /// </summary>
     public static bool IsChannelValidForMediaType(string deliveryChannel, string mediaType) 
-        => mediaType switch 
+        => deliveryChannel switch 
         { 
             Image => mediaType.StartsWith("image/"),
             Thumbnails => mediaType.StartsWith("image/"),

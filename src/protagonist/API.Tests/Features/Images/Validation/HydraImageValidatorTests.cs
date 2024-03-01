@@ -309,4 +309,54 @@ public class HydraImageValidatorTests
         var result = imageValidator.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
+    
+    [Theory]
+    [InlineData("image/jpeg", "iiif-img")]
+    [InlineData("image/jpeg", "thumbs")]  
+    [InlineData("image/jpeg", "file")]
+    [InlineData("video/mp4", "iiif-av")]  
+    [InlineData("video/mp4", "file")]  
+    [InlineData("audio/mp3", "iiif-av")] 
+    [InlineData("audio/mp3", "file")] 
+    [InlineData("application/pdf", "file")]
+    public void DeliveryChannel_NoValidationError_WhenChannelValidForMediaType(string mediaType, string channel)
+    {
+        var apiSettings = new ApiSettings();
+        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var model = new DLCS.HydraModel.Image { 
+            MediaType = mediaType,
+            DeliveryChannels = new[]
+            {
+                new DeliveryChannel()
+                {
+                    Channel = channel,
+                }
+            } };
+        var result = imageValidator.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
+    }
+    
+    [Theory]
+    [InlineData("video/mp4", "iiif-img")]
+    [InlineData("video/mp4", "thumbs")]
+    [InlineData("image/jpeg", "iiif-av")]
+    [InlineData("application/pdf", "iiif-img")]
+    [InlineData("application/pdf", "thumbs")]
+    [InlineData("application/pdf", "iiif-av")]
+    public void DeliveryChannel_ValidationError_WhenWrongChannelForMediaType(string mediaType, string channel)
+    {
+        var apiSettings = new ApiSettings();
+        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var model = new DLCS.HydraModel.Image { 
+            MediaType = mediaType,
+            DeliveryChannels = new[]
+        {
+            new DeliveryChannel()
+            {
+                Channel = channel,
+            }
+        } };
+        var result = imageValidator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
+    }
 }
