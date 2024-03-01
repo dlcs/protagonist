@@ -159,17 +159,6 @@ public class EngineClientTests
         await sut.AsynchronousIngest(ingestRequest);
         
         // Assert
-        try
-        {
-            var test = JsonSerializer.Deserialize<IngestAssetRequest>(jsonString,
-                new JsonSerializerOptions(JsonSerializerDefaults.Web)
-                {
-                    ReferenceHandler = ReferenceHandler.Preserve
-                });
-        }catch(Exception ex)
-        {
-            
-        }
         var body = JsonSerializer.Deserialize<IngestAssetRequest>(jsonString,
             new JsonSerializerOptions(JsonSerializerDefaults.Web)
         {
