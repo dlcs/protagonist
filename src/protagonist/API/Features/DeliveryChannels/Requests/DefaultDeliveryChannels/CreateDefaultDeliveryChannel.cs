@@ -2,7 +2,6 @@
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.DeliveryChannels;
-using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Exceptions;
 using MediatR;

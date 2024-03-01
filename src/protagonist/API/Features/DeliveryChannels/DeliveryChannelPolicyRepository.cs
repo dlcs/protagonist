@@ -1,4 +1,4 @@
-﻿using DLCS.Core.Caching;
+using DLCS.Core.Caching;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
 using DLCS.Repository;
