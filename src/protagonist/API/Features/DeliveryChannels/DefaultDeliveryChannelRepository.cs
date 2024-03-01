@@ -82,7 +82,7 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
             var defaultDeliveryChannels = dlcsContext.DefaultDeliveryChannels
                 .AsNoTracking()
                 .Include(d => d.DeliveryChannelPolicy)
-                .Where(d => d.Customer == customerId);
+                .Where(d => d.Customer == customerId).ToList();
 
             return defaultDeliveryChannels;
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
