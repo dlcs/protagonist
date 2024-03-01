@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Collections;
+using IIIF.Presentation.V3.Content;
 
 namespace DLCS.Model.Assets;
 
@@ -46,6 +48,22 @@ public static class AssetDeliveryChannels
     /// <summary>
     /// Checks if string is a valid delivery channel
     /// </summary>
-    public static bool IsValidChannel(string deliveryChannel) => 
-        All.Contains(deliveryChannel);
+    public static bool IsValidChannel(string deliveryChannel)
+        => All.Contains(deliveryChannel);
+
+    /// <summary>
+    /// Checks if a delivery channel is valid for a given media type
+    /// </summary>
+    public static bool IsChannelValidForMediaType(string deliveryChannel, string mediaType) 
+        => mediaType switch 
+        { 
+            Image => mediaType.StartsWith("image/"),
+            Thumbnails => mediaType.StartsWith("image/"),
+            Timebased => mediaType.StartsWith("video/") || mediaType.StartsWith("audio/"),
+            File => true, // A file can be matched to any media type
+            None => true, // Likewise for the 'none' channel
+            _ => throw new ArgumentOutOfRangeException(nameof(deliveryChannel), deliveryChannel,
+                $"Acceptable delivery-channels are: {AllString}")
+        };
 }
+
