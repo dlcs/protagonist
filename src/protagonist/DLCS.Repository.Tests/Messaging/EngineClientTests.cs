@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using DLCS.AWS.SQS;
 using DLCS.Core.Settings;
@@ -99,7 +100,10 @@ public class EngineClientTests
 
         var jsonContents = await message.Content.ReadAsStringAsync();
         var body = JsonSerializer.Deserialize<IngestAssetRequest>(jsonContents,
-            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            {
+                ReferenceHandler = ReferenceHandler.Preserve
+            });
         body.Should().BeEquivalentTo(ingestRequest);
     }
     
@@ -155,8 +159,22 @@ public class EngineClientTests
         await sut.AsynchronousIngest(ingestRequest);
         
         // Assert
+        try
+        {
+            var test = JsonSerializer.Deserialize<IngestAssetRequest>(jsonString,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web)
+                {
+                    ReferenceHandler = ReferenceHandler.Preserve
+                });
+        }catch(Exception ex)
+        {
+            
+        }
         var body = JsonSerializer.Deserialize<IngestAssetRequest>(jsonString,
-            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            ReferenceHandler = ReferenceHandler.Preserve
+        });
         body.Should().BeEquivalentTo(ingestRequest);
     }
 

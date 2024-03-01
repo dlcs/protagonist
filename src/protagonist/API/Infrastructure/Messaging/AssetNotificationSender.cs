@@ -20,10 +20,7 @@ public class AssetNotificationSender : IAssetNotificationSender
     private readonly ITopicPublisher topicPublisher;
     private readonly IPathCustomerRepository customerPathRepository;
 
-    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web)
-    {
-        ReferenceHandler = ReferenceHandler.Preserve
-    };
+    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
     private readonly Dictionary<int, CustomerPathElement> customerPathElements = new();
 
@@ -106,6 +103,17 @@ public class AssetNotificationSender : IAssetNotificationSender
             Asset = modifiedAsset,
             CustomerPathElement = customerPathElement
         };
+
+        if (!modifiedAsset.ImageDeliveryChannels.IsNullOrEmpty())
+        {
+            request.Asset.ImageDeliveryChannels = modifiedAsset.ImageDeliveryChannels.Select(x =>
+                new ImageDeliveryChannel()
+                {
+                    ImageId = x.ImageId,
+                    Channel = x.Channel,
+                    DeliveryChannelPolicyId = x.DeliveryChannelPolicyId
+                }).ToList();
+        }
 
         return JsonSerializer.Serialize(request, settings);
     }
