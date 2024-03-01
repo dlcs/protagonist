@@ -6,6 +6,9 @@ namespace DLCS.HydraModel;
 
 public class DeliveryChannel
 {
+    [JsonProperty(PropertyName = "@type")]
+    public string? Context => "vocab:DeliveryChannel";
+    
     [JsonProperty(Order = 11, PropertyName = "channel")]
     public string? Channel { get; set; }
     
