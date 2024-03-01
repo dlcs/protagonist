@@ -62,6 +62,10 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .Must((a, c) => AssetDeliveryChannels.IsChannelValidForMediaType(c.Channel!, a.MediaType!))
             .When(a => !string.IsNullOrEmpty(a.MediaType))
             .WithMessage((a,c) => $"\"{c.Channel}\" is not a valid delivery channel for asset of type \"{a.MediaType}\"");
+    
+        RuleForEach(a => a.DeliveryChannels)
+            .Must((a, c) => a.DeliveryChannels!.Count(dc => dc.Channel == c.Channel) <= 1)
+            .WithMessage("\"deliveryChannels\" cannot contain duplicate channels.");
     }
 
     // Validation rules that depend on DeliveryChannel being populated
