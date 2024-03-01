@@ -287,7 +287,7 @@ public class HydraImageValidatorTests
             },
             new DeliveryChannel()
             {
-                Channel = "File"
+                Channel = "file"
             }
         } };
         var result = imageValidator.TestValidate(model);
@@ -314,11 +314,15 @@ public class HydraImageValidatorTests
     [InlineData("image/jpeg", "iiif-img")]
     [InlineData("image/jpeg", "thumbs")]  
     [InlineData("image/jpeg", "file")]
+    [InlineData("image/jpeg", "none")]
     [InlineData("video/mp4", "iiif-av")]  
     [InlineData("video/mp4", "file")]  
+    [InlineData("video/mp4", "none")]  
     [InlineData("audio/mp3", "iiif-av")] 
     [InlineData("audio/mp3", "file")] 
+    [InlineData("audio/mp3", "none")] 
     [InlineData("application/pdf", "file")]
+    [InlineData("application/pdf", "none")]
     public void DeliveryChannel_NoValidationError_WhenChannelValidForMediaType(string mediaType, string channel)
     {
         var apiSettings = new ApiSettings();

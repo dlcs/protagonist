@@ -39,14 +39,14 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .WithMessage("Delivery channels are disabled");
 
         RuleForEach(a => a.WcDeliveryChannels)
-            .Must(dc => AssetDeliveryChannels.All.Contains(dc))
+            .Must(AssetDeliveryChannels.IsValidChannel)
             .WithMessage($"DeliveryChannel must be one of {AssetDeliveryChannels.AllString}");
     }
 
     private void ImageDeliveryChannelDependantValidation()
     {
         RuleForEach(a => a.DeliveryChannels)
-            .Must(dc => AssetDeliveryChannels.All.Contains(dc.Channel))
+            .Must(dc => AssetDeliveryChannels.IsValidChannel(dc.Channel))
             .WithMessage($"DeliveryChannel must be one of {AssetDeliveryChannels.AllString}");
 
         RuleFor(a => a.DeliveryChannels)
@@ -56,7 +56,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
 
         RuleForEach(a => a.DeliveryChannels)
             .Must(c => !string.IsNullOrEmpty(c.Channel))
-            .WithMessage((a, c) => $"`channel` must be specified when supplying delivery channels to an asset");
+            .WithMessage("\"channel\" must be specified when supplying delivery channels to an asset");
             
         RuleForEach(a => a.DeliveryChannels)
             .Must((a, c) => AssetDeliveryChannels.IsChannelValidForMediaType(c.Channel!, a.MediaType!))
