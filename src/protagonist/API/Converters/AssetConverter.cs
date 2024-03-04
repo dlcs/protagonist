@@ -79,10 +79,12 @@ public static class AssetConverter
         if (!dbAsset.ImageDeliveryChannels.IsNullOrEmpty())
         {
             image.DeliveryChannels = dbAsset.ImageDeliveryChannels.Select(c => new DeliveryChannel()
-            {
-                Channel = c.Channel,
-                Policy = c.DeliveryChannelPolicy.Name
-            }).ToArray();
+                {
+                    Channel = c.Channel,
+                    Policy = c.DeliveryChannelPolicy.System 
+                        ? c.DeliveryChannelPolicy.Name
+                        : $"{urlRoots.BaseUrl}/customers/{c.DeliveryChannelPolicy.Customer}/deliveryChannelPolicies/{c.Channel}/{c.DeliveryChannelPolicy.Name}"
+                }).ToArray();
         }
         else
         {
