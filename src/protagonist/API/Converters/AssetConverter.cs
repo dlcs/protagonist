@@ -84,6 +84,10 @@ public static class AssetConverter
                 Policy = c.DeliveryChannelPolicy.Name
             }).ToArray();
         }
+        else
+        {
+            image.DeliveryChannels = Array.Empty<DeliveryChannel>();
+        }
 
         return image;
     }
