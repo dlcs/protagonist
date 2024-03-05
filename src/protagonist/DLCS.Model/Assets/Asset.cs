@@ -50,11 +50,11 @@ public class Asset
     /// Flags the asset as not to be delivered for viewing under any circumstances
     /// </summary>
     public bool NotForDelivery { get; set; }
-    
+
     /// <summary>
     /// A list of 1:n delivery channels for asset. Dictates which asset-delivery channels are available
     /// </summary>
-    public string[] DeliveryChannels { get; set; }
+    public string[] DeliveryChannels { get; set; } = Array.Empty<string>();
 
     private IEnumerable<string>? rolesList;
     

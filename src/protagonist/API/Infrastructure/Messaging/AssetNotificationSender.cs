@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using DLCS.AWS.SNS;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
@@ -18,6 +19,7 @@ public class AssetNotificationSender : IAssetNotificationSender
     private readonly ILogger<AssetNotificationSender> logger;
     private readonly ITopicPublisher topicPublisher;
     private readonly IPathCustomerRepository customerPathRepository;
+
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
     private readonly Dictionary<int, CustomerPathElement> customerPathElements = new();
@@ -101,6 +103,17 @@ public class AssetNotificationSender : IAssetNotificationSender
             Asset = modifiedAsset,
             CustomerPathElement = customerPathElement
         };
+
+        if (!modifiedAsset.ImageDeliveryChannels.IsNullOrEmpty())
+        {
+            request.Asset.ImageDeliveryChannels = modifiedAsset.ImageDeliveryChannels.Select(x =>
+                new ImageDeliveryChannel()
+                {
+                    ImageId = x.ImageId,
+                    Channel = x.Channel,
+                    DeliveryChannelPolicyId = x.DeliveryChannelPolicyId
+                }).ToList();
+        }
 
         return JsonSerializer.Serialize(request, settings);
     }

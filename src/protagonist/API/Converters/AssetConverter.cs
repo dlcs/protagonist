@@ -58,7 +58,7 @@ public static class AssetConverter
             Roles = dbAsset.RolesList.ToArray(),
             WcDeliveryChannels = dbAsset.DeliveryChannels
         };
-        
+
         if (dbAsset.Batch > 0)
         {
             // TODO - this should be set by HydraProperty - but where does the template come from?

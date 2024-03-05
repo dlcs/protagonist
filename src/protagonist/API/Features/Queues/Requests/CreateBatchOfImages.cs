@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Data;
+using API.Features.Image;
 using API.Features.Image.Ingest;
 using API.Infrastructure.Requests;
 using DLCS.Core;
@@ -19,13 +20,13 @@ namespace API.Features.Queues.Requests;
 public class CreateBatchOfImages : IRequest<ModifyEntityResult<Batch>>
 {
     public int CustomerId { get; }
-    public IReadOnlyList<Asset> Assets { get; }
+    public IReadOnlyList<AssetBeforeProcessing> AssetsBeforeProcessing { get; }
     public bool IsPriority { get; }
 
-    public CreateBatchOfImages(int customerId, IReadOnlyList<Asset> assets, string queue = QueueNames.Default)
+    public CreateBatchOfImages(int customerId, IReadOnlyList<AssetBeforeProcessing> assetsBeforeProcessing, string queue = QueueNames.Default)
     {
         CustomerId = customerId;
-        Assets = assets;
+        AssetsBeforeProcessing = assetsBeforeProcessing;
         IsPriority = queue == QueueNames.Priority;
     }
 }
@@ -58,16 +59,16 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         // TODO - we may need to support non-Image assets here 
         if (request.IsPriority)
         {
-            if (request.Assets.Any(a =>
-                    a.Family != AssetFamily.Image && !a.HasDeliveryChannel(AssetDeliveryChannels.Image) &&
-                    !MIMEHelper.IsImage(a.MediaType)))
+            if (request.AssetsBeforeProcessing.Any(a =>
+                    a.Asset.Family != AssetFamily.Image && !a.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image) &&
+                    !MIMEHelper.IsImage(a.Asset.MediaType)))
             {
                 return ModifyEntityResult<Batch>.Failure("Priority queue only supports image assets",
                     WriteResult.FailedValidation);
             }
         }
         
-        var (exists, missing) = await DoAllSpacesExist(request.CustomerId, request.Assets, cancellationToken);
+        var (exists, missing) = await DoAllSpacesExist(request.CustomerId, request.AssetsBeforeProcessing.Select(a => a.Asset), cancellationToken);
         if (!exists)
         {
             var spaceList = string.Join(", ", missing);
@@ -81,22 +82,22 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         await using var transaction = 
             await dlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         
-        var batch = await batchRepository.CreateBatch(request.CustomerId, request.Assets, cancellationToken);
+        var batch = await batchRepository.CreateBatch(request.CustomerId, request.AssetsBeforeProcessing.Select(a => a.Asset).ToList(), cancellationToken);
 
-        var assetNotificationList = new List<Asset>(request.Assets.Count);
+        var assetNotificationList = new List<Asset>(request.AssetsBeforeProcessing.Count);
         try
         {
             using var logScope = logger.BeginScope("Processing batch {BatchId}", batch.Id);
 
-            foreach (var asset in request.Assets)
+            foreach (var assetBeforeProcessing in request.AssetsBeforeProcessing)
             {
-                logger.LogDebug("Processing asset {AssetId}", asset.Id);
+                logger.LogDebug("Processing asset {AssetId}", assetBeforeProcessing.Asset.Id);
                 var processAssetResult =
-                    await assetProcessor.Process(asset, false, true, true,
+                    await assetProcessor.Process(assetBeforeProcessing, false, true, true,
                         cancellationToken: cancellationToken);
                 if (!processAssetResult.IsSuccess)
                 {
-                    logger.LogDebug("Processing asset {AssetId} failed, aborting batch. Error: '{Error}'", asset.Id,
+                    logger.LogDebug("Processing asset {AssetId} failed, aborting batch. Error: '{Error}'", assetBeforeProcessing.Asset.Id,
                         processAssetResult.Result.Error);
                     updateFailed = true;
                     failureMessage = processAssetResult.Result.Error;
@@ -113,7 +114,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 {
                     logger.LogDebug(
                         "Asset {AssetId} of Batch {BatchId} does not require engine notification. Marking as complete",
-                        asset.Id, batch.Id);
+                        assetBeforeProcessing.Asset.Id, batch.Id);
                     batch.Completed += 1;
                 }
             }
@@ -130,7 +131,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Exception processing batch of {BatchCount}, rolling back", request.Assets.Count);
+            logger.LogError(ex, "Exception processing batch of {BatchCount}, rolling back", request.AssetsBeforeProcessing.Count);
             updateFailed = true;
             failureMessage = ex.Message;
         }
