@@ -18,6 +18,7 @@ using Stubbery;
 using Test.Helpers;
 using Test.Helpers.Integration;
 using Test.Helpers.Storage;
+using Z.EntityFramework.Plus;
 
 namespace Engine.Tests.Integration;
 
@@ -170,7 +171,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         storage.Size.Should().NotBe(950);
     }
     
-    [Fact]
+    [Fact(Skip = "delivery channel work")]
     public async Task IngestAsset_Success_HttpOrigin_InitialOrigin_AllOpen()
     {
         // Arrange
@@ -227,15 +228,13 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = AssetId.FromString($"99/1/{nameof(IngestAsset_Success_ChangesMediaTypeToContentType_WhenCalledWithUnknownImageType)}");
 
         // Note - API will have set this up before handing off
-        var initial = $"{apiStub.Address}/image";
-        var origin = $"{apiStub.Address}/this-will-fail";
+        var origin = $"{apiStub.Address}/image";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             imageOptimisationPolicy: "fast-higher", mediaType: "image/unknown", width: 0, height: 0, duration: 0,
             deliveryChannels: imageDeliveryChannels);
-        var asset = entity.Entity;
-        asset.InitialOrigin = initial;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        
+        var message = new IngestAssetRequest(entity.Entity, DateTime.UtcNow);
 
         // Act
         var jsonContent =

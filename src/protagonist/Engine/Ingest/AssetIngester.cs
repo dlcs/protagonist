@@ -31,17 +31,20 @@ public class AssetIngester : IAssetIngester
     private readonly ILogger<AssetIngester> logger;
     private readonly ICustomerOriginStrategyRepository customerOriginRepository;
     private readonly IPolicyRepository policyRepository;
+    private readonly IAssetRepository assetRepository;
 
     public AssetIngester(
         IPolicyRepository policyRepository, 
         ICustomerOriginStrategyRepository customerOriginRepository,
         ILogger<AssetIngester> logger,
-        IngestExecutor executor)
+        IngestExecutor executor,
+        IAssetRepository assetRepository)
     {
         this.policyRepository = policyRepository;
         this.customerOriginRepository = customerOriginRepository;
         this.logger = logger;
         this.executor = executor;
+        this.assetRepository = assetRepository;
     }
 
     /// <summary>
@@ -70,14 +73,22 @@ public class AssetIngester : IAssetIngester
     /// <returns>Result of ingest operations</returns>
     public async Task<IngestResult> Ingest(IngestAssetRequest request, CancellationToken cancellationToken = default)
     {
+        var asset = await assetRepository.GetAsset(request.Asset.Id);
+
+        if (asset == null)
+        {
+            logger.LogError("Could not find an asset for asset id {AssetId}", request.Asset.Id);
+            return new IngestResult(asset, IngestResultStatus.Failed);
+        }
+        
         // get any matching CustomerOriginStrategy 
-        var customerOriginStrategy = await customerOriginRepository.GetCustomerOriginStrategy(request.Asset, true);
+        var customerOriginStrategy = await customerOriginRepository.GetCustomerOriginStrategy(asset, true);
             
         // set Thumbnail and ImageOptimisation policies on Asset
-        await HydrateAssetPolicies(request.Asset);
+        await HydrateAssetPolicies(asset);
 
         // now ingest the asset
-        var status = await executor.IngestAsset(request.Asset, customerOriginStrategy, cancellationToken);
+        var status = await executor.IngestAsset(asset, customerOriginStrategy, cancellationToken);
         return status;
     }
 

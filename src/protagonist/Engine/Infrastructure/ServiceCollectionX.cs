@@ -4,14 +4,18 @@ using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
+using DLCS.Model;
+using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Model.Policies;
 using DLCS.Model.Processing;
 using DLCS.Model.Storage;
 using DLCS.Repository;
+using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
+using DLCS.Repository.Entities;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;
 using DLCS.Repository.Storage;
@@ -118,6 +122,8 @@ public static class ServiceCollectionX
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
         => services
             .AddScoped<IPolicyRepository, PolicyRepository>()
+            .AddScoped<IAssetRepository, AssetRepository>()
+            .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
             .AddScoped<IEngineAssetRepository, EngineAssetRepository>()
             .AddScoped<ICustomerOriginStrategyRepository, CustomerOriginStrategyRepository>()
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
