@@ -87,14 +87,14 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
         CancellationToken cancellationToken)
     {
         var assetId = context.Asset.Id;
-        var source = RegionalisedObjectInBucket.Parse(context.Asset.GetIngestOrigin());
+        var source = RegionalisedObjectInBucket.Parse(context.Asset.Origin);
 
         if (source == null)
         {
             // TODO - better error type
-            logger.LogError("Unable to parse ingest origin {Origin} to ObjectInBucket", context.Asset.GetIngestOrigin());
+            logger.LogError("Unable to parse ingest origin {Origin} to ObjectInBucket", context.Asset.Origin);
             throw new InvalidOperationException(
-                $"Unable to parse ingest origin {context.Asset.GetIngestOrigin()} to ObjectInBucket");
+                $"Unable to parse ingest origin {context.Asset.Origin} to ObjectInBucket");
         }
         
         logger.LogDebug("Copying asset '{AssetId}' directly from bucket to bucket. {Source} - {Dest}", context.Asset.Id,
@@ -108,7 +108,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
         if (copyResult.Result is not LargeObjectStatus.Success and not LargeObjectStatus.FileTooLarge)
         {
             throw new ApplicationException(
-                $"Failed to copy timebased asset {context.Asset.Id} directly from '{context.Asset.GetIngestOrigin()}' to {destination.GetS3Uri()}. Result: {copyResult.Result}");
+                $"Failed to copy timebased asset {context.Asset.Id} directly from '{context.Asset.Origin}' to {destination.GetS3Uri()}. Result: {copyResult.Result}");
         }
 
         var assetFromOrigin = new AssetFromOrigin(assetId, copyResult.Size ?? 0, destination.GetS3Uri().ToString(),
@@ -127,7 +127,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
     {
         logger.LogDebug("Copying asset '{AssetId}' indirectly from bucket to bucket. {Source} - {Dest}",
             context.Asset.Id,
-            context.Asset.GetIngestOrigin(), destination.GetS3Uri());
+            context.Asset.Origin, destination.GetS3Uri());
         var assetId = context.Asset.Id;
         string? downloadedFile = null;
 
@@ -150,7 +150,7 @@ public class AssetToS3 : AssetMoverBase, IAssetToS3
             if (!success)
             {
                 throw new ApplicationException(
-                    $"Failed to copy timebased asset {assetId} indirectly from '{context.Asset.GetIngestOrigin()}' to {destination}");
+                    $"Failed to copy timebased asset {assetId} indirectly from '{context.Asset.Origin}' to {destination}");
             }
 
             return new AssetFromOrigin(assetId, assetOnDisk.AssetSize, destination.GetS3Uri().ToString(),

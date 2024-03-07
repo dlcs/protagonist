@@ -72,9 +72,6 @@ public static class LegacyIngestEventConverter
         asset.Ingesting = parsedJson.TryGetPropertyValue("ingesting", out var ingesting)
             ? ingesting.GetValue<bool>()
             : null;
-        asset.InitialOrigin = parsedJson.TryGetPropertyValue("initialOrigin", out var initialOrigin)
-            ? initialOrigin.GetValue<string>()
-            : null;
         asset.MediaType = parsedJson.TryGetPropertyValue("mediaType", out var mediaType)
             ? mediaType.GetValue<string>()
             : null;

@@ -829,40 +829,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = await dbContext.Images.FindAsync(assetId);
         asset.DeliveryChannels.Should().BeEquivalentTo("file");
     }
-    
-    [Fact]
-    public async Task Put_New_Asset_Preserves_InitialOrigin()
-    {
-        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Preserves_InitialOrigin));
-        var initialOrigin = "s3://my-bucket/{assetId.Asset}.tiff";
-        var hydraImageBody = $@"{{
-  ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-  ""family"": ""I"",
-  ""mediaType"": ""image/tiff"",
-  ""initialOrigin"": ""{initialOrigin}""
-}}";
-
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
-                    A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
-        
-        // act
-        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
-        
-        // assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        A.CallTo(() =>
-            EngineClient.SynchronousIngest(
-                A<IngestAssetRequest>.That.Matches(r =>
-                    r.Asset.Id == assetId && r.Asset.InitialOrigin == initialOrigin), false,
-                A<CancellationToken>._))
-            .MustHaveHappened();
-    }
 
     [Fact]
     public async Task Put_Existing_Asset_ClearsError_AndMarksAsIngesting()

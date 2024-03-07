@@ -152,13 +152,7 @@ public class AssetProcessor
             }
 
             var assetAfterSave = await assetRepository.Save(updatedAsset, existingAsset != null, cancellationToken);
-
-            // Restore fields that are not persisted but are required
-            if (updatedAsset.InitialOrigin.HasText())
-            {
-                assetAfterSave.InitialOrigin = assetBeforeProcessing.Asset.InitialOrigin;
-            }
-
+            
             return new ProcessAssetResult
             {
                 ExistingAsset = existingAsset,
