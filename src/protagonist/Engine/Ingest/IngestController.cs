@@ -57,13 +57,13 @@ public class IngestController : Controller
     }
     
     /// <summary>
-    /// Synchronously ingest an asset 
+    /// Retrieve allowed av options
     /// </summary>
     [HttpGet]
     [Route("allowed-av")]
-    public async Task<IActionResult> Return(CancellationToken cancellationToken)
+    public IActionResult ReturnAllowedAvOptions()
     {
-        return Ok(timebasedIngestSettings.DeliveryChannelMappings.Keys);
+        return Ok(timebasedIngestSettings.DeliveryChannelMappings.Keys.ToList());
     }
 
     private IActionResult ConvertToStatusCode(object message, IngestResultStatus result)
