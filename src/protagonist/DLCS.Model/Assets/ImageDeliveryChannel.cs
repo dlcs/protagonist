@@ -1,8 +1,8 @@
 ﻿#nullable disable
 
+using System.Text.Json.Serialization;
 using DLCS.Core.Types;
 using DLCS.Model.Policies;
-
 namespace DLCS.Model.Assets;
 
 public class ImageDeliveryChannel
@@ -17,6 +17,7 @@ public class ImageDeliveryChannel
     /// </summary>
     public AssetId ImageId { get; set; }
     
+    [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public Asset Asset { get; set; }
 
     /// <summary>
