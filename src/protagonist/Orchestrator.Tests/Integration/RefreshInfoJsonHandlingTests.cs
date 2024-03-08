@@ -65,7 +65,8 @@ public class RefreshInfoJsonHandlingTests : IClassFixture<ProtagonistAppFactory<
         {
             new()
             {
-                Channel = AssetDeliveryChannels.Image
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = 1
             }
         });
         await dbFixture.DbContext.SaveChangesAsync();

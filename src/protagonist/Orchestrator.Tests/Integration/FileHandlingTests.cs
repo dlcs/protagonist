@@ -34,7 +34,8 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         new ImageDeliveryChannel()
         {
-            Channel = AssetDeliveryChannels.File
+            Channel = AssetDeliveryChannels.File,
+            DeliveryChannelPolicyId = 4
         }
     };
 
@@ -139,9 +140,9 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
-    [InlineData("iiif-img")]
-    [InlineData("iiif-av")]
-    public async Task Get_Returns404_IfNotFileDeliveryChannel(string deliveryChannel)
+    [InlineData("iiif-img", 1)]
+    [InlineData("iiif-av", 6)]
+    public async Task Get_Returns404_IfNotFileDeliveryChannel(string deliveryChannel, int deliveryChannelPolicyId)
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNotFileDeliveryChannel)}{deliveryChannel}");
@@ -149,7 +150,8 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             new()
             {
-                Channel = deliveryChannel
+                Channel = deliveryChannel,
+                DeliveryChannelPolicyId = deliveryChannelPolicyId
             }
         });
         await dbFixture.DbContext.SaveChangesAsync();
