@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Collections;
-using IIIF.Presentation.V3.Content;
 
 namespace DLCS.Model.Assets;
 

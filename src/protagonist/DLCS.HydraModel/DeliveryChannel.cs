@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 
 namespace DLCS.HydraModel;
 
-
 [HydraClass(typeof(DeliveryChannelClass),
     Description = "A delivery channel represents a way an asset on the DLCS can be served.",
     UriTemplate = "")]
