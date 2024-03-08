@@ -168,11 +168,11 @@ public static class AssetPreparer
             // However, this DOES allow the *creation* of a NotForDelivery asset.
         }
 
-        if (!updateAsset.DeliveryChannels.IsNullOrEmpty())
+        if (!updateAsset.ImageDeliveryChannels.IsNullOrEmpty())
         {
-            foreach (var dc in updateAsset.DeliveryChannels)
+            foreach (var dc in updateAsset.ImageDeliveryChannels)
             {
-                if (!AssetDeliveryChannels.All.Contains(dc))
+                if (AssetDeliveryChannels.All.All(x => x != dc.Channel))
                 {
                     return AssetPreparationResult.Failure(
                         $"'{dc}' is an invalid deliveryChannel. Valid values are: {AssetDeliveryChannels.AllString}.");
@@ -212,7 +212,7 @@ public static class AssetPreparer
         {
             // Allow updating dimensions if _existing_ channel is "file" only as these won't have been set by
             // an automated process
-            var isFileOnly = existingAsset.DeliveryChannels.ContainsOnly(AssetDeliveryChannels.File);
+            var isFileOnly = existingAsset.HasSingleDeliveryChannel(AssetDeliveryChannels.File);
             
             if (updateAsset.Width.HasValue && updateAsset.Width != 0 && updateAsset.Width != existingAsset.Width)
             {

@@ -37,7 +37,8 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     {
         new ImageDeliveryChannel
         {
-            Channel = AssetDeliveryChannels.Timebased
+            Channel = AssetDeliveryChannels.Timebased,
+            DeliveryChannelPolicyId = 6
         }
     };
 
@@ -184,9 +185,9 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
 
     [Theory]
-    [InlineData("video", "/full/full/max/max/0/default.webm")]
-    [InlineData("audio", "/full/max/default.mp3")]
-    public async Task IngestAsset_SetsFileSizeCorrectly_IfAlsoAvailableForFileChannel(string type, string expectedKey)
+    [InlineData("video", "/full/full/max/max/0/default.webm", 6)]
+    [InlineData("audio", "/full/max/default.mp3", 5)]
+    public async Task IngestAsset_SetsFileSizeCorrectly_IfAlsoAvailableForFileChannel(string type, string expectedKey, int deliveryChannelPolicyId)
     {
         // Arrange
         var assetId = AssetId.FromString($"99/1/{nameof(IngestAsset_SetsFileSizeCorrectly_IfAlsoAvailableForFileChannel)}-{type}");
@@ -196,11 +197,13 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         {
             new()
             {
-                Channel = AssetDeliveryChannels.Timebased
+                Channel = AssetDeliveryChannels.Timebased,
+                DeliveryChannelPolicyId = deliveryChannelPolicyId
             },
             new()
             {
-                Channel = AssetDeliveryChannels.File
+                Channel = AssetDeliveryChannels.File,
+                DeliveryChannelPolicyId = 3
             }
         };
         

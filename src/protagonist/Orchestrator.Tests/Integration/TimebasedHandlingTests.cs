@@ -27,7 +27,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     {
         new ImageDeliveryChannel()
         {
-            Channel = AssetDeliveryChannels.Timebased
+            Channel = AssetDeliveryChannels.Timebased,
+            DeliveryChannelPolicyId = 5
         }
     };
 
@@ -130,7 +131,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
         {
             new()
             {
-                Channel = AssetDeliveryChannels.File
+                Channel = AssetDeliveryChannels.File,
+                DeliveryChannelPolicyId = 3
             }
         });
         await dbFixture.DbContext.SaveChangesAsync();

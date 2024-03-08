@@ -270,8 +270,8 @@ public class AssetPreparerTests
         string reason)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "https://whatever", DeliveryChannels = update };
-        var existingAsset = new Asset { Origin = "https://whatever", DeliveryChannels = existing };
+        var updateAsset = new Asset { Origin = "https://whatever", ImageDeliveryChannels = GenerateImageDeliveryChannels(update) };
+        var existingAsset = new Asset { Origin = "https://whatever", ImageDeliveryChannels =  GenerateImageDeliveryChannels(existing) };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
@@ -279,7 +279,22 @@ public class AssetPreparerTests
         // Assert
         result.RequiresReingest.Should().BeTrue(reason);
     }
-    
+
+    private List<ImageDeliveryChannel> GenerateImageDeliveryChannels(string[] deliveryChannels)
+    {
+        var imageDeliveryChannels = new List<ImageDeliveryChannel>();
+
+        foreach (var deliveryChannel in deliveryChannels)
+        {
+            imageDeliveryChannels.Add(new ImageDeliveryChannel()
+            {
+                Channel = deliveryChannel
+            });
+        }
+
+        return imageDeliveryChannels;
+    }
+
     [Theory]
     [InlineData("file", AssetFamily.File)]
     [InlineData("file,iiif-img", AssetFamily.Image)]

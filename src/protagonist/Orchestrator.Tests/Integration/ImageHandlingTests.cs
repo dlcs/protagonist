@@ -48,7 +48,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         new ImageDeliveryChannel()
         {
-            Channel = AssetDeliveryChannels.Image
+            Channel = AssetDeliveryChannels.Image,
+            DeliveryChannelPolicyId = 1
         }
     };
 
@@ -1604,9 +1605,10 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: new List<ImageDeliveryChannel>()
             {
-                new ImageDeliveryChannel()
+                new()
                 {
-                    Channel = AssetDeliveryChannels.File
+                    Channel = AssetDeliveryChannels.File,
+                    DeliveryChannelPolicyId = 3
                 }
             });
             await dbFixture.DbContext.SaveChangesAsync();
