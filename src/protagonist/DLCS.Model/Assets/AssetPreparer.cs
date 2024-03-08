@@ -98,10 +98,9 @@ public static class AssetPreparer
                 requiresReingest = true;
             }
 
-            if (updateAsset.DeliveryChannels != null &&
-                !updateAsset.DeliveryChannels.SequenceEqual(existingAsset.DeliveryChannels))
+            if (updateAsset.ImageDeliveryChannels != null && !updateAsset.ImageDeliveryChannels.SequenceEqual(existingAsset.ImageDeliveryChannels))
             {
-                // Changing DeliveryChannel can alter how the image should be processed
+                // Changing ImageDeliveryChannel can alter how the image should be processed
                 requiresReingest = true;
                 reCalculateFamily = true;
             }
@@ -173,7 +172,7 @@ public static class AssetPreparer
         {
             foreach (var dc in updateAsset.DeliveryChannels)
             {
-                if (!AssetDeliveryChannels.IsValidChannel(dc))
+                if (!AssetDeliveryChannels.All.Contains(dc))
                 {
                     return AssetPreparationResult.Failure(
                         $"'{dc}' is an invalid deliveryChannel. Valid values are: {AssetDeliveryChannels.AllString}.");

@@ -18,7 +18,6 @@ using Stubbery;
 using Test.Helpers;
 using Test.Helpers.Integration;
 using Test.Helpers.Storage;
-using Z.EntityFramework.Plus;
 
 namespace Engine.Tests.Integration;
 
@@ -34,7 +33,14 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsContext dbContext;
     private static readonly TestBucketWriter BucketWriter = new();
     private readonly ApiStub apiStub;
-    private readonly string[] imageDeliveryChannels = { AssetDeliveryChannels.Image };
+    private readonly List<ImageDeliveryChannel> imageDeliveryChannels = new()
+    {
+        new ImageDeliveryChannel()
+        {
+            Channel = AssetDeliveryChannels.Image,
+            DeliveryChannelPolicyId = 1
+        }
+    };
 
     public ImageIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
     {
@@ -85,7 +91,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var origin = $"{apiStub.Address}/image";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             imageOptimisationPolicy: "fast-higher", mediaType: "image/tiff", width: 0, height: 0, duration: 0,
-            deliveryChannels: imageDeliveryChannels);
+            imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
         var message = new IngestAssetRequest(asset, DateTime.UtcNow);
@@ -136,7 +142,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             imageOptimisationPolicy: "fast-higher", mediaType: "image/tiff", width: 0, height: 0, duration: 0,
-            deliveryChannels: imageDeliveryChannels);
+            imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, 2);
@@ -181,7 +187,9 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var origin = $"{apiStub.Address}/image";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             imageOptimisationPolicy: "fast-higher", mediaType: "image/unknown", width: 0, height: 0, duration: 0,
-            deliveryChannels: imageDeliveryChannels);
+            imageDeliveryChannels: imageDeliveryChannels);
+        var asset = entity.Entity;
+        asset.ImageDeliveryChannels = imageDeliveryChannels;
         await dbContext.SaveChangesAsync();
         
         var message = new IngestAssetRequest(entity.Entity, DateTime.UtcNow);
@@ -231,7 +239,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var origin = $"{apiStub.Address}/image";
 
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin, customer: customerId,
-            width: 0, height: 0, duration: 0, mediaType: "image/tiff", deliveryChannels: imageDeliveryChannels);
+            width: 0, height: 0, duration: 0, mediaType: "image/tiff", imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, 1);
@@ -278,7 +286,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var origin = $"{apiStub.Address}/image";
 
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin, customer: customerId,
-            width: 0, height: 0, duration: 0, mediaType: "image/tiff", deliveryChannels: imageDeliveryChannels);
+            width: 0, height: 0, duration: 0, mediaType: "image/tiff", imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, 3);
@@ -324,7 +332,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var origin = $"{apiStub.Address}/this-will-fail";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             imageOptimisationPolicy: "fast-higher", mediaType: "image/tiff", width: 0, height: 0, duration: 0,
-            deliveryChannels: imageDeliveryChannels);
+            imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
         var message = new IngestAssetRequest(asset, DateTime.UtcNow);
