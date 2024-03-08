@@ -9,6 +9,8 @@ namespace DLCS.HydraModel;
     UriTemplate = "")]
 public class DeliveryChannel : DlcsResource
 {
+    public override string? Context => null;
+    
     [RdfProperty(Description = "The name of the DLCS delivery channel this is based on.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 11, PropertyName = "channel")]

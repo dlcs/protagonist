@@ -260,7 +260,70 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                                                                 x.DeliveryChannelPolicyId == 1);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
     }
-
+    
+    [Theory]
+    [InlineData("T", "video/mp4", "mp4",  "iiif-img")]
+    [InlineData("T", "video/mp4", "mp4", "thumbs")]
+    [InlineData("I", "image/jpeg", "jpeg", "iiif-av")]
+    [InlineData("F", "application/pdf", "pdf", "iiif-img")]
+    [InlineData("F", "application/pdf", "pdf", "thumbs")]
+    [InlineData("F", "application/pdf", "pdf", "iiif-av")]
+    public async Task Put_NewImageAsset_BadRequest_WhenDeliveryChannelInvalidForMediaType(string family, string mediaType, string format, string deliveryChannel)
+    {
+        // arrange
+        var assetId = new AssetId(99, 1, $"{nameof(Put_NewImageAsset_BadRequest_WhenDeliveryChannelInvalidForMediaType)}-{deliveryChannel}-{format}");
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.{format}"",
+            ""family"": ""{family}"",
+            ""mediaType"": ""{mediaType}"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"":""{deliveryChannel}"",
+                ""policy"":""default""
+            }}]
+        }}";
+     
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Put_NewImageAsset_BadRequest_WhenDeliveryChannels_ContainsDuplicates()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_BadRequest_WhenDeliveryChannels_ContainsDuplicates));
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"":""iiif-img"",
+                ""policy"":""default""
+            }},
+            {{
+                ""channel"":""iiif-img"",
+                ""policy"":""default""
+            }},
+            {{
+                ""channel"":""file"",
+                ""policy"":""none""
+            }}]]
+        }}";
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
     private async Task<(int customer, int space)> CreateCustomerAndSpace()
     {
         const string newCustomerJson = @"{
@@ -1047,7 +1110,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-
+    
     [Fact]
     public async Task Patch_Images_Updates_Multiple_Images()
     {

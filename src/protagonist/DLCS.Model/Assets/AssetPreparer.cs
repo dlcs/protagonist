@@ -173,7 +173,7 @@ public static class AssetPreparer
         {
             foreach (var dc in updateAsset.DeliveryChannels)
             {
-                if (!AssetDeliveryChannels.All.Contains(dc))
+                if (!AssetDeliveryChannels.IsValidChannel(dc))
                 {
                     return AssetPreparationResult.Failure(
                         $"'{dc}' is an invalid deliveryChannel. Valid values are: {AssetDeliveryChannels.AllString}.");

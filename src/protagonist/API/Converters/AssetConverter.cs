@@ -75,6 +75,21 @@ public static class AssetConverter
             image.ImageOptimisationPolicy =
                 $"{urlRoots.BaseUrl}/imageOptimisationPolicies/{dbAsset.ImageOptimisationPolicy}";
         }
+        
+        if (!dbAsset.ImageDeliveryChannels.IsNullOrEmpty())
+        {
+            image.DeliveryChannels = dbAsset.ImageDeliveryChannels.Select(c => new DeliveryChannel()
+                {
+                    Channel = c.Channel,
+                    Policy = c.DeliveryChannelPolicy.System 
+                        ? c.DeliveryChannelPolicy.Name
+                        : $"{urlRoots.BaseUrl}/customers/{c.DeliveryChannelPolicy.Customer}/deliveryChannelPolicies/{c.Channel}/{c.DeliveryChannelPolicy.Name}"
+                }).ToArray();
+        }
+        else
+        {
+            image.DeliveryChannels = Array.Empty<DeliveryChannel>();
+        }
 
         return image;
     }
