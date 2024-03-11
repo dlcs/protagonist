@@ -100,7 +100,7 @@ public class CustomerDefaultDeliveryChannelsController : HydraController
                 errorTitle: "Failed to create Default Delivery Channel",
                 cancellationToken: cancellationToken);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return BadRequest();
         }

@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using DLCS.Model.Assets;
+using FluentValidation;
 
 namespace API.Features.DeliveryChannels.Validation;
 
@@ -13,6 +14,10 @@ public class HydraDefaultDeliveryChannelValidator : AbstractValidator<DLCS.Hydra
         RuleFor(d => d.Channel)
             .NotEmpty()
             .WithMessage("A channel is required");
+
+        RuleFor(d => d.Channel)
+            .Must(c => AssetDeliveryChannels.IsValidChannel(c))
+            .WithMessage(d => $"delivery channel {d.Channel} is not a valid delivery channel");
         
         RuleFor(d => d.Policy)
             .NotEmpty()
