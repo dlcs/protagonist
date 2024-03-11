@@ -83,7 +83,7 @@ public class EngineAssetRepository : IEngineAssetRepository
     }
 
     public ValueTask<Asset?> GetAsset(AssetId assetId, CancellationToken cancellationToken = default)
-        => new(dlcsContext.Images.Include(i => i.ImageDeliveryChannels)
+        => new(dlcsContext.Images.AsNoTracking().Include(i => i.ImageDeliveryChannels)
             .ThenInclude(i => i.DeliveryChannelPolicy)
             .SingleOrDefaultAsync(i => i.Id == assetId, cancellationToken));
 
@@ -99,9 +99,8 @@ public class EngineAssetRepository : IEngineAssetRepository
     
     private async Task<bool> NonBatchedSave(CancellationToken cancellationToken)
     {
-        var modifiedRows = dlcsContext.ChangeTracker.Entries().Count(e => e.State == EntityState.Modified);
         var updatedRows = await dlcsContext.SaveChangesAsync(cancellationToken);
-        return updatedRows > 0 || modifiedRows == 0;
+        return updatedRows > 0;
     }
 
     private async Task<bool> BatchSave(int batchId, CancellationToken cancellationToken)
@@ -122,9 +121,8 @@ public class EngineAssetRepository : IEngineAssetRepository
             {
                 await transaction.CommitAsync(cancellationToken);
             }
-
-            var modifiedRows = dlcsContext.ChangeTracker.Entries().Count(e => e.State == EntityState.Modified);
-            return updatedRows > 0 || modifiedRows == 0;
+            
+            return updatedRows > 0;
         }
         finally
         {
