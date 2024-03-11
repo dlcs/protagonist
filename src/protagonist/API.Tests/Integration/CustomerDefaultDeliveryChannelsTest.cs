@@ -179,10 +179,8 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
-    [Theory]
-    [InlineData("some/value", "not-a-policy", "iiif-av")]
-    [InlineData("some/value", "default", "not-a-channel")]
-    public async Task Post_CreateDefaultDeliveryChannelForCustomerNonExistentPolicy_400(string mediaType, string name, string channel)
+    [Fact]
+    public async Task Post_CreateDefaultDeliveryChannelForCustomerNonExistentPolicy_400()
     {
         // Arrange
         const int customerId = 1;
@@ -190,9 +188,9 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
 
         string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
         {
-            MediaType = mediaType,
-            Policy = name,
-            Channel = channel
+            MediaType = "some/value",
+            Policy = "not-a-policy",
+            Channel = "iiif-av"
         });
         
         // Act
@@ -204,6 +202,31 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         data.Description.Should().Be("Failed to find linked delivery channel policy");
+    }
+    
+    [Fact]
+    public async Task Post_CreateDefaultDeliveryChannelForCustomerNonExistentPolicy_NotAChannel_400()
+    {
+        // Arrange
+        const int customerId = 1;
+        var path = $"customers/{customerId}/defaultDeliveryChannels";
+
+        string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
+        {
+            MediaType = "some/value",
+            Policy = "not-a-policy",
+            Channel = "not-a-channel"
+        });
+        
+        // Act
+        var content = new StringContent(newDefaultDeliveryChannelJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        var data = JsonConvert.DeserializeObject<Error>(await response.Content.ReadAsStringAsync());
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        data.Description.Should().Be("delivery channel not-a-channel is not a valid delivery channel");
     }
     
     [Fact]
@@ -315,7 +338,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
     }
     
     [Fact]
-    public async Task Put_UpdateNonExistentDefaultDeliveryChannelForCustomerFails_404()
+    public async Task Put_UpdateNonExistentDefaultDeliveryChannelForCustomerFails_InvalidChannel_400()
     {
         // Arrange
         const int customerId = 1;
@@ -333,13 +356,33 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
         
         // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Put_UpdateNonExistentDefaultDeliveryChannelForCustomerFails_DefaultDeliveryChannelNotFound_404()
+    {
+        // Arrange
+        const int customerId = 1;
+        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid().ToString()}";
+
+        string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
+        {
+            MediaType = "mediaType",
+            Policy = "policyName",
+            Channel = "iiif-img"
+        });
+        
+        // Act
+        var content = new StringContent(newDefaultDeliveryChannelJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Theory]
-    [InlineData("some/value", "not-a-policy", "iiif-av")]
-    [InlineData("some/value", "default", "not-a-channel")]
-    public async Task Put_UpdateDefaultDeliveryChannelForCustomerFailsToFindPolicy_400(string mediaType, string policyName, string channel)
+    [Fact]
+    public async Task Put_UpdateDefaultDeliveryChannelForCustomerFailsToFindPolicy_InvalidPolicy_400()
     {
         // Arrange
         const int customerId = 1;
@@ -352,9 +395,9 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
 
         string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
         {
-            MediaType = mediaType,
-            Policy = policyName,
-            Channel = channel
+            MediaType = "some/value",
+            Policy = "not-a-policy",
+            Channel = "iiif-av"
         });
         
         // Act
@@ -369,6 +412,36 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
     }
     
     [Fact]
+    public async Task Put_UpdateDefaultDeliveryChannelForCustomerFailsToFindPolicy_InvalidChannel_400()
+    {
+        // Arrange
+        const int customerId = 1;
+
+        var policy =
+            dlcsContext.DefaultDeliveryChannels.First(p =>
+                p.Customer == customerId);
+        
+        var path = $"customers/{customerId}/defaultDeliveryChannels/{policy.Id}";
+
+        string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
+        {
+            MediaType = "some/value",
+            Policy = "not-a-policy",
+            Channel = "not-a-channel"
+        });
+        
+        // Act
+        var content = new StringContent(newDefaultDeliveryChannelJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+
+        var data = JsonConvert.DeserializeObject<Error>(await response.Content.ReadAsStringAsync());
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        data.Description.Should().Be("delivery channel not-a-channel is not a valid delivery channel");
+    }
+    
+    [Fact]
     public async Task Put_UpdateANonExistentDefaultDeliveryChannelForCustomer_404()
     {
         // Arrange
@@ -379,7 +452,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         {
             MediaType = "whoCares",
             Policy = "whoCares",
-            Channel = "whoCares"
+            Channel = "iiif-img"
         });
         
         // Act
