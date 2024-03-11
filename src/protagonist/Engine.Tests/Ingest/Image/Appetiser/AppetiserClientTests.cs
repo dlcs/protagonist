@@ -272,8 +272,7 @@ public class AppetiserClientTests
 
         var context = GetIngestionContext(imageOptimisationPolicy: "use-original", optimised: true);
         context.Asset.Origin = "https://s3.amazonaws.com/dlcs-storage/2/1/foo-bar";
-        context.Asset.InitialOrigin = "https://s3.amazonaws.com/dlcs-storage-ignored/2/1/foo-bar";
-        
+
         const string expected = "s3://dlcs-storage/2/1/foo-bar";
 
         A.CallTo(() => storageKeyGenerator.GetS3Uri(A<ObjectInBucket>._, A<bool>._))

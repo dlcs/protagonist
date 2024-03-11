@@ -99,7 +99,6 @@ public class AssetConverterTests
         var queued = created.AddHours(1);
         var dequeued = queued.AddHours(1);
         var finished = dequeued.AddHours(1);
-        var initialOrigin = "https://example.org/initial-origin";
         var origin = "https://example.org/origin";
         var roles = new[] { "role1", "role2" };
         var tags = new[] { "tag1", "tag2" };
@@ -126,7 +125,6 @@ public class AssetConverterTests
             String1 = "1",
             String2 = "2",
             String3 = "3",
-            InitialOrigin = initialOrigin,
             Origin = origin,
             Roles = roles,
             Tags = tags,
@@ -149,7 +147,6 @@ public class AssetConverterTests
         asset.Family.Should().Be(DLCS.Model.Assets.AssetFamily.Image);
         asset.Ingesting.Should().Be(true);
         asset.Origin.Should().Be(origin);
-        asset.InitialOrigin.Should().Be(initialOrigin); // not patchable but still carried on the Asset class.
         asset.NumberReference1.Should().Be(1);
         asset.NumberReference2.Should().Be(2);
         asset.NumberReference3.Should().Be(3);

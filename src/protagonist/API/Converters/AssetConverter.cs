@@ -38,7 +38,6 @@ public static class AssetConverter
             ThumbnailImageService = $"{urlRoots.ResourceRoot}thumbs/{dbAsset.Id}",
             Created = dbAsset.Created,
             Origin = dbAsset.Origin,
-            InitialOrigin = dbAsset.InitialOrigin,
             MaxUnauthorised = dbAsset.MaxUnauthorised,
             Finished = dbAsset.Finished,
             Ingesting = dbAsset.Ingesting,
@@ -308,12 +307,6 @@ public static class AssetConverter
         else if (hydraImage.ImageOptimisationPolicy.HasText())
         {
             asset.ImageOptimisationPolicy = hydraImage.ImageOptimisationPolicy;
-        }
-        
-        // This can only arrive on a new Asset
-        if (hydraImage.InitialOrigin != null)
-        {
-            asset.InitialOrigin = hydraImage.InitialOrigin;
         }
         
         return asset;

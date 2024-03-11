@@ -121,7 +121,6 @@ public class IngestFromCsvHandler : IRequestHandler<IngestFromCsv, IngestFromCsv
                         Number1 = record.Number1,
                         Number2 = record.Number2,
                         Number3 = record.Number3,
-                        InitialOrigin = record.InitialOrigin,
                         Family = AssetFamily.Image,
                         MediaType = "image/jp2"
                     });

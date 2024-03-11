@@ -182,13 +182,7 @@ internal static class LegacyJsonMessageHelpers
         {
             // writer.WriteValue(String.Format("{0}/thumbnailPolicies/{1}", Context.BaseURL, this.ThumbnailPolicy));
         }
-
-        if (!String.IsNullOrEmpty(asset.InitialOrigin))
-        {
-            writer.WritePropertyName("initialOrigin");
-            writer.WriteValue(asset.InitialOrigin);
-        }
-
+        
         writer.WritePropertyName("family");
         writer.WriteValue((char)(asset.Family ?? AssetFamily.Image));
 

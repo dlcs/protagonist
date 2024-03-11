@@ -70,12 +70,6 @@ public class Image : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 15, PropertyName = "origin")]
     public string? Origin { get; set; }
-    
-    [RdfProperty(Description = "Endpoint to use the first time the image is retrieved. This allows an initial " +
-                               "ingest from a short term s3 bucket (for example) but subsequent references from an https URI.",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 16, PropertyName = "initialOrigin")]
-    public string? InitialOrigin { get; set; }
 
     [RdfProperty(Description = "Maximum size of request allowed before roles are enforced " +
                                "- relates to the effective WHOLE image size, not the individual tile size." +

@@ -263,11 +263,6 @@ public static class AssetPreparer
             {
                 return AssetPreparationResult.Failure("Family cannot be edited.");
             }
-
-            if (updateAsset.InitialOrigin != null)
-            {
-                return AssetPreparationResult.Failure("Cannot edit the InitialOrigin of an asset.");
-            }
         }
 
         return null;
@@ -340,7 +335,6 @@ public static class AssetPreparer
             Ingesting = false,
             ImageOptimisationPolicy = string.Empty,
             ThumbnailPolicy = string.Empty,
-            InitialOrigin = string.Empty,
             DeliveryChannels = null,
             MediaType = "unknown"
         };

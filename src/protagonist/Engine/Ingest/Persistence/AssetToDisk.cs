@@ -67,7 +67,7 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
         destinationTemplate.ThrowIfNullOrWhiteSpace(nameof(destinationTemplate));
 
         await using var originResponse =
-            await originFetcher.LoadAssetFromLocation(context.Asset.Id, context.Asset.GetIngestOrigin(),
+            await originFetcher.LoadAssetFromLocation(context.Asset.Id, context.Asset.Origin,
                 customerOriginStrategy, cancellationToken);
 
         if (originResponse == null || originResponse.Stream.IsNull())
@@ -124,7 +124,7 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
         {
             var uniqueName = asset.Id.Asset;
             
-            var guess = GuessContentType(asset.GetIngestOrigin());
+            var guess = GuessContentType(asset.Origin);
             if (string.IsNullOrEmpty(guess))
             {
                 guess = GuessContentType(uniqueName);

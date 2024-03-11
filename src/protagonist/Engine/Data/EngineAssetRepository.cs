@@ -63,7 +63,7 @@ public class EngineAssetRepository : IEngineAssetRepository
                     dlcsContext.ImageStorages.Add(imageStorage);
                 }
             }
-
+            
             var success = hasBatch
                 ? await BatchSave(asset.Batch!.Value, cancellationToken)
                 : await NonBatchedSave(cancellationToken);
@@ -72,7 +72,7 @@ public class EngineAssetRepository : IEngineAssetRepository
             {
                 await IncreaseCustomerStorage(imageStorage, cancellationToken);
             }
-            
+
             return success;
         }
         catch (Exception ex)
@@ -83,7 +83,9 @@ public class EngineAssetRepository : IEngineAssetRepository
     }
 
     public ValueTask<Asset?> GetAsset(AssetId assetId, CancellationToken cancellationToken = default)
-        => dlcsContext.Images.FindAsync(new object[] { assetId }, cancellationToken);
+        => new(dlcsContext.Images.AsNoTracking().Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(i => i.DeliveryChannelPolicy)
+            .SingleOrDefaultAsync(i => i.Id == assetId, cancellationToken));
 
     public async Task<long?> GetImageSize(AssetId assetId, CancellationToken cancellationToken = default)
     {
@@ -119,7 +121,7 @@ public class EngineAssetRepository : IEngineAssetRepository
             {
                 await transaction.CommitAsync(cancellationToken);
             }
-
+            
             return updatedRows > 0;
         }
         finally

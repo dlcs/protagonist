@@ -43,7 +43,7 @@ public class QueueController : ControllerBase
         foreach (var incomingImage in images.Members)
         {
             var newImage = MockHelp.MakeImage(model.BaseUrl, customerId, incomingImage.Space, incomingImage.ModelId, 
-                DateTime.UtcNow, incomingImage.Origin, incomingImage.InitialOrigin,
+                DateTime.UtcNow, incomingImage.Origin, 
                 0, 0, incomingImage.MaxUnauthorised, null, null, null, true, null, 
                 incomingImage.Tags, incomingImage.String1, incomingImage.String2, incomingImage.String3,
                 incomingImage.Number1, incomingImage.Number2, incomingImage.Number3,

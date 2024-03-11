@@ -386,8 +386,6 @@ public partial class DlcsContext : DbContext
                     dc => string.Join(',', dc.OrderBy(v => v)),
                     dc => dc.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray(),
                     stringArrayComparer);
-
-            entity.Ignore(e => e.InitialOrigin);
         });
 
         modelBuilder.Entity<ImageLocation>(entity =>

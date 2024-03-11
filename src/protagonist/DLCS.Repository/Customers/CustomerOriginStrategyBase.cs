@@ -61,8 +61,7 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
     public async Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Asset asset, bool initialIngestion = false)
     {
         var customerStrategies = await GetCustomerOriginStrategies(asset.Customer);
-        var assetOrigin = initialIngestion ? asset.GetIngestOrigin() : asset.Origin;
-        var matching = FindMatchingStrategy(assetOrigin, customerStrategies) ?? DefaultStrategy;
+        var matching = FindMatchingStrategy(asset.Origin, customerStrategies) ?? DefaultStrategy;
         
         logger.LogTrace("Using strategy: {Strategy} ('{StrategyId}') for handling asset '{AssetId}'",
             matching.Strategy, matching.Id, asset.Id);

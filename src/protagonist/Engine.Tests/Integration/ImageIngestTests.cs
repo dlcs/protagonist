@@ -18,6 +18,7 @@ using Stubbery;
 using Test.Helpers;
 using Test.Helpers.Integration;
 using Test.Helpers.Storage;
+using Z.EntityFramework.Plus;
 
 namespace Engine.Tests.Integration;
 
@@ -169,57 +170,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var storage = await dbContext.ImageStorages.SingleAsync(a => a.Id == assetId);
         storage.Size.Should().NotBe(950);
     }
-    
-    [Fact]
-    public async Task IngestAsset_Success_HttpOrigin_InitialOrigin_AllOpen()
-    {
-        // Arrange
-        var assetId = AssetId.FromString($"99/1/{nameof(IngestAsset_Success_HttpOrigin_InitialOrigin_AllOpen)}");
 
-        // Note - API will have set this up before handing off
-        var initial = $"{apiStub.Address}/image";
-        var origin = $"{apiStub.Address}/this-will-fail";
-        var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
-            imageOptimisationPolicy: "fast-higher", mediaType: "image/tiff", width: 0, height: 0, duration: 0,
-            deliveryChannels: imageDeliveryChannels);
-        var asset = entity.Entity;
-        asset.InitialOrigin = initial;
-        await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
-
-        // Act
-        var jsonContent =
-            new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
-        var result = await httpClient.PostAsync("asset-ingest", jsonContent);
-
-        // Assert
-        result.Should().BeSuccessful();
-        
-        // S3 assets created
-        BucketWriter.ShouldHaveKey(assetId.ToString()).ForBucket(LocalStackFixture.StorageBucketName);
-        BucketWriter.ShouldHaveKey($"{assetId}/low.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
-        BucketWriter.ShouldHaveKey($"{assetId}/open/200.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
-        BucketWriter.ShouldHaveKey($"{assetId}/open/400.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
-        BucketWriter.ShouldHaveKey($"{assetId}/open/800.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
-        BucketWriter.ShouldHaveKey($"{assetId}/s.json").ForBucket(LocalStackFixture.ThumbsBucketName);
-        
-        // Database records updated
-        var updatedAsset = await dbContext.Images.SingleAsync(a => a.Id == assetId);
-        updatedAsset.Width.Should().Be(500);
-        updatedAsset.Height.Should().Be(1000);
-        updatedAsset.Ingesting.Should().BeFalse();
-        updatedAsset.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
-        updatedAsset.MediaType.Should().Be("image/tiff");
-        updatedAsset.Error.Should().BeEmpty();
-
-        var location = await dbContext.ImageLocations.SingleAsync(a => a.Id == assetId);
-        location.Nas.Should().BeEmpty();
-        location.S3.Should().Be($"s3://us-east-1/{LocalStackFixture.StorageBucketName}/{assetId}");
-
-        var storage = await dbContext.ImageStorages.SingleAsync(a => a.Id == assetId);
-        storage.Size.Should().BeGreaterThan(0);
-    }
-    
     [Fact]
     public async Task IngestAsset_Success_ChangesMediaTypeToContentType_WhenCalledWithUnknownImageType()
     {
@@ -227,15 +178,13 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = AssetId.FromString($"99/1/{nameof(IngestAsset_Success_ChangesMediaTypeToContentType_WhenCalledWithUnknownImageType)}");
 
         // Note - API will have set this up before handing off
-        var initial = $"{apiStub.Address}/image";
-        var origin = $"{apiStub.Address}/this-will-fail";
+        var origin = $"{apiStub.Address}/image";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             imageOptimisationPolicy: "fast-higher", mediaType: "image/unknown", width: 0, height: 0, duration: 0,
             deliveryChannels: imageDeliveryChannels);
-        var asset = entity.Entity;
-        asset.InitialOrigin = initial;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        
+        var message = new IngestAssetRequest(entity.Entity, DateTime.UtcNow);
 
         // Act
         var jsonContent =

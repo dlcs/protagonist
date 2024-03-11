@@ -168,7 +168,7 @@ public class MockModel
             if (ongoing && i < 4) finished = DateTime.Now.AddSeconds(-60 + 9 * i);
             var id = Guid.NewGuid().ToString().Substring(0, 8) + i.ToString().PadLeft(5, '0');
             var image = MockHelp.MakeImage(BaseUrl, space.CustomerId, space.ModelId ?? 0, id,
-                DateTime.Now, "https://customer.com/images/" + id + ".tiff", null,
+                DateTime.Now, "https://customer.com/images/" + id + ".tiff",
                 r.Next(2000,11000), r.Next(3000,11000), space.MaxUnauthorised,
                 queued, dequeued, finished, !finished.HasValue, null,
                 space.DefaultTags, "b12345678", null, null, i, 0, 0,
