@@ -61,7 +61,7 @@ public class IngestController : Controller
     /// </summary>
     [HttpGet]
     [Route("allowed-av")]
-    public IActionResult ReturnAllowedAvOptions()
+    public IActionResult GetAllowedAvOptions()
     {
         return Ok(timebasedIngestSettings.DeliveryChannelMappings.Keys.ToList());
     }

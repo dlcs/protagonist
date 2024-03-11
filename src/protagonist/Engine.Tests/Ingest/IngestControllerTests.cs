@@ -33,7 +33,7 @@ public class IngestControllerTests
     public void ReturnAllowedAvOptions_ReturnsAvOptions_WhenCalled()
     {
         // Arrange and Act
-        var avReturn = sut.ReturnAllowedAvOptions();
+        var avReturn = sut.GetAllowedAvOptions();
         
         var options = avReturn as OkObjectResult;
         var avOptions = options.Value as List<string>;
@@ -57,7 +57,7 @@ public class IngestControllerTests
         var ingestController = new IngestController(ingester, Options.Create(engineSettings));
         
         // Act
-        var avReturn = ingestController.ReturnAllowedAvOptions();
+        var avReturn = ingestController.GetAllowedAvOptions();
         
         var options = avReturn as OkObjectResult;
         var avOptions = options.Value as List<string>;
