@@ -63,7 +63,7 @@ public class EngineAssetRepository : IEngineAssetRepository
                     dlcsContext.ImageStorages.Add(imageStorage);
                 }
             }
-
+            
             var success = hasBatch
                 ? await BatchSave(asset.Batch!.Value, cancellationToken)
                 : await NonBatchedSave(cancellationToken);
@@ -72,7 +72,7 @@ public class EngineAssetRepository : IEngineAssetRepository
             {
                 await IncreaseCustomerStorage(imageStorage, cancellationToken);
             }
-            
+
             return success;
         }
         catch (Exception ex)
@@ -83,7 +83,9 @@ public class EngineAssetRepository : IEngineAssetRepository
     }
 
     public ValueTask<Asset?> GetAsset(AssetId assetId, CancellationToken cancellationToken = default)
-        => dlcsContext.Images.FindAsync(new object[] { assetId }, cancellationToken);
+        => new(dlcsContext.Images.Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(i => i.DeliveryChannelPolicy)
+            .SingleOrDefaultAsync(i => i.Id == assetId, cancellationToken));
 
     public async Task<long?> GetImageSize(AssetId assetId, CancellationToken cancellationToken = default)
     {
@@ -97,8 +99,9 @@ public class EngineAssetRepository : IEngineAssetRepository
     
     private async Task<bool> NonBatchedSave(CancellationToken cancellationToken)
     {
+        var modifiedRows = dlcsContext.ChangeTracker.Entries().Count(e => e.State == EntityState.Modified);
         var updatedRows = await dlcsContext.SaveChangesAsync(cancellationToken);
-        return updatedRows > 0;
+        return updatedRows > 0 || modifiedRows == 0;
     }
 
     private async Task<bool> BatchSave(int batchId, CancellationToken cancellationToken)
@@ -120,7 +123,8 @@ public class EngineAssetRepository : IEngineAssetRepository
                 await transaction.CommitAsync(cancellationToken);
             }
 
-            return updatedRows > 0;
+            var modifiedRows = dlcsContext.ChangeTracker.Entries().Count(e => e.State == EntityState.Modified);
+            return updatedRows > 0 || modifiedRows == 0;
         }
         finally
         {
