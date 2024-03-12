@@ -53,10 +53,10 @@ public class EngineClient : IEngineClient
     {
         var jsonString = await GetJsonString(ingestAssetRequest, derivativesOnly);
         var content = new ByteArrayContent(Encoding.ASCII.GetBytes(jsonString));
-        
+
         try
         {
-            var response = await httpClient.PostAsync("asset-ingest", content, cancellationToken);
+            var response = await httpClient.PostAsync(dlcsSettings.EngineDirectIngestUri, content, cancellationToken);
             return response.StatusCode;
         }
         catch (WebException ex)
@@ -167,8 +167,8 @@ public class EngineClient : IEngineClient
             return jsonString;
         }
     }
-    
-    public IngestAssetRequest GetMinimalIngestAssetRequest(IngestAssetRequest ingestAssetRequest)
+
+    private IngestAssetRequest GetMinimalIngestAssetRequest(IngestAssetRequest ingestAssetRequest)
     {
         return new IngestAssetRequest(new Asset(){ Id = ingestAssetRequest.Asset.Id }, ingestAssetRequest.Created);
     }
