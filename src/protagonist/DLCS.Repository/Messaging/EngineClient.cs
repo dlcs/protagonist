@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.SQS;
@@ -26,8 +27,11 @@ public class EngineClient : IEngineClient
     private readonly ILogger<EngineClient> logger;
     private readonly DlcsSettings dlcsSettings;
 
-    private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web);
-
+    private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    };
+    
     public EngineClient(
         IQueueLookup queueLookup,
         IQueueSender queueSender,
@@ -132,6 +136,7 @@ public class EngineClient : IEngineClient
 
     private async Task<string> GetJsonString(IngestAssetRequest ingestAssetRequest, bool derivativesOnly)
     {
+        // If running in legacy mode, the payload should contain the full Legacy JSON string
         if (dlcsSettings.UseLegacyEngineMessage)
         {
             var legacyJson = await LegacyJsonMessageHelpers.GetLegacyJsonString(ingestAssetRequest, derivativesOnly);
@@ -139,6 +144,7 @@ public class EngineClient : IEngineClient
         }
         else
         {
+            // Otherwise, it should contain only the Asset ID - for now, this is an Asset object containing just the ID
             var jsonString = JsonSerializer.Serialize(GetMinimalIngestAssetRequest(ingestAssetRequest), SerializerOptions);
             return jsonString;
         }

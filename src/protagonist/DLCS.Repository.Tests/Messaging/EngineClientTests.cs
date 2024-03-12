@@ -108,36 +108,8 @@ public class EngineClientTests
         body.Asset.Should().BeEquivalentTo(new Asset
         {
             Id = ingestRequest.Asset.Id,
-            Customer = 0,
-            Space = 0,
-            Created = null,
-            Origin = null,
-            Tags = null,
-            Roles = null,
-            PreservedUri = null,
-            Reference1 = null,
-            Reference2 = null,
-            Reference3 = null,
-            NumberReference1 = null,
-            NumberReference2 = null,
-            NumberReference3 = null,
-            MaxUnauthorised = null,
-            Width = null,
-            Height = null,
-            Error = null,
-            Batch = null,
-            Finished = null,
-            Ingesting = null,
-            ImageOptimisationPolicy = null,
-            ThumbnailPolicy = null,
-            Family = null,
-            MediaType = null,
-            Duration = null,
-            NotForDelivery = false,
-            DeliveryChannels = Array.Empty<string>(),
-            RolesList = null,
-            TagsList = null,
-            ImageDeliveryChannels = null
+            Tags = string.Empty,
+            Roles = string.Empty
         });
     }
     
@@ -202,36 +174,8 @@ public class EngineClientTests
         body.Asset.Should().BeEquivalentTo(new Asset
         {
             Id = ingestRequest.Asset.Id,
-            Customer = 0,
-            Space = 0,
-            Created = null,
-            Origin = null,
-            Tags = null,
-            Roles = null,
-            PreservedUri = null,
-            Reference1 = null,
-            Reference2 = null,
-            Reference3 = null,
-            NumberReference1 = null,
-            NumberReference2 = null,
-            NumberReference3 = null,
-            MaxUnauthorised = null,
-            Width = null,
-            Height = null,
-            Error = null,
-            Batch = null,
-            Finished = null,
-            Ingesting = null,
-            ImageOptimisationPolicy = null,
-            ThumbnailPolicy = null,
-            Family = null,
-            MediaType = null,
-            Duration = null,
-            NotForDelivery = false,
-            DeliveryChannels = Array.Empty<string>(),
-            RolesList = null,
-            TagsList = null,
-            ImageDeliveryChannels = null
+            Tags = string.Empty,
+            Roles = string.Empty
         });
     }
 
