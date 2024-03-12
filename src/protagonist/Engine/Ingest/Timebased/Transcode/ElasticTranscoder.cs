@@ -86,7 +86,7 @@ public class ElasticTranscoder : IMediaTranscoder
                 TranscoderTemplates.ProcessPreset(mediaType, assetId, technicalDetail, jobId);
 
             // TODO - handle empty path/presetname
-            var mappedPresetName = settings.TranscoderMappings.TryGetValue(presetName, out var mappedName)
+            var mappedPresetName = settings.DeliveryChannelMappings.TryGetValue(presetName, out var mappedName)
                 ? mappedName
                 : presetName;
 

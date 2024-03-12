@@ -78,12 +78,12 @@ public class ImageIngestSettings
     /// Root folder for use by Image-Processor sidecar
     /// </summary>
     public string ImageProcessorRoot { get; set; }
-    
+
     /// <summary>
     /// Base url for calling orchestrator.
     /// </summary>
     public Uri OrchestratorBaseUrl { get; set; }
-        
+
     /// <summary>
     /// Timeout, in ms, to wait for calls to orchestrator
     /// </summary>
@@ -98,12 +98,11 @@ public class ImageIngestSettings
     /// The character to use when replacing an open bracket character
     /// </summary>
     public string OpenBracketReplacement { get; set; } = "_";
-    
+
     /// <summary>
     /// The character to use when replacing a closing bracket character
     /// </summary>
     public string CloseBracketReplacement { get; set; } = "_";
-    
 
     /// <summary>
     /// Get the root folder, if forImageProcessor will ensure that it is compatible with needs of image-processor
@@ -133,5 +132,5 @@ public class TimebasedIngestSettings
     /// <summary>
     /// Mapping of 'friendly' to 'real' transcoder names
     /// </summary>
-    public Dictionary<string, string> TranscoderMappings { get; set; } = new();
+    public Dictionary<string, string> DeliveryChannelMappings { get; set; } = new();
 }
