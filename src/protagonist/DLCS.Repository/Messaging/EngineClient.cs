@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.SQS;
@@ -46,6 +45,7 @@ public class EngineClient : IEngineClient
     public async Task<HttpStatusCode> SynchronousIngest(IngestAssetRequest ingestAssetRequest, 
         bool derivativesOnly = false, CancellationToken cancellationToken = default)
     {
+        // If the client isn't running in legacy mode, send a payload containing just the asset ID
         if (!dlcsSettings.UseLegacyEngineMessage)
         {
             ingestAssetRequest = ingestAssetRequest.GetMinimalPayload();
@@ -89,6 +89,7 @@ public class EngineClient : IEngineClient
     {
         var queueName = queueLookup.GetQueueNameForFamily(ingestAssetRequest.Asset.Family ?? new AssetFamily());
 
+        // If the client isn't running in legacy mode, send a payload containing just the asset ID
         if (!dlcsSettings.UseLegacyEngineMessage)
         {
             ingestAssetRequest = ingestAssetRequest.GetMinimalPayload();
@@ -112,6 +113,7 @@ public class EngineClient : IEngineClient
     public async Task<int> AsynchronousIngestBatch(IReadOnlyCollection<IngestAssetRequest> ingestAssetRequests,
         bool isPriority, CancellationToken cancellationToken)
     {
+        // If the client isn't running in legacy mode, send payloads containing just the ID of the assets
         if (!dlcsSettings.UseLegacyEngineMessage)
         {
             ingestAssetRequests = ingestAssetRequests.Select(c 

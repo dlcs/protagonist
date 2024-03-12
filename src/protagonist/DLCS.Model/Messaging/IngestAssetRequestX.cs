@@ -2,6 +2,9 @@
 
 namespace DLCS.Model.Messaging;
 
+/// <summary>
+/// Extension methods for asset ingest requests.
+/// </summary>
 public static class IngestAssetRequestX
 {
     public static IngestAssetRequest GetMinimalPayload(this IngestAssetRequest ingestAssetRequest)
