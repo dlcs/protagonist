@@ -34,9 +34,9 @@ public class DefaultDeliveryChannelsController : HydraController
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCustomerDefaultDeliveryChannels(
-        [FromRoute] int customerId, 
-        [FromRoute] int space,
-        CancellationToken cancellationToken)
+        [FromRoute] int customerId,
+        CancellationToken cancellationToken,
+        [FromRoute] int space = 0)
     {
 
         var getCustomerDefaultDeliveryChannels = new GetDefaultDeliveryChannels(customerId, space);
@@ -59,8 +59,8 @@ public class DefaultDeliveryChannelsController : HydraController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetCustomerDefaultDeliveryChannel(
         Guid defaultDeliveryChannelId,
-        [FromRoute] int space,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromRoute] int space = 0)
     {
         var getCustomerDefaultDeliveryChannel = new GetDefaultDeliveryChannel(defaultDeliveryChannelId, space);
 
@@ -81,10 +81,10 @@ public class DefaultDeliveryChannelsController : HydraController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateCustomerDefaultDeliveryChannel(
         [FromRoute] int customerId,
-        [FromRoute] int space,
         [FromBody] DefaultDeliveryChannel defaultDeliveryChannel,
         [FromServices] HydraDefaultDeliveryChannelValidator validator,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromRoute] int space = 0)
     {
         var validationResult = await validator.ValidateAsync(defaultDeliveryChannel, cancellationToken);
         if (!validationResult.IsValid)
@@ -119,11 +119,11 @@ public class DefaultDeliveryChannelsController : HydraController
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> UpdateCustomerDefaultDeliveryChannel(
         [FromRoute] int customerId,
-        [FromRoute] int space,
         [FromBody]DefaultDeliveryChannel defaultDeliveryChannel,
         [FromServices] HydraDefaultDeliveryChannelValidator validator,
         Guid defaultDeliveryChannelId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromRoute] int space = 0)
     {
         var validationResult = await validator.ValidateAsync(defaultDeliveryChannel, cancellationToken);
         if (!validationResult.IsValid)
@@ -154,9 +154,9 @@ public class DefaultDeliveryChannelsController : HydraController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteCustomerDefaultDeliveryChannel(
         [FromRoute] int customerId,
-        [FromRoute] int space,
         Guid defaultDeliveryChannelId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromRoute] int space = 0)
     {
         var deleteCustomerDefaultDeliveryChannel = new DeleteDefaultDeliveryChannel(
             customerId, 
