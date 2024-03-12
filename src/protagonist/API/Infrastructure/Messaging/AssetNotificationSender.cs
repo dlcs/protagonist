@@ -19,7 +19,6 @@ public class AssetNotificationSender : IAssetNotificationSender
     private readonly ILogger<AssetNotificationSender> logger;
     private readonly ITopicPublisher topicPublisher;
     private readonly IPathCustomerRepository customerPathRepository;
-
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
     private readonly Dictionary<int, CustomerPathElement> customerPathElements = new();

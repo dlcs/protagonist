@@ -3,7 +3,7 @@ using DLCS.Model.Assets;
 using DLCS.Repository;
 using MediatR;
 
-namespace API.Features.DeliveryChannels.Requests;
+namespace API.Features.DeliveryChannels.Requests.DeliveryChannelPolicies;
 
 public class GetDeliveryChannelPolicyCollections: IRequest<Dictionary<string,string>>
 {

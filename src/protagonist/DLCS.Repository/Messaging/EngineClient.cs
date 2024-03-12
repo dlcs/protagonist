@@ -27,7 +27,7 @@ public class EngineClient : IEngineClient
     private readonly ILogger<EngineClient> logger;
     private readonly DlcsSettings dlcsSettings;
 
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web);
 
     public EngineClient(
         IQueueLookup queueLookup,

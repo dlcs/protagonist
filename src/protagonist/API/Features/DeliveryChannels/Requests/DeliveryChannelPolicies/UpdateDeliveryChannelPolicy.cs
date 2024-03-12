@@ -6,7 +6,7 @@ using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace API.Features.DeliveryChannels.Requests;
+namespace API.Features.DeliveryChannels.Requests.DeliveryChannelPolicies;
 
 public class UpdateDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryChannelPolicy>>
 {

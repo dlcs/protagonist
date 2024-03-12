@@ -41,6 +41,11 @@ public enum WriteResult
     Created,
     
     /// <summary>
+    /// Entity had an invalid request
+    /// </summary>
+    BadRequest,
+    
+    /// <summary>
     /// Predefined storage limits exceeded
     /// </summary>
     StorageLimitExceeded,

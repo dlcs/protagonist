@@ -1,10 +1,9 @@
-﻿using API.Infrastructure.Requests;
-using DLCS.Core;
+﻿using DLCS.Core;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace API.Features.DeliveryChannels.Requests;
+namespace API.Features.DeliveryChannels.Requests.DeliveryChannelPolicies;
 
 public class DeleteDeliveryChannelPolicy: IRequest<ResultMessage<DeleteResult>>
 {

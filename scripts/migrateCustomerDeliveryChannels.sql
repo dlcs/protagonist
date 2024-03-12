@@ -10,7 +10,7 @@ SELECT TP."Id",
        current_timestamp,
        current_timestamp,
        n.new_sizes
-FROM (SELECT '{[' || string_agg('"!' || dimension || ',' || dimension, '",') || '"]}' new_sizes,
+FROM (SELECT '[' || string_agg('"!' || dimension || ',' || dimension, '",') || '"]' new_sizes,
              "Id"
       FROM (SELECT unnest(string_to_array("Sizes", ',')) AS dimension, "Id" FROM "ThumbnailPolicies") AS x
       GROUP BY "Id") AS n
