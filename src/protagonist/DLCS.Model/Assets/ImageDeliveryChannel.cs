@@ -17,7 +17,6 @@ public class ImageDeliveryChannel
     /// </summary>
     public AssetId ImageId { get; set; }
     
-    [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
     public Asset Asset { get; set; }
 
     /// <summary>
