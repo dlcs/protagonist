@@ -10,9 +10,12 @@ public class GetDefaultDeliveryChannel : IRequest<FetchEntityResult<DefaultDeliv
 {
     public Guid DefaultDeliveryChannelId { get; }
     
-    public GetDefaultDeliveryChannel(Guid defaultDeliveryChannelId)
+    public int Space { get; }
+    
+    public GetDefaultDeliveryChannel(Guid defaultDeliveryChannelId, int space)
     {
         DefaultDeliveryChannelId = defaultDeliveryChannelId;
+        Space = space;
     }
 }
 
@@ -31,7 +34,9 @@ public class GetDefaultDeliveryChannelHandler : IRequestHandler<GetDefaultDelive
     {
         var defaultDeliveryChannel = await dlcsContext.DefaultDeliveryChannels.AsNoTracking()
             .Include(d => d.DeliveryChannelPolicy)
-            .SingleOrDefaultAsync(b => b.Id == request.DefaultDeliveryChannelId,
+            .SingleOrDefaultAsync(d => 
+                d.Id == request.DefaultDeliveryChannelId && 
+                d.Space == request.Space,
                 cancellationToken);
 
         return defaultDeliveryChannel == null

@@ -26,7 +26,7 @@ public class DefaultDeliveryChannel : DlcsResource
         }
         else
         {
-            Init(baseUrl, true, customerId, id, space);
+            Init(baseUrl, true, customerId, space, id);
         }
     }
     

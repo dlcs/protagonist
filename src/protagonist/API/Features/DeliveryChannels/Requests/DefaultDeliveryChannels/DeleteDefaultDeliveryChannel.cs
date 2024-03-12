@@ -7,13 +7,16 @@ namespace API.Features.DeliveryChannels.Requests.DefaultDeliveryChannels;
 
 public class DeleteDefaultDeliveryChannel : IRequest<ResultMessage<DeleteResult>>
 {
-    public DeleteDefaultDeliveryChannel(int customer, Guid defaultDeliveryChannelId)
+    public DeleteDefaultDeliveryChannel(int customer, int space, Guid defaultDeliveryChannelId)
     {
         Customer = customer;
+        Space = space;
         DefaultDeliveryChannelId = defaultDeliveryChannelId;
     }
     
     public int Customer { get; }
+    
+    public int Space { get; }
     
     public Guid DefaultDeliveryChannelId { get; }
 }
@@ -31,7 +34,8 @@ public class DeleteDefaultDeliveryChannelHandler : IRequestHandler<DeleteDefault
     {
         var defaultDeliveryChannel = await dbContext.DefaultDeliveryChannels.SingleOrDefaultAsync(
             ch => ch.Customer == request.Customer && 
-                  ch.Id == request.DefaultDeliveryChannelId,
+                  ch.Id == request.DefaultDeliveryChannelId &&
+                  ch.Space == request.Space,
             cancellationToken: cancellationToken);
 
         if (defaultDeliveryChannel == null)
