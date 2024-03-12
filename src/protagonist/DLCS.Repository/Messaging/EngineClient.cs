@@ -27,8 +27,11 @@ public class EngineClient : IEngineClient
     private readonly ILogger<EngineClient> logger;
     private readonly DlcsSettings dlcsSettings;
 
-    private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web);
-
+    private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    };
+    
     public EngineClient(
         IQueueLookup queueLookup,
         IQueueSender queueSender,
@@ -83,8 +86,8 @@ public class EngineClient : IEngineClient
         CancellationToken cancellationToken = default)
     {
         var queueName = queueLookup.GetQueueNameForFamily(ingestAssetRequest.Asset.Family ?? new AssetFamily());
+        
         var jsonString = await GetJsonString(ingestAssetRequest, false);
-
         var success = await queueSender.QueueMessage(queueName, jsonString, cancellationToken);
 
         if (!success)
@@ -133,6 +136,7 @@ public class EngineClient : IEngineClient
 
     private async Task<string> GetJsonString(IngestAssetRequest ingestAssetRequest, bool derivativesOnly)
     {
+        // If running in legacy mode, the payload should contain the full Legacy JSON string
         if (dlcsSettings.UseLegacyEngineMessage)
         {
             var legacyJson = await LegacyJsonMessageHelpers.GetLegacyJsonString(ingestAssetRequest, derivativesOnly);
@@ -140,8 +144,15 @@ public class EngineClient : IEngineClient
         }
         else
         {
-            var jsonString = JsonSerializer.Serialize(ingestAssetRequest, SerializerOptions);
+            // Otherwise, it should contain only the Asset ID - for now, this is an Asset object containing just the ID
+            var jsonString = JsonSerializer.Serialize(GetMinimalIngestAssetRequest(ingestAssetRequest), SerializerOptions);
             return jsonString;
         }
     }
+
+    public IngestAssetRequest GetMinimalIngestAssetRequest(IngestAssetRequest ingestAssetRequest)
+    {
+        return new IngestAssetRequest(new Asset(){ Id = ingestAssetRequest.Asset.Id }, ingestAssetRequest.Created);
+    }
 }
+

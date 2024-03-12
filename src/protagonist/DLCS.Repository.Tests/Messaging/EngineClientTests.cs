@@ -104,7 +104,13 @@ public class EngineClientTests
             {
                 ReferenceHandler = ReferenceHandler.Preserve
             });
-        body.Should().BeEquivalentTo(ingestRequest);
+        
+        body.Asset.Should().BeEquivalentTo(new Asset
+        {
+            Id = ingestRequest.Asset.Id,
+            Tags = string.Empty,
+            Roles = string.Empty
+        });
     }
     
     [Fact]
@@ -164,7 +170,13 @@ public class EngineClientTests
         {
             ReferenceHandler = ReferenceHandler.Preserve
         });
-        body.Should().BeEquivalentTo(ingestRequest);
+
+        body.Asset.Should().BeEquivalentTo(new Asset
+        {
+            Id = ingestRequest.Asset.Id,
+            Tags = string.Empty,
+            Roles = string.Empty
+        });
     }
 
     private EngineClient GetSut(bool useLegacyMessageFormat)
