@@ -45,12 +45,6 @@ public class EngineClient : IEngineClient
     public async Task<HttpStatusCode> SynchronousIngest(IngestAssetRequest ingestAssetRequest, 
         bool derivativesOnly = false, CancellationToken cancellationToken = default)
     {
-        // If the client isn't running in legacy mode, send a payload containing just the asset ID
-        if (!dlcsSettings.UseLegacyEngineMessage)
-        {
-            ingestAssetRequest = ingestAssetRequest.GetMinimalPayload();
-        }
-        
         var jsonString = await GetJsonString(ingestAssetRequest, derivativesOnly);
         var content = new ByteArrayContent(Encoding.ASCII.GetBytes(jsonString));
 
@@ -88,13 +82,7 @@ public class EngineClient : IEngineClient
         CancellationToken cancellationToken = default)
     {
         var queueName = queueLookup.GetQueueNameForFamily(ingestAssetRequest.Asset.Family ?? new AssetFamily());
-
-        // If the client isn't running in legacy mode, send a payload containing just the asset ID
-        if (!dlcsSettings.UseLegacyEngineMessage)
-        {
-            ingestAssetRequest = ingestAssetRequest.GetMinimalPayload();
-        }
-      
+        
         var jsonString = await GetJsonString(ingestAssetRequest, false);
         var success = await queueSender.QueueMessage(queueName, jsonString, cancellationToken);
 
@@ -113,13 +101,6 @@ public class EngineClient : IEngineClient
     public async Task<int> AsynchronousIngestBatch(IReadOnlyCollection<IngestAssetRequest> ingestAssetRequests,
         bool isPriority, CancellationToken cancellationToken)
     {
-        // If the client isn't running in legacy mode, send payloads containing just the ID of the assets
-        if (!dlcsSettings.UseLegacyEngineMessage)
-        {
-            ingestAssetRequests = ingestAssetRequests.Select(c 
-                => c.GetMinimalPayload()).ToArray();
-        }
-
         var overallSent = 0;
         var batchId = (ingestAssetRequests.First().Asset.Batch ?? 0).ToString();
         
@@ -158,8 +139,14 @@ public class EngineClient : IEngineClient
         }
         else
         {
-            var jsonString = JsonSerializer.Serialize(ingestAssetRequest, SerializerOptions);
+            var jsonString = JsonSerializer.Serialize(GetMinimalIngestAssetRequest(ingestAssetRequest), SerializerOptions);
             return jsonString;
         }
     }
+
+    public IngestAssetRequest GetMinimalIngestAssetRequest(IngestAssetRequest ingestAssetRequest)
+    {
+        return new IngestAssetRequest(new Asset(){ Id = ingestAssetRequest.Asset.Id }, ingestAssetRequest.Created);
+    }
 }
+
