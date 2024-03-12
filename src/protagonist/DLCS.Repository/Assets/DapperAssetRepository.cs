@@ -100,15 +100,15 @@ public class DapperAssetRepository : AssetRepositoryCachingBase, IDapperConfigRe
     }
 
     private const string AssetSql = @"
-SELECT public.""Images"".""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Roles"", 
+SELECT ""Images"".""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Roles"", 
 ""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", 
 ""NumberReference1"", ""NumberReference2"", ""NumberReference3"", ""Width"", 
 ""Height"", ""Error"", ""Batch"", ""Finished"", ""Ingesting"", ""ImageOptimisationPolicy"", 
 ""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery"", ""DeliveryChannels"",  
 IDC.""Channel"", IDC.""DeliveryChannelPolicyId""
-  FROM public.""Images""
-  LEFT OUTER JOIN ""ImageDeliveryChannels"" IDC on public.""Images"".""Id"" = IDC.""ImageId""
-  WHERE public.""Images"".""Id""=@Id;";
+  FROM ""Images""
+  LEFT OUTER JOIN ""ImageDeliveryChannels"" IDC on ""Images"".""Id"" = IDC.""ImageId""
+  WHERE ""Images"".""Id""=@Id;";
 
     private const string ImageLocationSql =
         "SELECT \"Id\", \"S3\", \"Nas\" FROM public.\"ImageLocation\" WHERE \"Id\"=@Id;";
