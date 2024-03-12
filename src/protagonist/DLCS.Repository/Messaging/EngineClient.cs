@@ -46,6 +46,11 @@ public class EngineClient : IEngineClient
     public async Task<HttpStatusCode> SynchronousIngest(IngestAssetRequest ingestAssetRequest, 
         bool derivativesOnly = false, CancellationToken cancellationToken = default)
     {
+        if (!dlcsSettings.UseLegacyEngineMessage)
+        {
+            ingestAssetRequest = ingestAssetRequest.GetMinimalPayload();
+        }
+        
         var jsonString = await GetJsonString(ingestAssetRequest, derivativesOnly);
         var content = new ByteArrayContent(Encoding.ASCII.GetBytes(jsonString));
 
@@ -83,8 +88,13 @@ public class EngineClient : IEngineClient
         CancellationToken cancellationToken = default)
     {
         var queueName = queueLookup.GetQueueNameForFamily(ingestAssetRequest.Asset.Family ?? new AssetFamily());
-        var jsonString = await GetJsonString(ingestAssetRequest, false);
 
+        if (!dlcsSettings.UseLegacyEngineMessage)
+        {
+            ingestAssetRequest = ingestAssetRequest.GetMinimalPayload();
+        }
+      
+        var jsonString = await GetJsonString(ingestAssetRequest, false);
         var success = await queueSender.QueueMessage(queueName, jsonString, cancellationToken);
 
         if (!success)
@@ -102,6 +112,12 @@ public class EngineClient : IEngineClient
     public async Task<int> AsynchronousIngestBatch(IReadOnlyCollection<IngestAssetRequest> ingestAssetRequests,
         bool isPriority, CancellationToken cancellationToken)
     {
+        if (!dlcsSettings.UseLegacyEngineMessage)
+        {
+            ingestAssetRequests = ingestAssetRequests.Select(c 
+                => c.GetMinimalPayload()).ToArray();
+        }
+
         var overallSent = 0;
         var batchId = (ingestAssetRequests.First().Asset.Batch ?? 0).ToString();
         
