@@ -604,7 +604,7 @@ public class DefaultDeliveryChannelsTests : IClassFixture<ProtagonistAppFactory<
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         data.MediaType.Should().Be("image/tiff");
-        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/spaces/{space}/defaultDeliveryChannels/{dbEntry.Id.ToString()}");
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/spaces/{space}/defaultDeliveryChannels/{dbEntry.Id}");
         dbEntry.DeliveryChannelPolicy.Name.Should().Be("default");
 
         var retrievalFromCustomer = await httpClient.AsCustomer(customerId)

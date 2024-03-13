@@ -3,11 +3,11 @@ using DLCS.Model.Policies;
 
 namespace API.Features.DeliveryChannels.Helpers;
 
-public static class EnumerableExtensions
+public static class QueryableExtensions
 {
     private const int AdminCustomer = 1;
     
-    public static DeliveryChannelPolicy RetrieveDeliveryChannel(this IEnumerable<DeliveryChannelPolicy> policies, int  customerId, string channel, string policy)
+    public static DeliveryChannelPolicy RetrieveDeliveryChannel(this IQueryable<DeliveryChannelPolicy> policies, int  customerId, string channel, string policy)
     {
         return policies.Single(p =>
             (p.Customer == customerId &&
