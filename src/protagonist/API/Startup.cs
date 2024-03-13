@@ -44,7 +44,7 @@ public class Startup
         this.configuration = configuration;
         this.webHostEnvironment = webHostEnvironment;
     }
-    
+
     public void ConfigureServices(IServiceCollection services)
     {
         var cachingSection = configuration.GetSection("Caching");
@@ -82,8 +82,11 @@ public class Startup
             .AddAws(configuration, webHostEnvironment)
             .AddCorrelationIdHeaderPropagation()
             .ConfigureSwagger();
-        
-        services.AddHttpClient<IEngineClient, EngineClient>()
+
+        services.AddHttpClient<IEngineClient, EngineClient>(client =>
+            {
+                client.BaseAddress = apiSettings.DLCS.EngineRoot;
+            })
             .AddHttpMessageHandler<TimingHandler>();
 
         services.AddDlcsBasicAuth(options =>

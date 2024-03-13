@@ -57,7 +57,7 @@ public class EngineClient : IEngineClient
 
         try
         {
-            var response = await httpClient.PostAsync(dlcsSettings.EngineDirectIngestUri, content, cancellationToken);
+            var response = await httpClient.PostAsync("image-ingest", content, cancellationToken);
             return response.StatusCode;
         }
         catch (WebException ex)
@@ -141,7 +141,7 @@ public class EngineClient : IEngineClient
     {
         try
         {
-            var response = await httpClient.GetAsync(dlcsSettings.EngineAvOptionsUri, cancellationToken);
+            var response = await httpClient.GetAsync("allowed-av", cancellationToken);
             return await response.Content.ReadFromJsonAsync<IReadOnlyCollection<string>>(
                 cancellationToken: cancellationToken);
             

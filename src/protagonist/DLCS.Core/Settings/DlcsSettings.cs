@@ -17,6 +17,11 @@ public class DlcsSettings
     /// The base URI for image services and other public-facing resources
     /// </summary>
     public Uri ResourceRoot { get; set; }
+    
+    /// <summary>
+    /// The base URI for the engine
+    /// </summary>
+    public Uri EngineRoot { get; set; } 
 
     /// <summary>
     /// Default timeout for dlcs api requests.
@@ -37,8 +42,4 @@ public class DlcsSettings
     /// If true, the legacy/Deliverator message format is used for requests to Engine
     /// </summary>
     public bool UseLegacyEngineMessage { get; set; }
-    
-    public Uri EngineDirectIngestUri { get; set; } 
-    
-    public Uri EngineAvOptionsUri { get; set; }
 }

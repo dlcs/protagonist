@@ -28,7 +28,10 @@ public class EngineClientTests
     public EngineClientTests()
     {
         httpHandler = new ControllableHttpMessageHandler();
-        httpClient = new HttpClient(httpHandler);
+        httpClient = new HttpClient(httpHandler)
+        {
+            BaseAddress = new Uri("http://engine.dlcs")
+        };
 
         queueLookup = A.Fake<IQueueLookup>();
         queueSender = A.Fake<IQueueSender>();
@@ -59,7 +62,7 @@ public class EngineClientTests
         
         // Assert
         statusCode.Should().Be(HttpStatusCode.OK);
-        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/ingest");
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/image-ingest");
         message.Method.Should().Be(HttpMethod.Post);
 
         var body = await message.Content.ReadAsStringAsync();
@@ -95,7 +98,7 @@ public class EngineClientTests
         
         // Assert
         statusCode.Should().Be(HttpStatusCode.OK);
-        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/ingest");
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/image-ingest");
         message.Method.Should().Be(HttpMethod.Post);
 
         var jsonContents = await message.Content.ReadAsStringAsync();
@@ -183,8 +186,7 @@ public class EngineClientTests
     {
         var options = Options.Create(new DlcsSettings
         {
-            EngineDirectIngestUri = new Uri("http://engine.dlcs/ingest"),
-            EngineAvOptionsUri = new Uri("http://engine.dlcs/allowed-av"),
+            EngineRoot = new Uri("http://engine.dlcs/"),
             UseLegacyEngineMessage = useLegacyMessageFormat
         });
 
