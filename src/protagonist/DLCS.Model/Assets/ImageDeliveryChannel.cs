@@ -1,6 +1,5 @@
 ﻿#nullable disable
 
-using System.Text.Json.Serialization;
 using DLCS.Core.Types;
 using DLCS.Model.Policies;
 namespace DLCS.Model.Assets;
