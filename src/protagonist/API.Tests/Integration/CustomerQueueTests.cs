@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Messaging;
@@ -799,7 +800,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<IngestAssetRequest>>._, false,
+                A<IReadOnlyCollection<(IngestAssetRequest, Asset)>>._, false,
                 A<CancellationToken>._)).Returns(3);
         
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -843,7 +844,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Items queued for processing
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 3), false,
+                A<IReadOnlyCollection<(IngestAssetRequest, Asset)>>.That.Matches(i => i.Count == 3), false,
                 A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -1025,7 +1026,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<IngestAssetRequest>>._, true,
+                A<IReadOnlyCollection<(IngestAssetRequest, Asset)>>._, true,
                 A<CancellationToken>._)).Returns(3);
         
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -1069,7 +1070,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Items queued for processing
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 4), true,
+                A<IReadOnlyCollection<(IngestAssetRequest, Asset)>>.That.Matches(i => i.Count == 4), true,
                 A<CancellationToken>._)).MustHaveHappened();
     }
     

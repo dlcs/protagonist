@@ -28,7 +28,7 @@ public static class LegacyIngestEventConverter
         {
             var formattedJson = incomingRequest.AssetJson.Replace("\r\n", string.Empty);
             var asset = ConvertJsonToAsset(formattedJson);
-            return new IngestAssetRequest(asset, incomingRequest.Created);
+            return new IngestAssetRequest(asset.Id, incomingRequest.Created);
         }
         catch (JsonException e)
         {

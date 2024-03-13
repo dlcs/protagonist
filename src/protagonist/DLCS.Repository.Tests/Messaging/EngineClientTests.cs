@@ -47,7 +47,7 @@ public class EngineClientTests
             Family = family
         };
         
-        var ingestRequest = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
         HttpRequestMessage message = null;
         httpHandler.RegisterCallback(r => message = r);
         httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
@@ -55,7 +55,7 @@ public class EngineClientTests
         var sut = GetSut(true);
         
         // Act
-        var statusCode = await sut.SynchronousIngest(ingestRequest, false);
+        var statusCode = await sut.SynchronousIngest(ingestRequest, asset);
         
         // Assert
         statusCode.Should().Be(HttpStatusCode.OK);
@@ -83,7 +83,7 @@ public class EngineClientTests
             NumberReference1 = 1234
         };
         
-        var ingestRequest = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
         HttpRequestMessage message = null;
         httpHandler.RegisterCallback(r => message = r);
         httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
@@ -91,7 +91,7 @@ public class EngineClientTests
         var sut = GetSut(false);
         
         // Act
-        var statusCode = await sut.SynchronousIngest(ingestRequest, false);
+        var statusCode = await sut.SynchronousIngest(ingestRequest, asset);
         
         // Assert
         statusCode.Should().Be(HttpStatusCode.OK);
@@ -105,12 +105,7 @@ public class EngineClientTests
                 ReferenceHandler = ReferenceHandler.Preserve
             });
         
-        body.Asset.Should().BeEquivalentTo(new Asset
-        {
-            Id = ingestRequest.Asset.Id,
-            Tags = string.Empty,
-            Roles = string.Empty
-        });
+        body.Id.Should().Be(ingestRequest.Id);
     }
     
     [Fact]
@@ -122,7 +117,7 @@ public class EngineClientTests
             Family = AssetFamily.Image
         };
         
-        var ingestRequest = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         var sut = GetSut(true);
         string jsonString = string.Empty;
@@ -132,7 +127,7 @@ public class EngineClientTests
             .Returns(true);
         
         // Act
-        await sut.AsynchronousIngest(ingestRequest);
+        await sut.AsynchronousIngest(ingestRequest, asset);
         
         // Assert
         var jObj = JObject.Parse(jsonString);
@@ -152,7 +147,7 @@ public class EngineClientTests
             NumberReference1 = 1234
         };
         
-        var ingestRequest = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
         var sut = GetSut(false);
 
         string jsonString = string.Empty;
@@ -162,7 +157,7 @@ public class EngineClientTests
             .Returns(true);
 
         // Act
-        await sut.AsynchronousIngest(ingestRequest);
+        await sut.AsynchronousIngest(ingestRequest, asset);
         
         // Assert
         var body = JsonSerializer.Deserialize<IngestAssetRequest>(jsonString,
@@ -171,12 +166,7 @@ public class EngineClientTests
             ReferenceHandler = ReferenceHandler.Preserve
         });
 
-        body.Asset.Should().BeEquivalentTo(new Asset
-        {
-            Id = ingestRequest.Asset.Id,
-            Tags = string.Empty,
-            Roles = string.Empty
-        });
+        body.Id.Should().Be(ingestRequest.Id);
     }
 
     private EngineClient GetSut(bool useLegacyMessageFormat)
