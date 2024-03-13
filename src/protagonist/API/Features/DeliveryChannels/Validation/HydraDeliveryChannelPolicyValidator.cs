@@ -56,7 +56,7 @@ public class HydraDeliveryChannelPolicyValidator : AbstractValidator<DLCS.HydraM
                 .WithMessage("'policyData' is required");
         }); 
         RuleFor(p => p.PolicyData)
-            .Must((p, pd) => IsValidPolicyData(pd, p.Channel))
+            .MustAsync((p, pd, cancellationToken) => IsValidPolicyData(pd, p.Channel))
             .When(p => !string.IsNullOrEmpty(p.PolicyData))
             .WithMessage(p => $"'policyData' contains bad JSON or invalid data");
         RuleFor(p => p.Modified)
@@ -77,9 +77,9 @@ public class HydraDeliveryChannelPolicyValidator : AbstractValidator<DLCS.HydraM
         return allowedDeliveryChannels.Contains(deliveryChannelPolicyName);
     }
 
-    private bool IsValidPolicyData(string? policyData, string? channel)
+    private async Task<bool> IsValidPolicyData(string? policyData, string? channel)
     {
         if (string.IsNullOrEmpty(policyData) || string.IsNullOrEmpty(channel)) return false;
-        return policyDataValidator.Validate(policyData, channel);
+        return await policyDataValidator.Validate(policyData, channel);
     }
 }
