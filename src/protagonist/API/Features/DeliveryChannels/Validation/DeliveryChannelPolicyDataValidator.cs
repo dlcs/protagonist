@@ -8,11 +8,11 @@ namespace API.Features.DeliveryChannels.Validation;
 
 public class DeliveryChannelPolicyDataValidator
 {
-    private readonly IAvPolicyOptionsRepository avPolicyOptionsRepository;
+    private readonly IAvChannelPolicyOptionsRepository avChannelPolicyOptionsRepository;
 
-    public DeliveryChannelPolicyDataValidator(IAvPolicyOptionsRepository avPolicyOptionsRepository)
+    public DeliveryChannelPolicyDataValidator(IAvChannelPolicyOptionsRepository avChannelPolicyOptionsRepository)
     {
-        this.avPolicyOptionsRepository = avPolicyOptionsRepository;
+        this.avChannelPolicyOptionsRepository = avChannelPolicyOptionsRepository;
     }
 
     public async Task<bool> Validate(string policyDataJson, string channel)
@@ -74,7 +74,7 @@ public class DeliveryChannelPolicyDataValidator
         }
 
         var avChannelPolicyOptions = 
-            await avPolicyOptionsRepository.RetrieveAvChannelPolicyOptions();
+            await avChannelPolicyOptionsRepository.RetrieveAvChannelPolicyOptions();
 
         return policyData.All(avPolicy => avChannelPolicyOptions.Contains(avPolicy));
     }

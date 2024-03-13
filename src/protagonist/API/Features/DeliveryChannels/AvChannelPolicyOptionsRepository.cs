@@ -7,13 +7,13 @@ using Microsoft.Extensions.Options;
 
 namespace API.Features.DeliveryChannels;
 
-public class AvPolicyOptionsRepository : IAvPolicyOptionsRepository
+public class AvChannelPolicyOptionsRepository : IAvChannelPolicyOptionsRepository
 {
     private readonly IAppCache appCache;
     private readonly CacheSettings cacheSettings;
     private readonly IEngineClient engineClient;
 
-    public AvPolicyOptionsRepository(IAppCache appCache, IOptions<CacheSettings> cacheOptions, IEngineClient engineClient)
+    public AvChannelPolicyOptionsRepository(IAppCache appCache, IOptions<CacheSettings> cacheOptions, IEngineClient engineClient)
     {
         this.appCache = appCache;
         cacheSettings = cacheOptions.Value;

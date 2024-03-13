@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace DLCS.Model.DeliveryChannels;
 
-public interface IAvPolicyOptionsRepository
+public interface IAvChannelPolicyOptionsRepository
 {
     public Task<IReadOnlyCollection<string>?> RetrieveAvChannelPolicyOptions();
 }
