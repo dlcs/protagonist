@@ -68,7 +68,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const string newDeliveryChannelPolicyJson = @"{
             ""name"": ""my-iiif-av-policy-1"",
             ""displayName"": ""My IIIF AV Policy"",
-            ""policyData"": ""[\""audio-mp3-128\""]""
+            ""policyData"": ""[\""video-mp4-480p\""]""
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
@@ -84,7 +84,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             s.Customer == customerId &&
             s.Name == "my-iiif-av-policy-1");
         foundPolicy.DisplayName.Should().Be("My IIIF AV Policy");
-        foundPolicy.PolicyData.Should().Be("[\"audio-mp3-128\"]");
+        foundPolicy.PolicyData.Should().Be("[\"video-mp4-480p\"]");
     }
     
     [Fact]
@@ -146,7 +146,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const string newDeliveryChannelPolicyJson = @"{
             ""name"": ""foo bar"",
             ""displayName"": ""Invalid Policy"",
-            ""policyData"": ""[\""audio-mp3-128\""]""
+            ""policyData"": ""[\""not-a-transcode-policy\""]""
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
@@ -218,7 +218,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const int customerId = 88;
         const string putDeliveryChannelPolicyJson = @"{
             ""displayName"": ""My IIIF AV Policy 2 (modified)"",
-            ""policyData"": ""[\""audio-mp3-256\""]""
+            ""policyData"": ""[\""video-mp4-480p\""]""
         }";
         
         var policy = new DLCS.Model.Policies.DeliveryChannelPolicy()
@@ -227,7 +227,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             Name = "put-av-policy-2",
             DisplayName = "My IIIF-AV Policy 2",
             Channel = "iiif-av",
-            PolicyData = "[\"audio-mp3-128\"]"
+            PolicyData = "[\"video-webm-720p\"]"
         };
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/{policy.Channel}/{policy.Name}";
@@ -246,7 +246,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             s.Customer == customerId && 
             s.Name == policy.Name);
         foundPolicy.DisplayName.Should().Be("My IIIF AV Policy 2 (modified)");
-        foundPolicy.PolicyData.Should().Be("[\"audio-mp3-256\"]");
+        foundPolicy.PolicyData.Should().Be("[\"video-mp4-480p\"]");
     }
     
     [Fact]
@@ -368,7 +368,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const int customerId = 88;
         const string patchDeliveryChannelPolicyJson = @"{
             ""displayName"": ""My IIIF AV Policy 3 (modified)"",
-            ""policyData"": ""[\""audio-mp3-256\""]""
+            ""policyData"": ""[\""video-webm-720p\""]""
         }";
         
         var policy = new DLCS.Model.Policies.DeliveryChannelPolicy()
@@ -377,7 +377,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             Name = "put-av-policy",
             DisplayName = "My IIIF-AV Policy 3",
             Channel = "iiif-av",
-            PolicyData = "[\"audio-mp3-128\"]"
+            PolicyData = "[\"video-mp4-480p\"]"
         };
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/{policy.Channel}/{policy.Name}";
@@ -396,7 +396,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             s.Customer == customerId && 
             s.Name == policy.Name);
         foundPolicy.DisplayName.Should().Be("My IIIF AV Policy 3 (modified)");
-        foundPolicy.PolicyData.Should().Be("[\"audio-mp3-256\"]");
+        foundPolicy.PolicyData.Should().Be("[\"video-webm-720p\"]");
     }
     
     [Theory]

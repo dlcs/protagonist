@@ -178,15 +178,6 @@ public class EngineClientTests
             Roles = string.Empty
         });
     }
-
-    [Fact]
-    public async Task GetAllowedAvOptions_ReturnsListOfPolicies()
-    {
-        var sut = GetSut(false);
-        var avOptions = await sut.GetAllowedAvOptions();
-
-        avOptions.Should().NotBeNull();
-    }
     
     private EngineClient GetSut(bool useLegacyMessageFormat)
     {
