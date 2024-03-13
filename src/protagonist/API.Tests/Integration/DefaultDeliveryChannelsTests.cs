@@ -65,7 +65,7 @@ public class DefaultDeliveryChannelsTests : IClassFixture<ProtagonistAppFactory<
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         data.MediaType.Should().Be(mediaType);
-        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{defaultDeliveryChannel.Id.ToString()}");
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{defaultDeliveryChannel.Id}");
     }
     
     [Fact]
@@ -145,7 +145,7 @@ public class DefaultDeliveryChannelsTests : IClassFixture<ProtagonistAppFactory<
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         data.MediaType.Should().Be(mediaType);
-        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{dbEntry.Id.ToString()}");
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{dbEntry.Id}");
         dbEntry.DeliveryChannelPolicyId.Should().Be(policy.Id);
     }
     
@@ -305,7 +305,7 @@ public class DefaultDeliveryChannelsTests : IClassFixture<ProtagonistAppFactory<
         
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         data.MediaType.Should().Be(mediaType);
-        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{dbEntry.Id.ToString()}");
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{dbEntry.Id}");
         modifiedDbEntry.DeliveryChannelPolicy.Name.Should().Be(policyName.Split("/", StringSplitOptions.None).Last());
     }
     
@@ -317,7 +317,7 @@ public class DefaultDeliveryChannelsTests : IClassFixture<ProtagonistAppFactory<
     {
         // Arrange
         const int customerId = 1;
-        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid().ToString()}";
+        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid()}";
 
         string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
         {
@@ -339,7 +339,7 @@ public class DefaultDeliveryChannelsTests : IClassFixture<ProtagonistAppFactory<
     {
         // Arrange
         const int customerId = 1;
-        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid().ToString()}";
+        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid()}";
 
         string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
         {
@@ -361,7 +361,7 @@ public class DefaultDeliveryChannelsTests : IClassFixture<ProtagonistAppFactory<
     {
         // Arrange
         const int customerId = 1;
-        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid().ToString()}";
+        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid()}";
 
         string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
         {
@@ -561,7 +561,7 @@ public class DefaultDeliveryChannelsTests : IClassFixture<ProtagonistAppFactory<
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         data.MediaType.Should().Be(mediaType);
-        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/spaces/{space}/defaultDeliveryChannels/{dbEntry.Entity.Id.ToString()}");
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/spaces/{space}/defaultDeliveryChannels/{dbEntry.Entity.Id}");
     }
     
     [Fact]
@@ -669,7 +669,7 @@ public class DefaultDeliveryChannelsTests : IClassFixture<ProtagonistAppFactory<
         
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         data.MediaType.Should().Be(mediaType);
-        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/spaces/{space}/defaultDeliveryChannels/{dbEntry.Entity.Id.ToString()}");
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/spaces/{space}/defaultDeliveryChannels/{dbEntry.Entity.Id}");
         modifiedDbEntry.DeliveryChannelPolicy.Name.Should().Be(policyName.Split("/").Last());
     }
     
