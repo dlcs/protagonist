@@ -19,12 +19,12 @@ namespace API.Tests.Integration;
 
 [Trait("Category", "Integration")]
 [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
-public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppFactory<Startup>>
+public class DefaultDeliveryChannelsTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly HttpClient httpClient;
     private readonly DlcsContext dlcsContext;
 
-    public CustomerDefaultDeliveryChannelsTest(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
+    public DefaultDeliveryChannelsTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
         dlcsContext = dbFixture.DbContext;
         httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
@@ -65,7 +65,35 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         data.MediaType.Should().Be(mediaType);
-        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{defaultDeliveryChannel.Id.ToString()}");
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{defaultDeliveryChannel.Id}");
+    }
+    
+    [Fact]
+    public async Task Get_RetrieveADefaultDeliveryChannelForDifferentCustomer_404()
+    {
+        // Arrange
+        const int defaultCustomer = 1;
+        
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""api-test-customer-default"",
+  ""displayName"": ""My New Customer""
+}";
+        var customerContent = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+        var customerResponse = await httpClient.AsAdmin().PostAsync("/customers", customerContent);
+        var customerData = await customerResponse.ReadAsHydraResponseAsync<Customer>();
+        var customerId = int.Parse(customerData.Id!.Split('/').Last());
+        var mediaType = "audio/*";
+
+        var defaultDeliveryChannel = dlcsContext.DefaultDeliveryChannels.First(d => d.Customer == defaultCustomer && d.MediaType == mediaType);
+        
+        var path = $"customers/{customerId}/defaultDeliveryChannels/{defaultDeliveryChannel.Id}";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
     
     [Fact]
@@ -130,9 +158,6 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         // Act
         var content = new StringContent(newDefaultDeliveryChannelJson, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
-
-        var test = await response.Content.ReadAsStringAsync();
-        
         var data = await response.ReadAsHydraResponseAsync<DefaultDeliveryChannel>();
 
         var dbEntry =
@@ -148,7 +173,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         data.MediaType.Should().Be(mediaType);
-        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{dbEntry.Id.ToString()}");
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{dbEntry.Id}");
         dbEntry.DeliveryChannelPolicyId.Should().Be(policy.Id);
     }
     
@@ -308,7 +333,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
         
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         data.MediaType.Should().Be(mediaType);
-        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{dbEntry.Id.ToString()}");
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/defaultDeliveryChannels/{dbEntry.Id}");
         modifiedDbEntry.DeliveryChannelPolicy.Name.Should().Be(policyName.Split("/", StringSplitOptions.None).Last());
     }
     
@@ -320,7 +345,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
     {
         // Arrange
         const int customerId = 1;
-        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid().ToString()}";
+        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid()}";
 
         string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
         {
@@ -342,7 +367,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
     {
         // Arrange
         const int customerId = 1;
-        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid().ToString()}";
+        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid()}";
 
         string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
         {
@@ -364,7 +389,7 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
     {
         // Arrange
         const int customerId = 1;
-        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid().ToString()}";
+        var path = $"customers/{customerId}/defaultDeliveryChannels/{Guid.NewGuid()}";
 
         string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
         {
@@ -508,5 +533,213 @@ public class CustomerDefaultDeliveryChannelsTest : IClassFixture<ProtagonistAppF
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_RetrieveAllDefaultDeliveryChannelsForCustomerAndSpace_DoesNotRetrieveDevaultValues_200()
+    {
+        // Arrange
+        const int customerId = 1;
+        const int space = 5;
+        var path = $"customers/{customerId}/spaces/{space}/defaultDeliveryChannels";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).GetAsync(path);
+        var data = await response.ReadAsHydraResponseAsync<HydraCollection<DefaultDeliveryChannel>>();
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        data.Members.Count().Should().Be(0);
+    }
+    
+    [Fact]
+    public async Task Get_RetrieveADefaultDeliveryChannelForCustomerWithSpace_200()
+    {
+        // Arrange
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""api-test-customer-space-2"",
+  ""displayName"": ""My New Customer""
+}";
+        var customerContent = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+        var customerResponse = await httpClient.AsAdmin().PostAsync("/customers", customerContent);
+        var customerData = await customerResponse.ReadAsHydraResponseAsync<Customer>();
+        var customerId = int.Parse(customerData.Id!.Split('/').Last());
+        var mediaType = "audio/mp3";
+        const int space = 5;
+
+        var deliveryChannelPolicy = dlcsContext.DeliveryChannelPolicies.First(d => d.Customer == customerId &&
+            d.Name == "default-audio");
+        
+        var dbEntry = dlcsContext.DefaultDeliveryChannels.Add(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel()
+        {
+            Customer = customerId,
+            MediaType = mediaType,
+            DeliveryChannelPolicyId = deliveryChannelPolicy.Id,
+            Space = space
+        });
+        await dlcsContext.SaveChangesAsync();
+
+        var path = $"customers/{customerId}/spaces/{space}/defaultDeliveryChannels/{dbEntry.Entity.Id}";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).GetAsync(path);
+        var data = await response.ReadAsHydraResponseAsync<DefaultDeliveryChannel>();
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        data.MediaType.Should().Be(mediaType);
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/spaces/{space}/defaultDeliveryChannels/{dbEntry.Entity.Id}");
+    }
+    
+    [Fact]
+    public async Task Post_CreatesDefaultDeliveryChannelsSpaceNotAvailableInCustomer_200()
+    {
+        // Arrange
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""api-test-customer-space"",
+  ""displayName"": ""My New Customer""
+}";
+        var customerContent = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+        
+        var customerResponse = await httpClient.AsAdmin().PostAsync("/customers", customerContent);
+        var customerData = await customerResponse.ReadAsHydraResponseAsync<Customer>();
+        var customerId = int.Parse(customerData.Id!.Split('/').Last());
+        const int space = 5;
+        var path = $"customers/{customerId}/spaces/{space}/defaultDeliveryChannels";
+
+        string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
+        {
+            MediaType = "image/tiff",
+            Policy = "default",
+            Channel = "iiif-img"
+        });
+        
+        // Act
+        var content = new StringContent(newDefaultDeliveryChannelJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        var data = await response.ReadAsHydraResponseAsync<DefaultDeliveryChannel>();
+
+        var dbEntry =
+            dlcsContext.DefaultDeliveryChannels.Include(d => d.DeliveryChannelPolicy)
+                .Single(d => d.Customer == customerId &&
+                             d.MediaType == "image/tiff" &&
+                             d.DeliveryChannelPolicy.Channel == "iiif-img" &&
+                             d.Space == space);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        data.MediaType.Should().Be("image/tiff");
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/spaces/{space}/defaultDeliveryChannels/{dbEntry.Id}");
+        dbEntry.DeliveryChannelPolicy.Name.Should().Be("default");
+
+        var retrievalFromCustomer = await httpClient.AsCustomer(customerId)
+            .GetAsync($"customers/spaces/{space}/defaultDeliveryChannels/{dbEntry.Id}");
+
+        retrievalFromCustomer.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Theory]
+    [InlineData("audio/mp3", "audio/*", "https://api.dlcs.io/customers/2/deliveryChannelPolicies/iiif-av/default-audio", "iiif-av")]
+    [InlineData("video/mp4", "video/*", "default-video", "iiif-av")]
+    [InlineData("image/tiff", "image/*", "default", "iiif-img")]
+    [InlineData("image/*", "image/*", "use-original", "iiif-img")]
+    public async Task Put_UpdatesDefaultDeliveryChannelForCustomerInSpace_200(string mediaType, string initialMediaType, string policyName, string channel)
+    {
+        // Arrange
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""api-test-customer-space-2"",
+  ""displayName"": ""My New Customer""
+}";
+        var customerContent = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+        var customerResponse = await httpClient.AsAdmin().PostAsync("/customers", customerContent);
+        var customerData = await customerResponse.ReadAsHydraResponseAsync<Customer>();
+        var customerId = int.Parse(customerData.Id!.Split('/').Last());
+        const int space = 5;
+
+        var deliveryChannelPolicy = dlcsContext.DeliveryChannelPolicies.First(d => (d.Customer == customerId &&
+            d.Name == policyName.Split("/", StringSplitOptions.None).Last()) || (d.Customer == 1 &&
+            d.Name == policyName.Split("/", StringSplitOptions.None).Last()));
+        
+        var dbEntry = dlcsContext.DefaultDeliveryChannels.Add(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel()
+        {
+            Customer = customerId,
+            MediaType = mediaType,
+            DeliveryChannelPolicyId = deliveryChannelPolicy.Id,
+            Space = space
+        });
+
+        await dlcsContext.SaveChangesAsync();
+        
+        var path = $"customers/{customerId}/spaces/{space}/defaultDeliveryChannels/{dbEntry.Entity.Id}";
+
+        string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
+        {
+            MediaType = mediaType,
+            Policy = policyName,
+            Channel = channel
+        });
+        
+        // Act
+        var content = new StringContent(newDefaultDeliveryChannelJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+
+        // Assert
+        var data = await response.ReadAsHydraResponseAsync<DefaultDeliveryChannel>();
+        
+        var modifiedDbEntry =
+            dlcsContext.DefaultDeliveryChannels .Include(d => d.DeliveryChannelPolicy)
+                .Single(d => d.Customer == customerId && 
+                             d.MediaType == mediaType && d.DeliveryChannelPolicy.Channel == channel && d.Space == space);
+        
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        data.MediaType.Should().Be(mediaType);
+        data.Id.Should().Be($"{httpClient.BaseAddress}customers/{customerId}/spaces/{space}/defaultDeliveryChannels/{dbEntry.Entity.Id}");
+        modifiedDbEntry.DeliveryChannelPolicy.Name.Should().Be(policyName.Split("/").Last());
+    }
+    
+    [Fact]
+    public async Task Delete_DeleteADefaultDeliveryChannelForCustomerAndSpace_200()
+    {
+        // Arrange
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""api-test-customer-space-3"",
+  ""displayName"": ""My New Customer""
+}";
+        var customerContent = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+        var customerResponse = await httpClient.AsAdmin().PostAsync("/customers", customerContent);
+        var customerData = await customerResponse.ReadAsHydraResponseAsync<Customer>();
+        var customerId = int.Parse(customerData.Id!.Split('/').Last());
+        
+        var mediaType = "audio/mp3";
+        const int space = 5;
+
+        var deliveryChannelPolicy = dlcsContext.DeliveryChannelPolicies.First(d => d.Customer == customerId &&
+            d.Name == "default-audio");
+        
+        var dbEntry = dlcsContext.DefaultDeliveryChannels.Add(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel()
+        {
+            Customer = customerId,
+            MediaType = mediaType,
+            DeliveryChannelPolicyId = deliveryChannelPolicy.Id,
+            Space = space
+        });
+        await dlcsContext.SaveChangesAsync();
+        
+        var path = $"customers/{customerId}/spaces/{space}/defaultDeliveryChannels/{dbEntry.Entity.Id}";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).DeleteAsync(path);
+
+        var defaultDeliveryChannelAfterDelete = dlcsContext.DefaultDeliveryChannels.FirstOrDefault(d => 
+            d.Customer == customerId && d.MediaType == mediaType && d.Space == space);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        defaultDeliveryChannelAfterDelete.Should().BeNull();
     }
 }
