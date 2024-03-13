@@ -14,14 +14,14 @@ namespace DLCS.Repository.Messaging;
 /// </summary>
 internal static class LegacyJsonMessageHelpers
 {
-    public static async Task<string> GetLegacyJsonString(IngestAssetRequest ingestAssetRequest, bool derivativesOnly)
+    public static async Task<string> GetLegacyJsonString(Asset asset, bool derivativesOnly)
     {
         var stringParams = new Dictionary<string, string>
         {
-            ["id"] = ingestAssetRequest.Asset.Id.ToString(),
-            ["customer"] = ingestAssetRequest.Asset.Customer.ToString(),
-            ["space"] = ingestAssetRequest.Asset.Space.ToString(),
-            ["image"] = AsJsonStringForMessaging(ingestAssetRequest.Asset)
+            ["id"] = asset.Id.ToString(),
+            ["customer"] = asset.Customer.ToString(),
+            ["space"] = asset.Space.ToString(),
+            ["image"] = AsJsonStringForMessaging(asset)
         };
 
         // we'll never set initialorigin in our limited first port of this

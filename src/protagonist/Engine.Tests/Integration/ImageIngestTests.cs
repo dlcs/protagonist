@@ -94,7 +94,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         // Act
         var jsonContent =
@@ -150,7 +150,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customerId, sizeOfStored: 950,
             storagePolicy: "medium");
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         // Act
         var jsonContent =
@@ -192,7 +192,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels = imageDeliveryChannels;
         await dbContext.SaveChangesAsync();
         
-        var message = new IngestAssetRequest(entity.Entity, DateTime.UtcNow);
+        var message = new IngestAssetRequest(entity.Entity.Id, DateTime.UtcNow);
 
         // Act
         var jsonContent =
@@ -246,7 +246,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customerId, sizeOfStored: 99,
             storagePolicy: "small");
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         // Act
         var jsonContent =
@@ -294,7 +294,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customerId, sizeOfStored: 950,
             storagePolicy: "medium");
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         // Act
         var jsonContent =
@@ -335,7 +335,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         // Act
         var jsonContent =

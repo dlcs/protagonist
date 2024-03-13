@@ -80,7 +80,7 @@ public class LegacyIngestEventConverterTests
         var result = request.ConvertToAssetRequest();
 
         // Assert
-        result.Asset.Should().BeEquivalentTo(expected);
+        result.Id.Should().BeEquivalentTo(expected.Id);
     }
 
     private LegacyIngestEvent Create(Dictionary<string, string> paramsDict)

@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json.Serialization;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 
 namespace DLCS.Model.Messaging;
@@ -17,17 +18,17 @@ public class IngestAssetRequest
     /// <summary>
     /// Get Asset to be ingested.
     /// </summary>
-    public Asset Asset { get; }
+    public AssetId Id { get; }
 
     [JsonConstructor]
-    public IngestAssetRequest(Asset asset, DateTime? created)
+    public IngestAssetRequest(AssetId id, DateTime? created)
     {
-        Asset = asset;
+        Id = id;
         Created = created;
     }
 
     public override string ToString()
     {
-        return $"IngestAssetRequest at {Created} for Asset {Asset.Id}";
+        return $"IngestAssetRequest at {Created} for Asset {Id}";
     }
 }

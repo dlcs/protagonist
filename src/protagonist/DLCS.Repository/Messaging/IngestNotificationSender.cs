@@ -34,8 +34,8 @@ public class IngestNotificationSender : IIngestNotificationSender
         await customerQueueRepository.IncrementSize(assetToIngest.Customer, QueueNames.Default,
             cancellationToken: cancellationToken);
         
-        var ingestAssetRequest = new IngestAssetRequest(assetToIngest, DateTime.UtcNow);
-        var success = await engineClient.AsynchronousIngest(ingestAssetRequest, cancellationToken);
+        var ingestAssetRequest = new IngestAssetRequest(assetToIngest.Id, DateTime.UtcNow);
+        var success = await engineClient.AsynchronousIngest(ingestAssetRequest, assetToIngest, cancellationToken);
         
         if (!success)
         {
@@ -59,7 +59,7 @@ public class IngestNotificationSender : IIngestNotificationSender
         var customerId = assets[0].Customer;
         await customerQueueRepository.IncrementSize(customerId, queue, assets.Count, cancellationToken);
         
-        var ingestAssetRequests = assets.Select(a => new IngestAssetRequest(a, DateTime.UtcNow)).ToList();
+        var ingestAssetRequests = assets.Select(a => (new IngestAssetRequest(a.Id, DateTime.UtcNow), a)).ToList();
         var sentCount = await engineClient.AsynchronousIngestBatch(ingestAssetRequests, isPriority, cancellationToken);
 
         if (sentCount != assets.Count)
@@ -77,8 +77,8 @@ public class IngestNotificationSender : IIngestNotificationSender
     public async Task<HttpStatusCode> SendImmediateIngestAssetRequest(Asset assetToIngest, bool derivativesOnly,
         CancellationToken cancellationToken = default)
     {
-        var ingestAssetRequest = new IngestAssetRequest(assetToIngest, DateTime.UtcNow);
-        var statusCode = await engineClient.SynchronousIngest(ingestAssetRequest, derivativesOnly, cancellationToken);
+        var ingestAssetRequest = new IngestAssetRequest(assetToIngest.Id, DateTime.UtcNow);
+        var statusCode = await engineClient.SynchronousIngest(ingestAssetRequest, assetToIngest, derivativesOnly, cancellationToken);
         return statusCode;
     }
 }

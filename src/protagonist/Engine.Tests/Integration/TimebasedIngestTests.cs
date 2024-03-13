@@ -92,7 +92,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
             imageDeliveryChannels: timebasedDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
                 A<string>._,
@@ -147,7 +147,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
             imageDeliveryChannels: timebasedDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
                 A<string>._,
@@ -213,7 +213,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
             imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
                 A<string>._,

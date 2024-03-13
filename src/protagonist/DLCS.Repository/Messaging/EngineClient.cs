@@ -11,8 +11,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.SQS;
 using DLCS.Core.Settings;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Repository.Assets;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -48,10 +50,10 @@ public class EngineClient : IEngineClient
         this.dlcsSettings = dlcsSettings.Value;
     }
     
-    public async Task<HttpStatusCode> SynchronousIngest(IngestAssetRequest ingestAssetRequest, 
+    public async Task<HttpStatusCode> SynchronousIngest(IngestAssetRequest ingestAssetRequest, Asset asset,
         bool derivativesOnly = false, CancellationToken cancellationToken = default)
     {
-        var jsonString = await GetJsonString(ingestAssetRequest, derivativesOnly);
+        var jsonString = await GetJsonString(ingestAssetRequest, asset, derivativesOnly);
         var content = new ByteArrayContent(Encoding.ASCII.GetBytes(jsonString));
 
         try
@@ -135,6 +137,8 @@ public class EngineClient : IEngineClient
 
         return overallSent;
     }
+    
+    private async Task<string> GetJsonString(IngestAssetRequest ingestAssetRequest, Asset asset, bool derivativesOnly)
 
     public async Task<IReadOnlyCollection<string>?> GetAllowedAvPolicyOptions(CancellationToken cancellationToken = default)
     {
@@ -157,20 +161,15 @@ public class EngineClient : IEngineClient
         // If running in legacy mode, the payload should contain the full Legacy JSON string
         if (dlcsSettings.UseLegacyEngineMessage)
         {
-            var legacyJson = await LegacyJsonMessageHelpers.GetLegacyJsonString(ingestAssetRequest, derivativesOnly);
+            var legacyJson = await LegacyJsonMessageHelpers.GetLegacyJsonString(asset, derivativesOnly);
             return legacyJson;
         }
         else
         {
             // Otherwise, it should contain only the Asset ID - for now, this is an Asset object containing just the ID
-            var jsonString = JsonSerializer.Serialize(GetMinimalIngestAssetRequest(ingestAssetRequest), SerializerOptions);
+            var jsonString = JsonSerializer.Serialize(ingestAssetRequest, SerializerOptions);
             return jsonString;
         }
-    }
-
-    private IngestAssetRequest GetMinimalIngestAssetRequest(IngestAssetRequest ingestAssetRequest)
-    {
-        return new IngestAssetRequest(new Asset(){ Id = ingestAssetRequest.Asset.Id }, ingestAssetRequest.Created);
     }
 }
 

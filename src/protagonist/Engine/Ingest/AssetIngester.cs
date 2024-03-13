@@ -64,7 +64,7 @@ public class AssetIngester : IAssetIngester
         catch (Exception e)
         {
             logger.LogError(e, "Exception ingesting IncomingIngest - {Message}", request.Message);
-            return Task.FromResult(new IngestResult(internalIngestRequest?.Asset, IngestResultStatus.Failed));
+            return Task.FromResult(new IngestResult(new Asset() { Id = internalIngestRequest?.Id}, IngestResultStatus.Failed));
         }
     }
 
@@ -74,11 +74,11 @@ public class AssetIngester : IAssetIngester
     /// <returns>Result of ingest operations</returns>
     public async Task<IngestResult> Ingest(IngestAssetRequest request, CancellationToken cancellationToken = default)
     {
-        var asset = await engineAssetRepository.GetAsset(request.Asset.Id, cancellationToken);
+        var asset = await engineAssetRepository.GetAsset(request.Id, cancellationToken);
 
         if (asset == null)
         {
-            logger.LogError("Could not find an asset for asset id {AssetId}", request.Asset.Id);
+            logger.LogError("Could not find an asset for asset id {AssetId}", request.Id);
             return new IngestResult(asset, IngestResultStatus.Failed);
         }
         

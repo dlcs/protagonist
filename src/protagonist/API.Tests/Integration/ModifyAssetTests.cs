@@ -85,7 +85,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), A<Asset>._, false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -140,7 +140,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), A<Asset>._, false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -184,7 +184,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), A<Asset>._, false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -241,7 +241,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), A<Asset>._, false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -361,7 +361,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), A<Asset>._, false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -383,7 +383,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), A<Asset>._, false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -412,7 +412,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), A<Asset>._, false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -450,7 +450,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), A<Asset>._, false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -487,7 +487,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId),
+                    A<Asset>._,
                     A<CancellationToken>._))
             .Returns(true);
         
@@ -518,7 +519,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId),  
+                    A<Asset>._, 
+                    false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -552,7 +555,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._,
+                    false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -584,7 +589,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._,
+                    false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.TooManyRequests);  // Random status to verify it filters down
         
@@ -609,7 +616,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
             EngineClient.SynchronousIngest(
-                A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                A<Asset>._,
+                false,
                 A<CancellationToken>._))
         .Returns(HttpStatusCode.OK);
         
@@ -644,7 +653,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId),
+                    A<Asset>._,
+        false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.InternalServerError);
         
@@ -674,7 +685,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId),
+                    A<Asset>._,
                     A<CancellationToken>._))
             .Returns(true);
         
@@ -708,7 +720,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._,
                     A<CancellationToken>._))
             .Returns(true);
         
@@ -741,7 +754,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._,
+                    false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -772,7 +787,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._,
                     A<CancellationToken>._))
             .Returns(false);
         
@@ -816,7 +832,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._,
+                    false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -846,7 +864,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._,
+                    false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -933,7 +953,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._,
+                    false,
                     A<CancellationToken>._))
             .MustNotHaveHappened();
         
@@ -959,7 +981,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId),
+                    A<Asset>._,
+                    false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -971,7 +995,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId),  
+                    A<Asset>._,
+                    false,
                     A<CancellationToken>._))
             .MustHaveHappened();
         
@@ -998,7 +1024,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._,
                     A<CancellationToken>._))
             .Returns(true);
 
@@ -1010,7 +1037,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), 
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._,
                     A<CancellationToken>._))
             .MustHaveHappened();
         
@@ -1041,7 +1069,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId),                     
+                    A<Asset>._,
+                    false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -1052,7 +1082,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._, 
+                    false,
                     A<CancellationToken>._))
             .MustHaveHappened();
         
@@ -1226,7 +1258,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // make a callback for engine
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._,
+                    false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -1244,7 +1278,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Engine was called during this process.
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId),  A<Asset>._, false,
                     A<CancellationToken>._))
             .MustHaveHappened();
         
@@ -1495,7 +1529,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._, 
+                    false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -1510,7 +1546,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Engine called
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._, 
+                    false,
                     A<CancellationToken>._))
             .MustHaveHappened();
 
@@ -1533,7 +1571,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._, 
+                    false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -1548,7 +1588,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Engine called
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._, 
+                    false,
                     A<CancellationToken>._))
             .MustHaveHappened();
 
@@ -1573,7 +1615,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), 
+                    A<Asset>._, 
+                    false,
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -1588,7 +1632,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Engine called
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId),
+                    A<Asset>._, 
+                    false,
                     A<CancellationToken>._))
             .MustHaveHappened();
 
@@ -1615,7 +1661,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<IngestAssetRequest>.That.Matches(r => r.Id == assetId), A<Asset>._, false,
                     A<CancellationToken>._))
             .Returns(engine);
 

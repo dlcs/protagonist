@@ -42,9 +42,9 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetId.FromString($"1/2/{ingestResult}");
-        var message = new IngestAssetRequest(new Asset(assetId), DateTime.UtcNow);
+        var message = new IngestAssetRequest(assetId, DateTime.UtcNow);
         A.CallTo(() =>
-            assetIngester.Ingest(A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+            assetIngester.Ingest(A<IngestAssetRequest>.That.Matches(r => r.Id == assetId),
                 A<CancellationToken>._)).Returns(new IngestResult(null, ingestResult));
 
         // Act
@@ -95,9 +95,9 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetId.FromString($"1/2/{ingestResult}");
-        var message = new IngestAssetRequest(new Asset(assetId), DateTime.UtcNow);
+        var message = new IngestAssetRequest(assetId, DateTime.UtcNow);
         A.CallTo(() =>
-            assetIngester.Ingest(A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+            assetIngester.Ingest(A<IngestAssetRequest>.That.Matches(r => r.Id == assetId),
                 A<CancellationToken>._)).Returns(new IngestResult(null, ingestResult));
 
         // Act
