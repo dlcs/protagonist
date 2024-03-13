@@ -38,5 +38,7 @@ public class DlcsSettings
     /// </summary>
     public bool UseLegacyEngineMessage { get; set; }
     
-    public Uri EngineDirectIngestUri { get; set; }
+    public Uri EngineDirectIngestUri { get; set; } 
+    
+    public Uri EngineAvOptionsUri { get; set; }
 }

@@ -36,4 +36,6 @@ public interface IEngineClient
     /// <returns>Count of items successfully processed</returns>
     Task<int> AsynchronousIngestBatch(IReadOnlyCollection<IngestAssetRequest> ingestAssetRequests,
         bool isPriority, CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<string>> GetAllowedAvOptions(CancellationToken cancellationToken = default);
 }

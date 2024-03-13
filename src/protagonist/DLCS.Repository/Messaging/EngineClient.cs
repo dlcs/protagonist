@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -11,6 +13,7 @@ using DLCS.AWS.SQS;
 using DLCS.Core.Settings;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using IIIF.ImageApi.V3;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -134,6 +137,23 @@ public class EngineClient : IEngineClient
         return overallSent;
     }
 
+    public async Task<IReadOnlyCollection<string>> GetAllowedAvOptions(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync(dlcsSettings.EngineAvOptionsUri, cancellationToken);
+            var avOptions = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<string>>(
+                cancellationToken: cancellationToken);
+            return avOptions;
+        }
+        catch(Exception ex)
+        {
+            logger.LogError("Failed to retrieve allowed iiif-av policy options", ex);
+        }
+
+        return null;
+    }
+    
     private async Task<string> GetJsonString(IngestAssetRequest ingestAssetRequest, bool derivativesOnly)
     {
         // If running in legacy mode, the payload should contain the full Legacy JSON string
@@ -149,7 +169,7 @@ public class EngineClient : IEngineClient
             return jsonString;
         }
     }
-
+    
     public IngestAssetRequest GetMinimalIngestAssetRequest(IngestAssetRequest ingestAssetRequest)
     {
         return new IngestAssetRequest(new Asset(){ Id = ingestAssetRequest.Asset.Id }, ingestAssetRequest.Created);

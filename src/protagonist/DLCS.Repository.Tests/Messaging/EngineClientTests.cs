@@ -179,11 +179,21 @@ public class EngineClientTests
         });
     }
 
+    [Fact]
+    public async Task GetAllowedAvOptions_ReturnsListOfPolicies()
+    {
+        var sut = GetSut(false);
+        var avOptions = await sut.GetAllowedAvOptions();
+
+        avOptions.Should().NotBeNull();
+    }
+    
     private EngineClient GetSut(bool useLegacyMessageFormat)
     {
         var options = Options.Create(new DlcsSettings
         {
             EngineDirectIngestUri = new Uri("http://engine.dlcs/ingest"),
+            EngineAvOptionsUri = new Uri("http://engine.dlcs/allowed-av"),
             UseLegacyEngineMessage = useLegacyMessageFormat
         });
 
