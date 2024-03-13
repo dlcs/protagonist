@@ -8,14 +8,17 @@ namespace API.Features.DeliveryChannels.Requests.DefaultDeliveryChannels;
 
 public class GetDefaultDeliveryChannel : IRequest<FetchEntityResult<DefaultDeliveryChannel>>
 {
-    public Guid DefaultDeliveryChannelId { get; }
+    public int Customer { get; }
     
     public int Space { get; }
     
-    public GetDefaultDeliveryChannel(Guid defaultDeliveryChannelId, int space)
+    public Guid DefaultDeliveryChannelId { get; }
+
+    public GetDefaultDeliveryChannel(int customer, int space, Guid defaultDeliveryChannelId)
     {
-        DefaultDeliveryChannelId = defaultDeliveryChannelId;
+        Customer = customer;
         Space = space;
+        DefaultDeliveryChannelId = defaultDeliveryChannelId;
     }
 }
 
@@ -36,6 +39,7 @@ public class GetDefaultDeliveryChannelHandler : IRequestHandler<GetDefaultDelive
             .Include(d => d.DeliveryChannelPolicy)
             .SingleOrDefaultAsync(d => 
                 d.Id == request.DefaultDeliveryChannelId && 
+                d.Customer == request.Customer &&
                 d.Space == request.Space,
                 cancellationToken);
 

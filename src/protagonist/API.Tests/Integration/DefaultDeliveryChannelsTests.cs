@@ -69,6 +69,34 @@ public class DefaultDeliveryChannelsTests : IClassFixture<ProtagonistAppFactory<
     }
     
     [Fact]
+    public async Task Get_RetrieveADefaultDeliveryChannelForDifferentCustomer_404()
+    {
+        // Arrange
+        const int defaultCustomer = 1;
+        
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""api-test-customer-default"",
+  ""displayName"": ""My New Customer""
+}";
+        var customerContent = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+        var customerResponse = await httpClient.AsAdmin().PostAsync("/customers", customerContent);
+        var customerData = await customerResponse.ReadAsHydraResponseAsync<Customer>();
+        var customerId = int.Parse(customerData.Id!.Split('/').Last());
+        var mediaType = "audio/*";
+
+        var defaultDeliveryChannel = dlcsContext.DefaultDeliveryChannels.First(d => d.Customer == defaultCustomer && d.MediaType == mediaType);
+        
+        var path = $"customers/{customerId}/defaultDeliveryChannels/{defaultDeliveryChannel.Id}";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
     public async Task Get_RetrieveANonExistentDefaultDeliveryChannelForCustomer_404()
     {
         // Arrange

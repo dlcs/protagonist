@@ -58,11 +58,15 @@ public class DefaultDeliveryChannelsController : HydraController
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetCustomerDefaultDeliveryChannel(
+        [FromRoute] int customerId,
         Guid defaultDeliveryChannelId,
         CancellationToken cancellationToken,
         [FromRoute] int space = 0)
     {
-        var getCustomerDefaultDeliveryChannel = new GetDefaultDeliveryChannel(defaultDeliveryChannelId, space);
+        var getCustomerDefaultDeliveryChannel = new GetDefaultDeliveryChannel(
+            customerId, 
+            space, 
+            defaultDeliveryChannelId);
 
         return await HandleFetch(
             getCustomerDefaultDeliveryChannel,
