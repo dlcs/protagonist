@@ -137,21 +137,20 @@ public class EngineClient : IEngineClient
         return overallSent;
     }
 
-    public async Task<IReadOnlyCollection<string>> GetAllowedAvOptions(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<string>?> GetAllowedAvPolicyOptions(CancellationToken cancellationToken = default)
     {
         try
         {
             var response = await httpClient.GetAsync(dlcsSettings.EngineAvOptionsUri, cancellationToken);
-            var avOptions = await response.Content.ReadFromJsonAsync<IReadOnlyCollection<string>>(
+            return await response.Content.ReadFromJsonAsync<IReadOnlyCollection<string>>(
                 cancellationToken: cancellationToken);
-            return avOptions;
+            
         }
         catch(Exception ex)
         {
-            logger.LogError("Failed to retrieve allowed iiif-av policy options", ex);
+            logger.LogError("Failed to retrieve allowed iiif-av policy options from Engine", ex);
+            return null;
         }
-
-        return null;
     }
     
     private async Task<string> GetJsonString(IngestAssetRequest ingestAssetRequest, bool derivativesOnly)

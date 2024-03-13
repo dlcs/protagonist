@@ -37,5 +37,5 @@ public interface IEngineClient
     Task<int> AsynchronousIngestBatch(IReadOnlyCollection<IngestAssetRequest> ingestAssetRequests,
         bool isPriority, CancellationToken cancellationToken);
 
-    Task<IReadOnlyCollection<string>> GetAllowedAvOptions(CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<string>?> GetAllowedAvPolicyOptions(CancellationToken cancellationToken = default);
 }

@@ -20,11 +20,11 @@ public class AvPolicyOptionsRepository : IAvPolicyOptionsRepository
         this.engineClient = engineClient;
     }
 
-    public async Task<IReadOnlyCollection<string>> RetrieveAvChannelPolicyOptions()
+    public async Task<IReadOnlyCollection<string>?> RetrieveAvChannelPolicyOptions()
     {
         const string key = "avChannelPolicyOptions";
         
-        return await appCache.GetOrAdd(key, () => engineClient.GetAllowedAvOptions(),
+        return await appCache.GetOrAdd(key, () => engineClient.GetAllowedAvPolicyOptions(),
             cacheSettings.GetMemoryCacheOptions(CacheDuration.Long)); 
     }
 }
