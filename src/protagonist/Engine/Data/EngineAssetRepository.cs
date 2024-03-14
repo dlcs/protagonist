@@ -161,20 +161,6 @@ public class EngineAssetRepository : IEngineAssetRepository
         {
             asset.MarkAsFinished();
         }
-
-        dlcsContext.Images.Attach(asset);
-        var entry = dlcsContext.Entry(asset);
-        entry.Property(p => p.Width).IsModified = true;
-        entry.Property(p => p.Height).IsModified = true;
-        entry.Property(p => p.Duration).IsModified = true;
-        entry.Property(p => p.Error).IsModified = true;
-        entry.Property(p => p.Ingesting).IsModified = true;
-        entry.Property(p => p.Finished).IsModified = true;
-
-        if (asset.MediaType.HasText() && asset.MediaType != "unknown")
-        {
-            entry.Property(p => p.MediaType).IsModified = true;
-        }
     }
 
     private Task<int> TryFinishBatch(int batchId, CancellationToken cancellationToken)
