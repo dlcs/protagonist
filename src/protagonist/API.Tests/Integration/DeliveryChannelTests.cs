@@ -3,12 +3,20 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
+using API.Infrastructure.Messaging;
 using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
 using DLCS.Repository;
+using DLCS.Repository.Messaging;
+using FakeItEasy;
 using Hydra.Collections;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Test.Helpers.Http;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 
@@ -18,13 +26,38 @@ namespace API.Tests.Integration;
 [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
 public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
+    private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
+    private readonly ControllableHttpMessageHandler httpHandler;
     private readonly HttpClient httpClient;
     private readonly DlcsContext dbContext;
+    private readonly string[] fakedAvPolicies =
+    {
+        "video-mp4-480p",
+        "video-webm-720p",
+        "audio-mp3-128k"
+    };
     
     public DeliveryChannelTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
         dbContext = dbFixture.DbContext;
-        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
+        httpHandler = new ControllableHttpMessageHandler();
+        httpClient = factory
+            .WithConnectionString(dbFixture.ConnectionString)
+            .WithTestServices(services =>
+            {
+                services.AddScoped<IEngineClient>(_ => EngineClient);
+                services.AddAuthentication("API-Test")
+                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
+                        "API-Test", _ => { });
+            })
+            .CreateClient(new WebApplicationFactoryClientOptions
+            {
+                AllowAutoRedirect = false
+            });
+        
+        A.CallTo(() => EngineClient.GetAllowedAvPolicyOptions(A<CancellationToken>._))
+            .Returns(fakedAvPolicies);
+        
         dbFixture.CleanUp();
     }
 
@@ -72,7 +105,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
-
+   
         // Act
         var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
