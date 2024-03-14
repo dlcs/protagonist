@@ -57,7 +57,7 @@ public class EngineClient : IEngineClient
 
         try
         {
-            var response = await httpClient.PostAsync("image-ingest", content, cancellationToken);
+            var response = await httpClient.PostAsync("asset-ingest", content, cancellationToken);
             return response.StatusCode;
         }
         catch (WebException ex)
