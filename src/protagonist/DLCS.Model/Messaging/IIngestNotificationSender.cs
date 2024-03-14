@@ -28,8 +28,8 @@ public interface IIngestNotificationSender
     /// <summary>
     /// Send an asset for immediate processing; the call blocks until complete.
     /// </summary>
-    /// <param name="derivativesOnly">If true, only derivatives (e.g. thumbs) will be created</param>
+    /// <param name="assetToIngest">The asset to ingest</param>
     /// <param name="cancellationToken">Current cancellationToken</param>
-    Task<HttpStatusCode> SendImmediateIngestAssetRequest(Asset assetToIngest, bool derivativesOnly,
+    Task<HttpStatusCode> SendImmediateIngestAssetRequest(Asset assetToIngest, 
         CancellationToken cancellationToken = default);
 }

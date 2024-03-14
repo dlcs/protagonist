@@ -174,7 +174,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
             {
                 // await call to engine, which processes synchronously (not a queue)
                 var statusCode =
-                    await ingestNotificationSender.SendImmediateIngestAssetRequest(asset, false,
+                    await ingestNotificationSender.SendImmediateIngestAssetRequest(asset,
                         cancellationToken);
                 var success = statusCode is HttpStatusCode.Created or HttpStatusCode.OK;
 

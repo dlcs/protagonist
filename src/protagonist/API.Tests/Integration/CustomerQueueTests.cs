@@ -800,7 +800,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<(IngestAssetRequest, Asset)>>._, false,
+                A<IReadOnlyCollection<Asset>>._, false,
                 A<CancellationToken>._)).Returns(3);
         
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -844,7 +844,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Items queued for processing
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<(IngestAssetRequest, Asset)>>.That.Matches(i => i.Count == 3), false,
+                A<IReadOnlyCollection<Asset>>.That.Matches(i => i.Count == 3), false,
                 A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -1026,7 +1026,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<(IngestAssetRequest, Asset)>>._, true,
+                A<IReadOnlyCollection<Asset>>._, true,
                 A<CancellationToken>._)).Returns(3);
         
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -1070,7 +1070,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Items queued for processing
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<(IngestAssetRequest, Asset)>>.That.Matches(i => i.Count == 4), true,
+                A<IReadOnlyCollection<Asset>>.That.Matches(i => i.Count == 4), true,
                 A<CancellationToken>._)).MustHaveHappened();
     }
     

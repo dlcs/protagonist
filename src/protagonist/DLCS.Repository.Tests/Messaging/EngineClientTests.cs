@@ -37,11 +37,11 @@ public class EngineClientTests
         queueSender = A.Fake<IQueueSender>();
     }
 
-    [Theory(Skip = "Requires legacy payloads which are obsolete")]
+    [Theory]
     [InlineData(AssetFamily.File, 'F')]
     [InlineData(AssetFamily.Image, 'I')]
     [InlineData(AssetFamily.Timebased, 'T')]
-    public async Task SynchronousIngest_CallsEngineWithLegacyModel_IfUseLegacyEngineMessageTrue(
+    public void SynchronousIngest_FailsToCallEngineWithLegacyModel_IfUseLegacyEngineMessageTrue(
         AssetFamily family, char expected)
     {
         // Arrange
@@ -49,29 +49,19 @@ public class EngineClientTests
         {
             Family = family
         };
-        
+
         var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
         HttpRequestMessage message = null;
         httpHandler.RegisterCallback(r => message = r);
         httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
 
         var sut = GetSut(true);
-        
-        // Act
-        var statusCode = await sut.SynchronousIngest(ingestRequest, asset);
-        
-        // Assert
-        statusCode.Should().Be(HttpStatusCode.OK);
-        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/image-ingest");
-        message.Method.Should().Be(HttpMethod.Post);
 
-        var body = await message.Content.ReadAsStringAsync();
-        var jObj = JObject.Parse(body);
-        jObj["_type"].Value<string>().Should().Be("event");
-        jObj["message"].Value<string>().Should().Be("event::image-ingest");
-        
-        // Validate Family enum sent as char, rather than int
-        JObject.Parse(jObj.SelectToken("params.image").Value<string>())["family"].Value<char>().Should().Be(expected);
+        // Act
+        Action action = () => sut.SynchronousIngest(asset).Wait();
+
+        // Assert
+        action.Should().Throw<InvalidOperationException>().WithMessage("Legacy ingest events are no longer supported");
     }
     
     [Fact]
@@ -94,11 +84,11 @@ public class EngineClientTests
         var sut = GetSut(false);
         
         // Act
-        var statusCode = await sut.SynchronousIngest(ingestRequest, asset);
+        var statusCode = await sut.SynchronousIngest(asset);
         
         // Assert
         statusCode.Should().Be(HttpStatusCode.OK);
-        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/asset-ingest");
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/ingest");
         message.Method.Should().Be(HttpMethod.Post);
 
         var jsonContents = await message.Content.ReadAsStringAsync();
@@ -111,8 +101,8 @@ public class EngineClientTests
         body.Id.Should().Be(ingestRequest.Id);
     }
     
-    [Fact(Skip = "Requires legacy payloads which are obsolete")]
-    public async Task AsynchronousIngest_QueuesMessageWithLegacyModel_IfUseLegacyEngineMessageTrue()
+    [Fact]
+    public void AsynchronousIngest_FailsToQueueLegacyModel_IfUseLegacyEngineMessageTrue()
     {
         // Arrange
         var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
@@ -130,12 +120,10 @@ public class EngineClientTests
             .Returns(true);
         
         // Act
-        await sut.AsynchronousIngest(ingestRequest, asset);
+        Action action = () => sut.AsynchronousIngest(asset).Wait();
         
         // Assert
-        var jObj = JObject.Parse(jsonString);
-        jObj["_type"].Value<string>().Should().Be("event");
-        jObj["message"].Value<string>().Should().Be("event::image-ingest");
+        action.Should().Throw<InvalidOperationException>().WithMessage("Legacy ingest events are no longer supported");
     }
     
     [Fact]
@@ -160,7 +148,7 @@ public class EngineClientTests
             .Returns(true);
 
         // Act
-        await sut.AsynchronousIngest(ingestRequest, asset);
+        await sut.AsynchronousIngest(asset);
         
         // Assert
         var body = JsonSerializer.Deserialize<IngestAssetRequest>(jsonString,

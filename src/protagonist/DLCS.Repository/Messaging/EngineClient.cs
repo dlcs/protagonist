@@ -11,10 +11,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.SQS;
 using DLCS.Core.Settings;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
-using DLCS.Repository.Assets;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -30,7 +28,7 @@ public class EngineClient : IEngineClient
     private readonly HttpClient httpClient;
     private readonly ILogger<EngineClient> logger;
     private readonly DlcsSettings dlcsSettings;
-    
+
     private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -80,18 +78,19 @@ public class EngineClient : IEngineClient
         }
         catch (TaskCanceledException)
         {
-            logger.LogError("Request to ingest {AssetId} cancelled", ingestAssetRequest.Asset.Id);
+            logger.LogError("Request to ingest {AssetId} cancelled", ingestAssetRequest.Id);
         }
 
         return HttpStatusCode.InternalServerError;
     }
 
-    public async Task<bool> AsynchronousIngest(IngestAssetRequest ingestAssetRequest, 
+    public async Task<bool> AsynchronousIngest(Asset asset,
         CancellationToken cancellationToken = default)
     {
-        var queueName = queueLookup.GetQueueNameForFamily(ingestAssetRequest.Asset.Family ?? new AssetFamily());
+        var queueName = queueLookup.GetQueueNameForFamily(asset.Family ?? new AssetFamily());
+        var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
         
-        var jsonString = await GetJsonString(ingestAssetRequest, false);
+        var jsonString = await GetJsonString(ingestAssetRequest);
         var success = await queueSender.QueueMessage(queueName, jsonString, cancellationToken);
 
         if (!success)
@@ -106,14 +105,15 @@ public class EngineClient : IEngineClient
         return success;
     }
 
-    public async Task<int> AsynchronousIngestBatch(IReadOnlyCollection<IngestAssetRequest> ingestAssetRequests,
+    public async Task<int> AsynchronousIngestBatch(IReadOnlyCollection<Asset> assets,
         bool isPriority, CancellationToken cancellationToken)
     {
         var overallSent = 0;
-        var batchId = (ingestAssetRequests.First().Asset.Batch ?? 0).ToString();
+        var batchId = (assets.First().Batch ?? 0).ToString();
         
         // Get a grouping of items in batch by Family - different families can use different queues 
-        var byFamily = ingestAssetRequests.GroupBy(a => a.Asset.Family);
+        var byFamily  = assets.GroupBy(a => a.Family);
+        
         foreach (var familyGrouping in byFamily)
         {
             logger.LogDebug("Sending '{Family}' notifications for {BatchId}", familyGrouping.Key, batchId);
@@ -121,9 +121,10 @@ public class EngineClient : IEngineClient
             var capacity = familyGrouping.Count();
             
             var jsonStrings = new List<string>(capacity);
-            foreach (IngestAssetRequest iar in familyGrouping)
+            foreach (var asset in familyGrouping.Select(a => a))
             {
-                jsonStrings.Add(await GetJsonString(iar, true));
+                var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+                jsonStrings.Add(await GetJsonString(ingestAssetRequest));
             }
 
             var sentCount = await queueSender.QueueMessages(queueName, jsonStrings, batchId, cancellationToken);
@@ -161,8 +162,7 @@ public class EngineClient : IEngineClient
         // If running in legacy mode, the payload should contain the full Legacy JSON string
         if (dlcsSettings.UseLegacyEngineMessage)
         {
-            var legacyJson = await LegacyJsonMessageHelpers.GetLegacyJsonString(asset, derivativesOnly);
-            return legacyJson;
+            throw new InvalidOperationException("Legacy ingest events are no longer supported");
         }
         else
         {
