@@ -11,20 +11,10 @@ namespace API.Tests.Features.DeliveryChannelPolicies.Validation;
 public class HydraDeliveryChannelPolicyValidatorTests
 {
     private readonly HydraDeliveryChannelPolicyValidator sut;
-    private readonly string[] fakedAvPolicies =
-    {
-        "video-mp4-480p",
-        "video-webm-720p",
-        "audio-mp3-128k"
-    };
     
     public HydraDeliveryChannelPolicyValidatorTests()
     {
-        var avChannelPolicyOptionsRepository = A.Fake<IAvChannelPolicyOptionsRepository>();
-        A.CallTo(() => avChannelPolicyOptionsRepository.RetrieveAvChannelPolicyOptions())
-            .Returns(fakedAvPolicies);
-        sut = new HydraDeliveryChannelPolicyValidator(
-            new DeliveryChannelPolicyDataValidator(avChannelPolicyOptionsRepository));
+        sut = new HydraDeliveryChannelPolicyValidator();
     }
     
     [Fact]
@@ -102,32 +92,5 @@ public class HydraDeliveryChannelPolicyValidatorTests
         };
         var result = sut.TestValidate(policy, p => p.IncludeRuleSets("default", "put"));
         result.ShouldHaveValidationErrorFor(p => p.PolicyData);
-    }
-    
-    [Fact]
-    public async void NewDeliveryChannelPolicy_Requires_ValidTranscodePolicy_ForAvChannel()
-    {
-        var policy = new DeliveryChannelPolicy()
-        {
-            Channel = AssetDeliveryChannels.Timebased,
-            PolicyData = "[\"not-a-transcode-policy\"]"
-        };
-        var result = await sut.TestValidateAsync(policy);
-        result.ShouldHaveValidationErrorFor(p => p.PolicyData);
-    }
-    
-    [Theory]
-    [InlineData("[\"video-mp4-480p\"]")]
-    [InlineData("[\"video-webm-720p\"]")]
-    [InlineData("[\"audio-mp3-128k\"]")]
-    public async void NewDeliveryChannelPolicy_Accepts_ValidTranscodePolicy_ForAvChannel(string policyData)
-    {
-        var policy = new DeliveryChannelPolicy()
-        {
-            Channel = AssetDeliveryChannels.Timebased,
-            PolicyData = policyData
-        };
-        var result = await sut.TestValidateAsync(policy);
-        result.ShouldNotHaveValidationErrorFor(p => p.PolicyData);
     }
 }

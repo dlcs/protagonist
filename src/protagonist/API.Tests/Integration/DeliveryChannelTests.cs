@@ -266,6 +266,31 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Fact]
+    public async Task Post_DeliveryChannelPolicy_500_IfEngineAvPolicyEndpointUnreachable()
+    {
+        // Arrange
+        const int customerId = 88;
+        const string newDeliveryChannelPolicyJson = @"{
+            ""name"": ""my-iiif-av-policy-1"",
+            ""displayName"": ""My IIIF AV Policy"",
+            ""policyData"": ""[\""video-mp4-480p\""]""
+        }";
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
+        
+        string[] nullAvPolicies = null;
+        A.CallTo(() => EngineClient.GetAllowedAvPolicyOptions(A<CancellationToken>._))
+            .Returns(nullAvPolicies);
+        
+        // Act
+        var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+    }
+    
+    [Fact]
     public async Task Put_DeliveryChannelPolicy_200()
     {
         // Arrange
@@ -416,6 +441,30 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Fact]
+    public async Task Put_DeliveryChannelPolicy_500_IfEngineAvPolicyEndpointUnreachable()
+    {
+        // Arrange
+        const int customerId = 88;
+        const string putDeliveryChannelPolicyJson = @"{
+            ""displayName"": ""My IIIF AV Policy 2 (modified)"",
+            ""policyData"": ""[\""video-mp4-480p\""]""
+        }";
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av/return-500-policy";
+
+        string[] nullAvPolicies = null;
+        A.CallTo(() => EngineClient.GetAllowedAvPolicyOptions(A<CancellationToken>._))
+            .Returns(nullAvPolicies);
+        
+        // Act
+        var content = new StringContent(putDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PatchAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+    }
+    
+    [Fact]
     public async Task Patch_DeliveryChannelPolicy_201()
     {
         // Arrange
@@ -519,6 +568,30 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Patch_DeliveryChannelPolicy_500_IfEngineAvPolicyEndpointUnreachable()
+    {
+        // Arrange
+        const int customerId = 88;
+        const string putDeliveryChannelPolicyJson = @"{
+            ""displayName"": ""My IIIF AV Policy 2 (modified)"",
+            ""policyData"": ""[\""video-mp4-480p\""]""
+        }";
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av/return-500-policy";
+
+        string[] nullAvPolicies = null;
+        A.CallTo(() => EngineClient.GetAllowedAvPolicyOptions(A<CancellationToken>._))
+            .Returns(nullAvPolicies);
+        
+        // Act
+        var content = new StringContent(putDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }
     
     [Fact]

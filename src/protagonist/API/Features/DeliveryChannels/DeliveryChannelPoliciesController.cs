@@ -22,11 +22,14 @@ namespace API.Features.DeliveryChannels;
 [ApiController]
 public class DeliveryChannelPoliciesController : HydraController
 {
+    private readonly DeliveryChannelPolicyDataValidator policyDataValidator;
+
     public DeliveryChannelPoliciesController(
         IMediator mediator,
-        IOptions<ApiSettings> options) : base(options.Value, mediator)
+        IOptions<ApiSettings> options,
+        DeliveryChannelPolicyDataValidator policyDataValidator) : base(options.Value, mediator)
     {
-        
+        this.policyDataValidator = policyDataValidator;
     }
     
     /// <summary>
@@ -101,22 +104,29 @@ public class DeliveryChannelPoliciesController : HydraController
     [Route("{deliveryChannelName}")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PostDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
         [FromBody] DeliveryChannelPolicy hydraDeliveryChannelPolicy,
-        [FromServices] HydraDeliveryChannelPolicyValidator validator,
+        [FromServices] HydraDeliveryChannelPolicyValidator deliveryChannelPolicyValidator,
         CancellationToken cancellationToken)
     {
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         
-        var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
+        var hydraDeliveryChannelValidationResult = await deliveryChannelPolicyValidator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "post"), cancellationToken);
-        if (!validationResult.IsValid)
+        if (!hydraDeliveryChannelValidationResult.IsValid)
         {
-            return this.ValidationFailed(validationResult);
+            return this.ValidationFailed(hydraDeliveryChannelValidationResult);
         }
         
+        var policyDataValidationResult = await ValidatePolicyData(hydraDeliveryChannelPolicy);
+        if (policyDataValidationResult != null)
+        {
+            return policyDataValidationResult;
+        }
+    
         hydraDeliveryChannelPolicy.CustomerId = customerId;
         var request = new CreateDeliveryChannelPolicy(customerId, hydraDeliveryChannelPolicy.ToDlcsModel());
         
@@ -168,22 +178,29 @@ public class DeliveryChannelPoliciesController : HydraController
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PutDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
         [FromRoute] string deliveryChannelPolicyName,
         [FromBody] DeliveryChannelPolicy hydraDeliveryChannelPolicy,
-        [FromServices] HydraDeliveryChannelPolicyValidator validator,
+        [FromServices] HydraDeliveryChannelPolicyValidator deliveryChannelPolicyValidator,
         CancellationToken cancellationToken)
     {
         hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         
-        var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
+        var hydraDeliveryChannelValidationResult = await deliveryChannelPolicyValidator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "put"), cancellationToken);
-        if (!validationResult.IsValid)
+        if (!hydraDeliveryChannelValidationResult.IsValid)
         {
-            return this.ValidationFailed(validationResult);
+            return this.ValidationFailed(hydraDeliveryChannelValidationResult);
+        }
+
+        var policyDataValidationResult = await ValidatePolicyData(hydraDeliveryChannelPolicy);
+        if (policyDataValidationResult != null)
+        {
+            return policyDataValidationResult;
         }
         
         hydraDeliveryChannelPolicy.CustomerId = customerId;
@@ -214,22 +231,29 @@ public class DeliveryChannelPoliciesController : HydraController
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PatchDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
         [FromRoute] string deliveryChannelPolicyName,
         [FromBody] DeliveryChannelPolicy hydraDeliveryChannelPolicy,
-        [FromServices] HydraDeliveryChannelPolicyValidator validator,
+        [FromServices] HydraDeliveryChannelPolicyValidator deliveryChannelPolicyValidator,
         CancellationToken cancellationToken)
     {
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
         
-        var validationResult = await validator.ValidateAsync(hydraDeliveryChannelPolicy, 
+        var hydraDeliveryChannelValidationResult = await deliveryChannelPolicyValidator.ValidateAsync(hydraDeliveryChannelPolicy, 
             policy => policy.IncludeRuleSets("default", "patch"), cancellationToken);
-        if (!validationResult.IsValid)
+        if (!hydraDeliveryChannelValidationResult.IsValid)
         {
-            return this.ValidationFailed(validationResult);
+            return this.ValidationFailed(hydraDeliveryChannelValidationResult);
+        }
+        
+        var policyDataValidationResult = await ValidatePolicyData(hydraDeliveryChannelPolicy);
+        if (policyDataValidationResult != null)
+        {
+            return policyDataValidationResult;
         }
         
         hydraDeliveryChannelPolicy.CustomerId = customerId;
@@ -261,5 +285,26 @@ public class DeliveryChannelPoliciesController : HydraController
             new DeleteDeliveryChannelPolicy(customerId, deliveryChannelName, deliveryChannelPolicyName);
 
         return await HandleDelete(deleteDeliveryChannelPolicy);
+    }
+
+    private async Task<ObjectResult?> ValidatePolicyData(DeliveryChannelPolicy hydraDeliveryChannelPolicy)
+    {
+        if (!string.IsNullOrEmpty(hydraDeliveryChannelPolicy.PolicyData))
+        {
+            var isValidPolicyData = await policyDataValidator.Validate(hydraDeliveryChannelPolicy.PolicyData!,
+                hydraDeliveryChannelPolicy.Channel!);
+
+            if (!isValidPolicyData.HasValue)
+            {
+                return this.HydraProblem("Failed to retrieve available transcode policies", null, 500);
+            }
+
+            if (!isValidPolicyData.Value)
+            {
+                return this.HydraProblem("'policyData' contains bad JSON or invalid data", null, 400);
+            }
+        }
+
+        return null;
     }
 }
