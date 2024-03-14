@@ -13,7 +13,6 @@ using DLCS.AWS.SQS;
 using DLCS.Core.Settings;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
-using IIIF.ImageApi.V3;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -29,7 +28,10 @@ public class EngineClient : IEngineClient
     private readonly HttpClient httpClient;
     private readonly ILogger<EngineClient> logger;
     private readonly DlcsSettings dlcsSettings;
-
+    
+    private const string EngineIngestEndpoint = "asset-ingest";
+    private const string LegacyEngineIngestEndpoint = "image-ingest";
+    
     private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -54,7 +56,9 @@ public class EngineClient : IEngineClient
     {
         var jsonString = await GetJsonString(ingestAssetRequest, derivativesOnly);
         var content = new ByteArrayContent(Encoding.ASCII.GetBytes(jsonString));
-        var ingestEndpoint = dlcsSettings.UseLegacyEngineMessage ? "image-ingest" : "asset-ingest";
+        var ingestEndpoint = dlcsSettings.UseLegacyEngineMessage 
+            ? LegacyEngineIngestEndpoint 
+            : EngineIngestEndpoint;
         
         try
         {
