@@ -179,7 +179,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const string newDeliveryChannelPolicyJson = @"{
             ""name"": ""foo bar"",
             ""displayName"": ""Invalid Policy"",
-            ""policyData"": ""[\""not-a-transcode-policy\""]""
+            ""policyData"": ""[\""audio-mp3-128k\""]""
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
@@ -233,6 +233,27 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             ""name"": ""post-invalid-iiif-av"",
             ""displayName"": ""Invalid Policy (IIIF-AV Policy Data)"",
             ""policyData"": ""{policyData}""
+        }}";
+        var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
+
+        // Act
+        var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Post_DeliveryChannelPolicy_400_IfAvPolicyNonexistent()
+    {
+        // Arrange
+        const int customerId = 88;
+        
+        var newDeliveryChannelPolicyJson = @"{{
+            ""name"": ""post-invalid-iiif-av"",
+            ""displayName"": ""Invalid Policy (IIIF-AV Policy Data)"",
+            ""policyData"": ""[\""not-a-transcode-policy\""]""
         }}";
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
 
