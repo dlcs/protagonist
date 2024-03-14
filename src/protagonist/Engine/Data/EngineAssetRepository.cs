@@ -161,6 +161,12 @@ public class EngineAssetRepository : IEngineAssetRepository
         {
             asset.MarkAsFinished();
         }
+        
+        var entry = dlcsContext.Entry(asset);
+        if (asset.MediaType.HasText() && asset.MediaType != "unknown")
+        {
+            entry.Property(p => p.MediaType).IsModified = true;
+        }
     }
 
     private Task<int> TryFinishBatch(int batchId, CancellationToken cancellationToken)
