@@ -98,7 +98,7 @@ public class EngineClientTests
         
         // Assert
         statusCode.Should().Be(HttpStatusCode.OK);
-        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/image-ingest");
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/asset-ingest");
         message.Method.Should().Be(HttpMethod.Post);
 
         var jsonContents = await message.Content.ReadAsStringAsync();

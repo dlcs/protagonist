@@ -54,10 +54,11 @@ public class EngineClient : IEngineClient
     {
         var jsonString = await GetJsonString(ingestAssetRequest, derivativesOnly);
         var content = new ByteArrayContent(Encoding.ASCII.GetBytes(jsonString));
-
+        var ingestEndpoint = dlcsSettings.UseLegacyEngineMessage ? "image-ingest" : "asset-ingest";
+        
         try
         {
-            var response = await httpClient.PostAsync("asset-ingest", content, cancellationToken);
+            var response = await httpClient.PostAsync(ingestEndpoint, content, cancellationToken);
             return response.StatusCode;
         }
         catch (WebException ex)

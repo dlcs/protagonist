@@ -128,7 +128,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const string newDeliveryChannelPolicyJson = @"{
             ""name"": ""post-invalid-policy"",
             ""displayName"": ""Invalid Policy"",
-            ""policyData"": ""[\""audio-mp3-128\""]""
+            ""policyData"": ""[\""audio-mp3-128k\""]""
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/foo";
@@ -289,7 +289,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const int customerId = 88;
         const string newDeliveryChannelPolicyJson = @"{
             ""displayName"": ""Invalid Policy"",
-            ""policyData"": ""[\""audio-mp3-128\""]""
+            ""policyData"": ""[\""audio-mp3-128k\""]""
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/foo/put-invalid-channel-policy";
@@ -309,7 +309,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const int customerId = 88;
         const string newDeliveryChannelPolicyJson = @"{
             ""displayName"": ""Invalid Policy"",
-            ""policyData"": ""[\""audio-mp3-128\""]""r
+            ""policyData"": ""[\""audio-mp3-128k\""]""r
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av/FooBar";
