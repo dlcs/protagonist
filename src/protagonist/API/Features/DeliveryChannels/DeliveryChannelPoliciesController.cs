@@ -116,8 +116,8 @@ public class DeliveryChannelPoliciesController : HydraController
         
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         
-        var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy,
-            cancellationToken, errorMessage, "default", "post");
+        var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy, errorMessage,
+            new[]{ "default", "post" }, cancellationToken);
         if (validateResult.GetType() != typeof(OkResult))
         {
             return validateResult;
@@ -187,8 +187,8 @@ public class DeliveryChannelPoliciesController : HydraController
         hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
 
-        var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy,
-            cancellationToken, errorMessage, "default", "put");
+        var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy, errorMessage,
+            new[]{ "default", "put" }, cancellationToken);
         if (validateResult.GetType() != typeof(OkResult))
         {
             return validateResult;
@@ -235,8 +235,8 @@ public class DeliveryChannelPoliciesController : HydraController
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
 
-        var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy,
-            cancellationToken, errorMessage, "default", "patch");
+        var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy, errorMessage,
+            new[]{ "default", "patch" }, cancellationToken);
         if (validateResult.GetType() != typeof(OkResult))
         {
             return validateResult;
@@ -274,9 +274,9 @@ public class DeliveryChannelPoliciesController : HydraController
 
     private async Task<IActionResult> TryValidateHydraDeliveryChannelPolicy(
         DeliveryChannelPolicy hydraDeliveryChannelPolicy,
-        CancellationToken cancellationToken,
         string apiErrorMessage,
-        params string[] validatorRuleSets)
+        string[] validatorRuleSets,
+        CancellationToken cancellationToken)
     {
         try
         {
