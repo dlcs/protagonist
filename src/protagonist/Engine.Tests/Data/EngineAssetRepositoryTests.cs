@@ -401,7 +401,7 @@ public class EngineAssetRepositoryTests
         var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_DoesNotUpdateBatch_IfIngestNotFinished)}");
         const int batchId = -111;
         await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 1);
-        dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        await dbContext.Images.AddTestAsset(assetId, batch: batchId);
         await dbContext.SaveChangesAsync();
 
         var newAsset = new Asset

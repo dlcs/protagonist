@@ -48,10 +48,9 @@ public class EngineClient : IEngineClient
         this.dlcsSettings = dlcsSettings.Value;
     }
     
-    public async Task<HttpStatusCode> SynchronousIngest(IngestAssetRequest ingestAssetRequest, Asset asset,
-        bool derivativesOnly = false, CancellationToken cancellationToken = default)
+    public async Task<HttpStatusCode> SynchronousIngest(Asset asset, CancellationToken cancellationToken = default)
     {
-        var jsonString = await GetJsonString(ingestAssetRequest, asset, derivativesOnly);
+        var jsonString = GetJsonString(asset);
         var content = new ByteArrayContent(Encoding.ASCII.GetBytes(jsonString));
 
         try
@@ -90,7 +89,7 @@ public class EngineClient : IEngineClient
         var queueName = queueLookup.GetQueueNameForFamily(asset.Family ?? new AssetFamily());
         var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
         
-        var jsonString = await GetJsonString(ingestAssetRequest);
+        var jsonString = GetJsonString(asset);
         var success = await queueSender.QueueMessage(queueName, jsonString, cancellationToken);
 
         if (!success)
@@ -124,7 +123,7 @@ public class EngineClient : IEngineClient
             foreach (var asset in familyGrouping.Select(a => a))
             {
                 var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
-                jsonStrings.Add(await GetJsonString(ingestAssetRequest));
+                jsonStrings.Add(GetJsonString(asset));
             }
 
             var sentCount = await queueSender.QueueMessages(queueName, jsonStrings, batchId, cancellationToken);
@@ -139,8 +138,6 @@ public class EngineClient : IEngineClient
         return overallSent;
     }
     
-    private async Task<string> GetJsonString(IngestAssetRequest ingestAssetRequest, Asset asset, bool derivativesOnly)
-
     public async Task<IReadOnlyCollection<string>?> GetAllowedAvPolicyOptions(CancellationToken cancellationToken = default)
     {
         try
@@ -157,19 +154,19 @@ public class EngineClient : IEngineClient
         }
     }
     
-    private async Task<string> GetJsonString(IngestAssetRequest ingestAssetRequest, bool derivativesOnly)
+    private string GetJsonString(Asset asset)
     {
         // If running in legacy mode, the payload should contain the full Legacy JSON string
         if (dlcsSettings.UseLegacyEngineMessage)
         {
             throw new InvalidOperationException("Legacy ingest events are no longer supported");
         }
-        else
-        {
-            // Otherwise, it should contain only the Asset ID - for now, this is an Asset object containing just the ID
-            var jsonString = JsonSerializer.Serialize(ingestAssetRequest, SerializerOptions);
-            return jsonString;
-        }
+        
+        var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+
+        // Otherwise, it should contain only the Asset ID - for now, this is an Asset object containing just the ID
+        var jsonString = JsonSerializer.Serialize(ingestAssetRequest, SerializerOptions);
+        return jsonString;
     }
 }
 

@@ -48,7 +48,7 @@ public class IngestExecutor
                 logger.LogDebug("Storage policy exceeded for customer {CustomerId} with id {Id}", asset.Customer, asset.Id);
                 asset.Error = IngestErrors.StoragePolicyExceeded;
                 var dbResponse = await CompleteAssetInDatabase(context, true, cancellationToken);
-                return new IngestResult(asset, dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
+                return new IngestResult(asset.Id, dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
             }
             
             var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
@@ -91,7 +91,7 @@ public class IngestExecutor
             await postProcessor.PostIngest(context,
                 dbSuccess && overallStatus is IngestResultStatus.Success or IngestResultStatus.QueuedForProcessing);
         }
-        return new IngestResult(asset, dbSuccess ? overallStatus : IngestResultStatus.Failed);
+        return new IngestResult(asset.Id, dbSuccess ? overallStatus : IngestResultStatus.Failed);
     }
 
     private async Task<bool> CompleteAssetInDatabase(IngestionContext context, bool ingestFinished, CancellationToken cancellationToken)

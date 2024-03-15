@@ -1,4 +1,5 @@
-﻿using DLCS.Model.Assets;
+﻿using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using DLCS.Model.Policies;
@@ -64,7 +65,7 @@ public class AssetIngester : IAssetIngester
         catch (Exception e)
         {
             logger.LogError(e, "Exception ingesting IncomingIngest - {Message}", request.Message);
-            return Task.FromResult(new IngestResult(new Asset() { Id = internalIngestRequest?.Id}, IngestResultStatus.Failed));
+            return Task.FromResult(new IngestResult(internalIngestRequest?.Id, IngestResultStatus.Failed));
         }
     }
 
@@ -79,7 +80,7 @@ public class AssetIngester : IAssetIngester
         if (asset == null)
         {
             logger.LogError("Could not find an asset for asset id {AssetId}", request.Id);
-            return new IngestResult(asset, IngestResultStatus.Failed);
+            return new IngestResult(asset?.Id, IngestResultStatus.Failed);
         }
         
         // get any matching CustomerOriginStrategy 
@@ -112,12 +113,12 @@ public class AssetIngester : IAssetIngester
 
 public class IngestResult
 {
-    public Asset? Asset { get; }
+    public AssetId? Id { get; }
     public IngestResultStatus Status { get; }
 
-    public IngestResult(Asset? asset, IngestResultStatus ingestResult)
+    public IngestResult(AssetId? id, IngestResultStatus ingestResult)
     {
-        Asset = asset;
+        Id = id;
         Status = ingestResult;
     }
 }
