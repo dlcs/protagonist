@@ -55,7 +55,7 @@ public class EngineClient : IEngineClient
 
         try
         {
-            var response = await httpClient.PostAsync(dlcsSettings.EngineDirectIngestUri, content, cancellationToken);
+            var response = await httpClient.PostAsync("asset-ingest", content, cancellationToken);
             return response.StatusCode;
         }
         catch (WebException ex)
@@ -77,7 +77,7 @@ public class EngineClient : IEngineClient
         }
         catch (TaskCanceledException)
         {
-            logger.LogError("Request to ingest {AssetId} cancelled", ingestAssetRequest.Id);
+            logger.LogError("Request to ingest {AssetId} cancelled", asset.Id);
         }
 
         return HttpStatusCode.InternalServerError;
