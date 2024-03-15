@@ -33,7 +33,14 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     private static readonly TestBucketWriter BucketWriter = new();
     private static readonly IElasticTranscoderWrapper ElasticTranscoderWrapper = A.Fake<IElasticTranscoderWrapper>();
     private readonly ApiStub apiStub;
-    private readonly string[] timebasedDeliveryChannels = { AssetDeliveryChannels.Timebased };
+    private readonly List<ImageDeliveryChannel> timebasedDeliveryChannels = new()
+    {
+        new ImageDeliveryChannel
+        {
+            Channel = AssetDeliveryChannels.Timebased,
+            DeliveryChannelPolicyId = 6
+        }
+    };
 
     public TimebasedIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
     {
@@ -57,7 +64,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
             .Header("Content-Type", "video/mpeg");
         apiStub.Get("/audio", (request, args) => "anything")
             .Header("Content-Type", "audio/mpeg");
-        
+
         engineFixture.DbFixture.CleanUp();
 
         A.CallTo(() => ElasticTranscoderWrapper.GetPipelineId("protagonist-pipeline", A<CancellationToken>._))
@@ -82,10 +89,10 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         var origin = $"{apiStub.Address}/{type}";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             imageOptimisationPolicy: $"{type}-max", mediaType: $"{type}/mpeg", family: AssetFamily.Timebased,
-            deliveryChannels: timebasedDeliveryChannels);
+            imageDeliveryChannels: timebasedDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
                 A<string>._,
@@ -137,10 +144,10 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         var origin = $"{apiStub.Address}/{type}";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             imageOptimisationPolicy: $"{type}-max", mediaType: $"{type}/mpeg", family: AssetFamily.Timebased,
-            deliveryChannels: timebasedDeliveryChannels);
+            imageDeliveryChannels: timebasedDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
                 A<string>._,
@@ -178,21 +185,35 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
 
     [Theory]
-    [InlineData("video", "/full/full/max/max/0/default.webm")]
-    [InlineData("audio", "/full/max/default.mp3")]
-    public async Task IngestAsset_SetsFileSizeCorrectly_IfAlsoAvailableForFileChannel(string type, string expectedKey)
+    [InlineData("video", "/full/full/max/max/0/default.webm", 6)]
+    [InlineData("audio", "/full/max/default.mp3", 5)]
+    public async Task IngestAsset_SetsFileSizeCorrectly_IfAlsoAvailableForFileChannel(string type, string expectedKey, int deliveryChannelPolicyId)
     {
         // Arrange
         var assetId = AssetId.FromString($"99/1/{nameof(IngestAsset_SetsFileSizeCorrectly_IfAlsoAvailableForFileChannel)}-{type}");
         const string jobId = "1234567890123-abcdef";
+
+        var imageDeliveryChannels = new List<ImageDeliveryChannel>()
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.Timebased,
+                DeliveryChannelPolicyId = deliveryChannelPolicyId
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.File,
+                DeliveryChannelPolicyId = 3
+            }
+        };
         
         var origin = $"{apiStub.Address}/{type}";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             imageOptimisationPolicy: $"{type}-max", mediaType: $"{type}/mpeg", family: AssetFamily.Timebased,
-            deliveryChannels: new[] { "iiif-av", "file" });
+            imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
                 A<string>._,

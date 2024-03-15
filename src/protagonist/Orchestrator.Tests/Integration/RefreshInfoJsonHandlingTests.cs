@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using IIIF.ImageApi.V3;
 using IIIF.Serialisation;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -59,7 +61,14 @@ public class RefreshInfoJsonHandlingTests : IClassFixture<ProtagonistAppFactory<
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_Refreshed_IfAlreadyInS3_ButOutOfDate)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: new List<ImageDeliveryChannel>
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = 1
+            }
+        });
         await dbFixture.DbContext.SaveChangesAsync();
 
         var s3StorageKey = $"{id}/info/Cantaloupe/v3/info.json";

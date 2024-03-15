@@ -2,7 +2,6 @@
 
 using DLCS.Core.Types;
 using DLCS.Model.Policies;
-
 namespace DLCS.Model.Assets;
 
 public class ImageDeliveryChannel

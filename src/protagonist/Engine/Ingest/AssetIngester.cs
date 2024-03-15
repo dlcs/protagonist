@@ -1,4 +1,5 @@
-﻿using DLCS.Model.Assets;
+﻿using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using DLCS.Model.Policies;
@@ -64,7 +65,7 @@ public class AssetIngester : IAssetIngester
         catch (Exception e)
         {
             logger.LogError(e, "Exception ingesting IncomingIngest - {Message}", request.Message);
-            return Task.FromResult(new IngestResult(internalIngestRequest?.Asset, IngestResultStatus.Failed));
+            return Task.FromResult(new IngestResult(internalIngestRequest?.Id, IngestResultStatus.Failed));
         }
     }
 
@@ -74,12 +75,12 @@ public class AssetIngester : IAssetIngester
     /// <returns>Result of ingest operations</returns>
     public async Task<IngestResult> Ingest(IngestAssetRequest request, CancellationToken cancellationToken = default)
     {
-        var asset = await engineAssetRepository.GetAsset(request.Asset.Id, cancellationToken);
+        var asset = await engineAssetRepository.GetAsset(request.Id, cancellationToken);
 
         if (asset == null)
         {
-            logger.LogError("Could not find an asset for asset id {AssetId}", request.Asset.Id);
-            return new IngestResult(asset, IngestResultStatus.Failed);
+            logger.LogError("Could not find an asset for asset id {AssetId}", request.Id);
+            return new IngestResult(null, IngestResultStatus.Failed);
         }
         
         // get any matching CustomerOriginStrategy 
@@ -112,12 +113,12 @@ public class AssetIngester : IAssetIngester
 
 public class IngestResult
 {
-    public Asset? Asset { get; }
+    public AssetId? AssetId { get; }
     public IngestResultStatus Status { get; }
 
-    public IngestResult(Asset? asset, IngestResultStatus ingestResult)
+    public IngestResult(AssetId? assetId, IngestResultStatus ingestResult)
     {
-        Asset = asset;
+        AssetId = assetId;
         Status = ingestResult;
     }
 }

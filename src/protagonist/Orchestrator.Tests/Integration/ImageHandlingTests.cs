@@ -9,6 +9,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Auth.Entities;
 using IIIF;
 using IIIF.ImageApi;
@@ -42,6 +43,15 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly IAmazonS3 amazonS3;
     private readonly FakeImageOrchestrator orchestrator = new();
     private const string SizesJsonContent = "{\"o\":[[800,800],[400,400],[200,200]],\"a\":[]}";
+
+    private readonly List<ImageDeliveryChannel> deliveryChannelsForImage = new()
+    {
+        new ImageDeliveryChannel()
+        {
+            Channel = AssetDeliveryChannels.Image,
+            DeliveryChannelPolicyId = 1
+        }
+    };
 
     public ImageHandlingTests(ProtagonistAppFactory<Startup> factory, StorageFixture storageFixture)
     {
@@ -176,7 +186,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3)}");
         var namedId = $"test/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3)}";
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -213,7 +223,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_Correct_IgnoresQueryParamOnRequestUri)}");
         var namedId = $"test/1/{nameof(GetInfoJson_Correct_IgnoresQueryParamOnRequestUri)}";
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -246,7 +256,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -289,7 +299,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_RestrictedImage_NoRole_HasMaxWidthSet)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 500, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 500, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -318,7 +328,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_RestrictedImage_NoRole_HasMaxWidthSet)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 500, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 500, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -348,7 +358,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_ReturnsImageServerSizes_IfS3GetFails)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.SaveChangesAsync();
         
         // Sizes from FakeImageServerClient
@@ -386,7 +396,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -434,7 +444,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -473,7 +483,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3_CustomPathRules)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -516,7 +526,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaConneg)}");
         const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/image/2/context.json\"";
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -563,7 +573,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV3_Correct_ViaConneg_CustomPathRules)}"); 
         const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -600,7 +610,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV3_Correct_ViaConneg)}");
         const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -631,7 +641,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_OpenImage_Correct)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -658,7 +668,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_OrchestratesImage_IfServedFromS3)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -689,7 +699,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_DoesNotOrchestratesImage_IfServedFromImageServer)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -711,7 +721,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_DoesNotOrchestratesImage_IfQueryParamPassed)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -733,7 +743,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_OpenImage_ForwardedFor_Correct)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -767,7 +777,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         const string authServiceName = "my-auth-service";
         const string logoutServiceName = "my-logout-service";
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: roleName, maxUnauthorised: 500,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.Roles.AddAsync(new Role
         {
             Customer = 99, Id = roleName, Name = "test-role", AuthService = authServiceName
@@ -817,7 +827,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         const string logoutServiceName = "my-logout-service";
 
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: roleName, maxUnauthorised: 500,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.Roles.AddAsync(new Role
         {
             Customer = 99, Id = roleName, Name = "test-role", AuthService = authServiceName
@@ -866,7 +876,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_RestrictedImage_NoRole_HasNoService)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 500, deliveryChannels: new[] { "iiif-img" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 500, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -899,7 +909,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var id = AssetId.FromString(
             $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns401WithoutServices)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "unknown-role", maxUnauthorised: 500,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -930,7 +940,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var id = AssetId.FromString(
             $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfNoBearerTokenProvided)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.SaveChangesAsync();
         
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -959,7 +969,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var id = AssetId.FromString(
             $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfUnknownBearerTokenProvided)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.SaveChangesAsync();
         
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -990,7 +1000,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var id = AssetId.FromString(
             $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfExpiredBearerTokenProvided)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
                 DlcsDatabaseFixture.ClickThroughAuthService.AsList());
@@ -1026,7 +1036,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var id = AssetId.FromString(
             $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns200_AndRefreshesToken_IfValidBearerTokenProvided)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
                 DlcsDatabaseFixture.ClickThroughAuthService.AsList());
@@ -1119,7 +1129,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/test-auth-nocook{type}");
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", maxUnauthorised: 100,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -1139,7 +1149,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/test-auth-invalidcook{type}");
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", maxUnauthorised: 100,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -1161,7 +1171,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/test-auth-expcook{type}");
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 100,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
@@ -1188,7 +1198,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/test-auth-cook-tile{type}");
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 100,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
@@ -1225,7 +1235,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/test-auth-cook{type}");
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 100,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
@@ -1267,7 +1277,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var id = AssetId.FromString("99/1/known-thumb");
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
         var expectedPath = new Uri("http://thumbs/thumbs/99/1/known-thumb/full/!200,200/0/default.jpg");
@@ -1294,7 +1304,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ContentBody = "{\"o\": [[400,400], [200,200]]}",
         });
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
         var expectedPath = new Uri($"http://thumbresize/thumbs/{id}/full/!123,123/0/default.jpg");
@@ -1322,7 +1332,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ContentBody = "{\"o\": [[400,400], [200,200]]}",
         });
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -1349,7 +1359,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         });
 
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -1377,7 +1387,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         });
 
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -1405,7 +1415,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         });
 
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
         var expectedPath = new Uri($"http://thumbresize/thumbs/{id}/full/!600,600/0/default.jpg");
@@ -1448,7 +1458,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var id = AssetId.FromString($"99/1/{imageName}");
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.CustomHeaders.AddTestCustomHeader("x-test-key", "foo bar");
         await dbFixture.DbContext.SaveChangesAsync();
@@ -1481,7 +1491,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var id = AssetId.FromString($"99/1/{imageName}");
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.CustomHeaders.AddTestCustomHeader("x-test-key", "foo bar");
         await dbFixture.DbContext.SaveChangesAsync();
@@ -1515,7 +1525,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         FakeImageOrchestrator.ConfiguredResponse[id] = OrchestrationResult.NotFound;
 
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.CustomHeaders.AddTestCustomHeader("x-test-key", "foo bar");
         await dbFixture.DbContext.SaveChangesAsync();
@@ -1544,7 +1554,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         FakeImageOrchestrator.ConfiguredResponse[id] = OrchestrationResult.Error;
 
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            deliveryChannels: new[] { "iiif-img" });
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.CustomHeaders.AddTestCustomHeader("x-test-key", "foo bar");
         await dbFixture.DbContext.SaveChangesAsync();
@@ -1570,7 +1580,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         if (await dbFixture.DbContext.Images.FindAsync(id) == null)
         {
             await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true,
-                deliveryChannels: new[] { "iiif-img" });
+                imageDeliveryChannels: deliveryChannelsForImage);
             await dbFixture.DbContext.SaveChangesAsync();
         }
 
@@ -1593,7 +1603,14 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // test runs 3 times so only add on first run
         if (await dbFixture.DbContext.Images.FindAsync(id) == null)
         {
-            await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { "file" });
+            await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: new List<ImageDeliveryChannel>()
+            {
+                new()
+                {
+                    Channel = AssetDeliveryChannels.File,
+                    DeliveryChannelPolicyId = 3
+                }
+            });
             await dbFixture.DbContext.SaveChangesAsync();
         }
 

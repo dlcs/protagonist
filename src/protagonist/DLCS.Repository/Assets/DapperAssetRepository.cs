@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
@@ -36,53 +38,77 @@ public class DapperAssetRepository : AssetRepositoryCachingBase, IDapperConfigRe
     protected override async Task<Asset?> GetAssetFromDatabase(AssetId assetId)
     {
         var id = assetId.ToString();
-        dynamic? rawAsset = await this.QuerySingleOrDefaultAsync(AssetSql, new { Id = id });
-        if (rawAsset == null)
+        IEnumerable<dynamic> rawAsset = await this.QueryAsync(AssetSql, new { Id = id });
+        var convertedRawAsset = rawAsset.ToList();
+        if (!convertedRawAsset.Any())
         {
             return null;
         }
 
+        var firstAsset = convertedRawAsset[0];
+
         return new Asset
         {
-            Batch = rawAsset.Batch,
-            Created = rawAsset.Created,
-            Customer = rawAsset.Customer,
-            Duration = rawAsset.Duration,
-            Error = rawAsset.Error,
-            Family = (AssetFamily)rawAsset.Family.ToString()[0],
-            Finished = rawAsset.Finished,
-            Height = rawAsset.Height,
-            Id = AssetId.FromString(rawAsset.Id),
-            Ingesting = rawAsset.Ingesting,
-            Origin = rawAsset.Origin,
-            Reference1 = rawAsset.Reference1,
-            Reference2 = rawAsset.Reference2,
-            Reference3 = rawAsset.Reference3,
-            Roles = rawAsset.Roles,
-            Space = rawAsset.Space,
-            Tags = rawAsset.Tags,
-            Width = rawAsset.Width,
-            MaxUnauthorised = rawAsset.MaxUnauthorised,
-            MediaType = rawAsset.MediaType,
-            NumberReference1 = rawAsset.NumberReference1,
-            NumberReference2 = rawAsset.NumberReference2,
-            NumberReference3 = rawAsset.NumberReference3,
-            PreservedUri = rawAsset.PreservedUri,
-            ThumbnailPolicy = rawAsset.ThumbnailPolicy,
-            ImageOptimisationPolicy = rawAsset.ImageOptimisationPolicy,
-            NotForDelivery = rawAsset.NotForDelivery,
-            DeliveryChannels = rawAsset.DeliveryChannels.ToString().Split(",")
+            Batch = firstAsset.Batch,
+            Created = firstAsset.Created,
+            Customer = firstAsset.Customer,
+            Duration = firstAsset.Duration,
+            Error = firstAsset.Error,
+            Family = (AssetFamily)firstAsset.Family.ToString()[0],
+            Finished = firstAsset.Finished,
+            Height = firstAsset.Height,
+            Id = AssetId.FromString(firstAsset.Id),
+            Ingesting = firstAsset.Ingesting,
+            Origin = firstAsset.Origin,
+            Reference1 = firstAsset.Reference1,
+            Reference2 = firstAsset.Reference2,
+            Reference3 = firstAsset.Reference3,
+            Roles = firstAsset.Roles,
+            Space = firstAsset.Space,
+            Tags = firstAsset.Tags,
+            Width = firstAsset.Width,
+            MaxUnauthorised = firstAsset.MaxUnauthorised,
+            MediaType = firstAsset.MediaType,
+            NumberReference1 = firstAsset.NumberReference1,
+            NumberReference2 = firstAsset.NumberReference2,
+            NumberReference3 = firstAsset.NumberReference3,
+            PreservedUri = firstAsset.PreservedUri,
+            ThumbnailPolicy = firstAsset.ThumbnailPolicy,
+            ImageOptimisationPolicy = firstAsset.ImageOptimisationPolicy,
+            NotForDelivery = firstAsset.NotForDelivery,
+            DeliveryChannels = firstAsset.DeliveryChannels.ToString().Split(","),
+            ImageDeliveryChannels = GenerateImageDeliveryChannels(convertedRawAsset)
         };
     }
 
+    private List<ImageDeliveryChannel> GenerateImageDeliveryChannels(List<dynamic> rawAsset)
+    {
+        var imageDeliveryChannels = new List<ImageDeliveryChannel>();
+        foreach (dynamic rawDeliveryChannel in rawAsset)
+        {
+            if (rawDeliveryChannel.Channel != null) // avoids issues with left outer join returning assets without 'ImageDeliveryChannels'
+            {
+                imageDeliveryChannels.Add(new ImageDeliveryChannel()
+                {
+                    Channel = rawDeliveryChannel.Channel,
+                    DeliveryChannelPolicyId = rawDeliveryChannel.DeliveryChannelPolicyId
+                });
+            }
+        }
+
+        return imageDeliveryChannels;
+    }
+
     private const string AssetSql = @"
-SELECT ""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Roles"", 
+SELECT ""Images"".""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Roles"", 
 ""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", 
 ""NumberReference1"", ""NumberReference2"", ""NumberReference3"", ""Width"", 
 ""Height"", ""Error"", ""Batch"", ""Finished"", ""Ingesting"", ""ImageOptimisationPolicy"", 
-""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery"", ""DeliveryChannels""
-  FROM public.""Images""
-  WHERE ""Id""=@Id;";
+""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery"", ""DeliveryChannels"",  
+IDC.""Channel"", IDC.""DeliveryChannelPolicyId""
+  FROM ""Images""
+  LEFT OUTER JOIN ""ImageDeliveryChannels"" IDC on ""Images"".""Id"" = IDC.""ImageId""
+  WHERE ""Images"".""Id""=@Id;";
 
     private const string ImageLocationSql =
         "SELECT \"Id\", \"S3\", \"Nas\" FROM public.\"ImageLocation\" WHERE \"Id\"=@Id;";

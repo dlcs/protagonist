@@ -27,21 +27,23 @@ public static class AssetDeliveryChannels
     /// </summary>
     public static bool HasDeliveryChannel(this Asset asset, string deliveryChannel)
     {
-        if (asset.DeliveryChannels.IsNullOrEmpty()) return false;
+        if (asset.ImageDeliveryChannels.IsNullOrEmpty()) return false;
         if (!All.Contains(deliveryChannel))
         {
             throw new ArgumentOutOfRangeException(nameof(deliveryChannel), deliveryChannel,
                 $"Acceptable delivery-channels are: {AllString}");
         }
 
-        return asset.DeliveryChannels.Contains(deliveryChannel);
+        return asset.ImageDeliveryChannels.Any(i => i.Channel == deliveryChannel);
     }
-    
+
     /// <summary>
     /// Checks if asset has specified deliveryChannel only (e.g. 1 channel and it matches specified value
     /// </summary>
-    public static bool HasSingleDeliveryChannel(this Asset asset, string deliveryChannel) 
-        => asset.DeliveryChannels.ContainsOnly(deliveryChannel);
+    public static bool HasSingleDeliveryChannel(this Asset asset, string deliveryChannel)
+        => asset.ImageDeliveryChannels != null &&
+           asset.ImageDeliveryChannels.Count == 1 && 
+           asset.HasDeliveryChannel(deliveryChannel);
     
     /// <summary>
     /// Checks if string is a valid delivery channel

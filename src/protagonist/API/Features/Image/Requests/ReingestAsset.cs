@@ -54,7 +54,7 @@ public class ReingestAssetHandler : IRequestHandler<ReingestAsset, ModifyEntityR
 
         await assetNotificationSender.SendAssetModifiedMessage(AssetModificationRecord.Update(existingAsset!, asset),
             cancellationToken);
-        var statusCode = await ingestNotificationSender.SendImmediateIngestAssetRequest(asset, false, cancellationToken);
+        var statusCode = await ingestNotificationSender.SendImmediateIngestAssetRequest(asset, cancellationToken);
         
         if (statusCode.IsSuccess())
         {
