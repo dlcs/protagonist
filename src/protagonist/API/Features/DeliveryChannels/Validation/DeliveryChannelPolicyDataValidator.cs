@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using API.Exceptions;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;
@@ -15,7 +16,7 @@ public class DeliveryChannelPolicyDataValidator
         this.avChannelPolicyOptionsRepository = avChannelPolicyOptionsRepository;
     }
 
-    public async Task<bool?> Validate(string policyDataJson, string channel)
+    public async Task<bool> Validate(string policyDataJson, string channel)
     {
         return channel switch
         {
@@ -64,7 +65,7 @@ public class DeliveryChannelPolicyDataValidator
         return true;
     }
 
-    private async Task<bool?> ValidateTimeBasedPolicyData(string policyDataJson)
+    private async Task<bool> ValidateTimeBasedPolicyData(string policyDataJson)
     {
         var policyData = ParseJsonPolicyData(policyDataJson);
         
@@ -76,7 +77,11 @@ public class DeliveryChannelPolicyDataValidator
         var avChannelPolicyOptions = 
             await avChannelPolicyOptionsRepository.RetrieveAvChannelPolicyOptions();
 
-        if (avChannelPolicyOptions == null) return null;
+        if (avChannelPolicyOptions == null)
+        {
+            throw new APIException("Unable to retrieve available iiif-av policies from engine");
+        }
+        
         return policyData.All(avPolicy => avChannelPolicyOptions.Contains(avPolicy));
     }
 }

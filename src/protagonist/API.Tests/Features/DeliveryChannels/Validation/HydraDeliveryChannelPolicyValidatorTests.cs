@@ -11,10 +11,20 @@ namespace API.Tests.Features.DeliveryChannelPolicies.Validation;
 public class HydraDeliveryChannelPolicyValidatorTests
 {
     private readonly HydraDeliveryChannelPolicyValidator sut;
+    private readonly string[] fakedAvPolicies =
+    {
+        "video-mp4-480p",
+        "video-webm-720p",
+        "audio-mp3-128k"
+    };
     
     public HydraDeliveryChannelPolicyValidatorTests()
     {
-        sut = new HydraDeliveryChannelPolicyValidator();
+        var avChannelPolicyOptionsRepository = A.Fake<IAvChannelPolicyOptionsRepository>();
+        A.CallTo(() => avChannelPolicyOptionsRepository.RetrieveAvChannelPolicyOptions())
+            .Returns(fakedAvPolicies);
+        sut = new HydraDeliveryChannelPolicyValidator(
+            new DeliveryChannelPolicyDataValidator(avChannelPolicyOptionsRepository));
     }
     
     [Fact]
@@ -91,6 +101,18 @@ public class HydraDeliveryChannelPolicyValidatorTests
             PolicyData = null,
         };
         var result = sut.TestValidate(policy, p => p.IncludeRuleSets("default", "put"));
+        result.ShouldHaveValidationErrorFor(p => p.PolicyData);
+    }
+    
+    [Fact]
+    public async void NewDeliveryChannelPolicy_Requires_ValidTranscodePolicy_ForAvChannel()
+    {
+        var policy = new DeliveryChannelPolicy()
+        {
+            Channel = AssetDeliveryChannels.Timebased,
+            PolicyData = "[\"not-a-transcode-policy\"]"
+        };
+        var result = await sut.TestValidateAsync(policy);
         result.ShouldHaveValidationErrorFor(p => p.PolicyData);
     }
 }
