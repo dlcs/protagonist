@@ -73,7 +73,6 @@ public class EngineAssetRepository : IEngineAssetRepository
                 await IncreaseCustomerStorage(imageStorage, cancellationToken);
             }
             
-
             return updatedRows || !ingestFinished; // if the ingest hasn't finished, rows can be not updated - meaning success
         }
         catch (Exception ex)
