@@ -36,4 +36,10 @@ public interface IEngineClient
     /// <returns>Count of items successfully processed</returns>
     Task<int> AsynchronousIngestBatch(IReadOnlyCollection<IngestAssetRequest> ingestAssetRequests,
         bool isPriority, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieve a list of iiif-policy options from engine
+    /// </summary>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    Task<IReadOnlyCollection<string>?> GetAllowedAvPolicyOptions(CancellationToken cancellationToken = default);
 }

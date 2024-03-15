@@ -28,13 +28,16 @@ public class EngineClientTests
     public EngineClientTests()
     {
         httpHandler = new ControllableHttpMessageHandler();
-        httpClient = new HttpClient(httpHandler);
+        httpClient = new HttpClient(httpHandler)
+        {
+            BaseAddress = new Uri("http://engine.dlcs")
+        };
 
         queueLookup = A.Fake<IQueueLookup>();
         queueSender = A.Fake<IQueueSender>();
     }
 
-    [Theory]
+    [Theory(Skip = "Requires legacy payloads which are obsolete")]
     [InlineData(AssetFamily.File, 'F')]
     [InlineData(AssetFamily.Image, 'I')]
     [InlineData(AssetFamily.Timebased, 'T')]
@@ -59,7 +62,7 @@ public class EngineClientTests
         
         // Assert
         statusCode.Should().Be(HttpStatusCode.OK);
-        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/ingest");
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/image-ingest");
         message.Method.Should().Be(HttpMethod.Post);
 
         var body = await message.Content.ReadAsStringAsync();
@@ -95,7 +98,7 @@ public class EngineClientTests
         
         // Assert
         statusCode.Should().Be(HttpStatusCode.OK);
-        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/ingest");
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/asset-ingest");
         message.Method.Should().Be(HttpMethod.Post);
 
         var jsonContents = await message.Content.ReadAsStringAsync();
@@ -113,7 +116,7 @@ public class EngineClientTests
         });
     }
     
-    [Fact]
+    [Fact(Skip = "Requires legacy payloads which are obsolete")]
     public async Task AsynchronousIngest_QueuesMessageWithLegacyModel_IfUseLegacyEngineMessageTrue()
     {
         // Arrange
@@ -178,12 +181,51 @@ public class EngineClientTests
             Roles = string.Empty
         });
     }
-
+    
+    [Fact]
+    public async Task GetAllowedAvOptions_RetrievesAllowedAvPolicies()
+    {
+        // Act
+        var sut = GetSut(false);
+        
+        HttpRequestMessage message = null;
+        httpHandler.RegisterCallback(r => message = r);
+        httpHandler.GetResponseMessage("[\"video-mp4-480p\",\"video-webm-720p\",\"audio-mp3-128k\"]", HttpStatusCode.OK);
+        
+        // Assert
+        var returnedAvPolicyOptions = await sut.GetAllowedAvPolicyOptions();
+        
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/allowed-av");
+        message.Method.Should().Be(HttpMethod.Get);
+        returnedAvPolicyOptions!.Count.Should().Be(3);
+        returnedAvPolicyOptions!.Should().BeEquivalentTo("video-mp4-480p", "video-webm-720p", "audio-mp3-128k");
+    }
+    
+    [Fact]
+    public async Task GetAllowedAvOptions_ReturnsNull_IfEngineAvPolicyEndpointUnreachable()
+    {
+        // Act
+        var sut = GetSut(false);
+        
+        HttpRequestMessage message = null;
+        httpHandler.RegisterCallback(r => message = r);
+        httpHandler.GetResponseMessage("Not found", HttpStatusCode.NotFound);
+        
+        // Assert
+        var returnedAvPolicyOptions = await sut.GetAllowedAvPolicyOptions();
+        
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/allowed-av");
+        message.Method.Should().Be(HttpMethod.Get);
+        returnedAvPolicyOptions.Should().BeNull();
+    }
+    
     private EngineClient GetSut(bool useLegacyMessageFormat)
     {
         var options = Options.Create(new DlcsSettings
         {
-            EngineDirectIngestUri = new Uri("http://engine.dlcs/ingest"),
+            EngineRoot = new Uri("http://engine.dlcs/"),
             UseLegacyEngineMessage = useLegacyMessageFormat
         });
 

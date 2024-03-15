@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -26,7 +28,7 @@ public class EngineClient : IEngineClient
     private readonly HttpClient httpClient;
     private readonly ILogger<EngineClient> logger;
     private readonly DlcsSettings dlcsSettings;
-
+    
     private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -51,10 +53,10 @@ public class EngineClient : IEngineClient
     {
         var jsonString = await GetJsonString(ingestAssetRequest, derivativesOnly);
         var content = new ByteArrayContent(Encoding.ASCII.GetBytes(jsonString));
-
+        
         try
         {
-            var response = await httpClient.PostAsync(dlcsSettings.EngineDirectIngestUri, content, cancellationToken);
+            var response = await httpClient.PostAsync("asset-ingest", content, cancellationToken);
             return response.StatusCode;
         }
         catch (WebException ex)
@@ -134,6 +136,22 @@ public class EngineClient : IEngineClient
         return overallSent;
     }
 
+    public async Task<IReadOnlyCollection<string>?> GetAllowedAvPolicyOptions(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync("allowed-av", cancellationToken);
+            return await response.Content.ReadFromJsonAsync<IReadOnlyCollection<string>>(
+                cancellationToken: cancellationToken);
+            
+        }
+        catch(Exception ex)
+        {
+            logger.LogError(ex, "Failed to retrieve allowed iiif-av policy options from Engine");
+            return null;
+        }
+    }
+    
     private async Task<string> GetJsonString(IngestAssetRequest ingestAssetRequest, bool derivativesOnly)
     {
         // If running in legacy mode, the payload should contain the full Legacy JSON string
@@ -149,7 +167,7 @@ public class EngineClient : IEngineClient
             return jsonString;
         }
     }
-
+    
     public IngestAssetRequest GetMinimalIngestAssetRequest(IngestAssetRequest ingestAssetRequest)
     {
         return new IngestAssetRequest(new Asset(){ Id = ingestAssetRequest.Asset.Id }, ingestAssetRequest.Created);

@@ -1,14 +1,19 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
 using DLCS.Repository;
+using DLCS.Repository.Messaging;
+using FakeItEasy;
 using Hydra.Collections;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.DependencyInjection;
+using Test.Helpers.Http;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 
@@ -18,13 +23,33 @@ namespace API.Tests.Integration;
 [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
 public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
+    private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
+    private readonly ControllableHttpMessageHandler httpHandler;
     private readonly HttpClient httpClient;
     private readonly DlcsContext dbContext;
+    private readonly string[] fakedAvPolicies =
+    {
+        "video-mp4-480p",
+        "video-webm-720p",
+        "audio-mp3-128k"
+    };
     
     public DeliveryChannelTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
         dbContext = dbFixture.DbContext;
-        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
+        httpHandler = new ControllableHttpMessageHandler();
+     
+        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test",
+            f => f.WithTestServices(services =>
+            {
+                services.AddAuthentication("API-Test")
+                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("API-Test", _ => { });
+                services.AddScoped<IEngineClient>(_ => EngineClient);
+            }));
+        
+        A.CallTo(() => EngineClient.GetAllowedAvPolicyOptions(A<CancellationToken>._))
+            .Returns(fakedAvPolicies);
+        
         dbFixture.CleanUp();
     }
 
@@ -68,11 +93,11 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const string newDeliveryChannelPolicyJson = @"{
             ""name"": ""my-iiif-av-policy-1"",
             ""displayName"": ""My IIIF AV Policy"",
-            ""policyData"": ""[\""audio-mp3-128\""]""
+            ""policyData"": ""[\""video-mp4-480p\""]""
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
-
+   
         // Act
         var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
@@ -84,7 +109,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             s.Customer == customerId &&
             s.Name == "my-iiif-av-policy-1");
         foundPolicy.DisplayName.Should().Be("My IIIF AV Policy");
-        foundPolicy.PolicyData.Should().Be("[\"audio-mp3-128\"]");
+        foundPolicy.PolicyData.Should().Be("[\"video-mp4-480p\"]");
     }
     
     [Fact]
@@ -95,7 +120,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const string newDeliveryChannelPolicyJson = @"{
             ""name"": ""post-invalid-policy"",
             ""displayName"": ""Invalid Policy"",
-            ""policyData"": ""[\""audio-mp3-128\""]""
+            ""policyData"": ""[\""audio-mp3-128k\""]""
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/foo";
@@ -146,7 +171,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const string newDeliveryChannelPolicyJson = @"{
             ""name"": ""foo bar"",
             ""displayName"": ""Invalid Policy"",
-            ""policyData"": ""[\""audio-mp3-128\""]""
+            ""policyData"": ""[\""audio-mp3-128k\""]""
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
@@ -212,13 +237,58 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Fact]
+    public async Task Post_DeliveryChannelPolicy_400_IfAvPolicyNonexistent()
+    {
+        // Arrange
+        const int customerId = 88;
+        
+        var newDeliveryChannelPolicyJson = @"{{
+            ""name"": ""post-invalid-iiif-av"",
+            ""displayName"": ""Invalid Policy (IIIF-AV Policy Data)"",
+            ""policyData"": ""[\""not-a-transcode-policy\""]""
+        }}";
+        var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
+
+        // Act
+        var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Post_DeliveryChannelPolicy_500_IfEngineAvPolicyEndpointUnreachable()
+    {
+        // Arrange
+        const int customerId = 88;
+        const string newDeliveryChannelPolicyJson = @"{
+            ""name"": ""my-iiif-av-policy-1"",
+            ""displayName"": ""My IIIF AV Policy"",
+            ""policyData"": ""[\""video-mp4-480p\""]""
+        }";
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
+        
+        A.CallTo(() => EngineClient.GetAllowedAvPolicyOptions(A<CancellationToken>._))
+            .Returns((string[])null);
+        
+        // Act
+        var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+    }
+    
+    [Fact]
     public async Task Put_DeliveryChannelPolicy_200()
     {
         // Arrange
         const int customerId = 88;
         const string putDeliveryChannelPolicyJson = @"{
             ""displayName"": ""My IIIF AV Policy 2 (modified)"",
-            ""policyData"": ""[\""audio-mp3-256\""]""
+            ""policyData"": ""[\""video-mp4-480p\""]""
         }";
         
         var policy = new DLCS.Model.Policies.DeliveryChannelPolicy()
@@ -227,7 +297,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             Name = "put-av-policy-2",
             DisplayName = "My IIIF-AV Policy 2",
             Channel = "iiif-av",
-            PolicyData = "[\"audio-mp3-128\"]"
+            PolicyData = "[\"video-webm-720p\"]"
         };
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/{policy.Channel}/{policy.Name}";
@@ -246,7 +316,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             s.Customer == customerId && 
             s.Name == policy.Name);
         foundPolicy.DisplayName.Should().Be("My IIIF AV Policy 2 (modified)");
-        foundPolicy.PolicyData.Should().Be("[\"audio-mp3-256\"]");
+        foundPolicy.PolicyData.Should().Be("[\"video-mp4-480p\"]");
     }
     
     [Fact]
@@ -256,7 +326,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const int customerId = 88;
         const string newDeliveryChannelPolicyJson = @"{
             ""displayName"": ""Invalid Policy"",
-            ""policyData"": ""[\""audio-mp3-128\""]""
+            ""policyData"": ""[\""audio-mp3-128k\""]""
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/foo/put-invalid-channel-policy";
@@ -276,7 +346,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const int customerId = 88;
         const string newDeliveryChannelPolicyJson = @"{
             ""displayName"": ""Invalid Policy"",
-            ""policyData"": ""[\""audio-mp3-128\""]""r
+            ""policyData"": ""[\""audio-mp3-128k\""]""r
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av/FooBar";
@@ -362,13 +432,36 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Fact]
+    public async Task Put_DeliveryChannelPolicy_500_IfEngineAvPolicyEndpointUnreachable()
+    {
+        // Arrange
+        const int customerId = 88;
+        const string putDeliveryChannelPolicyJson = @"{
+            ""displayName"": ""My IIIF AV Policy 2 (modified)"",
+            ""policyData"": ""[\""video-mp4-480p\""]""
+        }";
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av/return-500-policy";
+        
+        A.CallTo(() => EngineClient.GetAllowedAvPolicyOptions(A<CancellationToken>._))
+            .Returns((string[])null);
+        
+        // Act
+        var content = new StringContent(putDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PatchAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+    }
+    
+    [Fact]
     public async Task Patch_DeliveryChannelPolicy_201()
     {
         // Arrange
         const int customerId = 88;
         const string patchDeliveryChannelPolicyJson = @"{
             ""displayName"": ""My IIIF AV Policy 3 (modified)"",
-            ""policyData"": ""[\""audio-mp3-256\""]""
+            ""policyData"": ""[\""video-webm-720p\""]""
         }";
         
         var policy = new DLCS.Model.Policies.DeliveryChannelPolicy()
@@ -377,7 +470,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             Name = "put-av-policy",
             DisplayName = "My IIIF-AV Policy 3",
             Channel = "iiif-av",
-            PolicyData = "[\"audio-mp3-128\"]"
+            PolicyData = "[\"video-mp4-480p\"]"
         };
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/{policy.Channel}/{policy.Name}";
@@ -396,7 +489,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             s.Customer == customerId && 
             s.Name == policy.Name);
         foundPolicy.DisplayName.Should().Be("My IIIF AV Policy 3 (modified)");
-        foundPolicy.PolicyData.Should().Be("[\"audio-mp3-256\"]");
+        foundPolicy.PolicyData.Should().Be("[\"video-webm-720p\"]");
     }
     
     [Theory]
@@ -465,6 +558,29 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Patch_DeliveryChannelPolicy_500_IfEngineAvPolicyEndpointUnreachable()
+    {
+        // Arrange
+        const int customerId = 88;
+        const string putDeliveryChannelPolicyJson = @"{
+            ""displayName"": ""My IIIF AV Policy 2 (modified)"",
+            ""policyData"": ""[\""video-mp4-480p\""]""
+        }";
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av/return-500-policy";
+        
+        A.CallTo(() => EngineClient.GetAllowedAvPolicyOptions(A<CancellationToken>._))
+            .Returns((string[])null);
+        
+        // Act
+        var content = new StringContent(putDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }
     
     [Fact]
