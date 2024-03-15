@@ -64,16 +64,17 @@ public class EngineAssetRepository : IEngineAssetRepository
                 }
             }
             
-            var success = hasBatch
+            var updatedRows = hasBatch
                 ? await BatchSave(asset.Batch!.Value, cancellationToken)
                 : await NonBatchedSave(cancellationToken);
 
-            if (success && imageStorage != null)
+            if (updatedRows && imageStorage != null)
             {
                 await IncreaseCustomerStorage(imageStorage, cancellationToken);
             }
+            
 
-            return success;
+            return updatedRows || !ingestFinished; // if the ingest hasn't finished, rows can be not updated - meaning success
         }
         catch (Exception ex)
         {
@@ -160,12 +161,6 @@ public class EngineAssetRepository : IEngineAssetRepository
         if (ingestFinished)
         {
             asset.MarkAsFinished();
-        }
-        
-        var entry = dlcsContext.Entry(asset);
-        if (asset.MediaType.HasText() && asset.MediaType != "unknown")
-        {
-            entry.Property(p => p.MediaType).IsModified = true;
         }
     }
 
