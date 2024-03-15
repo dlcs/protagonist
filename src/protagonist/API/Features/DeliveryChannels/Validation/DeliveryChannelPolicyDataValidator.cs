@@ -35,7 +35,7 @@ public class DeliveryChannelPolicyDataValidator
         }
         catch(JsonException)
         {
-            return null;
+            return Array.Empty<string>();
         }
 
         return policyData;
@@ -77,7 +77,7 @@ public class DeliveryChannelPolicyDataValidator
         var avChannelPolicyOptions = 
             await avChannelPolicyOptionsRepository.RetrieveAvChannelPolicyOptions();
 
-        if (avChannelPolicyOptions == null)
+        if (avChannelPolicyOptions.IsNullOrEmpty())
         {
             throw new APIException("Unable to retrieve available iiif-av policies from engine");
         }

@@ -23,8 +23,18 @@ public class AvChannelPolicyOptionsRepository : IAvChannelPolicyOptionsRepositor
     public async Task<IReadOnlyCollection<string>?> RetrieveAvChannelPolicyOptions()
     {
         const string key = "avChannelPolicyOptions";
-        
-        return await appCache.GetOrAdd(key, () => engineClient.GetAllowedAvPolicyOptions(),
-            cacheSettings.GetMemoryCacheOptions(CacheDuration.Long)); 
+
+        return await appCache.GetOrAddAsync(key, async entry =>
+        {
+            var avPolicyOptions = await engineClient.GetAllowedAvPolicyOptions();
+            if (avPolicyOptions == null)
+            {
+                entry.AbsoluteExpirationRelativeToNow =
+                    TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+                return Array.Empty<string>();
+            }
+            
+            return avPolicyOptions;
+        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
     }
 }

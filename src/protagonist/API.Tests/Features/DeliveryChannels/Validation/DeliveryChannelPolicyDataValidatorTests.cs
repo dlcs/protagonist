@@ -1,4 +1,5 @@
-﻿using API.Features.DeliveryChannels.Validation;
+﻿using System.Threading.Tasks;
+using API.Features.DeliveryChannels.Validation;
 using DLCS.Model.DeliveryChannels;
 using FakeItEasy;
 
@@ -28,7 +29,7 @@ public class DeliveryChannelPolicyDataValidatorTests
     [InlineData("[\"400,\",\"200,\",\"100,\"]")]
     [InlineData("[\"!400,\",\"!200,\",\"!100,\"]")]
     [InlineData("[\"400,400\"]")]
-    public async void PolicyDataValidator_ReturnsTrue_ForValidThumbSizes(string policyData)
+    public async Task PolicyDataValidator_ReturnsTrue_ForValidThumbSizes(string policyData)
     {
         // Arrange And Act
         var result = await sut.Validate(policyData, "thumbs");
@@ -38,7 +39,7 @@ public class DeliveryChannelPolicyDataValidatorTests
     }
     
     [Fact]
-    public async void PolicyDataValidator_ReturnsFalse_ForBadThumbSizes()
+    public async Task PolicyDataValidator_ReturnsFalse_ForBadThumbSizes()
     {
         // Arrange
         var policyData = "[\"400,400\",\"foo,bar\",\"100,100\"]";
@@ -51,7 +52,7 @@ public class DeliveryChannelPolicyDataValidatorTests
     }
     
     [Fact]
-    public async void PolicyDataValidator_ReturnsFalse_ForInvalidThumbSizesJson()
+    public async Task PolicyDataValidator_ReturnsFalse_ForInvalidThumbSizesJson()
     {
         // Arrange
         var policyData = "[\"400,400\",";
@@ -67,7 +68,7 @@ public class DeliveryChannelPolicyDataValidatorTests
     [InlineData("")]
     [InlineData("[]")]
     [InlineData("[\"\"]")]
-    public async void PolicyDataValidator_ReturnsFalse_ForEmptyThumbSizes(string policyData)
+    public async Task PolicyDataValidator_ReturnsFalse_ForEmptyThumbSizes(string policyData)
     {
         // Arrange and Act
         var result = await sut.Validate(policyData, "thumbs");
@@ -80,7 +81,7 @@ public class DeliveryChannelPolicyDataValidatorTests
     [InlineData("[\"video-mp4-480p\"]")]
     [InlineData("[\"video-webm-720p\"]")]
     [InlineData("[\"audio-mp3-128k\"]")]
-    public async void PolicyDataValidator_ReturnsTrue_ForValidAvPolicy(string policyData)
+    public async Task PolicyDataValidator_ReturnsTrue_ForValidAvPolicy(string policyData)
     {
         // Arrange and Act
         var result = await sut.Validate(policyData, "iiif-av");
@@ -90,7 +91,7 @@ public class DeliveryChannelPolicyDataValidatorTests
     }
     
     [Fact]
-    public async void PolicyDataValidator_ReturnsFalse_ForNonexistentAvPolicy()
+    public async Task PolicyDataValidator_ReturnsFalse_ForNonexistentAvPolicy()
     {
         // Arrange and Act
         var result = await sut.Validate("not-a-transcode-policy", "iiif-av");
@@ -102,7 +103,7 @@ public class DeliveryChannelPolicyDataValidatorTests
     [Theory]
     [InlineData("[\"\"]")]
     [InlineData("[\"policy-1\",\"\"]")]
-    public async void PolicyDataValidator_ReturnsFalse_ForBadAvPolicy(string policyData)
+    public async Task PolicyDataValidator_ReturnsFalse_ForBadAvPolicy(string policyData)
     {
         // Arrange and Act
         var result = await sut.Validate(policyData, "iiif-av");
@@ -115,7 +116,7 @@ public class DeliveryChannelPolicyDataValidatorTests
     [InlineData("")]
     [InlineData("[]")]
     [InlineData("[\"\"]")]
-    public async void PolicyDataValidator_ReturnsFalse_ForEmptyAvPolicy(string policyData)
+    public async Task PolicyDataValidator_ReturnsFalse_ForEmptyAvPolicy(string policyData)
     {
         // Arrange and Act
         var result = await sut.Validate(policyData, "iiif-av");
@@ -125,7 +126,7 @@ public class DeliveryChannelPolicyDataValidatorTests
     }
     
     [Fact]
-    public async void PolicyDataValidator_ReturnsFalse_ForInvalidAvPolicyJson()
+    public async Task PolicyDataValidator_ReturnsFalse_ForInvalidAvPolicyJson()
     {
         // Arrange
         var policyData = "[\"policy-1\",";

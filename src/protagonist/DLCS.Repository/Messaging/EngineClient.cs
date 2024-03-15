@@ -29,9 +29,6 @@ public class EngineClient : IEngineClient
     private readonly ILogger<EngineClient> logger;
     private readonly DlcsSettings dlcsSettings;
     
-    private const string EngineIngestEndpoint = "asset-ingest";
-    private const string LegacyEngineIngestEndpoint = "image-ingest";
-    
     private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -56,13 +53,10 @@ public class EngineClient : IEngineClient
     {
         var jsonString = await GetJsonString(ingestAssetRequest, derivativesOnly);
         var content = new ByteArrayContent(Encoding.ASCII.GetBytes(jsonString));
-        var ingestEndpoint = dlcsSettings.UseLegacyEngineMessage 
-            ? LegacyEngineIngestEndpoint 
-            : EngineIngestEndpoint;
         
         try
         {
-            var response = await httpClient.PostAsync(ingestEndpoint, content, cancellationToken);
+            var response = await httpClient.PostAsync("asset-ingest", content, cancellationToken);
             return response.StatusCode;
         }
         catch (WebException ex)

@@ -1,12 +1,10 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
-using API.Infrastructure.Messaging;
 using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
 using DLCS.Repository;
@@ -14,7 +12,6 @@ using DLCS.Repository.Messaging;
 using FakeItEasy;
 using Hydra.Collections;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Test.Helpers.Http;
 using Test.Helpers.Integration;
@@ -41,19 +38,14 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     {
         dbContext = dbFixture.DbContext;
         httpHandler = new ControllableHttpMessageHandler();
-        httpClient = factory
-            .WithConnectionString(dbFixture.ConnectionString)
-            .WithTestServices(services =>
+     
+        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test",
+            f => f.WithTestServices(services =>
             {
-                services.AddScoped<IEngineClient>(_ => EngineClient);
                 services.AddAuthentication("API-Test")
-                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
-                        "API-Test", _ => { });
-            })
-            .CreateClient(new WebApplicationFactoryClientOptions
-            {
-                AllowAutoRedirect = false
-            });
+                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("API-Test", _ => { });
+                services.AddScoped<IEngineClient>(_ => EngineClient);
+            }));
         
         A.CallTo(() => EngineClient.GetAllowedAvPolicyOptions(A<CancellationToken>._))
             .Returns(fakedAvPolicies);
@@ -278,9 +270,8 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av";
         
-        string[] nullAvPolicies = null;
         A.CallTo(() => EngineClient.GetAllowedAvPolicyOptions(A<CancellationToken>._))
-            .Returns(nullAvPolicies);
+            .Returns((string[])null);
         
         // Act
         var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
