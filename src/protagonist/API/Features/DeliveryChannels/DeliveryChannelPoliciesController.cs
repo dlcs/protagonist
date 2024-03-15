@@ -23,14 +23,14 @@ namespace API.Features.DeliveryChannels;
 [ApiController]
 public class DeliveryChannelPoliciesController : HydraController
 {
-    private readonly DeliveryChannelPolicyDataValidator policyDataValidator;
-
+    private readonly HydraDeliveryChannelPolicyValidator hydraDeliveryChannelPolicyValidator;
+    
     public DeliveryChannelPoliciesController(
         IMediator mediator,
         IOptions<ApiSettings> options,
-        DeliveryChannelPolicyDataValidator policyDataValidator) : base(options.Value, mediator)
+        HydraDeliveryChannelPolicyValidator hydraDeliveryChannelPolicyValidator) : base(options.Value, mediator)
     {
-        this.policyDataValidator = policyDataValidator;
+        this.hydraDeliveryChannelPolicyValidator = hydraDeliveryChannelPolicyValidator;
     }
     
     /// <summary>
@@ -110,25 +110,17 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
         [FromBody] DeliveryChannelPolicy hydraDeliveryChannelPolicy,
-        [FromServices] HydraDeliveryChannelPolicyValidator deliveryChannelPolicyValidator,
         CancellationToken cancellationToken)
     {
+        const string errorMessage = "Failed to create delivery channel policy";
+        
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         
-        try
+        var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy,
+            cancellationToken, errorMessage, "default", "post");
+        if (validateResult.GetType() != typeof(OkResult))
         {
-            var hydraDeliveryChannelValidationResult = await deliveryChannelPolicyValidator.ValidateAsync(
-                hydraDeliveryChannelPolicy,
-                policy => policy.IncludeRuleSets("default", "post"), cancellationToken);
-            if (!hydraDeliveryChannelValidationResult.IsValid)
-            {
-                return this.ValidationFailed(hydraDeliveryChannelValidationResult);
-            }
-        }
-        catch(APIException apiEx)
-        {
-            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode, 
-                "Failed to create delivery channel policy");
+            return validateResult;
         }
 
         hydraDeliveryChannelPolicy.CustomerId = customerId;
@@ -136,7 +128,7 @@ public class DeliveryChannelPoliciesController : HydraController
         
         return await HandleUpsert(request, 
             s => s.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to create delivery channel policy",
+            errorTitle: errorMessage,
             cancellationToken: cancellationToken);
     }
     
@@ -188,26 +180,18 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromRoute] string deliveryChannelName,
         [FromRoute] string deliveryChannelPolicyName,
         [FromBody] DeliveryChannelPolicy hydraDeliveryChannelPolicy,
-        [FromServices] HydraDeliveryChannelPolicyValidator deliveryChannelPolicyValidator,
         CancellationToken cancellationToken)
     {
+        const string errorMessage = "Failed to update delivery channel policy";
+        
         hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
 
-        try
+        var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy,
+            cancellationToken, errorMessage, "default", "put");
+        if (validateResult.GetType() != typeof(OkResult))
         {
-            var hydraDeliveryChannelValidationResult = await deliveryChannelPolicyValidator.ValidateAsync(
-                hydraDeliveryChannelPolicy,
-                policy => policy.IncludeRuleSets("default", "put"), cancellationToken);
-            if (!hydraDeliveryChannelValidationResult.IsValid)
-            {
-                return this.ValidationFailed(hydraDeliveryChannelValidationResult);
-            }
-        }
-        catch(APIException apiEx)
-        {
-            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode, 
-                "Failed to update delivery channel policy");
+            return validateResult;
         }
 
         hydraDeliveryChannelPolicy.CustomerId = customerId;
@@ -217,7 +201,7 @@ public class DeliveryChannelPoliciesController : HydraController
         
         return await HandleUpsert(updateDeliveryChannelPolicy, 
             s => s.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to update delivery channel policy",
+            errorTitle: errorMessage,
             cancellationToken: cancellationToken);
     }
     
@@ -244,28 +228,20 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromRoute] string deliveryChannelName,
         [FromRoute] string deliveryChannelPolicyName,
         [FromBody] DeliveryChannelPolicy hydraDeliveryChannelPolicy,
-        [FromServices] HydraDeliveryChannelPolicyValidator deliveryChannelPolicyValidator,
         CancellationToken cancellationToken)
     {
+        const string errorMessage = "Failed to patch delivery channel policy";
+        
         hydraDeliveryChannelPolicy.Channel = deliveryChannelName;
         hydraDeliveryChannelPolicy.Name = deliveryChannelPolicyName;
 
-        try
+        var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy,
+            cancellationToken, errorMessage, "default", "patch");
+        if (validateResult.GetType() != typeof(OkResult))
         {
-            var hydraDeliveryChannelValidationResult = await deliveryChannelPolicyValidator.ValidateAsync(
-                hydraDeliveryChannelPolicy,
-                policy => policy.IncludeRuleSets("default", "patch"), cancellationToken);
-            if (!hydraDeliveryChannelValidationResult.IsValid)
-            {
-                return this.ValidationFailed(hydraDeliveryChannelValidationResult);
-            }
+            return validateResult;
         }
-        catch(APIException apiEx)
-        {
-            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode, 
-                "Failed to update delivery channel policy");
-        }
-
+        
         hydraDeliveryChannelPolicy.CustomerId = customerId;
 
         var patchDeliveryChannelPolicy =
@@ -274,10 +250,9 @@ public class DeliveryChannelPoliciesController : HydraController
         
         return await HandleUpsert(patchDeliveryChannelPolicy, 
             s => s.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Failed to update delivery channel policy",
+            errorTitle: errorMessage,
             cancellationToken: cancellationToken);    
     } 
-    
         
     /// <summary>
     /// Delete a specified delivery channel policy
@@ -295,5 +270,29 @@ public class DeliveryChannelPoliciesController : HydraController
             new DeleteDeliveryChannelPolicy(customerId, deliveryChannelName, deliveryChannelPolicyName);
 
         return await HandleDelete(deleteDeliveryChannelPolicy);
+    }
+
+    private async Task<IActionResult> TryValidateHydraDeliveryChannelPolicy(
+        DeliveryChannelPolicy hydraDeliveryChannelPolicy,
+        CancellationToken cancellationToken,
+        string apiErrorMessage,
+        params string[] validatorRuleSets)
+    {
+        try
+        {
+            var hydraDeliveryChannelValidationResult = await hydraDeliveryChannelPolicyValidator.ValidateAsync(
+                hydraDeliveryChannelPolicy,
+                policy => policy.IncludeRuleSets(validatorRuleSets), cancellationToken);
+            if (!hydraDeliveryChannelValidationResult.IsValid)
+            {
+                return this.ValidationFailed(hydraDeliveryChannelValidationResult);
+            }
+        }
+        catch(APIException apiEx)
+        {
+            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode, apiErrorMessage);
+        }
+
+        return Ok();
     }
 }

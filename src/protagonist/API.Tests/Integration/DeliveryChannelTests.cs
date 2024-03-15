@@ -442,10 +442,9 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av/return-500-policy";
-
-        string[] nullAvPolicies = null;
+        
         A.CallTo(() => EngineClient.GetAllowedAvPolicyOptions(A<CancellationToken>._))
-            .Returns(nullAvPolicies);
+            .Returns((string[])null);
         
         // Act
         var content = new StringContent(putDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
@@ -572,10 +571,9 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av/return-500-policy";
-
-        string[] nullAvPolicies = null;
+        
         A.CallTo(() => EngineClient.GetAllowedAvPolicyOptions(A<CancellationToken>._))
-            .Returns(nullAvPolicies);
+            .Returns((string[])null);
         
         // Act
         var content = new StringContent(putDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");

@@ -77,7 +77,7 @@ public class DeliveryChannelPolicyDataValidator
         var avChannelPolicyOptions = 
             await avChannelPolicyOptionsRepository.RetrieveAvChannelPolicyOptions();
 
-        if (avChannelPolicyOptions.IsNullOrEmpty())
+        if (avChannelPolicyOptions == null)
         {
             throw new APIException("Unable to retrieve available iiif-av policies from engine");
         }

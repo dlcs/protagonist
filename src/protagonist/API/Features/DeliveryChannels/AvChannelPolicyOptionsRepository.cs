@@ -20,21 +20,33 @@ public class AvChannelPolicyOptionsRepository : IAvChannelPolicyOptionsRepositor
         this.engineClient = engineClient;
     }
 
+    private class CachedEngineAvChannelResponse
+    {
+        public IReadOnlyCollection<string>? AvChannelPolicies;
+
+        public CachedEngineAvChannelResponse(IReadOnlyCollection<string>? avChannelPolicies)
+        {
+            AvChannelPolicies = avChannelPolicies;
+        }
+    }
+
     public async Task<IReadOnlyCollection<string>?> RetrieveAvChannelPolicyOptions()
     {
         const string key = "avChannelPolicyOptions";
 
-        return await appCache.GetOrAddAsync(key, async entry =>
+        var cachedResponse = await appCache.GetOrAddAsync(key, async entry =>
         {
             var avPolicyOptions = await engineClient.GetAllowedAvPolicyOptions();
             if (avPolicyOptions == null)
             {
                 entry.AbsoluteExpirationRelativeToNow =
                     TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
-                return Array.Empty<string>();
+                return new CachedEngineAvChannelResponse(null);
             }
             
-            return avPolicyOptions;
+            return new CachedEngineAvChannelResponse(avPolicyOptions);
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
+
+        return cachedResponse.AvChannelPolicies;
     }
 }

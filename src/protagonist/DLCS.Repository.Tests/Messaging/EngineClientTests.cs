@@ -202,6 +202,25 @@ public class EngineClientTests
         returnedAvPolicyOptions!.Should().BeEquivalentTo("video-mp4-480p", "video-webm-720p", "audio-mp3-128k");
     }
     
+    [Fact]
+    public async Task GetAllowedAvOptions_ReturnsNull_IfEngineAvPolicyEndpointUnreachable()
+    {
+        // Act
+        var sut = GetSut(false);
+        
+        HttpRequestMessage message = null;
+        httpHandler.RegisterCallback(r => message = r);
+        httpHandler.GetResponseMessage("Not found", HttpStatusCode.NotFound);
+        
+        // Assert
+        var returnedAvPolicyOptions = await sut.GetAllowedAvPolicyOptions();
+        
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/allowed-av");
+        message.Method.Should().Be(HttpMethod.Get);
+        returnedAvPolicyOptions.Should().BeNull();
+    }
+    
     private EngineClient GetSut(bool useLegacyMessageFormat)
     {
         var options = Options.Create(new DlcsSettings

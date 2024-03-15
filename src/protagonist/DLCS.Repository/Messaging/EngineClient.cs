@@ -147,7 +147,7 @@ public class EngineClient : IEngineClient
         }
         catch(Exception ex)
         {
-            logger.LogError("Failed to retrieve allowed iiif-av policy options from Engine", ex);
+            logger.LogError(ex, "Failed to retrieve allowed iiif-av policy options from Engine");
             return null;
         }
     }
