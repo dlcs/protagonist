@@ -64,16 +64,16 @@ public class EngineAssetRepository : IEngineAssetRepository
                 }
             }
             
-            var success = hasBatch
+            var updatedRows = hasBatch
                 ? await BatchSave(asset.Batch!.Value, cancellationToken)
                 : await NonBatchedSave(cancellationToken);
 
-            if (success && imageStorage != null)
+            if (updatedRows && imageStorage != null)
             {
                 await IncreaseCustomerStorage(imageStorage, cancellationToken);
             }
-
-            return success;
+            
+            return updatedRows || !ingestFinished; // if the ingest hasn't finished, rows can be not updated - meaning success
         }
         catch (Exception ex)
         {
@@ -83,7 +83,7 @@ public class EngineAssetRepository : IEngineAssetRepository
     }
 
     public ValueTask<Asset?> GetAsset(AssetId assetId, CancellationToken cancellationToken = default)
-        => new(dlcsContext.Images.AsNoTracking().Include(i => i.ImageDeliveryChannels)
+        => new(dlcsContext.Images.Include(i => i.ImageDeliveryChannels)
             .ThenInclude(i => i.DeliveryChannelPolicy)
             .SingleOrDefaultAsync(i => i.Id == assetId, cancellationToken));
 
@@ -160,24 +160,6 @@ public class EngineAssetRepository : IEngineAssetRepository
         if (ingestFinished)
         {
             asset.MarkAsFinished();
-        }
-
-        // If the asset is tracked then no need to attach + set modified properties
-        // Assets will be tracked when finalising a Timebased ingest as the Asset will have been read from context
-        if (dlcsContext.Images.Local.Any(a => a.Id == asset.Id)) return;
-        
-        dlcsContext.Images.Attach(asset);
-        var entry = dlcsContext.Entry(asset);
-        entry.Property(p => p.Width).IsModified = true;
-        entry.Property(p => p.Height).IsModified = true;
-        entry.Property(p => p.Duration).IsModified = true;
-        entry.Property(p => p.Error).IsModified = true;
-        entry.Property(p => p.Ingesting).IsModified = true;
-        entry.Property(p => p.Finished).IsModified = true;
-
-        if (asset.MediaType.HasText() && asset.MediaType != "unknown")
-        {
-            entry.Property(p => p.MediaType).IsModified = true;
         }
     }
 
