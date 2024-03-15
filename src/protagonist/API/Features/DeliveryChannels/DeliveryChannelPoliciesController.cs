@@ -118,7 +118,7 @@ public class DeliveryChannelPoliciesController : HydraController
         
         var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy, errorMessage,
             new[]{ "default", "post" }, cancellationToken);
-        if (validateResult.GetType() != typeof(OkResult))
+        if (validateResult is not OkResult)
         {
             return validateResult;
         }
@@ -189,7 +189,7 @@ public class DeliveryChannelPoliciesController : HydraController
 
         var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy, errorMessage,
             new[]{ "default", "put" }, cancellationToken);
-        if (validateResult.GetType() != typeof(OkResult))
+        if (validateResult is not OkResult)
         {
             return validateResult;
         }
@@ -237,7 +237,7 @@ public class DeliveryChannelPoliciesController : HydraController
 
         var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy, errorMessage,
             new[]{ "default", "patch" }, cancellationToken);
-        if (validateResult.GetType() != typeof(OkResult))
+        if (validateResult is not OkResult)
         {
             return validateResult;
         }

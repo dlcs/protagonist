@@ -22,7 +22,7 @@ public class AvChannelPolicyOptionsRepository : IAvChannelPolicyOptionsRepositor
 
     private class CachedEngineAvChannelResponse
     {
-        public IReadOnlyCollection<string>? AvChannelPolicies;
+        public IReadOnlyCollection<string>? AvChannelPolicies { get; }
 
         public CachedEngineAvChannelResponse(IReadOnlyCollection<string>? avChannelPolicies)
         {
