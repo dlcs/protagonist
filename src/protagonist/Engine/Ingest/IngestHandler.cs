@@ -56,10 +56,10 @@ public class IngestHandler : IMessageHandler
         int customer = 0;
         try
         {
-            if (ingestResult.Id != null)
+            if (ingestResult.AssetId != null)
             {
-                customer = ingestResult.Id.Customer; 
-                await customerQueueRepository.DecrementSize(ingestResult.Id.Customer, queue,
+                customer = ingestResult.AssetId.Customer; 
+                await customerQueueRepository.DecrementSize(ingestResult.AssetId.Customer, queue,
                     cancellationToken: cancellationToken);
             }
         }

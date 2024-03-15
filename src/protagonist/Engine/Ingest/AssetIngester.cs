@@ -80,7 +80,7 @@ public class AssetIngester : IAssetIngester
         if (asset == null)
         {
             logger.LogError("Could not find an asset for asset id {AssetId}", request.Id);
-            return new IngestResult(asset?.Id, IngestResultStatus.Failed);
+            return new IngestResult(null, IngestResultStatus.Failed);
         }
         
         // get any matching CustomerOriginStrategy 
@@ -113,12 +113,12 @@ public class AssetIngester : IAssetIngester
 
 public class IngestResult
 {
-    public AssetId? Id { get; }
+    public AssetId? AssetId { get; }
     public IngestResultStatus Status { get; }
 
-    public IngestResult(AssetId? id, IngestResultStatus ingestResult)
+    public IngestResult(AssetId? assetId, IngestResultStatus ingestResult)
     {
-        Id = id;
+        AssetId = assetId;
         Status = ingestResult;
     }
 }

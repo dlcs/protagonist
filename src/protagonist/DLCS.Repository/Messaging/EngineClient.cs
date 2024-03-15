@@ -122,7 +122,6 @@ public class EngineClient : IEngineClient
             var jsonStrings = new List<string>(capacity);
             foreach (var asset in familyGrouping.Select(a => a))
             {
-                var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
                 jsonStrings.Add(GetJsonString(asset));
             }
 
