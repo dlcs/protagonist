@@ -12,14 +12,13 @@ public static class TranscoderTemplates
     /// </summary>
     /// <param name="mediaType">The media-type/content-type for asset.</param>
     /// <param name="assetId">Id of asset being ingested.</param>
-    /// <param name="preset">The preset id from ImageOptimisationPolicy</param>
     /// <param name="jobId">Unique identifier for job</param>
     /// <param name="presetExtension">The extension to use in the path</param>
     /// <returns></returns>
-    public static (string? template, string? presetName) ProcessPreset(string mediaType, AssetId assetId, string preset,
+    public static string? ProcessPreset(string mediaType, AssetId assetId,
         string jobId, string? presetExtension)
     {
-        if (presetExtension.IsNullOrEmpty()) return (null, null);
+        if (presetExtension.IsNullOrEmpty()) return null;
         
         var template = GetDestinationTemplate(mediaType);
 
@@ -27,7 +26,7 @@ public static class TranscoderTemplates
             .Replace("{jobId}", jobId)
             .Replace("{asset}", S3StorageKeyGenerator.GetStorageKey(assetId))
             .Replace("{extension}", presetExtension);
-        return (path, preset);
+        return path;
     }
 
     /// <summary>

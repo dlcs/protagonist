@@ -94,13 +94,13 @@ public class ElasticTranscoder : IMediaTranscoder
                 continue;
             }
             
-            var (destinationPath, presetName) =
-                TranscoderTemplates.ProcessPreset(mediaType, assetId, mappedPresetName, jobId, timeBasedPolicy.Split('-')[1]);
+            var destinationPath = TranscoderTemplates.ProcessPreset(
+                mediaType, assetId, jobId, timeBasedPolicy.Split('-')[1]);
 
             // TODO - handle not found
             if (!presets.TryGetValue(mappedPresetName, out var presetId))
             {
-                logger.LogWarning("Mapping for preset '{PresetName}' not found!", presetName);
+                logger.LogWarning("Mapping for preset '{PresetName}' not found!", mappedPresetName);
                 continue;
             }
 
