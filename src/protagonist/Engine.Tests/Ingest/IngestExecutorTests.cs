@@ -1,5 +1,6 @@
 ﻿using DLCS.Model.Assets;
 using DLCS.Model.Customers;
+using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using Engine.Data;
 using Engine.Ingest;
@@ -203,6 +204,28 @@ public class IngestExecutorTests
         // Assert
         result.Status.Should().Be(status);
         secondWorker.Called.Should().BeFalse();
+    }
+    
+    [Fact]
+    public async Task IngestAsset_SkipsProcessing_IfAssetHasNoneDeliveryChannel()
+    {
+        // Arrange
+        var asset = new Asset()
+        {
+            ImageDeliveryChannels = new[]
+            {
+                new ImageDeliveryChannel()
+                {
+                    Channel = AssetDeliveryChannels.None
+                }
+            }
+        };
+        
+        // Act
+        var result = await sut.IngestAsset(asset, customerOriginStrategy);
+
+        // Assert
+        result.Status.Should().Be(IngestResultStatus.Success);
     }
 }
 
