@@ -28,7 +28,9 @@ public class ElasticTranscoderTests
             {
                 DeliveryChannelMappings = new Dictionary<string, string>
                 {
-                    ["Standard WebM"] = "my-custom-preset",
+                    ["video-webm-preset"] = "Standard WebM",
+                    ["video-mp4-preset"] = "Standard mp4",
+                    ["audio-mp3-preset"] = "Standard audio"
                 },
                 PipelineName = "foo-pipeline"
             }
@@ -43,10 +45,6 @@ public class ElasticTranscoderTests
     {
         // Arrange
         var asset = new Asset(AssetId.FromString("1/2/hello"));
-        asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
-        {
-            TechnicalDetails = Array.Empty<string>()
-        });
         var context = new IngestionContext(asset);
         context.WithAssetFromOrigin(new AssetFromOrigin());
 
@@ -62,14 +60,62 @@ public class ElasticTranscoderTests
     }
     
     [Fact]
+    public async Task InitiateTranscodeOperation_Fail_IfPolicyDataNoExtension()
+    {
+        // Arrange
+        // Arrange
+        var asset = new Asset(AssetId.FromString("20/10/asset-id"))
+        {
+            MediaType = "video/mp4",
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    Channel = "iiif-av",
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        Id = 1,
+                        PolicyData = "[\"noExtensionPolicy\"]"
+                    },
+                    DeliveryChannelPolicyId = 1
+                }
+            }
+        };
+        var context = new IngestionContext(asset);
+        context.WithAssetFromOrigin(new AssetFromOrigin());
+
+        A.CallTo(() => elasticTranscoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
+            .Returns("1234567890123-abcdef");
+
+        // Act
+        var result = await sut.InitiateTranscodeOperation(context, new Dictionary<string, string>());
+
+        // Assert
+        asset.Error.Should().Be("Unable to generate ElasticTranscoder outputs");
+        result.Should().BeFalse();
+    }
+    
+    [Fact]
     public async Task InitiateTranscodeOperation_Fail_IfUnableToMakesCreateJobRequest()
     {
         // Arrange
-        var asset = new Asset(AssetId.FromString("20/10/asset-id")) { MediaType = "video/mp4" };
-        asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
+        var asset = new Asset(AssetId.FromString("20/10/asset-id"))
         {
-            TechnicalDetails = new[] { "Standard WebM(webm)", "auto-preset(mp4)" }
-        });
+            MediaType = "video/mp4",
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    Channel = "iiif-av",
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        Id = 1,
+                        PolicyData = "[\"video-webm-preset\", \"video-mp4-preset\"]"
+                    },
+                    DeliveryChannelPolicyId = 1
+                }
+            }
+        };
         var context = new IngestionContext(asset);
         context.WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "s3://loc/ation", "video/mpeg"));
 
@@ -88,11 +134,24 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_MakesCreateJobRequest()
     {
         // Arrange
-        var asset = new Asset(AssetId.FromString("20/10/asset-id")) { MediaType = "video/mp4" };
-        asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
-        {
-            TechnicalDetails = new[] { "Standard WebM(webm)", "auto-preset(mp4)" }
-        });
+        var asset = new Asset(AssetId.FromString("20/10/asset-id")) {
+            MediaType = "video/mp4", 
+            ImageDeliveryChannels = new List<ImageDeliveryChannel> 
+            {
+                new()
+                {
+                    Channel = "iiif-av",
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        Id = 1,
+                        PolicyData = "[\"video-webm-preset\", \"video-mp4-preset\"]"
+                    },
+                    DeliveryChannelPolicyId = 1
+                }
+            }
+            
+        };
+
         var context = new IngestionContext(asset);
         context.WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "s3://loc/ation", "video/mpeg"));
 
@@ -102,7 +161,8 @@ public class ElasticTranscoderTests
         A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
             .Returns(new Dictionary<string, string>()
             {
-                ["my-custom-preset"] = "1111111111111-aaaaaa",
+                ["Standard WebM"] = "1111111111111-aaaaaa",
+                ["Standard mp4"] = "1111111111111-aaaaab",
                 ["auto-preset"] = "9999999999999-bbbbbb"
             });
 
@@ -141,11 +201,24 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_ReturnsFalseAndSetsError_IfErrorStatusCodeFromET(HttpStatusCode statusCode)
     {
         // Arrange
-        var asset = new Asset(AssetId.FromString("20/10/asset-id")) { MediaType = "video/mp4" };
-        asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
+        var asset = new Asset(AssetId.FromString("20/10/asset-id"))
         {
-            TechnicalDetails = new[]{ "Standard WebM(webm)", "auto-preset(mp4)" }
-        });
+            MediaType = "video/mp4",
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    Channel = "iiif-av",
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        Id = 1,
+                        PolicyData = "[\"video-mp4-preset\"]"
+                    },
+                    DeliveryChannelPolicyId = 1
+                } 
+            }
+        };
+        
         var context = new IngestionContext(asset);
         context.WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "s3://loc/ation", "video/mpeg"));
 
@@ -155,7 +228,7 @@ public class ElasticTranscoderTests
         A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
             .Returns(new Dictionary<string, string>()
             {
-                ["my-custom-preset"] = "1111111111111-aaaaaa",
+                ["Standard mp4"] = "1111111111111-aaaaab",
                 ["auto-preset"] = "9999999999999-bbbbbb"
             });
 
@@ -180,11 +253,25 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_ReturnsTrue_IfSuccessStatusCodeFromET(HttpStatusCode statusCode)
     {
         // Arrange
-        var asset = new Asset(AssetId.FromString("20/10/asset-id")) { MediaType = "video/mp4" };
-        asset.WithImageOptimisationPolicy(new ImageOptimisationPolicy
+        var asset = new Asset(AssetId.FromString("20/10/asset-id"))
         {
-            TechnicalDetails = new[]{ "Standard WebM(webm)", "auto-preset(mp4)" }
-        });
+            MediaType = "video/mp4",
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    Channel = "iiif-av",
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        Id = 1,
+                        PolicyData = "[\"video-mp4-preset\"]"
+                    },
+                    DeliveryChannelPolicyId = 1
+                } 
+            }
+        };
+
+        
         var context = new IngestionContext(asset);
         context.WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "s3://loc/ation", "video/mpeg"));
 
@@ -195,7 +282,7 @@ public class ElasticTranscoderTests
         A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
             .Returns(new Dictionary<string, string>
             {
-                ["my-custom-preset"] = "1111111111111-aaaaaa",
+                ["Standard mp4"] = "1111111111111-aaaaab",
                 ["auto-preset"] = "9999999999999-bbbbbb"
             });
 

@@ -1,16 +1,12 @@
-﻿using System.Text.RegularExpressions;
-using DLCS.AWS.S3;
+﻿using DLCS.AWS.S3;
 using DLCS.Core;
+using DLCS.Core.Collections;
 using DLCS.Core.Types;
 
 namespace DLCS.AWS.ElasticTranscoder;
 
 public static class TranscoderTemplates
 {
-    // technical details will contain a comma separated list of presets to use with the extension in brackets at the end
-    // e.g. Wellcome Standard MP4(mp4),Wellcome Standard WebM(webm)
-    private static readonly Regex PresetRegex = new(@"^(.*?)\((.*?)\)$", RegexOptions.Compiled);
-
     /// <summary>
     /// Get the destination path where transcoded asset should be output to and the cleaned up presetName. 
     /// </summary>
@@ -18,23 +14,20 @@ public static class TranscoderTemplates
     /// <param name="assetId">Id of asset being ingested.</param>
     /// <param name="preset">The preset id from ImageOptimisationPolicy</param>
     /// <param name="jobId">Unique identifier for job</param>
+    /// <param name="presetExtension">The extension to use in the path</param>
     /// <returns></returns>
     public static (string? template, string? presetName) ProcessPreset(string mediaType, AssetId assetId, string preset,
-        string jobId)
+        string jobId, string? presetExtension)
     {
-        var match = PresetRegex.Match(preset);
-
-        if (!match.Success) return (null, null);
-
-        var presetName = match.Groups[1].Value;
-        var presetExtension = match.Groups[2].Value;
+        if (presetExtension.IsNullOrEmpty()) return (null, null);
+        
         var template = GetDestinationTemplate(mediaType);
 
         var path = template
             .Replace("{jobId}", jobId)
             .Replace("{asset}", S3StorageKeyGenerator.GetStorageKey(assetId))
             .Replace("{extension}", presetExtension);
-        return (path, presetName);
+        return (path, preset);
     }
 
     /// <summary>

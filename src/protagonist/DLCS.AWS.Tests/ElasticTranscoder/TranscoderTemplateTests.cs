@@ -10,7 +10,7 @@ public class TranscoderTemplatesTests
     {
         // Act
         var (template, preset) =
-            TranscoderTemplates.ProcessPreset("video/mpg", new AssetId(1, 2, "foo"), "mp3preset", "foo");
+            TranscoderTemplates.ProcessPreset("video/mpg", new AssetId(1, 2, "foo"), "mp3preset", "foo", null);
             
         // Assert
         template.Should().BeNull();
@@ -26,11 +26,11 @@ public class TranscoderTemplatesTests
             
         // Act
         var (template, preset) =
-            TranscoderTemplates.ProcessPreset("audio/wav", asset, "my-preset(mp3)", "_jobid_");
+            TranscoderTemplates.ProcessPreset("audio/wav", asset, "some preset", "_jobid_", "mp3");
             
         // Assert
         template.Should().Be(expected);
-        preset.Should().Be("my-preset");
+        preset.Should().Be("some preset");
     }
         
     [Fact]
@@ -42,11 +42,11 @@ public class TranscoderTemplatesTests
             
         // Act
         var (template, preset) =
-            TranscoderTemplates.ProcessPreset("video/mpeg", asset, "my-preset(webm)", "_jobid_");
+            TranscoderTemplates.ProcessPreset("video/mpeg", asset, "some preset", "_jobid_", "webm");
             
         // Assert
         template.Should().Be(expected);
-        preset.Should().Be("my-preset");
+        preset.Should().Be("some preset");
     }
         
     [Fact]
@@ -54,8 +54,10 @@ public class TranscoderTemplatesTests
     {
         // Act
         Action action = () =>
-            TranscoderTemplates.ProcessPreset("binary/octet-stream", new AssetId(1, 5, "foo"), "my-preset(webm)",
-                "_jobid_");
+            TranscoderTemplates.ProcessPreset("binary/octet-stream", new AssetId(1, 5, "foo"), 
+                "some preset",
+                "_jobid_",
+                "webm");
 
         // Assert
         action.Should().Throw<InvalidOperationException>()
@@ -69,7 +71,7 @@ public class TranscoderTemplatesTests
         var asset = new AssetId(1, 5, "foo");
         const string expected = "1/5/foo/full/max/default.mp3";
         var (template, _) =
-            TranscoderTemplates.ProcessPreset("audio/wav", asset, "my-preset(mp3)", Guid.NewGuid().ToString());
+            TranscoderTemplates.ProcessPreset("audio/wav", asset, "some preset", Guid.NewGuid().ToString(), "mp3");
             
         // Act
         var result = TranscoderTemplates.GetFinalDestinationKey(template);
@@ -85,7 +87,7 @@ public class TranscoderTemplatesTests
         var asset = new AssetId(1, 5, "foo");
         const string expected = "1/5/foo/full/full/max/max/0/default.webm";
         var (template, _) =
-            TranscoderTemplates.ProcessPreset("video/mpeg", asset, "my-preset(webm)", Guid.NewGuid().ToString());
+            TranscoderTemplates.ProcessPreset("video/mpeg", asset, "some preset", Guid.NewGuid().ToString(), "webm");
             
         // Act
         var result = TranscoderTemplates.GetFinalDestinationKey(template);
