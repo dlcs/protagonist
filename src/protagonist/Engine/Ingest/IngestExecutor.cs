@@ -39,7 +39,16 @@ public class IngestExecutor
         // If the asset has the `none` delivery channel specified, skip processing and mark the ingest as being complete
         if (asset.HasDeliveryChannel(AssetDeliveryChannels.None))
         {
-            await assetRepository.UpdateIngestedAsset(context.Asset, null, null, 
+            var imageStorage = new ImageStorage
+            {
+                Id = asset.Id,
+                Customer = asset.Customer,
+                Space = asset.Space,
+                Size = 0,
+                LastChecked = DateTime.UtcNow,
+                ThumbnailSize = 0,
+            };
+            await assetRepository.UpdateIngestedAsset(context.Asset, null, imageStorage, 
                 true, cancellationToken);
             return new IngestResult(asset.Id, IngestResultStatus.Success);
         }
