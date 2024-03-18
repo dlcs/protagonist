@@ -34,9 +34,17 @@ public class IngestExecutor
     public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
-        var workers = workerBuilder.GetWorkers(asset);
-        
         var context = new IngestionContext(asset);
+
+        // If the asset has the `none` delivery channel specified, skip processing and mark the ingest as being complete
+        if (asset.HasDeliveryChannel(AssetDeliveryChannels.None))
+        {
+            await assetRepository.UpdateIngestedAsset(context.Asset, null, null, 
+                true, cancellationToken);
+            return new IngestResult(asset.Id, IngestResultStatus.Success);
+        }
+        
+        var workers = workerBuilder.GetWorkers(asset);
         var overallStatus = IngestResultStatus.Unknown;
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
