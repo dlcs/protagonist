@@ -37,7 +37,7 @@ public class IngestExecutor
         var context = new IngestionContext(asset);
 
         // If the asset has the `none` delivery channel specified, skip processing and mark the ingest as being complete
-        if (asset.HasDeliveryChannel(AssetDeliveryChannels.None))
+        if (asset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
         {
             var imageStorage = new ImageStorage
             {
