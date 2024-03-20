@@ -98,7 +98,17 @@ public class AssetProcessor
 
                 counts.CustomerStorage.NumberOfStoredImages++;
             }
-
+            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing.IsNullOrEmpty() && alwaysReingest)
+            {
+                return new ProcessAssetResult
+                {
+                    Result = ModifyEntityResult<Asset>.Failure(
+                        "Delivery channels are required when updating an existing Asset via PUT",
+                        WriteResult.BadRequest
+                    )
+                };  
+            }
+            
             var assetPreparationResult =
                 AssetPreparer.PrepareAssetForUpsert(existingAsset, assetBeforeProcessing.Asset, false, isBatchUpdate, settings.RestrictedAssetIdCharacters);
 
@@ -113,7 +123,7 @@ public class AssetProcessor
             
             var updatedAsset = assetPreparationResult.UpdatedAsset!;
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
-
+            
             if (existingAsset == null)
             {
                 try
@@ -136,7 +146,7 @@ public class AssetProcessor
                     };
                 }
             }
-
+            
             if (requiresEngineNotification)
             {
                 updatedAsset.SetFieldsForIngestion();

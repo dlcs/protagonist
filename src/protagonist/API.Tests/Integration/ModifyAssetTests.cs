@@ -79,11 +79,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
         var hydraImageBody = $@"{{
-  ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-  ""family"": ""I"",
-  ""mediaType"": ""image/tiff""
-}}";
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff""
+        }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
                     A<Asset>.That.Matches(r => r.Id == assetId),
@@ -839,12 +839,17 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
-  ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-  ""family"": ""I"",
-  ""mediaType"": ""image/tiff""
-}}";
-        
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"": ""iiif-img"",
+                ""policy"": ""default""
+            }}]
+        }}";
+                
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
                     A<Asset>.That.Matches(r => r.Id == assetId),
@@ -861,6 +866,52 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Entry(newAsset.Entity).ReloadAsync();
         newAsset.Entity.Ingesting.Should().BeTrue();
         newAsset.Entity.Error.Should().BeEmpty();
+    }
+    
+    [Fact]
+    public async Task Put_Existing_Asset_Returns400_IfDeliveryChannelsNull()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_Returns400_IfDeliveryChannelsNull));
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": []
+        }}";
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Put_Existing_Asset_Returns400_IfDeliveryChannelsEmpty()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_Returns400_IfDeliveryChannelsEmpty));
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": []
+        }}";
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
     [Fact]
@@ -1076,6 +1127,24 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Patch_Asset_Returns_BadRequest_if_DeliveryChannels_Empty()
+    {
+        // arrange
+        var assetId = new AssetId(99, 1, nameof(Patch_Asset_Change_ImageOptimisationPolicy_Allowed));
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""deliveryChannels"": []
+        }}";
+
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
     [Fact]
