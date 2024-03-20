@@ -99,6 +99,17 @@ public class AssetProcessor
                 counts.CustomerStorage.NumberOfStoredImages++;
             }
 
+            if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing.IsNullOrEmpty() && !mustExist)
+            {
+                return new ProcessAssetResult
+                {
+                    Result = ModifyEntityResult<Asset>.Failure(
+                        "Delivery channels are required when updating an existing Asset via PUT",
+                        WriteResult.BadRequest
+                    )
+                };  
+            }
+            
             var assetPreparationResult =
                 AssetPreparer.PrepareAssetForUpsert(existingAsset, assetBeforeProcessing.Asset, false, isBatchUpdate, settings.RestrictedAssetIdCharacters);
 
