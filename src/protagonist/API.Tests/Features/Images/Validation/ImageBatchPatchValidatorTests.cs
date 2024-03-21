@@ -133,7 +133,7 @@ public class ImageBatchPatchValidatorTests
     }
     
     [Fact]
-    public void Member_DeliveryChannels_Provided()
+    public void Member_WcDeliveryChannels_Provided()
     {
         var model = new HydraCollection<Image> { Members = new[]
         {
@@ -152,5 +152,23 @@ public class ImageBatchPatchValidatorTests
         } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].ThumbnailPolicy");
+    }
+    
+    [Fact]
+    public void Member_DeliveryChannels_Provided()
+    {
+        var model = new HydraCollection<Image> { Members = new[]
+        {
+            new Image { DeliveryChannels = new []
+            {
+                new DeliveryChannel()
+                {
+                    Channel = "iiif-img",
+                    Policy = "default"
+                }
+            }}
+        } };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Members[0].DeliveryChannels");
     }
 }
