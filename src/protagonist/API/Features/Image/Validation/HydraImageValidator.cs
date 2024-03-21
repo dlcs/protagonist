@@ -23,7 +23,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
                 .WithMessage("'deliveryChannels' cannot be an empty array when updating an existing asset via PATCH");
         });
         
-        RuleSet("put", () =>
+        RuleSet("create", () =>
         {
             RuleFor(a => a.MediaType).NotEmpty().WithMessage("Media type must be specified");
         });
