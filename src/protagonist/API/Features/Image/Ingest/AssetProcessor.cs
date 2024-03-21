@@ -124,7 +124,7 @@ public class AssetProcessor
             var updatedAsset = assetPreparationResult.UpdatedAsset!;
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
             
-            if (existingAsset == null)
+            if (existingAsset == null || DeliveryChannelsRequireReprocessing(existingAsset, assetBeforeProcessing))
             {
                 try
                 {
@@ -242,6 +242,23 @@ public class AssetProcessor
         }
             
         return true;
+    }
+    
+    private bool DeliveryChannelsRequireReprocessing(Asset originalAsset, AssetBeforeProcessing changedAsset)
+    {
+        if (originalAsset.ImageDeliveryChannels.Count != changedAsset.DeliveryChannelsBeforeProcessing.Length) return true;
+    
+        foreach (var deliveryChannel in changedAsset.DeliveryChannelsBeforeProcessing)
+        {
+            if (!originalAsset.ImageDeliveryChannels.Any(c =>
+                    c.Channel == deliveryChannel.Channel &&
+                    c.DeliveryChannelPolicy.Name == deliveryChannel.Policy))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
