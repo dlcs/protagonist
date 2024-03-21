@@ -107,7 +107,7 @@ public class ImageController : HydraController
         }
         
         var validationResult = await validator.ValidateAsync(hydraAsset, 
-            strategy => strategy.IncludeRuleSets("default", "put"), cancellationToken);
+            strategy => strategy.IncludeRuleSets("default", "create"), cancellationToken);
         
         if (!validationResult.IsValid)
         {

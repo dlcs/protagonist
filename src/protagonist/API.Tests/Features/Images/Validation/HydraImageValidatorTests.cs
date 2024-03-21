@@ -22,10 +22,10 @@ public class HydraImageValidatorTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void MediaType_NullOrEmpty(string mediaType)
+    public void MediaType_NullOrEmpty_OnCreate(string mediaType)
     {
         var model = new DLCS.HydraModel.Image { MediaType = mediaType };
-        var result = sut.TestValidate(model);
+        var result = sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(a => a.MediaType);
     }
     
