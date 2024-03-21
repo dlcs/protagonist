@@ -10,6 +10,7 @@ using DLCS.Core.Types;
 using DLCS.HydraModel;
 using Hydra.Model;
 using MediatR;
+using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -150,12 +151,20 @@ public class ImageController : HydraController
         [FromRoute] int spaceId,
         [FromRoute] string imageId,
         [FromBody] DLCS.HydraModel.Image hydraAsset,
+        [FromServices] HydraImageValidator validator,
         CancellationToken cancellationToken)
     {
         if (!apiSettings.DeliveryChannelsEnabled && !hydraAsset.WcDeliveryChannels.IsNullOrEmpty())
         {
             var assetId = new AssetId(customerId, spaceId, imageId);
             return this.HydraProblem("Delivery channels are disabled", assetId.ToString(), 400, "Bad Request");
+        }
+        
+        var validationResult = await validator.ValidateAsync(hydraAsset, 
+            strategy => strategy.IncludeRuleSets("default", "patch"), cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
         }
         
         return await PutOrPatchAsset(customerId, spaceId, imageId, hydraAsset, cancellationToken);
