@@ -78,11 +78,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
         var hydraImageBody = $@"{{
-  ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-  ""family"": ""I"",
-  ""mediaType"": ""image/tiff""
-}}";
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff""
+        }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
                     A<Asset>.That.Matches(r => r.Id == assetId),
@@ -838,12 +838,17 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
-  ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-  ""family"": ""I"",
-  ""mediaType"": ""image/tiff""
-}}";
-        
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"": ""iiif-img"",
+                ""policy"": ""default""
+            }}]
+        }}";
+                
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
                     A<Asset>.That.Matches(r => r.Id == assetId),

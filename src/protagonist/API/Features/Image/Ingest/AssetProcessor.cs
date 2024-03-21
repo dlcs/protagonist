@@ -98,8 +98,7 @@ public class AssetProcessor
 
                 counts.CustomerStorage.NumberOfStoredImages++;
             }
-
-            if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing.IsNullOrEmpty() && !mustExist)
+            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing.IsNullOrEmpty() && alwaysReingest)
             {
                 return new ProcessAssetResult
                 {
@@ -124,7 +123,7 @@ public class AssetProcessor
             
             var updatedAsset = assetPreparationResult.UpdatedAsset!;
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
-
+            
             if (existingAsset == null)
             {
                 try
@@ -147,7 +146,7 @@ public class AssetProcessor
                     };
                 }
             }
-
+            
             if (requiresEngineNotification)
             {
                 updatedAsset.SetFieldsForIngestion();
