@@ -37,9 +37,4 @@ public class DlcsSettings
     /// URL format for generating manifests for single assets
     /// </summary>
     public string SingleAssetManifestTemplate { get; set; }
-    
-    /// <summary>
-    /// If true, the legacy/Deliverator message format is used for requests to Engine
-    /// </summary>
-    public bool UseLegacyEngineMessage { get; set; }
 }

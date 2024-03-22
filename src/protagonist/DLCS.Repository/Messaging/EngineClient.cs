@@ -155,12 +155,6 @@ public class EngineClient : IEngineClient
     
     private string GetJsonString(Asset asset)
     {
-        // If running in legacy mode, the payload should contain the full Legacy JSON string
-        if (dlcsSettings.UseLegacyEngineMessage)
-        {
-            throw new InvalidOperationException("Legacy ingest events are no longer supported");
-        }
-        
         var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
 
         // Otherwise, it should contain only the Asset ID - for now, this is an Asset object containing just the ID

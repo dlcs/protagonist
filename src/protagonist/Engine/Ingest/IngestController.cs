@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
 using DLCS.Model.Messaging;
-using Engine.Ingest.Models;
 using Engine.Settings;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -20,25 +19,7 @@ public class IngestController : Controller
         this.ingester = ingester;
         timebasedIngestSettings = engineSettings.Value.TimebasedIngest;
     }
-
-    /// <summary>
-    /// Synchronously ingest an asset using legacy model
-    /// </summary>
-    [HttpPost]
-    [Route("image-ingest")]
-    public async Task<IActionResult> IngestImage(CancellationToken cancellationToken)
-    {
-        // TODO - throw if this is a 'T' request
-        var message =
-            await JsonSerializer.DeserializeAsync<LegacyIngestEvent>(Request.Body,
-                JsonSerializerOptions, cancellationToken);
-
-        // TODO - throw if this is a 'T' request
-        var result = await ingester.Ingest(message, cancellationToken);
-
-        return ConvertToStatusCode(message, result.Status);
-    }
-
+    
     /// <summary>
     /// Synchronously ingest an asset 
     /// </summary>

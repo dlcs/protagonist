@@ -24,7 +24,8 @@ public class EngineClientTests
     private readonly IQueueLookup queueLookup;
     private readonly IQueueSender queueSender;
     private readonly HttpClient httpClient;
-
+    private readonly EngineClient sut;
+    
     public EngineClientTests()
     {
         httpHandler = new ControllableHttpMessageHandler();
@@ -35,37 +36,17 @@ public class EngineClientTests
 
         queueLookup = A.Fake<IQueueLookup>();
         queueSender = A.Fake<IQueueSender>();
-    }
-
-    [Theory]
-    [InlineData(AssetFamily.File, 'F')]
-    [InlineData(AssetFamily.Image, 'I')]
-    [InlineData(AssetFamily.Timebased, 'T')]
-    public void SynchronousIngest_FailsToCallEngineWithLegacyModel_IfUseLegacyEngineMessageTrue(
-        AssetFamily family, char expected)
-    {
-        // Arrange
-        var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
+        
+        var engineClientOptions = Options.Create(new DlcsSettings
         {
-            Family = family
-        };
-
-        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
-        HttpRequestMessage message = null;
-        httpHandler.RegisterCallback(r => message = r);
-        httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
-
-        var sut = GetSut(true);
-
-        // Act
-        Action action = () => sut.SynchronousIngest(asset).Wait();
-
-        // Assert
-        action.Should().Throw<InvalidOperationException>().WithMessage("Legacy ingest events are no longer supported");
+            EngineRoot = new Uri("http://engine.dlcs/")
+        });
+        
+        sut = new EngineClient(queueLookup, queueSender, httpClient, engineClientOptions, new NullLogger<EngineClient>());
     }
     
     [Fact]
-    public async Task SynchronousIngest_CallsEngineWithCurrentModel_IfUseLegacyEngineMessageFalse()
+    public async Task SynchronousIngest_CallsEngine()
     {
         // Arrange
         var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
@@ -81,8 +62,6 @@ public class EngineClientTests
         httpHandler.RegisterCallback(r => message = r);
         httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
 
-        var sut = GetSut(false);
-        
         // Act
         var statusCode = await sut.SynchronousIngest(asset);
         
@@ -102,32 +81,7 @@ public class EngineClientTests
     }
     
     [Fact]
-    public void AsynchronousIngest_FailsToQueueLegacyModel_IfUseLegacyEngineMessageTrue()
-    {
-        // Arrange
-        var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
-        {
-            Family = AssetFamily.Image
-        };
-        
-        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
-
-        var sut = GetSut(true);
-        string jsonString = string.Empty;
-        A.CallTo(() => queueLookup.GetQueueNameForFamily(AssetFamily.Image, false)).Returns("test-queue");
-        A.CallTo(() => queueSender.QueueMessage("test-queue", A<string>._, A<CancellationToken>._))
-            .Invokes((string _, string message, CancellationToken _) => jsonString = message)
-            .Returns(true);
-        
-        // Act
-        Action action = () => sut.AsynchronousIngest(asset).Wait();
-        
-        // Assert
-        action.Should().Throw<InvalidOperationException>().WithMessage("Legacy ingest events are no longer supported");
-    }
-    
-    [Fact]
-    public async Task AsynchronousIngest_QueuesMessageWithCurrentModel_IfUseLegacyEngineMessageFalse()
+    public async Task AsynchronousIngest_QueuesMessage()
     {
         // Arrange
         var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
@@ -139,9 +93,8 @@ public class EngineClientTests
         };
         
         var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
-        var sut = GetSut(false);
-
-        string jsonString = string.Empty;
+       
+        var jsonString = string.Empty;
         A.CallTo(() => queueLookup.GetQueueNameForFamily(AssetFamily.Image, false)).Returns("test-queue");
         A.CallTo(() => queueSender.QueueMessage("test-queue", A<string>._, A<CancellationToken>._))
             .Invokes((string _, string message, CancellationToken _) => jsonString = message)
@@ -163,14 +116,12 @@ public class EngineClientTests
     [Fact]
     public async Task GetAllowedAvOptions_RetrievesAllowedAvPolicies()
     {
-        // Act
-        var sut = GetSut(false);
-        
+        // Arrange
         HttpRequestMessage message = null;
         httpHandler.RegisterCallback(r => message = r);
         httpHandler.GetResponseMessage("[\"video-mp4-480p\",\"video-webm-720p\",\"audio-mp3-128k\"]", HttpStatusCode.OK);
         
-        // Assert
+        // Act
         var returnedAvPolicyOptions = await sut.GetAllowedAvPolicyOptions();
         
         // Assert
@@ -183,30 +134,17 @@ public class EngineClientTests
     [Fact]
     public async Task GetAllowedAvOptions_ReturnsNull_IfEngineAvPolicyEndpointUnreachable()
     {
-        // Act
-        var sut = GetSut(false);
-        
+        // Arrange
         HttpRequestMessage message = null;
         httpHandler.RegisterCallback(r => message = r);
         httpHandler.GetResponseMessage("Not found", HttpStatusCode.NotFound);
         
-        // Assert
+        // Act
         var returnedAvPolicyOptions = await sut.GetAllowedAvPolicyOptions();
         
         // Assert
         httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/allowed-av");
         message.Method.Should().Be(HttpMethod.Get);
         returnedAvPolicyOptions.Should().BeNull();
-    }
-    
-    private EngineClient GetSut(bool useLegacyMessageFormat)
-    {
-        var options = Options.Create(new DlcsSettings
-        {
-            EngineRoot = new Uri("http://engine.dlcs/"),
-            UseLegacyEngineMessage = useLegacyMessageFormat
-        });
-
-        return new EngineClient(queueLookup, queueSender, httpClient, options, new NullLogger<EngineClient>());
     }
 }

@@ -60,36 +60,6 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData(IngestResultStatus.Success, HttpStatusCode.OK)]
     [InlineData(IngestResultStatus.QueuedForProcessing, HttpStatusCode.Accepted)]
     [InlineData(IngestResultStatus.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
-    public async Task IngestImage_ReturnsExpectedCode_ForIngestResult_Legacy(IngestResultStatus ingestResult, HttpStatusCode expected)
-    {
-        // Arrange
-        var assetId = $"1/2/{ingestResult}";
-        var message = new LegacyIngestEvent(
-            assetId, 
-            DateTime.UtcNow, 
-            "message", 
-            new Dictionary<string, string>
-        {
-            ["asset"] = "test"
-        });
-        
-        A.CallTo(() =>
-            assetIngester.Ingest(A<LegacyIngestEvent>.That.Matches(r => r.Type == assetId),
-                A<CancellationToken>._)).Returns(new IngestResult(null, ingestResult));
-
-        // Act
-        var result = await httpClient.PostAsync("image-ingest", GetJsonContent(message));
-        
-        // Assert
-        result.StatusCode.Should().Be(expected);
-    }
-    
-    [Theory]
-    [InlineData(IngestResultStatus.Unknown, HttpStatusCode.InternalServerError)]
-    [InlineData(IngestResultStatus.Failed, HttpStatusCode.InternalServerError)]
-    [InlineData(IngestResultStatus.Success, HttpStatusCode.OK)]
-    [InlineData(IngestResultStatus.QueuedForProcessing, HttpStatusCode.Accepted)]
-    [InlineData(IngestResultStatus.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
     public async Task IngestAsset_ReturnsExpectedCode_ForIngestResult_ByteArray(IngestResultStatus ingestResult,
         HttpStatusCode expected)
     {
@@ -106,38 +76,7 @@ public class IngestResponseTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         result.StatusCode.Should().Be(expected);
     }
-
-    [Theory]
-    [InlineData(IngestResultStatus.Unknown, HttpStatusCode.InternalServerError)]
-    [InlineData(IngestResultStatus.Failed, HttpStatusCode.InternalServerError)]
-    [InlineData(IngestResultStatus.Success, HttpStatusCode.OK)]
-    [InlineData(IngestResultStatus.QueuedForProcessing, HttpStatusCode.Accepted)]
-    [InlineData(IngestResultStatus.StorageLimitExceeded, HttpStatusCode.InsufficientStorage)]
-    public async Task IngestImage_ReturnsExpectedCode_ForIngestResult_Legacy_ByteArray(IngestResultStatus ingestResult,
-        HttpStatusCode expected)
-    {
-        // Arrange
-        var assetId = $"1/2/{ingestResult}";
-        var message = new LegacyIngestEvent(
-            assetId,
-            DateTime.UtcNow,
-            "message",
-            new Dictionary<string, string>
-            {
-                ["asset"] = "test"
-            });
-
-        A.CallTo(() =>
-            assetIngester.Ingest(A<LegacyIngestEvent>.That.Matches(r => r.Type == assetId),
-                A<CancellationToken>._)).Returns(new IngestResult(null, ingestResult));
-
-        // Act
-        var result = await httpClient.PostAsync("image-ingest", GetByteArrayContent(message));
-
-        // Assert
-        result.StatusCode.Should().Be(expected);
-    }
-
+    
     private StringContent GetJsonContent(object message)
     {
         var jsonString = JsonSerializer.Serialize(message, settings);

@@ -25,24 +25,15 @@ public class IngestHandler : IMessageHandler
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken)
     {
-        IngestResult ingestResult;
-        if (IsLegacyMessageType(message))
-        {
-            var legacyEvent = DeserializeBody<LegacyIngestEvent>(message);
-            if (legacyEvent == null) return false;
-            ingestResult = await ingester.Ingest(legacyEvent, cancellationToken);
-        }
-        else
-        {
-            var ingestEvent = DeserializeBody<IngestAssetRequest>(message);
-            if (ingestEvent == null) return false;
-            ingestResult = await ingester.Ingest(ingestEvent, cancellationToken);
-        }
-
+        var ingestEvent = DeserializeBody<IngestAssetRequest>(message);
+        
+        if (ingestEvent == null) return false;
+        
+        var ingestResult = await ingester.Ingest(ingestEvent, cancellationToken);
+        
         logger.LogDebug("Message {MessageId} handled with result {IngestResult}", message.MessageId, ingestResult.Status);
-
         await UpdateCustomerQueue(message, cancellationToken, ingestResult);
-
+        
         // return true so that the message is deleted from the queue in all instances.
         // This shouldn't be the case and can be revisited at a later date as it will need logic of how Batch.Errors is
         // calculated
@@ -83,7 +74,4 @@ public class IngestHandler : IMessageHandler
             return null;
         }
     }
-
-    // If the message contains "_type" field then it is the legacy version from Deliverator/Inversion
-    private bool IsLegacyMessageType(QueueMessage message) => message.Body.ContainsKey("_type");
 }
