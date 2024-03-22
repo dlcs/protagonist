@@ -288,9 +288,18 @@ public class AssetDeletedHandlerTests
                 Id = new AssetId(1, 99, "foo"),
                 ImageDeliveryChannels = new List<ImageDeliveryChannel>()
                 {
-                    new() { Channel = "iiif-img" },
-                    new() { Channel = "iiif-av" },
-                    new() { Channel = "file" },
+                    new()
+                    {
+                        Channel = "iiif-img"
+                    },
+                    new()
+                    {
+                        Channel = "iiif-av"
+                    },
+                    new()
+                    {
+                        Channel = "file"
+                    }
                 }
             },
             DeleteFrom = ImageCacheType.Cdn,

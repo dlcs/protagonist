@@ -107,15 +107,19 @@ public class AssetDeletedHandler : IMessageHandler
             invalidationUriList = SetDeliveryChannelInvalidations(asset.Id!, 
                 asset.ImageDeliveryChannels, idList);
         }
-        else if (asset.Family is AssetFamily.Image)
+        else if (asset.Family.HasValue)
         {
-            logger.LogDebug("Received message body with no 'deliveryChannels' property - using 'family' as a fallback. {@Request}",
-                asset);
-            foreach (var id in idList)
+            if(asset.Family == AssetFamily.Image)
             {
-                invalidationUriList.Add($"/iiif-manifest/{id}");
-                invalidationUriList.Add($"/iiif-manifest/v2/{id}");
-                invalidationUriList.Add($"/iiif-manifest/v3/{id}");
+                logger.LogDebug(
+                    "Received message body with no 'deliveryChannels' property - using 'family' as a fallback. {@Request}",
+                    asset);
+                foreach (var id in idList)
+                {
+                    invalidationUriList.Add($"/iiif-manifest/{id}");
+                    invalidationUriList.Add($"/iiif-manifest/v2/{id}");
+                    invalidationUriList.Add($"/iiif-manifest/v3/{id}");
+                }
             }
         }
         else
