@@ -61,6 +61,8 @@ The process for each asset delivery-channel is outlined below, the same process 
   * Input file is removed.
   * "Images" database record updated with dimensions and marked as complete, "ImageStorage" is updated with size of bytes stored
 
+A list of transcode policies supported by Engine (as a JSON string array) can be retrieved the `/allowed-av` route.
+
 #### File (file channel)
 
 * If asset is stored at optimised origin this is a no-op (we will server from origin). Else,
