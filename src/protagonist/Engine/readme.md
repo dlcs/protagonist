@@ -6,10 +6,7 @@ Engine is responsible for ingesting assets; either synchronously via an API call
 
 ### API (Synchronous)
 
-The engine has 2 routes for synchronous processing:
-
-* `/asset-ingest` - Process incoming `IngestAssetRequest` - generating derivatives for asset delivery.
-* `/image-ingest` - As above but takes `LegacyIngestEvent`, which is Deliverator notification model. The `LegacyIngestEvent` is converted to `IngestAssetRequest` and follows exact same process as above. _The intention is that this endpoint will be removed when Deliverator engine is retired_
+For synchronous processing, the engine takes incoming`IngestAssetRequest` at `/asset-ingest`, generating derivatives for asset delivery.
 
 ### Queue (Asynchronous)
 
@@ -63,6 +60,8 @@ The process for each asset delivery-channel is outlined below, the same process 
   * AV output files are moved to correct S3 locations and permissions set.
   * Input file is removed.
   * "Images" database record updated with dimensions and marked as complete, "ImageStorage" is updated with size of bytes stored
+
+A list of transcode policies supported by Engine (as a JSON string array) can be retrieved the `/allowed-av` route.
 
 #### File (file channel)
 

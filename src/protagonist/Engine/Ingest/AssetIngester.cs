@@ -11,13 +11,6 @@ namespace Engine.Ingest;
 public interface IAssetIngester
 {
     /// <summary>
-    /// Run ingest based on <see cref="LegacyIngestEvent"/>.
-    /// </summary>
-    /// <returns>Result of ingest operations</returns>
-    /// <remarks>This is to comply with message format sent by Deliverator API.</remarks>
-    Task<IngestResult> Ingest(LegacyIngestEvent request, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Run ingest based on <see cref="IngestAssetRequest"/>.
     /// </summary>
     /// <returns>Result of ingest operations</returns>
@@ -48,27 +41,7 @@ public class AssetIngester : IAssetIngester
         this.executor = executor;
         this.engineAssetRepository = engineAssetRepository;
     }
-
-    /// <summary>
-    /// Run ingest based on <see cref="LegacyIngestEvent"/>.
-    /// </summary>
-    /// <returns>Result of ingest operations</returns>
-    /// <remarks>This is to comply with message format sent by Deliverator API.</remarks>
-    public Task<IngestResult> Ingest(LegacyIngestEvent request, CancellationToken cancellationToken = default)
-    {
-        IngestAssetRequest? internalIngestRequest = null;
-        try
-        {
-            internalIngestRequest = request.ConvertToAssetRequest();
-            return Ingest(internalIngestRequest, cancellationToken);
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Exception ingesting IncomingIngest - {Message}", request.Message);
-            return Task.FromResult(new IngestResult(internalIngestRequest?.Id, IngestResultStatus.Failed));
-        }
-    }
-
+    
     /// <summary>
     /// Run ingest based on <see cref="IngestAssetRequest"/>.
     /// </summary>
