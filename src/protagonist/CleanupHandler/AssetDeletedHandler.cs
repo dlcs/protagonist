@@ -102,33 +102,26 @@ public class AssetDeletedHandler : IMessageHandler
             $"{customerName}/{asset.Id.Space}/{asset.Id.Asset}"
         };
         
-        if (asset.ImageDeliveryChannels.IsNullOrEmpty())
-        {
-            logger.LogDebug("Received message body with no 'deliveryChannels' property. {@Request}", 
-                asset);
-        }
-        else
+        if (!asset.ImageDeliveryChannels.IsNullOrEmpty())
         {
             invalidationUriList = SetDeliveryChannelInvalidations(asset.Id!, 
                 asset.ImageDeliveryChannels, idList);
         }
-        
-        if (!asset.Family.HasValue)
+        else if (asset.Family is AssetFamily.Image)
         {
-            logger.LogDebug("Received message body with no 'asset family' property. {@Request}", 
+            logger.LogDebug("Received message body with no 'deliveryChannels' property - using 'family' as a fallback. {@Request}",
                 asset);
+            foreach (var id in idList)
+            {
+                invalidationUriList.Add($"/iiif-manifest/{id}");
+                invalidationUriList.Add($"/iiif-manifest/v2/{id}");
+                invalidationUriList.Add($"/iiif-manifest/v3/{id}");
+            }
         }
         else
         {
-            if (asset.Family == AssetFamily.Image)
-            {
-                foreach (var id in idList)
-                {
-                    invalidationUriList.Add($"/iiif-manifest/{id}");
-                    invalidationUriList.Add($"/iiif-manifest/v2/{id}");
-                    invalidationUriList.Add($"/iiif-manifest/v3/{id}");
-                }
-            }
+            logger.LogDebug("Unable to set invalidations - 'deliveryChannels' and 'family' not found in message body. {@Request}",
+                asset); 
         }
         
         if (invalidationUriList.Count > 0)
