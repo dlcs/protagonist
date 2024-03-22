@@ -6,10 +6,7 @@ Engine is responsible for ingesting assets; either synchronously via an API call
 
 ### API (Synchronous)
 
-The engine has 2 routes for synchronous processing:
-
-* `/asset-ingest` - Process incoming `IngestAssetRequest` - generating derivatives for asset delivery.
-* `/image-ingest` - As above but takes `LegacyIngestEvent`, which is Deliverator notification model. The `LegacyIngestEvent` is converted to `IngestAssetRequest` and follows exact same process as above. _The intention is that this endpoint will be removed when Deliverator engine is retired_
+For synchronous processing, the engine takes incoming`IngestAssetRequest` at `/asset-ingest`, generating derivatives for asset delivery.
 
 ### Queue (Asynchronous)
 
