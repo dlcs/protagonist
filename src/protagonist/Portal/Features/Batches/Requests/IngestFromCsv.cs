@@ -197,7 +197,7 @@ public class ImageIngestModel
 {
     public static readonly string[] FieldNames =
     {
-        "Type", "Line", "Space", "ID", "Origin", "InitialOrigin", "Reference1", "Reference2", "Reference3", "Tags",
+        "Type", "Line", "Space", "ID", "Origin", "Reference1", "Reference2", "Reference3", "Tags",
         "Roles",
         "MaxUnauthorised", "NumberReference1", "NumberReference2", "NumberReference3"
     };
@@ -207,14 +207,13 @@ public class ImageIngestModel
     [Index(2)] public int Space { get; set; }
     [Index(3)] public string Id { get; set; }
     [Index(4)] public string Origin { get; set; }
-    [Index(5), NullValues("")] public string? InitialOrigin { get; set; }
-    [Index(6)] public string String1 { get; set; }
-    [Index(7)] public string String2 { get; set; }
-    [Index(8)] public string String3 { get; set; }
-    [Index(9)] public string Tags { get; set; }
-    [Index(10)] public string Roles { get; set; }
-    [Index(11)] public int? MaxUnauthorized { get; set; }
-    [Index(12)] public int? Number1 { get; set; }
-    [Index(13)] public int? Number2 { get; set; }
-    [Index(14)] public int? Number3 { get; set; }
+    [Index(5)] public string String1 { get; set; }
+    [Index(6)] public string String2 { get; set; }
+    [Index(7)] public string String3 { get; set; }
+    [Index(8)] public string Tags { get; set; }
+    [Index(9)] public string Roles { get; set; }
+    [Index(10)] public int? MaxUnauthorized { get; set; }
+    [Index(11)] public int? Number1 { get; set; }
+    [Index(12)] public int? Number2 { get; set; }
+    [Index(13)] public int? Number3 { get; set; }
 }
