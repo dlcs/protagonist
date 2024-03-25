@@ -365,4 +365,42 @@ public class ApiAssetRepositoryTests
 
         contextForTests.Images.Any(i => i.Id == assetId).Should().BeFalse();
     }
+
+    [Fact]
+    public async Task DeleteAsset_ReturnsImageDeliveryChannels_FromDeletedAsset()
+    {
+        // Arrange
+        var assetId = AssetId.FromString($"100/10/{nameof(DeleteAsset_ReturnsImageDeliveryChannels_FromDeletedAsset)}");
+        await contextForTests.Images.AddTestAsset(assetId, imageDeliveryChannels: new List<ImageDeliveryChannel>
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = 1
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.Thumbnails,
+                DeliveryChannelPolicyId = 3
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.File,
+                DeliveryChannelPolicyId = 4
+            }
+        });
+        await contextForTests.SaveChangesAsync();
+        
+        // Act
+        var result = await sut.DeleteAsset(assetId);
+        
+        // Assert
+        result.Result.Should().Be(DeleteResult.Deleted);
+        result.DeletedEntity!.ImageDeliveryChannels.Count.Should().Be(3);
+        result.DeletedEntity!.ImageDeliveryChannels.Should().Satisfy(
+            i => i.Channel == AssetDeliveryChannels.Image,
+            i => i.Channel == AssetDeliveryChannels.Thumbnails,
+            i => i.Channel == AssetDeliveryChannels.File
+        );
+    }
 }
