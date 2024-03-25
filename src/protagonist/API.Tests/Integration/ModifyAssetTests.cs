@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -1449,6 +1450,44 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() => NotificationSender.SendAssetModifiedMessage(
             A<AssetModificationRecord>.That.Matches(r => r.ChangeType == ChangeType.Delete), 
+            A<CancellationToken>._)).MustHaveHappened();
+    }
+
+    [Fact]
+    public async Task Delete_IncludesImageDeliveryChannels_InAssetModifiedMessage()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Delete_IncludesImageDeliveryChannels_InAssetModifiedMessage));
+        await dbContext.Images.AddTestAsset(assetId, imageDeliveryChannels: new List<ImageDeliveryChannel>()
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = 1
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.Thumbnails,
+                DeliveryChannelPolicyId = 3
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.File,
+                DeliveryChannelPolicyId = 4
+            }   
+        });
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer(99).DeleteAsync(assetId.ToApiResourcePath());
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        
+        A.CallTo(() => NotificationSender.SendAssetModifiedMessage(
+            A<AssetModificationRecord>.That.Matches(r => 
+                r.ChangeType == ChangeType.Delete &&
+                r.Before.ImageDeliveryChannels.Count == 3),
             A<CancellationToken>._)).MustHaveHappened();
     }
 
