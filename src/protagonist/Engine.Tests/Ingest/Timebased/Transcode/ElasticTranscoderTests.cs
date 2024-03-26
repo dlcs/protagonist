@@ -63,7 +63,6 @@ public class ElasticTranscoderTests
     public async Task InitiateTranscodeOperation_Fail_IfPolicyDataNoExtension()
     {
         // Arrange
-        // Arrange
         var asset = new Asset(AssetId.FromString("20/10/asset-id"))
         {
             MediaType = "video/mp4",
@@ -149,7 +148,6 @@ public class ElasticTranscoderTests
                     DeliveryChannelPolicyId = 1
                 }
             }
-            
         };
 
         var context = new IngestionContext(asset);
@@ -271,7 +269,6 @@ public class ElasticTranscoderTests
             }
         };
 
-        
         var context = new IngestionContext(asset);
         context.WithAssetFromOrigin(new AssetFromOrigin(asset.Id, 123, "s3://loc/ation", "video/mpeg"));
 
