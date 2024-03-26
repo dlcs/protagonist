@@ -1,41 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using DLCS.Core.Caching;
 using DLCS.Core.Types;
-using DLCS.Model;
 using DLCS.Model.Assets;
-using LazyCache;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Assets;
 
 /// <summary>
 /// Implementation of <see cref="IAssetRepository"/> using Dapper for data access.
 /// </summary>
-public class DapperAssetRepository : AssetRepositoryCachingBase, IDapperConfigRepository
+public class DapperAssetRepository : IAssetRepository, IDapperConfigRepository
 {
     public IConfiguration Configuration { get; }
+    private readonly AssetCachingHelper assetCachingHelper;
     
     public DapperAssetRepository(
         IConfiguration configuration, 
-        IAppCache appCache,
-        IOptions<CacheSettings> cacheOptions,
-        ILogger<DapperAssetRepository> logger) : base(appCache, cacheOptions, logger)
+        AssetCachingHelper assetCachingHelper)
     {
         Configuration = configuration;
+        this.assetCachingHelper = assetCachingHelper;
     }
     
-    public override async Task<ImageLocation?> GetImageLocation(AssetId assetId) 
+    public async Task<ImageLocation?> GetImageLocation(AssetId assetId)
         => await this.QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql, new {Id = assetId.ToString()});
-
-    protected override Task<DeleteEntityResult<Asset>> DeleteAssetFromDatabase(AssetId assetId)
-        => throw new NotImplementedException("Deleting assets via Dapper is not supported");
-
-    protected override async Task<Asset?> GetAssetFromDatabase(AssetId assetId)
+    
+    public async Task<Asset?> GetAsset(AssetId assetId)
+    {
+        var asset = await assetCachingHelper.GetCachedAsset(assetId, GetAssetInternal);
+        return asset;
+    }
+    
+    private async Task<Asset?> GetAssetInternal(AssetId assetId)
     {
         var id = assetId.ToString();
         IEnumerable<dynamic> rawAsset = await this.QueryAsync(AssetSql, new { Id = id });

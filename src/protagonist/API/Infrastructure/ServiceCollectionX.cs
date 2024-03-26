@@ -89,11 +89,8 @@ public static class ServiceCollectionX
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
         => services
             .AddDlcsContext(configuration)
-            .AddScoped<IAssetRepository, AssetRepository>()
-            .AddScoped<IApiAssetRepository>(provider =>
-                ActivatorUtilities.CreateInstance<ApiAssetRepository>(
-                    provider,
-                    provider.GetRequiredService<IAssetRepository>()))
+            .AddSingleton<AssetCachingHelper>()
+            .AddScoped<IApiAssetRepository, ApiAssetRepository>()
             .AddScoped<ISpaceRepository, SpaceRepository>()
             .AddScoped<IBatchRepository, BatchRepository>()
             .AddScoped<IEntityCounterRepository, EntityCounterRepository>()

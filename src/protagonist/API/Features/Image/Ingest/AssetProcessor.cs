@@ -4,11 +4,11 @@ using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Core;
 using DLCS.Core.Collections;
-using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
 using DLCS.Model.Storage;
+using DLCS.Repository;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Image.Ingest;
@@ -59,7 +59,8 @@ public class AssetProcessor
         Asset? existingAsset;
         try
         {
-            existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, noCache: true);
+            existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true);
+            
             if (existingAsset == null)
             {
                 if (mustExist)
@@ -121,9 +122,14 @@ public class AssetProcessor
                 };
             }
             
-            var updatedAsset = assetPreparationResult.UpdatedAsset!;
+            var updatedAsset = assetPreparationResult.UpdatedAsset!; // this is from Database
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
             
+            /* Do delivery channels need changed? If so
+             - Set defaults if 'Create' and none provided
+             - Add if 'Create' and some provided
+             - If 'Update', Add/Delete existing updateAsset.ImageDeliveryChannel to match what was passed
+             */
             if (existingAsset == null || DeliveryChannelsRequireReprocessing(existingAsset, assetBeforeProcessing))
             {
                 try
@@ -183,6 +189,7 @@ public class AssetProcessor
     private bool SetImageDeliveryChannels(Asset updatedAsset, IList<DeliveryChannelsBeforeProcessing> deliveryChannelsBeforeProcessing)
     {
         updatedAsset.ImageDeliveryChannels = new List<ImageDeliveryChannel>();
+        
         // Creation, set image delivery channels to default values for media type, if not already set
         if (deliveryChannelsBeforeProcessing.IsNullOrEmpty())
         {

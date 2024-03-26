@@ -49,15 +49,14 @@ public class ApiAssetRepositoryTests
         
         var entityCounterRepo = new EntityCounterRepository(dbContext);
 
-        var assetRepository = new AssetRepository(
-            dbContext,
+        var assetRepositoryCachingHelper = new AssetCachingHelper(
             new MockCachingService(),
-            entityCounterRepo,
             Options.Create(new CacheSettings()),
-            new NullLogger<AssetRepository>()
+            new NullLogger<AssetCachingHelper>()
         );
 
-        sut = new ApiAssetRepository(dbContext, assetRepository, entityCounterRepo);
+        sut = new ApiAssetRepository(dbContext, entityCounterRepo, assetRepositoryCachingHelper,
+            new NullLogger<ApiAssetRepository>());
 
         dbFixture.CleanUp();
     }
