@@ -14,17 +14,23 @@ public class AssetXTests
     public void GetAvailableThumbSizes_IncludeUnavailable_Correct_MaxUnauthorisedNoRoles()
     {
         // Arrange
-        var thumbnailPolicy = new ThumbnailPolicy
-        {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100"
+        var asset = new Asset {Width = 5000, Height = 2500, MaxUnauthorised = 500, 
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    DeliveryChannelPolicyId = 1,
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        PolicyData = "[\"800,800\",\"400,400\",\"200,200\",\"100,100\"]"
+                    }
+                }
+            }
         };
-
-        var asset = new Asset {Width = 5000, Height = 2500, MaxUnauthorised = 500};
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, true);
+        var sizes = asset.GetAvailableThumbSizes(out var maxDimensions, true);
         
         // Assert
         sizes.Should().BeEquivalentTo(new List<Size>
@@ -43,17 +49,25 @@ public class AssetXTests
     public void GetAvailableThumbSizes_NotIncludeUnavailable_Correct_MaxUnauthorisedNoRoles()
     {
         // Arrange
-        var thumbnailPolicy = new ThumbnailPolicy
+        var asset = new Asset
         {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100"
+            Width = 5000, Height = 2500, MaxUnauthorised = 500,
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    DeliveryChannelPolicyId = 1,
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        PolicyData = "[\"800,800\",\"400,400\",\"200,200\",\"100,100\"]"
+                    }
+                }
+            }
         };
-
-        var asset = new Asset {Width = 5000, Height = 2500, MaxUnauthorised = 500};
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, false);
+        var sizes = asset.GetAvailableThumbSizes(out var maxDimensions, false);
         
         // Assert
         sizes.Should().BeEquivalentTo(new List<Size>
@@ -71,17 +85,25 @@ public class AssetXTests
     public void GetAvailableThumbSizes_IncludeUnavailable_Correct_IfRolesNoMaxUnauthorised()
     {
         // Arrange
-        var thumbnailPolicy = new ThumbnailPolicy
+        var asset = new Asset
         {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100",
+            Width = 5000, Height = 2500, Roles = "GoodGuys", MaxUnauthorised = -1,
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    DeliveryChannelPolicyId = 1,
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        PolicyData = "[\"800,800\",\"400,400\",\"200,200\",\"100,100\"]"
+                    }
+                }
+            }
         };
-
-        var asset = new Asset {Width = 5000, Height = 2500, Roles = "GoodGuys", MaxUnauthorised = -1};
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, true);
+        var sizes = asset.GetAvailableThumbSizes(out var maxDimensions, true);
         
         // Assert
         sizes.Should().BeEquivalentTo(new List<Size>
@@ -110,7 +132,7 @@ public class AssetXTests
         var asset = new Asset {Width = 5000, Height = 2500, Roles = "GoodGuys", MaxUnauthorised = -1};
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, false);
+        var sizes = asset.GetAvailableThumbSizes(out var maxDimensions, false);
         
         // Assert
         sizes.Should().BeNullOrEmpty();
@@ -123,17 +145,25 @@ public class AssetXTests
     public void GetAvailableThumbSizes_RestrictsAvailableSizes_IfHasRolesAndMaxUnauthorised()
     {
         // Arrange
-        var thumbnailPolicy = new ThumbnailPolicy
+        var asset = new Asset
         {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100",
+            Width = 2500, Height = 5000, Roles = "GoodGuys", MaxUnauthorised = 399, 
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    DeliveryChannelPolicyId = 1,
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        PolicyData = "[\"800,800\",\"400,400\",\"200,200\",\"100,100\"]"
+                    }
+                }
+            }
         };
-
-        var asset = new Asset {Width = 2500, Height = 5000, Roles = "GoodGuys", MaxUnauthorised = 399};
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions);
+        var sizes = asset.GetAvailableThumbSizes(out var maxDimensions);
         
         // Assert
         sizes.Should().BeEquivalentTo(new List<Size>
@@ -150,17 +180,25 @@ public class AssetXTests
     public void GetAvailableThumbSizes_ReturnsAvailableAndUnavailableSizes_ButReturnsMaxDimensionsOfAvailableOnly_IfIncludeUnavailable()
     {
         // Arrange
-        var thumbnailPolicy = new ThumbnailPolicy
+        var asset = new Asset
         {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100",
+            Width = 2500, Height = 5000, Roles = "GoodGuys", MaxUnauthorised = 399, 
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    DeliveryChannelPolicyId = 1,
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        PolicyData = "[\"800,800\",\"400,400\",\"200,200\",\"100,100\"]"
+                    }
+                }
+            }
         };
-
-        var asset = new Asset {Width = 2500, Height = 5000, Roles = "GoodGuys", MaxUnauthorised = 399};
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, true);
+        var sizes = asset.GetAvailableThumbSizes(out var maxDimensions, true);
         
         // Assert
         sizes.Should().BeEquivalentTo(new List<Size>
@@ -179,17 +217,25 @@ public class AssetXTests
     public void GetAvailableThumbSizes_HandlesImageBeingSmallerThanThumbnail()
     {
         // Arrange
-        var thumbnailPolicy = new ThumbnailPolicy
+        var asset = new Asset
         {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100"
+            Width = 300, Height = 150,
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    DeliveryChannelPolicyId = 1,
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        PolicyData = "[\"800,800\",\"400,400\",\"200,200\",\"100,100\"]"
+                    }
+                }
+            }
         };
-
-        var asset = new Asset { Width = 300, Height = 150 };
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, true);
+        var sizes = asset.GetAvailableThumbSizes(out var maxDimensions, true);
         
         // Assert
         sizes.Should().BeEquivalentTo(new List<Size>

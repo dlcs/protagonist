@@ -20,7 +20,8 @@ public class ThumbReorganiserTests
     private readonly IPolicyRepository thumbPolicyRepository;
     private readonly ThumbReorganiser sut;
     private readonly IBucketWriter bucketWriter;
-
+    private readonly List<ImageDeliveryChannel> imageDeliveryChannels;
+    
     public ThumbReorganiserTests()
     {
         bucketReader = A.Fake<IBucketReader>();
@@ -31,6 +32,31 @@ public class ThumbReorganiserTests
             Options.Create(new AWSSettings { S3 = new S3Settings { ThumbsBucket = "the-bucket" } }));
         sut = new ThumbReorganiser(bucketReader, bucketWriter, new NullLogger<ThumbReorganiser>(), assetRepository,
             thumbPolicyRepository, storageKeyGenerator);
+
+        imageDeliveryChannels = new List<ImageDeliveryChannel>
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = 1,
+                DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                {
+                    Name = "default",
+                    Channel = AssetDeliveryChannels.Image
+                }
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.Thumbnails,
+                DeliveryChannelPolicyId = 2,
+                DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                {
+                    Name = "default",
+                    PolicyData = "[\"!1024,1024\",\"!400,400\",\"!200,200\",\"!100,100\"]",
+                    Channel = AssetDeliveryChannels.Thumbnails
+                }
+            }
+        };
     }
 
     [Fact]
@@ -68,10 +94,15 @@ public class ThumbReorganiserTests
             });
 
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = -1});
-        A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
-            .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
-        
+            .Returns(new Asset 
+            {
+                Width = 4000,
+                Height = 8000,
+                MaxUnauthorised = -1,
+                ImageDeliveryChannels = imageDeliveryChannels
+                
+            });
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -82,7 +113,7 @@ public class ThumbReorganiserTests
         A.CallTo(() =>
                 bucketWriter.CopyObject(
                     A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/low.jpg"),
-                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/open/400.jpg")))
+                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/open/1024.jpg")))
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.CopyObject(
@@ -96,7 +127,7 @@ public class ThumbReorganiserTests
             .MustHaveHappened();
         
         // create sizes.json
-        const string expected = "{\"o\":[[200,400],[100,200],[50,100]],\"a\":[]}";
+        const string expected = "{\"o\":[[512,1024],[200,400],[100,200],[50,100]],\"a\":[]}";
         A.CallTo(() =>
                 bucketWriter.WriteToBucket(
                     A<ObjectInBucket>.That.Matches(o =>
@@ -121,10 +152,14 @@ public class ThumbReorganiserTests
             });
 
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 0});
-        A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
-            .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
-        
+            .Returns(new Asset 
+            {
+                Width = 4000, 
+                Height = 8000,
+                MaxUnauthorised = 0, 
+                ImageDeliveryChannels = imageDeliveryChannels
+            });
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -135,7 +170,7 @@ public class ThumbReorganiserTests
         A.CallTo(() =>
                 bucketWriter.CopyObject(
                     A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/low.jpg"),
-                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/auth/400.jpg")))
+                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/auth/1024.jpg")))
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.CopyObject(
@@ -149,7 +184,7 @@ public class ThumbReorganiserTests
             .MustHaveHappened();
         
         // create sizes.json
-        const string expected = "{\"o\":[],\"a\":[[200,400],[100,200],[50,100]]}";
+        const string expected = "{\"o\":[],\"a\":[[512,1024],[200,400],[100,200],[50,100]]}";
         A.CallTo(() =>
                 bucketWriter.WriteToBucket(
                     A<ObjectInBucket>.That.Matches(o =>
@@ -173,10 +208,15 @@ public class ThumbReorganiserTests
             });
 
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 0, Roles = "admin"});
-        A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
-            .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
-        
+            .Returns(new Asset
+            {
+                Width = 2000, 
+                Height = 4000, 
+                MaxUnauthorised = 0, 
+                Roles = "admin", 
+                ImageDeliveryChannels = imageDeliveryChannels
+            });
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -187,7 +227,7 @@ public class ThumbReorganiserTests
         A.CallTo(() =>
                 bucketWriter.CopyObject(
                     A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/low.jpg"),
-                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/auth/400.jpg")))
+                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/auth/1024.jpg")))
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.CopyObject(
@@ -201,7 +241,7 @@ public class ThumbReorganiserTests
             .MustHaveHappened();
         
         // create sizes.json
-        const string expected = "{\"o\":[],\"a\":[[200,400],[100,200],[50,100]]}";
+        const string expected = "{\"o\":[],\"a\":[[512,1024],[200,400],[100,200],[50,100]]}";
         A.CallTo(() =>
                 bucketWriter.WriteToBucket(
                     A<ObjectInBucket>.That.Matches(o =>
@@ -227,10 +267,14 @@ public class ThumbReorganiserTests
             });
 
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
-        A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
-            .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
-        
+            .Returns(new Asset {
+                Width = 2000, 
+                Height = 4000, 
+                MaxUnauthorised = 350, 
+                Roles = "admin", 
+                ImageDeliveryChannels = imageDeliveryChannels
+            });
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -284,10 +328,14 @@ public class ThumbReorganiserTests
             });
 
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
-        A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
-            .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
-        
+            .Returns(new Asset {
+                Width = 2000, 
+                Height = 4000, 
+                MaxUnauthorised = 350, 
+                Roles = "admin", 
+                ImageDeliveryChannels = imageDeliveryChannels
+            });
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -342,10 +390,15 @@ public class ThumbReorganiserTests
             });
 
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
-        A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
-            .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
-        
+            .Returns(new Asset
+            {
+                Width = 2000, 
+                Height = 4000, 
+                MaxUnauthorised = 350, 
+                Roles = "admin", 
+                ImageDeliveryChannels = imageDeliveryChannels
+            });
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -393,15 +446,28 @@ public class ThumbReorganiserTests
                 A<ObjectInBucket>.That.Matches(o => o.Key.StartsWith(assetId.ToString()))))
             .Returns(new[]
             {
-                "2/1/the-astronaut/low.jpg", "2/1/the-astronaut/100.jpg", "2/1/the-astronaut/sizes.json",
+                "2/1/the-astronaut/low.jpg", 
+                "2/1/the-astronaut/100.jpg", 
+                "2/1/the-astronaut/sizes.json",
                 "2/1/the-astronaut/full/50,100/0/default.jpg"
             });
 
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne"});
-        A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
-            .Returns(new ThumbnailPolicy {Sizes = "200,100"});
-        
+            .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne", ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+            {
+                new()
+                {
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicyId = 2,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                    {
+                        Name = "default",
+                        PolicyData = "[\"!200,200\",\"!100,100\"]",
+                        Channel = AssetDeliveryChannels.Thumbnails
+                    }
+                }
+            }});
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -428,10 +494,8 @@ public class ThumbReorganiserTests
             .ReturnsLazily(() => fakeBucketContents.ToArray());
 
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset {Width = 200, Height = 250, ThumbnailPolicy = "TheBestOne"});
-        A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
-            .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
-        
+            .Returns(new Asset {Width = 200, Height = 250, ImageDeliveryChannels = imageDeliveryChannels});
+
         // Once called, add s.json to return list of bucket contents
         A.CallTo(() => bucketWriter.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, A<CancellationToken>._))
             .Invokes(() => fakeBucketContents.Add("2/1/the-astronaut/s.json"));
@@ -461,11 +525,6 @@ public class ThumbReorganiserTests
                 A<ObjectInBucket>.That.Matches(o => o.Key.StartsWith(assetId1.ToString()))))
             .ReturnsLazily(() =>  fakeBucketContents.ToArray());
 
-        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._))
-            .Returns(new Asset {Width = 200, Height = 250, ThumbnailPolicy = "TheBestOne"});
-        A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
-            .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
-        
         // Once called, add sizes.json to return list of bucket contents
         A.CallTo(() => bucketWriter.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, A<CancellationToken>._))
             .Invokes((ObjectInBucket dest, string _, string _) =>
@@ -516,10 +575,27 @@ public class ThumbReorganiserTests
             });
 
         A.CallTo(() => assetRepository.GetAsset(assetId))
-            .Returns(new Asset {Width = 1293, Height = 2400, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = -1});
-        A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
-            .Returns(new ThumbnailPolicy {Sizes = "1024,400"});
-        
+            .Returns(new Asset 
+            {
+                Width = 1293, 
+                Height = 2400, 
+                MaxUnauthorised = -1, 
+                ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+                {
+                    new()
+                    {
+                        Channel = AssetDeliveryChannels.Thumbnails,
+                        DeliveryChannelPolicyId = 2,
+                        DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                        {
+                            Name = "default",
+                            PolicyData = "[\"!1024,1024\",\"!400,400\"]",
+                            Channel = AssetDeliveryChannels.Thumbnails
+                        }
+                    }
+                }
+            });
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -566,9 +642,13 @@ public class ThumbReorganiserTests
 
         A.CallTo(() => assetRepository.GetAsset(assetId))
             .Returns(new Asset
-                { Width = 300, Height = 600, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin" });
-        A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
-            .Returns(new ThumbnailPolicy { Sizes = "1024,400,200,100" });
+                { 
+                    Width = 300, 
+                    Height = 600, 
+                    MaxUnauthorised = 350, 
+                    Roles = "admin", 
+                    ImageDeliveryChannels = imageDeliveryChannels
+                });
 
         // Act
         var response = await sut.EnsureNewLayout(assetId);

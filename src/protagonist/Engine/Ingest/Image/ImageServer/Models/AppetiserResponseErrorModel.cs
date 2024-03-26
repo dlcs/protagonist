@@ -1,4 +1,4 @@
-﻿namespace Engine.Ingest.Image.Appetiser;
+﻿namespace Engine.Ingest.Image.ImageServer.Models;
 
 /// <summary>
 /// Response model for receiving error requests back from Appetiser.

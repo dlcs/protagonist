@@ -58,29 +58,10 @@ public class AssetIngester : IAssetIngester
         
         // get any matching CustomerOriginStrategy 
         var customerOriginStrategy = await customerOriginRepository.GetCustomerOriginStrategy(asset, true);
-            
-        // set Thumbnail and ImageOptimisation policies on Asset
-        await HydrateAssetPolicies(asset);
 
         // now ingest the asset
         var status = await executor.IngestAsset(asset, customerOriginStrategy, cancellationToken);
         return status;
-    }
-
-    private async Task HydrateAssetPolicies(Asset asset)
-    {
-        if (!string.IsNullOrEmpty(asset.ThumbnailPolicy))
-        {
-            var thumbnailPolicy = await policyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
-            asset.WithThumbnailPolicy(thumbnailPolicy);
-        }
-
-        if (!string.IsNullOrEmpty(asset.ImageOptimisationPolicy))
-        {
-            var optimisationPolicy =
-                await policyRepository.GetImageOptimisationPolicy(asset.ImageOptimisationPolicy, asset.Customer);
-            asset.WithImageOptimisationPolicy(optimisationPolicy);
-        }
     }
 }
 
