@@ -286,7 +286,21 @@ public class AssetDeletedHandlerTests
             Asset = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
-                DeliveryChannels = new[] {"iiif-img","iiif-av", "file" }
+                ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+                {
+                    new()
+                    {
+                        Channel = "iiif-img"
+                    },
+                    new()
+                    {
+                        Channel = "iiif-av"
+                    },
+                    new()
+                    {
+                        Channel = "file"
+                    }
+                }
             },
             DeleteFrom = ImageCacheType.Cdn,
             CustomerPathElement = new CustomerPathElement(99, "someName")

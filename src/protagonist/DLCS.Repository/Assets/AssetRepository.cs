@@ -39,7 +39,9 @@ public class AssetRepository : AssetRepositoryCachingBase
     {
         try
         {
-            var asset = await dlcsContext.Images.SingleOrDefaultAsync(i => i.Id == assetId);
+            var asset = await dlcsContext.Images
+                .Include(a => a.ImageDeliveryChannels)
+                .SingleOrDefaultAsync(i => i.Id == assetId);
             if (asset == null)
             {
                 Logger.LogDebug("Attempt to delete non-existent asset {AssetId}", assetId);

@@ -102,26 +102,18 @@ public class AssetDeletedHandler : IMessageHandler
             $"{customerName}/{asset.Id.Space}/{asset.Id.Asset}"
         };
         
-        if (asset.DeliveryChannels.IsNullOrEmpty())
-        {
-            logger.LogDebug("Received message body with no 'deliveryChannels' property. {@Request}", 
-                asset);
-        }
-        else
+        if (!asset.ImageDeliveryChannels.IsNullOrEmpty())
         {
             invalidationUriList = SetDeliveryChannelInvalidations(asset.Id!, 
-                asset.DeliveryChannels.ToList(), idList);
+                asset.ImageDeliveryChannels, idList);
         }
-        
-        if (!asset.Family.HasValue)
+        else if (asset.Family.HasValue)
         {
-            logger.LogDebug("Received message body with no 'asset family' property. {@Request}", 
-                asset);
-        }
-        else
-        {
-            if (asset.Family == AssetFamily.Image)
+            if(asset.Family == AssetFamily.Image)
             {
+                logger.LogDebug(
+                    "Received message body with no 'deliveryChannels' property - using 'family' as a fallback. {@Request}",
+                    asset);
                 foreach (var id in idList)
                 {
                     invalidationUriList.Add($"/iiif-manifest/{id}");
@@ -129,6 +121,11 @@ public class AssetDeletedHandler : IMessageHandler
                     invalidationUriList.Add($"/iiif-manifest/v3/{id}");
                 }
             }
+        }
+        else
+        {
+            logger.LogDebug("Unable to set invalidations - 'deliveryChannels' and 'family' not found in message body. {@Request}",
+                asset); 
         }
         
         if (invalidationUriList.Count > 0)
@@ -139,16 +136,16 @@ public class AssetDeletedHandler : IMessageHandler
         return true;
     }
 
-    private static List<string> SetDeliveryChannelInvalidations(AssetId assetId, List<string> deliveryChannels,
+    private static List<string> SetDeliveryChannelInvalidations(AssetId assetId, ICollection<ImageDeliveryChannel> deliveryChannels,
         List<string> idList)
     {
-        List<string> invalidationUriList = new List<string>();
+        var invalidationUriList = new List<string>();
 
         foreach (var deliveryChannel in deliveryChannels)
         {
             foreach (var id in idList)
             {
-                switch (deliveryChannel)
+                switch (deliveryChannel.Channel)
                 {
                     case AssetDeliveryChannels.Image:
                         invalidationUriList.Add($"/iiif-img/{id}/*");
@@ -157,6 +154,9 @@ public class AssetDeletedHandler : IMessageHandler
                         invalidationUriList.Add($"/thumbs/{id}/*");
                         invalidationUriList.Add($"/thumbs/v2/{id}/*");
                         invalidationUriList.Add($"/thumbs/v3/{id}/*");
+                        invalidationUriList.Add($"/iiif-manifest/{id}");
+                        invalidationUriList.Add($"/iiif-manifest/v2/{id}");
+                        invalidationUriList.Add($"/iiif-manifest/v3/{id}");
                         break;
                     case AssetDeliveryChannels.File:
                         invalidationUriList.Add($"/file/{id}");
