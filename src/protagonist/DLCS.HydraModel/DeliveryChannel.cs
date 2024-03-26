@@ -10,11 +10,11 @@ namespace DLCS.HydraModel;
 public class DeliveryChannel : DlcsResource
 {
     public override string? Context => null;
-    
+
     [RdfProperty(Description = "The name of the DLCS delivery channel this is based on.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 11, PropertyName = "channel")]
-    public string? Channel { get; set; }
+    public string Channel { get; set; } = null!;
     
     [HydraLink(Description = "The policy assigned to this delivery channel.",
         Range = "vocab:deliveryChannelPolicy", ReadOnly = false, WriteOnly = false)]

@@ -74,6 +74,7 @@ public class Startup
             .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
             .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
             .AddScoped<AssetProcessor>()
+            .AddScoped<IDeliveryChannelProcessor, DeliveryChannelProcessor>()
             .AddTransient<TimingHandler>()
             .AddScoped<DeliveryChannelPolicyDataValidator>()
             .AddValidatorsFromAssemblyContaining<Startup>()
