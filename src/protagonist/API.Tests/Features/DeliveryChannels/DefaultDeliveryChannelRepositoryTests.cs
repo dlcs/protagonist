@@ -60,10 +60,10 @@ public class DefaultDeliveryChannelRepositoryTests
     }
 
     [Fact]
-    public void MatchedDeliveryChannels_ReturnsAllDeliveryChannelPolicies_WhenCalled()
+    public async Task MatchedDeliveryChannels_ReturnsAllDeliveryChannelPolicies_WhenCalled()
     {
         // Arrange and Act
-        var matches = sut.MatchedDeliveryChannels("image/tiff", 1, 2);
+        var matches = await sut.MatchedDeliveryChannels("image/tiff", 1, 2);
 
         // Assert
         matches.Count.Should().Be(1);
@@ -71,17 +71,17 @@ public class DefaultDeliveryChannelRepositoryTests
     }
     
     [Fact]
-    public void MatchedDeliveryChannels_ShouldNotMatchAnything_WhenCalledWithInvalidMediaType()
+    public async Task MatchedDeliveryChannels_ShouldNotMatchAnything_WhenCalledWithInvalidMediaType()
     {
         // Arrange and Act
-        var matches = sut.MatchedDeliveryChannels("notValid/tiff", 1, 2);
+        var matches = await sut.MatchedDeliveryChannels("notValid/tiff", 1, 2);
 
         // Assert
         matches.Count.Should().Be(0);
     }
     
     [Fact]
-    public void MatchDeliveryChannelPolicyForChannel_MatchesDeliveryChannel_WhenMatchAvailable()
+    public async Task MatchDeliveryChannelPolicyForChannel_MatchesDeliveryChannel_WhenMatchAvailable()
     {
         // Arrange and Act
         var matches = sut.MatchDeliveryChannelPolicyForChannel("image/tiff", 1, 2, "iiif-img");
@@ -91,12 +91,12 @@ public class DefaultDeliveryChannelRepositoryTests
     }
     
     [Fact]
-    public void MatchDeliveryChannelPolicyForChannel_ThrowsException_WhenNotMatched()
+    public async Task MatchDeliveryChannelPolicyForChannel_ThrowsException_WhenNotMatched()
     {
         // Arrange and Act
-        Action action = () => sut.MatchDeliveryChannelPolicyForChannel("notMatched/tiff", 1, 2, "iiif-img");
+        Func<Task> action = () => sut.MatchDeliveryChannelPolicyForChannel("notMatched/tiff", 1, 2, "iiif-img");
 
         // Assert
-        action.Should().ThrowExactly<InvalidOperationException>();
+        await action.Should().ThrowExactlyAsync<InvalidOperationException>();
     }
 }

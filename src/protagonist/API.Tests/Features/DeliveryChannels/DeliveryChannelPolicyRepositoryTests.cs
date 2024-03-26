@@ -13,12 +13,12 @@ namespace API.Tests.Features.DeliveryChannels;
 
 [Trait("Category", "Database")]
 [Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
-public class DeliveryChannelPoliciesTests
+public class DeliveryChannelPolicyRepositoryTests
 {
     private readonly DlcsContext dbContext;
     private readonly DeliveryChannelPolicyRepository sut;
     
-    public DeliveryChannelPoliciesTests(DlcsDatabaseFixture dbFixture)
+    public DeliveryChannelPolicyRepositoryTests(DlcsDatabaseFixture dbFixture)
     {
         dbContext = dbFixture.DbContext;
         sut = new DeliveryChannelPolicyRepository(new MockCachingService() ,new NullLogger<DeliveryChannelPolicyRepository>(), Options.Create(new CacheSettings()), dbFixture.DbContext);
@@ -44,10 +44,10 @@ public class DeliveryChannelPoliciesTests
     [InlineData("space-specific-image")]
     [InlineData("channel/space-specific-image")]
     [InlineData("https://dlcs.api/customers/2/deliveryChannelPolicies/iiif-img/space-specific-image")]
-    public void RetrieveDeliveryChannelPolicy_RetrievesACustomerSpecificPolicy(string policy)
+    public async Task RetrieveDeliveryChannelPolicy_RetrievesACustomerSpecificPolicy(string policy)
     {
         // Arrange and Act
-        var deliveryChannelPolicy = sut.RetrieveDeliveryChannelPolicy(2, "iiif-img", policy);
+        var deliveryChannelPolicy = await sut.RetrieveDeliveryChannelPolicy(2, "iiif-img", policy);
 
         // Assert
         deliveryChannelPolicy.Channel.Should().Be("iiif-img");
@@ -55,10 +55,10 @@ public class DeliveryChannelPoliciesTests
     }
 
     [Fact]
-    public void RetrieveDeliveryChannelPolicy_RetrievesADefaultPolicy()
+    public async Task RetrieveDeliveryChannelPolicy_RetrievesADefaultPolicy()
     {
         // Arrange and Act
-        var policy = sut.RetrieveDeliveryChannelPolicy(2, "iiif-img", "default");
+        var policy = await sut.RetrieveDeliveryChannelPolicy(2, "iiif-img", "default");
 
         // Assert
         policy.Channel.Should().Be("iiif-img");
@@ -66,13 +66,13 @@ public class DeliveryChannelPoliciesTests
     }
     
     [Fact]
-    public void RetrieveDeliveryChannelPolicy_RetrieveNonExistentPolicy()
+    public async Task RetrieveDeliveryChannelPolicy_RetrieveNonExistentPolicy()
     {
         // Arrange and Act
-        Action action = () =>  sut.RetrieveDeliveryChannelPolicy(2, "notAChannel", "notAPolicy");
+        Func<Task> action = () => sut.RetrieveDeliveryChannelPolicy(2, "notAChannel", "notAPolicy");
 
         // Assert
-        action.Should()
-            .Throw<InvalidOperationException>();
+        await action.Should()
+            .ThrowAsync<InvalidOperationException>();
     }
 }
