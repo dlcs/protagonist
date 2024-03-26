@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using DLCS.Core.Guard;
-using DLCS.Model.Policies;
 using IIIF;
+using IIIF.ImageApi;
 
 namespace DLCS.Model.Assets;
 
@@ -11,23 +13,50 @@ namespace DLCS.Model.Assets;
 /// </summary>
 public static class AssetX
 {
+    public static List<Size> GetAllThumbSizes(this Asset asset)
+    {
+        var thumbnailSizes = new List<Size>();
+        
+        if (asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails))
+        {
+            var initialPolicyTransformation = JsonSerializer.Deserialize<List<string>>(asset.ImageDeliveryChannels
+                .Single(
+                    x => x.Channel == AssetDeliveryChannels.Thumbnails)
+                .DeliveryChannelPolicy.PolicyData);
+
+            foreach (var sizeValue in initialPolicyTransformation!)
+            {
+                var sizeParameter = SizeParameter.Parse(sizeValue);
+
+                thumbnailSizes.Add(new Size(sizeParameter.Width.Value, sizeParameter.Height.Value));
+            }
+        }
+
+        return thumbnailSizes;
+    }
+    
     /// <summary>
     /// Get a list of all available thumbnail sizes for asset, based on thumbnail policy. 
     /// </summary>
     /// <param name="asset">Asset to extract thumbnails sizes for.</param>
-    /// <param name="thumbnailPolicy">The thumbnail policy to use to calculate thumb sizes.</param>
     /// <param name="maxDimensions">A tuple of maxBoundedSize, maxAvailableWidth and maxAvailableHeight.</param>
     /// <param name="includeUnavailable">Whether to include unavailable sizes or not.</param>
     /// <returns>List of available thumbnail <see cref="Size"/></returns>
-    public static List<Size> GetAvailableThumbSizes(this Asset asset, ThumbnailPolicy thumbnailPolicy,
+    public static List<Size> GetAvailableThumbSizes(this Asset asset,
         out (int maxBoundedSize, int maxAvailableWidth, int maxAvailableHeight) maxDimensions,
         bool includeUnavailable = false)
     {
+        var initialPolicyTransformation = JsonSerializer.Deserialize<List<string>>(asset.ImageDeliveryChannels.Single(
+                x => x.Channel == AssetDeliveryChannels.Thumbnails)
+            .DeliveryChannelPolicy.PolicyData);
+
+        var thumbnailPolicy = initialPolicyTransformation!.Select(SizeParameter.Parse).ToList();
+
         asset.ThrowIfNull(nameof(asset));
         thumbnailPolicy.ThrowIfNull(nameof(thumbnailPolicy));
 
-        var availableSizes = new List<Size>(thumbnailPolicy.SizeList.Count);
-        var generatedMax = new List<int>(thumbnailPolicy.SizeList.Count);
+        var availableSizes = new List<Size>(thumbnailPolicy.Count);
+        var generatedMax = new List<int>(thumbnailPolicy.Count);
 
         var size = new Size(asset.Width.ThrowIfNull(nameof(asset.Width)),
             asset.Height.ThrowIfNull(nameof(asset.Height)));
@@ -36,23 +65,34 @@ public static class AssetX
         int maxAvailableWidth = 0;
         int maxAvailableHeight = 0;
 
-        foreach (int boundingSize in thumbnailPolicy.SizeList)
+        foreach (var boundingSize in thumbnailPolicy)
         {
-            var assetIsUnavailableForSize = AssetIsUnavailableForSize(asset, boundingSize);
-            if (!includeUnavailable && assetIsUnavailableForSize) continue;
-
-            Size bounded = Size.Confine(boundingSize, size);
-
-            var boundedMaxDimension = bounded.MaxDimension;
+            int maxDimension = boundingSize.Width > boundingSize.Height ? 
+                boundingSize.Width.Value : boundingSize.Height.Value;
             
+            var assetIsUnavailableForSize = AssetIsUnavailableForSize(asset, maxDimension);
+            if (!includeUnavailable && assetIsUnavailableForSize) continue;
+            Size bounded;
+
+            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image) && size.MaxDimension == 0)
+            { 
+                bounded = Size.Confine(maxDimension, new Size(boundingSize.Width!.Value, boundingSize.Height.Value));
+            }
+            else
+            {
+                bounded = Size.Confine(maxDimension, size);
+            }
+            
+            var boundedMaxDimension = bounded.MaxDimension;
+
             // If image < thumb-size then boundedMax may already have been processed (it'll be the same as imageMax)
             if (generatedMax.Contains(boundedMaxDimension)) continue;
             
             generatedMax.Add(boundedMaxDimension);
             availableSizes.Add(bounded);
-            if (boundingSize > maxBoundedSize && !assetIsUnavailableForSize)
+            if (maxDimension > maxBoundedSize && !assetIsUnavailableForSize)
             {
-                maxBoundedSize = Math.Min(boundingSize, boundedMaxDimension); // handles image being smaller than thumb
+                maxBoundedSize = Math.Min(maxDimension, boundedMaxDimension); // handles image being smaller than thumb
                 maxAvailableWidth = bounded.Width;
                 maxAvailableHeight = bounded.Height;
             }

@@ -54,9 +54,21 @@ public class ThumbCreatorTests
         // Arrange
         var asset = new Asset(new AssetId(10, 20, "foo"))
         {
-            Width = 40, Height = 50
+            Width = 40, Height = 50,
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    DeliveryChannelPolicyId = 1,
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        PolicyData = "[]"
+                    }
+                }
+            }
         };
-        asset.WithThumbnailPolicy(new ThumbnailPolicy { Sizes = string.Empty });
+
         
         // Act
         var thumbsCreated = await sut.CreateNewThumbs(asset, new[]
@@ -77,9 +89,20 @@ public class ThumbCreatorTests
         // Arrange
         var asset = new Asset(new AssetId(10, 20, "foo"))
         {
-            Width = 3030, Height = 5000
+            Width = 3030, Height = 5000,
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    DeliveryChannelPolicyId = 1,
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        PolicyData = "[\"1000,1000\",\"500,500\",\"100,100\"]"
+                    }
+                }
+            }
         };
-        asset.WithThumbnailPolicy(new ThumbnailPolicy { Sizes = "1000,500,100" });
 
         var imagesOnDisk = new List<ImageOnDisk>
         {
@@ -121,9 +144,20 @@ public class ThumbCreatorTests
         // Arrange
         var asset = new Asset(new AssetId(10, 20, "foo"))
         {
-            Width = 3030, Height = 5000, MaxUnauthorised = 700
+            Width = 3030, Height = 5000, MaxUnauthorised = 700,
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    DeliveryChannelPolicyId = 1,
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        PolicyData = "[\"1000,1000\",\"500,500\",\"100,100\"]"
+                    }
+                }
+            }
         };
-        asset.WithThumbnailPolicy(new ThumbnailPolicy { Sizes = "1000,500,100" });
 
         var imagesOnDisk = new List<ImageOnDisk>
         {
@@ -165,9 +199,20 @@ public class ThumbCreatorTests
         // Arrange
         var asset = new Asset(new AssetId(10, 20, "foo"))
         {
-            Width = 266, Height = 440
+            Width = 266, Height = 440,
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    DeliveryChannelPolicyId = 1,
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        PolicyData = "[\"1000,1000\",\"500,500\",\"100,100\"]"
+                    }
+                }
+            }
         };
-        asset.WithThumbnailPolicy(new ThumbnailPolicy { Sizes = "1000,500,100" });
 
         // NOTE - this mimics the payload that Appetiser would send back
         var imagesOnDisk = new List<ImageOnDisk>

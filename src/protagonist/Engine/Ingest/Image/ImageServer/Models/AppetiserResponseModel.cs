@@ -1,4 +1,4 @@
-namespace Engine.Ingest.Image.Appetiser;
+namespace Engine.Ingest.Image.ImageServer.Models;
 
 /// <summary>
 /// Response model for receiving requests back from Appetiser.
@@ -14,4 +14,5 @@ public class AppetiserResponseModel : IAppetiserResponse
     public int Width { get; set; }
     public string InfoJson { get; set; }
     public IEnumerable<ImageOnDisk> Thumbs { get; set; }
+    public bool NoOperationRequired { get; set; } = false;
 }

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using Microsoft.Extensions.Configuration;
 
 namespace DLCS.Repository.Assets;
@@ -20,7 +21,6 @@ public class DapperAssetRepository : IAssetRepository, IDapperConfigRepository
         AssetCachingHelper assetCachingHelper)
     {
         Configuration = configuration;
-        this.assetCachingHelper = assetCachingHelper;
     }
     
     public async Task<ImageLocation?> GetImageLocation(AssetId assetId)
@@ -88,7 +88,11 @@ public class DapperAssetRepository : IAssetRepository, IDapperConfigRepository
                 imageDeliveryChannels.Add(new ImageDeliveryChannel()
                 {
                     Channel = rawDeliveryChannel.Channel,
-                    DeliveryChannelPolicyId = rawDeliveryChannel.DeliveryChannelPolicyId
+                    DeliveryChannelPolicyId = rawDeliveryChannel.DeliveryChannelPolicyId,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                    {
+                        PolicyData = rawDeliveryChannel.PolicyData,
+                    }
                 });
             }
         }
@@ -97,14 +101,15 @@ public class DapperAssetRepository : IAssetRepository, IDapperConfigRepository
     }
 
     private const string AssetSql = @"
-SELECT ""Images"".""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Roles"", 
+SELECT ""Images"".""Id"", ""Images"".""Customer"", ""Space"", ""Images"".""Created"", ""Origin"", ""Tags"", ""Roles"", 
 ""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", 
 ""NumberReference1"", ""NumberReference2"", ""NumberReference3"", ""Width"", 
 ""Height"", ""Error"", ""Batch"", ""Finished"", ""Ingesting"", ""ImageOptimisationPolicy"", 
 ""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery"", ""DeliveryChannels"",  
-IDC.""Channel"", IDC.""DeliveryChannelPolicyId""
+IDC.""Channel"", IDC.""DeliveryChannelPolicyId"", ""PolicyData""
   FROM ""Images""
   LEFT OUTER JOIN ""ImageDeliveryChannels"" IDC on ""Images"".""Id"" = IDC.""ImageId""
+  JOIN ""DeliveryChannelPolicies"" DCP ON IDC.""DeliveryChannelPolicyId"" = DCP.""Id""
   WHERE ""Images"".""Id""=@Id;";
 
     private const string ImageLocationSql =

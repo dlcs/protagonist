@@ -124,15 +124,7 @@ public class Asset
         Customer = assetId.Customer;
         Space = assetId.Space;
     }
-    
-    public Asset WithThumbnailPolicy(ThumbnailPolicy? thumbnailPolicy)
-    {
-        FullThumbnailPolicy = Family == AssetFamily.Image
-            ? thumbnailPolicy.ThrowIfNull(nameof(thumbnailPolicy))
-            : thumbnailPolicy;
-        return this;
-    }
-    
+
     public Asset WithImageOptimisationPolicy(ImageOptimisationPolicy imageOptimisationPolicy)
     {
         FullImageOptimisationPolicy = imageOptimisationPolicy.ThrowIfNull(nameof(imageOptimisationPolicy));
