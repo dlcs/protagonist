@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using API.Features.DeliveryChannels;
+using API.Features.DeliveryChannels.DataAccess;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Caching;
 using DLCS.Model.DeliveryChannels;
@@ -23,8 +24,7 @@ public class DefaultDeliveryChannelRepositoryTests
     public DefaultDeliveryChannelRepositoryTests(DlcsDatabaseFixture dbFixture)
     {
         dbContext = dbFixture.DbContext;
-        sut = new DefaultDeliveryChannelRepository(new MockCachingService(), new NullLogger<DefaultDeliveryChannelRepository>(), 
-            Options.Create(new CacheSettings()), dbFixture.DbContext);
+        sut = new DefaultDeliveryChannelRepository(new MockCachingService(), new NullLogger<DefaultDeliveryChannelRepository>(), Options.Create(new CacheSettings()), dbFixture.DbContext);
 
         dbFixture.CleanUp();
         

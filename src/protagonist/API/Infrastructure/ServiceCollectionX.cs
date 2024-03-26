@@ -3,6 +3,7 @@ using System.Reflection;
 using API.Features.Assets;
 using API.Features.Customer;
 using API.Features.DeliveryChannels;
+using API.Features.DeliveryChannels.DataAccess;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;

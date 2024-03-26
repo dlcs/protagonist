@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace API.Features.DeliveryChannels;
+namespace API.Features.DeliveryChannels.DataAccess;
 
 public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
 {
@@ -17,8 +17,7 @@ public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
     private readonly DlcsContext dlcsContext;
     private const int AdminCustomer = 1;
 
-    public DeliveryChannelPolicyRepository(
-        IAppCache appCache,
+    public DeliveryChannelPolicyRepository(IAppCache appCache,
         ILogger<DeliveryChannelPolicyRepository> logger,
         IOptions<CacheSettings> cacheOptions,
         DlcsContext dlcsContext)

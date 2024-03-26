@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace API.Features.DeliveryChannels;
+namespace API.Features.DeliveryChannels.DataAccess;
 
 public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepository
 {
@@ -18,10 +18,9 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
     private readonly ILogger<DefaultDeliveryChannelRepository> logger;
     private readonly DlcsContext dlcsContext;
 
-    public DefaultDeliveryChannelRepository(
-        IAppCache appCache,
+    public DefaultDeliveryChannelRepository(IAppCache appCache,
         ILogger<DefaultDeliveryChannelRepository> logger,
-        IOptions<CacheSettings> cacheOptions,
+        IOptions<CacheSettings> cacheOptions, 
         DlcsContext dlcsContext)
     {
         this.appCache = appCache;

@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Features.Assets;
 using API.Features.Image;
 using API.Features.Image.Ingest;
 using API.Settings;
 using DLCS.Core.Types;
-using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Storage;

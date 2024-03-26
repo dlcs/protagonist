@@ -5,7 +5,7 @@ using DLCS.Repository.Messaging;
 using LazyCache;
 using Microsoft.Extensions.Options;
 
-namespace API.Features.DeliveryChannels;
+namespace API.Features.DeliveryChannels.DataAccess;
 
 public class AvChannelPolicyOptionsRepository : IAvChannelPolicyOptionsRepository
 {
@@ -13,7 +13,8 @@ public class AvChannelPolicyOptionsRepository : IAvChannelPolicyOptionsRepositor
     private readonly CacheSettings cacheSettings;
     private readonly IEngineClient engineClient;
 
-    public AvChannelPolicyOptionsRepository(IAppCache appCache, IOptions<CacheSettings> cacheOptions, IEngineClient engineClient)
+    public AvChannelPolicyOptionsRepository(IAppCache appCache, IOptions<CacheSettings> cacheOptions,
+        IEngineClient engineClient)
     {
         this.appCache = appCache;
         cacheSettings = cacheOptions.Value;
