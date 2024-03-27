@@ -846,13 +846,177 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
-        
+
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var asset = await dbContext.Images.FindAsync(assetId);
         asset.DeliveryChannels.Should().BeEquivalentTo("file");
     }
 
+    [Fact]
+    public async Task Put_New_Asset_Translates_ImageWcDeliveryChannel()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Translates_ImageWcDeliveryChannel));
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+          ""family"": ""I"",
+          ""mediaType"": ""image/tiff"",
+          ""wcDeliveryChannels"": [""iiif-img""]
+        }}";
+
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == "iiif-img" &&
+                  dc.DeliveryChannelPolicy.Name == "default");
+    }
+    
+    [Fact]
+    public async Task Put_New_Asset_Translates_ImageWcDeliveryChannel_WithUseOriginalPolicy()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Translates_ImageWcDeliveryChannel_WithUseOriginalPolicy));
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+          ""family"": ""I"",
+          ""mediaType"": ""image/tiff"",
+          ""imageOptimisationPolicy"": ""use-original"",
+          ""wcDeliveryChannels"": [""iiif-img""]
+        }}";
+
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == "iiif-img" &&
+                  dc.DeliveryChannelPolicy.Name == "use-original");
+    }
+    
+    [Fact]
+    public async Task Put_New_Asset_Translates_AvWcDeliveryChannel_Video()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Translates_AvWcDeliveryChannel_Video));
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""origin"": ""https://example.org/{assetId.Asset}.mp4"",
+          ""family"": ""T"",
+          ""mediaType"": ""video/mp4"",
+          ""wcDeliveryChannels"": [""iiif-av""]
+        }}";
+
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == "iiif-av" &&
+                  dc.DeliveryChannelPolicy.Name == "default-video");
+    }
+    
+    [Fact]
+    public async Task Put_New_Asset_Translates_AvWcDeliveryChannel_Audio()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Translates_AvWcDeliveryChannel_Audio));
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""origin"": ""https://example.org/{assetId.Asset}.mp3"",
+          ""family"": ""T"",
+          ""mediaType"": ""audio/mp3"",
+          ""wcDeliveryChannels"": [""iiif-av""]
+        }}";
+
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+      
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == "iiif-av" &&
+                  dc.DeliveryChannelPolicy.Name == "default-audio");
+    }
+    
+    [Theory]
+    [InlineData(AssetFamily.File, "application/pdf", "pdf")]
+    [InlineData(AssetFamily.Image, "image/tiff", "tiff")]
+    [InlineData(AssetFamily.Timebased, "video/mp4", "mp4")] 
+    public async Task Put_New_Asset_Translates_FileWcDeliveryChannel(AssetFamily assetFamily, string mediaType, string fileExtension)
+    {
+        var assetId = new AssetId(99, 1, $"{nameof(Put_New_Asset_Translates_FileWcDeliveryChannel)}-${fileExtension}");
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""origin"": ""https://example.org/{assetId.Asset}.{fileExtension}"",
+          ""family"": ""{assetFamily}"",
+          ""mediaType"": ""{mediaType}"",
+          ""wcDeliveryChannels"": [""file""]
+        }}";
+
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+      
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == "file" &&
+                  dc.DeliveryChannelPolicy.Name == "none");
+    }
+    
     [Fact]
     public async Task Put_Existing_Asset_ClearsError_AndMarksAsIngesting()
     {
