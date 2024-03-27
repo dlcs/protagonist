@@ -9,6 +9,7 @@ public class OldHydraDeliveryChannelsConverter
 {
     private const string ImageDefaultPolicy = "default";
     private const string ImageUseOriginalPolicy = "use-original";
+    private const string FileNonePolicy = "none";
     
     public DeliveryChannel[]? Convert(DLCS.HydraModel.Image hydraImage)
     {
@@ -32,6 +33,7 @@ public class OldHydraDeliveryChannelsConverter
                 AssetDeliveryChannels.File => new DeliveryChannel()
                 {
                     Channel = wcDeliveryChannel,
+                    Policy = FileNonePolicy
                 },
                 _ => null
             };
