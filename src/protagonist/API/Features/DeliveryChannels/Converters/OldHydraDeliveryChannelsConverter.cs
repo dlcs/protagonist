@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DLCS.Core.Collections;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
 
@@ -6,9 +7,12 @@ namespace API.Features.DeliveryChannels.Converters;
 
 public class OldHydraDeliveryChannelsConverter
 {
-    public List<DeliveryChannel> Convert(DLCS.HydraModel.Image hydraImage)
+    public DeliveryChannel[]? Convert(DLCS.HydraModel.Image hydraImage)
     {
+        if (hydraImage.WcDeliveryChannels.IsNullOrEmpty()) return null;
+        
         var convertedDeliveryChannels = new List<DeliveryChannel>();
+        
         foreach (var channel in hydraImage.WcDeliveryChannels)
         {
             switch (channel)
@@ -50,7 +54,7 @@ public class OldHydraDeliveryChannelsConverter
                 }
             }
         }
-        return convertedDeliveryChannels;
+        return convertedDeliveryChannels.ToArray();
     }
     public bool CanConvert(DLCS.HydraModel.Image hydraImage)
     {

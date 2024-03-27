@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using API.Converters;
+using API.Features.DeliveryChannels.Converters;
 using API.Features.Image.Requests;
 using API.Features.Image.Validation;
 using API.Infrastructure;
@@ -93,11 +94,18 @@ public class ImageController : HydraController
         [FromRoute] string imageId,
         [FromBody] ImageWithFile hydraAsset,
         [FromServices] HydraImageValidator validator,
+        [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
         if (apiSettings.LegacyModeEnabledForSpace(customerId, spaceId))
         {
             hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
+        }
+
+        if (apiSettings.EmulateOldDeliveryChannelProperties && 
+            oldHydraDcConverter.CanConvert(hydraAsset))
+        {
+            hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
         }
 
         if (hydraAsset.ModelId == null)
@@ -233,6 +241,7 @@ public class ImageController : HydraController
         [FromRoute] string imageId,
         [FromBody] ImageWithFile hydraAsset,
         [FromServices] HydraImageValidator validator,
+        [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
 
@@ -241,7 +250,7 @@ public class ImageController : HydraController
             customerId, spaceId, imageId);
         
 
-        return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, cancellationToken);
+        return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, oldHydraDcConverter, cancellationToken);
     }
 
     /// <summary>
