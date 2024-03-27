@@ -65,6 +65,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                         "API-Test", _ => { });
             })
             .WithConfigValue("DeliveryChannelsEnabled", "true")
+            .WithConfigValue("EmulateOldDeliveryChannelProperties", "true")
             .CreateClient(new WebApplicationFactoryClientOptions
             {
                 AllowAutoRedirect = false
