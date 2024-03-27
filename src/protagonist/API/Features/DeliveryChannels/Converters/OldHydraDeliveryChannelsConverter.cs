@@ -7,69 +7,44 @@ namespace API.Features.DeliveryChannels.Converters;
 
 public class OldHydraDeliveryChannelsConverter
 {
+    private const string ImageDefaultPolicy = "default";
+    private const string ImageUseOriginalPolicy = "use-original";
+    
     public DeliveryChannel[]? Convert(DLCS.HydraModel.Image hydraImage)
     {
         if (hydraImage.WcDeliveryChannels.IsNullOrEmpty()) return null;
         
         var convertedDeliveryChannels = new List<DeliveryChannel>();
         
-        foreach (var channel in hydraImage.WcDeliveryChannels)
+        foreach (var wcDeliveryChannel in hydraImage.WcDeliveryChannels)
         {
-            switch (channel)
+            var matchedDeliveryChannel = wcDeliveryChannel switch
             {
-                case AssetDeliveryChannels.Image:
+                AssetDeliveryChannels.Image => new DeliveryChannel()
                 {
-                    convertedDeliveryChannels.Add(new DeliveryChannel()
-                    {
-                        Channel = AssetDeliveryChannels.Image,
-                        Policy = hydraImage.ImageOptimisationPolicy == "use-original" 
-                            ? "use-original" 
-                            : "default"
-                    });
-                    break;
-                }
-                case AssetDeliveryChannels.Thumbnails:
+                    Channel = AssetDeliveryChannels.Image,
+                    Policy = hydraImage.ImageOptimisationPolicy == ImageUseOriginalPolicy
+                        ? ImageUseOriginalPolicy
+                        : ImageDefaultPolicy
+                },
+                AssetDeliveryChannels.Thumbnails or
+                AssetDeliveryChannels.Timebased or
+                AssetDeliveryChannels.File => new DeliveryChannel()
                 {
-                    convertedDeliveryChannels.Add(new DeliveryChannel()
-                    {
-                        Channel = AssetDeliveryChannels.Thumbnails,
-                    });
-                    break;
-                }
-                case AssetDeliveryChannels.Timebased:
-                {
-                    convertedDeliveryChannels.Add(new DeliveryChannel()
-                    {
-                        Channel = AssetDeliveryChannels.Timebased,
-                    });
-                    break;
-                }
-                case AssetDeliveryChannels.File:
-                {
-                    convertedDeliveryChannels.Add(new DeliveryChannel()
-                    {
-                        Channel = AssetDeliveryChannels.File
-                    });
-                    break;
-                }
+                    Channel = wcDeliveryChannel,
+                },
+                _ => null
+            };
+            
+            if (matchedDeliveryChannel != null)
+            {
+                convertedDeliveryChannels.Add(matchedDeliveryChannel);
             }
         }
+        
         return convertedDeliveryChannels.ToArray();
     }
-    public bool CanConvert(DLCS.HydraModel.Image hydraImage)
-    {
-        if (hydraImage.DeliveryChannels != null)
-        {
-            return false;
-        }
-        
-        if (hydraImage.WcDeliveryChannels != null ||
-            hydraImage.ThumbnailImageService != null ||
-            hydraImage.ImageOptimisationPolicy != null)
-        {
-            return true;
-        }
 
-        return false;
-    }
+    public bool CanConvert(DLCS.HydraModel.Image hydraImage)
+        => hydraImage.WcDeliveryChannels != null;
 }
