@@ -53,7 +53,6 @@ public class DeliveryChannelProcessor : IDeliveryChannelProcessor
             }
             catch (InvalidOperationException)
             {
-                // TODO Handle this better?
                 throw new APIException("Failed to match delivery channel policy")
                 {
                     StatusCode = 400
