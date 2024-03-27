@@ -31,8 +31,7 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
             logger.LogDebug("No thumbs to process for {AssetId}, aborting", assetId);
             return 0;
         }
-        
-        var expectedSizes = asset.GetAvailableThumbSizes(asset.FullThumbnailPolicy!, out var maxDimensions, true);
+        var expectedSizes = asset.GetAvailableThumbSizes(out var maxDimensions, true);
         if (expectedSizes.Count == 0)
         {
             logger.LogDebug("No expected thumb sizes for {AssetId}, aborting", assetId);

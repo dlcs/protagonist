@@ -21,8 +21,10 @@ using Engine.Data;
 using Engine.Ingest;
 using Engine.Ingest.File;
 using Engine.Ingest.Image;
-using Engine.Ingest.Image.Appetiser;
 using Engine.Ingest.Image.Completion;
+using Engine.Ingest.Image.ImageServer;
+using Engine.Ingest.Image.ImageServer.Clients;
+using Engine.Ingest.Image.ImageServer.Manipulation;
 using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased;
 using Engine.Ingest.Timebased.Completion;
@@ -91,16 +93,27 @@ public static class ServiceCollectionX
             .AddScoped<IAssetToDisk, AssetToDisk>()
             .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
             .AddScoped<IAssetToS3, AssetToS3>()
+            .AddScoped<IAppetiserClient, AppetiserClient>()
+            .AddScoped<ICantaloupeThumbsClient, CantaloupeThumbsClient>()
+            .AddScoped<IImageManipulator, ImageSharpManipulator>()
             .AddOriginStrategies();
 
         if (engineSettings.ImageIngest != null)
         {
-            services.AddTransient<TimingHandler>()
-                .AddHttpClient<IImageProcessor, AppetiserClient>(client =>
+            services.AddTransient<TimingHandler>();
+            services.AddScoped<IImageProcessor, ImageServerClient>();
+                
+            services.AddHttpClient("appetiser_client", client =>
                 {
                     client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
                     client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
                 }).AddHttpMessageHandler<TimingHandler>();
+            
+            services.AddHttpClient("thumbs_client", client =>
+            {
+                client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUri;
+                client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+            }).AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<IOrchestratorClient, InfoJsonOrchestratorClient>(client =>
             {

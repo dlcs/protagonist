@@ -139,9 +139,9 @@ public class MemoryAssetTracker : IAssetTracker
         if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
         {
             var getImageLocation = assetRepository.GetImageLocation(assetId);
-            var getOpenThumbs = thumbRepository.GetOpenSizes(assetId);
+            var getOpenThumbs = asset.GetAllThumbSizes().Select(a => new [] {a.Width, a.Height});
 
-            await Task.WhenAll(getImageLocation, getOpenThumbs);
+            await Task.WhenAll(getImageLocation);
 
             var imageLocation = getImageLocation.Result;
             
@@ -151,7 +151,7 @@ public class MemoryAssetTracker : IAssetTracker
                 Width = asset.Width ?? 0,
                 Height = asset.Height ?? 0,
                 MaxUnauthorised = asset.MaxUnauthorised ?? 0,
-                OpenThumbs = getOpenThumbs.Result ?? new List<int[]>(),
+                OpenThumbs = getOpenThumbs.ToList(),
                 Reingest = GetReingestFlag(asset, imageLocation),
             };
         }

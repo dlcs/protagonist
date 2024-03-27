@@ -51,7 +51,7 @@ public class WorkerBuilder : IWorkerBuilder
         
         if (MIMEHelper.IsImage(asset.MediaType))
         {
-            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
+            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image) || asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails))
             {
                 AddProcessor(serviceProvider.GetRequiredService<ImageIngesterWorker>());
             }

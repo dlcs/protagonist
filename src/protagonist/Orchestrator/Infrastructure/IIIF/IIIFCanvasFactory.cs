@@ -198,7 +198,7 @@ public class IIIFCanvasFactory
     private async Task<ImageSizeDetails> GetThumbnailSizesForImage(Asset image)
     {
         var thumbnailPolicy = await GetThumbnailPolicyForImage(image);
-        var thumbnailSizesForImage = image.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions);
+        var thumbnailSizesForImage = image.GetAvailableThumbSizes(out var maxDimensions);
 
         if (thumbnailSizesForImage.IsNullOrEmpty())
         {
