@@ -32,12 +32,12 @@ public class AssetProcessorTest
         defaultDeliveryChannelRepository = A.Fake<IDefaultDeliveryChannelRepository>();
         deliveryChannelPolicyRepository = A.Fake<IDeliveryChannelPolicyRepository>();
 
-        var otherThing = new DeliveryChannelProcessor(defaultDeliveryChannelRepository, deliveryChannelPolicyRepository,
+        var deliveryChannelProcessor = new DeliveryChannelProcessor(defaultDeliveryChannelRepository, deliveryChannelPolicyRepository,
             new NullLogger<DeliveryChannelProcessor>());
         
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(apiSettings);
 
-        sut = new AssetProcessor(assetRepository, storageRepository, otherThing, optionsMonitor);
+        sut = new AssetProcessor(assetRepository, storageRepository, deliveryChannelProcessor, optionsMonitor);
     }
     
     [Fact]

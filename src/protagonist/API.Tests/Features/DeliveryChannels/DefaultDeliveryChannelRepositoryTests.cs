@@ -52,7 +52,7 @@ public class DefaultDeliveryChannelRepositoryTests
        {
            Space = 0,
            Customer = 2,
-           DeliveryChannelPolicyId = 1,
+           DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
            MediaType = "image/*"
        });
        
@@ -84,7 +84,7 @@ public class DefaultDeliveryChannelRepositoryTests
     public async Task MatchDeliveryChannelPolicyForChannel_MatchesDeliveryChannel_WhenMatchAvailable()
     {
         // Arrange and Act
-        var matches = sut.MatchDeliveryChannelPolicyForChannel("image/tiff", 1, 2, "iiif-img");
+        var matches = await sut.MatchDeliveryChannelPolicyForChannel("image/tiff", 1, 2, "iiif-img");
 
         // Assert
         matches.Should().NotBeNull();

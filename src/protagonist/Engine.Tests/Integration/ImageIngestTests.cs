@@ -6,6 +6,7 @@ using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.Utils;
@@ -38,7 +39,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         new ImageDeliveryChannel()
         {
             Channel = AssetDeliveryChannels.Image,
-            DeliveryChannelPolicyId = 1
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
         }
     };
 

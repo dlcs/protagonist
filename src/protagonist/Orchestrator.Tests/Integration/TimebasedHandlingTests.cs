@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Tests.Integration.Infrastructure;
@@ -28,7 +29,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
         new ImageDeliveryChannel()
         {
             Channel = AssetDeliveryChannels.Timebased,
-            DeliveryChannelPolicyId = 5
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.AvDefaultAudio
         }
     };
 
@@ -132,7 +133,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
             new()
             {
                 Channel = AssetDeliveryChannels.File,
-                DeliveryChannelPolicyId = 3
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
             }
         });
         await dbFixture.DbContext.SaveChangesAsync();

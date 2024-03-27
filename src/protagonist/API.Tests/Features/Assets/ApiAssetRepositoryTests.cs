@@ -9,6 +9,7 @@ using DLCS.Core;
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Entities;
@@ -375,17 +376,17 @@ public class ApiAssetRepositoryTests
             new()
             {
                 Channel = AssetDeliveryChannels.Image,
-                DeliveryChannelPolicyId = 1
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
             },
             new()
             {
                 Channel = AssetDeliveryChannels.Thumbnails,
-                DeliveryChannelPolicyId = 3
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
             },
             new()
             {
                 Channel = AssetDeliveryChannels.File,
-                DeliveryChannelPolicyId = 4
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
             }
         });
         await contextForTests.SaveChangesAsync();

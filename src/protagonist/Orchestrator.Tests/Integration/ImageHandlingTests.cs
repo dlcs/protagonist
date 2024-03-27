@@ -11,6 +11,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth.Entities;
+using DLCS.Model.Policies;
 using IIIF;
 using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
@@ -49,7 +50,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         new ImageDeliveryChannel()
         {
             Channel = AssetDeliveryChannels.Image,
-            DeliveryChannelPolicyId = 1
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
         }
     };
 
@@ -1608,7 +1609,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 new()
                 {
                     Channel = AssetDeliveryChannels.File,
-                    DeliveryChannelPolicyId = 3
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
                 }
             });
             await dbFixture.DbContext.SaveChangesAsync();
