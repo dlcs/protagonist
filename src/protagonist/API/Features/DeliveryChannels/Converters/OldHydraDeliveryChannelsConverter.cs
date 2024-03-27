@@ -28,12 +28,15 @@ public class OldHydraDeliveryChannelsConverter
                         ? ImageUseOriginalPolicy
                         : ImageDefaultPolicy
                 },
-                AssetDeliveryChannels.Thumbnails or
-                AssetDeliveryChannels.Timebased or
                 AssetDeliveryChannels.File => new DeliveryChannel()
                 {
-                    Channel = wcDeliveryChannel,
+                    Channel = AssetDeliveryChannels.File,
                     Policy = FileNonePolicy
+                },
+                AssetDeliveryChannels.Thumbnails or
+                AssetDeliveryChannels.Timebased => new DeliveryChannel()
+                {
+                    Channel = wcDeliveryChannel,
                 },
                 _ => null
             };
