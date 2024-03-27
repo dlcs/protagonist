@@ -1,4 +1,5 @@
-﻿using API.Features.Assets;
+﻿using API.Exceptions;
+using API.Features.Assets;
 using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Core;
@@ -52,7 +53,7 @@ public class AssetProcessor
         try
         {
             existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true);
-            
+
             if (existingAsset == null)
             {
                 if (mustExist)
@@ -66,7 +67,8 @@ public class AssetProcessor
                     };
                 }
 
-                var counts = await storageRepository.GetStorageMetrics(assetBeforeProcessing.Asset.Customer, cancellationToken);
+                var counts =
+                    await storageRepository.GetStorageMetrics(assetBeforeProcessing.Asset.Customer, cancellationToken);
                 if (!counts.CanStoreAsset())
                 {
                     return new ProcessAssetResult
@@ -77,8 +79,8 @@ public class AssetProcessor
                         )
                     };
                 }
-                
-                if (!counts.CanStoreAssetSize(0,0))
+
+                if (!counts.CanStoreAssetSize(0, 0))
                 {
                     return new ProcessAssetResult
                     {
@@ -99,11 +101,12 @@ public class AssetProcessor
                         "Delivery channels are required when updating an existing Asset via PUT",
                         WriteResult.BadRequest
                     )
-                };  
+                };
             }
-            
+
             var assetPreparationResult =
-                AssetPreparer.PrepareAssetForUpsert(existingAsset, assetBeforeProcessing.Asset, false, isBatchUpdate, settings.RestrictedAssetIdCharacters);
+                AssetPreparer.PrepareAssetForUpsert(existingAsset, assetBeforeProcessing.Asset, false, isBatchUpdate,
+                    settings.RestrictedAssetIdCharacters);
 
             if (!assetPreparationResult.Success)
             {
@@ -113,7 +116,7 @@ public class AssetProcessor
                         WriteResult.FailedValidation)
                 };
             }
-            
+
             var updatedAsset = assetPreparationResult.UpdatedAsset!; // this is from Database
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
 
@@ -123,7 +126,7 @@ public class AssetProcessor
             {
                 requiresEngineNotification = true;
             }
-            
+
             if (requiresEngineNotification)
             {
                 updatedAsset.SetFieldsForIngestion();
@@ -139,13 +142,21 @@ public class AssetProcessor
             }
 
             var assetAfterSave = await assetRepository.Save(updatedAsset, existingAsset != null, cancellationToken);
-            
+
             return new ProcessAssetResult
             {
                 ExistingAsset = existingAsset,
                 RequiresEngineNotification = requiresEngineNotification,
                 Result = ModifyEntityResult<Asset>.Success(assetAfterSave,
                     existingAsset == null ? WriteResult.Created : WriteResult.Updated)
+            };
+        }
+        catch (APIException apiEx)
+        {
+            var resultStatus = (apiEx.StatusCode ?? 500) == 400 ? WriteResult.BadRequest : WriteResult.Error;
+            return new ProcessAssetResult
+            {
+                Result = ModifyEntityResult<Asset>.Failure(apiEx.Message, resultStatus)
             };
         }
         catch (Exception e)

@@ -69,7 +69,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .WithMessage("'channel' must be specified when supplying delivery channels to an asset");
             
         RuleForEach(a => a.DeliveryChannels)
-            .Must((a, c) => AssetDeliveryChannels.IsChannelValidForMediaType(c.Channel!, a.MediaType!))
+            .Must((a, c) => AssetDeliveryChannels.IsChannelValidForMediaType(c.Channel, a.MediaType!))
             .When(a => !string.IsNullOrEmpty(a.MediaType))
             .WithMessage((a,c) => $"'{c.Channel}' is not a valid delivery channel for asset of type \"{a.MediaType}\"");
     

@@ -163,11 +163,32 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Put_NewImageAsset_Returns400_IfNoDeliveryChannelDefaults()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_Returns400_IfNoDeliveryChannelDefaults));
+        var hydraImageBody = @"{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/test"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff"",
+  ""deliveryChannels"": [{ ""channel"":""file"" } ] 
+}";
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer().PutAsync(assetId.ToApiResourcePath(), content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, "there is no default handler for image/tiff for 'file' channel");
+    }
+    
+    [Fact]
     public async Task Put_NewImageAsset_Creates_AssetWithSpecifiedDeliveryChannels()
     {
         var customerAndSpace = await CreateCustomerAndSpace();
 
-        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_AssetWithSpecifiedDeliveryChannels));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -193,8 +214,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
-
-        var stuff = await response.Content.ReadAsStringAsync();
 
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);

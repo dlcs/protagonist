@@ -24,7 +24,7 @@ public class HydraImageValidatorTests
     [InlineData(" ")]
     public void MediaType_NullOrEmpty_OnCreate(string mediaType)
     {
-        var model = new DLCS.HydraModel.Image { MediaType = mediaType };
+        var model = new Image { MediaType = mediaType };
         var result = sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(a => a.MediaType);
     }
@@ -32,7 +32,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void Batch_Provided()
     {
-        var model = new DLCS.HydraModel.Image { Batch = "10" };
+        var model = new Image { Batch = "10" };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Batch);
     }
@@ -40,7 +40,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void Width_Provided()
     {
-        var model = new DLCS.HydraModel.Image { Width = 10 };
+        var model = new Image { Width = 10 };
         var result = sut.TestValidate(model);
         result
             .ShouldHaveValidationErrorFor(a => a.Width)
@@ -53,7 +53,7 @@ public class HydraImageValidatorTests
     [InlineData("audio/mp4", "file")]
     public void Width_Provided_NotFileOnly_OrAudio(string mediaType, string dc)
     {
-        var model = new DLCS.HydraModel.Image
+        var model = new Image
         {
             Width = 10, WcDeliveryChannels = dc.Split(","), MediaType = mediaType
         };
@@ -69,7 +69,7 @@ public class HydraImageValidatorTests
     [InlineData("application/pdf")]
     public void Width_Allowed_IfFileOnly_AndVideoOrImage(string mediaType)
     {
-        var model = new DLCS.HydraModel.Image
+        var model = new Image
         {
             MediaType = mediaType, WcDeliveryChannels = new[] { "file" }, Width = 10
         };
@@ -80,7 +80,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void Height_Provided()
     {
-        var model = new DLCS.HydraModel.Image { Height = 10 };
+        var model = new Image { Height = 10 };
         var result = sut.TestValidate(model);
         result
             .ShouldHaveValidationErrorFor(a => a.Height)
@@ -93,7 +93,7 @@ public class HydraImageValidatorTests
     [InlineData("audio/mp4", "file")]
     public void Height_Provided_NotFileOnly_OrAudio(string mediaType, string dc)
     {
-        var model = new DLCS.HydraModel.Image
+        var model = new Image
         {
             Height = 10, WcDeliveryChannels = dc.Split(","), MediaType = mediaType
         };
@@ -109,7 +109,7 @@ public class HydraImageValidatorTests
     [InlineData("application/pdf")]
     public void Height_Allowed_IfFileOnly_AndVideoOrImage(string mediaType)
     {
-        var model = new DLCS.HydraModel.Image
+        var model = new Image
         {
             MediaType = mediaType, WcDeliveryChannels = new[] { "file" }, Height = 10
         };
@@ -120,7 +120,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void Duration_Provided()
     {
-        var model = new DLCS.HydraModel.Image { Duration = 10 };
+        var model = new Image { Duration = 10 };
         var result = sut.TestValidate(model);
         result
             .ShouldHaveValidationErrorFor(a => a.Duration)
@@ -133,7 +133,7 @@ public class HydraImageValidatorTests
     [InlineData("audio/mp4", "file,iiif-av")]
     public void Duration_Provided_NotFileOnly_OrImage(string mediaType, string dc)
     {
-        var model = new DLCS.HydraModel.Image
+        var model = new Image
         {
             Duration = 10, WcDeliveryChannels = dc.Split(","), MediaType = mediaType
         };
@@ -149,7 +149,7 @@ public class HydraImageValidatorTests
     [InlineData("application/pdf")]
     public void Duration_Allowed_IfFileOnly_AndVideoOrAudio(string mediaType)
     {
-        var model = new DLCS.HydraModel.Image
+        var model = new Image
         {
             MediaType = mediaType, WcDeliveryChannels = new[] { "file" }, Duration = 10
         };
@@ -160,7 +160,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void Finished_Provided()
     {
-        var model = new DLCS.HydraModel.Image { Finished = DateTime.Today };
+        var model = new Image { Finished = DateTime.Today };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Finished);
     }
@@ -168,7 +168,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void Created_Provided()
     {
-        var model = new DLCS.HydraModel.Image { Created = DateTime.Today };
+        var model = new Image { Created = DateTime.Today };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Created);
     }
@@ -179,7 +179,7 @@ public class HydraImageValidatorTests
     [InlineData("iiif-av")]
     public void UseOriginalPolicy_NotImage(string dc)
     {
-        var model = new DLCS.HydraModel.Image
+        var model = new Image
         {
             WcDeliveryChannels = dc.Split(","),
             MediaType = "image/jpeg",
@@ -196,7 +196,7 @@ public class HydraImageValidatorTests
     [InlineData("file,iiif-img")]
     public void UseOriginalPolicy_Image(string dc)
     {
-        var model = new DLCS.HydraModel.Image
+        var model = new Image
         {
             WcDeliveryChannels = dc.Split(","),
             MediaType = "image/jpeg",
@@ -207,9 +207,9 @@ public class HydraImageValidatorTests
     }
     
     [Fact]
-    public void DeliveryChannel_CanBeEmpty()
+    public void WcDeliveryChannel_CanBeEmpty()
     {
-        var model = new DLCS.HydraModel.Image();
+        var model = new Image();
         var result = sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.WcDeliveryChannels);
     }
@@ -219,17 +219,17 @@ public class HydraImageValidatorTests
     [InlineData("iiif-av")]
     [InlineData("iiif-img")]
     [InlineData("file,iiif-av,iiif-img")]
-    public void DeliveryChannel_CanContainKnownValues(string knownValues)
+    public void WcDeliveryChannel_CanContainKnownValues(string knownValues)
     {
-        var model = new DLCS.HydraModel.Image { WcDeliveryChannels = knownValues.Split(',') };
+        var model = new Image { WcDeliveryChannels = knownValues.Split(',') };
         var result = sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.WcDeliveryChannels);
     }
     
     [Fact]
-    public void DeliveryChannel_UnknownValue()
+    public void WcDeliveryChannel_UnknownValue()
     {
-        var model = new DLCS.HydraModel.Image { WcDeliveryChannels = new[] { "foo" } };
+        var model = new Image { WcDeliveryChannels = new[] { "foo" } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.WcDeliveryChannels);
     }
@@ -239,7 +239,7 @@ public class HydraImageValidatorTests
     {
         var apiSettings = new ApiSettings();
         var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
-        var model = new DLCS.HydraModel.Image { WcDeliveryChannels = new[] { "iiif-img" } };
+        var model = new Image { WcDeliveryChannels = new[] { "iiif-img" } };
         var result = imageValidator.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.WcDeliveryChannels);
     }
@@ -249,9 +249,29 @@ public class HydraImageValidatorTests
     {
         var apiSettings = new ApiSettings();
         var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
-        var model = new DLCS.HydraModel.Image();
+        var model = new Image();
         var result = imageValidator.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.WcDeliveryChannels);
+    }
+    
+    [Fact]
+    public void DeliveryChannel_ValidationError_DeliveryChannelMissingChannel()
+    {
+        var apiSettings = new ApiSettings();
+        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var model = new Image { DeliveryChannels = new[]
+        {
+            new DeliveryChannel()
+            {
+                Policy = "none"
+            },
+            new DeliveryChannel()
+            {
+                Channel = "file"
+            }
+        } };
+        var result = imageValidator.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
     [Fact]
@@ -259,7 +279,7 @@ public class HydraImageValidatorTests
     {
         var apiSettings = new ApiSettings();
         var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
-        var model = new DLCS.HydraModel.Image { DeliveryChannels = new[]
+        var model = new Image { DeliveryChannels = new[]
         {
             new DeliveryChannel()
             {
@@ -279,7 +299,7 @@ public class HydraImageValidatorTests
     {
         var apiSettings = new ApiSettings();
         var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
-        var model = new DLCS.HydraModel.Image { DeliveryChannels = new[]
+        var model = new Image { DeliveryChannels = new[]
         {
             new DeliveryChannel()
             {
@@ -295,11 +315,11 @@ public class HydraImageValidatorTests
     }
     
     [Fact]
-    public void DeliveryChannel_ValidationError_WhenOnlyNone()
+    public void DeliveryChannel_NoValidationError_WhenOnlyNone()
     {
         var apiSettings = new ApiSettings();
         var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
-        var model = new DLCS.HydraModel.Image { DeliveryChannels = new[]
+        var model = new Image { DeliveryChannels = new[]
         {
             new DeliveryChannel()
             {
@@ -327,7 +347,7 @@ public class HydraImageValidatorTests
     {
         var apiSettings = new ApiSettings();
         var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
-        var model = new DLCS.HydraModel.Image { 
+        var model = new Image { 
             MediaType = mediaType,
             DeliveryChannels = new[]
             {
@@ -351,7 +371,7 @@ public class HydraImageValidatorTests
     {
         var apiSettings = new ApiSettings();
         var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
-        var model = new DLCS.HydraModel.Image { 
+        var model = new Image { 
             MediaType = mediaType,
             DeliveryChannels = new[]
         {
@@ -369,7 +389,7 @@ public class HydraImageValidatorTests
     {
         var apiSettings = new ApiSettings();
         var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
-        var model = new DLCS.HydraModel.Image
+        var model = new Image
         {
             DeliveryChannels = Array.Empty<DeliveryChannel>()
         };
