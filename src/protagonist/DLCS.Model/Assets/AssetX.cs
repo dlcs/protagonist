@@ -16,25 +16,14 @@ public static class AssetX
     public static List<Size> GetAllThumbSizes(this Asset asset)
     {
         var thumbnailSizes = new List<Size>();
-        
-        if (asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails))
-        {
-            var initialPolicyTransformation = JsonSerializer.Deserialize<List<string>>(asset.ImageDeliveryChannels
-                .Single(
-                    x => x.Channel == AssetDeliveryChannels.Thumbnails)
-                .DeliveryChannelPolicy.PolicyData);
 
-            foreach (var sizeValue in initialPolicyTransformation!)
-            {
-                var sizeParameter = SizeParameter.Parse(sizeValue);
+        var sizeParameters = ConvertThumbnailPolicy(asset);
 
-                thumbnailSizes.Add(new Size(sizeParameter.Width.Value, sizeParameter.Height.Value));
-            }
-        }
+        thumbnailSizes = sizeParameters.Select(s => new Size(s.Width.Value, s.Height.Value)).ToList();
 
         return thumbnailSizes;
     }
-    
+
     /// <summary>
     /// Get a list of all available thumbnail sizes for asset, based on thumbnail policy. 
     /// </summary>
@@ -46,11 +35,7 @@ public static class AssetX
         out (int maxBoundedSize, int maxAvailableWidth, int maxAvailableHeight) maxDimensions,
         bool includeUnavailable = false)
     {
-        var initialPolicyTransformation = JsonSerializer.Deserialize<List<string>>(asset.ImageDeliveryChannels.Single(
-                x => x.Channel == AssetDeliveryChannels.Thumbnails)
-            .DeliveryChannelPolicy.PolicyData);
-
-        var thumbnailPolicy = initialPolicyTransformation!.Select(SizeParameter.Parse).ToList();
+        var thumbnailPolicy = ConvertThumbnailPolicy(asset);
 
         asset.ThrowIfNull(nameof(asset));
         thumbnailPolicy.ThrowIfNull(nameof(thumbnailPolicy));
@@ -100,6 +85,26 @@ public static class AssetX
 
         maxDimensions = (maxBoundedSize, maxAvailableWidth, maxAvailableHeight);
         return availableSizes;
+    }
+
+    private static List<SizeParameter> ConvertThumbnailPolicy(Asset asset)
+    {
+        var sizeParameters = new List<SizeParameter>();
+
+        if (asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails))
+        {
+            var initialPolicyTransformation = JsonSerializer.Deserialize<List<string>>(asset.ImageDeliveryChannels
+                .Single(
+                    x => x.Channel == AssetDeliveryChannels.Thumbnails)
+                .DeliveryChannelPolicy.PolicyData);
+
+            foreach (var sizeValue in initialPolicyTransformation!)
+            {
+                sizeParameters.Add(SizeParameter.Parse(sizeValue));
+            }
+        }
+
+        return sizeParameters;
     }
 
     /// <summary>
