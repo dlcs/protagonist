@@ -11,7 +11,8 @@ namespace API.Features.Image.Ingest;
 public interface IDeliveryChannelProcessor
 {
     /// <summary>
-    /// Update updatedAsset.ImageDeliveryChannels  
+    /// Update updatedAsset.ImageDeliveryChannels, adding/removing/updating as required to match channels specified in
+    /// deliveryChannelsBeforeProcessing
     /// </summary>
     /// <param name="existingAsset">Existing asset, if found (will only be present for updates)</param>
     /// <param name="updatedAsset">
@@ -47,7 +48,7 @@ public class DeliveryChannelProcessor : IDeliveryChannelProcessor
             try
             {
                 var deliveryChannelChanged = await SetImageDeliveryChannels(updatedAsset,
-                    deliveryChannelsBeforeProcessing, existingAsset == null);
+                    deliveryChannelsBeforeProcessing, existingAsset != null);
                 return deliveryChannelChanged;
             }
             catch (InvalidOperationException)
