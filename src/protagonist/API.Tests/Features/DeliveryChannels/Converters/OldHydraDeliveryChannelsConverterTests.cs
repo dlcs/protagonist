@@ -41,18 +41,13 @@ public class OldHydraDeliveryChannelsConverterTests
         result.Should().BeFalse();
     }
     
-    [Theory]
-    [InlineData(new[]{"iiif-img"}, "use-original", null)]
-    [InlineData(new[]{"iiif-av"}, null, null)]
-    public void CanConvert_ReturnsTrue_IfImageUsesOldDeliveryChannels(string[] wcDeliveryChannels,
-        string imageOptimisationPolicy, string thumbnailPolicy)
+    [Fact]
+    public void CanConvert_ReturnsTrue_IfImageUsesOldDeliveryChannels()
     {
         // Arrange
         var image = new Image()
         {
-            WcDeliveryChannels = wcDeliveryChannels,
-            ImageOptimisationPolicy = imageOptimisationPolicy,
-            ThumbnailPolicy = thumbnailPolicy
+            WcDeliveryChannels = new[]{"file"},
         };
 
         // Act
