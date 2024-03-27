@@ -4,6 +4,7 @@ using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
+using DLCS.Model.Policies;
 using FakeItEasy;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -167,7 +168,6 @@ public class MemoryAssetTrackerTests
         // Assert
         result.AssetId.Should().Be(assetId);
         result.Origin.Should().Be(expectedOrigin);
-        A.CallTo(() => thumbRepository.GetOpenSizes(A<AssetId>._)).MustHaveHappened();
     }
     
     [Theory]
@@ -203,13 +203,25 @@ public class MemoryAssetTrackerTests
         var imageDeliveryChannels = GenerateImageDeliveryChannels(deliveryChannels);
 
         var assetId = new AssetId(1, 1, "go!");
+        imageDeliveryChannels.Add(new ImageDeliveryChannel
+        {
+            Channel = AssetDeliveryChannels.Thumbnails,
+            DeliveryChannelPolicyId = 3,
+            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            {
+                Name = "default",
+                PolicyData = "[\"!100,200\"]",
+                Channel = AssetDeliveryChannels.Thumbnails
+            }
+        });
+
         var sizes = new List<int[]> { new[] { 100, 200 } };
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
            ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50, MaxUnauthorised = -1, 
             Origin = "test"
         });
-        A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
+      //  A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
 
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
@@ -236,8 +248,7 @@ public class MemoryAssetTrackerTests
             ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50, MaxUnauthorised = -1,
             Origin = "test", Created = DateTime.Today
         });
-        A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns<List<int[]>>(null);
-
+        
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
         
