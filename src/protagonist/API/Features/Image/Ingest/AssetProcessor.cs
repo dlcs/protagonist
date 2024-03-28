@@ -18,13 +18,13 @@ public class AssetProcessor
 {
     private readonly IApiAssetRepository assetRepository;
     private readonly IStorageRepository storageRepository;
-    private readonly IDeliveryChannelProcessor deliveryChannelProcessor;
+    private readonly DeliveryChannelProcessor deliveryChannelProcessor;
     private readonly ApiSettings settings;
     
     public AssetProcessor(
         IApiAssetRepository assetRepository,
         IStorageRepository storageRepository,
-        IDeliveryChannelProcessor deliveryChannelProcessor,
+        DeliveryChannelProcessor deliveryChannelProcessor,
         IOptionsMonitor<ApiSettings> apiSettings)
     {
         this.assetRepository = assetRepository;

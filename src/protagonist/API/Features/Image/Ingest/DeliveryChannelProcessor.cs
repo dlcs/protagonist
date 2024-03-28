@@ -8,23 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace API.Features.Image.Ingest;
 
-public interface IDeliveryChannelProcessor
-{
-    /// <summary>
-    /// Update updatedAsset.ImageDeliveryChannels, adding/removing/updating as required to match channels specified in
-    /// deliveryChannelsBeforeProcessing
-    /// </summary>
-    /// <param name="existingAsset">Existing asset, if found (will only be present for updates)</param>
-    /// <param name="updatedAsset">
-    /// Asset that is existing asset (if update) or default asset (if create) with changes applied.
-    /// </param>
-    /// <param name="deliveryChannelsBeforeProcessing">List of deliveryChannels submitted in body</param>
-    /// <returns>Boolean indicating whether asset requires processing Engine</returns>
-    Task<bool> ProcessImageDeliveryChannels(Asset? existingAsset, Asset updatedAsset,
-        DeliveryChannelsBeforeProcessing[] deliveryChannelsBeforeProcessing);
-}
-
-public class DeliveryChannelProcessor : IDeliveryChannelProcessor
+public class DeliveryChannelProcessor
 {
     private readonly IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository;
     private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
@@ -39,6 +23,16 @@ public class DeliveryChannelProcessor : IDeliveryChannelProcessor
         this.logger = logger;
     }
     
+    /// <summary>
+    /// Update updatedAsset.ImageDeliveryChannels, adding/removing/updating as required to match channels specified in
+    /// deliveryChannelsBeforeProcessing
+    /// </summary>
+    /// <param name="existingAsset">Existing asset, if found (will only be present for updates)</param>
+    /// <param name="updatedAsset">
+    /// Asset that is existing asset (if update) or default asset (if create) with changes applied.
+    /// </param>
+    /// <param name="deliveryChannelsBeforeProcessing">List of deliveryChannels submitted in body</param>
+    /// <returns>Boolean indicating whether asset requires processing Engine</returns>
     public async Task<bool> ProcessImageDeliveryChannels(Asset? existingAsset, Asset updatedAsset,
         DeliveryChannelsBeforeProcessing[] deliveryChannelsBeforeProcessing)
     {
@@ -103,7 +97,7 @@ public class DeliveryChannelProcessor : IDeliveryChannelProcessor
         if (deliveryChannelsBeforeProcessing.Count(d => d.Channel == AssetDeliveryChannels.None) == 1)
         {
             AddExplicitNoneChannel(asset);
-            return false;
+            return true;
         }
 
         // Iterate through DeliveryChannels specified in payload and make necessary update/delete/insert
