@@ -1008,6 +1008,42 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Put_New_Asset_Translates_MultipleWcDeliveryChannels()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Translates_MultipleWcDeliveryChannels));
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+          ""family"": ""I"",
+          ""mediaType"": ""image/tiff"",
+          ""wcDeliveryChannels"": [""iiif-img"",""thumbs"",""file""]
+        }}";
+
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == "iiif-img" &&
+                  dc.DeliveryChannelPolicy.Name == "default",
+            dc => dc.Channel == "thumbs" && 
+                  dc.DeliveryChannelPolicy.Name == "default",
+            dc => dc.Channel == "file" && 
+                  dc.DeliveryChannelPolicy.Name == "none");
+    }
+    
+    [Fact]
     public async Task Put_Existing_Asset_ClearsError_AndMarksAsIngesting()
     {
         var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));

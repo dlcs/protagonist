@@ -165,6 +165,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
                 Id = "cust-default", Name = "Customer Scoped", TechnicalDetails = new[] { "default" },
                 Global = false, Customer = 99
             });
+        await DbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(99);
         await DbContext.DeliveryChannelPolicies.AddRangeAsync(new DeliveryChannelPolicy()
         {
             Customer = 99,
@@ -174,39 +175,6 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             PolicyData = "[\"!1024,1024\",\"!400,400\",\"!200,200\",\"!100,100\"]",
             System = false,
         });
-        await DbContext.DefaultDeliveryChannels.AddRangeAsync(
-            new DefaultDeliveryChannel()
-            {
-                Id = Guid.NewGuid(),
-                Customer = 99,
-                Space = 1,
-                MediaType = "video/*",
-                DeliveryChannelPolicy =  new DeliveryChannelPolicy()
-                {
-                    Customer = 99,
-                    Name = "default-video",
-                    DisplayName = "A default video policy",
-                    Channel = "iiif-av",
-                    PolicyData = "[\"video-mp4-720p\"]",
-                    System = false,
-                }
-            },
-            new DefaultDeliveryChannel()
-            {
-                Id = Guid.NewGuid(),
-                Customer = 99,
-                Space = 1,
-                MediaType = "audio/*",
-                DeliveryChannelPolicy = new DeliveryChannelPolicy()
-                {
-                    Customer = 99,
-                    Name = "default-audio",
-                    DisplayName = "A default audio policy",
-                    Channel = "iiif-av",
-                    PolicyData = "[\"audio-mp3-128\"]",
-                    System = false,
-                }
-            });
         await DbContext.AuthServices.AddAsync(new AuthService
         {
             Customer = customer, Name = "clickthrough", Id = ClickThroughAuthService, Description = "", Label = "",
