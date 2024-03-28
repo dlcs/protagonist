@@ -13,7 +13,7 @@ public class DeliveryChannelProcessor
     private readonly IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository;
     private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
     private readonly ILogger<DeliveryChannelProcessor> logger;
-    private const string None = "none";
+    private const string FileNonePolicy = "none";
 
     public DeliveryChannelProcessor(IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository,
         IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository, ILogger<DeliveryChannelProcessor> logger)
@@ -178,7 +178,7 @@ public class DeliveryChannelProcessor
     {
         logger.LogTrace("assigning 'none' channel for asset {AssetId}", asset.Id);
         var deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(asset.Customer,
-            AssetDeliveryChannels.None, None);
+            AssetDeliveryChannels.None, FileNonePolicy);
 
         // "none" channel can only exist on it's own so remove any others that may be there already prior to adding
         asset.ImageDeliveryChannels.Clear();
