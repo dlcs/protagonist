@@ -49,7 +49,4 @@ public class OldHydraDeliveryChannelsConverter
         
         return convertedDeliveryChannels.ToArray();
     }
-
-    public bool CanConvert(DLCS.HydraModel.Image hydraImage)
-        => hydraImage.WcDeliveryChannels != null;
 }
