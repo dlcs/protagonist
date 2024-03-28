@@ -6,7 +6,7 @@ using Engine.Ingest;
 using Engine.Ingest.Image.ImageServer;
 using Engine.Ingest.Persistence;
 
-namespace Engine.Tests.Ingest.Image.Appetiser;
+namespace Engine.Tests.Ingest.Image.ImageServer;
 
 public class ImageProcessorFlagsTests
 {

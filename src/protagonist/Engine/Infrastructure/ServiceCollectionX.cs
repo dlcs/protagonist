@@ -94,22 +94,22 @@ public static class ServiceCollectionX
             .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
             .AddScoped<IAssetToS3, AssetToS3>()
             .AddScoped<IAppetiserClient, AppetiserClient>()
-            .AddScoped<ICantaloupeThumbsClient, CantaloupeThumbsClient>()
-            .AddScoped<IImageManipulator, ImageSharpManipulator>()
             .AddOriginStrategies();
 
         if (engineSettings.ImageIngest != null)
         {
             services.AddTransient<TimingHandler>();
-            services.AddScoped<IImageProcessor, ImageServerClient>();
+            services.AddScoped<IImageProcessor, ImageServerClient>()
+                .AddScoped<ICantaloupeThumbsClient, CantaloupeThumbsClient>()
+                .AddScoped<IImageManipulator, ImageSharpManipulator>();
                 
-            services.AddHttpClient("appetiser_client", client =>
+            services.AddHttpClient<IAppetiserClient, AppetiserClient>(client =>
                 {
                     client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
                     client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
                 }).AddHttpMessageHandler<TimingHandler>();
             
-            services.AddHttpClient("thumbs_client", client =>
+            services.AddHttpClient<ICantaloupeThumbsClient, CantaloupeThumbsClient>(client =>
             {
                 client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUri;
                 client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);

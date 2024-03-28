@@ -9,12 +9,15 @@ public class AppetiserClient : IAppetiserClient
 {
         private HttpClient appetiserClient;
         private readonly EngineSettings engineSettings;
+        private readonly ILogger<AppetiserClient> logger;
         
         public AppetiserClient(
-                IHttpClientFactory factory,
+                HttpClient appetiserClient,
+                ILogger<AppetiserClient> logger,
                 IOptionsMonitor<EngineSettings> engineOptionsMonitor)
         {
-                appetiserClient = factory.CreateClient("appetiser_client");
+                this.appetiserClient = appetiserClient;
+                this.logger = logger;
                 engineSettings = engineOptionsMonitor.CurrentValue;
         }
 
@@ -39,9 +42,11 @@ public class AppetiserClient : IAppetiserClient
                 }
                 else
                 {
-                        responseModel = await response.Content.ReadFromJsonAsync<AppetiserResponseErrorModel>(cancellationToken: cancellationToken);
+                        responseModel =
+                                await response.Content.ReadFromJsonAsync<AppetiserResponseErrorModel>(
+                                        cancellationToken: cancellationToken);
                 }
-
+                
                 return responseModel;
         }
 }
