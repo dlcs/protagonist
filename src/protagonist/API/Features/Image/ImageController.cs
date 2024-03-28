@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using API.Converters;
+using API.Features.DeliveryChannels.Converters;
 using API.Features.Image.Requests;
 using API.Features.Image.Validation;
 using API.Infrastructure;
@@ -93,6 +94,7 @@ public class ImageController : HydraController
         [FromRoute] string imageId,
         [FromBody] ImageWithFile hydraAsset,
         [FromServices] HydraImageValidator validator,
+        [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
         if (apiSettings.LegacyModeEnabledForSpace(customerId, spaceId))
@@ -100,6 +102,18 @@ public class ImageController : HydraController
             hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
         }
 
+        if (apiSettings.EmulateOldDeliveryChannelProperties && 
+            hydraAsset.WcDeliveryChannels != null)
+        {
+            hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
+        }
+        if(!apiSettings.EmulateOldDeliveryChannelProperties &&
+           (hydraAsset.ImageOptimisationPolicy != null || hydraAsset.ThumbnailPolicy != null))
+        {
+            return this.HydraProblem("ImageOptimisationPolicy and ThumbnailPolicy are disabled", null,
+                400, "Bad Request");
+        }
+        
         if (hydraAsset.ModelId == null)
         {
             hydraAsset.ModelId = imageId;
@@ -233,6 +247,7 @@ public class ImageController : HydraController
         [FromRoute] string imageId,
         [FromBody] ImageWithFile hydraAsset,
         [FromServices] HydraImageValidator validator,
+        [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
 
@@ -241,7 +256,7 @@ public class ImageController : HydraController
             customerId, spaceId, imageId);
         
 
-        return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, cancellationToken);
+        return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, oldHydraDcConverter, cancellationToken);
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using API.Auth;
+using API.Features.DeliveryChannels.Converters;
 using API.Features.DeliveryChannels.Validation;
 using API.Features.Image.Ingest;
 using API.Features.OriginStrategies.Credentials;
@@ -76,6 +77,7 @@ public class Startup
             .AddScoped<AssetProcessor>()
             .AddTransient<TimingHandler>()
             .AddScoped<DeliveryChannelPolicyDataValidator>()
+            .AddSingleton<OldHydraDeliveryChannelsConverter>()
             .AddValidatorsFromAssemblyContaining<Startup>()
             .ConfigureMediatR()
             .AddNamedQueriesCore()
