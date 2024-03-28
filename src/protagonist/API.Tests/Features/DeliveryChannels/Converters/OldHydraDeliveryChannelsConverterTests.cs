@@ -31,7 +31,7 @@ public class OldHydraDeliveryChannelsConverterTests
             new()
             {
                 Channel = "iiif-img",
-                Policy = "default"
+                Policy = "default",
             }
         });
     }
@@ -77,7 +77,8 @@ public class OldHydraDeliveryChannelsConverterTests
         {
             new()
             {
-                Channel = "iiif-av"
+                Channel = "iiif-av",
+                Policy = null,
             }
         });
     }
@@ -97,6 +98,39 @@ public class OldHydraDeliveryChannelsConverterTests
         // Assert
         result.Should().BeEquivalentTo(new List<DeliveryChannel>()
         {
+            new()
+            {
+                Channel = "file",
+                Policy = "none"
+            }
+        });
+    }
+    
+    [Fact]
+    public void Convert_TranslatesMultipleChannels()
+    {
+        // Arrange
+        var image = new Image()
+        {
+            WcDeliveryChannels = new[]{"iiif-img","thumbs","file"}
+        };
+        
+        // Act
+        var result = sut.Convert(image);
+        
+        // Assert
+        result.Should().BeEquivalentTo(new List<DeliveryChannel>()
+        { 
+            new()
+            {
+                Channel = "iiif-img",
+                Policy = "default",
+            },
+            new()
+            {
+                Channel = "thumbs",
+                Policy = null,
+            },
             new()
             {
                 Channel = "file",
