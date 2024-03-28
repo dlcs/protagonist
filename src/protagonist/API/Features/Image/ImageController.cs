@@ -104,11 +104,17 @@ public class ImageController : HydraController
         }
 
         if (apiSettings.EmulateOldDeliveryChannelProperties && 
-            oldHydraDcConverter.CanConvert(hydraAsset))
+            hydraAsset.WcDeliveryChannels != null)
         {
             hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
         }
-
+        if(!apiSettings.EmulateOldDeliveryChannelProperties &&
+           (hydraAsset.ImageOptimisationPolicy != null || hydraAsset.ThumbnailPolicy != null))
+        {
+            return this.HydraProblem("ImageOptimisationPolicy and ThumbnailPolicy are disabled", null,
+                400, "Bad Request");
+        }
+        
         if (hydraAsset.ModelId == null)
         {
             hydraAsset.ModelId = imageId;

@@ -12,50 +12,6 @@ public class OldHydraDeliveryChannelsConverterTests
     {
         sut = new OldHydraDeliveryChannelsConverter();
     }
-
-    [Fact]
-    public void CanConvert_ReturnsFalse_IfImageUsesNewDeliveryChannels()
-    {
-        // Arrange
-        var image = new Image()
-        {
-            DeliveryChannels = new DeliveryChannel[]
-            {
-                new()
-                {
-                    Channel = "iiif-img",
-                    Policy = "my-iiif-img-policy"
-                },
-                new()
-                {
-                    Channel = "thumbs",
-                    Policy = "my-thumbs-policy"
-                }
-            }
-        };
-
-        // Act
-        var result = sut.CanConvert(image);
-        
-        // Assert
-        result.Should().BeFalse();
-    }
-    
-    [Fact]
-    public void CanConvert_ReturnsTrue_IfImageUsesOldDeliveryChannels()
-    {
-        // Arrange
-        var image = new Image()
-        {
-            WcDeliveryChannels = new[]{"file"},
-        };
-
-        // Act
-        var result = sut.CanConvert(image);
-        
-        // Assert
-        result.Should().BeTrue();
-    }
     
     [Fact]
     public void Convert_TranslatesImageChannel()
