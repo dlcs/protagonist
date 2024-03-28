@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using DLCS.Core.Collections;
-using DLCS.Core.Guard;
 using DLCS.Core.Types;
-using DLCS.Model.Policies;
 
 namespace DLCS.Model.Assets;
 
@@ -98,21 +96,9 @@ public class Asset
     public bool RequiresAuth => !string.IsNullOrWhiteSpace(Roles) || MaxUnauthorised >= 0;
 
     /// <summary>
-    /// Full thumbnail policy object for Asset
-    /// </summary>
-    [NotMapped]
-    public ThumbnailPolicy? FullThumbnailPolicy { get; private set; }
-    
-    /// <summary>
     /// A list of image delivery channels attached to this asset
     /// </summary>
     public ICollection<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
-
-    /// <summary>
-    /// Full image optimisation policy object for Asset
-    /// </summary>
-    [NotMapped]
-    public ImageOptimisationPolicy FullImageOptimisationPolicy { get; private set; } = new();
 
     public Asset()
     {
@@ -123,11 +109,5 @@ public class Asset
         Id = assetId;
         Customer = assetId.Customer;
         Space = assetId.Space;
-    }
-
-    public Asset WithImageOptimisationPolicy(ImageOptimisationPolicy imageOptimisationPolicy)
-    {
-        FullImageOptimisationPolicy = imageOptimisationPolicy.ThrowIfNull(nameof(imageOptimisationPolicy));
-        return this;
     }
 }

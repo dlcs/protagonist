@@ -17,12 +17,12 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
     private readonly IImageManipulator imageManipulator;
         
     public CantaloupeThumbsClient(
-        IHttpClientFactory factory,
+        HttpClient thumbsClient,
         IFileSystem fileSystem,
         IImageManipulator imageManipulator,
         IOptionsMonitor<EngineSettings> engineOptionsMonitor)
     {
-        thumbsClient = factory.CreateClient("thumbs_client");
+        this.thumbsClient = thumbsClient;
         engineSettings = engineOptionsMonitor.CurrentValue;
         this.fileSystem = fileSystem;
         this.imageManipulator = imageManipulator;
@@ -34,8 +34,7 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
         CancellationToken cancellationToken = default)
     {
         var thumbsResponse = new List<ImageOnDisk>();
-
-        var filepath = GetRelativeLocationOnDisk(context, modifiedAssetId);
+        
         var convertedS3Location = context.ImageLocation.S3.Replace("/", engineSettings.ImageIngest!.ThumbsProcessorSeparator);
 
         foreach (var size in thumbSizes!)
@@ -49,15 +48,8 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
             if (response.IsSuccessStatusCode)
             {
                 await using var responseStream = await response.Content.ReadAsStreamAsync();
-
-               // var test = await response.Content.ReadAsStringAsync();
-
                 var assetDirectoryLocation = Path.GetDirectoryName(context.AssetFromOrigin.Location);
 
-                // var stuff = responseStream as MemoryStream;
-                // var stuff2 = stuff.ToArray();
-                // var stuff3 = System.Convert.ToBase64String(stuff2);
-                
                 var localThumbsPath =
                     $"{assetDirectoryLocation}{Path.DirectorySeparatorChar}output{Path.DirectorySeparatorChar}thumbs{Path.DirectorySeparatorChar}{size}";
                 

@@ -21,11 +21,10 @@ using Test.Helpers.Http;
 using Test.Helpers.Settings;
 using Test.Helpers.Storage;
 
-namespace Engine.Tests.Ingest.Image.Appetiser;
+namespace Engine.Tests.Ingest.Image.ImageServer;
 
 public class ImageServerClientTests
 {
-    private readonly ControllableHttpMessageHandler httpHandler;
     private readonly TestBucketWriter bucketWriter;
     private readonly IThumbCreator thumbnailCreator;
     private readonly IAppetiserClient appetiserClient;
@@ -38,7 +37,6 @@ public class ImageServerClientTests
 
     public ImageServerClientTests()
     {
-        httpHandler = new ControllableHttpMessageHandler();
         fileSystem = A.Fake<IFileSystem>();
         bucketWriter = new TestBucketWriter("appetiser-test");
         appetiserClient = A.Fake<IAppetiserClient>();
@@ -63,9 +61,7 @@ public class ImageServerClientTests
                 new RegionalisedObjectInBucket("appetiser-test", $"{assetId}/original", "Fake-Region"));
 
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
-
-        var httpClient = new HttpClient(httpHandler);
-        httpClient.BaseAddress = new Uri("http://image-processor/");
+        
         sut = new ImageServerClient(appetiserClient, cantaloupeThumbsClient, bucketWriter, storageKeyGenerator, thumbnailCreator, fileSystem,
             optionsMonitor, new NullLogger<ImageServerClient>());
     }
@@ -74,8 +70,7 @@ public class ImageServerClientTests
     public async Task ProcessImage_CreatesAndRemovesRequiredDirectories()
     {
         // Arrange
-        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
-        var context = GetIngestionContext();
+        var context = IngestionContextFactory.GetIngestionContext();
 
         // Act
         await sut.ProcessImage(context);
@@ -89,8 +84,7 @@ public class ImageServerClientTests
     public async Task ProcessImage_ChangesFileSavedLocationBasedOnImageIdWithBrackets()
     {
         // Arrange
-        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
-        var context = GetIngestionContext(assetId: "1/2/some(id)");
+        var context = IngestionContextFactory.GetIngestionContext(assetId: "1/2/some(id)");
 
         // Act
         await sut.ProcessImage(context);
@@ -111,7 +105,7 @@ public class ImageServerClientTests
                 Status = "some status"
             } as IAppetiserResponse));
         
-        var context = GetIngestionContext();
+        var context = IngestionContextFactory.GetIngestionContext();
 
         // Act
         var result = await sut.ProcessImage(context);
@@ -131,8 +125,7 @@ public class ImageServerClientTests
     public async Task ProcessImage_SetsOperation_Ingest_IfNotJp2AndUseOriginal(string contentType, string policy)
     {
         // Arrange
-        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
-        var context = GetIngestionContext(contentType: contentType, imageDeliveryChannelPolicy: policy);
+        var context = IngestionContextFactory.GetIngestionContext(contentType: contentType, imageDeliveryChannelPolicy: policy);
         
         A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new AppetiserResponseModel()
@@ -164,7 +157,7 @@ public class ImageServerClientTests
         A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
 
-        var context = GetIngestionContext();
+        var context = IngestionContextFactory.GetIngestionContext();
 
         // Act
         await sut.ProcessImage(context);
@@ -188,7 +181,7 @@ public class ImageServerClientTests
         A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
 
-        var context = GetIngestionContext("/1/2/test");
+        var context = IngestionContextFactory.GetIngestionContext("/1/2/test");
         context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy
         {
             Optimised = optimised,
@@ -221,7 +214,7 @@ public class ImageServerClientTests
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
 
         const string locationOnDisk = "/file/on/disk";
-        var context = GetIngestionContext("/1/2/test", imageDeliveryChannelPolicy: "use-original");
+        var context = IngestionContextFactory.GetIngestionContext("/1/2/test", imageDeliveryChannelPolicy: "use-original");
         context.AssetFromOrigin.Location = locationOnDisk;
 
         // Act
@@ -244,7 +237,7 @@ public class ImageServerClientTests
         A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
 
-        var context = GetIngestionContext(imageDeliveryChannelPolicy: "use-original", optimised: true);
+        var context = IngestionContextFactory.GetIngestionContext(imageDeliveryChannelPolicy: "use-original", optimised: true);
         context.Asset.Origin = "https://s3.amazonaws.com/dlcs-storage/2/1/foo-bar";
 
         const string expected = "s3://dlcs-storage/2/1/foo-bar";
@@ -285,7 +278,7 @@ public class ImageServerClientTests
                 }
             }));
 
-        var context = GetIngestionContext();
+        var context = IngestionContextFactory.GetIngestionContext();
         context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = false };
 
         // Act
@@ -330,7 +323,7 @@ public class ImageServerClientTests
                 }
             }));
 
-        var context = GetIngestionContext(contentType: originContentType,
+        var context = IngestionContextFactory.GetIngestionContext(contentType: originContentType,
             cos: new CustomerOriginStrategy { Optimised = true, Strategy = OriginStrategyType.S3Ambient },
             imageDeliveryChannelPolicy: "use-original");
         
@@ -404,7 +397,7 @@ public class ImageServerClientTests
                 }
             }));
 
-        var context = GetIngestionContext(contentType: originContentType,
+        var context = IngestionContextFactory.GetIngestionContext(contentType: originContentType,
             cos: new CustomerOriginStrategy { Optimised = optimised, Strategy = strategyType });
         context.AssetFromOrigin.Location = "/file/on/disk";
         context.Asset.Origin = "s3://origin/2/1/foo-bar";
@@ -457,13 +450,8 @@ public class ImageServerClientTests
                     Path = "bar"
                 }
             }));
-        
-        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
-            HttpStatusCode.OK);
-        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-        httpHandler.SetResponse(response);
 
-        var context = GetIngestionContext(
+        var context = IngestionContextFactory.GetIngestionContext(
             cos: new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient },
             imageDeliveryChannelPolicy: "use-original");
         context.AssetFromOrigin.Location = "/file/on/disk";
@@ -472,10 +460,6 @@ public class ImageServerClientTests
         context.StoredObjects.Add(alreadyUploadedFile, -999);
 
         AppetiserRequestModel? requestModel = null;
-        httpHandler.RegisterCallback(async message =>
-        {
-            requestModel = await message.Content.ReadAsAsync<AppetiserRequestModel>();
-        });
         A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(100);
 
         // Act
@@ -491,47 +475,5 @@ public class ImageServerClientTests
         context.Asset.Width.Should().Be(imageProcessorResponse.Width);
         context.StoredObjects.Should().ContainKey(alreadyUploadedFile).WhoseValue.Should()
             .Be(-999, "Value should not have changed");
-    }
-
-    private static IngestionContext GetIngestionContext(string assetId = "/1/2/something",
-        string contentType = "image/jpg", CustomerOriginStrategy? cos = null, 
-        bool optimised = false, string imageDeliveryChannelPolicy = "default")
-    {
-        cos ??= new CustomerOriginStrategy { Strategy = OriginStrategyType.Default, Optimised = optimised };
-        var asset = new Asset
-        {
-            Id = AssetId.FromString(assetId), Customer = 1, Space = 2,
-            DeliveryChannels = new[] { AssetDeliveryChannels.Image }, MediaType = contentType
-        };
-        
-        asset.ImageDeliveryChannels = new List<ImageDeliveryChannel>()
-        {
-            new()
-            {
-                Channel = AssetDeliveryChannels.Image,
-                DeliveryChannelPolicyId = 1,
-                DeliveryChannelPolicy = new DeliveryChannelPolicy()
-                {
-                    Name = imageDeliveryChannelPolicy
-                }
-            },
-            new()
-            {
-                Channel = AssetDeliveryChannels.Thumbnails,
-                DeliveryChannelPolicyId = 2,
-                DeliveryChannelPolicy = new DeliveryChannelPolicy()
-                {
-                    PolicyData = "[\"1000,1000\",\"400,400\",\"200,200\",\"100,100\"]"
-                }
-            }
-        };
-
-        var context = new IngestionContext(asset);
-        var assetFromOrigin = new AssetFromOrigin(asset.Id, 123, "./scratch/here.jpg", contentType)
-        {
-            CustomerOriginStrategy = cos
-        };
-        
-        return context.WithAssetFromOrigin(assetFromOrigin);
     }
 }
