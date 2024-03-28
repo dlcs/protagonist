@@ -1,4 +1,5 @@
 ﻿using API.Exceptions;
+using API.Features.Assets;
 using API.Infrastructure.Requests;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.ElasticTranscoder.Models.Job;
@@ -26,11 +27,11 @@ public class GetAssetMetadata : IRequest<FetchEntityResult<TranscoderJob>>
 
 public class GetAssetMetadataHandler : IRequestHandler<GetAssetMetadata, FetchEntityResult<TranscoderJob>>
 {
-    private readonly IAssetRepository assetRepository;
+    private readonly IApiAssetRepository assetRepository;
     private readonly IElasticTranscoderWrapper elasticTranscoderWrapper;
 
     public GetAssetMetadataHandler(
-        IAssetRepository assetRepository, 
+        IApiAssetRepository assetRepository, 
         IElasticTranscoderWrapper elasticTranscoderWrapper)
     {
         this.assetRepository = assetRepository;

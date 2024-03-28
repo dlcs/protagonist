@@ -1,4 +1,5 @@
-﻿using API.Infrastructure.Messaging;
+﻿using API.Features.Assets;
+using API.Infrastructure.Messaging;
 using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Model;
@@ -27,12 +28,12 @@ public class DeleteAsset : IRequest<DeleteResult>
 public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
 {
     private readonly IAssetNotificationSender assetNotificationSender;
-    private readonly IAssetRepository assetRepository;
+    private readonly IApiAssetRepository assetRepository;
     private readonly ILogger<DeleteAssetHandler> logger;
 
     public DeleteAssetHandler(
         IAssetNotificationSender assetNotificationSender,
-        IAssetRepository assetRepository,
+        IApiAssetRepository assetRepository,
         ILogger<DeleteAssetHandler> logger)
     {
         this.assetNotificationSender = assetNotificationSender;

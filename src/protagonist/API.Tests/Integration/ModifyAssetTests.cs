@@ -15,6 +15,7 @@ using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
@@ -79,11 +80,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
         var hydraImageBody = $@"{{
-  ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-  ""family"": ""I"",
-  ""mediaType"": ""image/tiff""
-}}";
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff""
+        }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
                     A<Asset>.That.Matches(r => r.Id == assetId),
@@ -132,7 +133,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.SaveChangesAsync();
 
-        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset_WithCustomDefaultDeliveryChannel));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -162,11 +163,32 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Put_NewImageAsset_Returns400_IfNoDeliveryChannelDefaults()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_Returns400_IfNoDeliveryChannelDefaults));
+        var hydraImageBody = @"{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/test"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff"",
+  ""deliveryChannels"": [{ ""channel"":""file"" } ] 
+}";
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer().PutAsync(assetId.ToApiResourcePath(), content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, "there is no default handler for image/tiff for 'file' channel");
+    }
+    
+    [Fact]
     public async Task Put_NewImageAsset_Creates_AssetWithSpecifiedDeliveryChannels()
     {
         var customerAndSpace = await CreateCustomerAndSpace();
 
-        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_AssetWithSpecifiedDeliveryChannels));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -192,8 +214,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
-
-        var stuff = await response.Content.ReadAsStringAsync();
 
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -258,7 +278,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
-                                                                x.DeliveryChannelPolicyId == 1);
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
     }
     
@@ -375,9 +395,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_NewImageAsset_FailsToCreateAsset_whenMediaTypeAndFamilyNotSet()
+    public async Task Put_NewImageAsset_FailsToCreateAsset_WhenMediaTypeAndFamilyNotSet()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_FailsToCreateAsset_whenMediaTypeAndFamilyNotSet));
+        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_FailsToCreateAsset_WhenMediaTypeAndFamilyNotSet));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff""
@@ -397,11 +417,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_NewImageAsset_CreatesAsset_whenMediaTypeAndFamilyNotSetWithLegacyEnabled()
+    public async Task Put_NewImageAsset_CreatesAsset_WhenMediaTypeAndFamilyNotSetWithLegacyEnabled()
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_whenMediaTypeAndFamilyNotSetWithLegacyEnabled));
+        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_WhenMediaTypeAndFamilyNotSetWithLegacyEnabled));
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
@@ -430,16 +450,16 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Family.Should().Be(AssetFamily.Image);
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
-                                                                x.DeliveryChannelPolicyId == 1);
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
     }
     
     [Fact]
-    public async Task Put_NewImageAsset_CreatesAsset_whenInferringOfMediaTypeNotPossibleWithLegacyEnabled()
+    public async Task Put_NewImageAsset_CreatesAsset_WhenInferringOfMediaTypeNotPossibleWithLegacyEnabled()
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_whenMediaTypeAndFamilyNotSetWithLegacyEnabled));
+        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_WhenInferringOfMediaTypeNotPossibleWithLegacyEnabled));
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
@@ -468,8 +488,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Family.Should().Be(AssetFamily.Image);
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
-                                                                x.DeliveryChannelPolicyId == 1);
-        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs" &&
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ThumbsDefault);
     }
     
     [Theory]
@@ -692,7 +713,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
-                                                                x.DeliveryChannelPolicyId == 5);
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultAudio);
     }
     
     [Fact]
@@ -726,7 +747,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
-                                                                x.DeliveryChannelPolicyId == 6);
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultVideo);
     }
     
     [Fact]
@@ -839,12 +860,17 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
-  ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-  ""family"": ""I"",
-  ""mediaType"": ""image/tiff""
-}}";
-        
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"": ""iiif-img"",
+                ""policy"": ""default""
+            }}]
+        }}";
+                
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
                     A<Asset>.That.Matches(r => r.Id == assetId),
@@ -864,7 +890,112 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_Asset_Returns_InsufficientStorage_if_Policy_Exceeded()
+    public async Task Put_Existing_Asset_Returns400_IfDeliveryChannelsNull()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_Returns400_IfDeliveryChannelsNull));
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff""
+        }}";
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Put_Existing_Asset_Returns400_IfDeliveryChannelsEmpty()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_Returns400_IfDeliveryChannelsEmpty));
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": []
+        }}";
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Put_Existing_Asset_AllowsUpdatingDeliveryChannel()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, $"{nameof(Put_Existing_Asset_AllowsUpdatingDeliveryChannel)}");
+        
+        await dbContext.Images.AddTestAsset(assetId, imageDeliveryChannels: new List<ImageDeliveryChannel>
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.Thumbnails,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
+            }
+        });
+        await dbContext.SaveChangesAsync();
+        
+        // change iiif-img to 'use-original', remove thumbs, add file
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"":""iiif-img"",
+                ""policy"":""use-original""
+            }},
+            {{
+                ""channel"":""file"",
+                ""policy"":""none""
+            }}]
+        }}";
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.ImageDeliveryChannels
+            .Should().HaveCount(2).And.Subject
+            .Should().Satisfy(
+                i => i.Channel == AssetDeliveryChannels.Image &&
+                     i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageUseOriginal,
+                i => i.Channel == AssetDeliveryChannels.File);
+    }
+
+    [Fact]
+    public async Task Put_Asset_Returns_InsufficientStorage_If_Policy_Exceeded()
     {
         // This will break other tests so we need a different customer
         // This customer has maxed out their limit of 2!
@@ -894,7 +1025,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         });
         await dbContext.SaveChangesAsync();
 
-        var assetId = new AssetId(customer, 1, nameof(Put_Asset_Returns_InsufficientStorage_if_Policy_Exceeded));
+        var assetId = new AssetId(customer, 1, nameof(Put_Asset_Returns_InsufficientStorage_If_Policy_Exceeded));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -1076,6 +1207,24 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Patch_Asset_Returns_BadRequest_if_DeliveryChannels_Empty()
+    {
+        // arrange
+        var assetId = new AssetId(99, 1, nameof(Patch_Asset_Change_ImageOptimisationPolicy_Allowed));
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""deliveryChannels"": []
+        }}";
+
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
     [Fact]
@@ -1463,17 +1612,17 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             new()
             {
                 Channel = AssetDeliveryChannels.Image,
-                DeliveryChannelPolicyId = 1
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
             },
             new()
             {
                 Channel = AssetDeliveryChannels.Thumbnails,
-                DeliveryChannelPolicyId = 3
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
             },
             new()
             {
                 Channel = AssetDeliveryChannels.File,
-                DeliveryChannelPolicyId = 4
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
             }   
         });
         await dbContext.SaveChangesAsync();

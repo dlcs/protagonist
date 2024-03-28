@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using API.Features.DeliveryChannels;
+using API.Features.DeliveryChannels.DataAccess;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Caching;
 using DLCS.Model.DeliveryChannels;
@@ -23,8 +24,7 @@ public class DefaultDeliveryChannelRepositoryTests
     public DefaultDeliveryChannelRepositoryTests(DlcsDatabaseFixture dbFixture)
     {
         dbContext = dbFixture.DbContext;
-        sut = new DefaultDeliveryChannelRepository(new MockCachingService(), new NullLogger<DefaultDeliveryChannelRepository>(), 
-            Options.Create(new CacheSettings()), dbFixture.DbContext);
+        sut = new DefaultDeliveryChannelRepository(new MockCachingService(), new NullLogger<DefaultDeliveryChannelRepository>(), Options.Create(new CacheSettings()), dbFixture.DbContext);
 
         dbFixture.CleanUp();
         
@@ -52,7 +52,7 @@ public class DefaultDeliveryChannelRepositoryTests
        {
            Space = 0,
            Customer = 2,
-           DeliveryChannelPolicyId = 1,
+           DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
            MediaType = "image/*"
        });
        
@@ -60,10 +60,10 @@ public class DefaultDeliveryChannelRepositoryTests
     }
 
     [Fact]
-    public void MatchedDeliveryChannels_ReturnsAllDeliveryChannelPolicies_WhenCalled()
+    public async Task MatchedDeliveryChannels_ReturnsAllDeliveryChannelPolicies_WhenCalled()
     {
         // Arrange and Act
-        var matches = sut.MatchedDeliveryChannels("image/tiff", 1, 2);
+        var matches = await sut.MatchedDeliveryChannels("image/tiff", 1, 2);
 
         // Assert
         matches.Count.Should().Be(1);
@@ -71,32 +71,32 @@ public class DefaultDeliveryChannelRepositoryTests
     }
     
     [Fact]
-    public void MatchedDeliveryChannels_ShouldNotMatchAnything_WhenCalledWithInvalidMediaType()
+    public async Task MatchedDeliveryChannels_ShouldNotMatchAnything_WhenCalledWithInvalidMediaType()
     {
         // Arrange and Act
-        var matches = sut.MatchedDeliveryChannels("notValid/tiff", 1, 2);
+        var matches = await sut.MatchedDeliveryChannels("notValid/tiff", 1, 2);
 
         // Assert
         matches.Count.Should().Be(0);
     }
     
     [Fact]
-    public void MatchDeliveryChannelPolicyForChannel_MatchesDeliveryChannel_WhenMatchAvailable()
+    public async Task MatchDeliveryChannelPolicyForChannel_MatchesDeliveryChannel_WhenMatchAvailable()
     {
         // Arrange and Act
-        var matches = sut.MatchDeliveryChannelPolicyForChannel("image/tiff", 1, 2, "iiif-img");
+        var matches = await sut.MatchDeliveryChannelPolicyForChannel("image/tiff", 1, 2, "iiif-img");
 
         // Assert
         matches.Should().NotBeNull();
     }
     
     [Fact]
-    public void MatchDeliveryChannelPolicyForChannel_ThrowsException_WhenNotMatched()
+    public async Task MatchDeliveryChannelPolicyForChannel_ThrowsException_WhenNotMatched()
     {
         // Arrange and Act
-        Action action = () => sut.MatchDeliveryChannelPolicyForChannel("notMatched/tiff", 1, 2, "iiif-img");
+        Func<Task> action = () => sut.MatchDeliveryChannelPolicyForChannel("notMatched/tiff", 1, 2, "iiif-img");
 
         // Assert
-        action.Should().ThrowExactly<InvalidOperationException>();
+        await action.Should().ThrowExactlyAsync<InvalidOperationException>();
     }
 }

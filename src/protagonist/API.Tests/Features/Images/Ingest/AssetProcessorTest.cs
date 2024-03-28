@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Features.Assets;
 using API.Features.Image;
 using API.Features.Image.Ingest;
 using API.Settings;
 using DLCS.Core.Types;
-using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Storage;
 using FakeItEasy;
+using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers.Settings;
 using CustomerStorage = DLCS.Model.Storage.CustomerStorage;
 using StoragePolicy = DLCS.Model.Storage.StoragePolicy;
@@ -32,17 +31,20 @@ public class AssetProcessorTest
         assetRepository = A.Fake<IApiAssetRepository>();
         defaultDeliveryChannelRepository = A.Fake<IDefaultDeliveryChannelRepository>();
         deliveryChannelPolicyRepository = A.Fake<IDeliveryChannelPolicyRepository>();
+
+        var deliveryChannelProcessor = new DeliveryChannelProcessor(defaultDeliveryChannelRepository, deliveryChannelPolicyRepository,
+            new NullLogger<DeliveryChannelProcessor>());
         
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(apiSettings);
 
-        sut = new AssetProcessor(assetRepository, storageRepository, defaultDeliveryChannelRepository, deliveryChannelPolicyRepository, optionsMonitor);
+        sut = new AssetProcessor(assetRepository, storageRepository, deliveryChannelProcessor, optionsMonitor);
     }
     
     [Fact]
     public async Task Process_ChecksForMaximumNumberOfImages_Exceeded()
     {
         // Arrange
-        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._)).Returns<Asset?>(null);
+        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._, A<bool>._)).Returns<Asset?>(null);
 
         A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
             .Returns(new AssetStorageMetric
@@ -65,7 +67,7 @@ public class AssetProcessorTest
     public async Task Process_ChecksForTotalImageSize_Exceeded()
     {
         // Arrange
-        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._)).Returns<Asset?>(null);
+        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._, A<bool>._)).Returns<Asset?>(null);
         A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
             .Returns(new AssetStorageMetric
             {
@@ -87,7 +89,7 @@ public class AssetProcessorTest
     public async Task Process_RetrievesNoneDeliveryChannelPolicy_WhenCalledWithNoneDeliveryChannel()
     {
         // Arrange
-        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._)).Returns<Asset?>(null);
+        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._, A<bool>._)).Returns<Asset?>(null);
 
         A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
             .Returns(new AssetStorageMetric
@@ -123,7 +125,7 @@ public class AssetProcessorTest
     public async Task Process_RetrievesDeliveryChannelPolicy_WhenCalledWithDeliveryChannels()
     {
         // Arrange
-        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._)).Returns<Asset?>(null);
+        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._, A<bool>._)).Returns<Asset?>(null);
 
         A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
             .Returns(new AssetStorageMetric
@@ -167,7 +169,7 @@ public class AssetProcessorTest
     public async Task Process_FailsToProcessImage_WhenDeliveryPolicyNotMatched()
     {
         // Arrange
-        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._)).Returns<Asset?>(null);
+        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._, A<bool>._)).Returns<Asset?>(null);
 
         A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
             .Returns(new AssetStorageMetric
@@ -202,7 +204,7 @@ public class AssetProcessorTest
     public async Task Process_ProcessesImage_WhenDeliveryPolicyMatchedFromChannel()
     {
         // Arrange
-        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._)).Returns<Asset?>(null);
+        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._, A<bool>._)).Returns<Asset?>(null);
 
         A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
             .Returns(new AssetStorageMetric
@@ -235,7 +237,7 @@ public class AssetProcessorTest
     public async Task Process_FailsToProcessesImage_WhenDeliveryPolicyNotMatchedFromChannel()
     {
         // Arrange
-        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._)).Returns<Asset?>(null);
+        A.CallTo(() => assetRepository.GetAsset(A<AssetId>._, A<bool>._, A<bool>._)).Returns<Asset?>(null);
 
         A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
             .Returns(new AssetStorageMetric

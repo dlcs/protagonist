@@ -58,5 +58,43 @@ public class DeliveryChannelPolicy
     /// <summary>
     /// List of delivery channels attached to the image
     /// </summary>
-    public virtual List<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
+    public List<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
+}
+
+public static class KnownDeliveryChannelPolicies
+{
+    /// <summary>
+    /// DeliveryChannelPolicyId for "iiif-img" channel, "default" policy
+    /// </summary>
+    public const int ImageDefault = 1;
+    
+    /// <summary>
+    /// DeliveryChannelPolicyId for "iiif-img" channel, "use-original" policy
+    /// </summary>
+    public const int ImageUseOriginal = 2;
+    
+    /// <summary>
+    /// DeliveryChannelPolicyId for "thumbs" channel, "default" policy
+    /// </summary>
+    public const int ThumbsDefault = 3;
+    
+    /// <summary>
+    /// DeliveryChannelPolicyId for "file" channel, "none" policy
+    /// </summary>
+    public const int FileNone = 4;
+    
+    /// <summary>
+    /// DeliveryChannelPolicyId for "iiif-av" channel, "default-audio" policy
+    /// </summary>
+    public const int AvDefaultAudio = 5;
+    
+    /// <summary>
+    /// DeliveryChannelPolicyId for "iiif-av" channel, "default-video" policy
+    /// </summary>
+    public const int AvDefaultVideo = 6;
+    
+    /// <summary>
+    /// DeliveryChannelPolicyId for "none" channel, "none" policy
+    /// </summary>
+    public const int None = 7;
 }

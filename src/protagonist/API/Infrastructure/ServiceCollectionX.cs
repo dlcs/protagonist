@@ -3,6 +3,7 @@ using System.Reflection;
 using API.Features.Assets;
 using API.Features.Customer;
 using API.Features.DeliveryChannels;
+using API.Features.DeliveryChannels.DataAccess;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
@@ -89,11 +90,8 @@ public static class ServiceCollectionX
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
         => services
             .AddDlcsContext(configuration)
-            .AddScoped<IAssetRepository, AssetRepository>()
-            .AddScoped<IApiAssetRepository>(provider =>
-                ActivatorUtilities.CreateInstance<ApiAssetRepository>(
-                    provider,
-                    provider.GetRequiredService<IAssetRepository>()))
+            .AddSingleton<AssetCachingHelper>()
+            .AddScoped<IApiAssetRepository, ApiAssetRepository>()
             .AddScoped<ISpaceRepository, SpaceRepository>()
             .AddScoped<IBatchRepository, BatchRepository>()
             .AddScoped<IEntityCounterRepository, EntityCounterRepository>()

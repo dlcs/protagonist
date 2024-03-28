@@ -1,3 +1,4 @@
+using API.Features.Assets;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using MediatR;
@@ -17,11 +18,11 @@ public class GetImage : IRequest<Asset?>
     public AssetId AssetId { get; }
 }
 
-public class GetImageHandler : IRequestHandler<GetImage, DLCS.Model.Assets.Asset?>
+public class GetImageHandler : IRequestHandler<GetImage, Asset?>
 {
-    private readonly IAssetRepository assetRepository;
+    private readonly IApiAssetRepository assetRepository;
 
-    public GetImageHandler(IAssetRepository assetRepository)
+    public GetImageHandler(IApiAssetRepository assetRepository)
     {
         this.assetRepository = assetRepository;
     }

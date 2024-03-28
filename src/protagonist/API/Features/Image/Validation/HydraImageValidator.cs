@@ -15,9 +15,19 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
 {
     public HydraImageValidator(IOptions<ApiSettings> apiSettings)
     {
-        // Required fields
-        RuleFor(a => a.MediaType).NotEmpty().WithMessage("Media type must be specified");
-
+        RuleSet("patch", () =>
+        {
+            RuleFor(p => p.DeliveryChannels)
+                .Must(a => a!.Any())
+                .When(a => a.DeliveryChannels != null)
+                .WithMessage("'deliveryChannels' cannot be an empty array when updating an existing asset via PATCH");
+        });
+        
+        RuleSet("create", () =>
+        {
+            RuleFor(a => a.MediaType).NotEmpty().WithMessage("Media type must be specified");
+        });
+        
         When(a => !a.WcDeliveryChannels.IsNullOrEmpty(), DeliveryChannelDependantValidation)
             .Otherwise(() =>
             {
@@ -27,7 +37,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             });
         
         When(a => !a.DeliveryChannels.IsNullOrEmpty(), ImageDeliveryChannelDependantValidation);
-
+        
         // System edited fields
         RuleFor(a => a.Batch).Empty().WithMessage("Should not include batch");
         RuleFor(a => a.Finished).Empty().WithMessage("Should not include finished");
@@ -52,20 +62,20 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleFor(a => a.DeliveryChannels)
             .Must(d => d.All(d => d.Channel != AssetDeliveryChannels.None))
             .When(a => a.DeliveryChannels!.Length > 1)
-            .WithMessage("If \"none\" is the specified channel, then no other delivery channels are allowed");
+            .WithMessage("If 'none' is the specified channel, then no other delivery channels are allowed");
 
         RuleForEach(a => a.DeliveryChannels)
             .Must(c => !string.IsNullOrEmpty(c.Channel))
-            .WithMessage("\"channel\" must be specified when supplying delivery channels to an asset");
+            .WithMessage("'channel' must be specified when supplying delivery channels to an asset");
             
         RuleForEach(a => a.DeliveryChannels)
-            .Must((a, c) => AssetDeliveryChannels.IsChannelValidForMediaType(c.Channel!, a.MediaType!))
+            .Must((a, c) => AssetDeliveryChannels.IsChannelValidForMediaType(c.Channel, a.MediaType!))
             .When(a => !string.IsNullOrEmpty(a.MediaType))
-            .WithMessage((a,c) => $"\"{c.Channel}\" is not a valid delivery channel for asset of type \"{a.MediaType}\"");
+            .WithMessage((a,c) => $"'{c.Channel}' is not a valid delivery channel for asset of type \"{a.MediaType}\"");
     
         RuleForEach(a => a.DeliveryChannels)
             .Must((a, c) => a.DeliveryChannels!.Count(dc => dc.Channel == c.Channel) <= 1)
-            .WithMessage("\"deliveryChannels\" cannot contain duplicate channels.");
+            .WithMessage("'deliveryChannels' cannot contain duplicate channels.");
     }
 
     // Validation rules that depend on DeliveryChannel being populated

@@ -8,6 +8,7 @@ using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Strategy.Utils;
 using Engine.Tests.Integration.Infrastructure;
@@ -33,6 +34,14 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     private static readonly TestBucketWriter BucketWriter = new();
     private static readonly IElasticTranscoderWrapper ElasticTranscoderWrapper = A.Fake<IElasticTranscoderWrapper>();
     private readonly ApiStub apiStub;
+    private readonly List<ImageDeliveryChannel> timebasedDeliveryChannels = new()
+    {
+        new ImageDeliveryChannel
+        {
+            Channel = AssetDeliveryChannels.Timebased,
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.AvDefaultVideo
+        }
+    };
 
     public TimebasedIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
     {
@@ -209,7 +218,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
             new()
             {
                 Channel = AssetDeliveryChannels.File,
-                DeliveryChannelPolicyId = 3
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
             }
         };
         

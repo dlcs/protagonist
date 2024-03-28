@@ -9,6 +9,7 @@ using DLCS.Core;
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Entities;
@@ -49,15 +50,14 @@ public class ApiAssetRepositoryTests
         
         var entityCounterRepo = new EntityCounterRepository(dbContext);
 
-        var assetRepository = new AssetRepository(
-            dbContext,
+        var assetRepositoryCachingHelper = new AssetCachingHelper(
             new MockCachingService(),
-            entityCounterRepo,
             Options.Create(new CacheSettings()),
-            new NullLogger<AssetRepository>()
+            new NullLogger<AssetCachingHelper>()
         );
 
-        sut = new ApiAssetRepository(dbContext, assetRepository, entityCounterRepo);
+        sut = new ApiAssetRepository(dbContext, entityCounterRepo, assetRepositoryCachingHelper,
+            new NullLogger<ApiAssetRepository>());
 
         dbFixture.CleanUp();
     }
@@ -376,17 +376,17 @@ public class ApiAssetRepositoryTests
             new()
             {
                 Channel = AssetDeliveryChannels.Image,
-                DeliveryChannelPolicyId = 1
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
             },
             new()
             {
                 Channel = AssetDeliveryChannels.Thumbnails,
-                DeliveryChannelPolicyId = 3
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
             },
             new()
             {
                 Channel = AssetDeliveryChannels.File,
-                DeliveryChannelPolicyId = 4
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
             }
         });
         await contextForTests.SaveChangesAsync();

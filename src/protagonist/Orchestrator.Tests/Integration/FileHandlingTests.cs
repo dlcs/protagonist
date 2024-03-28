@@ -9,6 +9,7 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
+using DLCS.Model.Policies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,14 +29,13 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
-    private readonly IAmazonS3 amazonS3;
     private readonly string stubAddress;
     private readonly List<ImageDeliveryChannel> deliveryChannelsForFile = new()
     {
         new ImageDeliveryChannel()
         {
             Channel = AssetDeliveryChannels.File,
-            DeliveryChannelPolicyId = 4
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
         }
     };
 
@@ -46,8 +46,6 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
     public FileHandlingTests(ProtagonistAppFactory<Startup> factory, OrchestratorFixture orchestratorFixture)
     {
-        amazonS3 = orchestratorFixture.LocalStackFixture.AWSS3ClientFactory();
-        
         dbFixture = orchestratorFixture.DbFixture;
         stubAddress = orchestratorFixture.ApiStub.Address;
         httpClient = factory

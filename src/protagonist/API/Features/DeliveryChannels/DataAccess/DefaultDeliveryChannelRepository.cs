@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace API.Features.DeliveryChannels;
+namespace API.Features.DeliveryChannels.DataAccess;
 
 public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepository
 {
@@ -18,10 +18,9 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
     private readonly ILogger<DefaultDeliveryChannelRepository> logger;
     private readonly DlcsContext dlcsContext;
 
-    public DefaultDeliveryChannelRepository(
-        IAppCache appCache,
+    public DefaultDeliveryChannelRepository(IAppCache appCache,
         ILogger<DefaultDeliveryChannelRepository> logger,
-        IOptions<CacheSettings> cacheOptions,
+        IOptions<CacheSettings> cacheOptions, 
         DlcsContext dlcsContext)
     {
         this.appCache = appCache;
@@ -30,11 +29,11 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
         this.dlcsContext = dlcsContext;
     }
 
-    public List<DeliveryChannelPolicy> MatchedDeliveryChannels(string mediaType, int space, int customerId)
+    public async Task<List<DeliveryChannelPolicy>> MatchedDeliveryChannels(string mediaType, int space, int customerId)
     {
         var completedMatch = new List<DeliveryChannelPolicy>();
         
-        var orderedDefaultDeliveryChannels = OrderedDefaultDeliveryChannels(space, customerId);
+        var orderedDefaultDeliveryChannels = await OrderedDefaultDeliveryChannels(space, customerId);
         
         foreach (var defaultDeliveryChannel in orderedDefaultDeliveryChannels)
         {
@@ -52,13 +51,13 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
         return completedMatch;
     }
 
-    public DeliveryChannelPolicy MatchDeliveryChannelPolicyForChannel(
+    public async Task<DeliveryChannelPolicy> MatchDeliveryChannelPolicyForChannel(
         string mediaType, 
         int space, 
         int customerId, 
         string? channel)
     {
-        var orderedDefaultDeliveryChannels = OrderedDefaultDeliveryChannels(space, customerId, channel);
+        var orderedDefaultDeliveryChannels = await OrderedDefaultDeliveryChannels(space, customerId, channel);
         
         foreach (var defaultDeliveryChannel in orderedDefaultDeliveryChannels)
         {
@@ -71,18 +70,19 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
         throw new InvalidOperationException($"Failed to match media type {mediaType} to channel {channel}");
     }
     
-    private List<DefaultDeliveryChannel> GetDefaultDeliveryChannelsForCustomer(int customerId, int space)
+    private async Task<List<DefaultDeliveryChannel>> GetDefaultDeliveryChannelsForCustomer(int customerId, int space)
     {
         var key = $"defaultDeliveryChannels:{customerId}";
-        
-        var defaultDeliveryChannels = appCache.GetOrAdd(key, () =>
+
+        var defaultDeliveryChannels = await appCache.GetOrAddAsync(key, async () =>
         {
             logger.LogDebug("Refreshing {CacheKey} from database", key);
 
-            var defaultDeliveryChannels = dlcsContext.DefaultDeliveryChannels
+            var defaultDeliveryChannels = await dlcsContext.DefaultDeliveryChannels
                 .AsNoTracking()
                 .Include(d => d.DeliveryChannelPolicy)
-                .Where(d => d.Customer == customerId).ToList();
+                .Where(d => d.Customer == customerId)
+                .ToListAsync();
 
             return defaultDeliveryChannels;
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
@@ -90,9 +90,9 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
         return defaultDeliveryChannels.Where(d => d.Space == space || d.Space == 0).ToList();
     }
     
-    private List<DefaultDeliveryChannel> OrderedDefaultDeliveryChannels(int space, int customerId, string? channel = null)
+    private async Task<List<DefaultDeliveryChannel>> OrderedDefaultDeliveryChannels(int space, int customerId, string? channel = null)
     {
-        var defaultDeliveryChannels = GetDefaultDeliveryChannelsForCustomer(customerId, space)
+        var defaultDeliveryChannels = (await GetDefaultDeliveryChannelsForCustomer(customerId, space))
             .Where(d => channel == null || d.DeliveryChannelPolicy.Channel == channel);
 
         return defaultDeliveryChannels.OrderByDescending(v => v.Space)

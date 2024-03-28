@@ -1,13 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using API.Exceptions;
 using API.Features.Assets;
 using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Core;
 using DLCS.Core.Collections;
-using DLCS.Core.Strings;
 using DLCS.Model.Assets;
-using DLCS.Model.DeliveryChannels;
-using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using Microsoft.Extensions.Options;
 
@@ -21,22 +18,18 @@ public class AssetProcessor
 {
     private readonly IApiAssetRepository assetRepository;
     private readonly IStorageRepository storageRepository;
-    private readonly IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository;
-    private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
+    private readonly DeliveryChannelProcessor deliveryChannelProcessor;
     private readonly ApiSettings settings;
-    private const string None = "none";
     
     public AssetProcessor(
         IApiAssetRepository assetRepository,
         IStorageRepository storageRepository,
-        IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository,
-        IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository,
+        DeliveryChannelProcessor deliveryChannelProcessor,
         IOptionsMonitor<ApiSettings> apiSettings)
     {
         this.assetRepository = assetRepository;
         this.storageRepository = storageRepository;
-        this.defaultDeliveryChannelRepository = defaultDeliveryChannelRepository;
-        this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
+        this.deliveryChannelProcessor = deliveryChannelProcessor;
         settings = apiSettings.CurrentValue;
     }
 
@@ -59,7 +52,8 @@ public class AssetProcessor
         Asset? existingAsset;
         try
         {
-            existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, noCache: true);
+            existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true);
+
             if (existingAsset == null)
             {
                 if (mustExist)
@@ -73,7 +67,8 @@ public class AssetProcessor
                     };
                 }
 
-                var counts = await storageRepository.GetStorageMetrics(assetBeforeProcessing.Asset.Customer, cancellationToken);
+                var counts =
+                    await storageRepository.GetStorageMetrics(assetBeforeProcessing.Asset.Customer, cancellationToken);
                 if (!counts.CanStoreAsset())
                 {
                     return new ProcessAssetResult
@@ -84,8 +79,8 @@ public class AssetProcessor
                         )
                     };
                 }
-                
-                if (!counts.CanStoreAssetSize(0,0))
+
+                if (!counts.CanStoreAssetSize(0, 0))
                 {
                     return new ProcessAssetResult
                     {
@@ -98,9 +93,20 @@ public class AssetProcessor
 
                 counts.CustomerStorage.NumberOfStoredImages++;
             }
+            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing.IsNullOrEmpty() && alwaysReingest)
+            {
+                return new ProcessAssetResult
+                {
+                    Result = ModifyEntityResult<Asset>.Failure(
+                        "Delivery channels are required when updating an existing Asset via PUT",
+                        WriteResult.BadRequest
+                    )
+                };
+            }
 
             var assetPreparationResult =
-                AssetPreparer.PrepareAssetForUpsert(existingAsset, assetBeforeProcessing.Asset, false, isBatchUpdate, settings.RestrictedAssetIdCharacters);
+                AssetPreparer.PrepareAssetForUpsert(existingAsset, assetBeforeProcessing.Asset, false, isBatchUpdate,
+                    settings.RestrictedAssetIdCharacters);
 
             if (!assetPreparationResult.Success)
             {
@@ -110,31 +116,15 @@ public class AssetProcessor
                         WriteResult.FailedValidation)
                 };
             }
-            
-            var updatedAsset = assetPreparationResult.UpdatedAsset!;
+
+            var updatedAsset = assetPreparationResult.UpdatedAsset!; // this is from Database
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
 
-            if (existingAsset == null)
+            var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(existingAsset,
+                updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
+            if (deliveryChannelChanged)
             {
-                try
-                {
-                    var deliveryChannelChanged =
-                        SetImageDeliveryChannels(updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
-                    if (deliveryChannelChanged)
-                    {
-                        requiresEngineNotification = true;
-                    }
-                }
-                catch (InvalidOperationException)
-                {
-                    return new ProcessAssetResult
-                    {
-                        Result = ModifyEntityResult<Asset>.Failure(
-                            "Failed to match delivery channel policy",
-                            WriteResult.Error
-                        )
-                    };
-                }
+                requiresEngineNotification = true;
             }
 
             if (requiresEngineNotification)
@@ -152,13 +142,21 @@ public class AssetProcessor
             }
 
             var assetAfterSave = await assetRepository.Save(updatedAsset, existingAsset != null, cancellationToken);
-            
+
             return new ProcessAssetResult
             {
                 ExistingAsset = existingAsset,
                 RequiresEngineNotification = requiresEngineNotification,
                 Result = ModifyEntityResult<Asset>.Success(assetAfterSave,
                     existingAsset == null ? WriteResult.Created : WriteResult.Updated)
+            };
+        }
+        catch (APIException apiEx)
+        {
+            var resultStatus = (apiEx.StatusCode ?? 500) == 400 ? WriteResult.BadRequest : WriteResult.Error;
+            return new ProcessAssetResult
+            {
+                Result = ModifyEntityResult<Asset>.Failure(apiEx.Message, resultStatus)
             };
         }
         catch (Exception e)
@@ -168,70 +166,6 @@ public class AssetProcessor
                 Result = ModifyEntityResult<Asset>.Failure(e.Message, WriteResult.Error)
             };
         }
-    }
-
-    private bool SetImageDeliveryChannels(Asset updatedAsset, IList<DeliveryChannelsBeforeProcessing> deliveryChannelsBeforeProcessing)
-    {
-        updatedAsset.ImageDeliveryChannels = new List<ImageDeliveryChannel>();
-        // Creation, set image delivery channels to default values for media type, if not already set
-        if (deliveryChannelsBeforeProcessing.IsNullOrEmpty())
-        {
-            var matchedDeliveryChannels =
-                defaultDeliveryChannelRepository.MatchedDeliveryChannels(updatedAsset.MediaType!, updatedAsset.Space, updatedAsset.Customer);
-
-            foreach (var deliveryChannel in matchedDeliveryChannels)
-            {
-                updatedAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
-                {
-                    ImageId = updatedAsset.Id,
-                    DeliveryChannelPolicyId = deliveryChannel.Id,
-                    Channel = deliveryChannel.Channel
-                });
-            }
-            return true;
-        }
-
-        if (deliveryChannelsBeforeProcessing.Count(d => d.Channel == AssetDeliveryChannels.None) == 1)
-        {
-            var deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(updatedAsset.Customer,
-                AssetDeliveryChannels.None, None);
-
-            updatedAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
-                {
-                    ImageId = updatedAsset.Id,
-                    DeliveryChannelPolicyId = deliveryChannelPolicy.Id,
-                    Channel = AssetDeliveryChannels.None
-                });
-            
-            return false;
-        }
-
-        foreach (var deliveryChannel in deliveryChannelsBeforeProcessing)
-        {
-            DeliveryChannelPolicy deliveryChannelPolicy;
-            
-            if (deliveryChannel.Policy.IsNullOrEmpty())
-            {
-                deliveryChannelPolicy = defaultDeliveryChannelRepository.MatchDeliveryChannelPolicyForChannel(
-                    updatedAsset.MediaType!, updatedAsset.Space, updatedAsset.Customer, deliveryChannel.Channel);
-            }
-            else
-            {
-                deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(
-                    updatedAsset.Customer,
-                    deliveryChannel.Channel!,
-                    deliveryChannel.Policy);
-            }
-
-            updatedAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
-            {
-                ImageId = updatedAsset.Id,
-                DeliveryChannelPolicyId = deliveryChannelPolicy.Id,
-                Channel = deliveryChannel.Channel
-            });
-        }
-            
-        return true;
     }
 }
 

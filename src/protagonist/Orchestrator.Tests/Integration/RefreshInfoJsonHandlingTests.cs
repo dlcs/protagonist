@@ -6,6 +6,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using IIIF.ImageApi.V3;
 using IIIF.Serialisation;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -66,7 +67,7 @@ public class RefreshInfoJsonHandlingTests : IClassFixture<ProtagonistAppFactory<
             new()
             {
                 Channel = AssetDeliveryChannels.Image,
-                DeliveryChannelPolicyId = 1
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
             }
         });
         await dbFixture.DbContext.SaveChangesAsync();

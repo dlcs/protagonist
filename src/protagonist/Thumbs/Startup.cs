@@ -54,6 +54,7 @@ public class Startup
             .AddSingleton<AssetDeliveryPathParser>()
             .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
             .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
+            .AddSingleton<AssetCachingHelper>()
             .AddSingleton<IAssetRepository, DapperAssetRepository>()
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>();
 
