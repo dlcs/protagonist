@@ -143,7 +143,8 @@ public class OldHydraDeliveryChannelsConverterTests
         {
             new()
             {
-                Channel = "file"
+                Channel = "file",
+                Policy = "none"
             }
         });
     }

@@ -194,8 +194,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
 
-        var stuff = await response.Content.ReadAsStringAsync();
-
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
@@ -666,7 +664,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Put_NewAudioAsset_Creates_Asset()
     {
         var assetId = new AssetId(99, 1, nameof(Put_NewAudioAsset_Creates_Asset));
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(99);
         await dbContext.SaveChangesAsync();
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
@@ -688,19 +685,19 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
-                                                                x.DeliveryChannelPolicyId == 5);
+                                                                x.DeliveryChannelPolicy.Name == "default-audio");
     }
     
     [Fact]
     public async Task Put_NewVideoAsset_Creates_Asset()
     {
         var assetId = new AssetId(99, 1, nameof(Put_NewVideoAsset_Creates_Asset));
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(99);
         await dbContext.SaveChangesAsync();
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
@@ -722,12 +719,14 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ImageDeliveryChannels.Count.Should().Be(1);
-        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
-                                                                x.DeliveryChannelPolicyId == 6);
+        asset.ImageDeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == "iiif-av" &&
+                  dc.DeliveryChannelPolicy.Name == "default-video");
     }
     
     [Fact]
@@ -908,12 +907,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""mediaType"": ""video/mp4"",
           ""wcDeliveryChannels"": [""iiif-av""]
         }}";
-
+        
         A.CallTo(() =>
-                EngineClient.SynchronousIngest(
+                EngineClient.AsynchronousIngest(
                     A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
+            .Returns(true);
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -942,15 +941,15 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         }}";
 
         A.CallTo(() =>
-                EngineClient.SynchronousIngest(
+                EngineClient.AsynchronousIngest(
                     A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
-        
+            .Returns(true);
+            
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
-      
+     
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         
@@ -962,10 +961,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
-    [InlineData(AssetFamily.File, "application/pdf", "pdf")]
-    [InlineData(AssetFamily.Image, "image/tiff", "tiff")]
-    [InlineData(AssetFamily.Timebased, "video/mp4", "mp4")] 
-    public async Task Put_New_Asset_Translates_FileWcDeliveryChannel(AssetFamily assetFamily, string mediaType, string fileExtension)
+    [InlineData(AssetFamily.File, "application/pdf", "pdf", false)]
+    [InlineData(AssetFamily.Image, "image/tiff", "tiff", false)]
+    [InlineData(AssetFamily.Timebased, "video/mp4", "mp4", true)] 
+    public async Task Put_New_Asset_Translates_FileWcDeliveryChannel(AssetFamily assetFamily, string mediaType, 
+        string fileExtension, bool isIngestedAsync)
     {
         var assetId = new AssetId(99, 1, $"{nameof(Put_New_Asset_Translates_FileWcDeliveryChannel)}-${fileExtension}");
         var hydraImageBody = $@"{{
@@ -976,16 +976,27 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""wcDeliveryChannels"": [""file""]
         }}";
 
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<Asset>.That.Matches(r => r.Id == assetId),
-                    A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
+        if (isIngestedAsync)
+        {
+            A.CallTo(() =>
+                    EngineClient.AsynchronousIngest(
+                        A<Asset>.That.Matches(r => r.Id == assetId),
+                        A<CancellationToken>._))
+                .Returns(true);
+        }
+        else
+        {
+            A.CallTo(() =>
+                    EngineClient.SynchronousIngest(
+                        A<Asset>.That.Matches(r => r.Id == assetId),
+                        A<CancellationToken>._))
+                .Returns(HttpStatusCode.OK); 
+        }
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
-        
+
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
       
