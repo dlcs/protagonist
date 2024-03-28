@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
+using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
@@ -65,7 +66,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space-images' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'customer-images' AND \"Scope\" != '99'");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DeliveryChannelPolicies\" WHERE \"Customer\" not in (1,99)");
-        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DefaultDeliveryChannels\" WHERE \"Customer\" <> 1");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"DefaultDeliveryChannels\" WHERE \"Customer\" not in (1,99)");
         DbContext.ChangeTracker.Clear();
     }
 
@@ -164,14 +165,47 @@ public class DlcsDatabaseFixture : IAsyncLifetime
                 Id = "cust-default", Name = "Customer Scoped", TechnicalDetails = new[] { "default" },
                 Global = false, Customer = 99
             });
-        await DbContext.DeliveryChannelPolicies.AddAsync(new DeliveryChannelPolicy()
+        await DbContext.DeliveryChannelPolicies.AddRangeAsync(new DeliveryChannelPolicy()
+        {
+            Customer = 99,
+            Name = "example-thumbs-policy",
+            DisplayName = "Example Thumbnail Policy",
+            Channel = "thumbs",
+            PolicyData = "[\"!1024,1024\",\"!400,400\",\"!200,200\",\"!100,100\"]",
+            System = false,
+        });
+        await DbContext.DefaultDeliveryChannels.AddRangeAsync(
+            new DefaultDeliveryChannel()
             {
+                Id = Guid.NewGuid(),
                 Customer = 99,
-                Name = "example-thumbs-policy",
-                DisplayName = "Example Thumbnail Policy",
-                Channel = "thumbs",
-                PolicyData = "[\"!1024,1024\",\"!400,400\",\"!200,200\",\"!100,100\"]",
-                System = false,
+                Space = 1,
+                MediaType = "video/*",
+                DeliveryChannelPolicy =  new DeliveryChannelPolicy()
+                {
+                    Customer = 99,
+                    Name = "default-video",
+                    DisplayName = "A default video policy",
+                    Channel = "iiif-av",
+                    PolicyData = "[\"video-mp4-720p\"]",
+                    System = false,
+                }
+            },
+            new DefaultDeliveryChannel()
+            {
+                Id = Guid.NewGuid(),
+                Customer = 99,
+                Space = 1,
+                MediaType = "audio/*",
+                DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                {
+                    Customer = 99,
+                    Name = "default-audio",
+                    DisplayName = "A default audio policy",
+                    Channel = "iiif-av",
+                    PolicyData = "[\"audio-mp3-128\"]",
+                    System = false,
+                }
             });
         await DbContext.AuthServices.AddAsync(new AuthService
         {
@@ -184,6 +218,7 @@ public class DlcsDatabaseFixture : IAsyncLifetime
             Customer = customer, Id = "clickthrough", AuthService = ClickThroughAuthService,
             Name = "test-clickthrough"
         });
+        
         await DbContext.SaveChangesAsync();
     }
 
