@@ -52,12 +52,12 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             new()
             {
                 Channel = AssetDeliveryChannels.Image,
-                DeliveryChannelPolicyId = 1 // default image
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
             },
             new()
             {
                 Channel = AssetDeliveryChannels.Thumbnails,
-                DeliveryChannelPolicyId = 3 // default thumbs
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
             }
         };
     }

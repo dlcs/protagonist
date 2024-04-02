@@ -59,7 +59,7 @@ public class ThumbCreatorTests
             {
                 new()
                 {
-                    DeliveryChannelPolicyId = 1,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
                     Channel = AssetDeliveryChannels.Thumbnails,
                     DeliveryChannelPolicy = new DeliveryChannelPolicy
                     {
@@ -94,7 +94,7 @@ public class ThumbCreatorTests
             {
                 new()
                 {
-                    DeliveryChannelPolicyId = 1,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
                     Channel = AssetDeliveryChannels.Thumbnails,
                     DeliveryChannelPolicy = new DeliveryChannelPolicy
                     {
@@ -149,7 +149,7 @@ public class ThumbCreatorTests
             {
                 new()
                 {
-                    DeliveryChannelPolicyId = 1,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
                     Channel = AssetDeliveryChannels.Thumbnails,
                     DeliveryChannelPolicy = new DeliveryChannelPolicy
                     {
@@ -204,7 +204,7 @@ public class ThumbCreatorTests
             {
                 new()
                 {
-                    DeliveryChannelPolicyId = 1,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
                     Channel = AssetDeliveryChannels.Thumbnails,
                     DeliveryChannelPolicy = new DeliveryChannelPolicy
                     {

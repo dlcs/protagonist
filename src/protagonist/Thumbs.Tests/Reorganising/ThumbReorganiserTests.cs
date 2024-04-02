@@ -38,7 +38,7 @@ public class ThumbReorganiserTests
             new()
             {
                 Channel = AssetDeliveryChannels.Image,
-                DeliveryChannelPolicyId = 1,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
                 DeliveryChannelPolicy = new DeliveryChannelPolicy()
                 {
                     Name = "default",
@@ -48,7 +48,7 @@ public class ThumbReorganiserTests
             new()
             {
                 Channel = AssetDeliveryChannels.Thumbnails,
-                DeliveryChannelPolicyId = 2,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
                 DeliveryChannelPolicy = new DeliveryChannelPolicy()
                 {
                     Name = "default",
@@ -458,7 +458,7 @@ public class ThumbReorganiserTests
                 new()
                 {
                     Channel = AssetDeliveryChannels.Thumbnails,
-                    DeliveryChannelPolicyId = 2,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
                     DeliveryChannelPolicy = new DeliveryChannelPolicy()
                     {
                         Name = "default",
@@ -585,7 +585,7 @@ public class ThumbReorganiserTests
                     new()
                     {
                         Channel = AssetDeliveryChannels.Thumbnails,
-                        DeliveryChannelPolicyId = 2,
+                        DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
                         DeliveryChannelPolicy = new DeliveryChannelPolicy()
                         {
                             Name = "default",

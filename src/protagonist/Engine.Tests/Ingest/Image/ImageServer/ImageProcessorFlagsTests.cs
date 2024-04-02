@@ -155,7 +155,7 @@ public class ImageProcessorFlagsTests
         context.Asset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
         {
             Channel = AssetDeliveryChannels.File,
-            DeliveryChannelPolicyId = 3
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
         });
         
         // Act
@@ -181,7 +181,7 @@ public class ImageProcessorFlagsTests
         context.Asset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
         {
             Channel = AssetDeliveryChannels.File,
-            DeliveryChannelPolicyId = 3
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
         });
         
         // Act
@@ -217,7 +217,7 @@ public class ImageProcessorFlagsTests
                         Name = "default",
                         PolicyData = "[\"100\",\"100\"]"
                     },
-                    DeliveryChannelPolicyId = 2
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
                 }
             }
         };
@@ -231,7 +231,7 @@ public class ImageProcessorFlagsTests
                 {
                     Name = useOriginal ? "use-original" : "default"
                 },
-                DeliveryChannelPolicyId = 1
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
             });
         }
 

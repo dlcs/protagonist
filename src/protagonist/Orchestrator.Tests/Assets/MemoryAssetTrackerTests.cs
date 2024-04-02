@@ -206,7 +206,7 @@ public class MemoryAssetTrackerTests
         imageDeliveryChannels.Add(new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Thumbnails,
-            DeliveryChannelPolicyId = 3,
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
             DeliveryChannelPolicy = new DeliveryChannelPolicy()
             {
                 Name = "default",

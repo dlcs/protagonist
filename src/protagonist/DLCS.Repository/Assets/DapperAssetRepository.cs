@@ -21,6 +21,7 @@ public class DapperAssetRepository : IAssetRepository, IDapperConfigRepository
         AssetCachingHelper assetCachingHelper)
     {
         Configuration = configuration;
+        this.assetCachingHelper = assetCachingHelper;
     }
     
     public async Task<ImageLocation?> GetImageLocation(AssetId assetId)

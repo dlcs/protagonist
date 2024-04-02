@@ -19,7 +19,7 @@ public class AssetXTests
             {
                 new()
                 {
-                    DeliveryChannelPolicyId = 1,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
                     Channel = AssetDeliveryChannels.Thumbnails,
                     DeliveryChannelPolicy = new DeliveryChannelPolicy
                     {
@@ -56,7 +56,7 @@ public class AssetXTests
             {
                 new()
                 {
-                    DeliveryChannelPolicyId = 1,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
                     Channel = AssetDeliveryChannels.Thumbnails,
                     DeliveryChannelPolicy = new DeliveryChannelPolicy
                     {
@@ -92,7 +92,7 @@ public class AssetXTests
             {
                 new()
                 {
-                    DeliveryChannelPolicyId = 1,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
                     Channel = AssetDeliveryChannels.Thumbnails,
                     DeliveryChannelPolicy = new DeliveryChannelPolicy
                     {
@@ -152,7 +152,7 @@ public class AssetXTests
             {
                 new()
                 {
-                    DeliveryChannelPolicyId = 1,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
                     Channel = AssetDeliveryChannels.Thumbnails,
                     DeliveryChannelPolicy = new DeliveryChannelPolicy
                     {
@@ -187,7 +187,7 @@ public class AssetXTests
             {
                 new()
                 {
-                    DeliveryChannelPolicyId = 1,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
                     Channel = AssetDeliveryChannels.Thumbnails,
                     DeliveryChannelPolicy = new DeliveryChannelPolicy
                     {
@@ -224,7 +224,7 @@ public class AssetXTests
             {
                 new()
                 {
-                    DeliveryChannelPolicyId = 1,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
                     Channel = AssetDeliveryChannels.Thumbnails,
                     DeliveryChannelPolicy = new DeliveryChannelPolicy
                     {

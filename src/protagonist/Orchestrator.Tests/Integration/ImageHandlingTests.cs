@@ -50,12 +50,12 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Image,
-            DeliveryChannelPolicyId = 1
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
         },
         new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Thumbnails,
-            DeliveryChannelPolicyId = 3 // default thumbs
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
         }
     };
 

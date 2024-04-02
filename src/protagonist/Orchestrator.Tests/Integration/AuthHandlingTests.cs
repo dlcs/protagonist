@@ -9,6 +9,7 @@ using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using IIIF.Auth.V2;
 using IIIF.Serialisation;
 using Microsoft.EntityFrameworkCore;
@@ -47,7 +48,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         {
             new()
             {
-                DeliveryChannelPolicyId = 1,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
                 Channel = AssetDeliveryChannels.Image
             }
         };

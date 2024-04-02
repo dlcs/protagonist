@@ -6,6 +6,7 @@ using System.Net.Http;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
+using DLCS.Model.Policies;
 using IIIF.Auth.V2;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
@@ -52,12 +53,12 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
             new()
             {
                 Channel = AssetDeliveryChannels.Image,
-                DeliveryChannelPolicyId = 1 // default image
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
             },
             new()
             {
                 Channel = AssetDeliveryChannels.Thumbnails,
-                DeliveryChannelPolicyId = 3 // default thumbs
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
             }
         };
 
@@ -74,8 +75,8 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
             roles: "clickthrough", imageDeliveryChannels: imageDeliveryChannels);
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/auth-2"), num1: 1, ref1: "auth-ref",
             roles: "clickthrough", imageDeliveryChannels: imageDeliveryChannels);
-        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/no-auth"), num1: 3, ref1: "auth-ref"
-            , imageDeliveryChannels: imageDeliveryChannels);
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/no-auth"), num1: 3, ref1: "auth-ref",
+            imageDeliveryChannels: imageDeliveryChannels);
         
         dbFixture.DbContext.SaveChanges();
     }

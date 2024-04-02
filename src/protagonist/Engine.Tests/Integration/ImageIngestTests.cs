@@ -55,7 +55,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Thumbnails,
-            DeliveryChannelPolicyId = 2,
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
             DeliveryChannelPolicy = new DeliveryChannelPolicy()
             {
                 Name = "default",
