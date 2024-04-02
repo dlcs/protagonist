@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Amazon.S3;
 using API.Client;
 using API.Infrastructure.Messaging;
@@ -30,7 +29,6 @@ using Newtonsoft.Json.Linq;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using AssetFamily = DLCS.Model.Assets.AssetFamily;
-using ImageOptimisationPolicy = DLCS.Model.Policies.ImageOptimisationPolicy;
 
 namespace API.Tests.Integration;
 
@@ -851,6 +849,60 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Put_Asset_Fails_When_ThumbnailPolicy_Is_Provided()
+    {
+        // Arrange 
+        var assetId = new AssetId(99, 1, $"{nameof(Put_Asset_Fails_When_ThumbnailPolicy_Is_Provided)}");
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""mediaType"":""image/tiff"",
+          ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+          ""family"": ""I"",
+          ""wcDeliveryChannels"": [
+            ""iiif-img""
+            ],
+          ""thumbnailPolicy"": ""thumbs-policy""
+        }}";    
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
+    }
+    
+    [Fact]
+    public async Task Put_Asset_Fails_When_ImageOptimisationPolicy_Is_Provided()
+    {
+        // Arrange 
+        var assetId = new AssetId(99, 1, $"{nameof(Put_Asset_Fails_When_ThumbnailPolicy_Is_Provided)}");
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""mediaType"":""image/tiff"",
+          ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+          ""family"": ""I"",
+          ""wcDeliveryChannels"": [
+            ""iiif-img""
+            ],
+          ""imageOptimisationPolicy"": ""image-optimisation-policy""
+        }}";    
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
+    }
+    
+    [Fact]
     public async Task Put_Existing_Asset_ClearsError_AndMarksAsIngesting()
     {
         var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
@@ -1148,49 +1200,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         testAsset.Entity.Reference1.Should().Be("I am edited");
         testAsset.Entity.Batch.Should().BeGreaterThan(0);
     }
-    
-    [Fact]
-    public async Task Patch_Asset_Change_ImageOptimisationPolicy_Allowed()
-    {
-        var assetId = new AssetId(99, 1, nameof(Patch_Asset_Change_ImageOptimisationPolicy_Allowed));
-
-        var asset = (await dbContext.Images.AddTestAsset(assetId, origin: "https://images.org/image1.tiff")).Entity;
-        var testPolicy = new ImageOptimisationPolicy
-        {
-            Id = "test-policy",
-            Name = "Test Policy",
-            TechnicalDetails = new[] { "1010101" }
-        };
-        dbContext.ImageOptimisationPolicies.Add(testPolicy);
-        await dbContext.SaveChangesAsync();
-        
-        var hydraImageBody = $@"{{
-  ""@type"": ""Image"",
-  ""imageOptimisationPolicy"": ""http://localhost/imageOptimisationPolicies/test-policy""
-}}";
-        
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<Asset>.That.Matches(r => r.Id == assetId),
-                    A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
-
-        // act
-        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
-        
-        // assert
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<Asset>.That.Matches(r => r.Id == assetId),
-                    A<CancellationToken>._))
-            .MustHaveHappened();
-        
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
-        await dbContext.Entry(asset).ReloadAsync();
-        asset.ImageOptimisationPolicy.Should().Be("test-policy");
-    }
 
     [Fact]
     public async Task Patch_Asset_Returns_Notfound_if_Asset_Missing()
@@ -1211,7 +1220,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Patch_Asset_Returns_BadRequest_if_DeliveryChannels_Empty()
     {
         // arrange
-        var assetId = new AssetId(99, 1, nameof(Patch_Asset_Change_ImageOptimisationPolicy_Allowed));
+        var assetId = new AssetId(99, 1, nameof(Patch_Asset_Returns_BadRequest_if_DeliveryChannels_Empty));
         var hydraImageBody = $@"{{
           ""@type"": ""Image"",
           ""deliveryChannels"": []
@@ -1223,6 +1232,46 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Patch_Asset_Fails_When_ThumbnailPolicy_Is_Provided()
+    {
+        // Arrange 
+        var assetId = new AssetId(99, 1, $"{nameof(Patch_Asset_Fails_When_ThumbnailPolicy_Is_Provided)}");
+        var hydraImageBody = $@"{{
+          ""thumbnailPolicy"": ""thumbs-policy""
+        }}";    
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
+    }
+    
+    [Fact]
+    public async Task Patch_Asset_Fails_When_ImageOptimisationPolicy_Is_Provided()
+    {
+        // Arrange 
+        var assetId = new AssetId(99, 1, $"{nameof(Patch_Asset_Fails_When_ThumbnailPolicy_Is_Provided)}");
+        var hydraImageBody = $@"{{
+          ""imageOptimisationPolicy"": ""image-optimisation-policy""
+        }}";    
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
     }
     
     [Fact]
