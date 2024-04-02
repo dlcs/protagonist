@@ -17,9 +17,6 @@ public class CantaloupeThumbsClientTests
 {
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly CantaloupeThumbsClient sut;
-    private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
-    private readonly IFileSystem fileSystem;
-    private readonly IImageManipulator imageManipulator;
 
     private readonly List<string> defaultThumbs = new List<string>()
     {
@@ -29,8 +26,8 @@ public class CantaloupeThumbsClientTests
     public CantaloupeThumbsClientTests()
     {
         httpHandler = new ControllableHttpMessageHandler();
-        fileSystem = A.Fake<IFileSystem>();
-        imageManipulator = A.Fake<IImageManipulator>();
+        var fileSystem = A.Fake<IFileSystem>();
+        var imageManipulator = A.Fake<IImageManipulator>();
         var engineSettings = new EngineSettings
         {
             ImageIngest = new ImageIngestSettings
