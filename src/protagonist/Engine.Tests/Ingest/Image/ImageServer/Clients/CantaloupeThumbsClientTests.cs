@@ -62,7 +62,7 @@ public class CantaloupeThumbsClientTests
 
         // Assert
         thumbs.Count().Should().Be(1);
-        thumbs[0].Path.Should().Be(".\\scratch\\output\\thumbs\\!1024,1024");
+        thumbs[0].Path.Should().Be($".{Path.DirectorySeparatorChar}scratch{Path.DirectorySeparatorChar}output{Path.DirectorySeparatorChar}thumbs{Path.DirectorySeparatorChar}!1024,1024");
     }
     
     [Fact]
