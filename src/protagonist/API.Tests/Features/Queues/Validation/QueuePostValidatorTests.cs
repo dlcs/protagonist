@@ -171,4 +171,20 @@ public class QueuePostValidatorTests
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].Created");
     }
+    
+    [Fact]
+    public void Member_ImageOptimisationPolicy_Null_WhenOldDeliveryChannelEmulationDisabled()
+    {
+        var model = new HydraCollection<Image> { Members = new[] { new Image { ImageOptimisationPolicy = "my-policy" } } };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Members[0].ImageOptimisationPolicy");
+    }
+    
+    [Fact]
+    public void Member_ThumbnailPolicy_Null_WhenOldDeliveryChannelEmulationDisabled()
+    {
+        var model = new HydraCollection<Image> { Members = new[] { new Image { ThumbnailPolicy = "my-policy" } } };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Members[0].ThumbnailPolicy");
+    }
 }
