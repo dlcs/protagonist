@@ -59,7 +59,7 @@ public class ImageServerClient : IImageProcessor
         try
         {
             var flags = new ImageProcessorFlags(context, GetJP2FilePath(modifiedAssetId, false));
-            logger.LogDebug("Got flags '{Flags}' for {AssetId}", flags, context.AssetId);
+            logger.LogDebug("Got flags '{@Flags}' for {AssetId}", flags, context.AssetId);
             var responseModel = await CallImageProcessor(context, flags, modifiedAssetId);
 
             if (responseModel is AppetiserResponseModel successResponse)
@@ -235,7 +235,7 @@ public class ImageServerClient : IImageProcessor
 
         if (!processorFlags.SaveInDlcsStorage || processorFlags.IsTransient)
         {
-            // Optimised + image-server ready. No need to store - set imageLocation to origin and stop
+            // Optimised + image-server ready or transient. No need to store - set imageLocation to origin and stop
             logger.LogDebug("Asset {AssetId} can be served from origin. No file to save", context.AssetId);
             var originObject = RegionalisedObjectInBucket.Parse(asset.Origin, true)!;
             SetAssetLocation(originObject);
@@ -333,10 +333,7 @@ public class ImageServerClient : IImageProcessor
         /// </summary>
         /// <remarks>Used for calculating size and uploading (if required)</remarks>
         public string ImageServerFilePath { get; }
-
-        // public override string ToString() =>
-        //     $"derivative-only:{GenerateDerivativesOnly},save:{SaveInDlcsStorage},image-server-ready:{OriginIsImageServerReady}";
-
+        
         public ImageProcessorFlags(IngestionContext ingestionContext, string jp2OutputPath)
         {
             var assetFromOrigin =

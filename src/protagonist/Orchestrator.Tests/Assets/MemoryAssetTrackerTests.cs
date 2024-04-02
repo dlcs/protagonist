@@ -221,7 +221,6 @@ public class MemoryAssetTrackerTests
            ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50, MaxUnauthorised = -1, 
             Origin = "test"
         });
-      //  A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
 
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);

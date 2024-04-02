@@ -13,12 +13,15 @@ namespace DLCS.Model.Assets;
 /// </summary>
 public static class AssetX
 {
+    /// <summary>
+    /// Gets all thumb sizes available to the asset
+    /// </summary>
+    /// <param name="asset"></param>
+    /// <returns>A list of sizes</returns>
     public static List<Size> GetAllThumbSizes(this Asset asset)
     {
-        var thumbnailSizes = new List<Size>();
-
+        List<Size> thumbnailSizes;
         var sizeParameters = ConvertThumbnailPolicy(asset);
-
         thumbnailSizes = sizeParameters.Select(s => new Size(s.Width.Value, s.Height.Value)).ToList();
 
         return thumbnailSizes;
@@ -59,7 +62,8 @@ public static class AssetX
             if (!includeUnavailable && assetIsUnavailableForSize) continue;
             Size bounded;
 
-            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image) && size.MaxDimension == 0)
+            // this happens when the image processor isn't called (i.e. transient), so we don't know the actual size of the asset
+            if (!asset.HasDeliveryChannel(AssetDeliveryChannels.Image) && size.MaxDimension == 0)
             { 
                 bounded = Size.Confine(maxDimension, new Size(boundingSize.Width!.Value, boundingSize.Height.Value));
             }
