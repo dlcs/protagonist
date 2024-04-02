@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using API.Converters;
+using API.Features.DeliveryChannels.Converters;
 using API.Features.Image;
 using API.Features.Queues.Converters;
 using API.Features.Queues.Requests;
@@ -27,10 +28,12 @@ namespace API.Features.Queues;
 public class CustomerQueueController : HydraController
 {
     private readonly ApiSettings apiSettings;
-    
-    public CustomerQueueController(IOptions<ApiSettings> settings, IMediator mediator) : base(settings.Value, mediator)
+    private readonly OldHydraDeliveryChannelsConverter oldHydraDcConverter;   
+    public CustomerQueueController(IOptions<ApiSettings> settings, IMediator mediator, 
+        OldHydraDeliveryChannelsConverter oldHydraDcConverter) : base(settings.Value, mediator)
     {
         apiSettings = settings.Value;
+        this.oldHydraDcConverter = oldHydraDcConverter;
     }
 
     /// <summary>
@@ -94,16 +97,22 @@ public class CustomerQueueController : HydraController
         [FromRoute] int customerId,
         [FromBody] HydraCollection<DLCS.HydraModel.Image> images,
         [FromServices] QueuePostValidator validator,
+        [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
         UpdateMembers(customerId, images.Members);
+
+        if (apiSettings.EmulateOldDeliveryChannelProperties)
+        {
+            ConvertOldDeliveryChannelsForMembers(images.Members);
+        }
 
         var validationResult = await validator.ValidateAsync(images, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
         }
-
+    
         var assetsBeforeProcessing = CreateAssetsBeforeProcessing(customerId, images);
 
         var request =
@@ -120,7 +129,7 @@ public class CustomerQueueController : HydraController
     /// </summary>
     /// <param name="customerId">The customer id</param>
     /// <param name="members">The assets to update</param>
-    private  void UpdateMembers(int customerId, IList<DLCS.HydraModel.Image>? members)
+    private void UpdateMembers(int customerId, IList<DLCS.HydraModel.Image>? members)
     {
         if (members != null)
         {
@@ -139,6 +148,21 @@ public class CustomerQueueController : HydraController
             {
                 image.ModelId = Guid.NewGuid().ToString();
             }
+        }
+    }
+
+    /// <summary>
+    /// Converts WcDeliveryChannels (if set) to DeliveryChannels for a list of assets
+    /// </summary>
+    /// <param name="members">The assets to update</param>
+    private void ConvertOldDeliveryChannelsForMembers(IList<DLCS.HydraModel.Image>? members)
+    {
+        if (members == null) return;
+        
+        foreach (var hydraAsset in members)
+        {
+            if (hydraAsset.WcDeliveryChannels == null) continue;
+            hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
         }
     }
 
