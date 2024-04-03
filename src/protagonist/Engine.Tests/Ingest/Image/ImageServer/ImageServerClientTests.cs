@@ -1,5 +1,3 @@
-using System.Net;
-using System.Net.Http.Headers;
 using System.Text.Json;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
@@ -13,11 +11,9 @@ using Engine.Ingest.Image;
 using Engine.Ingest.Image.ImageServer;
 using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Models;
-using Engine.Ingest.Persistence;
 using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
-using Test.Helpers.Http;
 using Test.Helpers.Settings;
 using Test.Helpers.Storage;
 
