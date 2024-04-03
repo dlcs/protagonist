@@ -271,6 +271,32 @@ public class ModifyAssetWithOldDeliveryChannelEmulationTests : IClassFixture<Pro
                   dc.DeliveryChannelPolicy.Name == "default-audio");
     }
     
+    [Fact]
+    public async Task Put_New_Asset_BadRequest_IfWcDeliveryChannelInvalid()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_BadRequest_IfWcDeliveryChannelInvalid));
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""origin"": ""https://example.org/{assetId.Asset}.mp3"",
+          ""family"": ""T"",
+          ""mediaType"": ""audio/mp3"",
+          ""wcDeliveryChannels"": [""not-a-channel""]
+        }}";
+        
+        A.CallTo(() =>
+                EngineClient.AsynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(true);
+            
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
     [Theory]
     [InlineData(DLCS.Model.Assets.AssetFamily.File, "application/pdf", "pdf", false)]
     [InlineData(DLCS.Model.Assets.AssetFamily.Image, "image/tiff", "tiff", false)]
@@ -485,6 +511,32 @@ public class ModifyAssetWithOldDeliveryChannelEmulationTests : IClassFixture<Pro
         asset.ImageDeliveryChannels.Should().Satisfy(
             dc => dc.Channel == "iiif-av" &&
                   dc.DeliveryChannelPolicy.Name == "default-audio");
+    }
+    
+    [Fact]
+    public async Task Patch_Asset_BadRequest_IfWcDeliveryChannelInvalid()
+    {
+        var assetId = new AssetId(99, 1, nameof(Patch_Asset_BadRequest_IfWcDeliveryChannelInvalid));
+        var hydraImageBody = @"{
+          ""wcDeliveryChannels"": [""not-a-channel""]
+        }";
+        
+        await dbContext.Images.AddTestAsset(assetId, origin: $"https://example.org/{assetId.Asset}.mp3", 
+            mediaType: "audio/mp3", family: DLCS.Model.Assets.AssetFamily.Timebased);
+        await dbContext.SaveChangesAsync();
+        
+        A.CallTo(() =>
+                EngineClient.AsynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(true);
+            
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
     [Fact]
