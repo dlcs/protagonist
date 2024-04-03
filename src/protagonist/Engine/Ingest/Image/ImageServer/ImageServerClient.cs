@@ -334,7 +334,7 @@ public class ImageServerClient : IImageProcessor
                     x=> x.Channel == AssetDeliveryChannels.Image)
                 ?.DeliveryChannelPolicy.Name : null;
 
-            OriginIsImageServerReady = imagePolicy != null && derivativesOnlyPolicies.Contains(imagePolicy); // only set image server ready if an image server ready policy is set explicitly
+            OriginIsImageServerReady = imagePolicy != null || derivativesOnlyPolicies.Contains(imagePolicy); // only set image server ready if an image server ready policy is set explicitly
             ImageServerFilePath = OriginIsImageServerReady ? ingestionContext.AssetFromOrigin.Location : jp2OutputPath;
 
             IsTransient = !hasImageDeliveryChannel;
@@ -343,7 +343,7 @@ public class ImageServerClient : IImageProcessor
                               !hasImageDeliveryChannel;
 
             // Save in DLCS unless the image is image-server ready AND the strategy is optimised 
-            SaveInDlcsStorage = !(OriginIsImageServerReady && assetFromOrigin.CustomerOriginStrategy.Optimised);
+            SaveInDlcsStorage = !((OriginIsImageServerReady || IsTransient) && assetFromOrigin.CustomerOriginStrategy.Optimised);
         }
     }
 }
