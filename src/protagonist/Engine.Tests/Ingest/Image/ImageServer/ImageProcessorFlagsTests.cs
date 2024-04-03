@@ -119,7 +119,7 @@ public class ImageProcessorFlagsTests
         flags.IsTransient.Should().BeTrue();
         flags.AlreadyUploaded.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
-        flags.SaveInDlcsStorage.Should().BeTrue();
+        flags.SaveInDlcsStorage.Should().BeFalse();
         flags.ImageServerFilePath.Should().Be($"/path/to/generated.jp2");
     }
     
@@ -165,7 +165,7 @@ public class ImageProcessorFlagsTests
         flags.IsTransient.Should().BeTrue();
         flags.AlreadyUploaded.Should().BeTrue();
         flags.OriginIsImageServerReady.Should().BeFalse();
-        flags.SaveInDlcsStorage.Should().BeTrue();
+        flags.SaveInDlcsStorage.Should().BeFalse();
         flags.ImageServerFilePath.Should().Be($"/path/to/generated.jp2");
     }
 

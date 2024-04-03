@@ -361,8 +361,8 @@ public class ImageServerClientTests
         A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
             .MustHaveHappened();
         context.ImageStorage.ThumbnailSize.Should().Be(200, "Thumbs saved");
-        context.ImageStorage.Size.Should().Be(0, "Transient images are cleaned up");
-        bucketWriter.Operations.Should().ContainKey("transient/1/2/something");
+        context.ImageStorage.Size.Should().Be(0, "JP2 not written");
+        bucketWriter.Operations.Should().BeEmpty();
         context.Asset.Height.Should().Be(1000);
         context.Asset.Width.Should().Be(5000);
         context.StoredObjects.Should().BeEmpty();
