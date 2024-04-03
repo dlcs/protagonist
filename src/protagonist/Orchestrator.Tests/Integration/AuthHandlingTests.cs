@@ -24,7 +24,7 @@ namespace Orchestrator.Tests.Integration;
 /// Test of all auth handling
 /// </summary>
 [Trait("Category", "Integration")]
-[Collection(DatabaseCollection.CollectionName)]
+[Collection(StorageCollection.CollectionName)]
 public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, IClassFixture<ApiStub>
 {
     private readonly DlcsDatabaseFixture dbFixture;
@@ -32,16 +32,17 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
     private readonly ApiStub apiStub;
     private readonly List<ImageDeliveryChannel> imageDeliveryChannels;
 
-    public AuthHandlingTests(ProtagonistAppFactory<Startup> factory, ApiStub apiStub, DlcsDatabaseFixture databaseFixture)
+    public AuthHandlingTests(ProtagonistAppFactory<Startup> factory, ApiStub apiStub, StorageFixture storageFixture)
     {
         apiStub.EnsureStarted();
         this.apiStub = apiStub; 
         
-        dbFixture = databaseFixture;
+        dbFixture = storageFixture.DbFixture;
 
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithConfigValue("Auth:Auth2ServiceRoot", apiStub.Address)
+            .WithLocalStack(storageFixture.LocalStackFixture)    
             .CreateClient();
 
         imageDeliveryChannels = new List<ImageDeliveryChannel>

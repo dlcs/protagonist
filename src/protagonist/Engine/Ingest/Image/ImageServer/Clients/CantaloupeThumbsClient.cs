@@ -39,11 +39,9 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
 
         foreach (var size in thumbSizes!)
         {
-            var splitSize = size.Split(",");
-            
             using var response =
                 await thumbsClient.GetAsync(
-                    $"iiif/3/{convertedS3Location}/full/{splitSize[0]},{splitSize[1]}/0/default.jpg", cancellationToken);
+                    $"iiif/3/{convertedS3Location}/full/{size}/0/default.jpg", cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
@@ -54,8 +52,7 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
                     $"{assetDirectoryLocation}{Path.DirectorySeparatorChar}output{Path.DirectorySeparatorChar}thumbs{Path.DirectorySeparatorChar}{size}";
                 
                 await fileSystem.CreateFileFromStream(localThumbsPath, responseStream, cancellationToken);
-
-                //responseStream.Position = 0;
+                
                 var image = await imageManipulator.LoadAsync(localThumbsPath, cancellationToken);
 
                 thumbsResponse.Add(new ImageOnDisk()

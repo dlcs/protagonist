@@ -114,17 +114,7 @@ public class ImageServerClient : IImageProcessor
         var requestModel = CreateModel(context, modifiedAssetId, processorFlags);
         IAppetiserResponse? responseModel;
 
-        if (requestModel != null)
-        {
-            responseModel = await appetiserClient.CallAppetiser(requestModel);
-        }
-        else
-        {
-            responseModel = new AppetiserResponseModel
-            {
-                NoOperationRequired = true
-            };
-        }
+        responseModel = await appetiserClient.CallAppetiser(requestModel);
 
         return responseModel;
     }
@@ -148,28 +138,21 @@ public class ImageServerClient : IImageProcessor
         await CreateNewThumbs(context, thumbsResponse);
     }
 
-    private AppetiserRequestModel? CreateModel(IngestionContext context, AssetId modifiedAssetId, ImageProcessorFlags processorFlags)
+    private AppetiserRequestModel CreateModel(IngestionContext context, AssetId modifiedAssetId, ImageProcessorFlags processorFlags)
     {
-        var asset = context.Asset;
-
-        AppetiserRequestModel? requestModel = null;
-        
-        if (!processorFlags.IsTransient && !processorFlags.AlreadyUploaded)
+        var requestModel = new AppetiserRequestModel
         {
-            requestModel = new AppetiserRequestModel
-            {
-                Destination = GetJP2FilePath(modifiedAssetId, true),
-                Operation = "image-only",
-                Optimisation = "kdu_max",
-                Origin = asset.Origin,
-                Source = GetRelativeLocationOnDisk(context, modifiedAssetId),
-                ImageId = context.AssetId.Asset,
-                JobId = Guid.NewGuid().ToString(),
-                ThumbDir = TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.ThumbsTemplate,
-                    modifiedAssetId, root: engineSettings.ImageIngest.GetRoot(true)),
-                ThumbSizes = new int[1]
-            };
-        }
+            Destination = GetJP2FilePath(modifiedAssetId, true),
+            Operation = "image-only",
+            Optimisation = "kdu_max",
+            Origin = context.Asset.Origin,
+            Source = GetRelativeLocationOnDisk(context, modifiedAssetId),
+            ImageId = context.AssetId.Asset,
+            JobId = Guid.NewGuid().ToString(),
+            ThumbDir = TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.ThumbsTemplate,
+                modifiedAssetId, root: engineSettings.ImageIngest.GetRoot(true)),
+            ThumbSizes = new int[1]
+        };
 
         return requestModel;
     }
@@ -204,13 +187,10 @@ public class ImageServerClient : IImageProcessor
     private async Task ProcessResponse(IngestionContext context, AppetiserResponseModel responseModel, 
         ImageProcessorFlags processorFlags, AssetId modifiedAssetId)
     {
-        if (!responseModel.NoOperationRequired)
-        {
-            // Update dimensions on Asset
-            UpdateImageDimensions(context.Asset, responseModel);
-        }
+        // Update dimensions on Asset
+        UpdateImageDimensions(context.Asset, responseModel);
 
-        // Process output: upload derivative/original to DLCS storage if required and set Location + Storage on context 
+            // Process output: upload derivative/original to DLCS storage if required and set Location + Storage on context 
         await ProcessOriginImage(context, processorFlags);
     }
 
@@ -233,9 +213,9 @@ public class ImageServerClient : IImageProcessor
             context.WithLocation(new ImageLocation { Id = asset.Id, Nas = string.Empty, S3 = s3Location });
         }
 
-        if (!processorFlags.SaveInDlcsStorage || processorFlags.IsTransient)
+        if (!processorFlags.SaveInDlcsStorage)
         {
-            // Optimised + image-server ready or transient. No need to store - set imageLocation to origin and stop
+            // Optimised + image-server ready. No need to store - set imageLocation to origin and stop
             logger.LogDebug("Asset {AssetId} can be served from origin. No file to save", context.AssetId);
             var originObject = RegionalisedObjectInBucket.Parse(asset.Origin, true)!;
             SetAssetLocation(originObject);
@@ -264,6 +244,12 @@ public class ImageServerClient : IImageProcessor
                 return;
             }
         }
+        else if (processorFlags.IsTransient)
+        {
+            // transient asset, means it can be cleaned up after a set period of time
+            logger.LogDebug("Asset {AssetId} is transient. S3 marker will be added", context.AssetId);
+            targetStorageLocation = storageKeyGenerator.GetTransientImageLocation(context.AssetId);
+        }
         else
         {
             // Location for derivative
@@ -282,10 +268,13 @@ public class ImageServerClient : IImageProcessor
                 $"Failed to write image-server file {imageServerFile} to storage bucket with content-type {contentType}");
         }
 
-        var storedImageSize = fileSystem.GetFileSize(processorFlags.ImageServerFilePath);
-        context.StoredObjects[targetStorageLocation] = storedImageSize;
-        context.WithStorage(assetSize: storedImageSize);
-
+        if (!processorFlags.IsTransient) // transient images get deleted, so no need to store asset sizes
+        {
+            var storedImageSize = fileSystem.GetFileSize(processorFlags.ImageServerFilePath);
+            context.StoredObjects[targetStorageLocation] = storedImageSize;
+            context.WithStorage(assetSize: storedImageSize);
+        }
+        
         SetAssetLocation(targetStorageLocation);
     }
 
@@ -348,8 +337,7 @@ public class ImageServerClient : IImageProcessor
             OriginIsImageServerReady = imagePolicy != null && derivativesOnlyPolicies.Contains(imagePolicy); // only set image server ready if an image server ready policy is set explicitly
             ImageServerFilePath = OriginIsImageServerReady ? ingestionContext.AssetFromOrigin.Location : jp2OutputPath;
 
-            IsTransient = assetFromOrigin.CustomerOriginStrategy.Optimised &&
-                          !hasImageDeliveryChannel;
+            IsTransient = !hasImageDeliveryChannel;
 
             AlreadyUploaded = ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.File) && 
                               !hasImageDeliveryChannel;

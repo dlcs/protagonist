@@ -78,7 +78,7 @@ public class ThumbReorganiser : ThumbsManager, IThumbReorganiser
         foreach (var boundingSquare in boundingSquares)
         {
             var thumb = Size.Confine(boundingSquare, realSize);
-            if (thumb.IsConfinedWithin(new Size(maxDimensions.maxAvailableWidth,maxDimensions.maxAvailableHeight)))
+            if (thumb.IsConfinedWithin(new Size(maxDimensions.maxAvailableWidth, maxDimensions.maxAvailableHeight)))
             {
                 thumbnailSizes.AddOpen(thumb);
             }

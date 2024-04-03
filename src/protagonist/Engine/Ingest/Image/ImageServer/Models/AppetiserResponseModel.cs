@@ -14,5 +14,4 @@ public class AppetiserResponseModel : IAppetiserResponse
     public int Width { get; set; }
     public string InfoJson { get; set; }
     public IEnumerable<ImageOnDisk> Thumbs { get; set; }
-    public bool NoOperationRequired { get; set; } = false;
 }

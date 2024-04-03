@@ -21,9 +21,8 @@ The DLCS uses a number of S3 keys in various buckets to store assets. These gene
 | Thumbnail Root              | `"{ThumbsBucket}/{storage-key}/"`                                         | `dlcs-thumbs/1/2/foo/`                                 | Root key where thumbnails will reside                                                             |
 | Output Location             | `"{OutputBucket}/{storage-key}/"`                                         | `dlcs-output/1/2/foo/`                                 | Root key where DLCS 'output' is stored (e.g. projected NQ to PDF or Zip)                          |
 | Origin Location             | `"{OriginBucket}/{storage-key}"`                                          | `dlcs-origin/1/2/foo`                                  | Location where directly uploaded bytes are stored                                                 |
-| Transient Thumbnail         | `"{ThumbsBucket}/{storage-key}/{access}/{longestEdge}.jpg"`               | `dlcs-thumbs/1/2/foo/open/100.jpg`                     | Location of specific transient (i.e.: no image delivery channel) thumbnail                        |
-| Transient Thumbnail Sizes   | `"{ThumbsBucket}/{storage-key}/s.json"`                                   | `dlcs-thumbs/1/2/foo/s.json`                           | JSON blob storing known transient thumbnails                                                      |
-| Transient Largest Thumbnail | `"{ThumbsBucket}/{storage-key}/low.jpg"`                                  | `dlcs-thumbs/1/2/foo/low.jpg`                          | The location of the largest transient generated thumbnail                                         |
+| Transient Images            | `"{StorageBucket}/stransient/{storage-key}"`                              | `dlcs-thumbs/1/2/foo/open/100.jpg`                     | Location of transient images, that will be cleaned up by lifecycle policies                       |
+
 
 ## Timebased
 

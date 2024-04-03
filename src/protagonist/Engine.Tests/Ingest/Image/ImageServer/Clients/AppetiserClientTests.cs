@@ -5,7 +5,6 @@ using Engine.Ingest.Image.ImageServer;
 using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Models;
 using Engine.Settings;
-using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers.Http;
 using Test.Helpers.Settings;
 
@@ -34,7 +33,7 @@ public class AppetiserClientTests
 
         var httpClient = new HttpClient(httpHandler);
         httpClient.BaseAddress = new Uri("http://image-processor/");
-        sut = new AppetiserClient(httpClient, new NullLogger<AppetiserClient>(), optionsMonitor);
+        sut = new AppetiserClient(httpClient, optionsMonitor);
     }
 
     [Fact]

@@ -60,18 +60,8 @@ public static class AssetX
             
             var assetIsUnavailableForSize = AssetIsUnavailableForSize(asset, maxDimension);
             if (!includeUnavailable && assetIsUnavailableForSize) continue;
-            Size bounded;
-
-            // this happens when the image processor isn't called (i.e. transient), so we don't know the actual size of the asset
-            if (!asset.HasDeliveryChannel(AssetDeliveryChannels.Image) && size.MaxDimension == 0)
-            { 
-                bounded = Size.Confine(maxDimension, new Size(boundingSize.Width!.Value, boundingSize.Height.Value));
-            }
-            else
-            {
-                bounded = Size.Confine(maxDimension, size);
-            }
             
+            var bounded = Size.Confine(maxDimension, size);
             var boundedMaxDimension = bounded.MaxDimension;
 
             // If image < thumb-size then boundedMax may already have been processed (it'll be the same as imageMax)

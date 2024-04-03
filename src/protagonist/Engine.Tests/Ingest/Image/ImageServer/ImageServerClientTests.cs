@@ -59,6 +59,9 @@ public class ImageServerClientTests
         A.CallTo(() => storageKeyGenerator.GetStoredOriginalLocation(A<AssetId>._))
             .ReturnsLazily((AssetId assetId) =>
                 new RegionalisedObjectInBucket("appetiser-test", $"{assetId}/original", "Fake-Region"));
+        A.CallTo(() => storageKeyGenerator.GetTransientImageLocation(A<AssetId>._))
+            .ReturnsLazily((AssetId assetId) =>
+                new RegionalisedObjectInBucket("appetiser-test", $"transient/{assetId.ToString()}", "Fake-Region"));
 
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
         
@@ -302,6 +305,8 @@ public class ImageServerClientTests
             Height = 1000,
             Width = 5000,
         };
+
+        const string expected = "s3://dlcs-storage/2/1/foo-bar";
         
         A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
@@ -350,16 +355,16 @@ public class ImageServerClientTests
 
         // Assert
         A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
-            .MustNotHaveHappened();
+            .MustHaveHappened();
         A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(A<IngestionContext>._, A<AssetId>._, A<List<string>>._, A<CancellationToken>._))
             .MustHaveHappened();
         A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
             .MustHaveHappened();
         context.ImageStorage.ThumbnailSize.Should().Be(200, "Thumbs saved");
-        context.ImageStorage.Size.Should().Be(0, "JP2 not written to S3");
-        bucketWriter.Operations.Should().BeEmpty("JP2 not written to S3");
-        context.Asset.Height.Should().BeNull();
-        context.Asset.Width.Should().BeNull();
+        context.ImageStorage.Size.Should().Be(0, "Transient images are cleaned up");
+        bucketWriter.Operations.Should().ContainKey("transient/1/2/something");
+        context.Asset.Height.Should().Be(1000);
+        context.Asset.Width.Should().Be(5000);
         context.StoredObjects.Should().BeEmpty();
     }
     

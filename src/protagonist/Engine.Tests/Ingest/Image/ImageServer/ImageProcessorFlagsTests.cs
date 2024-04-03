@@ -136,7 +136,7 @@ public class ImageProcessorFlagsTests
         var flags = new ImageServerClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
-        flags.IsTransient.Should().BeFalse();
+        flags.IsTransient.Should().BeTrue();
         flags.AlreadyUploaded.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeTrue();
@@ -188,7 +188,7 @@ public class ImageProcessorFlagsTests
         var flags = new ImageServerClient.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
-        flags.IsTransient.Should().BeFalse();
+        flags.IsTransient.Should().BeTrue();
         flags.AlreadyUploaded.Should().BeTrue();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeTrue();
