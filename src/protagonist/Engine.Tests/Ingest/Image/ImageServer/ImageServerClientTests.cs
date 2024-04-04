@@ -139,7 +139,7 @@ public class ImageServerClientTests
         // Assert
         A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
             .MustHaveHappened();
-        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(A<IngestionContext>._, A<AssetId>._, A<List<string>>._, A<CancellationToken>._))
+        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(A<IngestionContext>._, A<List<string>>._, A<CancellationToken>._))
             .MustHaveHappened();
     }
 
@@ -264,7 +264,6 @@ public class ImageServerClientTests
         
         A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(
                 A<IngestionContext>._, 
-                A<AssetId>._, 
                 A<List<string>>._, 
                 A<CancellationToken>._))
             .Returns(Task.FromResult(new List<ImageOnDisk>()
@@ -309,7 +308,6 @@ public class ImageServerClientTests
         
         A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(
                 A<IngestionContext>._, 
-                A<AssetId>._, 
                 A<List<string>>._, 
                 A<CancellationToken>._))
             .Returns(Task.FromResult(new List<ImageOnDisk>()
@@ -352,7 +350,7 @@ public class ImageServerClientTests
         // Assert
         A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
             .MustHaveHappened();
-        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(A<IngestionContext>._, A<AssetId>._, A<List<string>>._, A<CancellationToken>._))
+        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(A<IngestionContext>._, A<List<string>>._, A<CancellationToken>._))
             .MustHaveHappened();
         A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
             .MustHaveHappened();
@@ -383,7 +381,6 @@ public class ImageServerClientTests
         
         A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(
                 A<IngestionContext>._, 
-                A<AssetId>._, 
                 A<List<string>>._, 
                 A<CancellationToken>._))
             .Returns(Task.FromResult(new List<ImageOnDisk>()
@@ -410,7 +407,7 @@ public class ImageServerClientTests
         // Assert
         A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
             .MustHaveHappened();
-        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(A<IngestionContext>._, A<AssetId>._, A<List<string>>._, A<CancellationToken>._))
+        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(A<IngestionContext>._, A<List<string>>._, A<CancellationToken>._))
             .MustHaveHappened();
         A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
             .MustHaveHappened();
@@ -437,7 +434,6 @@ public class ImageServerClientTests
         
         A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(
                 A<IngestionContext>._, 
-                A<AssetId>._, 
                 A<List<string>>._, 
                 A<CancellationToken>._))
             .Returns(Task.FromResult(new List<ImageOnDisk>()

@@ -28,8 +28,7 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
         this.imageManipulator = imageManipulator;
     }
 
-    public async Task<List<ImageOnDisk>> CallCantaloupe(IngestionContext context, 
-        AssetId modifiedAssetId,
+    public async Task<List<ImageOnDisk>> CallCantaloupe(IngestionContext context,
         List<string> thumbSizes, 
         CancellationToken cancellationToken = default)
     {

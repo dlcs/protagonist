@@ -58,7 +58,7 @@ public class CantaloupeThumbsClientTests
         });
 
         // Act
-        var thumbs = await sut.CallCantaloupe(context, assetId, defaultThumbs);
+        var thumbs = await sut.CallCantaloupe(context, defaultThumbs);
 
         // Assert
         thumbs.Count().Should().Be(1);
@@ -79,7 +79,7 @@ public class CantaloupeThumbsClientTests
         });
 
         // Act
-        Func<Task> action = async () => await sut.CallCantaloupe(context, assetId, defaultThumbs);
+        Func<Task> action = async () => await sut.CallCantaloupe(context, defaultThumbs);
         
         // Assert
         action.Should().ThrowAsync<HttpException>();

@@ -131,7 +131,7 @@ public class ImageServerClient : IImageProcessor
         if (thumbPolicy != null)
         {
             var sizes = JsonSerializer.Deserialize<List<string>>(thumbPolicy);
-            thumbsResponse = await thumbsClient.CallCantaloupe(context, modifiedAssetId, sizes);
+            thumbsResponse = await thumbsClient.CallCantaloupe(context, sizes);
         }
         
         // Create new thumbnails + update Storage on context
@@ -190,7 +190,7 @@ public class ImageServerClient : IImageProcessor
         // Update dimensions on Asset
         UpdateImageDimensions(context.Asset, responseModel);
 
-            // Process output: upload derivative/original to DLCS storage if required and set Location + Storage on context 
+        // Process output: upload derivative/original to DLCS storage if required and set Location + Storage on context 
         await ProcessOriginImage(context, processorFlags);
     }
 
