@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using API.Converters;
+using API.Features.DeliveryChannels.Converters;
 using API.Features.Image.Requests;
 using API.Features.Image.Validation;
 using API.Infrastructure;
@@ -94,13 +95,27 @@ public class ImageController : HydraController
         [FromRoute] string imageId,
         [FromBody] ImageWithFile hydraAsset,
         [FromServices] HydraImageValidator validator,
+        [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
         if (apiSettings.LegacyModeEnabledForSpace(customerId, spaceId))
         {
             hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
         }
-
+        
+        if (apiSettings.EmulateOldDeliveryChannelProperties && 
+            hydraAsset.WcDeliveryChannels != null)
+        {
+            hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
+        }
+        
+        if(!apiSettings.EmulateOldDeliveryChannelProperties &&
+           (hydraAsset.ImageOptimisationPolicy != null || hydraAsset.ThumbnailPolicy != null))
+        {
+            return this.HydraProblem("ImageOptimisationPolicy and ThumbnailPolicy are disabled", null,
+                400, "Bad Request");
+        }
+        
         if (hydraAsset.ModelId == null)
         {
             hydraAsset.ModelId = imageId;
@@ -154,12 +169,28 @@ public class ImageController : HydraController
         [FromRoute] string imageId,
         [FromBody] DLCS.HydraModel.Image hydraAsset,
         [FromServices] HydraImageValidator validator,
+        [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
-        if (!apiSettings.DeliveryChannelsEnabled && !hydraAsset.WcDeliveryChannels.IsNullOrEmpty())
+        if (!hydraAsset.WcDeliveryChannels.IsNullOrEmpty())
         {
-            var assetId = new AssetId(customerId, spaceId, imageId);
-            return this.HydraProblem("Delivery channels are disabled", assetId.ToString(), 400, "Bad Request");
+            if (!apiSettings.DeliveryChannelsEnabled)
+            {
+                var assetId = new AssetId(customerId, spaceId, imageId);
+                return this.HydraProblem("Delivery channels are disabled", assetId.ToString(), 400, "Bad Request");
+            }
+            
+            if (apiSettings.EmulateOldDeliveryChannelProperties)
+            {
+                hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
+            }
+        }
+        
+        if(!apiSettings.EmulateOldDeliveryChannelProperties &&
+           (hydraAsset.ImageOptimisationPolicy != null || hydraAsset.ThumbnailPolicy != null))
+        {
+            return this.HydraProblem("ImageOptimisationPolicy and ThumbnailPolicy are disabled", null,
+                400, "Bad Request");
         }
         
         var validationResult = await validator.ValidateAsync(hydraAsset, 
@@ -244,6 +275,7 @@ public class ImageController : HydraController
         [FromRoute] string imageId,
         [FromBody] ImageWithFile hydraAsset,
         [FromServices] HydraImageValidator validator,
+        [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
 
@@ -252,7 +284,7 @@ public class ImageController : HydraController
             customerId, spaceId, imageId);
         
 
-        return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, cancellationToken);
+        return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, oldHydraDcConverter, cancellationToken);
     }
 
     /// <summary>
