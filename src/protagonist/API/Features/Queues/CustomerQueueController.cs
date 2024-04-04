@@ -7,6 +7,7 @@ using API.Features.Queues.Requests;
 using API.Features.Queues.Validation;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
@@ -161,7 +162,7 @@ public class CustomerQueueController : HydraController
         
         foreach (var hydraAsset in members)
         {
-            if (hydraAsset.WcDeliveryChannels == null) continue;
+            if (hydraAsset.WcDeliveryChannels.IsNullOrEmpty()) continue;
             hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
         }
     }

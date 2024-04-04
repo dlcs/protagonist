@@ -172,16 +172,18 @@ public class ImageController : HydraController
         [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
-        if (!apiSettings.DeliveryChannelsEnabled && !hydraAsset.WcDeliveryChannels.IsNullOrEmpty())
+        if (!hydraAsset.WcDeliveryChannels.IsNullOrEmpty())
         {
-            var assetId = new AssetId(customerId, spaceId, imageId);
-            return this.HydraProblem("Delivery channels are disabled", assetId.ToString(), 400, "Bad Request");
-        }
-        
-        if (apiSettings.EmulateOldDeliveryChannelProperties && 
-            hydraAsset.WcDeliveryChannels != null)
-        {
-            hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
+            if (!apiSettings.DeliveryChannelsEnabled)
+            {
+                var assetId = new AssetId(customerId, spaceId, imageId);
+                return this.HydraProblem("Delivery channels are disabled", assetId.ToString(), 400, "Bad Request");
+            }
+            
+            if (apiSettings.EmulateOldDeliveryChannelProperties)
+            {
+                hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
+            }
         }
         
         if(!apiSettings.EmulateOldDeliveryChannelProperties &&
