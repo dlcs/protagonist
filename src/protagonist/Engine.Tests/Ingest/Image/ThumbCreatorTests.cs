@@ -21,11 +21,7 @@ public class ThumbCreatorTests
         new ImageDeliveryChannel()
         {
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
-            Channel = AssetDeliveryChannels.Thumbnails,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy
-            {
-                PolicyData = "[\"!1000,1000\",\"!500,500\",\"!100,100\"]"
-            }
+            Channel = AssetDeliveryChannels.Thumbnails
         }
     };
     
@@ -74,10 +70,6 @@ public class ThumbCreatorTests
                 {
                     DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
                     Channel = AssetDeliveryChannels.Thumbnails,
-                    DeliveryChannelPolicy = new DeliveryChannelPolicy
-                    {
-                        PolicyData = "[]"
-                    }
                 }
             }
         };

@@ -21,7 +21,7 @@ public class AppetiserClient : IAppetiserClient
         engineSettings = engineOptionsMonitor.CurrentValue;
     }
 
-    public async Task<IAppetiserResponse> GenerateJpeg2000(
+    public async Task<IAppetiserResponse> GenerateJP2(
         IngestionContext context, 
         AssetId modifiedAssetId, 
         CancellationToken cancellationToken = default)

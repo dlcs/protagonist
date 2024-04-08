@@ -56,7 +56,7 @@ public class AppetiserClientTests
         var context = IngestionContextFactory.GetIngestionContext();
 
         // Act
-        var appetiserResponse = await sut.GenerateJpeg2000(context, new AssetId(1, 2, "stuff/asset"));
+        var appetiserResponse = await sut.GenerateJP2(context, new AssetId(1, 2, "stuff/asset"));
 
         var convertedAppetiserResponse = appetiserResponse as AppetiserResponseModel;
 
@@ -82,7 +82,7 @@ public class AppetiserClientTests
         var context = IngestionContextFactory.GetIngestionContext();
         
         // Act
-        var appetiserResponse = await sut.GenerateJpeg2000(context, new AssetId(1, 2, "stuff/asset"));
+        var appetiserResponse = await sut.GenerateJP2(context, new AssetId(1, 2, "stuff/asset"));
 
         var convertedAppetiserResponse = appetiserResponse as AppetiserResponseErrorModel;
 

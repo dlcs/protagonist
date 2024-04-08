@@ -204,22 +204,12 @@ public class MemoryAssetTrackerTests
         var imageDeliveryChannels = GenerateImageDeliveryChannels(deliveryChannels);
 
         var assetId = new AssetId(1, 1, "go!");
-        imageDeliveryChannels.Add(new ImageDeliveryChannel
-        {
-            Channel = AssetDeliveryChannels.Thumbnails,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy()
-            {
-                Name = "default",
-                PolicyData = "[\"!100,200\"]",
-                Channel = AssetDeliveryChannels.Thumbnails
-            }
-        });
 
         var sizes = new List<int[]> { new[] { 100, 200 } };
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-           ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50, MaxUnauthorised = -1, 
+            ImageDeliveryChannels = imageDeliveryChannels,
+            Height = 10, Width = 50, MaxUnauthorised = -1,
             Origin = "test"
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);

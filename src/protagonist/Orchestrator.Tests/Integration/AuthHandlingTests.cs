@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -8,8 +7,6 @@ using System.Text.RegularExpressions;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
-using DLCS.Model.Policies;
 using IIIF.Auth.V2;
 using IIIF.Serialisation;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +27,6 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
     private readonly ApiStub apiStub;
-    private readonly List<ImageDeliveryChannel> imageDeliveryChannels;
 
     public AuthHandlingTests(ProtagonistAppFactory<Startup> factory, ApiStub apiStub, DlcsDatabaseFixture databaseFixture)
     {
@@ -43,15 +39,6 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
             .WithConnectionString(dbFixture.ConnectionString)
             .WithConfigValue("Auth:Auth2ServiceRoot", apiStub.Address)
             .CreateClient();
-
-        imageDeliveryChannels = new List<ImageDeliveryChannel>()
-        {
-            new()
-            {
-                Channel = "none",
-                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.None
-            }
-        };
 
         dbFixture.CleanUp();
     }
@@ -391,7 +378,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(ProbeService_ReturnsProbeResultWith200Status_IfOpen)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.Images.AddTestAsset(id);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"auth/v2/probe/{id}";
         
@@ -413,7 +400,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(ProbeService_ReturnsProbeResultWith200Status_IfHasMaxUnauth_WithoutRoles)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 100, imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 100);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"auth/v2/probe/{id}";
         
@@ -438,8 +425,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         await dbFixture.DbContext.Images.AddTestAsset(
             id, 
             maxUnauthorised: 100, 
-            roles: "test-role", 
-            imageDeliveryChannels: imageDeliveryChannels);
+            roles: "test-role");
         await dbFixture.DbContext.SaveChangesAsync();
 
         var downstreamProbeResult = new AuthProbeResult2 { Status = 999 };

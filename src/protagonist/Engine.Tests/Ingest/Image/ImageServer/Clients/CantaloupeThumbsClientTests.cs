@@ -7,6 +7,7 @@ using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Manipulation;
 using Engine.Settings;
 using FakeItEasy;
+using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers.Http;
 using Test.Helpers.Settings;
 
@@ -41,7 +42,7 @@ public class CantaloupeThumbsClientTests
 
         var httpClient = new HttpClient(httpHandler);
         httpClient.BaseAddress = new Uri("http://image-processor/");
-        sut = new CantaloupeThumbsClient(httpClient, fileSystem, imageManipulator, optionsMonitor);
+        sut = new CantaloupeThumbsClient(httpClient, fileSystem, imageManipulator, optionsMonitor, new NullLogger<CantaloupeThumbsClient>());
     }
     
     [Fact]
@@ -83,5 +84,25 @@ public class CantaloupeThumbsClientTests
         
         // Assert
         action.Should().ThrowAsync<HttpException>();
+    }
+    
+    [Fact]
+    public async Task GenerateThumbnails_ReturnsNothing_WhenCantaloupeReturns400()
+    {
+        // Arrange
+        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ThrowsException_WhenNotOk));
+        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadRequest));
+
+        context.WithLocation(new ImageLocation()
+        {
+            S3 = "//some/location/with/s3"
+        });
+
+        // Act
+        var thumbs = await sut.GenerateThumbnails(context, defaultThumbs);
+
+        // Assert
+        thumbs.Count().Should().Be(0);
     }
 }

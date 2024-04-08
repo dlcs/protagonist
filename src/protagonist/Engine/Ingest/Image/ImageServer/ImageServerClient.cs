@@ -59,7 +59,7 @@ public class ImageServerClient : IImageProcessor
         {
             var flags = new ImageProcessorFlags(context, appetiserClient.GetJP2FilePath(modifiedAssetId, false));
             logger.LogDebug("Got flags '{@Flags}' for {AssetId}", flags, context.AssetId);
-            var responseModel = await appetiserClient.GenerateJpeg2000(context, modifiedAssetId);
+            var responseModel = await appetiserClient.GenerateJP2(context, modifiedAssetId);
 
             if (responseModel is AppetiserResponseModel successResponse)
             {
@@ -79,7 +79,7 @@ public class ImageServerClient : IImageProcessor
         catch (Exception e)
         {
             logger.LogError(e, "Error processing image {Asset}", context.Asset.Id);
-            context.Asset.Error = $"Appetiser Error: {e.Message}";
+            context.Asset.Error = $"Image Server Error: {e.Message}";
             return false;
         }
         finally

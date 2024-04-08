@@ -12,7 +12,7 @@ public interface IAppetiserClient
     /// <param name="context">ingestion context for the request</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>A response containing details of the generated image</returns>
-    public Task<IAppetiserResponse> GenerateJpeg2000(
+    public Task<IAppetiserResponse> GenerateJP2(
         IngestionContext context, 
         AssetId modifiedAssetId,   
         CancellationToken cancellationToken = default);

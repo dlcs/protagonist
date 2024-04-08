@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using DLCS.AWS.S3;
 using DLCS.Core;
 using DLCS.Core.Threading;
@@ -82,36 +81,14 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
         await CreateSizesJson(assetId, thumbnailSizes);
         return thumbnailSizes.Count;
     }
-
-    /// <summary>
-    /// Find matching size from pre-calculated thumbs. We use these rather than sizes returned by image-processor to
-    /// avoid rounding issues
-    /// </summary>
-    private Size GetThumbnailSize(ImageOnDisk imageOnDisk, ImageShape imageShape, IEnumerable<Size> expectedSizes,
-        AssetId assetId)
-    {
-        try
-        {
-            return imageShape == ImageShape.Landscape
-                ? expectedSizes.Single(s => s.Width == imageOnDisk.Width)
-                : expectedSizes.Single(s => s.Height == imageOnDisk.Height);
-        }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogError("Unable to find expected thumbnail size {Width},{Height} for asset {AssetId}. {Path}",
-                imageOnDisk.Width, imageOnDisk.Height, assetId, imageOnDisk.Path);
-            throw new ApplicationException(
-                $"Unable to find expected thumbnail size {imageOnDisk.Width},{imageOnDisk.Height}", ex);
-        }
-    }
-
+    
     private Size GetMaxThumbnailSize(Asset asset, IReadOnlyList<ImageOnDisk> thumbsToProcess)
     {
         if (asset.MaxUnauthorised == -1) return new Size(0, 0);
 
         foreach (var thumb in thumbsToProcess.OrderByDescending(x => Math.Max(x.Height, x.Width)))
         {
-            if (asset.MaxUnauthorised.GetValueOrDefault() == 0) return new Size(thumb.Width, thumb.Height);
+            if ((asset.MaxUnauthorised ?? 0) == 0) return new Size(thumb.Width, thumb.Height);
 
             if (asset.MaxUnauthorised > Math.Max(thumb.Width, thumb.Height)) return new Size(thumb.Width, thumb.Height);
         }

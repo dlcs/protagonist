@@ -59,16 +59,6 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         }
     };
 
-    private readonly List<ImageDeliveryChannel> deliveryChannelsNoThumbs = new()
-    {
-        new ImageDeliveryChannel
-        {
-            Channel = AssetDeliveryChannels.Image,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
-        }
-    };
-
-
     public ImageHandlingTests(ProtagonistAppFactory<Startup> factory, StorageFixture storageFixture)
     {
         dbFixture = storageFixture.DbFixture;
@@ -1348,7 +1338,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ContentBody = "{\"o\": [[400,400], [200,200]]}",
         });
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            imageDeliveryChannels: deliveryChannelsNoThumbs);
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -1375,7 +1365,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         });
 
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            imageDeliveryChannels: deliveryChannelsNoThumbs);
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -1403,7 +1393,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         });
 
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            imageDeliveryChannels: deliveryChannelsNoThumbs);
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -1474,7 +1464,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var id = AssetId.FromString($"99/1/{imageName}");
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
-            imageDeliveryChannels: deliveryChannelsNoThumbs);
+            imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.CustomHeaders.AddTestCustomHeader("x-test-key", "foo bar");
         await dbFixture.DbContext.SaveChangesAsync();
