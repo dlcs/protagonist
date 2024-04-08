@@ -97,7 +97,7 @@ public class ImageServerClientTests
     public async Task ProcessImage_False_IfImageProcessorCallFails()
     {
         // Arrange
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new AppetiserResponseErrorModel()
             {
                 Message = "error",
@@ -110,7 +110,7 @@ public class ImageServerClientTests
         var result = await sut.ProcessImage(context);
 
         // Assert
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .MustHaveHappened();
         result.Should().BeFalse();
         context.Asset.Should().NotBeNull();
@@ -126,7 +126,7 @@ public class ImageServerClientTests
         // Arrange
         var context = IngestionContextFactory.GetIngestionContext(contentType: contentType, imageDeliveryChannelPolicy: policy);
         
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new AppetiserResponseModel()
             {
                 Height = 100,
@@ -137,9 +137,9 @@ public class ImageServerClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .MustHaveHappened();
-        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(A<IngestionContext>._, A<List<string>>._, A<CancellationToken>._))
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._, A<List<string>>._, A<CancellationToken>._))
             .MustHaveHappened();
     }
 
@@ -153,7 +153,7 @@ public class ImageServerClientTests
             Width = 5000,
         };
 
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
 
         var context = IngestionContextFactory.GetIngestionContext();
@@ -177,8 +177,10 @@ public class ImageServerClientTests
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel();
 
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
+        A.CallTo(() => appetiserClient.GetJP2FilePath(A<AssetId>._, A<bool>._))
+            .Returns("scratch/1/2/test/outputtest.jp2");
 
         var context = IngestionContextFactory.GetIngestionContext("/1/2/test");
         context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy
@@ -209,7 +211,7 @@ public class ImageServerClientTests
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel();
 
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
 
         const string locationOnDisk = "/file/on/disk";
@@ -233,7 +235,7 @@ public class ImageServerClientTests
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel();
 
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
 
         var context = IngestionContextFactory.GetIngestionContext(imageDeliveryChannelPolicy: "use-original", optimised: true);
@@ -259,10 +261,10 @@ public class ImageServerClientTests
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel();
         
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
         
-        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(
                 A<IngestionContext>._, 
                 A<List<string>>._, 
                 A<CancellationToken>._))
@@ -303,10 +305,10 @@ public class ImageServerClientTests
 
         const string expected = "s3://dlcs-storage/2/1/foo-bar";
         
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
         
-        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(
                 A<IngestionContext>._, 
                 A<List<string>>._, 
                 A<CancellationToken>._))
@@ -348,9 +350,9 @@ public class ImageServerClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .MustHaveHappened();
-        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(A<IngestionContext>._, A<List<string>>._, A<CancellationToken>._))
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._, A<List<string>>._, A<CancellationToken>._))
             .MustHaveHappened();
         A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
             .MustHaveHappened();
@@ -376,10 +378,10 @@ public class ImageServerClientTests
             Width = 5000,
         };
         
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
         
-        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(
                 A<IngestionContext>._, 
                 A<List<string>>._, 
                 A<CancellationToken>._))
@@ -405,9 +407,9 @@ public class ImageServerClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .MustHaveHappened();
-        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(A<IngestionContext>._, A<List<string>>._, A<CancellationToken>._))
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._, A<List<string>>._, A<CancellationToken>._))
             .MustHaveHappened();
         A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
             .MustHaveHappened();
@@ -429,10 +431,10 @@ public class ImageServerClientTests
             Width = 5000,
         };
         
-        A.CallTo(() => appetiserClient.CallAppetiser(A<AppetiserRequestModel>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateJpeg2000(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
         
-        A.CallTo(() => cantaloupeThumbsClient.CallCantaloupe(
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(
                 A<IngestionContext>._, 
                 A<List<string>>._, 
                 A<CancellationToken>._))

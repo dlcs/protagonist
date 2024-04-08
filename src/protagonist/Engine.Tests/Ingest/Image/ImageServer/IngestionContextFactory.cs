@@ -26,7 +26,7 @@ public static class IngestionContextFactory
             {
                 Channel = AssetDeliveryChannels.Image,
                 DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
-                DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                DeliveryChannelPolicy = new DeliveryChannelPolicy
                 {
                     Name = imageDeliveryChannelPolicy
                 }
@@ -35,9 +35,9 @@ public static class IngestionContextFactory
             {
                 Channel = AssetDeliveryChannels.Thumbnails,
                 DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
-                DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                DeliveryChannelPolicy = new DeliveryChannelPolicy
                 {
-                    PolicyData = "[\"1000,1000\",\"400,400\",\"200,200\",\"100,100\"]"
+                    PolicyData = "[\"!1000,1000\",\"!400,400\",\"!200,200\",\"!100,100\"]"
                 }
             }
         };

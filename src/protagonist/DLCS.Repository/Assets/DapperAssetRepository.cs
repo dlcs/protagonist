@@ -90,10 +90,6 @@ public class DapperAssetRepository : IAssetRepository, IDapperConfigRepository
                 {
                     Channel = rawDeliveryChannel.Channel,
                     DeliveryChannelPolicyId = rawDeliveryChannel.DeliveryChannelPolicyId,
-                    DeliveryChannelPolicy = new DeliveryChannelPolicy()
-                    {
-                        PolicyData = rawDeliveryChannel.PolicyData,
-                    }
                 });
             }
         }

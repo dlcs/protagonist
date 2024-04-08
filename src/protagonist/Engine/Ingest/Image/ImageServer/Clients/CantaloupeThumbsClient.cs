@@ -11,24 +11,24 @@ namespace Engine.Ingest.Image.ImageServer.Clients;
 
 public class CantaloupeThumbsClient : ICantaloupeThumbsClient
 {
-    private readonly HttpClient thumbsClient;
+    private readonly HttpClient cantaloupeClient;
     private readonly EngineSettings engineSettings;
     private readonly IFileSystem fileSystem;
     private readonly IImageManipulator imageManipulator;
         
     public CantaloupeThumbsClient(
-        HttpClient thumbsClient,
+        HttpClient cantaloupeClient,
         IFileSystem fileSystem,
         IImageManipulator imageManipulator,
         IOptionsMonitor<EngineSettings> engineOptionsMonitor)
     {
-        this.thumbsClient = thumbsClient;
+        this.cantaloupeClient = cantaloupeClient;
         engineSettings = engineOptionsMonitor.CurrentValue;
         this.fileSystem = fileSystem;
         this.imageManipulator = imageManipulator;
     }
 
-    public async Task<List<ImageOnDisk>> CallCantaloupe(IngestionContext context,
+    public async Task<List<ImageOnDisk>> GenerateThumbnails(IngestionContext context,
         List<string> thumbSizes, 
         CancellationToken cancellationToken = default)
     {
@@ -36,10 +36,10 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
         
         var convertedS3Location = context.ImageLocation.S3.Replace("/", engineSettings.ImageIngest!.ThumbsProcessorSeparator);
 
-        foreach (var size in thumbSizes!)
+        foreach (var size in thumbSizes)
         {
             using var response =
-                await thumbsClient.GetAsync(
+                await cantaloupeClient.GetAsync(
                     $"iiif/3/{convertedS3Location}/full/{size}/0/default.jpg", cancellationToken);
 
             if (response.IsSuccessStatusCode)
@@ -52,7 +52,7 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
                 
                 await fileSystem.CreateFileFromStream(localThumbsPath, responseStream, cancellationToken);
                 
-                var image = await imageManipulator.LoadAsync(localThumbsPath, cancellationToken);
+                using var image = await imageManipulator.LoadAsync(localThumbsPath, cancellationToken);
 
                 thumbsResponse.Add(new ImageOnDisk()
                 {
@@ -68,19 +68,5 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
         }
         
         return thumbsResponse;
-    }
-    
-    private string GetRelativeLocationOnDisk(IngestionContext context, AssetId modifiedAssetId)
-    {
-        var assetOnDisk = context.AssetFromOrigin.Location;
-        var extension = assetOnDisk.EverythingAfterLast('.');
-
-        // this is to get it working nice locally as appetiser/tizer root needs to be unix + relative to it
-        var imageProcessorRoot = engineSettings.ImageIngest.GetRoot(true);
-        var unixPath = TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.SourceTemplate, modifiedAssetId,
-            root: imageProcessorRoot);
-
-        unixPath += $"/{modifiedAssetId.Asset}.{extension}";
-        return unixPath;
     }
 }

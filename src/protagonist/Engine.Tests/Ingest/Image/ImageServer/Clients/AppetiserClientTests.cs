@@ -1,6 +1,9 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using DLCS.Core.Types;
+using DLCS.Model.Assets;
+using Engine.Ingest;
 using Engine.Ingest.Image.ImageServer;
 using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Models;
@@ -37,7 +40,7 @@ public class AppetiserClientTests
     }
 
     [Fact]
-    public async Task CallAppetiser_ReturnsSuccessfulAppetiserResponse_WhenSuccess()
+    public async Task GenerateJpeg2000_ReturnsSuccessfulAppetiserResponse_WhenSuccess()
     {
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel
@@ -50,9 +53,10 @@ public class AppetiserClientTests
             HttpStatusCode.OK);
         response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         httpHandler.SetResponse(response);
-        
+        var context = IngestionContextFactory.GetIngestionContext();
+
         // Act
-        var appetiserResponse = await sut.CallAppetiser(new AppetiserRequestModel());
+        var appetiserResponse = await sut.GenerateJpeg2000(context, new AssetId(1, 2, "stuff/asset"));
 
         var convertedAppetiserResponse = appetiserResponse as AppetiserResponseModel;
 
@@ -62,7 +66,7 @@ public class AppetiserClientTests
     }
     
     [Fact]
-    public async Task CallAppetiser_ReturnsErrorAppetiserResponse_WhenNotSuccess()
+    public async Task GenerateJpeg2000_ReturnsErrorAppetiserResponse_WhenNotSuccess()
     {
         // Arrange
         var imageProcessorResponse = new AppetiserResponseErrorModel()
@@ -75,9 +79,10 @@ public class AppetiserClientTests
             HttpStatusCode.InternalServerError);
         response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         httpHandler.SetResponse(response);
+        var context = IngestionContextFactory.GetIngestionContext();
         
         // Act
-        var appetiserResponse = await sut.CallAppetiser(new AppetiserRequestModel());
+        var appetiserResponse = await sut.GenerateJpeg2000(context, new AssetId(1, 2, "stuff/asset"));
 
         var convertedAppetiserResponse = appetiserResponse as AppetiserResponseErrorModel;
 

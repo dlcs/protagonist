@@ -29,6 +29,5 @@ public class FakeFileSystem : IFileSystem
     public async Task CreateFileFromStream(string path, Stream stream, CancellationToken cancellationToken = default)
     {
         // no-op
-        await Task.Delay(0, cancellationToken);
     }
 }

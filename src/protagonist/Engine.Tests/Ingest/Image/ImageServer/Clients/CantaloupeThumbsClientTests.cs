@@ -45,10 +45,10 @@ public class CantaloupeThumbsClientTests
     }
     
     [Fact]
-    public async Task CallCantaloupe_ReturnsSuccessfulResponse_WhenOk()
+    public async Task GenerateThumbnails_ReturnsSuccessfulResponse_WhenOk()
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(CallCantaloupe_ReturnsSuccessfulResponse_WhenOk));
+        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsSuccessfulResponse_WhenOk));
         var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
 
@@ -58,7 +58,7 @@ public class CantaloupeThumbsClientTests
         });
 
         // Act
-        var thumbs = await sut.CallCantaloupe(context, defaultThumbs);
+        var thumbs = await sut.GenerateThumbnails(context, defaultThumbs);
 
         // Assert
         thumbs.Count().Should().Be(1);
@@ -66,10 +66,10 @@ public class CantaloupeThumbsClientTests
     }
     
     [Fact]
-    public async Task CallCantaloupe_ThrowsException_WhenNotOk()
+    public async Task GenerateThumbnails_ThrowsException_WhenNotOk()
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(CallCantaloupe_ThrowsException_WhenNotOk));
+        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ThrowsException_WhenNotOk));
         var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
 
@@ -79,7 +79,7 @@ public class CantaloupeThumbsClientTests
         });
 
         // Act
-        Func<Task> action = async () => await sut.CallCantaloupe(context, defaultThumbs);
+        Func<Task> action = async () => await sut.GenerateThumbnails(context, defaultThumbs);
         
         // Assert
         action.Should().ThrowAsync<HttpException>();

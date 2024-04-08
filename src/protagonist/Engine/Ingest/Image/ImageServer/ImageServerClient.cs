@@ -58,14 +58,14 @@ public class ImageServerClient : IImageProcessor
 
         try
         {
-            var flags = new ImageProcessorFlags(context, GetJP2FilePath(modifiedAssetId, false));
+            var flags = new ImageProcessorFlags(context, appetiserClient.GetJP2FilePath(modifiedAssetId, false));
             logger.LogDebug("Got flags '{@Flags}' for {AssetId}", flags, context.AssetId);
-            var responseModel = await CallImageProcessor(context, flags, modifiedAssetId);
+            var responseModel = await appetiserClient.GenerateJpeg2000(context, modifiedAssetId);
 
             if (responseModel is AppetiserResponseModel successResponse)
             {
-                await ProcessResponse(context, successResponse, flags, modifiedAssetId);
-                await CallThumbsProcessor(context, modifiedAssetId);
+                await ProcessResponse(context, successResponse, flags);
+                await CallThumbsProcessor(context);
                 
                 return true;
             }
@@ -107,20 +107,7 @@ public class ImageServerClient : IImageProcessor
         return (dest, thumb);
     }
     
-    private async Task<IAppetiserResponse> CallImageProcessor(IngestionContext context,
-        ImageProcessorFlags processorFlags, AssetId modifiedAssetId)
-    {
-        // call tizer/appetiser
-        var requestModel = CreateModel(context, modifiedAssetId, processorFlags);
-        IAppetiserResponse? responseModel;
-
-        responseModel = await appetiserClient.CallAppetiser(requestModel);
-
-        return responseModel;
-    }
-    
-    private async Task CallThumbsProcessor(IngestionContext context,
-        AssetId modifiedAssetId)
+    private async Task CallThumbsProcessor(IngestionContext context)
     {
         var thumbPolicy = context.Asset.ImageDeliveryChannels.SingleOrDefault(
                 x=> x.Channel == AssetDeliveryChannels.Thumbnails)
@@ -131,61 +118,15 @@ public class ImageServerClient : IImageProcessor
         if (thumbPolicy != null)
         {
             var sizes = JsonSerializer.Deserialize<List<string>>(thumbPolicy);
-            thumbsResponse = await thumbsClient.CallCantaloupe(context, sizes);
+            thumbsResponse = await thumbsClient.GenerateThumbnails(context, sizes);
         }
         
         // Create new thumbnails + update Storage on context
         await CreateNewThumbs(context, thumbsResponse);
     }
 
-    private AppetiserRequestModel CreateModel(IngestionContext context, AssetId modifiedAssetId, ImageProcessorFlags processorFlags)
-    {
-        var requestModel = new AppetiserRequestModel
-        {
-            Destination = GetJP2FilePath(modifiedAssetId, true),
-            Operation = "image-only",
-            Optimisation = "kdu_max",
-            Origin = context.Asset.Origin,
-            Source = GetRelativeLocationOnDisk(context, modifiedAssetId),
-            ImageId = context.AssetId.Asset,
-            JobId = Guid.NewGuid().ToString(),
-            ThumbDir = TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.ThumbsTemplate,
-                modifiedAssetId, root: engineSettings.ImageIngest.GetRoot(true)),
-            ThumbSizes = new int[1]
-        };
-
-        return requestModel;
-    }
-
-    private string GetJP2FilePath(AssetId assetId, bool forImageProcessor)
-    {
-        // Appetiser/Tizer want unix paths relative to mount share.
-        // This logic allows handling when running locally on win/unix and when deployed to unix
-        var destFolder = forImageProcessor
-            ? TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.DestinationTemplate,
-                assetId, root: engineSettings.ImageIngest.GetRoot(true))
-            : TemplatedFolders.GenerateFolderTemplate(engineSettings.ImageIngest.DestinationTemplate,
-                assetId, root: engineSettings.ImageIngest.GetRoot());
-
-        return $"{destFolder}{assetId.Asset}.jp2";
-    }
-
-    private string GetRelativeLocationOnDisk(IngestionContext context, AssetId modifiedAssetId)
-    {
-        var assetOnDisk = context.AssetFromOrigin.Location;
-        var extension = assetOnDisk.EverythingAfterLast('.');
-
-        // this is to get it working nice locally as appetiser/tizer root needs to be unix + relative to it
-        var imageProcessorRoot = engineSettings.ImageIngest.GetRoot(true);
-        var unixPath = TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.SourceTemplate, modifiedAssetId,
-            root: imageProcessorRoot);
-
-        unixPath += $"/{modifiedAssetId.Asset}.{extension}";
-        return unixPath;
-    }
-
     private async Task ProcessResponse(IngestionContext context, AppetiserResponseModel responseModel, 
-        ImageProcessorFlags processorFlags, AssetId modifiedAssetId)
+        ImageProcessorFlags processorFlags)
     {
         // Update dimensions on Asset
         UpdateImageDimensions(context.Asset, responseModel);

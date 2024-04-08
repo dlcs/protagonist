@@ -68,17 +68,19 @@ public class ThumbReorganiser : ThumbsManager, IThumbReorganiser
         {
             return ReorganiseResult.AssetNotFound;
         }
-
-        asset.GetAvailableThumbSizes(out var maxDimensions);
+        
+        var policy = await policyRepository.GetThumbnailPolicy(asset.ThumbnailPolicy);
+        var maxAvailableThumb = GetMaxAvailableThumb(asset, policy);
+        
         var realSize = new Size(asset.Width.Value, asset.Height.Value);
 
-        var boundingSquares = asset.GetAllThumbSizes();
+        var boundingSquares = policy.SizeList.OrderByDescending(i => i).ToList();
         var thumbnailSizes = new ThumbnailSizes(boundingSquares.Count);
             
-        foreach (var boundingSquare in boundingSquares)
+        foreach (int boundingSquare in boundingSquares)
         {
             var thumb = Size.Confine(boundingSquare, realSize);
-            if (thumb.IsConfinedWithin(new Size(maxDimensions.maxAvailableWidth, maxDimensions.maxAvailableHeight)))
+            if (thumb.IsConfinedWithin(maxAvailableThumb))
             {
                 thumbnailSizes.AddOpen(thumb);
             }

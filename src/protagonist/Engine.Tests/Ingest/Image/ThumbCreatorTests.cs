@@ -1,4 +1,5 @@
-﻿using DLCS.AWS.S3;
+﻿using System.Collections.ObjectModel;
+using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -14,7 +15,19 @@ public class ThumbCreatorTests
 {
     private readonly TestBucketWriter bucketWriter;
     private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly ThumbCreator sut; 
+    private readonly ThumbCreator sut;
+    private readonly List<ImageDeliveryChannel> thumbsDeliveryChannel = new()
+    {
+        new ImageDeliveryChannel()
+        {
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
+            Channel = AssetDeliveryChannels.Thumbnails,
+            DeliveryChannelPolicy = new DeliveryChannelPolicy
+            {
+                PolicyData = "[\"!1000,1000\",\"!500,500\",\"!100,100\"]"
+            }
+        }
+    };
     
     public ThumbCreatorTests()
     {
@@ -71,13 +84,7 @@ public class ThumbCreatorTests
 
         
         // Act
-        var thumbsCreated = await sut.CreateNewThumbs(asset, new[]
-        {
-            new ImageOnDisk
-            {
-                Height = 10, Path = "here", Width = 10
-            }
-        });
+        var thumbsCreated = await sut.CreateNewThumbs(asset, new Collection<ImageOnDisk>());
         
         // Assert
         thumbsCreated.Should().Be(0);
@@ -90,18 +97,7 @@ public class ThumbCreatorTests
         var asset = new Asset(new AssetId(10, 20, "foo"))
         {
             Width = 3030, Height = 5000,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new()
-                {
-                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
-                    Channel = AssetDeliveryChannels.Thumbnails,
-                    DeliveryChannelPolicy = new DeliveryChannelPolicy
-                    {
-                        PolicyData = "[\"1000,1000\",\"500,500\",\"100,100\"]"
-                    }
-                }
-            }
+            ImageDeliveryChannels = thumbsDeliveryChannel
         };
 
         var imagesOnDisk = new List<ImageOnDisk>
@@ -133,7 +129,7 @@ public class ThumbCreatorTests
         // verify that s.json uses the calculated size, rather than size returned from processor
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
-            .WithContents("{\"o\":[[606,1000],[303,500],[61,100]],\"a\":[]}");
+            .WithContents("{\"o\":[[606,1000],[302,500],[60,100]],\"a\":[]}");
         
         bucketWriter.ShouldHaveNoUnverifiedPaths();
     }
@@ -145,18 +141,7 @@ public class ThumbCreatorTests
         var asset = new Asset(new AssetId(10, 20, "foo"))
         {
             Width = 3030, Height = 5000, MaxUnauthorised = 700,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new()
-                {
-                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
-                    Channel = AssetDeliveryChannels.Thumbnails,
-                    DeliveryChannelPolicy = new DeliveryChannelPolicy
-                    {
-                        PolicyData = "[\"1000,1000\",\"500,500\",\"100,100\"]"
-                    }
-                }
-            }
+            ImageDeliveryChannels = thumbsDeliveryChannel
         };
 
         var imagesOnDisk = new List<ImageOnDisk>
@@ -188,7 +173,7 @@ public class ThumbCreatorTests
         // verify that s.json uses the calculated size, rather than size returned from processor
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
-            .WithContents("{\"o\":[[303,500],[61,100]],\"a\":[[606,1000]]}");
+            .WithContents("{\"o\":[[302,500],[60,100]],\"a\":[[606,1000]]}");
         
         bucketWriter.ShouldHaveNoUnverifiedPaths();
     }
@@ -200,18 +185,7 @@ public class ThumbCreatorTests
         var asset = new Asset(new AssetId(10, 20, "foo"))
         {
             Width = 266, Height = 440,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new()
-                {
-                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
-                    Channel = AssetDeliveryChannels.Thumbnails,
-                    DeliveryChannelPolicy = new DeliveryChannelPolicy
-                    {
-                        PolicyData = "[\"1000,1000\",\"500,500\",\"100,100\"]"
-                    }
-                }
-            }
+            ImageDeliveryChannels = thumbsDeliveryChannel
         };
 
         // NOTE - this mimics the payload that Appetiser would send back

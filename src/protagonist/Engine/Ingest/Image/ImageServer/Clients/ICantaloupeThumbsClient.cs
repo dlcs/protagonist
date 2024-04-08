@@ -11,6 +11,6 @@ public interface ICantaloupeThumbsClient
     /// <param name="thumbSizes">A list of thumbnail sizes to generate</param>
     /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>A list of images on disk</returns>
-    public Task<List<ImageOnDisk>> CallCantaloupe(IngestionContext context,
+    public Task<List<ImageOnDisk>> GenerateThumbnails(IngestionContext context,
         List<string> thumbSizes, CancellationToken cancellationToken = default);
 }

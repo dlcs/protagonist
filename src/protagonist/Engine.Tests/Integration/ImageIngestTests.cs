@@ -166,7 +166,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var origin = $"{apiStub.Address}/image";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             imageOptimisationPolicy: "fast-higher", mediaType: "image/tiff", width: 0, height: 0, duration: 0,
-            imageDeliveryChannels: imageDeliveryChannels);
+            imageDeliveryChannels: imageDeliveryChannels, maxUnauthorised: 0);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
         var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
@@ -262,7 +262,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var origin = $"{apiStub.Address}/image";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin, 
             mediaType: "image/unknown", width: 0, height: 0, duration: 0,
-            imageDeliveryChannels: imageDeliveryChannels);
+            imageDeliveryChannels: imageDeliveryChannels, maxUnauthorised: 0);
         var asset = entity.Entity;
         asset.ImageDeliveryChannels = imageDeliveryChannels;
         await dbContext.SaveChangesAsync();
