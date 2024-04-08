@@ -96,7 +96,7 @@ public class DeliveryChannelProcessor
         // If 'none' specified then it's the only valid option
         if (deliveryChannelsBeforeProcessing.Count(d => d.Channel == AssetDeliveryChannels.None) == 1)
         {
-            AddExplicitNoneChannel(asset);
+            await AddExplicitNoneChannel(asset);
             return true;
         }
 
@@ -174,10 +174,10 @@ public class DeliveryChannelProcessor
         return deliveryChannelPolicy;
     }
 
-    private void AddExplicitNoneChannel(Asset asset)
+    private async Task AddExplicitNoneChannel(Asset asset)
     {
         logger.LogTrace("assigning 'none' channel for asset {AssetId}", asset.Id);
-        var deliveryChannelPolicy = deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(asset.Customer,
+        var deliveryChannelPolicy = await deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(asset.Customer,
             AssetDeliveryChannels.None, FileNonePolicy);
 
         // "none" channel can only exist on it's own so remove any others that may be there already prior to adding
