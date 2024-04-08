@@ -53,8 +53,7 @@ public class NamedQueryRepository : INamedQueryRepository
 
     public IQueryable<Asset> GetNamedQueryResults(ParsedNamedQuery query)
     {
-        var imageFilter = dlcsContext.Images.Include(i => i.ImageDeliveryChannels)
-            .Where(i => i.Customer == query.Customer && !i.NotForDelivery);
+        var imageFilter = dlcsContext.Images.Where(i => i.Customer == query.Customer && !i.NotForDelivery);
 
         if (query.String1.HasText())
         {

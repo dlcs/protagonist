@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
 using DLCS.Core.Guard;
 using DLCS.Model.Policies;
 using IIIF;
-using IIIF.ImageApi;
 
 namespace DLCS.Model.Assets;
 
@@ -18,6 +15,7 @@ public static class AssetX
     /// Get a list of all available thumbnail sizes for asset, based on thumbnail policy. 
     /// </summary>
     /// <param name="asset">Asset to extract thumbnails sizes for.</param>
+    /// <param name="thumbnailPolicy">The thumbnail policy to use to calculate thumb sizes.</param>
     /// <param name="maxDimensions">A tuple of maxBoundedSize, maxAvailableWidth and maxAvailableHeight.</param>
     /// <param name="includeUnavailable">Whether to include unavailable sizes or not.</param>
     /// <returns>List of available thumbnail <see cref="Size"/></returns>
@@ -38,7 +36,7 @@ public static class AssetX
         int maxAvailableWidth = 0;
         int maxAvailableHeight = 0;
 
-        foreach (var boundingSize in thumbnailPolicy.SizeList)
+        foreach (int boundingSize in thumbnailPolicy.SizeList)
         {
             var assetIsUnavailableForSize = AssetIsUnavailableForSize(asset, boundingSize);
             if (!includeUnavailable && assetIsUnavailableForSize) continue;
@@ -62,26 +60,6 @@ public static class AssetX
 
         maxDimensions = (maxBoundedSize, maxAvailableWidth, maxAvailableHeight);
         return availableSizes;
-    }
-
-    private static List<SizeParameter> ConvertThumbnailPolicy(Asset asset)
-    {
-        var sizeParameters = new List<SizeParameter>();
-
-        if (asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails))
-        {
-            var initialPolicyTransformation = JsonSerializer.Deserialize<List<string>>(asset.ImageDeliveryChannels
-                .Single(
-                    x => x.Channel == AssetDeliveryChannels.Thumbnails)
-                .DeliveryChannelPolicy.PolicyData);
-
-            foreach (var sizeValue in initialPolicyTransformation!)
-            {
-                sizeParameters.Add(SizeParameter.Parse(sizeValue));
-            }
-        }
-
-        return sizeParameters;
     }
 
     /// <summary>

@@ -4,7 +4,6 @@ using DLCS.AWS.S3.Models;
 using DLCS.Core;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Guard;
-using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Templates;
