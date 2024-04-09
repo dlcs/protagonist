@@ -62,12 +62,7 @@ public class ImageIngestSettings
     /// <summary>
     /// URI of downstream derivative processor
     /// </summary>
-    public Uri ThumbsProcessorUri { get; set; }
-    
-    /// <summary>
-    /// A path separator replacement used to convert path separators to ones accepted by the thumbs processor
-    /// </summary>
-    public string ThumbsProcessorSeparator { get; set; }
+    public Uri ThumbsProcessorUrl { get; set; }
 
     /// <summary>
     /// How long, in ms, to delay calling Image-Processor after copying file to shared disk 

@@ -82,7 +82,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             })
             .WithConfigValue("OrchestratorBaseUrl", apiStub.Address)
             .WithConfigValue("ImageIngest:ImageProcessorUrl", apiStub.Address)
-            .WithConfigValue("ImageIngest:ThumbsProcessorUri", apiStub.Address)
+            .WithConfigValue("ImageIngest:ThumbsProcessorUrl", apiStub.Address)
             .WithConnectionString(engineFixture.DbFixture.ConnectionString)
             .CreateClient();
 
@@ -93,13 +93,13 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         };
 
         
-        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("1024"), A<CancellationToken>._))
+        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("thumb1"), A<CancellationToken>._))
             .Returns(Task.FromResult(GenerateTestImage(1024, 1024)));
-        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("400"), A<CancellationToken>._))
+        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("thumb2"), A<CancellationToken>._))
             .Returns(Task.FromResult(GenerateTestImage(400, 400)));
-        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("200"), A<CancellationToken>._))
+        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("thumb3"), A<CancellationToken>._))
             .Returns(Task.FromResult(GenerateTestImage(200, 200)));
-        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("100"), A<CancellationToken>._))
+        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("thumb4"), A<CancellationToken>._))
             .Returns(Task.FromResult(GenerateTestImage(100, 100)));
         
         var testImage = GenerateTestImageByteData();
@@ -166,7 +166,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var origin = $"{apiStub.Address}/image";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             imageOptimisationPolicy: "fast-higher", mediaType: "image/tiff", width: 0, height: 0, duration: 0,
-            imageDeliveryChannels: imageDeliveryChannels, maxUnauthorised: 0);
+            imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
         var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
@@ -262,7 +262,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var origin = $"{apiStub.Address}/image";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin, 
             mediaType: "image/unknown", width: 0, height: 0, duration: 0,
-            imageDeliveryChannels: imageDeliveryChannels, maxUnauthorised: 0);
+            imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         asset.ImageDeliveryChannels = imageDeliveryChannels;
         await dbContext.SaveChangesAsync();

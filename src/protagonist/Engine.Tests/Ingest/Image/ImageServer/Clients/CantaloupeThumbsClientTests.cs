@@ -18,31 +18,22 @@ public class CantaloupeThumbsClientTests
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly CantaloupeThumbsClient sut;
 
-    private readonly List<string> defaultThumbs = new List<string>()
+    private readonly List<string> defaultThumbs = new()
     {
         "!1024,1024"
     };
+
+    private static readonly string ThumbsRoot = $"{Path.DirectorySeparatorChar}thumbs";
 
     public CantaloupeThumbsClientTests()
     {
         httpHandler = new ControllableHttpMessageHandler();
         var fileSystem = A.Fake<IFileSystem>();
         var imageManipulator = A.Fake<IImageManipulator>();
-        var engineSettings = new EngineSettings
-        {
-            ImageIngest = new ImageIngestSettings
-            {
-                ScratchRoot = "scratch/",
-                DestinationTemplate ="{root}{customer}/{space}/{image}/output",
-                SourceTemplate = "source/",
-                ThumbsTemplate = "thumb/"
-            }
-        };
-        var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
 
         var httpClient = new HttpClient(httpHandler);
         httpClient.BaseAddress = new Uri("http://image-processor/");
-        sut = new CantaloupeThumbsClient(httpClient, fileSystem, imageManipulator, optionsMonitor, new NullLogger<CantaloupeThumbsClient>());
+        sut = new CantaloupeThumbsClient(httpClient, fileSystem, imageManipulator, new NullLogger<CantaloupeThumbsClient>());
     }
     
     [Fact]
@@ -57,13 +48,13 @@ public class CantaloupeThumbsClientTests
         {
             S3 = "//some/location/with/s3"
         });
-
+        
         // Act
-        var thumbs = await sut.GenerateThumbnails(context, defaultThumbs);
+        var thumbs = await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
 
         // Assert
-        thumbs.Count().Should().Be(1);
-        thumbs[0].Path.Should().Be($".{Path.DirectorySeparatorChar}scratch{Path.DirectorySeparatorChar}output{Path.DirectorySeparatorChar}thumbs{Path.DirectorySeparatorChar}!1024,1024");
+        thumbs.Should().HaveCount(1);
+        thumbs[0].Path.Should().Be($"{Path.DirectorySeparatorChar}thumbs{Path.DirectorySeparatorChar}thumb1");
     }
     
     [Fact]
@@ -80,17 +71,17 @@ public class CantaloupeThumbsClientTests
         });
 
         // Act
-        Func<Task> action = async () => await sut.GenerateThumbnails(context, defaultThumbs);
+        Func<Task> action = async () => await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
         
         // Assert
-        action.Should().ThrowAsync<HttpException>();
+        await action.Should().ThrowAsync<HttpException>();
     }
     
     [Fact]
     public async Task GenerateThumbnails_ReturnsNothing_WhenCantaloupeReturns400()
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ThrowsException_WhenNotOk));
+        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsNothing_WhenCantaloupeReturns400));
         var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadRequest));
 
@@ -100,9 +91,9 @@ public class CantaloupeThumbsClientTests
         });
 
         // Act
-        var thumbs = await sut.GenerateThumbnails(context, defaultThumbs);
+        var thumbs = await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
 
         // Assert
-        thumbs.Count().Should().Be(0);
+        thumbs.Should().HaveCount(0);
     }
 }

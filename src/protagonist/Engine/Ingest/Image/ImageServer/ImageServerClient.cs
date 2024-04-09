@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 namespace Engine.Ingest.Image.ImageServer;
 
 /// <summary>
-/// Derivative generator using Appetiser for generating resources
+/// Derivative generator using Appetiser for generating JP2 and Cantaloupe for Thumbs
 /// </summary>
 public class ImageServerClient : IImageProcessor
 {
@@ -64,7 +64,7 @@ public class ImageServerClient : IImageProcessor
             if (responseModel is AppetiserResponseModel successResponse)
             {
                 await ProcessResponse(context, successResponse, flags);
-                await CallThumbsProcessor(context);
+                await CallThumbsProcessor(context, thumb);
                 
                 return true;
             }
@@ -106,7 +106,7 @@ public class ImageServerClient : IImageProcessor
         return (dest, thumb);
     }
     
-    private async Task CallThumbsProcessor(IngestionContext context)
+    private async Task CallThumbsProcessor(IngestionContext context, string thumbFolder)
     {
         var thumbPolicy = context.Asset.ImageDeliveryChannels.SingleOrDefault(
                 x=> x.Channel == AssetDeliveryChannels.Thumbnails)
@@ -117,7 +117,7 @@ public class ImageServerClient : IImageProcessor
         if (thumbPolicy != null)
         {
             var sizes = JsonSerializer.Deserialize<List<string>>(thumbPolicy);
-            thumbsResponse = await thumbsClient.GenerateThumbnails(context, sizes);
+            thumbsResponse = await thumbsClient.GenerateThumbnails(context, sizes!, thumbFolder);
         }
         
         // Create new thumbnails + update Storage on context

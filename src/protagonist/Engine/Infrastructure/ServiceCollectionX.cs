@@ -110,7 +110,7 @@ public static class ServiceCollectionX
             
             services.AddHttpClient<ICantaloupeThumbsClient, CantaloupeThumbsClient>(client =>
             {
-                client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUri;
+                client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUrl;
                 client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
             }).AddHttpMessageHandler<TimingHandler>();
 

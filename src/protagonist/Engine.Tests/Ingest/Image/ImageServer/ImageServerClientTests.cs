@@ -139,7 +139,7 @@ public class ImageServerClientTests
         // Assert
         A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .MustHaveHappened();
-        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._, A<List<string>>._, A<CancellationToken>._))
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._, A<List<string>>._, A<string>._, A<CancellationToken>._))
             .MustHaveHappened();
     }
 
@@ -266,8 +266,7 @@ public class ImageServerClientTests
         
         A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(
                 A<IngestionContext>._, 
-                A<List<string>>._, 
-                A<CancellationToken>._))
+                A<List<string>>._, A<string>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new List<ImageOnDisk>()
             {
                 new()
@@ -310,8 +309,7 @@ public class ImageServerClientTests
         
         A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(
                 A<IngestionContext>._, 
-                A<List<string>>._, 
-                A<CancellationToken>._))
+                A<List<string>>._, A<string>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new List<ImageOnDisk>()
             {
                 new()
@@ -352,7 +350,7 @@ public class ImageServerClientTests
         // Assert
         A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .MustHaveHappened();
-        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._, A<List<string>>._, A<CancellationToken>._))
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._, A<List<string>>._, A<string>._, A<CancellationToken>._))
             .MustHaveHappened();
         A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
             .MustHaveHappened();
@@ -383,8 +381,7 @@ public class ImageServerClientTests
         
         A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(
                 A<IngestionContext>._, 
-                A<List<string>>._, 
-                A<CancellationToken>._))
+                A<List<string>>._, A<string>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new List<ImageOnDisk>()
             {
                 new()
@@ -409,7 +406,7 @@ public class ImageServerClientTests
         // Assert
         A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .MustHaveHappened();
-        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._, A<List<string>>._, A<CancellationToken>._))
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._, A<List<string>>._, A<string>._, A<CancellationToken>._))
             .MustHaveHappened();
         A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
             .MustHaveHappened();
@@ -436,8 +433,7 @@ public class ImageServerClientTests
         
         A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(
                 A<IngestionContext>._, 
-                A<List<string>>._, 
-                A<CancellationToken>._))
+                A<List<string>>._, A<string>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new List<ImageOnDisk>()
             {
                 new()

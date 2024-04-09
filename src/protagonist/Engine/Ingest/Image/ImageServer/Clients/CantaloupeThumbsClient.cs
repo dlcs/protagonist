@@ -10,7 +10,6 @@ namespace Engine.Ingest.Image.ImageServer.Clients;
 public class CantaloupeThumbsClient : ICantaloupeThumbsClient
 {
     private readonly HttpClient cantaloupeClient;
-    private readonly EngineSettings engineSettings;
     private readonly IFileSystem fileSystem;
     private readonly IImageManipulator imageManipulator;
     private readonly ILogger<CantaloupeThumbsClient> logger;
@@ -19,24 +18,25 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
         HttpClient cantaloupeClient,
         IFileSystem fileSystem,
         IImageManipulator imageManipulator,
-        IOptionsMonitor<EngineSettings> engineOptionsMonitor,
         ILogger<CantaloupeThumbsClient> logger)
     {
         this.cantaloupeClient = cantaloupeClient;
-        engineSettings = engineOptionsMonitor.CurrentValue;
         this.fileSystem = fileSystem;
         this.imageManipulator = imageManipulator;
         this.logger = logger;
     }
 
     public async Task<List<ImageOnDisk>> GenerateThumbnails(IngestionContext context,
-        List<string> thumbSizes, 
+        List<string> thumbSizes,
+        string thumbFolder,
         CancellationToken cancellationToken = default)
     {
         var thumbsResponse = new List<ImageOnDisk>();
-        
-        var convertedS3Location = context.ImageLocation.S3.Replace("/", engineSettings.ImageIngest!.ThumbsProcessorSeparator);
 
+        const string pathReplacement = "%2f";
+        var convertedS3Location = context.ImageLocation.S3.Replace("/", pathReplacement);
+
+        var count = 0;
         foreach (var size in thumbSizes)
         {
             using var response =
@@ -53,10 +53,9 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
             if (response.IsSuccessStatusCode)
             {
                 await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                var assetDirectoryLocation = Path.GetDirectoryName(context.AssetFromOrigin.Location);
 
-                var localThumbsPath =
-                    $"{assetDirectoryLocation}{Path.DirectorySeparatorChar}output{Path.DirectorySeparatorChar}thumbs{Path.DirectorySeparatorChar}{size}";
+                var localThumbsPath = Path.Join(thumbFolder, $"thumb{++count}");
+                logger.LogDebug("Saving thumb for {ThumbSize} to {ThumbLocation}", size, localThumbsPath);
                 
                 await fileSystem.CreateFileFromStream(localThumbsPath, responseStream, cancellationToken);
                 

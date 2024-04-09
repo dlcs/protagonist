@@ -65,8 +65,6 @@ public class AppetiserClient : IAppetiserClient
             Source = GetRelativeLocationOnDisk(context, modifiedAssetId),
             ImageId = context.AssetId.Asset,
             JobId = Guid.NewGuid().ToString(),
-            ThumbDir = TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.ThumbsTemplate,
-                modifiedAssetId, root: engineSettings.ImageIngest.GetRoot(true))
         };
 
         return requestModel;

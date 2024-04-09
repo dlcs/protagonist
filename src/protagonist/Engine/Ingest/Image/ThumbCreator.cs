@@ -32,12 +32,6 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
             return 0;
         }
 
-        if (thumbsToProcess.Count == 0)
-        {
-            logger.LogDebug("No expected thumb sizes for {AssetId}, aborting", assetId);
-            return 0;
-        }
-
         var maxAvailableThumb = GetMaxThumbnailSize(asset, thumbsToProcess);
         var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);
         var processedWidths = new List<int>(thumbsToProcess.Count);
@@ -84,11 +78,11 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
     
     private Size GetMaxThumbnailSize(Asset asset, IReadOnlyList<ImageOnDisk> thumbsToProcess)
     {
-        if (asset.MaxUnauthorised == -1) return new Size(0, 0);
+        if (asset.MaxUnauthorised == 0) return new Size(0, 0);
 
         foreach (var thumb in thumbsToProcess.OrderByDescending(x => Math.Max(x.Height, x.Width)))
         {
-            if ((asset.MaxUnauthorised ?? 0) == 0) return new Size(thumb.Width, thumb.Height);
+            if ((asset.MaxUnauthorised ?? -1) == -1) return new Size(thumb.Width, thumb.Height);
 
             if (asset.MaxUnauthorised > Math.Max(thumb.Width, thumb.Height)) return new Size(thumb.Width, thumb.Height);
         }

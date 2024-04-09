@@ -2,11 +2,28 @@ version: '3'
 
 services:
   appetiser:
-    image: digirati/appetiser:latest
+    image: ghcr.io/dlcs/appetiser:latest
     ports:
       - "5031:80"
     volumes:
       - $HOME\Docker\scratch:/scratch
       - $HOME\.aws:/root/.aws
+    env_file:
+      - .env
+
+  thumbs-client:
+    image: ghcr.io/dlcs/cantaloupe:5.0.5
+    ports:
+      - "5126:8182"
+    environment:
+      - ENDPOINT_ADMIN_ENABLED=true
+      - ENDPOINT_ADMIN_SECRET=admin
+      - DELEGATE_SCRIPT_ENABLED=true
+      - SOURCE_STATIC=S3Source
+      - DELEGATE_SCRIPT_PATHNAME=/cantaloupe/delegates.rb
+      - S3SOURCE_LOOKUP_STRATEGY=ScriptLookupStrategy
+      - AWS_ACCESS_KEY_ID=${SS_AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${SS_AWS_SECRET_ACCESS_KEY}
+      - MAX_SCALE=0
     env_file:
       - .env
