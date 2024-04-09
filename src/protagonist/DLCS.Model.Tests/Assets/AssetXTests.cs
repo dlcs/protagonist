@@ -14,14 +14,14 @@ public class AssetXTests
     public void GetAvailableThumbSizes_IncludeUnavailable_Correct_MaxUnauthorisedNoRoles()
     {
         // Arrange
+        var asset = new Asset {Width = 5000, Height = 2500, MaxUnauthorised = 500};
+        
         var thumbnailPolicy = new ThumbnailPolicy
         {
             Id = "TestPolicy",
             Name = "TestPolicy",
             Sizes = "800,400,200,100"
         };
-
-        var asset = new Asset {Width = 5000, Height = 2500, MaxUnauthorised = 500};
         
         // Act
         var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, true);
@@ -43,14 +43,13 @@ public class AssetXTests
     public void GetAvailableThumbSizes_NotIncludeUnavailable_Correct_MaxUnauthorisedNoRoles()
     {
         // Arrange
+        var asset = new Asset { Width = 5000, Height = 2500, MaxUnauthorised = 500};
         var thumbnailPolicy = new ThumbnailPolicy
         {
             Id = "TestPolicy",
             Name = "TestPolicy",
-            Sizes = "800,400,200,100"
+            Sizes = "800,400,200,100",
         };
-
-        var asset = new Asset {Width = 5000, Height = 2500, MaxUnauthorised = 500};
         
         // Act
         var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, false);
@@ -71,14 +70,13 @@ public class AssetXTests
     public void GetAvailableThumbSizes_IncludeUnavailable_Correct_IfRolesNoMaxUnauthorised()
     {
         // Arrange
+        var asset = new Asset {Width = 5000, Height = 2500, Roles = "GoodGuys", MaxUnauthorised = -1};
         var thumbnailPolicy = new ThumbnailPolicy
         {
             Id = "TestPolicy",
             Name = "TestPolicy",
             Sizes = "800,400,200,100",
         };
-
-        var asset = new Asset {Width = 5000, Height = 2500, Roles = "GoodGuys", MaxUnauthorised = -1};
         
         // Act
         var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, true);
@@ -110,7 +108,7 @@ public class AssetXTests
         var asset = new Asset {Width = 5000, Height = 2500, Roles = "GoodGuys", MaxUnauthorised = -1};
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, false);
+        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy,out var maxDimensions, false);
         
         // Assert
         sizes.Should().BeNullOrEmpty();
@@ -129,7 +127,7 @@ public class AssetXTests
             Name = "TestPolicy",
             Sizes = "800,400,200,100",
         };
-
+        
         var asset = new Asset {Width = 2500, Height = 5000, Roles = "GoodGuys", MaxUnauthorised = 399};
         
         // Act
@@ -156,7 +154,7 @@ public class AssetXTests
             Name = "TestPolicy",
             Sizes = "800,400,200,100",
         };
-
+        
         var asset = new Asset {Width = 2500, Height = 5000, Roles = "GoodGuys", MaxUnauthorised = 399};
         
         // Act
@@ -183,10 +181,10 @@ public class AssetXTests
         {
             Id = "TestPolicy",
             Name = "TestPolicy",
-            Sizes = "800,400,200,100"
+            Sizes = "800,400,200,100",
         };
-
-        var asset = new Asset { Width = 300, Height = 150 };
+        
+        var asset = new Asset { Width = 300, Height = 150};
         
         // Act
         var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, true);
@@ -202,7 +200,7 @@ public class AssetXTests
         maxDimensions.maxAvailableWidth.Should().Be(300);
         maxDimensions.maxAvailableHeight.Should().Be(150);
     }
-    
+
     [Fact]
     public void SetFieldsForIngestion_ClearsFields()
     {

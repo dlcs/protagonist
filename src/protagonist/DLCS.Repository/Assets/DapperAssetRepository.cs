@@ -88,7 +88,7 @@ public class DapperAssetRepository : IAssetRepository, IDapperConfigRepository
                 imageDeliveryChannels.Add(new ImageDeliveryChannel()
                 {
                     Channel = rawDeliveryChannel.Channel,
-                    DeliveryChannelPolicyId = rawDeliveryChannel.DeliveryChannelPolicyId
+                    DeliveryChannelPolicyId = rawDeliveryChannel.DeliveryChannelPolicyId,
                 });
             }
         }
@@ -101,7 +101,7 @@ SELECT ""Images"".""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Ta
 ""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", 
 ""NumberReference1"", ""NumberReference2"", ""NumberReference3"", ""Width"", 
 ""Height"", ""Error"", ""Batch"", ""Finished"", ""Ingesting"", ""ImageOptimisationPolicy"", 
-""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery"", ""DeliveryChannels"",  
+""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery"", ""DeliveryChannels"", 
 IDC.""Channel"", IDC.""DeliveryChannelPolicyId""
   FROM ""Images""
   LEFT OUTER JOIN ""ImageDeliveryChannels"" IDC on ""Images"".""Id"" = IDC.""ImageId""

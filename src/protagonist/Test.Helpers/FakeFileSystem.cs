@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using DLCS.Core.FileSystem;
 
 namespace Test.Helpers;
@@ -19,6 +22,11 @@ public class FakeFileSystem : IFileSystem
     public bool FileExists(string path) => true;
     public long GetFileSize(string path) => 10;
     public void SetLastWriteTimeUtc(string path, DateTime dateTime)
+    {
+        // no-op
+    }
+
+    public async Task CreateFileFromStream(string path, Stream stream, CancellationToken cancellationToken = default)
     {
         // no-op
     }

@@ -191,4 +191,10 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         var key = $"{customerId}/origin-strategy/{originStrategyId}/credentials.json";
         return new ObjectInBucket(s3Options.SecurityObjectsBucket, key);
     }
+
+    public RegionalisedObjectInBucket GetTransientImageLocation(AssetId assetId)
+    {
+        var key = GetStorageKey(assetId);
+        return new RegionalisedObjectInBucket(s3Options.StorageBucket, $"transient/{key}", awsSettings.Region);
+    }
 }

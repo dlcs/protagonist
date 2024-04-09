@@ -1,4 +1,4 @@
-namespace Engine.Ingest.Image.Appetiser;
+namespace Engine.Ingest.Image.ImageServer;
 
 /// <summary>
 /// Request model for making requests to Appetiser.

@@ -10,11 +10,15 @@ using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.Utils;
-using Engine.Ingest.Image;
-using Engine.Ingest.Image.Appetiser;
+using Engine.Ingest.Image.ImageServer.Manipulation;
+using Engine.Ingest.Image.ImageServer.Models;
 using Engine.Tests.Integration.Infrastructure;
+using FakeItEasy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using Stubbery;
 using Test.Helpers;
 using Test.Helpers.Integration;
@@ -34,12 +38,30 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsContext dbContext;
     private static readonly TestBucketWriter BucketWriter = new();
     private readonly ApiStub apiStub;
+    private readonly IImageManipulator imageManipulator;
+    
     private readonly List<ImageDeliveryChannel> imageDeliveryChannels = new()
     {
-        new ImageDeliveryChannel()
+        new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Image,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
+            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            {
+                Name = "default",
+                Channel = AssetDeliveryChannels.Image
+            }
+        },
+        new ImageDeliveryChannel
+        {
+            Channel = AssetDeliveryChannels.Thumbnails,
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
+            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            {
+                Name = "default",
+                PolicyData = "[\"!1024,1024\",\"!400,400\",\"!200,200\",\"!100,100\"]",
+                Channel = AssetDeliveryChannels.Thumbnails
+            }
         }
     };
 
@@ -47,6 +69,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         dbContext = engineFixture.DbFixture.DbContext;
         apiStub = engineFixture.ApiStub;
+        imageManipulator = A.Fake<IImageManipulator>();
         httpClient = appFactory
             .WithTestServices(services =>
             {
@@ -54,32 +77,83 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 services
                     .AddSingleton<IFileSaver, FakeFileSaver>()
                     .AddSingleton<IFileSystem, FakeFileSystem>()
+                    .AddSingleton(imageManipulator)
                     .AddSingleton<IBucketWriter>(BucketWriter);
             })
             .WithConfigValue("OrchestratorBaseUrl", apiStub.Address)
             .WithConfigValue("ImageIngest:ImageProcessorUrl", apiStub.Address)
+            .WithConfigValue("ImageIngest:ThumbsProcessorUrl", apiStub.Address)
             .WithConnectionString(engineFixture.DbFixture.ConnectionString)
             .CreateClient();
 
         // Stubbed appetiser
         var appetiserResponse = new AppetiserResponseModel
         {
-            Height = 1000, Width = 500, Thumbs = new[]
-            {
-                new ImageOnDisk { Height = 800, Width = 400, Path = "/path/to/800.jpg" },
-                new ImageOnDisk { Height = 400, Width = 200, Path = "/path/to/400.jpg" },
-                new ImageOnDisk { Height = 200, Width = 100, Path = "/path/to/200.jpg" },
-            }
+            Height = 1024, Width = 1024
         };
+
+        
+        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("thumb1"), A<CancellationToken>._))
+            .Returns(Task.FromResult(GenerateTestImage(1024, 1024)));
+        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("thumb2"), A<CancellationToken>._))
+            .Returns(Task.FromResult(GenerateTestImage(400, 400)));
+        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("thumb3"), A<CancellationToken>._))
+            .Returns(Task.FromResult(GenerateTestImage(200, 200)));
+        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("thumb4"), A<CancellationToken>._))
+            .Returns(Task.FromResult(GenerateTestImage(100, 100)));
+        
+        var testImage = GenerateTestImageByteData();
+        
         var appetiserResponseJson = JsonSerializer.Serialize(appetiserResponse, settings);
         apiStub.Post("/convert", (request, args) => appetiserResponseJson)
             .Header("Content-Type", "application/json");
+        
+        apiStub.Get("iiif/3/{arg1}/full/{arg2}/0/default.jpg", (request, args) => testImage);
         
         // Fake http image
         apiStub.Get("/image", (request, args) => "anything")
             .Header("Content-Type", "image/jpeg");
 
         engineFixture.DbFixture.CleanUp();
+    }
+
+    private SixLabors.ImageSharp.Image GenerateTestImage(int width, int height)
+    { 
+        using var image = new Image<Rgba32>(width, height);
+
+        //draw a useless line for some data
+        image.Mutate(imageContext =>
+        {
+            // draw background
+            var bgColor = Rgba32.ParseHex("#f00a21");
+            imageContext.BackgroundColor(bgColor);
+        });
+
+        return image;
+    }
+    
+    private byte[] GenerateTestImageByteData()
+    {
+        using var image = new Image<Rgba32>(1024, 1024);
+
+        //draw a useless line for some data
+        image.Mutate(imageContext =>
+        {
+            // draw background
+            var bgColor = Rgba32.ParseHex("#f00a21");
+            imageContext.BackgroundColor(bgColor);
+        });
+        
+        //Convert to byte array
+        MemoryStream memoryStream = new MemoryStream();
+        byte[] jpegData;
+
+        using (memoryStream)
+        {
+            image.SaveAsJpeg(memoryStream);
+            jpegData = memoryStream.ToArray();
+        }
+        return jpegData;
     }
 
     [Fact]
@@ -110,13 +184,13 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         BucketWriter.ShouldHaveKey($"{assetId}/low.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/200.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/400.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
-        BucketWriter.ShouldHaveKey($"{assetId}/open/800.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
+        BucketWriter.ShouldHaveKey($"{assetId}/open/1024.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/s.json").ForBucket(LocalStackFixture.ThumbsBucketName);
         
         // Database records updated
         var updatedAsset = await dbContext.Images.SingleAsync(a => a.Id == assetId);
-        updatedAsset.Width.Should().Be(500);
-        updatedAsset.Height.Should().Be(1000);
+        updatedAsset.Width.Should().Be(1024);
+        updatedAsset.Height.Should().Be(1024);
         updatedAsset.Ingesting.Should().BeFalse();
         updatedAsset.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
         updatedAsset.MediaType.Should().Be("image/tiff");
@@ -141,8 +215,8 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Note - API will have set this up before handing off
         var origin = $"{apiStub.Address}/image";
 
-        var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
-            imageOptimisationPolicy: "fast-higher", mediaType: "image/tiff", width: 0, height: 0, duration: 0,
+        var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin, 
+            mediaType: "image/tiff", width: 0, height: 0, duration: 0,
             imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.Customers.AddTestCustomer(customerId);
@@ -163,8 +237,8 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Database records updated
         var updatedAsset = await dbContext.Images.SingleAsync(a => a.Id == assetId);
-        updatedAsset.Width.Should().Be(500);
-        updatedAsset.Height.Should().Be(1000);
+        updatedAsset.Width.Should().Be(1024);
+        updatedAsset.Height.Should().Be(1024);
         updatedAsset.Ingesting.Should().BeFalse();
         updatedAsset.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
         updatedAsset.MediaType.Should().Be("image/tiff");
@@ -186,8 +260,8 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Note - API will have set this up before handing off
         var origin = $"{apiStub.Address}/image";
-        var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
-            imageOptimisationPolicy: "fast-higher", mediaType: "image/unknown", width: 0, height: 0, duration: 0,
+        var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin, 
+            mediaType: "image/unknown", width: 0, height: 0, duration: 0,
             imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         asset.ImageDeliveryChannels = imageDeliveryChannels;
@@ -208,13 +282,13 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         BucketWriter.ShouldHaveKey($"{assetId}/low.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/200.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/400.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
-        BucketWriter.ShouldHaveKey($"{assetId}/open/800.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
+        BucketWriter.ShouldHaveKey($"{assetId}/open/1024.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/s.json").ForBucket(LocalStackFixture.ThumbsBucketName);
         
         // Database records updated
         var updatedAsset = await dbContext.Images.SingleAsync(a => a.Id == assetId);
-        updatedAsset.Width.Should().Be(500);
-        updatedAsset.Height.Should().Be(1000);
+        updatedAsset.Width.Should().Be(1024);
+        updatedAsset.Height.Should().Be(1024);
         updatedAsset.Ingesting.Should().BeFalse();
         updatedAsset.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
         updatedAsset.MediaType.Should().Be("image/jpeg");

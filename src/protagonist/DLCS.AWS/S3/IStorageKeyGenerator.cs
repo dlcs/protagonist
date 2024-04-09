@@ -166,4 +166,12 @@ public interface IStorageKeyGenerator
     /// </summary>
     /// <returns><see cref="ObjectInBucket"/> for JSON object containing credentials for a user's origin strategy</returns>
     ObjectInBucket GetOriginStrategyCredentialsLocation(int customerId, string originStrategyId);
+    
+    /// <summary>
+    /// Get <see cref="RegionalisedObjectInBucket"/> root location for a transient image in the origin bucket
+    /// </summary>
+    /// <param name="assetId">asset id the request is for</param>
+    /// <returns><see cref="RegionalisedObjectInBucket"/> for specified transient asset's that will be cleared up after
+    /// a period of time</returns>
+    RegionalisedObjectInBucket GetTransientImageLocation(AssetId assetId);
 }

@@ -31,16 +31,8 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
             logger.LogDebug("No thumbs to process for {AssetId}, aborting", assetId);
             return 0;
         }
-        
-        var expectedSizes = asset.GetAvailableThumbSizes(asset.FullThumbnailPolicy!, out var maxDimensions, true);
-        if (expectedSizes.Count == 0)
-        {
-            logger.LogDebug("No expected thumb sizes for {AssetId}, aborting", assetId);
-            return 0;
-        }
 
-        var imageShape = expectedSizes[0].GetShape();
-        var maxAvailableThumb = Size.Square(maxDimensions.maxBoundedSize);
+        var maxAvailableThumb = GetMaxThumbnailSize(asset, thumbsToProcess);
         var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);
         var processedWidths = new List<int>(thumbsToProcess.Count);
         
@@ -50,6 +42,8 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
         bool processingLargest = true;
         foreach (var thumbCandidate in thumbsToProcess)
         {
+            if (thumbCandidate.Width > asset.Width || thumbCandidate.Height > asset.Height) continue;
+            
             // Safety check for duplicate
             if (processedWidths.Contains(thumbCandidate.Width))
             {
@@ -58,7 +52,7 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
                 continue;
             }
 
-            var thumb = GetThumbnailSize(thumbCandidate, imageShape, expectedSizes, assetId);
+            var thumb = new Size(thumbCandidate.Width, thumbCandidate.Height);
             
             bool isOpen;
             if (thumb.IsConfinedWithin(maxAvailableThumb))
@@ -81,27 +75,19 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
         await CreateSizesJson(assetId, thumbnailSizes);
         return thumbnailSizes.Count;
     }
-
-    /// <summary>
-    /// Find matching size from pre-calculated thumbs. We use these rather than sizes returned by image-processor to
-    /// avoid rounding issues
-    /// </summary>
-    private Size GetThumbnailSize(ImageOnDisk imageOnDisk, ImageShape imageShape, IEnumerable<Size> expectedSizes,
-        AssetId assetId)
+    
+    private Size GetMaxThumbnailSize(Asset asset, IReadOnlyList<ImageOnDisk> thumbsToProcess)
     {
-        try
+        if (asset.MaxUnauthorised == 0) return new Size(0, 0);
+
+        foreach (var thumb in thumbsToProcess.OrderByDescending(x => Math.Max(x.Height, x.Width)))
         {
-            return imageShape == ImageShape.Landscape
-                ? expectedSizes.Single(s => s.Width == imageOnDisk.Width)
-                : expectedSizes.Single(s => s.Height == imageOnDisk.Height);
+            if ((asset.MaxUnauthorised ?? -1) == -1) return new Size(thumb.Width, thumb.Height);
+
+            if (asset.MaxUnauthorised > Math.Max(thumb.Width, thumb.Height)) return new Size(thumb.Width, thumb.Height);
         }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogError("Unable to find expected thumbnail size {Width},{Height} for asset {AssetId}. {Path}",
-                imageOnDisk.Width, imageOnDisk.Height, assetId, imageOnDisk.Path);
-            throw new ApplicationException(
-                $"Unable to find expected thumbnail size {imageOnDisk.Width},{imageOnDisk.Height}", ex);
-        }
+        
+        return new Size(0, 0);
     }
 
     private async Task UploadThumbs(bool processingLargest, AssetId assetId, ImageOnDisk thumbCandidate, Size thumb,

@@ -4,6 +4,7 @@ using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
+using DLCS.Model.Policies;
 using FakeItEasy;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -203,10 +204,12 @@ public class MemoryAssetTrackerTests
         var imageDeliveryChannels = GenerateImageDeliveryChannels(deliveryChannels);
 
         var assetId = new AssetId(1, 1, "go!");
+
         var sizes = new List<int[]> { new[] { 100, 200 } };
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-           ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50, MaxUnauthorised = -1, 
+            ImageDeliveryChannels = imageDeliveryChannels,
+            Height = 10, Width = 50, MaxUnauthorised = -1,
             Origin = "test"
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
@@ -237,14 +240,14 @@ public class MemoryAssetTrackerTests
             Origin = "test", Created = DateTime.Today
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns<List<int[]>>(null);
-
+        
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
-        
+
         // Assert
         result.OpenThumbs.Should().BeEmpty();
     }
-    
+
     [Theory]
     [InlineData("iiif-img")]
     [InlineData("iiif-img,file")]

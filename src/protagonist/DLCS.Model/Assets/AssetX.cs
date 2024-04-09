@@ -40,11 +40,11 @@ public static class AssetX
         {
             var assetIsUnavailableForSize = AssetIsUnavailableForSize(asset, boundingSize);
             if (!includeUnavailable && assetIsUnavailableForSize) continue;
-
-            Size bounded = Size.Confine(boundingSize, size);
-
-            var boundedMaxDimension = bounded.MaxDimension;
             
+            Size bounded = Size.Confine(boundingSize, size);
+            
+            var boundedMaxDimension = bounded.MaxDimension;
+
             // If image < thumb-size then boundedMax may already have been processed (it'll be the same as imageMax)
             if (generatedMax.Contains(boundedMaxDimension)) continue;
             

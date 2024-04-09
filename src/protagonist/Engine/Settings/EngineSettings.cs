@@ -55,9 +55,14 @@ public class ImageIngestSettings
     public bool IncludeRegionInS3Uri { get; set; } = false;
 
     /// <summary>
-    /// URI of downstream image/derivative processor
+    /// URI of downstream image processor
     /// </summary>
     public Uri ImageProcessorUrl { get; set; }
+    
+    /// <summary>
+    /// URI of downstream derivative processor
+    /// </summary>
+    public Uri ThumbsProcessorUrl { get; set; }
 
     /// <summary>
     /// How long, in ms, to delay calling Image-Processor after copying file to shared disk 

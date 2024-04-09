@@ -66,12 +66,12 @@ public class ThumbReorganiserTests
                 "2/1/the-astronaut/full/50,/0/default.jpg",
                 "2/1/the-astronaut/full/50,100/0/default.jpg"
             });
-
+        
         A.CallTo(() => assetRepository.GetAsset(assetId))
             .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = -1});
         A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
             .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
-        
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -124,7 +124,7 @@ public class ThumbReorganiserTests
             .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 0});
         A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
             .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
-        
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -134,7 +134,7 @@ public class ThumbReorganiserTests
         // move jpg per thumbnail size
         A.CallTo(() =>
                 bucketWriter.CopyObject(
-                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/low.jpg"),
+                    A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/low.jpg"), 
                     A<ObjectInBucket>.That.Matches(o => o.Key == "2/1/the-astronaut/auth/400.jpg")))
             .MustHaveHappened();
         A.CallTo(() =>
@@ -176,7 +176,7 @@ public class ThumbReorganiserTests
             .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 0, Roles = "admin"});
         A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
             .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
-        
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -230,7 +230,7 @@ public class ThumbReorganiserTests
             .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
         A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
             .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
-        
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -287,7 +287,7 @@ public class ThumbReorganiserTests
             .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
         A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
             .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
-        
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -345,7 +345,7 @@ public class ThumbReorganiserTests
             .Returns(new Asset {Width = 2000, Height = 4000, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = 350, Roles = "admin"});
         A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
             .Returns(new ThumbnailPolicy {Sizes = "1024,400,200,100"});
-        
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -401,7 +401,7 @@ public class ThumbReorganiserTests
             .Returns(new Asset {Width = 4000, Height = 8000, ThumbnailPolicy = "TheBestOne"});
         A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
             .Returns(new ThumbnailPolicy {Sizes = "200,100"});
-        
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 
@@ -431,7 +431,7 @@ public class ThumbReorganiserTests
             .Returns(new Asset {Width = 200, Height = 250, ThumbnailPolicy = "TheBestOne"});
         A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
             .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
-        
+
         // Once called, add s.json to return list of bucket contents
         A.CallTo(() => bucketWriter.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, A<CancellationToken>._))
             .Invokes(() => fakeBucketContents.Add("2/1/the-astronaut/s.json"));
@@ -460,17 +460,17 @@ public class ThumbReorganiserTests
         A.CallTo(() => bucketReader.GetMatchingKeys(
                 A<ObjectInBucket>.That.Matches(o => o.Key.StartsWith(assetId1.ToString()))))
             .ReturnsLazily(() =>  fakeBucketContents.ToArray());
-
+        
         A.CallTo(() => assetRepository.GetAsset(A<AssetId>._))
             .Returns(new Asset {Width = 200, Height = 250, ThumbnailPolicy = "TheBestOne"});
         A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
             .Returns(new ThumbnailPolicy {Sizes = "400,200,100"});
-        
+
         // Once called, add sizes.json to return list of bucket contents
         A.CallTo(() => bucketWriter.WriteToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, A<CancellationToken>._))
             .Invokes((ObjectInBucket dest, string _, string _) =>
                 fakeBucketContents.Add(dest.Key + "sizes.json"));
-
+        
         A.CallTo(() => bucketWriter.CopyObject(A<ObjectInBucket>._, A<ObjectInBucket>._))
             .Invokes(async () => await Task.Delay(500));
 
@@ -519,7 +519,7 @@ public class ThumbReorganiserTests
             .Returns(new Asset {Width = 1293, Height = 2400, ThumbnailPolicy = "TheBestOne", MaxUnauthorised = -1});
         A.CallTo(() => thumbPolicyRepository.GetThumbnailPolicy("TheBestOne", A<CancellationToken>._))
             .Returns(new ThumbnailPolicy {Sizes = "1024,400"});
-        
+
         // Act
         var response = await sut.EnsureNewLayout(assetId);
 

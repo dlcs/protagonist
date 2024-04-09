@@ -21,8 +21,10 @@ using Engine.Data;
 using Engine.Ingest;
 using Engine.Ingest.File;
 using Engine.Ingest.Image;
-using Engine.Ingest.Image.Appetiser;
 using Engine.Ingest.Image.Completion;
+using Engine.Ingest.Image.ImageServer;
+using Engine.Ingest.Image.ImageServer.Clients;
+using Engine.Ingest.Image.ImageServer.Manipulation;
 using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased;
 using Engine.Ingest.Timebased.Completion;
@@ -95,12 +97,22 @@ public static class ServiceCollectionX
 
         if (engineSettings.ImageIngest != null)
         {
-            services.AddTransient<TimingHandler>()
-                .AddHttpClient<IImageProcessor, AppetiserClient>(client =>
+            services.AddTransient<TimingHandler>();
+            services.AddScoped<IImageProcessor, ImageServerClient>()
+                .AddScoped<ICantaloupeThumbsClient, CantaloupeThumbsClient>()
+                .AddScoped<IImageManipulator, ImageSharpManipulator>();
+                
+            services.AddHttpClient<IAppetiserClient, AppetiserClient>(client =>
                 {
                     client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
                     client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
                 }).AddHttpMessageHandler<TimingHandler>();
+            
+            services.AddHttpClient<ICantaloupeThumbsClient, CantaloupeThumbsClient>(client =>
+            {
+                client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUrl;
+                client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+            }).AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<IOrchestratorClient, InfoJsonOrchestratorClient>(client =>
             {

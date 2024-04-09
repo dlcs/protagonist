@@ -76,7 +76,7 @@ public class ElasticTranscoderTests
                         Id = 1,
                         PolicyData = "[\"noExtensionPolicy\"]"
                     },
-                    DeliveryChannelPolicyId = 1
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
                 }
             }
         };
@@ -111,7 +111,7 @@ public class ElasticTranscoderTests
                         Id = 1,
                         PolicyData = "[\"video-webm-preset\", \"video-mp4-preset\"]"
                     },
-                    DeliveryChannelPolicyId = 1
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
                 }
             }
         };
@@ -145,7 +145,7 @@ public class ElasticTranscoderTests
                         Id = 1,
                         PolicyData = "[\"video-webm-preset\", \"video-mp4-preset\"]"
                     },
-                    DeliveryChannelPolicyId = 1
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
                 }
             }
         };
@@ -212,7 +212,7 @@ public class ElasticTranscoderTests
                         Id = 1,
                         PolicyData = "[\"video-mp4-preset\"]"
                     },
-                    DeliveryChannelPolicyId = 1
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
                 } 
             }
         };
@@ -264,7 +264,7 @@ public class ElasticTranscoderTests
                         Id = 1,
                         PolicyData = "[\"video-mp4-preset\"]"
                     },
-                    DeliveryChannelPolicyId = 1
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
                 } 
             }
         };

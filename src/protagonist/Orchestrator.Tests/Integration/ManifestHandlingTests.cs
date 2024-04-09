@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using IIIF.Auth.V2;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;

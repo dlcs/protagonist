@@ -47,10 +47,15 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
     private readonly List<ImageDeliveryChannel> deliveryChannelsForImage = new()
     {
-        new ImageDeliveryChannel()
+        new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Image,
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
+        },
+        new ImageDeliveryChannel
+        {
+            Channel = AssetDeliveryChannels.Thumbnails,
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
         }
     };
 
