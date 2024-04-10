@@ -196,6 +196,16 @@ public class DeliveryChannelProcessor
             await defaultDeliveryChannelRepository.MatchedDeliveryChannels(asset.MediaType!, asset.Space,
                 asset.Customer);
 
+        if (matchedDeliveryChannels.Any(x => x.Channel == AssetDeliveryChannels.None) &&
+            matchedDeliveryChannels.Count != 1)
+        {
+            throw new APIException($"An asset can only be automatically assigned a delivery channel of type 'None' when it is the only one available. " +
+                                   $"Please check your default delivery channel configuration for media type '{asset.MediaType}'")
+            {
+                StatusCode = 400
+            };
+        }
+        
         foreach (var deliveryChannel in matchedDeliveryChannels)
         {
             asset.ImageDeliveryChannels.Add(new ImageDeliveryChannel
