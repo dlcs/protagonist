@@ -451,7 +451,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(customerId).PutAsync(assetId.ToApiResourcePath(), content);
 
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
