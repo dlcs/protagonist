@@ -44,7 +44,11 @@ public class ImageServerClientTests
                 ScratchRoot = "scratch/",
                 DestinationTemplate ="{root}{customer}/{space}/{image}/output",
                 SourceTemplate = "source/",
-                ThumbsTemplate = "thumb/"
+                ThumbsTemplate = "thumb/",
+                DefaultThumbs = new List<string>()
+                {
+                    "!100,100", "!200,200", "!400,400", "!1024,1024"
+                }
             }
         };
         thumbnailCreator = A.Fake<IThumbCreator>();
@@ -288,6 +292,101 @@ public class ImageServerClientTests
                 A<IReadOnlyList<ImageOnDisk>>.That.Matches(t => t.Single().Path.EndsWith("100.jpg"))
             ))
             .MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task ProcessImage_ProcessesUnionOfThumbs()
+    {
+        // Arrange
+        var imageProcessorResponse = new AppetiserResponseModel();
+        
+        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
+            .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
+        
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(
+                A<IngestionContext>._, 
+                A<List<string>>._, A<string>._, A<CancellationToken>._))
+            .Returns(Task.FromResult(new List<ImageOnDisk>()
+            {
+                new()
+                {
+                    Height = 100, 
+                    Width = 50, 
+                    Path = "/path/to/thumb/100.jpg"
+                }
+            }));
+
+        var context = IngestionContextFactory.GetIngestionContext();
+        context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = false };
+
+        // Act
+        await sut.ProcessImage(context);
+
+        // Assert
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._,
+            A<List<string>>.That.Matches( x => x.Count == 5), A<string>._, A<CancellationToken>._)
+        ).MustHaveHappened(); // union of delivery channel + default thumbs, with removed duplicates
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._,
+            A<List<string>>.That.Matches( x => x.Contains("!1000,1000")), A<string>._, A<CancellationToken>._)
+        ).MustHaveHappened(); // from ingestion context asset (mimicking delivery channel)
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._,
+            A<List<string>>.That.Matches( x => x.Contains("!1024,1024")), A<string>._, A<CancellationToken>._)
+        ).MustHaveHappened(); // from default thumbs
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._,
+            A<List<string>>.That.Matches( x => x.Count(y => y == "!100,100") == 1), A<string>._, A<CancellationToken>._)
+        ).MustHaveHappened(); // from both
+    }
+    
+        [Fact]
+    public async Task ProcessImage_ProcessesThumbsWhenNoThumbsChannel()
+    {
+        // Arrange
+        var imageProcessorResponse = new AppetiserResponseModel();
+        
+        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
+            .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
+        
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(
+                A<IngestionContext>._, 
+                A<List<string>>._, A<string>._, A<CancellationToken>._))
+            .Returns(Task.FromResult(new List<ImageOnDisk>()
+            {
+                new()
+                {
+                    Height = 100, 
+                    Width = 50, 
+                    Path = "/path/to/thumb/100.jpg"
+                }
+            }));
+
+        var context = IngestionContextFactory.GetIngestionContext();
+        context.Asset.ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
+                DeliveryChannelPolicy = new DeliveryChannelPolicy
+                {
+                    Name = "default"
+                }
+            }
+        };
+        context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = false };
+
+        // Act
+        await sut.ProcessImage(context);
+
+        // Assert
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._,
+            A<List<string>>.That.Matches( x => x.Count == 4), A<string>._, A<CancellationToken>._)
+        ).MustHaveHappened();
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._,
+            A<List<string>>.That.Matches( x => x.Contains("!1024,1024")), A<string>._, A<CancellationToken>._)
+        ).MustHaveHappened();
+        A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._,
+            A<List<string>>.That.Matches( x => x.Count(y => y == "!100,100") == 1), A<string>._, A<CancellationToken>._)
+        ).MustHaveHappened();
     }
     
     [Theory]
