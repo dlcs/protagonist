@@ -443,12 +443,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.SaveChangesAsync();
         
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<Asset>.That.Matches(r => r.Id == assetId),
-                    A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
-        
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(customerId).PutAsync(assetId.ToApiResourcePath(), content);
