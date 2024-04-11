@@ -176,8 +176,8 @@ public class ImageRequestHandler
 
         if (!assetRequest.IIIFImageRequest.Region.Percent &&
             assetRequest.IIIFImageRequest.Region.X + assetRequest.IIIFImageRequest.Region.Y == 0 &&
-            orchestrationImage.Width == assetRequest.IIIFImageRequest.Region.W &&
-            orchestrationImage.Height == assetRequest.IIIFImageRequest.Region.H)
+            orchestrationImage.Width == (int)assetRequest.IIIFImageRequest.Region.W &&
+            orchestrationImage.Height == (int)assetRequest.IIIFImageRequest.Region.H)
         {
             return true;
         }
