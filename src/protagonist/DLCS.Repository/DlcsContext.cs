@@ -77,6 +77,7 @@ public partial class DlcsContext : DbContext
     public virtual DbSet<DeliveryChannelPolicy> DeliveryChannelPolicies { get; set; }
     public virtual DbSet<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
     public virtual DbSet<DefaultDeliveryChannel> DefaultDeliveryChannels { get; set; }
+    public virtual DbSet<AssetApplicationMetadata> AssetApplicationMetadata { get; set; }
 
     public virtual DbSet<SignupLink> SignupLinks { get; set; }
 
@@ -678,6 +679,15 @@ public partial class DlcsContext : DbContext
             entity.Property(e => e.DeliveryChannelPolicyId).IsRequired();
             
             entity.Property(e => e.MediaType).IsRequired().HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<AssetApplicationMetadata>(entity =>
+        {
+            entity.Property(e => e.ImageId).IsRequired().HasConversion(
+                aId => aId.ToString(),
+                id => AssetId.FromString(id));
+            entity.Property(e => e.MetadataType).IsRequired();
+            entity.Property(e => e.MetadataValue).IsRequired().HasColumnType("jsonb");
         });
 
         OnModelCreatingPartial(modelBuilder);
