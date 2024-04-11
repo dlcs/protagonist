@@ -105,7 +105,7 @@ public class DefaultDeliveryChannelsController : HydraController
                 defaultDeliveryChannel.MediaType);
             
             return await HandleUpsert(command,
-                s => s.DefaultDeliveryChannel.ToHydra(GetUrlRoots().BaseUrl),
+                s => s.ToHydra(GetUrlRoots().BaseUrl),
                 errorTitle: "Failed to create Default Delivery Channel",
                 cancellationToken: cancellationToken);
         }
@@ -143,7 +143,7 @@ public class DefaultDeliveryChannelsController : HydraController
             defaultDeliveryChannelId);
 
         return await HandleUpsert(command, 
-            ch => ch.DefaultDeliveryChannel.ToHydra(GetUrlRoots().BaseUrl),
+            ch => ch.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to update Default Delivery Channel",
             cancellationToken: cancellationToken);
     }

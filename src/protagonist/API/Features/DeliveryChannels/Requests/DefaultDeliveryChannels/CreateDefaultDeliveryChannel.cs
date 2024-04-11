@@ -1,6 +1,8 @@
 ﻿using API.Features.DeliveryChannels.Helpers;
 using API.Infrastructure.Requests;
+using API.Infrastructure.Requests.Pipelines;
 using DLCS.Core;
+using DLCS.Core.Collections;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Repository;
 using DLCS.Repository.Exceptions;
@@ -9,7 +11,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.DeliveryChannels.Requests.DefaultDeliveryChannels;
 
-public class CreateDefaultDeliveryChannel : IRequest<ModifyEntityResult<CreateDefaultDeliveryChannelResult>>
+/// <summary>
+/// Create a new DefaultDeliveryChannel object in DB
+/// </summary>
+public class CreateDefaultDeliveryChannel : IRequest<ModifyEntityResult<DefaultDeliveryChannel>>, IInvalidateCaches
 {
     public int Customer { get; }
     
@@ -29,32 +34,21 @@ public class CreateDefaultDeliveryChannel : IRequest<ModifyEntityResult<CreateDe
         MediaType = mediaType;
         Space = space;
     }
-}
 
-public class CreateDefaultDeliveryChannelResult
-{
-    public CreateDefaultDeliveryChannelResult(DefaultDeliveryChannel defaultDeliveryChannel)
-    {
-        DefaultDeliveryChannel = defaultDeliveryChannel;
-    }
-
-    public DefaultDeliveryChannel DefaultDeliveryChannel { get; init; }
+    public string[] InvalidatedCacheKeys => CacheKeys.DefaultDeliveryChannels(Customer).AsArray();
 }
 
 public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefaultDeliveryChannel,
-    ModifyEntityResult<CreateDefaultDeliveryChannelResult>>
+    ModifyEntityResult<DefaultDeliveryChannel>>
 {
     private readonly DlcsContext dbContext;
-    private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
 
-    public CreateDefaultDeliveryChannelHandler(DlcsContext dbContext, 
-        IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository)
+    public CreateDefaultDeliveryChannelHandler(DlcsContext dbContext)
     {
         this.dbContext = dbContext;
-        this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
     }
 
-    public async Task<ModifyEntityResult<CreateDefaultDeliveryChannelResult>> Handle(
+    public async Task<ModifyEntityResult<DefaultDeliveryChannel>> Handle(
         CreateDefaultDeliveryChannel request, CancellationToken cancellationToken)
     {
         var defaultDeliveryChannel = new DefaultDeliveryChannel()
@@ -75,10 +69,10 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
         }
         catch (InvalidOperationException)
         {
-            return ModifyEntityResult<CreateDefaultDeliveryChannelResult>.Failure("Failed to find linked delivery channel policy", WriteResult.BadRequest);
+            return ModifyEntityResult<DefaultDeliveryChannel>.Failure("Failed to find linked delivery channel policy", WriteResult.BadRequest);
         }
 
-        var returnedDefaultDeliveryChannel = dbContext.DefaultDeliveryChannels.Add(defaultDeliveryChannel);
+        dbContext.DefaultDeliveryChannels.Add(defaultDeliveryChannel);
 
         try
         {
@@ -86,13 +80,11 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
         }
         catch (DbUpdateException ex) when (ex.GetDatabaseError() is UniqueConstraintError)
         {
-            return ModifyEntityResult<CreateDefaultDeliveryChannelResult>.Failure(
+            return ModifyEntityResult<DefaultDeliveryChannel>.Failure(
                 $"A default delivery channel for the requested media type '{defaultDeliveryChannel.MediaType}' already exists",
                 WriteResult.Conflict);
         }
 
-        var created = new CreateDefaultDeliveryChannelResult(returnedDefaultDeliveryChannel.Entity);
-
-        return ModifyEntityResult<CreateDefaultDeliveryChannelResult>.Success(created, WriteResult.Created);
+        return ModifyEntityResult<DefaultDeliveryChannel>.Success(defaultDeliveryChannel, WriteResult.Created);
     }
 }

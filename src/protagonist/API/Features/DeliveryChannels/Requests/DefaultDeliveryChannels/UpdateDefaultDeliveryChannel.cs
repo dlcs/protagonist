@@ -1,6 +1,8 @@
 ﻿using API.Features.DeliveryChannels.Helpers;
 using API.Infrastructure.Requests;
+using API.Infrastructure.Requests.Pipelines;
 using DLCS.Core;
+using DLCS.Core.Collections;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Repository;
 using MediatR;
@@ -8,7 +10,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.DeliveryChannels.Requests.DefaultDeliveryChannels;
 
-public class UpdateDefaultDeliveryChannel : IRequest<ModifyEntityResult<UpdateDefaultDeliveryChannelResult>>
+/// <summary>
+/// Update default delivery channel - can update Space, MediaType and associated Policy
+/// </summary>
+public class UpdateDefaultDeliveryChannel : IRequest<ModifyEntityResult<DefaultDeliveryChannel>>, IInvalidateCaches
 {
     public int Customer { get; }
 
@@ -38,33 +43,27 @@ public class UpdateDefaultDeliveryChannel : IRequest<ModifyEntityResult<UpdateDe
         Id = id;
         Space = space;
     }
+
+    public string[] InvalidatedCacheKeys => CacheKeys.DefaultDeliveryChannels(Customer).AsArray();
 }
 
-public class UpdateDefaultDeliveryChannelResult
-{
-    public DefaultDeliveryChannel? DefaultDeliveryChannel { get; init; }
-}
-
-public class UpdateDefaultDeliveryChannelHandler : IRequestHandler<UpdateDefaultDeliveryChannel, ModifyEntityResult<UpdateDefaultDeliveryChannelResult>>
+public class UpdateDefaultDeliveryChannelHandler : IRequestHandler<UpdateDefaultDeliveryChannel, ModifyEntityResult<DefaultDeliveryChannel>>
 {  
     private readonly DlcsContext dbContext;
-    private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
 
-    public UpdateDefaultDeliveryChannelHandler(DlcsContext dbContext, 
-        IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository)
+    public UpdateDefaultDeliveryChannelHandler(DlcsContext dbContext)
     {
         this.dbContext = dbContext;
-        this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
     }
     
-    public async Task<ModifyEntityResult<UpdateDefaultDeliveryChannelResult>> Handle(UpdateDefaultDeliveryChannel request, CancellationToken cancellationToken)
+    public async Task<ModifyEntityResult<DefaultDeliveryChannel>> Handle(UpdateDefaultDeliveryChannel request, CancellationToken cancellationToken)
     {
         var defaultDeliveryChannel = await dbContext.DefaultDeliveryChannels.SingleOrDefaultAsync(
             d => d.Customer == request.Customer && d.Id == request.Id, cancellationToken);
         
         if (defaultDeliveryChannel == null)
         {
-            return ModifyEntityResult<UpdateDefaultDeliveryChannelResult>.Failure($"Couldn't find a default delivery channel with the id {request.Id}",
+            return ModifyEntityResult<DefaultDeliveryChannel>.Failure($"Couldn't find a default delivery channel with the id {request.Id}",
                 WriteResult.NotFound);
         }
 
@@ -78,23 +77,15 @@ public class UpdateDefaultDeliveryChannelHandler : IRequestHandler<UpdateDefault
                 request.Channel,
                 request.Policy);
 
-                defaultDeliveryChannel.DeliveryChannelPolicyId = deliveryChannelPolicy.Id;
+            defaultDeliveryChannel.DeliveryChannelPolicyId = deliveryChannelPolicy.Id;
         }
         catch (InvalidOperationException)
         {
-            return ModifyEntityResult<UpdateDefaultDeliveryChannelResult>.Failure("Failed to find linked delivery channel policy", WriteResult.BadRequest);
+            return ModifyEntityResult<DefaultDeliveryChannel>.Failure("Failed to find linked delivery channel policy", WriteResult.BadRequest);
         }
-        
-
-        var updatedDefaultDeliveryChannel =  dbContext.DefaultDeliveryChannels.Update(defaultDeliveryChannel);
 
         await dbContext.SaveChangesAsync(cancellationToken); 
-        
-        var updated = new UpdateDefaultDeliveryChannelResult()
-        {
-            DefaultDeliveryChannel = updatedDefaultDeliveryChannel.Entity
-        };
 
-        return ModifyEntityResult<UpdateDefaultDeliveryChannelResult>.Success(updated);
+        return ModifyEntityResult<DefaultDeliveryChannel>.Success(defaultDeliveryChannel);
     }
 }
