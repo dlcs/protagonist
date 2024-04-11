@@ -125,7 +125,7 @@ public class IIIFCanvasFactory
 
         return new ImageSizeDetails()
         {
-            IsDerivativeOpen = false,
+            IsDerivativeOpen = true,
             MaxDerivativeSize = new Size(largest[0], largest[1])
         };
     }
