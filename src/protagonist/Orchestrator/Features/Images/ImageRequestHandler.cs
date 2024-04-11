@@ -174,7 +174,8 @@ public class ImageRequestHandler
             return true;
         }
 
-        if (assetRequest.IIIFImageRequest.Region.X + assetRequest.IIIFImageRequest.Region.Y == 0 &&
+        if (!assetRequest.IIIFImageRequest.Region.Percent &&
+            assetRequest.IIIFImageRequest.Region.X + assetRequest.IIIFImageRequest.Region.Y == 0 &&
             orchestrationImage.Width == assetRequest.IIIFImageRequest.Region.W &&
             orchestrationImage.Height == assetRequest.IIIFImageRequest.Region.H)
         {
