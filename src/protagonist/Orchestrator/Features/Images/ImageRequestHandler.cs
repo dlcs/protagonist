@@ -139,7 +139,7 @@ public class ImageRequestHandler
         }
 
         // /full/ that cannot be handled by thumbs (e.g. format, size, rotation, quality), handle with special-server
-        if (IsRequestFullOrEquivalent(assetRequest, orchestrationImage))
+        if (assetRequest.IIIFImageRequest.Region.Full)
         {
             if (orchestrationImage.S3Location.IsNullOrEmpty())
             {
