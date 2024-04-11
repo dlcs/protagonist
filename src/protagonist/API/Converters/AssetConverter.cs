@@ -31,11 +31,13 @@ public static class AssetConverter
         }
 
         var modelId = dbAsset.Id.Asset;
-        
+
         var image = new Image(urlRoots.BaseUrl, dbAsset.Customer, dbAsset.Space, modelId)
         {
             ImageService = $"{urlRoots.ResourceRoot}iiif-img/{dbAsset.Id}",
-            ThumbnailImageService = $"{urlRoots.ResourceRoot}thumbs/{dbAsset.Id}",
+            ThumbnailImageService = dbAsset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails)
+                ? $"{urlRoots.ResourceRoot}thumbs/{dbAsset.Id}"
+                : null,
             Created = dbAsset.Created,
             Origin = dbAsset.Origin,
             MaxUnauthorised = dbAsset.MaxUnauthorised,

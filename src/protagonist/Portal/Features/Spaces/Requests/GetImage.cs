@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
+using DLCS.Core.Collections;
 using DLCS.HydraModel;
 using DLCS.Web.Auth;
 using IIIF.ImageApi.V3;
@@ -66,6 +67,8 @@ public class GetImageHandler : IRequestHandler<GetImage, GetImageResult?>
     
     private async Task<ImageService3?> GetImageThumbnailService(Image image)
     {
+        if (image.ThumbnailImageService.IsNullOrEmpty()) return null;
+        
         try
         {
             var response = await httpClient.GetAsync($"{image.ThumbnailImageService}/info.json");

@@ -110,6 +110,11 @@ public class ImageIngestSettings
     public string CloseBracketReplacement { get; set; } = "_";
 
     /// <summary>
+    /// A list of thumbnails that will be added to every asset regardless of the thumbnail policy
+    /// </summary>
+    public List<string> DefaultThumbs { get; set; } = new();
+
+    /// <summary>
     /// Get the root folder, if forImageProcessor will ensure that it is compatible with needs of image-processor
     /// sidecar.
     /// </summary>

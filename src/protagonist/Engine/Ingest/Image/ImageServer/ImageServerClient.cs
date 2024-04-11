@@ -111,15 +111,17 @@ public class ImageServerClient : IImageProcessor
         var thumbPolicy = context.Asset.ImageDeliveryChannels.SingleOrDefault(
                 x=> x.Channel == AssetDeliveryChannels.Thumbnails)
             ?.DeliveryChannelPolicy.PolicyData;
-
-        var thumbsResponse = new List<ImageOnDisk>();
+        
+        var sizes = engineSettings.ImageIngest!.DefaultThumbs;
 
         if (thumbPolicy != null)
         {
-            var sizes = JsonSerializer.Deserialize<List<string>>(thumbPolicy);
-            thumbsResponse = await thumbsClient.GenerateThumbnails(context, sizes!, thumbFolder);
+            var sizesFromAsset = JsonSerializer.Deserialize<List<string>>(thumbPolicy);
+            sizes = sizes.Union(sizesFromAsset!).ToList();
         }
-        
+
+        var thumbsResponse = await thumbsClient.GenerateThumbnails(context, sizes, thumbFolder);
+
         // Create new thumbnails + update Storage on context
         await CreateNewThumbs(context, thumbsResponse);
     }
@@ -225,10 +227,10 @@ public class ImageServerClient : IImageProcessor
         var thumbSize = thumbs.Sum(t => fileSystem.GetFileSize(t.Path));
         context.WithStorage(thumbnailSize: thumbSize);
     }
-
+    
     public class ImageProcessorFlags
     {
-        private readonly List<string> derivativesOnlyPolicies = new List<string>()
+        private readonly List<string> derivativesOnlyPolicies = new()
         {
             "use-original"
         };
@@ -262,7 +264,7 @@ public class ImageServerClient : IImageProcessor
         /// </summary>
         /// <remarks>Used for calculating size and uploading (if required)</remarks>
         public string ImageServerFilePath { get; }
-        
+
         public ImageProcessorFlags(IngestionContext ingestionContext, string jp2OutputPath)
         {
             var assetFromOrigin =
