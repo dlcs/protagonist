@@ -117,7 +117,7 @@ public class ImageRequestHandler
         }
 
         // /full/ request but not /full/max/ - can it be handled by thumbnail service?
-        if (RegionFullNotMax(assetRequest))
+        if (RegionFullNotMax(assetRequest, orchestrationImage))
         {
             var canHandleByThumbResponse = CanRequestBeHandledByThumb(assetRequest, orchestrationImage);
             if (canHandleByThumbResponse.CanHandle)
@@ -139,7 +139,7 @@ public class ImageRequestHandler
         }
 
         // /full/ that cannot be handled by thumbs (e.g. format, size, rotation, quality), handle with special-server
-        if (assetRequest.IIIFImageRequest.Region.Full)
+        if (IsRequestFullOrEquivalent(assetRequest, orchestrationImage))
         {
             if (orchestrationImage.S3Location.IsNullOrEmpty())
             {
@@ -157,9 +157,19 @@ public class ImageRequestHandler
         return GenerateImageServerProxyResult(orchestrationImage, assetRequest, specialServer: false);
     }
 
-    private static bool RegionFullNotMax(ImageAssetDeliveryRequest assetRequest) 
-        => assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max;
+    private static bool RegionFullNotMax(ImageAssetDeliveryRequest assetRequest, OrchestrationImage orchestrationImage) 
+        => IsRequestFullOrEquivalent(assetRequest, orchestrationImage) && !assetRequest.IIIFImageRequest.Size.Max;
 
+    private static bool IsRequestFullOrEquivalent(ImageAssetDeliveryRequest assetRequest,
+        OrchestrationImage orchestrationImage)
+    {
+        if (assetRequest.IIIFImageRequest.Region.Full) return true;
+        
+        return assetRequest.IIIFImageRequest.Region.X + assetRequest.IIIFImageRequest.Region.Y == 0 &&
+               orchestrationImage.Width == assetRequest.IIIFImageRequest.Region.W &&
+               orchestrationImage.Height == assetRequest.IIIFImageRequest.Region.H;
+    }
+    
     private async Task<bool> IsRequestUnauthorised(ImageAssetDeliveryRequest assetRequest,
         OrchestrationImage orchestrationImage)
     {
