@@ -149,9 +149,9 @@ public class DefaultDeliveryChannelsController : HydraController
     }
     
     /// <summary>
-    /// Get an individual customer accessible default delivery channel (customer specific + system)
+    /// Delete an individual customer accessible default delivery channel (customer specific + system)
     /// </summary>
-    /// <returns>A Hydra JSON-LD default delivery channel object</returns>
+    /// <returns>A 204 status code on success, or problem detail response on failure</returns>
     [HttpDelete("{defaultDeliveryChannelId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -169,7 +169,7 @@ public class DefaultDeliveryChannelsController : HydraController
     
         return await HandleDelete(
             deleteCustomerDefaultDeliveryChannel,
-            errorTitle: "Get default delivery channel failed",
+            errorTitle: "Delete Default Delivery Channel failed",
             cancellationToken: cancellationToken
         );
     }

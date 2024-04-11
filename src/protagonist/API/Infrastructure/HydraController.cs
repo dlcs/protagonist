@@ -86,7 +86,7 @@ public abstract class HydraController : Controller
     /// <param name="errorTitle">The title of the error</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the <see cref="DeleteResult"/> is not understood</exception>
-    ///<returns>
+    /// <returns>
     /// ActionResult generated from DeleteResult. This will be 204 on success. Or a Hydra
     /// error and appropriate status code if failed.
     /// </returns>
@@ -111,7 +111,7 @@ public abstract class HydraController : Controller
     /// <param name="errorTitle">The title of the error</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the <see cref="DeleteResult"/> is not understood</exception>
-    ///<returns>
+    /// <returns>
     /// ActionResult generated from DeleteResult. This will be 204 on success. Or a Hydra
     /// error and appropriate status code if failed.
     /// </returns>
@@ -130,7 +130,7 @@ public abstract class HydraController : Controller
 
     private IActionResult ConvertDeleteToHttp(DeleteResult result, string? message)
     {
-        // Note: this is temporary until HandleDelete used for all deletions
+        // Note: this is temporary until DeleteResult used for all deletions
         return result switch
         {
             DeleteResult.NotFound => this.HydraNotFound(),
