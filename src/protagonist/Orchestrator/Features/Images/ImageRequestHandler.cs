@@ -163,11 +163,25 @@ public class ImageRequestHandler
     private static bool IsRequestFullOrEquivalent(ImageAssetDeliveryRequest assetRequest,
         OrchestrationImage orchestrationImage)
     {
-        if (assetRequest.IIIFImageRequest.Region.Full) return true;
-        
-        return assetRequest.IIIFImageRequest.Region.X + assetRequest.IIIFImageRequest.Region.Y == 0 &&
-               orchestrationImage.Width == assetRequest.IIIFImageRequest.Region.W &&
-               orchestrationImage.Height == assetRequest.IIIFImageRequest.Region.H;
+        if (assetRequest.IIIFImageRequest.Region.Full)
+        {
+            return true;
+        }
+
+        if (assetRequest.IIIFImageRequest.Region.Square &&
+            orchestrationImage.Width == orchestrationImage.Height)
+        {
+            return true;
+        }
+
+        if (assetRequest.IIIFImageRequest.Region.X + assetRequest.IIIFImageRequest.Region.Y == 0 &&
+            orchestrationImage.Width == assetRequest.IIIFImageRequest.Region.W &&
+            orchestrationImage.Height == assetRequest.IIIFImageRequest.Region.H)
+        {
+            return true;
+        }
+
+        return false;
     }
     
     private async Task<bool> IsRequestUnauthorised(ImageAssetDeliveryRequest assetRequest,
