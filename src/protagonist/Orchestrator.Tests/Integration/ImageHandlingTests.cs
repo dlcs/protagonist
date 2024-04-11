@@ -1483,8 +1483,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
-    [InlineData("iiif-img/99/1/tile/0,0,1000,1000/200,200/0/default.jpg", "tile")]
-    [InlineData("iiif-img/test/1/rewrite_id/0,0,1000,1000/200,200/0/default.jpg", "rewrite_id")]
+    [InlineData("iiif-img/99/1/tile/10,10,990,990/200,200/0/default.jpg", "tile")]
+    [InlineData("iiif-img/test/1/rewrite_id/10,10,990,990/200,200/0/default.jpg", "rewrite_id")]
     public async Task Get_RedirectsImageServer_AsFallThrough_ForTileRequests(string path, string imageName)
     {
         // Arrange
@@ -1508,6 +1508,38 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Assert
         proxyResponse.Uri.ToString().Should().StartWith("http://image-server/iiif");
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.SharedMaxAge.Should().Be(TimeSpan.FromDays(28));
+        response.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromDays(28));
+        response.Headers.Should().ContainKey("x-test-key").WhoseValue.Should().BeEquivalentTo("foo bar");
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+    }
+    
+    [Fact]
+    public async Task Get_RedirectsSpecialServer_ForTileRequests_IfRegionEquivalentToFull_WithNoMatchingThumbs()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_RedirectsSpecialServer_ForTileRequests_IfRegionEquivalentToFull_WithNoMatchingThumbs)}");
+        
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": []}",
+        });
+        
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
+            imageDeliveryChannels: deliveryChannelsForImage);
+        await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
+        await dbFixture.DbContext.CustomHeaders.AddTestCustomHeader("x-test-key", "foo bar");
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        //Act
+        var response = await httpClient.GetAsync($"iiif-img/{id}/0,0,1000,1000/200,200/0/default.jpg");
+        var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+        
+        // Assert
+        proxyResponse.Uri.ToString().Should().StartWith("http://special-server/iiif");
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.SharedMaxAge.Should().Be(TimeSpan.FromDays(28));
         response.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromDays(28));
