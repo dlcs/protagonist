@@ -6,7 +6,7 @@ namespace API.Infrastructure.Requests;
 /// Represents the result of a request to modify an entity
 /// </summary>
 /// <typeparam name="T">Type of entity being modified</typeparam>
-public class ModifyEntityResult<T>
+public class ModifyEntityResult<T> : IModifyRequest
     where T : class
 {
     /// <summary>
@@ -34,4 +34,38 @@ public class ModifyEntityResult<T>
 
     public static ModifyEntityResult<T> Success(T entity, WriteResult result = WriteResult.Updated)
         => new() { Entity = entity, WriteResult = result, IsSuccess = true };
+}
+
+/// <summary>
+/// Represents the result of a request to modify an entity
+/// </summary>
+public class DeleteEntityResult : IModifyRequest
+{
+    /// <summary>
+    /// The associated value.
+    /// </summary>
+    public DeleteResult Value { get; private init; }
+    
+    /// <summary>
+    /// The message related to the result
+    /// </summary>
+    public string? Message { get; private init; }
+    
+    public bool IsSuccess => Value == DeleteResult.Deleted;
+    
+    public static DeleteEntityResult Success => new() { Value = DeleteResult.Deleted };
+
+    public static DeleteEntityResult Failure(string message, DeleteResult result) =>
+        new() { Message = message, Value = result };
+}
+
+/// <summary>
+/// Marker interface for operations that alter an underlying entity
+/// </summary>
+public interface IModifyRequest
+{
+    /// <summary>
+    /// Whether record is deemed as success or not
+    /// </summary>
+    bool IsSuccess { get; }
 }

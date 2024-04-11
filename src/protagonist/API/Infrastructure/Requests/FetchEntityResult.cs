@@ -3,7 +3,7 @@ namespace API.Infrastructure.Requests;
 /// <summary>
 /// Represents the result of a request to load an entity
 /// </summary>
-/// <typeparam name="T">Type of entity being modified</typeparam>
+/// <typeparam name="T">Type of entity being loaded</typeparam>
 public class FetchEntityResult<T>
     where T : class
 {

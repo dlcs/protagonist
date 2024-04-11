@@ -6,4 +6,6 @@
 public static class CacheKeys
 {
     public static string Customer(int customerId) => $"cust:{customerId}";
+    
+    public static string DefaultDeliveryChannels(int customerId) => $"defaultDeliveryChannels:{customerId}";
 }
