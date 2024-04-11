@@ -415,6 +415,43 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Put_NewImageAsset_FailsToCreateAsset_WhenMatchingDefaultDeliveryChannelsAreInvalid()
+    {
+        // arrange
+        const int customerId = 9901;
+        var assetId = new AssetId(customerId, 1, nameof(Put_NewImageAsset_FailsToCreateAsset_WhenMatchingDefaultDeliveryChannelsAreInvalid));
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+          ""mediaType"": ""application/tiff""
+        }}";
+
+        await dbContext.Spaces.AddTestSpace(customerId, 1);
+        
+        dbContext.DefaultDeliveryChannels.Add(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel()
+        {
+            Customer = customerId,
+            MediaType = "application/*",
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone,
+        });
+        dbContext.DefaultDeliveryChannels.Add(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel()
+        {
+            Customer = customerId,
+            MediaType = "application/*",
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.None,
+        });
+
+        await dbContext.SaveChangesAsync();
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }  
+    
+    [Fact]
     public async Task Put_NewImageAsset_CreatesAsset_WhenMediaTypeAndFamilyNotSetWithLegacyEnabled()
     {
         const int customer = 325665;
