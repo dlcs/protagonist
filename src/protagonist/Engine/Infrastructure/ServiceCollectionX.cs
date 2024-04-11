@@ -4,12 +4,14 @@ using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Model.Policies;
 using DLCS.Model.Processing;
 using DLCS.Model.Storage;
 using DLCS.Repository;
+using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
@@ -86,7 +88,7 @@ public static class ServiceCollectionX
             .AddScoped<ImageIngesterWorker>()
             .AddScoped<IImageIngestPostProcessing, ImageIngestPostProcessing>()
             .AddScoped<IngestExecutor>()
-            .AddSingleton<IThumbCreator, ThumbCreator>()
+            .AddScoped<IThumbCreator, ThumbCreator>()
             .AddScoped<IWorkerBuilder, WorkerBuilder>()
             .AddSingleton<IFileSystem, FileSystem>()
             .AddSingleton<IMediaTranscoder, ElasticTranscoder>()
@@ -135,6 +137,7 @@ public static class ServiceCollectionX
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
             .AddScoped<IStorageRepository, CustomerStorageRepository>()
             .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
+            .AddScoped<IAssetApplicationMetadataRepository, AssetApplicationMetadataRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>

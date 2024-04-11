@@ -9,6 +9,7 @@ using DLCS.Core.Enum;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
@@ -683,11 +684,16 @@ public partial class DlcsContext : DbContext
 
         modelBuilder.Entity<AssetApplicationMetadata>(entity =>
         {
+            entity.Property(e => e.Id).HasMaxLength(100);
             entity.Property(e => e.ImageId).IsRequired().HasConversion(
                 aId => aId.ToString(),
                 id => AssetId.FromString(id));
             entity.Property(e => e.MetadataType).IsRequired();
             entity.Property(e => e.MetadataValue).IsRequired().HasColumnType("jsonb");
+            
+            entity.HasOne(e => e.Asset)
+                .WithMany(e => e.AssetApplicationMetadata)
+                .HasForeignKey(e => e.ImageId);
         });
 
         OnModelCreatingPartial(modelBuilder);

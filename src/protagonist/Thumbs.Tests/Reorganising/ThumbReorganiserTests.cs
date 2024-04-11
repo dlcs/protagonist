@@ -3,6 +3,7 @@ using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Assets.Thumbs;
 using DLCS.Model.Policies;
 using FakeItEasy;
@@ -20,6 +21,7 @@ public class ThumbReorganiserTests
     private readonly IPolicyRepository thumbPolicyRepository;
     private readonly ThumbReorganiser sut;
     private readonly IBucketWriter bucketWriter;
+    private readonly IAssetApplicationMetadataRepository assetApplicationMetadataRepository;
 
     public ThumbReorganiserTests()
     {
@@ -27,10 +29,11 @@ public class ThumbReorganiserTests
         bucketWriter = A.Fake<IBucketWriter>();
         assetRepository = A.Fake<IAssetRepository>();
         thumbPolicyRepository = A.Fake<IPolicyRepository>();
+        assetApplicationMetadataRepository = A.Fake<IAssetApplicationMetadataRepository>();
         IStorageKeyGenerator storageKeyGenerator = new S3StorageKeyGenerator(
             Options.Create(new AWSSettings { S3 = new S3Settings { ThumbsBucket = "the-bucket" } }));
         sut = new ThumbReorganiser(bucketReader, bucketWriter, new NullLogger<ThumbReorganiser>(), assetRepository,
-            thumbPolicyRepository, storageKeyGenerator);
+            thumbPolicyRepository, assetApplicationMetadataRepository, storageKeyGenerator);
     }
 
     [Fact]

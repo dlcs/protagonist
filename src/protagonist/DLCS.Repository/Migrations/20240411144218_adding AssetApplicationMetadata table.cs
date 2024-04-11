@@ -14,10 +14,9 @@ namespace DLCS.Repository.Migrations
                 name: "AssetApplicationMetadata",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<int>(type: "integer", maxLength: 100, nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    ImageId = table.Column<string>(type: "text", nullable: false),
-                    AssetId = table.Column<string>(type: "character varying(500)", nullable: false),
+                    ImageId = table.Column<string>(type: "character varying(500)", nullable: false),
                     MetadataType = table.Column<string>(type: "text", nullable: false),
                     MetadataValue = table.Column<string>(type: "jsonb", nullable: false),
                     Created = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -27,17 +26,17 @@ namespace DLCS.Repository.Migrations
                 {
                     table.PrimaryKey("PK_AssetApplicationMetadata", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_AssetApplicationMetadata_Images_AssetId",
-                        column: x => x.AssetId,
+                        name: "FK_AssetApplicationMetadata_Images_ImageId",
+                        column: x => x.ImageId,
                         principalTable: "Images",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_AssetApplicationMetadata_AssetId",
+                name: "IX_AssetApplicationMetadata_ImageId",
                 table: "AssetApplicationMetadata",
-                column: "AssetId");
+                column: "ImageId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

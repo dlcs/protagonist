@@ -1,6 +1,7 @@
 ﻿using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Policies;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Policies;
@@ -30,6 +31,7 @@ public static class ServiceCollectionX
             Log.Information("Thumbs supports reorganising thumbs");
             services
                 .AddSingleton<IThumbnailPolicyRepository, DapperThumbnailPolicy>()
+                .AddScoped<IAssetApplicationMetadataRepository, AssetApplicationMetadataRepository>()
                 .AddSingleton<ThumbRepository>()
                 .AddSingleton<IThumbRepository>(provider =>
                     ActivatorUtilities.CreateInstance<ReorganisingThumbRepository>(

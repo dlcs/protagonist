@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    [Migration("20240411134159_adding AssetApplicationMetadata table")]
+    [Migration("20240411144218_adding AssetApplicationMetadata table")]
     partial class addingAssetApplicationMetadatatable
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -184,43 +184,6 @@ namespace DLCS.Repository.Migrations
                     b.ToTable("Images", (string)null);
                 });
 
-            modelBuilder.Entity("DLCS.Model.Assets.AssetApplicationMetadata", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AssetId")
-                        .IsRequired()
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime>("Created")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ImageId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("MetadataType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("MetadataValue")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<DateTime>("Modified")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AssetId");
-
-                    b.ToTable("AssetApplicationMetadata");
-                });
-
             modelBuilder.Entity("DLCS.Model.Assets.Batch", b =>
                 {
                     b.Property<int>("Id")
@@ -370,6 +333,40 @@ namespace DLCS.Repository.Migrations
                     b.HasIndex(new[] { "Customer", "Space", "Id" }, "IX_ImageStorageByCustomerSpace");
 
                     b.ToTable("ImageStorage", (string)null);
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.Metadata.AssetApplicationMetadata", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImageId")
+                        .IsRequired()
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("MetadataType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetadataValue")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("Modified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImageId");
+
+                    b.ToTable("AssetApplicationMetadata");
                 });
 
             modelBuilder.Entity("DLCS.Model.Assets.NamedQueries.NamedQuery", b =>
@@ -1071,17 +1068,6 @@ namespace DLCS.Repository.Migrations
                     b.ToTable("MetricThresholds");
                 });
 
-            modelBuilder.Entity("DLCS.Model.Assets.AssetApplicationMetadata", b =>
-                {
-                    b.HasOne("DLCS.Model.Assets.Asset", "Asset")
-                        .WithMany()
-                        .HasForeignKey("AssetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Asset");
-                });
-
             modelBuilder.Entity("DLCS.Model.Assets.ImageDeliveryChannel", b =>
                 {
                     b.HasOne("DLCS.Model.Policies.DeliveryChannelPolicy", "DeliveryChannelPolicy")
@@ -1101,6 +1087,17 @@ namespace DLCS.Repository.Migrations
                     b.Navigation("DeliveryChannelPolicy");
                 });
 
+            modelBuilder.Entity("DLCS.Model.Assets.Metadata.AssetApplicationMetadata", b =>
+                {
+                    b.HasOne("DLCS.Model.Assets.Asset", "Asset")
+                        .WithMany("AssetApplicationMetadata")
+                        .HasForeignKey("ImageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Asset");
+                });
+
             modelBuilder.Entity("DLCS.Model.DeliveryChannels.DefaultDeliveryChannel", b =>
                 {
                     b.HasOne("DLCS.Model.Policies.DeliveryChannelPolicy", "DeliveryChannelPolicy")
@@ -1114,6 +1111,8 @@ namespace DLCS.Repository.Migrations
 
             modelBuilder.Entity("DLCS.Model.Assets.Asset", b =>
                 {
+                    b.Navigation("AssetApplicationMetadata");
+
                     b.Navigation("ImageDeliveryChannels");
                 });
 

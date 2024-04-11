@@ -3,6 +3,7 @@ using DLCS.Core;
 using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Assets.Thumbs;
 using IIIF;
@@ -17,7 +18,8 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
     public ThumbCreator(
         IBucketWriter bucketWriter,
         IStorageKeyGenerator storageKeyGenerator,
-        ILogger<ThumbCreator> logger) : base(bucketWriter, storageKeyGenerator)
+        IAssetApplicationMetadataRepository assetApplicationMetadataRepository,
+        ILogger<ThumbCreator> logger) : base(bucketWriter, storageKeyGenerator, assetApplicationMetadataRepository)
     {
         this.logger = logger;
     }

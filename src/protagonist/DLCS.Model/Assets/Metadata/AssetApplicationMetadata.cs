@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using DLCS.Core.Types;
 
-namespace DLCS.Model.Assets;
+namespace DLCS.Model.Assets.Metadata;
 
 public class AssetApplicationMetadata
 {

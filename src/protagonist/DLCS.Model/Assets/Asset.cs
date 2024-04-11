@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
+using DLCS.Model.Assets.Metadata;
 
 namespace DLCS.Model.Assets;
 
@@ -99,6 +100,11 @@ public class Asset
     /// A list of image delivery channels attached to this asset
     /// </summary>
     public ICollection<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
+    
+    /// <summary>
+    /// A list of metadata attached to this asset
+    /// </summary>
+    public ICollection<AssetApplicationMetadata> AssetApplicationMetadata { get; set; }
 
     public Asset()
     {
