@@ -95,7 +95,7 @@ public class IIIFCanvasFactory
                 }.AsList()
             };
 
-            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails) && !thumbnailSizes.OpenThumbnails.IsNullOrEmpty())
+            if (ShouldAddThumbs(asset, thumbnailSizes))
             {
                 canvas.Thumbnail = new IIIF3.Content.Image
                 {
@@ -120,7 +120,7 @@ public class IIIFCanvasFactory
         }
 
         // temporary - will be replaced by call to application metadata table
-        var thumbs = await thumbRepository.GetAllSizes(i.Id);
+        var thumbs = await thumbRepository.GetOpenSizes(i.Id);
         var largest = thumbs.MaxBy(x => x.Sum());
 
         return new ImageSizeDetails()
@@ -172,7 +172,7 @@ public class IIIFCanvasFactory
                 }.AsList()
             };
 
-            if (!asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails) || !thumbnailSizes.OpenThumbnails.IsNullOrEmpty())
+            if (ShouldAddThumbs(asset, thumbnailSizes))
             {
                 canvas.Thumbnail = new IIIF2.Thumbnail
                 {
@@ -360,6 +360,11 @@ public class IIIFCanvasFactory
             { "Tags", asset.Tags ?? string.Empty },
             { "Roles", asset.Roles ?? string.Empty }
         };
+    }
+    
+    private static bool ShouldAddThumbs(Asset asset, ImageSizeDetails thumbnailSizes)
+    {
+        return asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails) && !thumbnailSizes.OpenThumbnails.IsNullOrEmpty();
     }
     
     /// <summary>
