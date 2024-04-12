@@ -24,14 +24,13 @@ public class DeliveryChannelPolicyDataValidatorTests
     }
     
     [Theory]
-    [InlineData("[\"400,400\",\"200,200\",\"100,100\"]")]
-    [InlineData("[\"!400,400\",\"!200,200\",\"!100,100\"]")]
     [InlineData("[\"400,\",\"200,\",\"100,\"]")]
     [InlineData("[\"!400,\",\"!200,\",\"!100,\"]")]
-    [InlineData("[\"400,400\"]")]
-    public async Task PolicyDataValidator_ReturnsTrue_ForValidThumbSizes(string policyData)
+    [InlineData("[\",400\",\",200\",\",100\"]")]
+    [InlineData("[\"!,400\",\"!,200\",\"!,100\"]")]
+    public async Task PolicyDataValidator_ReturnsTrue_ForValidThumbParameters(string policyData)
     {
-        // Arrange And Act
+        // Arrange and Act
         var result = await sut.Validate(policyData, "thumbs");
         
         // Assert
@@ -42,7 +41,7 @@ public class DeliveryChannelPolicyDataValidatorTests
     public async Task PolicyDataValidator_ReturnsFalse_ForBadThumbSizes()
     {
         // Arrange
-        var policyData = "[\"400,400\",\"foo,bar\",\"100,100\"]";
+        var policyData = "[\"400,\",\"foo,bar\",\"100,\"]";
    
         // Act
         var result = await sut.Validate(policyData, "thumbs");
@@ -55,7 +54,7 @@ public class DeliveryChannelPolicyDataValidatorTests
     public async Task PolicyDataValidator_ReturnsFalse_ForInvalidThumbSizesJson()
     {
         // Arrange
-        var policyData = "[\"400,400\",";
+        var policyData = "[\"400,\",";
    
         // Act
         var result = await sut.Validate(policyData, "thumbs");
@@ -69,6 +68,26 @@ public class DeliveryChannelPolicyDataValidatorTests
     [InlineData("[]")]
     [InlineData("[\"\"]")]
     public async Task PolicyDataValidator_ReturnsFalse_ForEmptyThumbSizes(string policyData)
+    {
+        // Arrange and Act
+        var result = await sut.Validate(policyData, "thumbs");
+        
+        // Assert
+        result.Should().BeFalse();
+    }
+    
+    [Theory]
+    [InlineData("[\"max\"]")]
+    [InlineData("[\"^max\"]")]
+    [InlineData("[\"^,512\"]")]
+    [InlineData("[\"^512,\"]")]
+    [InlineData("[\"^!,512\"]")]
+    [InlineData("[\"^!512,\"]")]
+    [InlineData("[\"41.6,7.5\"]")]
+    [InlineData("[\"^pct:41.6,7.5\"]")]
+    [InlineData("[\"10,50\"]")]
+    [InlineData("[\",\"]")]
+    public async Task PolicyDataValidator_ReturnsFalse_ForInvalidThumbParameters(string policyData)
     {
         // Arrange and Act
         var result = await sut.Validate(policyData, "thumbs");
