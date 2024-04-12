@@ -1,9 +1,9 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
@@ -113,15 +113,8 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData(@"[\""400,\"",\""200,\"",\""100,\""]", "my-thumbs-policy-1-a")]
-    [InlineData(@"[\""!400,\"",\""!200,\"",\""!100,\""]", "my-thumbs-policy-1-b")]
-    [InlineData(@"[\"",400\"",\"",200\"",\"",100\""]", "my-thumbs-policy-1-c")]
-    [InlineData(@"[\""!,400\"",\""!,200\"",\""!,100\""]", "my-thumbs-policy-1-d")]
-    [InlineData(@"[\""^400,\"",\""^200,\"",\""^100,\""]", "my-thumbs-policy-1-e")]
-    [InlineData(@"[\""^!400,\"",\""^!200,\"",\""^!100,\""]", "my-thumbs-policy-1-f")]
-    [InlineData(@"[\""^,400\"",\""^,200\"",\""^,100\""]", "my-thumbs-policy-1-g")]
-    [InlineData(@"[\""^!,400\"",\""^!,200\"",\""^!,100\""]", "my-thumbs-policy-1-h")]
-    public async Task Post_DeliveryChannelPolicy_201_WithThumbsPolicy(string thumbParams, string policyName)
+    [MemberData(nameof(ValidThumbsPolicies))]
+    public async Task Post_DeliveryChannelPolicy_201_WithThumbsPolicy(string policyName, string thumbParams)
     {
         // Arrange
         const int customerId = 88;
@@ -222,20 +215,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData("")] // No PolicyData specified
-    [InlineData("[]")] // Empty array
-    [InlineData("[\"\"]")] // Array containing an empty value
-    [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
-    [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
-    [InlineData(@"[\""max\""]")] // SizeParameter specific rules
-    [InlineData(@"[\""^max\""]")]
-    [InlineData(@"[\""441.6,7.5\""]")]
-    [InlineData(@"[\""441.6,\""]")]
-    [InlineData(@"[\"",7.5\""]")]
-    [InlineData(@"[\""pct:441.6,7.5\""]")]
-    [InlineData(@"[\""^pct:41.6,7.5\""]")]
-    [InlineData(@"[\""10,50\""]")]
-    [InlineData(@"[\"",\""]")]
+    [MemberData(nameof(InvalidPutThumbsPolicies))]
     public async Task Post_DeliveryChannelPolicy_400_IfThumbsPolicyDataInvalid(string policyData)
     {
         // Arrange
@@ -366,15 +346,8 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData(@"[\""400,\"",\""200,\"",\""100,\""]", "my-thumbs-policy-1-a")]
-    [InlineData(@"[\""!400,\"",\""!200,\"",\""!100,\""]", "my-thumbs-policy-1-b")]
-    [InlineData(@"[\"",400\"",\"",200\"",\"",100\""]", "my-thumbs-policy-1-c")]
-    [InlineData(@"[\""!,400\"",\""!,200\"",\""!,100\""]", "my-thumbs-policy-1-d")]
-    [InlineData(@"[\""^400,\"",\""^200,\"",\""^100,\""]", "my-thumbs-policy-1-e")]
-    [InlineData(@"[\""^!400,\"",\""^!200,\"",\""^!100,\""]", "my-thumbs-policy-1-f")]
-    [InlineData(@"[\""^,400\"",\""^,200\"",\""^,100\""]", "my-thumbs-policy-1-g")]
-    [InlineData(@"[\""^!,400\"",\""^!,200\"",\""^!,100\""]", "my-thumbs-policy-1-h")]
-    public async Task Put_DeliveryChannelPolicy_200_WithThumbsPolicy(string thumbParams, string policyName)
+    [MemberData(nameof(ValidThumbsPolicies))]
+    public async Task Put_DeliveryChannelPolicy_200_WithThumbsPolicy(string policyName, string thumbParams)
     {
         // Arrange
         const int customerId = 88;
@@ -454,20 +427,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData("")] // No PolicyData specified
-    [InlineData("[]")] // Empty array
-    [InlineData("[\"\"]")] // Array containing an empty value
-    [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
-    [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
-    [InlineData(@"[\""max\""]")] // SizeParameter specific rules
-    [InlineData(@"[\""^max\""]")]
-    [InlineData(@"[\""441.6,7.5\""]")]
-    [InlineData(@"[\""441.6,\""]")]
-    [InlineData(@"[\"",7.5\""]")]
-    [InlineData(@"[\""pct:441.6,7.5\""]")]
-    [InlineData(@"[\""^pct:41.6,7.5\""]")]
-    [InlineData(@"[\""10,50\""]")]
-    [InlineData(@"[\"",\""]")]
+    [MemberData(nameof(InvalidPutThumbsPolicies))]
     public async Task Put_DeliveryChannelPolicy_400_IfThumbsPolicyDataInvalid(string policyData)
     {
         // Arrange
@@ -596,15 +556,8 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData(@"[\""400,\"",\""200,\"",\""100,\""]")]
-    [InlineData(@"[\""!400,\"",\""!200,\"",\""!100,\""]")]
-    [InlineData(@"[\"",400\"",\"",200\"",\"",100\""]")]
-    [InlineData(@"[\""!,400\"",\""!,200\"",\""!,100\""]")]
-    [InlineData(@"[\""^400,\"",\""^200,\"",\""^100,\""]")]
-    [InlineData(@"[\""^!400,\"",\""^!200,\"",\""^!100,\""]")]
-    [InlineData(@"[\""^,400\"",\""^,200\"",\""^,100\""]")]
-    [InlineData(@"[\""^!,400\"",\""^!,200\"",\""^!,100\""]")]
-    public async Task Patch_DeliveryChannelPolicy_200_WithThumbsPolicy(string policyData)
+    [MemberData(nameof(ValidThumbsPolicies))]
+    public async Task Patch_DeliveryChannelPolicy_200_WithThumbsPolicy(string policyId, string policyData)
     {
         // Arrange
         const int customerId = 88;
@@ -644,19 +597,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData("[]")] // Empty array
-    [InlineData("[\"\"]")] // Array containing an empty value
-    [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
-    [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
-    [InlineData(@"[\""max\""]")] // SizeParameter specific rules
-    [InlineData(@"[\""^max\""]")]
-    [InlineData(@"[\""441.6,7.5\""]")]
-    [InlineData(@"[\""441.6,\""]")]
-    [InlineData(@"[\"",7.5\""]")]
-    [InlineData(@"[\""pct:441.6,7.5\""]")]
-    [InlineData(@"[\""^pct:41.6,7.5\""]")]
-    [InlineData(@"[\""10,50\""]")]
-    [InlineData(@"[\"",\""]")]
+    [MemberData(nameof(InvalidPatchThumbsPolicies))]
     public async Task Patch_DeliveryChannelPolicy_400_IfThumbsPolicyDataInvalid(string policyData)
     {
         // Arrange
@@ -835,4 +776,74 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
+    
+    public static IEnumerable<object[]> ValidThumbsPolicies => new List<object[]>
+    {
+        new object[]
+        {
+            "my-thumbs-policy-1-a",
+            @"[\""400,\"",\""200,\"",\""100,\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-b",
+            @"[\""!400,\"",\""!200,\"",\""!100,\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-c",
+            @"[\"",400\"",\"",200\"",\"",100\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-d",
+            @"[\""!,400\"",\""!,200\"",\""!,100\""]"
+
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-e",
+            @"[\""^400,\"",\""^200,\"",\""^100,\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-f",
+            @"[\""^!400,\"",\""^!200,\"",\""^!100,\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-g",
+            @"[\""^,400\"",\""^,200\"",\""^,100\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-h",
+            @"[\""^!,400\"",\""^!,200\"",\""^!,100\""]"
+        }
+    };
+
+    public static ICollection<object[]> InvalidPatchThumbsPolicies => new List<string>()
+    {
+        "[]", // Empty array
+        "[\"\"]", // Array containing an empty value
+        @"[\""foo\"",\""bar\""]", // Invalid data
+        @"[\""100,100\"",\""200,200\""]", // Invalid JSON
+        @"[\""max\""]", // SizeParameter specific rules
+        @"[\""^max\""]",
+        @"[\""441.6,7.5\""]",
+        @"[\""441.6,\""]",
+        @"[\"",7.5\""]",
+        @"[\""pct:441.6,7.5\""]",
+        @"[\""^pct:41.6,7.5\""]",
+        @"[\""10,50\""]",
+        @"[\"",\""]"
+    }.Select(x => new object[] { x }).ToList();
+
+    public static ICollection<object[]> InvalidPutThumbsPolicies => InvalidPatchThumbsPolicies.Concat(new List<object[]>()
+    {
+        new object[]
+        {
+            "" // No PolicyData specified
+        }
+    }).ToList();
 }
