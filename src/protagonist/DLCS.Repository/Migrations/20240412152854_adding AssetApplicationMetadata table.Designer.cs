@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    [Migration("20240412090855_adding AssetApplicationMetadata table")]
+    [Migration("20240412152854_adding AssetApplicationMetadata table")]
     partial class addingAssetApplicationMetadatatable
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -337,7 +337,7 @@ namespace DLCS.Repository.Migrations
 
             modelBuilder.Entity("DLCS.Model.Assets.Metadata.AssetApplicationMetadata", b =>
                 {
-                    b.Property<string>("ImageId")
+                    b.Property<string>("AssetId")
                         .HasColumnType("character varying(500)");
 
                     b.Property<string>("MetadataType")
@@ -353,7 +353,7 @@ namespace DLCS.Repository.Migrations
                     b.Property<DateTime>("Modified")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("ImageId", "MetadataType");
+                    b.HasKey("AssetId", "MetadataType");
 
                     b.ToTable("AssetApplicationMetadata");
                 });
@@ -1080,7 +1080,7 @@ namespace DLCS.Repository.Migrations
                 {
                     b.HasOne("DLCS.Model.Assets.Asset", "Asset")
                         .WithMany("AssetApplicationMetadata")
-                        .HasForeignKey("ImageId")
+                        .HasForeignKey("AssetId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

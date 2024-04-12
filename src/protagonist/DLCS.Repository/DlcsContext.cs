@@ -684,8 +684,8 @@ public partial class DlcsContext : DbContext
 
         modelBuilder.Entity<AssetApplicationMetadata>(entity =>
         {
-            entity.HasKey(e => new { e.ImageId, e.MetadataType });
-            entity.Property(e => e.ImageId).IsRequired().HasConversion(
+            entity.HasKey(e => new { ImageId = e.AssetId, e.MetadataType });
+            entity.Property(e => e.AssetId).IsRequired().HasConversion(
                 aId => aId.ToString(),
                 id => AssetId.FromString(id));
             entity.Property(e => e.MetadataType).IsRequired();
@@ -693,7 +693,7 @@ public partial class DlcsContext : DbContext
             
             entity.HasOne(e => e.Asset)
                 .WithMany(e => e.AssetApplicationMetadata)
-                .HasForeignKey(e => e.ImageId);
+                .HasForeignKey(e => e.AssetId);
         });
 
         OnModelCreatingPartial(modelBuilder);

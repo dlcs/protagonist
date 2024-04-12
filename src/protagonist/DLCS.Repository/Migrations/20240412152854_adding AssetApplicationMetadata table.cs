@@ -13,7 +13,7 @@ namespace DLCS.Repository.Migrations
                 name: "AssetApplicationMetadata",
                 columns: table => new
                 {
-                    ImageId = table.Column<string>(type: "character varying(500)", nullable: false),
+                    AssetId = table.Column<string>(type: "character varying(500)", nullable: false),
                     MetadataType = table.Column<string>(type: "text", nullable: false),
                     MetadataValue = table.Column<string>(type: "jsonb", nullable: false),
                     Created = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -21,10 +21,10 @@ namespace DLCS.Repository.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AssetApplicationMetadata", x => new { x.ImageId, x.MetadataType });
+                    table.PrimaryKey("PK_AssetApplicationMetadata", x => new { x.AssetId, x.MetadataType });
                     table.ForeignKey(
-                        name: "FK_AssetApplicationMetadata_Images_ImageId",
-                        column: x => x.ImageId,
+                        name: "FK_AssetApplicationMetadata_Images_AssetId",
+                        column: x => x.AssetId,
                         principalTable: "Images",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);

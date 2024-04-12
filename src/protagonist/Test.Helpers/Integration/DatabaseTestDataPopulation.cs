@@ -190,7 +190,7 @@ public static class DatabaseTestDataPopulation
         string metadataType, string metadataValue)
         => assetApplicationMetadata.AddAsync(new AssetApplicationMetadata()
         {
-            ImageId = assetId,
+            AssetId = assetId,
             MetadataType = metadataType,
             MetadataValue = metadataValue,
             Created = DateTime.UtcNow,

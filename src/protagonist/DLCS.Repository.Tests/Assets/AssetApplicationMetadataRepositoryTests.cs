@@ -36,7 +36,7 @@ public class AssetApplicationMetadataRepositoryTests
             AssetApplicationMetadataTypes.ThumbSizes, metadataValue);
 
         var metaDataFromDatabase = await dbContext.AssetApplicationMetadata.FirstAsync(x =>
-            x.ImageId == assetId && x.MetadataType == AssetApplicationMetadataTypes.ThumbSizes);
+            x.AssetId == assetId && x.MetadataType == AssetApplicationMetadataTypes.ThumbSizes);
         
         // Assert
         metadata.Should().NotBeNull();
@@ -57,7 +57,7 @@ public class AssetApplicationMetadataRepositoryTests
         var metadata = await sut.UpsertApplicationMetadata(assetId, 
             AssetApplicationMetadataTypes.ThumbSizes, newMetadataValue);
         var metaDataFromDatabase = await dbContext.AssetApplicationMetadata.FirstAsync(x =>
-            x.ImageId == assetId && x.MetadataType == AssetApplicationMetadataTypes.ThumbSizes);
+            x.AssetId == assetId && x.MetadataType == AssetApplicationMetadataTypes.ThumbSizes);
         
         // Assert
         metadata.Should().NotBeNull();

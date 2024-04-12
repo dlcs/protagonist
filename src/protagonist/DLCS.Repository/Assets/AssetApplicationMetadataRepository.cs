@@ -20,7 +20,7 @@ public class AssetApplicationMetadataRepository : IAssetApplicationMetadataRepos
         CancellationToken cancellationToken = default)
     {
         var addedMetadata =  await dlcsContext.AssetApplicationMetadata.FirstOrDefaultAsync(e =>
-            e.ImageId == assetId && e.MetadataType == metadataType, cancellationToken);
+            e.AssetId == assetId && e.MetadataType == metadataType, cancellationToken);
 
         if (addedMetadata is not null)
         {
@@ -33,7 +33,7 @@ public class AssetApplicationMetadataRepository : IAssetApplicationMetadataRepos
         
         var databaseMetadata= await dlcsContext.AssetApplicationMetadata.AddAsync(new AssetApplicationMetadata()
         {
-            ImageId = assetId,
+            AssetId = assetId,
             MetadataType = metadataType,
             MetadataValue = metadataValue,
             Created = DateTime.UtcNow,

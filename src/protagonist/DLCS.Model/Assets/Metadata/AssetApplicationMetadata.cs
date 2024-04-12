@@ -8,7 +8,7 @@ public class AssetApplicationMetadata
     /// <summary>
     /// The image id for the attached asset
     /// </summary>
-    public AssetId ImageId { get; set; }
+    public AssetId AssetId { get; set; }
     
     public Asset Asset { get; set; }
     
@@ -23,12 +23,12 @@ public class AssetApplicationMetadata
     public string MetadataValue { get; set; }  
     
     /// <summary>
-    /// When the metadata was created. 
+    /// When the metadata was created
     /// </summary>
     public DateTime Created { get; set; }
     
     /// <summary>
-    /// When the metadata was last modified.
+    /// When the metadata was last modified
     /// </summary>
     public DateTime Modified { get; set; }
 }
