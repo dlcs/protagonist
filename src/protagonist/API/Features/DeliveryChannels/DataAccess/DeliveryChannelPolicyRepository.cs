@@ -31,7 +31,7 @@ public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
 
     public async Task<DeliveryChannelPolicy> RetrieveDeliveryChannelPolicy(int customerId, string channel, string policy)
     {
-        var key = $"deliveryChannelPolicies:{customerId}";
+        var key = CacheKeys.DeliveryChannelPolicies(customerId);
         
         var deliveryChannelPolicies = await appCache.GetOrAddAsync(key, async () =>
         {

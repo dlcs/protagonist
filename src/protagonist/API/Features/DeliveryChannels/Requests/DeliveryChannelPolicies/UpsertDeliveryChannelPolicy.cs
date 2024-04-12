@@ -1,42 +1,48 @@
-﻿using API.Features.DeliveryChannels.Validation;
+﻿using API.Features.DeliveryChannels.Helpers;
 using API.Infrastructure.Requests;
+using API.Infrastructure.Requests.Pipelines;
 using DLCS.Core;
 using DLCS.Model.Policies;
 using DLCS.Repository;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.DeliveryChannels.Requests.DeliveryChannelPolicies;
 
-public class UpdateDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryChannelPolicy>>
+/// <summary>
+/// Create or update DeliveryChannelPolicy, only DisplayName and PolicyData can be updated
+/// </summary>
+public class UpsertDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryChannelPolicy>>, IInvalidateCaches
 {
     public int CustomerId { get; }
     
     public DeliveryChannelPolicy DeliveryChannelPolicy { get; }
     
-    public UpdateDeliveryChannelPolicy(int customerId, DeliveryChannelPolicy deliveryChannelPolicy)
+    public UpsertDeliveryChannelPolicy(int customerId, DeliveryChannelPolicy deliveryChannelPolicy)
     {
         CustomerId = customerId;
         DeliveryChannelPolicy = deliveryChannelPolicy;
     }
+    
+    public string[] InvalidatedCacheKeys => new[]
+        { CacheKeys.DeliveryChannelPolicies(CustomerId), CacheKeys.DefaultDeliveryChannels(CustomerId) };
 }
 
-public class UpdateDeliveryChannelPolicyHandler : IRequestHandler<UpdateDeliveryChannelPolicy, ModifyEntityResult<DeliveryChannelPolicy>>
+public class UpsertDeliveryChannelPolicyHandler : IRequestHandler<UpsertDeliveryChannelPolicy, ModifyEntityResult<DeliveryChannelPolicy>>
 {
     private readonly DlcsContext dbContext;
     
-    public UpdateDeliveryChannelPolicyHandler(DlcsContext dbContext, DeliveryChannelPolicyDataValidator policyDataValidator)
+    public UpsertDeliveryChannelPolicyHandler(DlcsContext dbContext)
     {
         this.dbContext = dbContext;
     }
     
-    public async Task<ModifyEntityResult<DeliveryChannelPolicy>> Handle(UpdateDeliveryChannelPolicy request, CancellationToken cancellationToken)
+    public async Task<ModifyEntityResult<DeliveryChannelPolicy>> Handle(UpsertDeliveryChannelPolicy request, CancellationToken cancellationToken)
     {
-        var existingDeliveryChannelPolicy = await dbContext.DeliveryChannelPolicies.SingleOrDefaultAsync(p => 
-            p.Customer == request.CustomerId &&
-            p.Channel == request.DeliveryChannelPolicy.Channel &&
-            p.Name == request.DeliveryChannelPolicy.Name,
-            cancellationToken);
+        var existingDeliveryChannelPolicy = await dbContext.DeliveryChannelPolicies
+            .GetDeliveryChannel(request.CustomerId,
+                request.DeliveryChannelPolicy.Channel,
+                request.DeliveryChannelPolicy.Name,
+                cancellationToken);
 
         if (existingDeliveryChannelPolicy != null)
         {

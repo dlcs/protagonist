@@ -1,40 +1,46 @@
-﻿using API.Features.DeliveryChannels.Validation;
+﻿using API.Features.DeliveryChannels.Helpers;
 using API.Infrastructure.Requests;
+using API.Infrastructure.Requests.Pipelines;
 using DLCS.Core;
 using DLCS.Model.Policies;
 using DLCS.Repository;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.DeliveryChannels.Requests.DeliveryChannelPolicies;
 
-public class PatchDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryChannelPolicy>>
+/// <summary>
+/// Partial update of DeliveryChannelPolicy, only DisplayName and PolicyData can be updated
+/// </summary>
+public class PatchDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryChannelPolicy>>, IInvalidateCaches
 {
     public int CustomerId { get; }
 
     public string Channel { get; }
     
-    public string Name { get; }
+    public string PolicyName { get; }
     
     public string? DisplayName { get; }
 
     public string? PolicyData { get; }
     
-    public PatchDeliveryChannelPolicy(int customerId, string channel, string name, string? displayName, string? policyData)
+    public PatchDeliveryChannelPolicy(int customerId, string channel, string policyName, string? displayName, string? policyData)
     {
         CustomerId = customerId;
         Channel = channel;
-        Name = name;
+        PolicyName = policyName;
         DisplayName = displayName;
         PolicyData = policyData;
     }
+    
+    public string[] InvalidatedCacheKeys => new[]
+        { CacheKeys.DeliveryChannelPolicies(CustomerId), CacheKeys.DefaultDeliveryChannels(CustomerId) };
 }
 
 public class PatchDeliveryChannelPolicyHandler : IRequestHandler<PatchDeliveryChannelPolicy, ModifyEntityResult<DeliveryChannelPolicy>>
 {
     private readonly DlcsContext dbContext;
     
-    public PatchDeliveryChannelPolicyHandler(DlcsContext dbContext, DeliveryChannelPolicyDataValidator policyDataValidator)
+    public PatchDeliveryChannelPolicyHandler(DlcsContext dbContext)
     {
         this.dbContext = dbContext;
     }
@@ -42,16 +48,14 @@ public class PatchDeliveryChannelPolicyHandler : IRequestHandler<PatchDeliveryCh
     public async Task<ModifyEntityResult<DeliveryChannelPolicy>> Handle(PatchDeliveryChannelPolicy request,
         CancellationToken cancellationToken)
     {
-        var existingDeliveryChannelPolicy = await dbContext.DeliveryChannelPolicies.SingleOrDefaultAsync(p =>
-            p.Customer == request.CustomerId &&
-            p.Channel == request.Channel &&
-            p.Name == request.Name,
-            cancellationToken);
+        var existingDeliveryChannelPolicy =
+            await dbContext.DeliveryChannelPolicies.GetDeliveryChannel(request.CustomerId, request.Channel,
+                request.PolicyName, cancellationToken);
 
         if (existingDeliveryChannelPolicy == null)
         {
             return ModifyEntityResult<DeliveryChannelPolicy>.Failure(
-                $"A policy for delivery channel '{request.Channel}' called '{request.Name}' was not found" , 
+                $"A policy for delivery channel '{request.Channel}' called '{request.PolicyName}' was not found" , 
                 WriteResult.NotFound);
         }
         
