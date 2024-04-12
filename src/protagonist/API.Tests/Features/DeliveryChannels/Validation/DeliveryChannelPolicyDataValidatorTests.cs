@@ -96,6 +96,29 @@ public class DeliveryChannelPolicyDataValidatorTests
         // Assert
         result.Should().BeFalse();
     }
+    
+    [Theory]
+    [InlineData("max", false)]
+    [InlineData("^max", false)]
+    [InlineData("10,", true)]
+    [InlineData("^10,", true)]
+    [InlineData(",10", true)]
+    [InlineData("^,10", true)]
+    [InlineData("pct:10", false)]
+    [InlineData("^pct:10", false)]
+    [InlineData("10,10", false)]
+    [InlineData("^10,10", false)]
+    [InlineData("!10,10", true)]
+    [InlineData("^!10,10", true)]
+    public async Task PolicyDataValidator_ReturnsExpectedResult_ForThumbsPolicy_FromIIIFDocs(string sizeParam, bool expectedResult)
+    {
+        // Arrange and Act
+        var policyData = $"[\"{sizeParam}\"]";
+        var result = await sut.Validate(policyData, "thumbs");
+
+        // Assert
+        result.Should().Be(expectedResult);
+    }
 
     [Theory]
     [InlineData("[\"video-mp4-480p\"]")]
@@ -156,28 +179,5 @@ public class DeliveryChannelPolicyDataValidatorTests
 
         // Assert
         result.Should().BeFalse();
-    }
-    
-    [Theory]
-    [InlineData("max", false)]
-    [InlineData("^max", false)]
-    [InlineData("10,", true)]
-    [InlineData("^10,", true)]
-    [InlineData(",10", true)]
-    [InlineData("^,10", true)]
-    [InlineData("pct:10", false)]
-    [InlineData("^pct:10", false)]
-    [InlineData("10,10", false)]
-    [InlineData("^10,10", false)]
-    [InlineData("!10,10", true)]
-    [InlineData("^!10,10", true)]
-    public async Task PolicyDataValidator_ReturnsExpectedResult_FromIIIFDocs(string sizeParam, bool expectedResult)
-    {
-        // Arrange and Act
-        var policyData = $"[\"{sizeParam}\"]";
-        var result = await sut.Validate(policyData, "thumbs");
-
-        // Assert
-        result.Should().Be(expectedResult);
     }
 }
