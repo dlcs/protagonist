@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using API.Exceptions;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
@@ -57,7 +58,7 @@ public static class AssetConverter
             MediaType = dbAsset.MediaType,
             Family = (AssetFamily)dbAsset.Family,
             Roles = dbAsset.RolesList.ToArray(),
-            WcDeliveryChannels = dbAsset.DeliveryChannels
+            WcDeliveryChannels = ConvertImageDeliveryChannelsToWc(dbAsset.ImageDeliveryChannels)
         };
 
         if (dbAsset.Batch > 0)
@@ -419,4 +420,11 @@ public static class AssetConverter
 
         return assetFilter;
     }
+
+    /// <summary>
+    /// Converts ImageDeliveryChannels into the old format (WcDeliveryChannels)
+    /// </summary>
+    /// <param name="imageDeliveryChannels"></param>
+    public static string[] ConvertImageDeliveryChannelsToWc(ICollection<ImageDeliveryChannel> imageDeliveryChannels)
+        => imageDeliveryChannels.Select(dc => dc.Channel).ToArray();
 }
