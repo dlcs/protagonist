@@ -9,13 +9,14 @@ namespace API.Tests.Features.DeliveryChannelPolicies.Validation;
 public class DeliveryChannelPolicyDataValidatorTests
 {
     private readonly DeliveryChannelPolicyDataValidator sut;
+
     private readonly string[] fakedAvPolicies =
     {
         "video-mp4-480p",
         "video-webm-720p",
         "audio-mp3-128k"
     };
-    
+
     public DeliveryChannelPolicyDataValidatorTests()
     {
         var avChannelPolicyOptionsRepository = A.Fake<IAvChannelPolicyOptionsRepository>();
@@ -23,7 +24,7 @@ public class DeliveryChannelPolicyDataValidatorTests
             .Returns(fakedAvPolicies);
         sut = new DeliveryChannelPolicyDataValidator(avChannelPolicyOptionsRepository);
     }
-    
+
     [Theory]
     [InlineData("[\"400,\",\"200,\",\"100,\"]")]
     [InlineData("[\"!400,\",\"!200,\",\"!100,\"]")]
@@ -33,37 +34,37 @@ public class DeliveryChannelPolicyDataValidatorTests
     {
         // Arrange and Act
         var result = await sut.Validate(policyData, "thumbs");
-        
+
         // Assert
         result.Should().BeTrue();
     }
-    
+
     [Fact]
     public async Task PolicyDataValidator_ReturnsFalse_ForBadThumbSizes()
     {
         // Arrange
         var policyData = "[\"400,\",\"foo,bar\",\"100,\"]";
-   
+
         // Act
         var result = await sut.Validate(policyData, "thumbs");
-        
+
         // Assert
         result.Should().BeFalse();
     }
-    
+
     [Fact]
     public async Task PolicyDataValidator_ReturnsFalse_ForInvalidThumbSizesJson()
     {
         // Arrange
         var policyData = "[\"400,\",";
-   
+
         // Act
         var result = await sut.Validate(policyData, "thumbs");
-        
+
         // Assert
         result.Should().BeFalse();
     }
-    
+
     [Theory]
     [InlineData("")]
     [InlineData("[]")]
@@ -72,11 +73,11 @@ public class DeliveryChannelPolicyDataValidatorTests
     {
         // Arrange and Act
         var result = await sut.Validate(policyData, "thumbs");
-        
+
         // Assert
         result.Should().BeFalse();
     }
-    
+
     [Theory]
     [InlineData("[\"max\"]")]
     [InlineData("[\"^max\"]")]
@@ -91,11 +92,11 @@ public class DeliveryChannelPolicyDataValidatorTests
     {
         // Arrange and Act
         var result = await sut.Validate(policyData, "thumbs");
-        
+
         // Assert
         result.Should().BeFalse();
     }
-    
+
     [Theory]
     [InlineData("[\"video-mp4-480p\"]")]
     [InlineData("[\"video-webm-720p\"]")]
@@ -104,21 +105,21 @@ public class DeliveryChannelPolicyDataValidatorTests
     {
         // Arrange and Act
         var result = await sut.Validate(policyData, "iiif-av");
-        
+
         // Assert
         result.Should().BeTrue();
     }
-    
+
     [Fact]
     public async Task PolicyDataValidator_ReturnsFalse_ForNonexistentAvPolicy()
     {
         // Arrange and Act
         var result = await sut.Validate("not-a-transcode-policy", "iiif-av");
-        
+
         // Assert
         result.Should().BeFalse();
     }
-    
+
     [Theory]
     [InlineData("[\"\"]")]
     [InlineData("[\"policy-1\",\"\"]")]
@@ -126,11 +127,11 @@ public class DeliveryChannelPolicyDataValidatorTests
     {
         // Arrange and Act
         var result = await sut.Validate(policyData, "iiif-av");
-        
+
         // Assert
         result.Should().BeFalse();
     }
-    
+
     [Theory]
     [InlineData("")]
     [InlineData("[]")]
@@ -139,48 +140,44 @@ public class DeliveryChannelPolicyDataValidatorTests
     {
         // Arrange and Act
         var result = await sut.Validate(policyData, "iiif-av");
-        
+
         // Assert
         result.Should().BeFalse();
     }
-    
+
     [Fact]
     public async Task PolicyDataValidator_ReturnsFalse_ForInvalidAvPolicyJson()
     {
         // Arrange
         var policyData = "[\"policy-1\",";
-        
+
         // Act
         var result = await sut.Validate(policyData, "iiif-av");
-        
+
         // Assert
         result.Should().BeFalse();
     }
     
     [Theory]
-    [MemberData(nameof(IiifDocsSizes))]
-    public async Task PolicyDataValidator_ReturnsExpectedResult_FromIiifDocs(string policyData, bool expectedResult)
+    [InlineData("max", false)]
+    [InlineData("^max", false)]
+    [InlineData("10,", true)]
+    [InlineData("^10,", true)]
+    [InlineData(",10", true)]
+    [InlineData("^,10", true)]
+    [InlineData("pct:10", false)]
+    [InlineData("^pct:10", false)]
+    [InlineData("10,10", false)]
+    [InlineData("^10,10", false)]
+    [InlineData("!10,10", true)]
+    [InlineData("^!10,10", true)]
+    public async Task PolicyDataValidator_ReturnsExpectedResult_FromIIIFDocs(string sizeParam, bool expectedResult)
     {
         // Arrange and Act
+        var policyData = $"[\"{sizeParam}\"]";
         var result = await sut.Validate(policyData, "thumbs");
-        
+
         // Assert
         result.Should().Be(expectedResult);
     }
-    
-    public static ICollection<object[]> IiifDocsSizes => new Dictionary<string, bool>()
-    {
-        {"max", false},
-        {"^max", false},
-        {"10,", true},
-        {"^10,", true},
-        {",10", true},
-        {"^,10", true},
-        {"pct:10", false},
-        {"^pct:10", false},
-        {"10,10", false},
-        {"^10,10", false},
-        {"!10,10", true},
-        {"^!10,10", true},
-    }.Select(p => new object[] { $"[\"{p.Key}\"]", p.Value }).ToList();
 }
