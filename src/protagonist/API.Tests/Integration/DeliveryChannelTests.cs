@@ -851,20 +851,4 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             "" // No PolicyData specified
         }
     }).ToList();
-
-    public static ICollection<object[]> IiifDocsSizes => new Dictionary<string, bool>()
-    {
-        {"max", false},
-        {"^max", false},
-        {"10,", true},
-        {"^10,", true},
-        {",10", true},
-        {"^,10", true},
-        {"pct:10", false},
-        {"^pct:10", false},
-        {"10,10", false},
-        {"^10,10", false},
-        {"!10,10", true},
-        {"^!10,10", true},
-    }.Select(p => new object[] { p.Key, p.Value }).ToList();
 }
