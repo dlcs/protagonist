@@ -140,7 +140,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const int customerId = 88;
         const string newDeliveryChannelPolicyJson = @"{
             ""name"": ""post-existing-policy"",
-            ""policyData"": ""[\""100,100\""]""
+            ""policyData"": ""[\""100,\""]""
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/thumbs";
@@ -149,7 +149,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             Customer = customerId,
             Name = "post-existing-policy",
             Channel = "thumbs",
-            PolicyData = "[\"100,100\"]"
+            PolicyData = "[\"100,\"]"
         };
         
         await dbContext.DeliveryChannelPolicies.AddAsync(policy);
@@ -188,8 +188,22 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     [InlineData("")] // No PolicyData specified
     [InlineData("[]")] // Empty array
     [InlineData("[\"\"]")] // Array containing an empty value
-    [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
-    [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
+    [InlineData("[\"foo\",\"bar\"]")] // Invalid data
+    [InlineData("[\"100,100\",\"200,200\"")]  // Invalid JSON
+    // SizeParameter specific rules
+    [InlineData("[\"max\"]")] 
+    [InlineData("[\"^max\"]")]
+    [InlineData("[\"^,512\"]")]
+    [InlineData("[\"^512,\"]")]
+    [InlineData("[\"^!,512\"]")]
+    [InlineData("[\"^!512,\"]")]
+    [InlineData("[\"441.6,7.5\"]")]
+    [InlineData("[\"441.6,\"]")]
+    [InlineData("[\",7.5\"]")]
+    [InlineData("[\"pct:441.6,7.5\"]")]
+    [InlineData("[\"^pct:41.6,7.5\"]")]
+    [InlineData("[\"10,50\"]")]
+    [InlineData("[\",\"]")]
     public async Task Post_DeliveryChannelPolicy_400_IfThumbsPolicyDataInvalid(string policyData)
     {
         // Arrange
@@ -365,6 +379,20 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     [InlineData("[\"\"]")] // Array containing an empty value
     [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
     [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
+    // SizeParameter specific rules
+    [InlineData("[\"max\"]")] 
+    [InlineData("[\"^max\"]")]
+    [InlineData("[\"^,512\"]")]
+    [InlineData("[\"^512,\"]")]
+    [InlineData("[\"^!,512\"]")]
+    [InlineData("[\"^!512,\"]")]
+    [InlineData("[\"441.6,7.5\"]")]
+    [InlineData("[\"441.6,\"]")]
+    [InlineData("[\",7.5\"]")]
+    [InlineData("[\"pct:441.6,7.5\"]")]
+    [InlineData("[\"^pct:41.6,7.5\"]")]
+    [InlineData("[\"10,50\"]")]
+    [InlineData("[\",\"]")]
     public async Task Put_DeliveryChannelPolicy_400_IfThumbsPolicyDataInvalid(string policyData)
     {
         // Arrange
@@ -497,6 +525,20 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     [InlineData("[\"\"]")] // Array containing an empty value
     [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
     [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
+    // SizeParameter specific rules
+    [InlineData("[\"max\"]")] 
+    [InlineData("[\"^max\"]")]
+    [InlineData("[\"^,512\"]")]
+    [InlineData("[\"^512,\"]")]
+    [InlineData("[\"^!,512\"]")]
+    [InlineData("[\"^!512,\"]")]
+    [InlineData("[\"441.6,7.5\"]")]
+    [InlineData("[\"441.6,\"]")]
+    [InlineData("[\",7.5\"]")]
+    [InlineData("[\"pct:441.6,7.5\"]")]
+    [InlineData("[\"^pct:41.6,7.5\"]")]
+    [InlineData("[\"10,50\"]")]
+    [InlineData("[\",\"]")]
     public async Task Patch_DeliveryChannelPolicy_400_IfThumbsPolicyDataInvalid(string policyData)
     {
         // Arrange
