@@ -70,7 +70,7 @@ public class DeliveryChannelPolicyDataValidator
 
     private bool IsValidThumbnailParameter(SizeParameter param)
         => !(param.Max || param.PercentScale.HasValue || 
-             (param.Width.HasValue && param.Height.HasValue) ||
+             (param.Width.HasValue && param.Height.HasValue && !param.Confined) ||
              (!param.Width.HasValue && !param.Height.HasValue));
 
     private async Task<bool> ValidateTimeBasedPolicyData(string policyDataJson)

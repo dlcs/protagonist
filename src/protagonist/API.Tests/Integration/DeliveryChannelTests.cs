@@ -819,6 +819,11 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         {
             "my-thumbs-policy-1-h",
             @"[\""^!,400\"",\""^!,200\"",\""^!,100\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-i",
+            @"[\""!400,400\"",\""!200,200\"",\""!100,100\""]"
         }
     };
 
