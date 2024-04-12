@@ -117,6 +117,10 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     [InlineData(@"[\""!400,\"",\""!200,\"",\""!100,\""]", "my-thumbs-policy-1-b")]
     [InlineData(@"[\"",400\"",\"",200\"",\"",100\""]", "my-thumbs-policy-1-c")]
     [InlineData(@"[\""!,400\"",\""!,200\"",\""!,100\""]", "my-thumbs-policy-1-d")]
+    [InlineData(@"[\""^400,\"",\""^200,\"",\""^100,\""]", "my-thumbs-policy-1-e")]
+    [InlineData(@"[\""^!400,\"",\""^!200,\"",\""^!100,\""]", "my-thumbs-policy-1-f")]
+    [InlineData(@"[\""^,400\"",\""^,200\"",\""^,100\""]", "my-thumbs-policy-1-g")]
+    [InlineData(@"[\""^!,400\"",\""^!,200\"",\""^!,100\""]", "my-thumbs-policy-1-h")]
     public async Task Post_DeliveryChannelPolicy_201_WithThumbsPolicy(string thumbParams, string policyName)
     {
         // Arrange
@@ -225,10 +229,6 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
     [InlineData(@"[\""max\""]")] // SizeParameter specific rules
     [InlineData(@"[\""^max\""]")]
-    [InlineData(@"[\""^,512\""]")]
-    [InlineData(@"[\""^512,\""]")]
-    [InlineData(@"[\""^!,512\""]")]
-    [InlineData(@"[\""^!512,\""]")]
     [InlineData(@"[\""441.6,7.5\""]")]
     [InlineData(@"[\""441.6,\""]")]
     [InlineData(@"[\"",7.5\""]")]
@@ -366,10 +366,14 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData(@"[\""400,\"",\""200,\"",\""100,\""]", "put-thumbs-policy-2-a")]
-    [InlineData(@"[\""!400,\"",\""!200,\"",\""!100,\""]","put-thumbs-policy-2-b")]
-    [InlineData(@"[\"",400\"",\"",200\"",\"",100\""]", "put-thumbs-policy-2-c")]
-    [InlineData(@"[\""!,400\"",\""!,200\"",\""!,100\""]", "put-thumbs-policy-2-d")]
+    [InlineData(@"[\""400,\"",\""200,\"",\""100,\""]", "my-thumbs-policy-1-a")]
+    [InlineData(@"[\""!400,\"",\""!200,\"",\""!100,\""]", "my-thumbs-policy-1-b")]
+    [InlineData(@"[\"",400\"",\"",200\"",\"",100\""]", "my-thumbs-policy-1-c")]
+    [InlineData(@"[\""!,400\"",\""!,200\"",\""!,100\""]", "my-thumbs-policy-1-d")]
+    [InlineData(@"[\""^400,\"",\""^200,\"",\""^100,\""]", "my-thumbs-policy-1-e")]
+    [InlineData(@"[\""^!400,\"",\""^!200,\"",\""^!100,\""]", "my-thumbs-policy-1-f")]
+    [InlineData(@"[\""^,400\"",\""^,200\"",\""^,100\""]", "my-thumbs-policy-1-g")]
+    [InlineData(@"[\""^!,400\"",\""^!,200\"",\""^!,100\""]", "my-thumbs-policy-1-h")]
     public async Task Put_DeliveryChannelPolicy_200_WithThumbsPolicy(string thumbParams, string policyName)
     {
         // Arrange
@@ -457,10 +461,6 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
     [InlineData(@"[\""max\""]")] // SizeParameter specific rules
     [InlineData(@"[\""^max\""]")]
-    [InlineData(@"[\""^,512\""]")]
-    [InlineData(@"[\""^512,\""]")]
-    [InlineData(@"[\""^!,512\""]")]
-    [InlineData(@"[\""^!512,\""]")]
     [InlineData(@"[\""441.6,7.5\""]")]
     [InlineData(@"[\""441.6,\""]")]
     [InlineData(@"[\"",7.5\""]")]
@@ -600,6 +600,10 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     [InlineData(@"[\""!400,\"",\""!200,\"",\""!100,\""]")]
     [InlineData(@"[\"",400\"",\"",200\"",\"",100\""]")]
     [InlineData(@"[\""!,400\"",\""!,200\"",\""!,100\""]")]
+    [InlineData(@"[\""^400,\"",\""^200,\"",\""^100,\""]")]
+    [InlineData(@"[\""^!400,\"",\""^!200,\"",\""^!100,\""]")]
+    [InlineData(@"[\""^,400\"",\""^,200\"",\""^,100\""]")]
+    [InlineData(@"[\""^!,400\"",\""^!,200\"",\""^!,100\""]")]
     public async Task Patch_DeliveryChannelPolicy_200_WithThumbsPolicy(string policyData)
     {
         // Arrange
@@ -646,10 +650,6 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
     [InlineData(@"[\""max\""]")] // SizeParameter specific rules
     [InlineData(@"[\""^max\""]")]
-    [InlineData(@"[\""^,512\""]")]
-    [InlineData(@"[\""^512,\""]")]
-    [InlineData(@"[\""^!,512\""]")]
-    [InlineData(@"[\""^!512,\""]")]
     [InlineData(@"[\""441.6,7.5\""]")]
     [InlineData(@"[\""441.6,\""]")]
     [InlineData(@"[\"",7.5\""]")]

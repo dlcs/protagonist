@@ -69,7 +69,7 @@ public class DeliveryChannelPolicyDataValidator
     }
 
     private bool IsValidThumbnailParameter(SizeParameter param)
-        => !(param.Max || param.Upscaled || param.PercentScale.HasValue || 
+        => !(param.Max || param.PercentScale.HasValue || 
              (param.Width.HasValue && param.Height.HasValue) ||
              (!param.Width.HasValue && !param.Height.HasValue));
 
