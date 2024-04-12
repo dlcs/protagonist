@@ -842,7 +842,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         @"[\""^pct:41.6,7.5\""]",
         @"[\""10,50\""]",
         @"[\"",\""]"
-    }.Select(x => new object[] { x }).ToList();
+    }.Select(p => new object[] { p }).ToList();
 
     public static ICollection<object[]> InvalidPutThumbsPolicies => InvalidPatchThumbsPolicies.Concat(new List<object[]>()
     {
@@ -851,4 +851,20 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             "" // No PolicyData specified
         }
     }).ToList();
+
+    public static ICollection<object[]> IiifDocsSizes => new Dictionary<string, bool>()
+    {
+        {"max", false},
+        {"^max", false},
+        {"10,", true},
+        {"^10,", true},
+        {",10", true},
+        {"^,10", true},
+        {"pct:10", false},
+        {"^pct:10", false},
+        {"10,10", false},
+        {"^10,10", false},
+        {"!10,10", true},
+        {"^!10,10", true},
+    }.Select(p => new object[] { p.Key, p.Value }).ToList();
 }

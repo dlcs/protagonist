@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Linq;
 using API.Features.DeliveryChannels.Validation;
 using DLCS.Model.DeliveryChannels;
 using FakeItEasy;
@@ -155,4 +156,31 @@ public class DeliveryChannelPolicyDataValidatorTests
         // Assert
         result.Should().BeFalse();
     }
+    
+    [Theory]
+    [MemberData(nameof(IiifDocsSizes))]
+    public async Task PolicyDataValidator_ReturnsExpectedResult_FromIiifDocs(string policyData, bool expectedResult)
+    {
+        // Arrange and Act
+        var result = await sut.Validate(policyData, "thumbs");
+        
+        // Assert
+        result.Should().Be(expectedResult);
+    }
+    
+    public static ICollection<object[]> IiifDocsSizes => new Dictionary<string, bool>()
+    {
+        {"max", false},
+        {"^max", false},
+        {"10,", true},
+        {"^10,", true},
+        {",10", true},
+        {"^,10", true},
+        {"pct:10", false},
+        {"^pct:10", false},
+        {"10,10", false},
+        {"^10,10", false},
+        {"!10,10", true},
+        {"^!10,10", true},
+    }.Select(p => new object[] { $"[\"{p.Key}\"]", p.Value }).ToList();
 }
