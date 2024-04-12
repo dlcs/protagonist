@@ -202,6 +202,9 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var storage = await dbContext.ImageStorages.SingleAsync(a => a.Id == assetId);
         storage.Size.Should().BeGreaterThan(0);
+        
+        var policyData = await dbContext.AssetApplicationMetadata.SingleAsync(a => a.ImageId == assetId);
+        policyData.MetadataValue.Should().Be("{\"a\": [], \"o\": [[1024, 1024], [400, 400], [200, 200], [100, 100]]}");
     }
     
      [Fact]
@@ -250,6 +253,9 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var storage = await dbContext.ImageStorages.SingleAsync(a => a.Id == assetId);
         storage.Size.Should().NotBe(950);
+        
+        var policyData = await dbContext.AssetApplicationMetadata.SingleAsync(a => a.ImageId == assetId);
+        policyData.MetadataValue.Should().Be("{\"a\": [], \"o\": [[1024, 1024], [400, 400], [200, 200], [100, 100]]}");
     }
 
     [Fact]
@@ -300,6 +306,9 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var storage = await dbContext.ImageStorages.SingleAsync(a => a.Id == assetId);
         storage.Size.Should().BeGreaterThan(0);
+        
+        var policyData = await dbContext.AssetApplicationMetadata.SingleAsync(a => a.ImageId == assetId);
+        policyData.MetadataValue.Should().Be("{\"a\": [], \"o\": [[1024, 1024], [400, 400], [200, 200], [100, 100]]}");
     }
     
     [Fact]
