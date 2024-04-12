@@ -86,7 +86,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Fact]
-    public async Task Post_DeliveryChannelPolicy_201()
+    public async Task Post_DeliveryChannelPolicy_201_WithAvPolicy()
     {
         // Arrange
         const int customerId = 88;
@@ -110,6 +110,37 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             s.Name == "my-iiif-av-policy-1");
         foundPolicy.DisplayName.Should().Be("My IIIF AV Policy");
         foundPolicy.PolicyData.Should().Be("[\"video-mp4-480p\"]");
+    }
+    
+    [Theory]
+    [InlineData("100,")]
+    [InlineData(",100")]
+    [InlineData("!100,")]
+    [InlineData("!,100")]
+    public async Task Post_DeliveryChannelPolicy_201_WithThumbsPolicy(string thumbParams)
+    {
+        // Arrange
+        const int customerId = 88;
+        var newDeliveryChannelPolicyJson = @$"{{
+            ""name"": ""my-thumbs-policy-1"",
+            ""displayName"": ""My Thumbs Policy"",
+            ""policyData"": ""[\""{thumbParams}\""]""
+        }}";
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/thumbs";
+   
+        // Act
+        var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var foundPolicy = dbContext.DeliveryChannelPolicies.Single(s => 
+            s.Customer == customerId &&
+            s.Name == "my-thumbs-policy-1");
+        foundPolicy.DisplayName.Should().Be("My Thumbs Policy");
+        foundPolicy.PolicyData.Should().Be($"[\"{thumbParams}\"]");
     }
     
     [Fact]
@@ -296,7 +327,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Fact]
-    public async Task Put_DeliveryChannelPolicy_200()
+    public async Task Put_DeliveryChannelPolicy_200_WithAvPolicy()
     {
         // Arrange
         const int customerId = 88;
@@ -331,6 +362,48 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             s.Name == policy.Name);
         foundPolicy.DisplayName.Should().Be("My IIIF AV Policy 2 (modified)");
         foundPolicy.PolicyData.Should().Be("[\"video-mp4-480p\"]");
+    }
+    
+    [Theory]
+    [InlineData("100,")]
+    [InlineData(",100")]
+    [InlineData("!100,")]
+    [InlineData("!,100")]
+    public async Task Put_DeliveryChannelPolicy_200_WithThumbsPolicy(string thumbParams)
+    {
+        // Arrange
+        const int customerId = 88;
+        var putDeliveryChannelPolicyJson = @$"{{
+            ""displayName"": ""My Thumbs Policy 2 (modified)"",
+            ""policyData"": ""[\""{thumbParams}\""]""
+        }}";
+        
+        var policy = new DLCS.Model.Policies.DeliveryChannelPolicy()
+        {
+            Customer = customerId,
+            Name = "put-thumbs-policy-2",
+            DisplayName = "My Thumbs Policy 2",
+            Channel = "thumbs",
+            PolicyData = "[\"512,\"]"
+        };
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/{policy.Channel}/{policy.Name}";
+
+        await dbContext.DeliveryChannelPolicies.AddAsync(policy);
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var content = new StringContent(putDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var foundPolicy = dbContext.DeliveryChannelPolicies.Single(s => 
+            s.Customer == customerId && 
+            s.Name == policy.Name);
+        foundPolicy.DisplayName.Should().Be("My Thumbs Policy 2 (modified)");
+        foundPolicy.PolicyData.Should().Be($"[\"{thumbParams}\"]");
     }
     
     [Fact]
