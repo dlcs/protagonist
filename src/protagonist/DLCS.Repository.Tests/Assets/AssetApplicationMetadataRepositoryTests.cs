@@ -33,10 +33,10 @@ public class AssetApplicationMetadataRepositoryTests
         
         // Act
         var metadata = await sut.UpsertApplicationMetadata(assetId, 
-            AssetApplicationMetadataTypes.ThumbnailPolicy, metadataValue);
+            AssetApplicationMetadataTypes.ThumbSizes, metadataValue);
 
         var metaDataFromDatabase = await dbContext.AssetApplicationMetadata.FirstAsync(x =>
-            x.ImageId == assetId && x.MetadataType == AssetApplicationMetadataTypes.ThumbnailPolicy);
+            x.ImageId == assetId && x.MetadataType == AssetApplicationMetadataTypes.ThumbSizes);
         
         // Assert
         metadata.Should().NotBeNull();
@@ -50,14 +50,14 @@ public class AssetApplicationMetadataRepositoryTests
         // Arrange
         var assetId = AssetId.FromString("99/1/1");
         await sut.UpsertApplicationMetadata(assetId, 
-            AssetApplicationMetadataTypes.ThumbnailPolicy, "{\"a\": [], \"o\": []}");
+            AssetApplicationMetadataTypes.ThumbSizes, "{\"a\": [], \"o\": []}");
         var newMetadataValue = "{\"a\": [], \"o\": [[75, 100], [150, 200], [300, 400], [769, 1024]]}";
         
         // Act
         var metadata = await sut.UpsertApplicationMetadata(assetId, 
-            AssetApplicationMetadataTypes.ThumbnailPolicy, newMetadataValue);
+            AssetApplicationMetadataTypes.ThumbSizes, newMetadataValue);
         var metaDataFromDatabase = await dbContext.AssetApplicationMetadata.FirstAsync(x =>
-            x.ImageId == assetId && x.MetadataType == AssetApplicationMetadataTypes.ThumbnailPolicy);
+            x.ImageId == assetId && x.MetadataType == AssetApplicationMetadataTypes.ThumbSizes);
         
         // Assert
         metadata.Should().NotBeNull();
@@ -74,7 +74,7 @@ public class AssetApplicationMetadataRepositoryTests
         
         // Act
         Func<Task> action = async () => await sut.UpsertApplicationMetadata(assetId, 
-            AssetApplicationMetadataTypes.ThumbnailPolicy, metadataValue);
+            AssetApplicationMetadataTypes.ThumbSizes, metadataValue);
 
         // Assert
         await action.Should().ThrowAsync<DbUpdateException>();

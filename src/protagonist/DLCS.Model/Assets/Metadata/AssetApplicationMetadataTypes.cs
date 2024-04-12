@@ -2,5 +2,5 @@
 
 public static class AssetApplicationMetadataTypes
 {
-    public const string ThumbnailPolicy = "ThumbnailPolicy";
+    public const string ThumbSizes = "ThumbSizes";
 }

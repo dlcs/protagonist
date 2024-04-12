@@ -42,6 +42,6 @@ public abstract class ThumbsManager
         await BucketWriter.WriteToBucket(sizesDest, serializedThumbnailSizes,
             "application/json");
         await AssetApplicationMetadataRepository.UpsertApplicationMetadata(assetId,
-            AssetApplicationMetadataTypes.ThumbnailPolicy, serializedThumbnailSizes);
+            AssetApplicationMetadataTypes.ThumbSizes, serializedThumbnailSizes);
     }
 }
