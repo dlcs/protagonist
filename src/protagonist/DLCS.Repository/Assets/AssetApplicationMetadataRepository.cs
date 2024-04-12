@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.Metadata;
+using Microsoft.EntityFrameworkCore;
 
 namespace DLCS.Repository.Assets;
 
@@ -14,21 +15,32 @@ public class AssetApplicationMetadataRepository : IAssetApplicationMetadataRepos
     {
         this.dlcsContext = dlcsContext;
     }
-    
-    public async Task<List<int[]>> GetThumbnailSizes(AssetId assetId)
-    {
 
-
-        return new List<int[]>();
-    }
-
-    public async Task<AssetApplicationMetadata> AddApplicationMetadata(
-        AssetApplicationMetadata metadata, 
+    public async Task<AssetApplicationMetadata> UpsertApplicationMetadata(AssetId assetId, string metadataType, string metadataValue,
         CancellationToken cancellationToken = default)
     {
-        var databaseMetadata= await dlcsContext.AssetApplicationMetadata.AddAsync(metadata, cancellationToken);
-        await dlcsContext.SaveChangesAsync(cancellationToken);
+        var addedMetadata =  await dlcsContext.AssetApplicationMetadata.FirstOrDefaultAsync(e =>
+            e.ImageId == assetId && e.MetadataType == metadataType, cancellationToken);
 
+        if (addedMetadata is not null)
+        {
+            addedMetadata.MetadataValue = metadataValue;
+            addedMetadata.Modified = DateTime.UtcNow;
+            await dlcsContext.AssetApplicationMetadata.SingleUpdateAsync(addedMetadata, cancellationToken);
+            await dlcsContext.SaveChangesAsync(cancellationToken);
+            return addedMetadata;
+        }
+        
+        var databaseMetadata= await dlcsContext.AssetApplicationMetadata.AddAsync(new AssetApplicationMetadata()
+        {
+            ImageId = assetId,
+            MetadataType = metadataType,
+            MetadataValue = metadataValue,
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow
+        }, cancellationToken);
+        
+        await dlcsContext.SaveChangesAsync(cancellationToken);
         return databaseMetadata.Entity;
     }
 }

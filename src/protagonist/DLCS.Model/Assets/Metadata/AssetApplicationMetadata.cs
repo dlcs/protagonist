@@ -6,11 +6,6 @@ namespace DLCS.Model.Assets.Metadata;
 public class AssetApplicationMetadata
 {
     /// <summary>
-    /// Unique identifier
-    /// </summary>
-    public int Id { get; set; }
-    
-    /// <summary>
     /// The image id for the attached asset
     /// </summary>
     public AssetId ImageId { get; set; }

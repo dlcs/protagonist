@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -14,8 +13,6 @@ namespace DLCS.Repository.Migrations
                 name: "AssetApplicationMetadata",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", maxLength: 100, nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ImageId = table.Column<string>(type: "character varying(500)", nullable: false),
                     MetadataType = table.Column<string>(type: "text", nullable: false),
                     MetadataValue = table.Column<string>(type: "jsonb", nullable: false),
@@ -24,7 +21,7 @@ namespace DLCS.Repository.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AssetApplicationMetadata", x => x.Id);
+                    table.PrimaryKey("PK_AssetApplicationMetadata", x => new { x.ImageId, x.MetadataType });
                     table.ForeignKey(
                         name: "FK_AssetApplicationMetadata_Images_ImageId",
                         column: x => x.ImageId,
@@ -32,11 +29,6 @@ namespace DLCS.Repository.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AssetApplicationMetadata_ImageId",
-                table: "AssetApplicationMetadata",
-                column: "ImageId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

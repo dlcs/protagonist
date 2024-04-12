@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.Core.Types;
@@ -42,14 +41,7 @@ public abstract class ThumbsManager
         var sizesDest = StorageKeyGenerator.GetThumbsSizesJsonLocation(assetId);
         await BucketWriter.WriteToBucket(sizesDest, serializedThumbnailSizes,
             "application/json");
-        await AssetApplicationMetadataRepository.AddApplicationMetadata(new AssetApplicationMetadata()
-        {
-            ImageId = assetId,
-            MetadataType = AssetApplicationMetadataKeys.ThumbnailPolicy,
-            MetadataValue = serializedThumbnailSizes,
-            Created = DateTime.UtcNow,
-            Modified = DateTime.UtcNow
-        });
-
+        await AssetApplicationMetadataRepository.UpsertApplicationMetadata(assetId,
+            AssetApplicationMetadataTypes.ThumbnailPolicy, serializedThumbnailSizes);
     }
 }

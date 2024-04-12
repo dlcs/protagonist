@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    [Migration("20240411144218_adding AssetApplicationMetadata table")]
+    [Migration("20240412090855_adding AssetApplicationMetadata table")]
     partial class addingAssetApplicationMetadatatable
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -337,23 +337,14 @@ namespace DLCS.Repository.Migrations
 
             modelBuilder.Entity("DLCS.Model.Assets.Metadata.AssetApplicationMetadata", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(100)
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("Created")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("ImageId")
-                        .IsRequired()
                         .HasColumnType("character varying(500)");
 
                     b.Property<string>("MetadataType")
-                        .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("MetadataValue")
                         .IsRequired()
@@ -362,9 +353,7 @@ namespace DLCS.Repository.Migrations
                     b.Property<DateTime>("Modified")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("ImageId");
+                    b.HasKey("ImageId", "MetadataType");
 
                     b.ToTable("AssetApplicationMetadata");
                 });
