@@ -116,7 +116,7 @@ public class ImageRequestHandler
             }
         }
         
-        if (IsRequestFullOrEquivalent(assetRequest, orchestrationImage))
+        if (IsRequestedRegionFullOrEquivalent(assetRequest.IIIFImageRequest.Region, orchestrationImage))
         {
             // /full/ request but not /full/max/ - can it be handled by thumbnail service?
             if (!assetRequest.IIIFImageRequest.Size.Max)
@@ -156,24 +156,24 @@ public class ImageRequestHandler
         return GenerateImageServerProxyResult(orchestrationImage, assetRequest, specialServer: false);
     }
     
-    private static bool IsRequestFullOrEquivalent(ImageAssetDeliveryRequest assetRequest,
+    private static bool IsRequestedRegionFullOrEquivalent(RegionParameter requestedRegion,
         OrchestrationImage orchestrationImage)
     {
-        if (assetRequest.IIIFImageRequest.Region.Full)
+        if (requestedRegion.Full)
         {
             return true;
         }
 
-        if (assetRequest.IIIFImageRequest.Region.Square &&
+        if (requestedRegion.Square &&
             orchestrationImage.Width == orchestrationImage.Height)
         {
             return true;
         }
 
-        if (!assetRequest.IIIFImageRequest.Region.Percent &&
-            assetRequest.IIIFImageRequest.Region.X + assetRequest.IIIFImageRequest.Region.Y == 0 &&
-            orchestrationImage.Width == (int)assetRequest.IIIFImageRequest.Region.W &&
-            orchestrationImage.Height == (int)assetRequest.IIIFImageRequest.Region.H)
+        if (!requestedRegion.Percent &&
+            requestedRegion.X + requestedRegion.Y == 0 &&
+            orchestrationImage.Width == (int)requestedRegion.W &&
+            orchestrationImage.Height == (int)requestedRegion.H)
         {
             return true;
         }
