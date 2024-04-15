@@ -1,5 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using DLCS.AWS.S3;
+﻿using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -15,7 +14,6 @@ namespace Engine.Tests.Ingest.Image;
 public class ThumbCreatorTests
 {
     private readonly TestBucketWriter bucketWriter;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly ThumbCreator sut;
     private readonly IAssetApplicationMetadataRepository assetApplicationMetadataRepository;
     private readonly List<ImageDeliveryChannel> thumbsDeliveryChannel = new()
@@ -30,7 +28,7 @@ public class ThumbCreatorTests
     public ThumbCreatorTests()
     {
         bucketWriter = new TestBucketWriter();
-        storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
+        var storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
         assetApplicationMetadataRepository = A.Fake<IAssetApplicationMetadataRepository>();
 
         A.CallTo(() => storageKeyGenerator.GetLargestThumbnailLocation(A<AssetId>._))
@@ -64,7 +62,8 @@ public class ThumbCreatorTests
     public async Task CreateNewThumbs_UploadsExpected_AllOpen()
     {
         // Arrange
-        var asset = new Asset(new AssetId(10, 20, "foo"))
+        var assetId = new AssetId(10, 20, "foo");
+        var asset = new Asset(assetId)
         {
             Width = 3030, Height = 5000, MaxUnauthorised = -1,
             ImageDeliveryChannels = thumbsDeliveryChannel
@@ -76,6 +75,8 @@ public class ThumbCreatorTests
             new() { Width = 302, Height = 500, Path = "500.jpg" },
             new() { Width = 60, Height = 100, Path = "100.jpg" }
         };
+        
+        const string thumbSizes = "{\"o\":[[606,1000],[302,500],[60,100]],\"a\":[]}";
         
         // Act
         var thumbsCreated = await sut.CreateNewThumbs(asset, imagesOnDisk);
@@ -97,16 +98,20 @@ public class ThumbCreatorTests
             .WithFilePath("100.jpg");
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
-            .WithContents("{\"o\":[[606,1000],[302,500],[60,100]],\"a\":[]}");
+            .WithContents(thumbSizes);
         
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        A.CallTo(() =>
+            assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId, "ThumbSizes", thumbSizes,
+                A<CancellationToken>._)).MustHaveHappened();
     }
     
     [Fact]
     public async Task CreateNewThumbs_UploadsExpected_LargestAuth()
     {
         // Arrange
-        var asset = new Asset(new AssetId(10, 20, "foo"))
+        var assetId = new AssetId(10, 20, "foo");
+        var asset = new Asset(assetId)
         {
             Width = 3030, Height = 5000, MaxUnauthorised = 700,
             ImageDeliveryChannels = thumbsDeliveryChannel
@@ -118,6 +123,8 @@ public class ThumbCreatorTests
             new() { Width = 302, Height = 500, Path = "500.jpg" },
             new() { Width = 60, Height = 100, Path = "100.jpg" }
         };
+        
+        const string thumbSizes = "{\"o\":[[302,500],[60,100]],\"a\":[[606,1000]]}";
         
         // Act
         var thumbsCreated = await sut.CreateNewThumbs(asset, imagesOnDisk);
@@ -139,16 +146,20 @@ public class ThumbCreatorTests
             .WithFilePath("100.jpg");
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
-            .WithContents("{\"o\":[[302,500],[60,100]],\"a\":[[606,1000]]}");
+            .WithContents(thumbSizes);
         
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        A.CallTo(() =>
+            assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId, "ThumbSizes", thumbSizes,
+                A<CancellationToken>._)).MustHaveHappened();
     }
     
     [Fact]
     public async Task CreateNewThumbs_UploadsExpected_ImageSmallerThanThumbnail()
     {
         // Arrange
-        var asset = new Asset(new AssetId(10, 20, "foo"))
+        var assetId = new AssetId(10, 20, "foo");
+        var asset = new Asset(assetId)
         {
             Width = 266, Height = 440,
             ImageDeliveryChannels = thumbsDeliveryChannel
@@ -161,6 +172,8 @@ public class ThumbCreatorTests
             new() { Width = 266, Height = 440, Path = "500.jpg" },
             new() { Width = 60, Height = 100, Path = "100.jpg" }
         };
+        
+        const string thumbSizes = "{\"o\":[[266,440],[60,100]],\"a\":[]}";
         
         // Act
         var thumbsCreated = await sut.CreateNewThumbs(asset, imagesOnDisk);
@@ -179,16 +192,20 @@ public class ThumbCreatorTests
             .WithFilePath("100.jpg");
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
-            .WithContents("{\"o\":[[266,440],[60,100]],\"a\":[]}");
+            .WithContents(thumbSizes);
         
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        A.CallTo(() =>
+            assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId, "ThumbSizes", thumbSizes,
+                A<CancellationToken>._)).MustHaveHappened();
     }
     
     [Fact]
     public async Task CreateNewThumbs_UploadsNothing_MaxUnauthorisedIs0()
     {
         // Arrange
-        var asset = new Asset(new AssetId(10, 20, "foo"))
+        var assetId = new AssetId(10, 20, "foo");
+        var asset = new Asset(assetId)
         {
             Width = 3030, Height = 5000, MaxUnauthorised = 0,
             ImageDeliveryChannels = thumbsDeliveryChannel
@@ -200,6 +217,7 @@ public class ThumbCreatorTests
             new() { Width = 302, Height = 500, Path = "500.jpg" },
             new() { Width = 60, Height = 100, Path = "100.jpg" }
         };
+        const string thumbSizes = "{\"o\":[],\"a\":[[606,1000],[302,500],[60,100]]}";
         
         // Act
         var thumbsCreated = await sut.CreateNewThumbs(asset, imagesOnDisk);
@@ -221,8 +239,11 @@ public class ThumbCreatorTests
             .WithFilePath("100.jpg");
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
-            .WithContents("{\"o\":[],\"a\":[[606,1000],[302,500],[60,100]]}");
+            .WithContents(thumbSizes);
         
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        A.CallTo(() =>
+            assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId, "ThumbSizes", thumbSizes,
+                A<CancellationToken>._)).MustHaveHappened();
     }
 }
