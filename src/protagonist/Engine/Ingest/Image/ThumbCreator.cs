@@ -5,13 +5,16 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
 using DLCS.Repository.Assets;
-using DLCS.Repository.Assets.Thumbs;
 using IIIF;
+using Newtonsoft.Json;
 
 namespace Engine.Ingest.Image;
 
-public class ThumbCreator : ThumbsManager, IThumbCreator
+public class ThumbCreator : IThumbCreator
 {
+    private readonly IBucketWriter bucketWriter;
+    private readonly IStorageKeyGenerator storageKeyGenerator;
+    private readonly IAssetApplicationMetadataRepository assetApplicationMetadataRepository;
     private readonly ILogger<ThumbCreator> logger;
     private readonly AsyncKeyedLock asyncLocker = new();
 
@@ -19,8 +22,11 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
         IBucketWriter bucketWriter,
         IStorageKeyGenerator storageKeyGenerator,
         IAssetApplicationMetadataRepository assetApplicationMetadataRepository,
-        ILogger<ThumbCreator> logger) : base(bucketWriter, storageKeyGenerator, assetApplicationMetadataRepository)
+        ILogger<ThumbCreator> logger)
     {
+        this.bucketWriter = bucketWriter;
+        this.storageKeyGenerator = storageKeyGenerator;
+        this.assetApplicationMetadataRepository = assetApplicationMetadataRepository;
         this.logger = logger;
     }
 
@@ -98,11 +104,21 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
         if (processingLargest)
         {
             // The largest thumb always goes to low.jpg as well as the 'normal' place
-            var lowKey = StorageKeyGenerator.GetLargestThumbnailLocation(assetId);
-            await BucketWriter.WriteFileToBucket(lowKey, thumbCandidate.Path, MIMEHelper.JPEG);
+            var lowKey = storageKeyGenerator.GetLargestThumbnailLocation(assetId);
+            await bucketWriter.WriteFileToBucket(lowKey, thumbCandidate.Path, MIMEHelper.JPEG);
         }
 
-        var thumbKey = StorageKeyGenerator.GetThumbnailLocation(assetId, thumb.MaxDimension, isOpen);
-        await BucketWriter.WriteFileToBucket(thumbKey, thumbCandidate.Path, MIMEHelper.JPEG);
+        var thumbKey = storageKeyGenerator.GetThumbnailLocation(assetId, thumb.MaxDimension, isOpen);
+        await bucketWriter.WriteFileToBucket(thumbKey, thumbCandidate.Path, MIMEHelper.JPEG);
+    }
+    
+    private async Task CreateSizesJson(AssetId assetId, ThumbnailSizes thumbnailSizes)
+    {
+        var serializedThumbnailSizes = JsonConvert.SerializeObject(thumbnailSizes);
+        var sizesDest = storageKeyGenerator.GetThumbsSizesJsonLocation(assetId);
+        await bucketWriter.WriteToBucket(sizesDest, serializedThumbnailSizes,
+            "application/json");
+        await assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId,
+            AssetApplicationMetadataTypes.ThumbSizes, serializedThumbnailSizes);
     }
 }

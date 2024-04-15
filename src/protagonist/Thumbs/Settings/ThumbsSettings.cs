@@ -6,11 +6,6 @@
 public class ThumbsSettings
 {
     /// <summary>
-    /// If true, when a request is received old thumbnail layout will be rearranged to match new.
-    /// </summary>
-    public bool EnsureNewThumbnailLayout { get; set; } = false;
-
-    /// <summary>
     /// If true the service will attempt to resize an existing jpg to serve images.
     /// </summary>
     public bool Resize { get; set; }
