@@ -1,9 +1,7 @@
 using DLCS.Core.Caching;
-using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Repository;
-using DLCS.Repository.Assets;
 using DLCS.Repository.Customers;
 using DLCS.Web.Configuration;
 using DLCS.Web.Logging;
@@ -41,21 +39,17 @@ public class Startup
             .Configure<PathTemplateOptions>(configuration.GetSection("PathRules"))
             .Configure<CacheSettings>(configuration.GetSection("Caching"));
         
-        var thumbSettings = configuration.GetSection("Thumbs").Get<ThumbsSettings>();
-        
         services
             .AddHealthChecks()
             .AddNpgSql(configuration.GetPostgresSqlConnection());
 
         services
             .AddLazyCache()
-            .AddThumbnailHandling(thumbSettings)
+            .AddThumbnailHandling()
             .AddAws(configuration, webHostEnvironment)
             .AddSingleton<AssetDeliveryPathParser>()
             .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
             .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
-            .AddSingleton<AssetCachingHelper>()
-            .AddSingleton<IAssetRepository, DapperAssetRepository>()
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>();
 
         // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
@@ -82,7 +76,6 @@ public class Startup
             opts.GetLevel = LogHelper.ExcludeHealthChecks;
         });
         app.UseRouting();
-        // TODO: Consider better caching solutions
         app.UseResponseCaching();
         var respondsTo = configuration.GetValue<string>("RespondsTo", "thumbs");
         var logger = loggerFactory.CreateLogger<Startup>();
