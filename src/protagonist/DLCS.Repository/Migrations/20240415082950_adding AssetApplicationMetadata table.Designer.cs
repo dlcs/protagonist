@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    [Migration("20240412152854_adding AssetApplicationMetadata table")]
+    [Migration("20240415082950_adding AssetApplicationMetadata table")]
     partial class addingAssetApplicationMetadatatable
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

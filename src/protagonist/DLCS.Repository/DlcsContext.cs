@@ -684,7 +684,7 @@ public partial class DlcsContext : DbContext
 
         modelBuilder.Entity<AssetApplicationMetadata>(entity =>
         {
-            entity.HasKey(e => new { ImageId = e.AssetId, e.MetadataType });
+            entity.HasKey(e => new { e.AssetId, e.MetadataType });
             entity.Property(e => e.AssetId).IsRequired().HasConversion(
                 aId => aId.ToString(),
                 id => AssetId.FromString(id));
