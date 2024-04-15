@@ -58,7 +58,6 @@ public static class AssetConverter
             MediaType = dbAsset.MediaType,
             Family = (AssetFamily)dbAsset.Family,
             Roles = dbAsset.RolesList.ToArray(),
-            WcDeliveryChannels = ConvertImageDeliveryChannelsToWc(dbAsset.ImageDeliveryChannels)
         };
 
         if (dbAsset.Batch > 0)
@@ -87,6 +86,7 @@ public static class AssetConverter
                         ? c.DeliveryChannelPolicy.Name
                         : $"{urlRoots.BaseUrl}/customers/{c.DeliveryChannelPolicy.Customer}/deliveryChannelPolicies/{c.Channel}/{c.DeliveryChannelPolicy.Name}"
                 }).ToArray();
+            image.WcDeliveryChannels = ConvertImageDeliveryChannelsToWc(dbAsset.ImageDeliveryChannels);
         }
         else
         {
@@ -425,6 +425,8 @@ public static class AssetConverter
     /// Converts ImageDeliveryChannels into the old format (WcDeliveryChannels)
     /// </summary>
     /// <param name="imageDeliveryChannels"></param>
-    public static string[] ConvertImageDeliveryChannelsToWc(ICollection<ImageDeliveryChannel> imageDeliveryChannels)
-        => imageDeliveryChannels.Select(dc => dc.Channel).ToArray();
+    private static string[] ConvertImageDeliveryChannelsToWc(ICollection<ImageDeliveryChannel>? imageDeliveryChannels)
+        => imageDeliveryChannels.IsNullOrEmpty() 
+            ? Array.Empty<string>() 
+            : imageDeliveryChannels.Select(dc => dc.Channel).ToArray();
 }

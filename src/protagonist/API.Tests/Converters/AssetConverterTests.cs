@@ -233,6 +233,6 @@ public class AssetConverterTests
         var hydraAsset = assetPreparationResult.UpdatedAsset!.ToHydra(dlcsAssetUrlRoot);
         
         // Assert
-        hydraAsset.WcDeliveryChannels.Should().BeEquivalentTo("iiif-img", "iiif-av", "file");
+        hydraAsset.WcDeliveryChannels.Should().BeEquivalentTo("iiif-img", "thumbs", "file");
     }
 }
