@@ -38,7 +38,7 @@ public class IIIFNamedQueryProjector
     {
         var parsedNamedQuery = namedQueryResult.ParsedQuery.ThrowIfNull(nameof(request.Query))!;
 
-        var assets = await namedQueryResult.Results.ToListAsync(cancellationToken);
+        var assets = await namedQueryResult.Results.IncludeRequiredDataForManifest().ToListAsync(cancellationToken);
         if (assets.Count == 0) return null;
 
         var orderedImages = NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery).ToList();

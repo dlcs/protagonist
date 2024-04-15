@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.PathElements;
 using DLCS.Model.Policies;
+using DLCS.Repository.Assets;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
@@ -19,6 +22,7 @@ using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orchestrator.Settings;
 using ImageApi = IIIF.ImageApi;
 using IIIF2 = IIIF.Presentation.V2;
@@ -34,7 +38,7 @@ public class IIIFCanvasFactory
     private readonly IAssetPathGenerator assetPathGenerator;
     private readonly IPolicyRepository policyRepository;
     private readonly OrchestratorSettings orchestratorSettings;
-    private readonly Dictionary<string, ThumbnailPolicy> thumbnailPolicies = new();
+    private readonly Dictionary<int, DeliveryChannelPolicy> thumbnailPolicies = new();
     private readonly IThumbRepository thumbRepository;
     private const string MetadataLanguage = "none";
     
@@ -112,21 +116,33 @@ public class IIIFCanvasFactory
         return canvases;
     }
 
-    private async Task<ImageSizeDetails?> RetrieveThumbnails(Asset i)
+    private async Task<ImageSizeDetails?> RetrieveThumbnails(Asset asset)
     {
-        if (i.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails))
+        if (asset.AssetApplicationMetadata.IsNullOrEmpty())
         {
-            return await GetThumbnailSizesForImage(i);
+            return await GetThumbnailSizesForImage(asset);
         }
 
-        // temporary - will be replaced by call to application metadata table
-        var thumbs = await thumbRepository.GetOpenSizes(i.Id);
-        var largest = thumbs.MaxBy(x => x.Sum());
+        var thumbs =
+            asset.AssetApplicationMetadata.First(a => a.MetadataType == AssetApplicationMetadataTypes.ThumbSizes);
 
-        return new ImageSizeDetails()
+        var deserializedThumbs = JsonConvert.DeserializeObject<ThumbnailSizes>(thumbs.MetadataValue);
+
+        if (deserializedThumbs.Open.Any())
         {
-            IsDerivativeOpen = true,
-            MaxDerivativeSize = new Size(largest[0], largest[1])
+            var largest = deserializedThumbs.Open.MaxBy(x => x.Sum());
+        
+            return new ImageSizeDetails
+            {
+                MaxDerivativeSize = new Size(largest![0], largest[1]),
+                OpenThumbnails = deserializedThumbs.Open.Select(t => new Size(t[0], t[1])).ToList()
+            };
+        }
+        
+        return new ImageSizeDetails
+        {
+            MaxDerivativeSize = new Size(0, 0), // TODO: work out the actual max deriviative based on policy
+            OpenThumbnails = new List<Size>()
         };
     }
 
@@ -241,15 +257,20 @@ public class IIIFCanvasFactory
         };
     }
 
-    private async Task<ThumbnailPolicy> GetThumbnailPolicyForImage(Asset image)
+    private async Task<DeliveryChannelPolicy?> GetThumbnailPolicyForImage(Asset image)
     {
-        if (thumbnailPolicies.TryGetValue(image.ThumbnailPolicy, out var thumbnailPolicy))
+        var thumbnailDeliveryChannel =
+            image.ImageDeliveryChannels.FirstOrDefault(i => i.Channel == AssetDeliveryChannels.Thumbnails);
+
+        if (thumbnailDeliveryChannel is null) return null;
+        
+        if (thumbnailPolicies.TryGetValue(thumbnailDeliveryChannel.DeliveryChannelPolicyId, out var thumbnailPolicy))
         {
             return thumbnailPolicy;
         }
 
-        var thumbnailPolicyFromDb = await policyRepository.GetThumbnailPolicy(image.ThumbnailPolicy);
-        thumbnailPolicies[image.ThumbnailPolicy] = thumbnailPolicyFromDb;
+        var thumbnailPolicyFromDb = await policyRepository.GetThumbnailPolicy(thumbnailDeliveryChannel.DeliveryChannelPolicyId, image.Customer);
+        thumbnailPolicies[thumbnailDeliveryChannel.DeliveryChannelPolicyId] = thumbnailPolicyFromDb;
         return thumbnailPolicyFromDb;
     }
 
@@ -381,10 +402,5 @@ public class IIIFCanvasFactory
         /// The size of the largest derivative, according to thumbnail policy.
         /// </summary>
         public Size MaxDerivativeSize { get; set; }
-
-        /// <summary>
-        /// Whether the <see cref="MaxDerivativeSize"/> is open.
-        /// </summary>
-        public bool IsDerivativeOpen { get; set; }
     }
 }

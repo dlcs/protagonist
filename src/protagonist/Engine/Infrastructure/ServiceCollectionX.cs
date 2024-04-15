@@ -101,7 +101,6 @@ public static class ServiceCollectionX
         {
             services.AddTransient<TimingHandler>();
             services.AddScoped<IImageProcessor, ImageServerClient>()
-                .AddScoped<ICantaloupeThumbsClient, CantaloupeThumbsClient>()
                 .AddScoped<IImageManipulator, ImageSharpManipulator>();
                 
             services.AddHttpClient<IAppetiserClient, AppetiserClient>(client =>
