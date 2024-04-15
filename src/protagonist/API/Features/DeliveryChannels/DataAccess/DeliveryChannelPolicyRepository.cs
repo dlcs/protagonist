@@ -1,3 +1,4 @@
+using API.Features.DeliveryChannels.Helpers;
 using DLCS.Core.Caching;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
@@ -30,7 +31,7 @@ public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
 
     public async Task<DeliveryChannelPolicy> RetrieveDeliveryChannelPolicy(int customerId, string channel, string policy)
     {
-        var key = $"deliveryChannelPolicies:{customerId}";
+        var key = CacheKeys.DeliveryChannelPolicies(customerId);
         
         var deliveryChannelPolicies = await appCache.GetOrAddAsync(key, async () =>
         {
@@ -42,17 +43,8 @@ public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
                 .ToListAsync();
 
             return defaultDeliveryChannels;
-        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long)); 
-        
-        return deliveryChannelPolicies.Single(p =>
-            (p.Customer == customerId &&
-             p.System == false &&
-             p.Channel == channel &&
-             p.Name == policy
-                 .Split('/').Last()) ||
-            (p.Customer == AdminCustomer &&
-             p.System &&
-             p.Channel == channel &&
-             p.Name == policy));
+        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
+
+        return deliveryChannelPolicies.RetrieveDeliveryChannel(customerId, channel, policy);
     }
 }

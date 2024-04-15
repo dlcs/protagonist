@@ -86,8 +86,11 @@ public abstract class HydraController : Controller
     /// <param name="errorTitle">The title of the error</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the <see cref="DeleteResult"/> is not understood</exception>
+    /// <returns>
     /// ActionResult generated from DeleteResult. This will be 204 on success. Or a Hydra
     /// error and appropriate status code if failed.
+    /// </returns>
+    /// <remarks>This will be replaced with overload that takes DeleteEntityResult in future</remarks>
     protected async Task<IActionResult> HandleDelete(
         IRequest<ResultMessage<DeleteResult>> request,
         string? errorTitle = "Delete failed",
@@ -97,19 +100,49 @@ public abstract class HydraController : Controller
         {
             var result = await Mediator.Send(request, cancellationToken);
 
-            return result.Value switch
-            {
-                DeleteResult.NotFound => this.HydraNotFound(),
-                DeleteResult.Conflict => this.HydraProblem(result.Message, null, 409,
-                    "Delete failed"),
-                DeleteResult.Error => this.HydraProblem(result.Message, null, 500,
-                    "Error when deleting"),
-                DeleteResult.Deleted => NoContent(),
-                _ => throw new ArgumentOutOfRangeException(nameof(DeleteResult),$"No deletion value of {result.Value}")
-            };
+            return ConvertDeleteToHttp(result.Value, result.Message);;
         }, errorTitle);
     }
     
+    /// <summary>
+    /// Handles a deletion, turning DeleteResult to a http response
+    /// </summary>
+    /// <param name="request">The request/response to be sent through Mediatr</param>
+    /// <param name="errorTitle">The title of the error</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the <see cref="DeleteResult"/> is not understood</exception>
+    /// <returns>
+    /// ActionResult generated from DeleteResult. This will be 204 on success. Or a Hydra
+    /// error and appropriate status code if failed.
+    /// </returns>
+    protected async Task<IActionResult> HandleDelete(
+        IRequest<DeleteEntityResult> request,
+        string? errorTitle = "Delete failed",
+        CancellationToken cancellationToken = default)
+    {
+        return await HandleHydraRequest(async () =>
+        {
+            var result = await Mediator.Send(request, cancellationToken);
+
+            return ConvertDeleteToHttp(result.Value, result.Message);
+        }, errorTitle);
+    }
+
+    private IActionResult ConvertDeleteToHttp(DeleteResult result, string? message)
+    {
+        // Note: this is temporary until DeleteResult used for all deletions
+        return result switch
+        {
+            DeleteResult.NotFound => this.HydraNotFound(),
+            DeleteResult.Conflict => this.HydraProblem(message, null, 409,
+                "Delete failed"),
+            DeleteResult.Error => this.HydraProblem(message, null, 500,
+                "Error when deleting"),
+            DeleteResult.Deleted => NoContent(),
+            _ => throw new ArgumentOutOfRangeException(nameof(DeleteResult),$"No deletion value of {result}")
+        };
+    }
+
     /// <summary>
     /// Handle a GET request - this takes a IRequest which returns a FetchEntityResult{T}.
     /// The request is sent and result is transformed to an http hydra result.  

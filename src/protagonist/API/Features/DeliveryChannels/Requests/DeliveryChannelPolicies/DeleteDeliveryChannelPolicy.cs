@@ -1,11 +1,17 @@
-﻿using DLCS.Core;
+﻿using API.Features.DeliveryChannels.Helpers;
+using API.Infrastructure.Requests;
+using API.Infrastructure.Requests.Pipelines;
+using DLCS.Core;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.DeliveryChannels.Requests.DeliveryChannelPolicies;
 
-public class DeleteDeliveryChannelPolicy: IRequest<ResultMessage<DeleteResult>>
+/// <summary>
+/// Delete DeliveryChannelPolicy with specified name for channel
+/// </summary>
+public class DeleteDeliveryChannelPolicy: IRequest<DeleteEntityResult>, IInvalidateCaches
 {
     public int CustomerId { get; }
     public string DeliveryChannelName { get; }
@@ -17,9 +23,12 @@ public class DeleteDeliveryChannelPolicy: IRequest<ResultMessage<DeleteResult>>
         DeliveryChannelName = deliveryChannelName;
         DeliveryChannelPolicyName = deliveryChannelPolicyName;
     }
+    
+    public string[] InvalidatedCacheKeys => new[]
+        { CacheKeys.DeliveryChannelPolicies(CustomerId), CacheKeys.DefaultDeliveryChannels(CustomerId) };
 }
 
-public class DeleteDeliveryChannelPolicyHandler : IRequestHandler<DeleteDeliveryChannelPolicy, ResultMessage<DeleteResult>>
+public class DeleteDeliveryChannelPolicyHandler : IRequestHandler<DeleteDeliveryChannelPolicy, DeleteEntityResult>
 {
     private readonly DlcsContext dbContext;
     
@@ -28,17 +37,15 @@ public class DeleteDeliveryChannelPolicyHandler : IRequestHandler<DeleteDelivery
         this.dbContext = dbContext;
     }
     
-    public async Task<ResultMessage<DeleteResult>> Handle(DeleteDeliveryChannelPolicy request, CancellationToken cancellationToken)
+    public async Task<DeleteEntityResult> Handle(DeleteDeliveryChannelPolicy request, CancellationToken cancellationToken)
     {
-        var policy = await dbContext.DeliveryChannelPolicies.SingleOrDefaultAsync(p =>
-            p.Customer == request.CustomerId &&
-            p.Name == request.DeliveryChannelPolicyName &&
-            p.Channel == request.DeliveryChannelName,
-            cancellationToken);
+        var policy =
+            await dbContext.DeliveryChannelPolicies.GetDeliveryChannel(request.CustomerId, request.DeliveryChannelName,
+                request.DeliveryChannelPolicyName, cancellationToken);
         
         if (policy == null)
         {
-            return new ResultMessage<DeleteResult>(
+            return DeleteEntityResult.Failure(
                 $"Deletion failed - Delivery channel policy ${request.DeliveryChannelPolicyName} was not found", DeleteResult.NotFound);
         }
         
@@ -52,14 +59,13 @@ public class DeleteDeliveryChannelPolicyHandler : IRequestHandler<DeleteDelivery
         
         if (policyInUseByDefaultDeliveryChannel || policyInUseByAsset)
         {
-            return new ResultMessage<DeleteResult>(
+            return DeleteEntityResult.Failure(
                 $"Deletion failed - Delivery channel policy {request.DeliveryChannelPolicyName} is still in use", DeleteResult.Conflict);
         }
         
         dbContext.DeliveryChannelPolicies.Remove(policy);
         await dbContext.SaveChangesAsync(cancellationToken);
         
-        return new ResultMessage<DeleteResult>(
-            $"Delivery channel policy {request.DeliveryChannelPolicyName} successfully deleted", DeleteResult.Deleted);
+        return DeleteEntityResult.Success;
     }
 }

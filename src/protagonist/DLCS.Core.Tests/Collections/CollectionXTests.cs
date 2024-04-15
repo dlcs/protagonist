@@ -143,4 +143,14 @@ public class CollectionXTests
 
         coll.ContainsOnly(123).Should().BeTrue();
     }
+    
+    [Fact]
+    public void AsArray_ReturnsExpected()
+    {
+        var item = DateTime.Now;
+
+        var list = item.AsArray();
+
+        list.Should().ContainSingle(i => i == item);
+    }
 }

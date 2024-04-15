@@ -43,7 +43,7 @@ public class DeliveryChannelPoliciesController : HydraController
         [FromRoute] int customerId,
         CancellationToken cancellationToken)
     {
-        var request = new GetDeliveryChannelPolicyCollections(customerId, Request.GetDisplayUrl(Request.Path), Request.GetJsonLdId());
+        var request = new GetDeliveryChannelPolicyCollections(Request.GetDisplayUrl(Request.Path), Request.GetJsonLdId());
         var result = await Mediator.Send(request, cancellationToken);
         var policyCollections = new HydraCollection<HydraNestedCollection<DeliveryChannelPolicy>>()
         {
@@ -197,7 +197,7 @@ public class DeliveryChannelPoliciesController : HydraController
         hydraDeliveryChannelPolicy.CustomerId = customerId;
         
         var updateDeliveryChannelPolicy =
-            new UpdateDeliveryChannelPolicy(customerId, hydraDeliveryChannelPolicy.ToDlcsModel());
+            new UpsertDeliveryChannelPolicy(customerId, hydraDeliveryChannelPolicy.ToDlcsModel());
         
         return await HandleUpsert(updateDeliveryChannelPolicy, 
             s => s.ToHydra(GetUrlRoots().BaseUrl),
@@ -264,12 +264,16 @@ public class DeliveryChannelPoliciesController : HydraController
     public async Task<IActionResult> DeleteDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
-        [FromRoute] string deliveryChannelPolicyName)
+        [FromRoute] string deliveryChannelPolicyName,
+        CancellationToken cancellationToken)
     {
         var deleteDeliveryChannelPolicy =
             new DeleteDeliveryChannelPolicy(customerId, deliveryChannelName, deliveryChannelPolicyName);
 
-        return await HandleDelete(deleteDeliveryChannelPolicy);
+        return await HandleDelete(
+            deleteDeliveryChannelPolicy,
+            errorTitle: "Delete delivery channel policy failed",
+            cancellationToken);
     }
 
     private async Task<IActionResult> TryValidateHydraDeliveryChannelPolicy(

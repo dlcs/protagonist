@@ -1,5 +1,5 @@
-﻿using API.Features.DeliveryChannels.Validation;
-using API.Infrastructure.Requests;
+﻿using API.Infrastructure.Requests;
+using API.Infrastructure.Requests.Pipelines;
 using DLCS.Core;
 using DLCS.Model.Policies;
 using DLCS.Repository;
@@ -9,7 +9,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.DeliveryChannels.Requests.DeliveryChannelPolicies;
 
-public class CreateDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryChannelPolicy>>
+/// <summary>
+/// Create a new DeliveryChannelPolicy for specified customer
+/// </summary>
+public class CreateDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryChannelPolicy>>, IInvalidateCaches
 {
     public int CustomerId { get; }
     
@@ -20,13 +23,16 @@ public class CreateDeliveryChannelPolicy : IRequest<ModifyEntityResult<DeliveryC
         CustomerId = customerId;
         DeliveryChannelPolicy = deliveryChannelPolicy;
     }
+
+    public string[] InvalidatedCacheKeys => new[]
+        { CacheKeys.DeliveryChannelPolicies(CustomerId), CacheKeys.DefaultDeliveryChannels(CustomerId) };
 }
 
 public class CreateDeliveryChannelPolicyHandler : IRequestHandler<CreateDeliveryChannelPolicy, ModifyEntityResult<DeliveryChannelPolicy>>
 {
     private readonly DlcsContext dbContext;
     
-    public CreateDeliveryChannelPolicyHandler(DlcsContext dbContext, DeliveryChannelPolicyDataValidator policyDataValidator)
+    public CreateDeliveryChannelPolicyHandler(DlcsContext dbContext)
     {
         this.dbContext = dbContext;
     }

@@ -72,7 +72,7 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
     
     private async Task<List<DefaultDeliveryChannel>> GetDefaultDeliveryChannelsForCustomer(int customerId, int space)
     {
-        var key = $"defaultDeliveryChannels:{customerId}";
+        var key = CacheKeys.DefaultDeliveryChannels(customerId);
 
         var defaultDeliveryChannels = await appCache.GetOrAddAsync(key, async () =>
         {

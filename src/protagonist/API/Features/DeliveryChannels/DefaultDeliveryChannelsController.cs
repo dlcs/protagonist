@@ -105,7 +105,7 @@ public class DefaultDeliveryChannelsController : HydraController
                 defaultDeliveryChannel.MediaType);
             
             return await HandleUpsert(command,
-                s => s.DefaultDeliveryChannel.ToHydra(GetUrlRoots().BaseUrl),
+                s => s.ToHydra(GetUrlRoots().BaseUrl),
                 errorTitle: "Failed to create Default Delivery Channel",
                 cancellationToken: cancellationToken);
         }
@@ -143,15 +143,15 @@ public class DefaultDeliveryChannelsController : HydraController
             defaultDeliveryChannelId);
 
         return await HandleUpsert(command, 
-            ch => ch.DefaultDeliveryChannel.ToHydra(GetUrlRoots().BaseUrl),
+            ch => ch.ToHydra(GetUrlRoots().BaseUrl),
             errorTitle: "Failed to update Default Delivery Channel",
             cancellationToken: cancellationToken);
     }
     
     /// <summary>
-    /// Get an individual customer accessible default delivery channel (customer specific + system)
+    /// Delete an individual customer accessible default delivery channel (customer specific + system)
     /// </summary>
-    /// <returns>A Hydra JSON-LD default delivery channel object</returns>
+    /// <returns>A 204 status code on success, or problem detail response on failure</returns>
     [HttpDelete("{defaultDeliveryChannelId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -169,7 +169,7 @@ public class DefaultDeliveryChannelsController : HydraController
     
         return await HandleDelete(
             deleteCustomerDefaultDeliveryChannel,
-            errorTitle: "Get default delivery channel failed",
+            errorTitle: "Delete Default Delivery Channel failed",
             cancellationToken: cancellationToken
         );
     }

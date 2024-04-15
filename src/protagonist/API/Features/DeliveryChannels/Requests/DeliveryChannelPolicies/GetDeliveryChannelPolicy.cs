@@ -1,4 +1,5 @@
-﻿using API.Infrastructure.Requests;
+﻿using API.Features.DeliveryChannels.Helpers;
+using API.Infrastructure.Requests;
 using DLCS.Model.Policies;
 using DLCS.Repository;
 using MediatR;
@@ -33,10 +34,7 @@ public class GetDeliveryChannelPolicyHandler : IRequestHandler<GetDeliveryChanne
     {
         var deliveryChannelPolicy = await dbContext.DeliveryChannelPolicies
             .AsNoTracking()
-            .SingleOrDefaultAsync(p => 
-                p.Customer == request.CustomerId && 
-                p.Channel == request.DeliveryChannelName &&
-                p.Name == request.DeliveryChannelPolicyName,
+            .GetDeliveryChannel(request.CustomerId, request.DeliveryChannelName, request.DeliveryChannelPolicyName,
                 cancellationToken);
         
         return deliveryChannelPolicy == null 
