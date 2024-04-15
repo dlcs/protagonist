@@ -54,7 +54,10 @@ public class DeliveryChannelPolicyDataValidator
         {
             try
             {
-                SizeParameter.Parse(sizeValue);
+                if (!IsValidThumbnailParameter(SizeParameter.Parse(sizeValue)))
+                {
+                    return false;
+                }
             }
             catch
             {
@@ -64,6 +67,11 @@ public class DeliveryChannelPolicyDataValidator
 
         return true;
     }
+
+    private bool IsValidThumbnailParameter(SizeParameter param)
+        => !(param.Max || param.PercentScale.HasValue ||
+             (param.Width.HasValue && param.Height.HasValue && !param.Confined) ||
+             (!param.Width.HasValue && !param.Height.HasValue));
 
     private async Task<bool> ValidateTimeBasedPolicyData(string policyDataJson)
     {

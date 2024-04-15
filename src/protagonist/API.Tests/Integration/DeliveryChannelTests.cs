@@ -1,9 +1,9 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
@@ -86,7 +86,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Fact]
-    public async Task Post_DeliveryChannelPolicy_201()
+    public async Task Post_DeliveryChannelPolicy_201_WithAvPolicy()
     {
         // Arrange
         const int customerId = 88;
@@ -110,6 +110,36 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             s.Name == "my-iiif-av-policy-1");
         foundPolicy.DisplayName.Should().Be("My IIIF AV Policy");
         foundPolicy.PolicyData.Should().Be("[\"video-mp4-480p\"]");
+    }
+    
+    [Theory]
+    [MemberData(nameof(ValidThumbsPolicies))]
+    public async Task Post_DeliveryChannelPolicy_201_WithThumbsPolicy(string policyName, string thumbParams)
+    {
+        // Arrange
+        const int customerId = 88;
+        var newDeliveryChannelPolicyJson = @$"{{
+            ""name"": ""{policyName}"",
+            ""displayName"": ""My Thumbs Policy"",
+            ""policyData"": ""{thumbParams}""
+        }}";
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/thumbs";
+   
+        // Act
+        var content = new StringContent(newDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var foundPolicy = dbContext.DeliveryChannelPolicies.Single(s => 
+            s.Customer == customerId &&
+            s.Name == policyName);
+        foundPolicy.DisplayName.Should().Be("My Thumbs Policy");
+       
+        var expectedPolicyData = thumbParams.Replace(@"\", string.Empty);
+        foundPolicy.PolicyData.Should().Be(expectedPolicyData);
     }
     
     [Fact]
@@ -140,7 +170,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         const int customerId = 88;
         const string newDeliveryChannelPolicyJson = @"{
             ""name"": ""post-existing-policy"",
-            ""policyData"": ""[\""100,100\""]""
+            ""policyData"": ""[\""100,\""]""
         }";
         
         var path = $"customers/{customerId}/deliveryChannelPolicies/thumbs";
@@ -149,7 +179,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             Customer = customerId,
             Name = "post-existing-policy",
             Channel = "thumbs",
-            PolicyData = "[\"100,100\"]"
+            PolicyData = "[\"100,\"]"
         };
         
         await dbContext.DeliveryChannelPolicies.AddAsync(policy);
@@ -185,11 +215,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData("")] // No PolicyData specified
-    [InlineData("[]")] // Empty array
-    [InlineData("[\"\"]")] // Array containing an empty value
-    [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
-    [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
+    [MemberData(nameof(InvalidPutThumbsPolicies))]
     public async Task Post_DeliveryChannelPolicy_400_IfThumbsPolicyDataInvalid(string policyData)
     {
         // Arrange
@@ -282,7 +308,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Fact]
-    public async Task Put_DeliveryChannelPolicy_200()
+    public async Task Put_DeliveryChannelPolicy_200_WithAvPolicy()
     {
         // Arrange
         const int customerId = 88;
@@ -317,6 +343,47 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             s.Name == policy.Name);
         foundPolicy.DisplayName.Should().Be("My IIIF AV Policy 2 (modified)");
         foundPolicy.PolicyData.Should().Be("[\"video-mp4-480p\"]");
+    }
+    
+    [Theory]
+    [MemberData(nameof(ValidThumbsPolicies))]
+    public async Task Put_DeliveryChannelPolicy_200_WithThumbsPolicy(string policyName, string thumbParams)
+    {
+        // Arrange
+        const int customerId = 88;
+        var putDeliveryChannelPolicyJson = @$"{{
+            ""displayName"": ""My Thumbs Policy 2 (modified)"",
+            ""policyData"": ""{thumbParams}""
+        }}";
+        
+        var policy = new DLCS.Model.Policies.DeliveryChannelPolicy()
+        {
+            Customer = customerId,
+            Name = policyName,
+            DisplayName = "My Thumbs Policy 2",
+            Channel = "thumbs",
+            PolicyData = "[\"512,\"]"
+        };
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/{policy.Channel}/{policy.Name}";
+
+        await dbContext.DeliveryChannelPolicies.AddAsync(policy);
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var content = new StringContent(putDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var foundPolicy = dbContext.DeliveryChannelPolicies.Single(s => 
+            s.Customer == customerId && 
+            s.Name == policy.Name);
+        foundPolicy.DisplayName.Should().Be("My Thumbs Policy 2 (modified)");
+        
+        var expectedPolicyData = thumbParams.Replace(@"\", string.Empty);
+        foundPolicy.PolicyData.Should().Be(expectedPolicyData);
     }
     
     [Fact]
@@ -360,11 +427,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData("")] // No PolicyData specified
-    [InlineData("[]")] // Empty array
-    [InlineData("[\"\"]")] // Array containing an empty value
-    [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
-    [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
+    [MemberData(nameof(InvalidPutThumbsPolicies))]
     public async Task Put_DeliveryChannelPolicy_400_IfThumbsPolicyDataInvalid(string policyData)
     {
         // Arrange
@@ -381,7 +444,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             Name = "put-invalid-thumbs",
             DisplayName = "Valid Policy (Thumbs Policy Data)",
             Channel = "thumbs",
-            PolicyData = "[\"100,100\"]"
+            PolicyData = "[\"100,\"]"
         };
         
         await dbContext.DeliveryChannelPolicies.AddAsync(policy);
@@ -416,7 +479,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             Name = "put-invalid-iiif-av",
             DisplayName = "Valid Policy (IIIF-AV Policy Data)",
             Channel = "thumbs",
-            PolicyData = "[\"100,100\"]"
+            PolicyData = "[\"100,\"]"
         };
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av/put-invalid-iiif-av";
 
@@ -455,7 +518,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Fact]
-    public async Task Patch_DeliveryChannelPolicy_201()
+    public async Task Patch_DeliveryChannelPolicy_201_WithAvPolicy()
     {
         // Arrange
         const int customerId = 88;
@@ -493,10 +556,48 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData("[]")] // Empty array
-    [InlineData("[\"\"]")] // Array containing an empty value
-    [InlineData(@"[\""foo\"",\""bar\""]")] // Invalid data
-    [InlineData(@"[\""100,100\"",\""200,200\""")]  // Invalid JSON
+    [MemberData(nameof(ValidThumbsPolicies))]
+    public async Task Patch_DeliveryChannelPolicy_200_WithThumbsPolicy(string policyId, string policyData)
+    {
+        // Arrange
+        const int customerId = 88;
+        var patchDeliveryChannelPolicyJson = @$"{{
+            ""displayName"": ""My Thumbs Policy 3 (modified)"",
+            ""policyData"": ""{policyData}""
+        }}";
+        
+        var policy = new DLCS.Model.Policies.DeliveryChannelPolicy()
+        {
+            Customer = customerId,
+            Name = "put-thumbs-policy",
+            DisplayName = "My Thumbs Policy 3",
+            Channel = "thumbs",
+            PolicyData = "[\"100,\"]"
+        };
+        
+        var path = $"customers/{customerId}/deliveryChannelPolicies/{policy.Channel}/{policy.Name}";
+
+        await dbContext.DeliveryChannelPolicies.AddAsync(policy);
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var content = new StringContent(patchDeliveryChannelPolicyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PatchAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var foundPolicy = dbContext.DeliveryChannelPolicies.Single(s => 
+            s.Customer == customerId && 
+            s.Name == policy.Name);
+        foundPolicy.DisplayName.Should().Be("My Thumbs Policy 3 (modified)");
+        
+        var expectedPolicyData = policyData.Replace(@"\", string.Empty);
+        foundPolicy.PolicyData.Should().Be(expectedPolicyData);
+    }
+    
+    [Theory]
+    [MemberData(nameof(InvalidPatchThumbsPolicies))]
     public async Task Patch_DeliveryChannelPolicy_400_IfThumbsPolicyDataInvalid(string policyData)
     {
         // Arrange
@@ -512,7 +613,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             Name = "patch-invalid-thumbs",
             DisplayName = "Valid Policy (Thumbs Policy Data)",
             Channel = "thumbs",
-            PolicyData = "[\"100,100\"]"
+            PolicyData = "[\"100,\"]"
         };
         
         await dbContext.DeliveryChannelPolicies.AddAsync(policy);
@@ -545,7 +646,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
             Name = "patch-invalid-iiif-av",
             DisplayName = "Valid Policy (IIIF-AV Policy Data)",
             Channel = "iiif-av",
-            PolicyData = "[\"100,100\"]"
+            PolicyData = "[\"100,\"]"
         };
         var path = $"customers/{customerId}/deliveryChannelPolicies/iiif-av/patch-invalid-iiif-av";
 
@@ -675,4 +776,79 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
+    
+    public static IEnumerable<object[]> ValidThumbsPolicies => new List<object[]>
+    {
+        new object[]
+        {
+            "my-thumbs-policy-1-a",
+            @"[\""400,\"",\""200,\"",\""100,\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-b",
+            @"[\""!400,\"",\""!200,\"",\""!100,\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-c",
+            @"[\"",400\"",\"",200\"",\"",100\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-d",
+            @"[\""!,400\"",\""!,200\"",\""!,100\""]"
+
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-e",
+            @"[\""^400,\"",\""^200,\"",\""^100,\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-f",
+            @"[\""^!400,\"",\""^!200,\"",\""^!100,\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-g",
+            @"[\""^,400\"",\""^,200\"",\""^,100\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-h",
+            @"[\""^!,400\"",\""^!,200\"",\""^!,100\""]"
+        },
+        new object[]
+        {
+            "my-thumbs-policy-1-i",
+            @"[\""!400,400\"",\""!200,200\"",\""!100,100\""]"
+        }
+    };
+
+    public static ICollection<object[]> InvalidPatchThumbsPolicies => new List<string>()
+    {
+        "[]", // Empty array
+        "[\"\"]", // Array containing an empty value
+        @"[\""foo\"",\""bar\""]", // Invalid data
+        @"[\""100,100\"",\""200,200\""]", // Invalid JSON
+        @"[\""max\""]", // SizeParameter specific rules
+        @"[\""^max\""]",
+        @"[\""441.6,7.5\""]",
+        @"[\""441.6,\""]",
+        @"[\"",7.5\""]",
+        @"[\""pct:441.6,7.5\""]",
+        @"[\""^pct:41.6,7.5\""]",
+        @"[\""10,50\""]",
+        @"[\"",\""]"
+    }.Select(p => new object[] { p }).ToList();
+
+    public static ICollection<object[]> InvalidPutThumbsPolicies => InvalidPatchThumbsPolicies.Concat(new List<object[]>()
+    {
+        new object[]
+        {
+            "" // No PolicyData specified
+        }
+    }).ToList();
 }
