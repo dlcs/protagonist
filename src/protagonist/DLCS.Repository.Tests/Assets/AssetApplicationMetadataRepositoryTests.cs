@@ -13,11 +13,17 @@ public class AssetApplicationMetadataRepositoryTests
 {
     private readonly DlcsContext dbContext;
     private readonly AssetApplicationMetadataRepository sut;
+    private readonly DlcsContext contextForTests;
     
     public AssetApplicationMetadataRepositoryTests(DlcsDatabaseFixture dbFixture)
     {
         dbContext = dbFixture.DbContext;
-        sut = new AssetApplicationMetadataRepository(dbFixture.DbContext);
+
+        var optionsBuilder = new DbContextOptionsBuilder<DlcsContext>();
+        optionsBuilder.UseNpgsql(dbFixture.ConnectionString);
+        contextForTests = new DlcsContext(optionsBuilder.Options);
+        
+        sut = new AssetApplicationMetadataRepository(contextForTests);
         
         dbFixture.CleanUp();
         dbContext.Images.AddTestAsset(AssetId.FromString("99/1/1"), ref1: "foobar");
@@ -56,7 +62,7 @@ public class AssetApplicationMetadataRepositoryTests
         // Act
         var metadata = await sut.UpsertApplicationMetadata(assetId, 
             AssetApplicationMetadataTypes.ThumbSizes, newMetadataValue);
-        var metaDataFromDatabase = await dbContext.AssetApplicationMetadata.FirstAsync(x =>
+        var metaDataFromDatabase = await contextForTests.AssetApplicationMetadata.FirstAsync(x =>
             x.AssetId == assetId && x.MetadataType == AssetApplicationMetadataTypes.ThumbSizes);
         
         // Assert

@@ -26,21 +26,22 @@ public class AssetApplicationMetadataRepository : IAssetApplicationMetadataRepos
         {
             addedMetadata.MetadataValue = metadataValue;
             addedMetadata.Modified = DateTime.UtcNow;
-            await dlcsContext.AssetApplicationMetadata.SingleUpdateAsync(addedMetadata, cancellationToken);
             await dlcsContext.SaveChangesAsync(cancellationToken);
             return addedMetadata;
         }
-        
-        var databaseMetadata= await dlcsContext.AssetApplicationMetadata.AddAsync(new AssetApplicationMetadata()
+
+        var assetApplicationMetadata = new AssetApplicationMetadata()
         {
             AssetId = assetId,
             MetadataType = metadataType,
             MetadataValue = metadataValue,
             Created = DateTime.UtcNow,
             Modified = DateTime.UtcNow
-        }, cancellationToken);
+        };
+        
+        await dlcsContext.AssetApplicationMetadata.AddAsync(assetApplicationMetadata, cancellationToken);
         
         await dlcsContext.SaveChangesAsync(cancellationToken);
-        return databaseMetadata.Entity;
+        return assetApplicationMetadata;
     }
 }
