@@ -9,6 +9,7 @@ using DLCS.Core.Enum;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
@@ -77,6 +78,7 @@ public partial class DlcsContext : DbContext
     public virtual DbSet<DeliveryChannelPolicy> DeliveryChannelPolicies { get; set; }
     public virtual DbSet<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
     public virtual DbSet<DefaultDeliveryChannel> DefaultDeliveryChannels { get; set; }
+    public virtual DbSet<AssetApplicationMetadata> AssetApplicationMetadata { get; set; }
 
     public virtual DbSet<SignupLink> SignupLinks { get; set; }
 
@@ -678,6 +680,20 @@ public partial class DlcsContext : DbContext
             entity.Property(e => e.DeliveryChannelPolicyId).IsRequired();
             
             entity.Property(e => e.MediaType).IsRequired().HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<AssetApplicationMetadata>(entity =>
+        {
+            entity.HasKey(e => new { e.AssetId, e.MetadataType });
+            entity.Property(e => e.AssetId).IsRequired().HasConversion(
+                aId => aId.ToString(),
+                id => AssetId.FromString(id));
+            entity.Property(e => e.MetadataType).IsRequired();
+            entity.Property(e => e.MetadataValue).IsRequired().HasColumnType("jsonb");
+            
+            entity.HasOne(e => e.Asset)
+                .WithMany(e => e.AssetApplicationMetadata)
+                .HasForeignKey(e => e.AssetId);
         });
 
         OnModelCreatingPartial(modelBuilder);

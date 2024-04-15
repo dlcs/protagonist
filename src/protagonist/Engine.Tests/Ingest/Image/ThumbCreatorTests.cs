@@ -3,6 +3,7 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Policies;
 using Engine.Ingest.Image;
 using FakeItEasy;
@@ -16,6 +17,7 @@ public class ThumbCreatorTests
     private readonly TestBucketWriter bucketWriter;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly ThumbCreator sut;
+    private readonly IAssetApplicationMetadataRepository assetApplicationMetadataRepository;
     private readonly List<ImageDeliveryChannel> thumbsDeliveryChannel = new()
     {
         new ImageDeliveryChannel()
@@ -29,6 +31,7 @@ public class ThumbCreatorTests
     {
         bucketWriter = new TestBucketWriter();
         storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
+        assetApplicationMetadataRepository = A.Fake<IAssetApplicationMetadataRepository>();
 
         A.CallTo(() => storageKeyGenerator.GetLargestThumbnailLocation(A<AssetId>._))
             .ReturnsLazily((AssetId assetId) => new ObjectInBucket("thumbs-bucket", $"{assetId}/low.jpg"));
@@ -41,7 +44,7 @@ public class ThumbCreatorTests
                 return new ObjectInBucket("thumbs-bucket", $"{assetId}/{authSlug}/{size}.jpg");
             });
 
-        sut = new ThumbCreator(bucketWriter, storageKeyGenerator, new NullLogger<ThumbCreator>());
+        sut = new ThumbCreator(bucketWriter, storageKeyGenerator, assetApplicationMetadataRepository,new NullLogger<ThumbCreator>());
     }
 
     [Fact]

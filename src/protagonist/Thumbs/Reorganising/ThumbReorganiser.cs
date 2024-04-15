@@ -8,6 +8,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Assets.Thumbs;
 using DLCS.Model.Policies;
 using DLCS.Repository.Assets;
@@ -35,7 +36,8 @@ public class ThumbReorganiser : ThumbsManager, IThumbReorganiser
         ILogger<ThumbReorganiser> logger,
         IAssetRepository assetRepository,
         IThumbnailPolicyRepository policyRepository,
-        IStorageKeyGenerator storageKeyGenerator) : base(bucketWriter, storageKeyGenerator)
+        IAssetApplicationMetadataRepository assetApplicationMetadataRepository,
+        IStorageKeyGenerator storageKeyGenerator) : base(bucketWriter, storageKeyGenerator, assetApplicationMetadataRepository)
     {
         this.bucketReader = bucketReader;
         this.logger = logger;

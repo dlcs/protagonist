@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.DeliveryChannels;
@@ -182,5 +183,17 @@ public static class DatabaseTestDataPopulation
             NumberOfStoredImages = numberOfImages,
             TotalSizeOfStoredImages = sizeOfStored,
             TotalSizeOfThumbnails = sizeOfThumbs
+        });
+
+    public static ValueTask<EntityEntry<AssetApplicationMetadata>> AddAssetApplicationMetadata(
+        this DbSet<AssetApplicationMetadata> assetApplicationMetadata, AssetId assetId,
+        string metadataType, string metadataValue)
+        => assetApplicationMetadata.AddAsync(new AssetApplicationMetadata()
+        {
+            AssetId = assetId,
+            MetadataType = metadataType,
+            MetadataValue = metadataValue,
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow
         });
 }
