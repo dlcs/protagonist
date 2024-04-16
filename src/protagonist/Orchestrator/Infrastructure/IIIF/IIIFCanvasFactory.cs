@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
@@ -136,6 +135,13 @@ public class IIIFCanvasFactory
             }
         }
 
+        if ((orchestratorSettings.ThumbsMetadataDate ?? DateTime.MaxValue) < asset.Finished)
+        {
+            logger.LogWarning(
+                "No metadata found for asset {AssetId} with finished date {FinishedDate} and fallback disabled", asset.Id,
+                asset.Finished);
+        }
+        
         return await GetThumbnailSizesForImage(asset);
     }
 
