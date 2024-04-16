@@ -59,6 +59,8 @@ public class DeliveryChannelProcessor
 
     private bool DeliveryChannelsRequireReprocessing(Asset originalAsset, DeliveryChannelsBeforeProcessing[] deliveryChannelsBeforeProcessing)
     {
+        // PUT prevents empty delivery channels from being passed here, but PATCH doesn't
+        if (deliveryChannelsBeforeProcessing.IsNullOrEmpty()) return false;
         if (originalAsset.ImageDeliveryChannels.Count != deliveryChannelsBeforeProcessing.Length) return true;
         
         foreach (var deliveryChannel in deliveryChannelsBeforeProcessing)

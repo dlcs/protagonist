@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
 using API.Converters;
 using API.Exceptions;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
+using DLCS.Model.Assets;
+using AssetFamily = DLCS.HydraModel.AssetFamily;
+using DeliveryChannelPolicy = DLCS.Model.Policies.DeliveryChannelPolicy;
 
 namespace API.Tests.Converters;
 
@@ -179,5 +183,56 @@ public class AssetConverterTests
         
         // Assert
         asset.DeliveryChannels.Should().BeInAscendingOrder();
+    }
+    
+    [Fact]
+    public void ToHydraModel_Converts_ImageDeliveryChannels_To_WcDeliveryChannels()
+    {
+        // Arrange
+        var dlcsAssetId = new AssetId(0, 1, "test-asset");
+        var dlcsAssetUrlRoot = new UrlRoots()
+        {
+            BaseUrl = "https://api.example.com/",
+            ResourceRoot = "https://resource.example.com/"
+        };
+        var dlcsAsset = new Asset(dlcsAssetId)
+        {
+            Origin = "https://example-origin.com/my-image.jpeg",
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+            {
+                new()
+                {
+                    Channel = "iiif-img",
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                    {
+                        Name = "img-policy"
+                    }
+                },
+                new()
+                {
+                    Channel = "thumbs",
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                    {
+                        Name = "thumbs-policy"
+                    }
+                },
+                new()
+                {
+                    Channel = "file",
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                    {
+                        Name = "none",
+                    }
+                }
+            }
+        };
+        var assetPreparationResult = AssetPreparer.PrepareAssetForUpsert(null, dlcsAsset, false,
+            false, new []{' '});
+        
+        // Act
+        var hydraAsset = assetPreparationResult.UpdatedAsset!.ToHydra(dlcsAssetUrlRoot);
+        
+        // Assert
+        hydraAsset.WcDeliveryChannels.Should().BeEquivalentTo("iiif-img", "thumbs", "file");
     }
 }

@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Repository;
+using DLCS.Repository.Assets;
 using DLCS.Repository.Messaging;
 using FakeItEasy;
 using Microsoft.AspNetCore.Authentication;
@@ -75,8 +76,7 @@ public class CustomerQueueWithOldDeliveryChannelEmulationTests : IClassFixture<P
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var assetInDatabase = await dbContext.Images
-            .Include(a => a.ImageDeliveryChannels)
-            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .IncludeDeliveryChannelsWithPolicy()
             .SingleAsync(a => a.Customer == customerId && a.Space == space);
         
         assetInDatabase.ImageDeliveryChannels.Should().Satisfy(
@@ -117,8 +117,7 @@ public class CustomerQueueWithOldDeliveryChannelEmulationTests : IClassFixture<P
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var assetInDatabase = await dbContext.Images
-            .Include(a => a.ImageDeliveryChannels)
-            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .IncludeDeliveryChannelsWithPolicy()
             .SingleAsync(a => a.Customer == customerId && a.Space == space);
         
         assetInDatabase.ImageDeliveryChannels.Should().Satisfy(
@@ -158,8 +157,7 @@ public class CustomerQueueWithOldDeliveryChannelEmulationTests : IClassFixture<P
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var assetInDatabase = await dbContext.Images
-            .Include(a => a.ImageDeliveryChannels)
-            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .IncludeDeliveryChannelsWithPolicy()
             .SingleAsync(a => a.Customer == customerId && a.Space == space);
         
         assetInDatabase.ImageDeliveryChannels.Should().Satisfy(
@@ -199,8 +197,7 @@ public class CustomerQueueWithOldDeliveryChannelEmulationTests : IClassFixture<P
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var assetInDatabase = await dbContext.Images
-            .Include(a => a.ImageDeliveryChannels)
-            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .IncludeDeliveryChannelsWithPolicy()
             .SingleAsync(a => a.Customer == customerId && a.Space == space);
         
         assetInDatabase.ImageDeliveryChannels.Should().Satisfy(
@@ -240,8 +237,7 @@ public class CustomerQueueWithOldDeliveryChannelEmulationTests : IClassFixture<P
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var assetInDatabase = await dbContext.Images
-            .Include(a => a.ImageDeliveryChannels)
-            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .IncludeDeliveryChannelsWithPolicy()
             .SingleAsync(a => a.Customer == customerId && a.Space == space);
         
         assetInDatabase.ImageDeliveryChannels.Should().Satisfy(
@@ -281,8 +277,7 @@ public class CustomerQueueWithOldDeliveryChannelEmulationTests : IClassFixture<P
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var assetInDatabase = await dbContext.Images
-            .Include(a => a.ImageDeliveryChannels)
-            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .IncludeDeliveryChannelsWithPolicy()
             .SingleAsync(a => a.Customer == customerId && a.Space == space);
         
         assetInDatabase.ImageDeliveryChannels.Should().Satisfy(
@@ -322,8 +317,7 @@ public class CustomerQueueWithOldDeliveryChannelEmulationTests : IClassFixture<P
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var assetInDatabase = await dbContext.Images
-            .Include(a => a.ImageDeliveryChannels)
-            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .IncludeDeliveryChannelsWithPolicy()
             .SingleAsync(a => a.Customer == customerId && a.Space == space);
         
         assetInDatabase.ImageDeliveryChannels.Should().Satisfy(
