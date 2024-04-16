@@ -424,9 +424,6 @@ public static class AssetConverter
     /// <summary>
     /// Converts ImageDeliveryChannels into the old format (WcDeliveryChannels)
     /// </summary>
-    /// <param name="imageDeliveryChannels"></param>
-    private static string[] ConvertImageDeliveryChannelsToWc(ICollection<ImageDeliveryChannel>? imageDeliveryChannels)
-        => imageDeliveryChannels.IsNullOrEmpty() 
-            ? Array.Empty<string>() 
-            : imageDeliveryChannels.Select(dc => dc.Channel).ToArray();
+    private static string[] ConvertImageDeliveryChannelsToWc(ICollection<ImageDeliveryChannel> imageDeliveryChannels)
+        => imageDeliveryChannels.Select(dc => dc.Channel).ToArray();
 }
