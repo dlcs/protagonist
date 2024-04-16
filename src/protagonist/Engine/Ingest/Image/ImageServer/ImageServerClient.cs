@@ -6,6 +6,7 @@ using DLCS.Core.FileSystem;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using DLCS.Model.Templates;
 using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Models;
@@ -108,16 +109,15 @@ public class ImageServerClient : IImageProcessor
     
     private async Task CallThumbsProcessor(IngestionContext context, string thumbFolder)
     {
-        var thumbPolicy = context.Asset.ImageDeliveryChannels.SingleOrDefault(
-                x=> x.Channel == AssetDeliveryChannels.Thumbnails)
-            ?.DeliveryChannelPolicy.PolicyData;
+        var thumbPolicy = context.Asset.ImageDeliveryChannels
+            .GetThumbsChannel()?.DeliveryChannelPolicy
+            .PolicyDataAs<List<string>>();
         
         var sizes = engineSettings.ImageIngest!.DefaultThumbs;
 
         if (thumbPolicy != null)
         {
-            var sizesFromAsset = JsonSerializer.Deserialize<List<string>>(thumbPolicy);
-            sizes = sizes.Union(sizesFromAsset!).ToList();
+            sizes = sizes.Union(thumbPolicy).ToList();
         }
 
         var thumbsResponse = await thumbsClient.GenerateThumbnails(context, sizes, thumbFolder);
