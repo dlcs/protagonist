@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Assets.NamedQueries;
+using DLCS.Model.Policies;
 using IIIF.Auth.V2;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
@@ -44,20 +48,32 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
             Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "test-named-query",
             Template = "assetOrdering=n1&s1=p1&space=p2"
         });
-
-        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-1"), num1: 2, ref1: "my-ref");
-        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-2"), num1: 1, ref1: "my-ref");
+                
+        var thumbsPolicy = dbFixture.DbContext.DeliveryChannelPolicies.Single(d =>
+            d.Channel == AssetDeliveryChannels.Thumbnails && d.Customer == 99);
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-1"), num1: 2, ref1: "my-ref",
+            imageDeliveryChannels: new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicyId = thumbsPolicy.Id,
+                }
+            });
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-2"), num1: 1, ref1: "my-ref")
+            .AddTestThumbnailMetadata();
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-nothumbs"), num1: 3, ref1: "my-ref",
-            maxUnauthorised: 10, roles: "default");
+            maxUnauthorised: 10, roles: "default").AddTestThumbnailMetadata();
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/not-for-delivery"), num1: 4, ref1: "my-ref",
-            notForDelivery: true);
-        
+            notForDelivery: true).AddTestThumbnailMetadata();
+
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/auth-1"), num1: 2, ref1: "auth-ref",
-            roles: "clickthrough");
+            roles: "clickthrough").AddTestThumbnailMetadata();
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/auth-2"), num1: 1, ref1: "auth-ref",
-            roles: "clickthrough");
-        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/no-auth"), num1: 3, ref1: "auth-ref");
-        
+            roles: "clickthrough").AddTestThumbnailMetadata();
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/no-auth"), num1: 3, ref1: "auth-ref")
+            .AddTestThumbnailMetadata();
+
         dbFixture.DbContext.SaveChanges();
     }
     
@@ -127,7 +143,7 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact(Skip = "Orchestrator changes for delivery channels")]
+    [Fact]
     public async Task Get_ReturnsV2ManifestWithCorrectCount_ViaConneg()
     {
         // Arrange
@@ -147,7 +163,7 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(3);
     }
     
-    [Fact(Skip = "Orchestrator changes for delivery channels")]
+    [Fact]
     public async Task Get_ReturnsV2ManifestWithCorrectCount_ViaDirectPath()
     {
         // Arrange
@@ -165,7 +181,7 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(3);
     }
     
-    [Fact(Skip = "Orchestrator changes for delivery channels")]
+    [Fact]
     public async Task Get_ReturnsV3ManifestWithCorrectCount_ViaConneg()
     {
         // Arrange
@@ -185,7 +201,7 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse.SelectToken("items").Count().Should().Be(3);
     }
     
-    [Fact(Skip = "Orchestrator changes for delivery channels")]
+    [Fact]
     public async Task Get_ReturnsV3ManifestWithCorrectCount_ViaDirectPath()
     {
         // Arrange
@@ -203,7 +219,7 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse.SelectToken("items").Count().Should().Be(3);
     }
     
-    [Fact(Skip = "Orchestrator changes for delivery channels")]
+    [Fact]
     public async Task Get_ReturnsV3ManifestWithCorrectCount_AsCanonical()
     {
         // Arrange
@@ -221,7 +237,7 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse.SelectToken("items").Count().Should().Be(3);
     }
     
-    [Fact(Skip = "Orchestrator changes for delivery channels")]
+    [Fact]
     public async Task Get_ReturnsManifestWithCorrectlyOrderedItems()
     {
         // Arrange
@@ -232,13 +248,13 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         });
 
         await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/third"), num1: 1, num2: 10, ref1: "z",
-            ref2: "grace");
+            ref2: "grace").AddTestThumbnailMetadata();;
         await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/first"), num1: 1, num2: 20, ref1: "c",
-            ref2: "grace");
+            ref2: "grace").AddTestThumbnailMetadata();;
         await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/fourth"), num1: 2, num2: 10, ref1: "a",
-            ref2: "grace");
+            ref2: "grace").AddTestThumbnailMetadata();;
         await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/second"), num1: 1, num2: 10, ref1: "x",
-            ref2: "grace");
+            ref2: "grace").AddTestThumbnailMetadata();;
         await dbFixture.DbContext.SaveChangesAsync();
 
         var expectedOrder = new[] { "99/1/first", "99/1/second", "99/1/third", "99/1/fourth" };
@@ -258,7 +274,7 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         }
     }
     
-    [Fact(Skip = "Orchestrator changes for delivery channels")]
+    [Fact]
     public async Task Get_AssetsRequireAuth_ReturnsV2ManifestWithoutAuthServices()
     {
         // Arrange
@@ -266,8 +282,7 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Act
         var response = await httpClient.GetAsync(path);
-        var test = response.Content.ReadAsStringAsync();
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -279,7 +294,7 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(3);
     }
     
-    [Fact(Skip = "Orchestrator changes for delivery channels")]
+    [Fact]
     public async Task Get_AssetsRequireAuth_ReturnsV3ManifestWithAuthServices()
     {
         // Arrange

@@ -31,19 +31,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
     private JToken imageServices;
-    private readonly List<ImageDeliveryChannel> imageDeliveryChannels = new()
-    {
-        new ImageDeliveryChannel
-        {
-            Channel = AssetDeliveryChannels.Image,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
-        },
-        new ImageDeliveryChannel
-        {
-            Channel = AssetDeliveryChannels.Thumbnails,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
-        }
-    };
+    private readonly List<ImageDeliveryChannel> imageDeliveryChannels;
 
     public ManifestHandlingTests(ProtagonistAppFactory<Startup> factory, DlcsDatabaseFixture databaseFixture)
     {
@@ -56,7 +44,24 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             })
             .WithConnectionString(dbFixture.ConnectionString)
             .CreateClient();
-            
+
+        var thumbsPolicy = dbFixture.DbContext.DeliveryChannelPolicies.Single(d =>
+            d.Channel == AssetDeliveryChannels.Thumbnails && d.Customer == 99);
+
+        imageDeliveryChannels = new()
+        {
+            new ImageDeliveryChannel
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
+            },
+            new ImageDeliveryChannel
+            {
+                Channel = AssetDeliveryChannels.Thumbnails,
+                DeliveryChannelPolicyId = thumbsPolicy.Id,
+            }
+        };
+        
         dbFixture.CleanUp();
     }
 
@@ -185,6 +190,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+       // await dbFixture.DbContext.AssetApplicationMetadata.AddAssetApplicationMetadata(id, "thumbs", "");
         await dbFixture.DbContext.SaveChangesAsync();
             
         var path = $"iiif-manifest/v2/{id}";
