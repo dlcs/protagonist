@@ -41,8 +41,7 @@ public class ApiAssetRepository : IApiAssetRepository
 
         Task<Asset?> LoadAssetFromDb(AssetId id) =>
             images
-                .Include(i => i.ImageDeliveryChannels)
-                .ThenInclude(i => i.DeliveryChannelPolicy)
+                .IncludeDeliveryChannelsWithPolicy()
                 .SingleOrDefaultAsync(i => i.Id == id);
 
         if (noCache) assetCachingHelper.RemoveAssetFromCache(assetId);

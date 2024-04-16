@@ -4,6 +4,7 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository;
+using DLCS.Repository.Assets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -83,8 +84,7 @@ public class EngineAssetRepository : IEngineAssetRepository
     }
 
     public ValueTask<Asset?> GetAsset(AssetId assetId, CancellationToken cancellationToken = default)
-        => new(dlcsContext.Images.Include(i => i.ImageDeliveryChannels)
-            .ThenInclude(i => i.DeliveryChannelPolicy)
+        => new(dlcsContext.Images.IncludeDeliveryChannelsWithPolicy()
             .SingleOrDefaultAsync(i => i.Id == assetId, cancellationToken));
 
     public async Task<long?> GetImageSize(AssetId assetId, CancellationToken cancellationToken = default)

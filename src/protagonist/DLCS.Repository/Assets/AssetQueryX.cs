@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Page;
+using Microsoft.EntityFrameworkCore;
 
 namespace DLCS.Repository.Assets;
 
@@ -114,4 +115,11 @@ public static class AssetQueryX
 
         return filtered;
     }
+    
+    /// <summary>
+    /// Include asset delivery channels and their associated policies.
+    /// </summary>
+    public static IQueryable<Asset> IncludeDeliveryChannelsWithPolicy(this IQueryable<Asset> assetQuery)
+        => assetQuery.Include(a => a.ImageDeliveryChannels)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy);
 }

@@ -3,6 +3,7 @@ using API.Features.Customer.Validation;
 using API.Infrastructure.Requests;
 using DLCS.Model.Assets;
 using DLCS.Repository;
+using DLCS.Repository.Assets;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -40,8 +41,7 @@ public class GetMultipleImagesByIdHandler
 
         var results = await dlcsContext.Images.AsNoTracking()
             .Where(i => i.Customer == request.CustomerId && assetIds.Contains(i.Id))
-            .Include(i => i.ImageDeliveryChannels)
-            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .IncludeDeliveryChannelsWithPolicy()
             .ToListAsync(cancellationToken);
 
         return FetchEntityResult<IReadOnlyCollection<Asset>>.Success(results);
