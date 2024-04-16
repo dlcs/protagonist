@@ -1166,9 +1166,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange 
         var assetId = new AssetId(99, 1, 
             $"{nameof(Patch_Asset_Leaves_ImageDeliveryChannels_Intact_WhenDeliveryChannelsNull)}");
-        await dbContext.Images.AddTestAsset(assetId, family: AssetFamily.File, 
-            origin: "https://files.org/example.pdf",
-            imageDeliveryChannels: new List<ImageDeliveryChannel>()
+        
+        await dbContext.Images.AddTestAsset(assetId, customer: 99, space: 1, family: AssetFamily.Image, 
+            origin: "https://files.org/example.jpeg", imageDeliveryChannels: new List<ImageDeliveryChannel>()
             {
                 new()
                 {
@@ -1472,12 +1472,13 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Patch_Images_Leaves_ImageDeliveryChannels_Intact_WhenDeliveryChannelsNull()
     {
+        // Arrange
         await dbContext.Spaces.AddTestSpace(99, 3004);
         
         var assetId = AssetId.FromString($"99/3003/{nameof(Patch_Images_Leaves_ImageDeliveryChannels_Intact_WhenDeliveryChannelsNull)}");
         
-        await dbContext.Images.AddTestAsset(assetId, customer: 99, space: 3004, 
-            imageDeliveryChannels: new List<ImageDeliveryChannel>()
+        await dbContext.Images.AddTestAsset(assetId, customer: 99, space: 3004, family: AssetFamily.Image, 
+            origin: "https://files.org/example.jpeg", imageDeliveryChannels: new List<ImageDeliveryChannel>() 
         {
             new()
             {
@@ -1507,11 +1508,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
            }}]
         }}";
                 
-        // act
+        // Act
         var content = new StringContent(hydraCollectionBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PatchAsync("/customers/99/spaces/3004/images", content);
 
-        // assert
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
