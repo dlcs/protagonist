@@ -51,6 +51,7 @@ public class GetBatchImagesHandler : IRequestHandler<GetBatchImages, FetchEntity
             i => i
                 .Where(a => a.Customer == request.CustomerId && a.Batch == request.BatchId)
                 .Include(a => a.ImageDeliveryChannels)
+                .ThenInclude(dc => dc.DeliveryChannelPolicy)
                 .ApplyAssetFilter(request.AssetFilter, true),
             images => images.AsOrderedAssetQuery(request),
             cancellationToken);

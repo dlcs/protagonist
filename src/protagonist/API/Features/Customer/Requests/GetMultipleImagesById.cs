@@ -41,6 +41,7 @@ public class GetMultipleImagesByIdHandler
         var results = await dlcsContext.Images.AsNoTracking()
             .Where(i => i.Customer == request.CustomerId && assetIds.Contains(i.Id))
             .Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy)
             .ToListAsync(cancellationToken);
 
         return FetchEntityResult<IReadOnlyCollection<Asset>>.Success(results);

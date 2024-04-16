@@ -63,6 +63,7 @@ public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, FetchEntity
             i => i
                 .Where(a => a.Customer == request.CustomerId && a.Space == request.SpaceId)
                 .Include(a => a.ImageDeliveryChannels)
+                .ThenInclude(dc => dc.DeliveryChannelPolicy)
                 .ApplyAssetFilter(request.AssetFilter),
             images => images.AsOrderedAssetQuery(request),
             cancellationToken);
