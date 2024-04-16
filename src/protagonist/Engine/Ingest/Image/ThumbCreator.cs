@@ -113,6 +113,7 @@ public class ThumbCreator : IThumbCreator
     
     private async Task CreateSizesJson(AssetId assetId, ThumbnailSizes thumbnailSizes)
     {
+        // NOTE - this data is read via AssetApplicationMetadataX.GetThumbsMetadata
         var serializedThumbnailSizes = JsonConvert.SerializeObject(thumbnailSizes);
         var sizesDest = storageKeyGenerator.GetThumbsSizesJsonLocation(assetId);
         await bucketWriter.WriteToBucket(sizesDest, serializedThumbnailSizes,

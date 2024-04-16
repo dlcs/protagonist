@@ -11,7 +11,6 @@ using DLCS.Model.Assets.Metadata;
 using DLCS.Model.IIIF;
 using DLCS.Model.PathElements;
 using DLCS.Model.Policies;
-using DLCS.Repository.Assets;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
@@ -23,8 +22,8 @@ using IIIF.Presentation.V2.Strings;
 using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Orchestrator.Settings;
 using ImageApi = IIIF.ImageApi;
 using IIIF2 = IIIF.Presentation.V2;
@@ -39,6 +38,7 @@ public class IIIFCanvasFactory
 {
     private readonly IAssetPathGenerator assetPathGenerator;
     private readonly IPolicyRepository policyRepository;
+    private readonly ILogger<IIIFCanvasFactory> logger;
     private readonly OrchestratorSettings orchestratorSettings;
     private readonly Dictionary<int, List<ImageApi.SizeParameter>> thumbnailPolicies = new();
     private const string MetadataLanguage = "none";
@@ -46,10 +46,12 @@ public class IIIFCanvasFactory
     public IIIFCanvasFactory(
         IAssetPathGenerator assetPathGenerator,
         IOptions<OrchestratorSettings> orchestratorSettings,
-        IPolicyRepository policyRepository)
+        IPolicyRepository policyRepository,
+        ILogger<IIIFCanvasFactory> logger)
     {
         this.assetPathGenerator = assetPathGenerator;
         this.policyRepository = policyRepository;
+        this.logger = logger;
         this.orchestratorSettings = orchestratorSettings.Value;
     }
 
@@ -117,21 +119,19 @@ public class IIIFCanvasFactory
 
     private async Task<ImageSizeDetails?> RetrieveThumbnails(Asset asset)
     {
-        if (!asset.AssetApplicationMetadata.IsNullOrEmpty())
+        var thumbnailSizes = asset.AssetApplicationMetadata.GetThumbsMetadata();
+        
+        if (thumbnailSizes != null)
         {
-            var thumbs =
-                asset.AssetApplicationMetadata.First(a => a.MetadataType == AssetApplicationMetadataTypes.ThumbSizes);
-
-            var deserializedThumbs = JsonConvert.DeserializeObject<ThumbnailSizes>(thumbs.MetadataValue);
-
-            if (deserializedThumbs.Open.Any())
+            logger.LogDebug("ThumbSizes metadata found for {AssetId}", asset.Id);
+            if (thumbnailSizes.Open.Any())
             {
-                var largest = deserializedThumbs.Open.MaxBy(x => x.Sum());
+                var largest = thumbnailSizes.Open.MaxBy(x => x.Sum());
         
                 return new ImageSizeDetails
                 {
                     MaxDerivativeSize = new Size(largest![0], largest[1]),
-                    OpenThumbnails = deserializedThumbs.Open.Select(t => new Size(t[0], t[1])).ToList()
+                    OpenThumbnails = thumbnailSizes.Open.Select(t => new Size(t[0], t[1])).ToList()
                 };
             }
         }
@@ -225,11 +225,12 @@ public class IIIFCanvasFactory
         return services;
     }
 
-    private async Task<ImageSizeDetails> GetThumbnailSizesForImage(Asset image)
+    private async Task<ImageSizeDetails> GetThumbnailSizesForImage(Asset asset)
     {
-        var sizeParameters = await GetThumbnailDeliveryChannelPolicyForImage(image);
+        logger.LogDebug("Calculating thumbnail sizes for {AssetId}", asset.Id);
+        var sizeParameters = await GetThumbnailDeliveryChannelPolicyForImage(asset);
         
-        var thumbnailSizesForImage = image.GetAvailableThumbSizes(sizeParameters, out var maxDimensions);
+        var thumbnailSizesForImage = asset.GetAvailableThumbSizes(sizeParameters, out var maxDimensions);
 
         if (thumbnailSizesForImage.IsNullOrEmpty())
         {
@@ -241,7 +242,7 @@ public class IIIFCanvasFactory
             return new ImageSizeDetails
             {
                 OpenThumbnails = new List<Size>(0),
-                MaxDerivativeSize = Size.Confine(largestThumbnail.GetMaxDimension(), new Size(image.Width.Value, image.Height.Value))
+                MaxDerivativeSize = Size.Confine(largestThumbnail.GetMaxDimension(), new Size(asset.Width.Value, asset.Height.Value))
             };
         }
 
