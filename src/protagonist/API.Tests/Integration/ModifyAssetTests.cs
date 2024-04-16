@@ -1200,7 +1200,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .Single(x => x.Id == assetId);
         asset.ImageDeliveryChannels.Should().Satisfy(
             dc => dc.Channel == AssetDeliveryChannels.File 
                   && dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.FileNone,
@@ -1466,6 +1467,62 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Patch_Images_Leaves_ImageDeliveryChannels_Intact_WhenDeliveryChannelsNull()
+    {
+        await dbContext.Spaces.AddTestSpace(99, 3004);
+        
+        var assetId = AssetId.FromString($"99/3003/{nameof(Patch_Images_Leaves_ImageDeliveryChannels_Intact_WhenDeliveryChannelsNull)}");
+        
+        await dbContext.Images.AddTestAsset(assetId, customer: 99, space: 3004, 
+            imageDeliveryChannels: new List<ImageDeliveryChannel>()
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.File,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone,
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.Thumbnails,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
+            },               
+        });
+        await dbContext.SaveChangesAsync();
+        
+        var hydraCollectionBody = $@"{{
+          ""@type"": ""Collection"",
+          ""member"": [
+           {{
+                ""@type"": ""Image"",
+                ""id"": ""{assetId}"",
+                ""tags"": [""my-tag""]
+           }}]
+        }}";
+                
+        // act
+        var content = new StringContent(hydraCollectionBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync("/customers/99/spaces/3004/images", content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.File 
+                  && dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.FileNone,
+            dc => dc.Channel == AssetDeliveryChannels.Image
+                  && dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault,
+            dc => dc.Channel == AssetDeliveryChannels.Thumbnails
+                  && dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ThumbsDefault);
     }
     
     [Fact]
