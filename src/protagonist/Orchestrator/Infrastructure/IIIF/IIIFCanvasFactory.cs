@@ -8,6 +8,7 @@ using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
+using DLCS.Model.IIIF;
 using DLCS.Model.PathElements;
 using DLCS.Model.Policies;
 using DLCS.Repository.Assets;
@@ -234,13 +235,13 @@ public class IIIFCanvasFactory
         {
             var largestThumbnail = sizeParameters
                 .Where(s => s.Confined)
-                .MaxBy(s => s.Width ?? 0 * s.Height ?? 0);
+                .MaxBy(s => s.GetMaxDimension())
+                .ThrowIfNull("largestThumbnail");
 
             return new ImageSizeDetails
             {
-                // TODO - fix below calc
                 OpenThumbnails = new List<Size>(0),
-                MaxDerivativeSize = Size.Confine(Math.Max(largestThumbnail.Width ?? 0, largestThumbnail.Height ?? 0), new Size(image.Width.Value, image.Height.Value))
+                MaxDerivativeSize = Size.Confine(largestThumbnail.GetMaxDimension(), new Size(image.Width.Value, image.Height.Value))
             };
         }
 

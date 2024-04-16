@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Core.Guard;
+using DLCS.Model.IIIF;
 using DLCS.Model.Policies;
 using IIIF;
 using IIIF.ImageApi;
@@ -41,7 +42,7 @@ public static class AssetX
         {
             if (!sizeParameter.Confined) continue;
 
-            var maxConfinedDimension = Math.Max(sizeParameter.Width ?? 0, sizeParameter.Height ?? 0);
+            var maxConfinedDimension = sizeParameter.GetMaxDimension();
             var assetIsUnavailableForSize = AssetIsUnavailableForSize(asset, maxConfinedDimension);
             if (!includeUnavailable && assetIsUnavailableForSize) continue;
             

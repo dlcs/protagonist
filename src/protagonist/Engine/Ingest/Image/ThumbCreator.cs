@@ -4,7 +4,6 @@ using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
-using DLCS.Repository.Assets;
 using IIIF;
 using Newtonsoft.Json;
 
