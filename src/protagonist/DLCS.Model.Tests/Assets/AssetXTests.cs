@@ -1,30 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Model.Assets;
-using DLCS.Model.Policies;
-using FluentAssertions;
 using IIIF;
-using Xunit;
+using IIIF.ImageApi;
 
 namespace DLCS.Model.Tests.Assets;
 
 public class AssetXTests
 {
+    private readonly List<SizeParameter> sizeParameters = new()
+    {
+        SizeParameter.Parse("!800,800"),
+        SizeParameter.Parse("!400,400"),
+        SizeParameter.Parse("!200,200"),
+        SizeParameter.Parse("!100,100"),
+    };
+
     [Fact]
     public void GetAvailableThumbSizes_IncludeUnavailable_Correct_MaxUnauthorisedNoRoles()
     {
         // Arrange
         var asset = new Asset {Width = 5000, Height = 2500, MaxUnauthorised = 500};
-        
-        var thumbnailPolicy = new ThumbnailPolicy
-        {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100"
-        };
-        
+
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, true);
+        var sizes = asset.GetAvailableThumbSizes(sizeParameters, out var maxDimensions, true);
         
         // Assert
         sizes.Should().BeEquivalentTo(new List<Size>
@@ -44,15 +43,9 @@ public class AssetXTests
     {
         // Arrange
         var asset = new Asset { Width = 5000, Height = 2500, MaxUnauthorised = 500};
-        var thumbnailPolicy = new ThumbnailPolicy
-        {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100",
-        };
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, false);
+        var sizes = asset.GetAvailableThumbSizes(sizeParameters, out var maxDimensions, false);
         
         // Assert
         sizes.Should().BeEquivalentTo(new List<Size>
@@ -71,15 +64,9 @@ public class AssetXTests
     {
         // Arrange
         var asset = new Asset {Width = 5000, Height = 2500, Roles = "GoodGuys", MaxUnauthorised = -1};
-        var thumbnailPolicy = new ThumbnailPolicy
-        {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100",
-        };
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, true);
+        var sizes = asset.GetAvailableThumbSizes(sizeParameters, out var maxDimensions, true);
         
         // Assert
         sizes.Should().BeEquivalentTo(new List<Size>
@@ -98,17 +85,10 @@ public class AssetXTests
     public void GetAvailableThumbSizes_NotIncludeUnavailable_Correct_IfRolesNoMaxUnauthorised()
     {
         // Arrange
-        var thumbnailPolicy = new ThumbnailPolicy
-        {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100",
-        };
-
         var asset = new Asset {Width = 5000, Height = 2500, Roles = "GoodGuys", MaxUnauthorised = -1};
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy,out var maxDimensions, false);
+        var sizes = asset.GetAvailableThumbSizes(sizeParameters,out var maxDimensions, false);
         
         // Assert
         sizes.Should().BeNullOrEmpty();
@@ -121,17 +101,10 @@ public class AssetXTests
     public void GetAvailableThumbSizes_RestrictsAvailableSizes_IfHasRolesAndMaxUnauthorised()
     {
         // Arrange
-        var thumbnailPolicy = new ThumbnailPolicy
-        {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100",
-        };
-        
         var asset = new Asset {Width = 2500, Height = 5000, Roles = "GoodGuys", MaxUnauthorised = 399};
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions);
+        var sizes = asset.GetAvailableThumbSizes(sizeParameters, out var maxDimensions);
         
         // Assert
         sizes.Should().BeEquivalentTo(new List<Size>
@@ -148,17 +121,10 @@ public class AssetXTests
     public void GetAvailableThumbSizes_ReturnsAvailableAndUnavailableSizes_ButReturnsMaxDimensionsOfAvailableOnly_IfIncludeUnavailable()
     {
         // Arrange
-        var thumbnailPolicy = new ThumbnailPolicy
-        {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100",
-        };
-        
         var asset = new Asset {Width = 2500, Height = 5000, Roles = "GoodGuys", MaxUnauthorised = 399};
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, true);
+        var sizes = asset.GetAvailableThumbSizes(sizeParameters, out var maxDimensions, true);
         
         // Assert
         sizes.Should().BeEquivalentTo(new List<Size>
@@ -177,17 +143,10 @@ public class AssetXTests
     public void GetAvailableThumbSizes_HandlesImageBeingSmallerThanThumbnail()
     {
         // Arrange
-        var thumbnailPolicy = new ThumbnailPolicy
-        {
-            Id = "TestPolicy",
-            Name = "TestPolicy",
-            Sizes = "800,400,200,100",
-        };
-        
         var asset = new Asset { Width = 300, Height = 150};
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions, true);
+        var sizes = asset.GetAvailableThumbSizes(sizeParameters, out var maxDimensions, true);
         
         // Assert
         sizes.Should().BeEquivalentTo(new List<Size>
@@ -199,6 +158,32 @@ public class AssetXTests
         maxDimensions.maxBoundedSize.Should().Be(300);
         maxDimensions.maxAvailableWidth.Should().Be(300);
         maxDimensions.maxAvailableHeight.Should().Be(150);
+    }
+    
+    [Fact]
+    public void GetAvailableThumbSizes_Ignores_NonConfinedSizeParameters()
+    {
+        // Arrange
+        var asset = new Asset {Width = 5000, Height = 2500, MaxUnauthorised = 500};
+        var sizeParametersWithNotConfined = new List<SizeParameter>
+        {
+            SizeParameter.Parse("800,800"),
+            SizeParameter.Parse("400,400"),
+            SizeParameter.Parse("!200,200"),
+            SizeParameter.Parse("100,100"),
+        };
+
+        // Act
+        var sizes = asset.GetAvailableThumbSizes(sizeParametersWithNotConfined, out var maxDimensions, true);
+        
+        // Assert
+        sizes.Should().BeEquivalentTo(new List<Size>
+        {
+            new(200, 100),
+        });
+        maxDimensions.maxBoundedSize.Should().Be(200);
+        maxDimensions.maxAvailableWidth.Should().Be(200);
+        maxDimensions.maxAvailableHeight.Should().Be(100);
     }
 
     [Fact]
