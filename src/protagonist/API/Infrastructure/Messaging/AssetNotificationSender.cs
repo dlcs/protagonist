@@ -19,7 +19,10 @@ public class AssetNotificationSender : IAssetNotificationSender
     private readonly ILogger<AssetNotificationSender> logger;
     private readonly ITopicPublisher topicPublisher;
     private readonly IPathCustomerRepository customerPathRepository;
-    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
+    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web)
+    {
+        ReferenceHandler = ReferenceHandler.IgnoreCycles
+    };
 
     private readonly Dictionary<int, CustomerPathElement> customerPathElements = new();
 
@@ -103,8 +106,6 @@ public class AssetNotificationSender : IAssetNotificationSender
             CustomerPathElement = customerPathElement
         };
 
-        modifiedAsset = RefreshImageDeliveryChannelsForAsset(modifiedAsset);
-
         return JsonSerializer.Serialize(request, settings);
     }
     
@@ -118,9 +119,6 @@ public class AssetNotificationSender : IAssetNotificationSender
             AssetAfterUpdate = modifiedAssetAfter, 
             CustomerPathElement = customerPathElement
         };
-
-        request.AssetBeforeUpdate = RefreshImageDeliveryChannelsForAsset(request.AssetBeforeUpdate);
-        request.AssetAfterUpdate = RefreshImageDeliveryChannelsForAsset(request.AssetAfterUpdate);
 
         return JsonSerializer.Serialize(request, settings);
     }
@@ -144,21 +142,5 @@ public class AssetNotificationSender : IAssetNotificationSender
             .ToList();
         
         return await topicPublisher.PublishToAssetModifiedTopic(toSend, cancellationToken);
-    }
-
-
-    private Asset RefreshImageDeliveryChannelsForAsset(Asset asset)
-    {
-        if (!asset.ImageDeliveryChannels.IsNullOrEmpty())
-        {
-            asset.ImageDeliveryChannels =  asset.ImageDeliveryChannels.Select(x => new ImageDeliveryChannel()
-            {
-                ImageId = x.ImageId,
-                Channel = x.Channel,
-                DeliveryChannelPolicyId = x.DeliveryChannelPolicyId
-            }).ToList();
-        }
-        
-        return asset;
     }
 }
