@@ -2,12 +2,12 @@
 using IIIF;
 using Newtonsoft.Json;
 
-namespace DLCS.Repository.Assets;
+namespace DLCS.Model.Assets;
 
 /// <summary>
 /// Model representing auth/open thumbnail sizes
 /// </summary>
-/// <remarks>This is saved as s.json in s3.</remarks>
+/// <remarks>This is saved as s.json in s3 and ThumbsSizes metadata in DB.</remarks>
 public class ThumbnailSizes
 {
     [JsonProperty("o")]

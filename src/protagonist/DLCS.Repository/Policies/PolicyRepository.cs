@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Caching;
+using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using LazyCache;
@@ -31,19 +32,20 @@ public class PolicyRepository : IPolicyRepository
         cacheSettings = cacheOptions.Value;
         this.dlcsContext = dlcsContext;
     }
-
-    public async Task<ThumbnailPolicy?> GetThumbnailPolicy(string thumbnailPolicyId,
+    
+    public async Task<DeliveryChannelPolicy?> GetThumbnailPolicy(int deliveryChannelPolicyId, int customerId,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var thumbnailPolicies = await GetThumbnailPolicies(cancellationToken);
-            return thumbnailPolicies.SingleOrDefault(p => p.Id == thumbnailPolicyId);
+            var thumbnailPolicies =
+                await GetThumbnailDeliveryChannelPolicies(customerId, cancellationToken);
+            return thumbnailPolicies.SingleOrDefault(p => p.Id == deliveryChannelPolicyId);
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Error getting ThumbnailPolicy with id {ThumbnailPolicyId}",
-                thumbnailPolicyId);
+            logger.LogError(e, "Error getting deliver channel policy with id {DeliveryChannelPolicyId}",
+                deliveryChannelPolicyId);
             return null;
         }
     }
@@ -105,7 +107,21 @@ public class PolicyRepository : IPolicyRepository
             return thumbnailPolicies;
         }, cacheSettings.GetMemoryCacheOptions());
     }
-
+    
+    private async Task<List<DeliveryChannelPolicy>> GetThumbnailDeliveryChannelPolicies(int customerId, CancellationToken cancellationToken)
+    {
+        string key = $"ThumbnailDeliveryChannelPolicies:{customerId}";
+        return await appCache.GetOrAddAsync(key, async () =>
+        {
+            logger.LogDebug("Refreshing ThumbnailPolicies from database");
+            var thumbnailPolicies =
+                await dlcsContext.DeliveryChannelPolicies
+                    .Where(d => d.Customer == customerId && d.Channel == AssetDeliveryChannels.Thumbnails)
+                    .AsNoTracking().ToListAsync(cancellationToken: cancellationToken);
+            return thumbnailPolicies;
+        }, cacheSettings.GetMemoryCacheOptions());
+    }
+    
     private Task<List<ImageOptimisationPolicy>> GetImageOptimisationPolicies(CancellationToken cancellationToken)
     {
         const string key = "ImageOptimisation";

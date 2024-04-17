@@ -31,19 +31,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
     private JToken imageServices;
-    private readonly List<ImageDeliveryChannel> imageDeliveryChannels = new()
-    {
-        new ImageDeliveryChannel
-        {
-            Channel = AssetDeliveryChannels.Image,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
-        },
-        new ImageDeliveryChannel
-        {
-            Channel = AssetDeliveryChannels.Thumbnails,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
-        }
-    };
+    private readonly List<ImageDeliveryChannel> imageDeliveryChannels;
 
     public ManifestHandlingTests(ProtagonistAppFactory<Startup> factory, DlcsDatabaseFixture databaseFixture)
     {
@@ -56,7 +44,24 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             })
             .WithConnectionString(dbFixture.ConnectionString)
             .CreateClient();
-            
+
+        var thumbsPolicy = dbFixture.DbContext.DeliveryChannelPolicies.Single(d =>
+            d.Channel == AssetDeliveryChannels.Thumbnails && d.Customer == 99);
+
+        imageDeliveryChannels = new()
+        {
+            new ImageDeliveryChannel
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
+            },
+            new ImageDeliveryChannel
+            {
+                Channel = AssetDeliveryChannels.Thumbnails,
+                DeliveryChannelPolicyId = thumbsPolicy.Id,
+            }
+        };
+        
         dbFixture.CleanUp();
     }
 
@@ -205,6 +210,56 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     }
     
     [Fact]
+    public async Task Get_V2ManifestForImage_ReturnsManifest_FromMetadata()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels)
+            .AddTestThumbnailMetadata();
+        await dbFixture.DbContext.SaveChangesAsync();
+            
+        var path = $"iiif-manifest/v2/{id}";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+            
+        // Assert
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/v2/{id}");
+        jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
+            .Should().StartWith($"http://localhost/thumbs/{id}/full");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+    }
+    
+    [Fact]
+    public async Task Get_V2ManifestForImage_ReturnsManifestNoThumbnails_WhenNoThumbsChannel()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin").AddTestThumbnailMetadata();
+        await dbFixture.DbContext.SaveChangesAsync();
+            
+        var path = $"iiif-manifest/v2/{id}";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+            
+        // Assert
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/v2/{id}");
+        jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail").Should().BeNull();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+    }
+    
+    [Fact]
     public async Task Get_ManifestForImage_ReturnsManifest_ByName()
     {
         // Arrange
@@ -269,6 +324,56 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         metadata.Should().Contain("Number 1", asset.Entity.NumberReference1.ToString());
         metadata.Should().Contain("Number 2", asset.Entity.NumberReference2.ToString());
         metadata.Should().Contain("Number 3", asset.Entity.NumberReference3.ToString());
+    }
+    
+        [Fact]
+    public async Task Get_V3ManifestForImage_ReturnsManifest_FromMetadata()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels)
+            .AddTestThumbnailMetadata();
+        await dbFixture.DbContext.SaveChangesAsync();
+            
+        var path = $"iiif-manifest/{id}";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+            
+        // Assert
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-manifest/{id}");
+        jsonResponse.SelectToken("items[0].thumbnail[0].id").Value<string>()
+            .Should().StartWith($"http://localhost/thumbs/{id}/full");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+    }
+    
+    [Fact]
+    public async Task Get_V3ManifestForImage_ReturnsManifestNoThumbnails_WhenNoThumbsChannel()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin").AddTestThumbnailMetadata();
+        await dbFixture.DbContext.SaveChangesAsync();
+            
+        var path = $"iiif-manifest/{id}";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+            
+        // Assert
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-manifest/{id}");
+        jsonResponse.SelectToken("items[0].thumbnail").Should().BeNull();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
     }
     
     [Fact]

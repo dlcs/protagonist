@@ -4,7 +4,6 @@ using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
-using DLCS.Repository.Assets;
 using IIIF;
 using Newtonsoft.Json;
 
@@ -114,6 +113,7 @@ public class ThumbCreator : IThumbCreator
     
     private async Task CreateSizesJson(AssetId assetId, ThumbnailSizes thumbnailSizes)
     {
+        // NOTE - this data is read via AssetApplicationMetadataX.GetThumbsMetadata
         var serializedThumbnailSizes = JsonConvert.SerializeObject(thumbnailSizes);
         var sizesDest = storageKeyGenerator.GetThumbsSizesJsonLocation(assetId);
         await bucketWriter.WriteToBucket(sizesDest, serializedThumbnailSizes,

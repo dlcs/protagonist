@@ -45,7 +45,7 @@ public static class DatabaseTestDataPopulation
         DateTime? finished = null,
         List<ImageDeliveryChannel> imageDeliveryChannels = null)
     {
-        return  assets.AddAsync(new Asset
+        return assets.AddAsync(new Asset
         {
             Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
             Width = width, Height = height, Roles = roles, Family = family, MediaType = mediaType,
@@ -54,7 +54,8 @@ public static class DatabaseTestDataPopulation
             NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
             NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = error,
             ImageOptimisationPolicy = imageOptimisationPolicy, Batch = batch, Ingesting = ingesting,
-            Duration = duration, Finished = finished, ImageDeliveryChannels = imageDeliveryChannels ?? new List<ImageDeliveryChannel>()
+            Duration = duration, Finished = finished,
+            ImageDeliveryChannels = imageDeliveryChannels ?? new List<ImageDeliveryChannel>()
         });
     }
 
@@ -115,24 +116,25 @@ public static class DatabaseTestDataPopulation
     public static ValueTask<EntityEntry<Space>> AddTestSpace(this DbSet<Space> spaces,
         int customer, int id, string name = null) =>
         spaces.AddAsync(new Space { Customer = customer, Id = id, Name = name ?? id.ToString() });
-    
+
     public static ValueTask<EntityEntry<Customer>> AddTestCustomer(this DbSet<Customer> customers,
         int id, string name = null, string displayName = null) =>
         customers.AddAsync(new Customer
         {
-            Id = id, Name = name ?? id.ToString(), Keys = Array.Empty<string>(), 
+            Id = id, Name = name ?? id.ToString(), Keys = Array.Empty<string>(),
             DisplayName = displayName ?? id.ToString(), Created = DateTime.UtcNow
         });
 
     public static Task AddTestDefaultDeliveryChannels(this DbSet<DefaultDeliveryChannel> defaultDeliveryChannels,
         int customerId) =>
-        defaultDeliveryChannels.AddRangeAsync(defaultDeliveryChannels.Where(d => d.Customer == 1 && d.Space == 0).Select(x => new  DefaultDeliveryChannel()
-        {
-            Customer = customerId,
-            Space = x.Space,
-            MediaType = x.MediaType,
-            DeliveryChannelPolicyId = x.DeliveryChannelPolicyId
-        } ));
+        defaultDeliveryChannels.AddRangeAsync(defaultDeliveryChannels.Where(d => d.Customer == 1 && d.Space == 0)
+            .Select(x => new DefaultDeliveryChannel()
+            {
+                Customer = customerId,
+                Space = x.Space,
+                MediaType = x.MediaType,
+                DeliveryChannelPolicyId = x.DeliveryChannelPolicyId
+            }));
 
     public static ValueTask<EntityEntry<User>> AddTestUser(this DbSet<User> users,
         int customer, string email, string password = "password123") => users.AddAsync(new User
@@ -145,11 +147,11 @@ public static class DatabaseTestDataPopulation
         Created = DateTime.UtcNow,
         Roles = string.Empty
     });
-    
+
     public static ValueTask<EntityEntry<ImageLocation>> AddTestImageLocation(this DbSet<ImageLocation> locations,
         AssetId id, string s3 = "s3://wherever", string nas = "")
         => locations.AddAsync(new ImageLocation { Id = id, S3 = s3, Nas = nas });
-    
+
     public static ValueTask<EntityEntry<ImageStorage>> AddTestImageStorage(this DbSet<ImageStorage> storage,
         AssetId id, int space = 1, int customer = 99, long size = 123, long thumbSize = 10)
         => storage.AddAsync(new ImageStorage
@@ -185,7 +187,7 @@ public static class DatabaseTestDataPopulation
             TotalSizeOfThumbnails = sizeOfThumbs
         });
 
-    public static ValueTask<EntityEntry<AssetApplicationMetadata>> AddAssetApplicationMetadata(
+    public static ValueTask<EntityEntry<AssetApplicationMetadata>> AddTestAssetApplicationMetadata(
         this DbSet<AssetApplicationMetadata> assetApplicationMetadata, AssetId assetId,
         string metadataType, string metadataValue)
         => assetApplicationMetadata.AddAsync(new AssetApplicationMetadata()
@@ -196,4 +198,22 @@ public static class DatabaseTestDataPopulation
             Created = DateTime.UtcNow,
             Modified = DateTime.UtcNow
         });
+    
+    public static ValueTask<EntityEntry<Asset>> AddTestThumbnailMetadata(
+        this  ValueTask<EntityEntry<Asset>> asset,
+        string metadataValue = "{\"a\": [], \"o\": [[75, 100], [150, 200], [300, 400], [769, 1024]]}")
+    {
+        asset.Result.Entity.AssetApplicationMetadata ??= new List<AssetApplicationMetadata>();
+        
+        asset.Result.Entity.AssetApplicationMetadata.Add(new AssetApplicationMetadata()
+        {
+            AssetId = asset.Result.Entity.Id,
+            MetadataType = AssetApplicationMetadataTypes.ThumbSizes,
+            MetadataValue = metadataValue,
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow
+        });
+
+        return asset;
+    }
 }

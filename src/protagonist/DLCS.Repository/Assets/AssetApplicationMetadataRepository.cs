@@ -16,6 +16,11 @@ public class AssetApplicationMetadataRepository : IAssetApplicationMetadataRepos
         this.dlcsContext = dlcsContext;
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Once we have more usage of AssetApplicationMetadata we should endeavour to link methods that write data to the
+    /// extension methods that read the data to avoid one changing without the other.
+    /// </remarks>
     public async Task<AssetApplicationMetadata> UpsertApplicationMetadata(AssetId assetId, string metadataType, string metadataValue,
         CancellationToken cancellationToken = default)
     {

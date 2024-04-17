@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
+using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Metadata;
+using DLCS.Model.IIIF;
 using DLCS.Model.PathElements;
 using DLCS.Model.Policies;
 using DLCS.Web.Requests.AssetDelivery;
@@ -18,6 +21,7 @@ using IIIF.Presentation.V2.Strings;
 using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Settings;
 using ImageApi = IIIF.ImageApi;
@@ -33,20 +37,20 @@ public class IIIFCanvasFactory
 {
     private readonly IAssetPathGenerator assetPathGenerator;
     private readonly IPolicyRepository policyRepository;
+    private readonly ILogger<IIIFCanvasFactory> logger;
     private readonly OrchestratorSettings orchestratorSettings;
-    private readonly Dictionary<string, ThumbnailPolicy> thumbnailPolicies = new();
-    private readonly IThumbRepository thumbRepository;
+    private readonly Dictionary<int, List<ImageApi.SizeParameter>> thumbnailPolicies = new();
     private const string MetadataLanguage = "none";
     
     public IIIFCanvasFactory(
         IAssetPathGenerator assetPathGenerator,
         IOptions<OrchestratorSettings> orchestratorSettings,
-        IThumbRepository thumbRepository,
-        IPolicyRepository policyRepository)
+        IPolicyRepository policyRepository,
+        ILogger<IIIFCanvasFactory> logger)
     {
         this.assetPathGenerator = assetPathGenerator;
         this.policyRepository = policyRepository;
-        this.thumbRepository = thumbRepository;
+        this.logger = logger;
         this.orchestratorSettings = orchestratorSettings.Value;
     }
 
@@ -112,22 +116,33 @@ public class IIIFCanvasFactory
         return canvases;
     }
 
-    private async Task<ImageSizeDetails?> RetrieveThumbnails(Asset i)
+    private async Task<ImageSizeDetails?> RetrieveThumbnails(Asset asset)
     {
-        if (i.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails))
+        var thumbnailSizes = asset.AssetApplicationMetadata.GetThumbsMetadata();
+        
+        if (thumbnailSizes != null)
         {
-            return await GetThumbnailSizesForImage(i);
+            logger.LogDebug("ThumbSizes metadata found for {AssetId}", asset.Id);
+            if (thumbnailSizes.Open.Any())
+            {
+                var largest = thumbnailSizes.Open.MaxBy(x => x.Sum());
+        
+                return new ImageSizeDetails
+                {
+                    MaxDerivativeSize = new Size(largest![0], largest[1]),
+                    OpenThumbnails = thumbnailSizes.Open.Select(t => new Size(t[0], t[1])).ToList()
+                };
+            }
         }
 
-        // temporary - will be replaced by call to application metadata table
-        var thumbs = await thumbRepository.GetOpenSizes(i.Id);
-        var largest = thumbs.MaxBy(x => x.Sum());
-
-        return new ImageSizeDetails()
+        if ((orchestratorSettings.ThumbsMetadataDate ?? DateTime.MaxValue) < asset.Finished)
         {
-            IsDerivativeOpen = true,
-            MaxDerivativeSize = new Size(largest[0], largest[1])
-        };
+            logger.LogWarning(
+                "No metadata found for asset {AssetId} with finished date {FinishedDate} and fallback disabled", asset.Id,
+                asset.Finished);
+        }
+        
+        return await GetThumbnailSizesForImage(asset);
     }
 
     /// <summary>
@@ -216,41 +231,53 @@ public class IIIFCanvasFactory
         return services;
     }
 
-    private async Task<ImageSizeDetails> GetThumbnailSizesForImage(Asset image)
+    private async Task<ImageSizeDetails> GetThumbnailSizesForImage(Asset asset)
     {
-        var thumbnailPolicy = await GetThumbnailPolicyForImage(image);
-        var thumbnailSizesForImage = image.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions);
+        logger.LogDebug("Calculating thumbnail sizes for {AssetId}", asset.Id);
+        var sizeParameters = await GetThumbnailDeliveryChannelPolicyForImage(asset);
+        
+        var thumbnailSizesForImage = asset.GetAvailableThumbSizes(sizeParameters, out var maxDimensions);
 
         if (thumbnailSizesForImage.IsNullOrEmpty())
         {
-            var largestThumbnail = thumbnailPolicy.SizeList.MaxBy(s => s);
+            var largestThumbnail = sizeParameters
+                .Where(s => s.Confined)
+                .MaxBy(s => s.GetMaxDimension())
+                .ThrowIfNull("largestThumbnail");
 
             return new ImageSizeDetails
             {
                 OpenThumbnails = new List<Size>(0),
-                IsDerivativeOpen = false,
-                MaxDerivativeSize = Size.Confine(largestThumbnail, new Size(image.Width.Value, image.Height.Value))
+                MaxDerivativeSize = Size.Confine(largestThumbnail.GetMaxDimension(), new Size(asset.Width.Value, asset.Height.Value))
             };
         }
 
         return new ImageSizeDetails
         {
             OpenThumbnails = thumbnailSizesForImage,
-            IsDerivativeOpen = true,
             MaxDerivativeSize = new Size(maxDimensions.maxAvailableWidth, maxDimensions.maxAvailableHeight)
         };
     }
 
-    private async Task<ThumbnailPolicy> GetThumbnailPolicyForImage(Asset image)
+    private async Task<List<ImageApi.SizeParameter>> GetThumbnailDeliveryChannelPolicyForImage(Asset image)
     {
-        if (thumbnailPolicies.TryGetValue(image.ThumbnailPolicy, out var thumbnailPolicy))
+        var thumbnailDeliveryChannel = image.ImageDeliveryChannels.GetThumbsChannel();
+
+        if (thumbnailDeliveryChannel is null) return new List<ImageApi.SizeParameter>();
+
+        if (thumbnailPolicies.TryGetValue(thumbnailDeliveryChannel.DeliveryChannelPolicyId, out var thumbnailPolicy))
         {
             return thumbnailPolicy;
         }
 
-        var thumbnailPolicyFromDb = await policyRepository.GetThumbnailPolicy(image.ThumbnailPolicy);
-        thumbnailPolicies[image.ThumbnailPolicy] = thumbnailPolicyFromDb;
-        return thumbnailPolicyFromDb;
+        var thumbnailPolicyFromDb =
+            await policyRepository.GetThumbnailPolicy(thumbnailDeliveryChannel.DeliveryChannelPolicyId, image.Customer);
+
+        var sizeParameters = thumbnailPolicyFromDb
+            .ThrowIfNull(nameof(thumbnailPolicyFromDb))
+            .ThumbsDataAsSizeParameters();
+        thumbnailPolicies[thumbnailDeliveryChannel.DeliveryChannelPolicyId] = sizeParameters;
+        return sizeParameters;
     }
 
     private string GetFullQualifiedThumbPath(Asset asset, CustomerPathElement customerPathElement,
@@ -381,10 +408,5 @@ public class IIIFCanvasFactory
         /// The size of the largest derivative, according to thumbnail policy.
         /// </summary>
         public Size MaxDerivativeSize { get; set; }
-
-        /// <summary>
-        /// Whether the <see cref="MaxDerivativeSize"/> is open.
-        /// </summary>
-        public bool IsDerivativeOpen { get; set; }
     }
 }

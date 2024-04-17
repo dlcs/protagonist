@@ -1,4 +1,3 @@
-using System.Text.Json;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.FileSystem;
@@ -29,7 +28,6 @@ public class ImageServerClientTests
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly ImageServerClient sut;
     private readonly IFileSystem fileSystem;
-    private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
 
     public ImageServerClientTests()
     {
@@ -336,25 +334,25 @@ public class ImageServerClientTests
             A<List<string>>.That.Matches( x => x.Count(y => y == "!100,100") == 1), A<string>._, A<CancellationToken>._)
         ).MustHaveHappened(); // from both
     }
-    
-        [Fact]
+
+    [Fact]
     public async Task ProcessImage_ProcessesThumbsWhenNoThumbsChannel()
     {
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel();
-        
+
         A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
-        
+
         A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(
-                A<IngestionContext>._, 
+                A<IngestionContext>._,
                 A<List<string>>._, A<string>._, A<CancellationToken>._))
             .Returns(Task.FromResult(new List<ImageOnDisk>()
             {
                 new()
                 {
-                    Height = 100, 
-                    Width = 50, 
+                    Height = 100,
+                    Width = 50,
                     Path = "/path/to/thumb/100.jpg"
                 }
             }));
@@ -379,16 +377,16 @@ public class ImageServerClientTests
 
         // Assert
         A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._,
-            A<List<string>>.That.Matches( x => x.Count == 4), A<string>._, A<CancellationToken>._)
+            A<List<string>>.That.Matches(x => x.Count == 4), A<string>._, A<CancellationToken>._)
         ).MustHaveHappened();
         A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._,
-            A<List<string>>.That.Matches( x => x.Contains("!1024,1024")), A<string>._, A<CancellationToken>._)
+            A<List<string>>.That.Matches(x => x.Contains("!1024,1024")), A<string>._, A<CancellationToken>._)
         ).MustHaveHappened();
         A.CallTo(() => cantaloupeThumbsClient.GenerateThumbnails(A<IngestionContext>._,
-            A<List<string>>.That.Matches( x => x.Count(y => y == "!100,100") == 1), A<string>._, A<CancellationToken>._)
+            A<List<string>>.That.Matches(x => x.Count(y => y == "!100,100") == 1), A<string>._, A<CancellationToken>._)
         ).MustHaveHappened();
     }
-    
+
     [Theory]
     [InlineData("image/jp2")]
     [InlineData("image/jpx")]
@@ -401,8 +399,6 @@ public class ImageServerClientTests
             Width = 5000,
         };
 
-        const string expected = "s3://dlcs-storage/2/1/foo-bar";
-        
         A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
         
