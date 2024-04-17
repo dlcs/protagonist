@@ -5,15 +5,12 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using DLCS.AWS.SQS;
-using DLCS.Core.Settings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository.Messaging;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 using Test.Helpers.Http;
 
 namespace DLCS.Repository.Tests.Messaging;
@@ -37,12 +34,7 @@ public class EngineClientTests
         queueLookup = A.Fake<IQueueLookup>();
         queueSender = A.Fake<IQueueSender>();
         
-        var engineClientOptions = Options.Create(new DlcsSettings
-        {
-            EngineRoot = new Uri("http://engine.dlcs/")
-        });
-        
-        sut = new EngineClient(queueLookup, queueSender, httpClient, engineClientOptions, new NullLogger<EngineClient>());
+        sut = new EngineClient(queueLookup, queueSender, httpClient, new NullLogger<EngineClient>());
     }
     
     [Fact]

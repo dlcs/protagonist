@@ -10,11 +10,9 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.SQS;
-using DLCS.Core.Settings;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Messaging;
 
@@ -27,7 +25,6 @@ public class EngineClient : IEngineClient
     private readonly IQueueSender queueSender;
     private readonly HttpClient httpClient;
     private readonly ILogger<EngineClient> logger;
-    private readonly DlcsSettings dlcsSettings;
 
     private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web)
     {
@@ -38,14 +35,12 @@ public class EngineClient : IEngineClient
         IQueueLookup queueLookup,
         IQueueSender queueSender,
         HttpClient httpClient,
-        IOptions<DlcsSettings> dlcsSettings,
         ILogger<EngineClient> logger)
     {
         this.queueLookup = queueLookup;
         this.queueSender = queueSender;
         this.httpClient = httpClient;
         this.logger = logger;
-        this.dlcsSettings = dlcsSettings.Value;
     }
     
     public async Task<HttpStatusCode> SynchronousIngest(Asset asset, CancellationToken cancellationToken = default)
@@ -87,18 +82,16 @@ public class EngineClient : IEngineClient
         CancellationToken cancellationToken = default)
     {
         var queueName = queueLookup.GetQueueNameForFamily(asset.Family ?? new AssetFamily());
-        var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
-        
         var jsonString = GetJsonString(asset);
         var success = await queueSender.QueueMessage(queueName, jsonString, cancellationToken);
 
         if (!success)
         {
-            logger.LogInformation("Error queueing ingest request {IngestRequest}", ingestAssetRequest);
+            logger.LogInformation("Error queueing ingest request for {AssetId}", asset.Id);
         }
         else
         {
-            logger.LogDebug("Successfully enqueued ingest request {IngestRequest}", ingestAssetRequest);
+            logger.LogDebug("Successfully enqueued ingest request for {AssetId}", asset.Id);
         }
 
         return success;
@@ -156,8 +149,6 @@ public class EngineClient : IEngineClient
     private string GetJsonString(Asset asset)
     {
         var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
-
-        // Otherwise, it should contain only the Asset ID - for now, this is an Asset object containing just the ID
         var jsonString = JsonSerializer.Serialize(ingestAssetRequest, SerializerOptions);
         return jsonString;
     }
