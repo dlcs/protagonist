@@ -70,6 +70,7 @@ public class Startup
             .AddSingleton<FileRequestHandler>()
             .AddSingleton<S3ProxyPathGenerator>()
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
+            .AddScoped<ThumbSizeCalculator>()
             .AddScoped<IIIFManifestBuilder>()
             .AddScoped<IIIFCanvasFactory>()
             .AddSingleton<AssetRequestProcessor>()

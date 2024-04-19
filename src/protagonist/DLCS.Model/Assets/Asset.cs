@@ -104,7 +104,7 @@ public class Asset
     /// <summary>
     /// A list of metadata attached to this asset
     /// </summary>
-    public ICollection<AssetApplicationMetadata> AssetApplicationMetadata { get; set; }
+    public ICollection<AssetApplicationMetadata>? AssetApplicationMetadata { get; set; }
 
     public Asset()
     {
