@@ -32,13 +32,13 @@ public class IIIFCanvasFactory
 {
     private readonly IAssetPathGenerator assetPathGenerator;
     private readonly OrchestratorSettings orchestratorSettings;
-    private readonly ThumbSizeCalculator thumbSizeCalculator;
+    private readonly IThumbSizeCalculator thumbSizeCalculator;
     private const string MetadataLanguage = "none";
     
     public IIIFCanvasFactory(
         IAssetPathGenerator assetPathGenerator,
         IOptions<OrchestratorSettings> orchestratorSettings,
-        ThumbSizeCalculator thumbSizeCalculator)
+        IThumbSizeCalculator thumbSizeCalculator)
     {
         this.assetPathGenerator = assetPathGenerator;
         this.thumbSizeCalculator = thumbSizeCalculator;

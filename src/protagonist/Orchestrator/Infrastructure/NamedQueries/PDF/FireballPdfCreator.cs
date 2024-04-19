@@ -10,6 +10,7 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
+using DLCS.Model.IIIF;
 using DLCS.Web.Response;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -28,6 +29,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF;
 public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
 {
     private const string PdfEndpoint = "pdf";
+    private readonly IThumbSizeCalculator thumbSizeCalculator;
     private readonly HttpClient fireballClient;
     private readonly JsonSerializerSettings jsonSerializerSettings;
 
@@ -35,11 +37,13 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
         IBucketReader bucketReader,
         IBucketWriter bucketWriter,
         IOptions<NamedQuerySettings> namedQuerySettings,
+        IThumbSizeCalculator thumbSizeCalculator,
         ILogger<FireballPdfCreator> logger,
         HttpClient fireballClient,
         IStorageKeyGenerator storageKeyGenerator
     ) : base(bucketReader, bucketWriter, namedQuerySettings, storageKeyGenerator, logger)
     {
+        this.thumbSizeCalculator = thumbSizeCalculator;
         this.fireballClient = fireballClient;
         jsonSerializerSettings = new JsonSerializerSettings
         {
@@ -56,7 +60,7 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
         try
         {
             Logger.LogDebug("Creating new pdf document at {PdfS3Key}", pdfKey);
-            var playbook = GeneratePlaybook(pdfKey, parsedNamedQuery, assets);
+            var playbook = await GeneratePlaybook(pdfKey, parsedNamedQuery, assets);
 
             var fireballResponse = await CallFireball(cancellationToken, playbook, pdfKey);
             return fireballResponse;
@@ -73,7 +77,7 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
         return new CreateProjectionResult();
     }
 
-    private FireballPlaybook GeneratePlaybook(string pdfKey, PdfParsedNamedQuery parsedNamedQuery,
+    private async Task<FireballPlaybook> GeneratePlaybook(string pdfKey, PdfParsedNamedQuery parsedNamedQuery,
         List<Asset> assets)
     {
         var playbook = new FireballPlaybook
@@ -102,12 +106,19 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
             }
             else
             {
-                var largestThumb = StorageKeyGenerator.GetLargestThumbnailLocation(i.Id);
+                var largestThumb = await GetThumbnailLocation(i);
                 playbook.Pages.Add(FireballPage.Image(largestThumb.GetS3Uri().ToString()));
             }
         }
 
         return playbook;
+    }
+
+    private async Task<ObjectInBucket> GetThumbnailLocation(Asset asset)
+    {
+        var availableSizes = await thumbSizeCalculator.GetAvailableThumbSizesForImage(asset);
+        var selectedSize = availableSizes.SizeClosestTo(NamedQuerySettings.ProjectionThumbsize);
+        return StorageKeyGenerator.GetThumbnailLocation(asset.Id, selectedSize.MaxDimension);
     }
 
     private CustomerOverride GetCustomerOverride(PdfParsedNamedQuery parsedNamedQuery) 
@@ -138,7 +149,7 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
 
 public class FireballPlaybook
 {
-    public string Method { get; set; } = "s3";  // TODO - should this have any say in prefix for adding low.jpg
+    public string Method { get; set; } = "s3";
     
     public string Output { get; set; }
     

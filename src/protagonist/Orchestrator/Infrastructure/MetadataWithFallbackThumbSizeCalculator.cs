@@ -14,15 +14,23 @@ using ImageApi = IIIF.ImageApi;
 
 namespace Orchestrator.Infrastructure;
 
-public class ThumbSizeCalculator
+public interface IThumbSizeCalculator
+{
+    /// <summary>
+    /// Get available sizes for thumbnails (if any). ie it will only return "Open" thumb sizes
+    /// </summary>
+    Task<List<Size>> GetAvailableThumbSizesForImage(Asset asset);
+}
+
+public class MetadataWithFallbackThumbSizeCalculator : IThumbSizeCalculator
 {
     private readonly IPolicyRepository policyRepository;
-    private readonly ILogger<ThumbSizeCalculator> logger;
+    private readonly ILogger<MetadataWithFallbackThumbSizeCalculator> logger;
     private readonly OrchestratorSettings orchestratorSettings;
     private readonly Dictionary<int, List<ImageApi.SizeParameter>> thumbnailPolicies = new();
 
-    public ThumbSizeCalculator(IPolicyRepository policyRepository, 
-        ILogger<ThumbSizeCalculator> logger,
+    public MetadataWithFallbackThumbSizeCalculator(IPolicyRepository policyRepository, 
+        ILogger<MetadataWithFallbackThumbSizeCalculator> logger,
         IOptions<OrchestratorSettings> orchestratorOptions)
     {
         this.policyRepository = policyRepository;
