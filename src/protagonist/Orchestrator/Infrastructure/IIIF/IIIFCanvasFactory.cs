@@ -286,10 +286,7 @@ public class IIIFCanvasFactory
         var targetThumb = orchestratorSettings.TargetThumbnailSize;
 
         // Get the thumbnail size that is closest to the system-wide TargetThumbnailSize
-        var closestSize = availableThumbs
-            .OrderBy(s => s.MaxDimension)
-            .Aggregate((x, y) =>
-                Math.Abs(x.MaxDimension - targetThumb) < Math.Abs(y.MaxDimension - targetThumb) ? x : y);
+        var closestSize = availableThumbs.SizeClosestTo(targetThumb);
 
         return GetFullQualifiedImagePath(asset, customerPathElement, closestSize, true);
     }
