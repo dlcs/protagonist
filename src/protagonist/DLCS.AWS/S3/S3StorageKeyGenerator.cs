@@ -105,6 +105,7 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         return new ObjectInBucket(s3Options.ThumbsBucket, key);
     }
 
+    [Obsolete]
     public ObjectInBucket GetLargestThumbnailLocation(AssetId assetId)
     {
         var key = $"{GetStorageKey(assetId)}/{LargestThumbKey}";

@@ -59,6 +59,7 @@ public interface IStorageKeyGenerator
     /// </summary>
     /// <param name="assetId">Unique identifier for Asset</param>
     /// <returns><see cref="ObjectInBucket"/> for largest thumbnail</returns>
+    [Obsolete]
     ObjectInBucket GetLargestThumbnailLocation(AssetId assetId);
 
     /// <summary>

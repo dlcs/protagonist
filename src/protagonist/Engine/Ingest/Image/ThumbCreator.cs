@@ -49,7 +49,6 @@ public class ThumbCreator : IThumbCreator
         using var processLock = await asyncLocker.LockAsync($"create:{assetId}");
 
         // First is always largest
-        bool processingLargest = true;
         foreach (var thumbCandidate in orderedThumbs)
         {
             if (thumbCandidate.Width > asset.Width || thumbCandidate.Height > asset.Height) continue;
@@ -76,9 +75,8 @@ public class ThumbCreator : IThumbCreator
                 isOpen = false;
             }
             
-            await UploadThumbs(processingLargest, assetId, thumbCandidate, thumb, isOpen);
+            await UploadThumbs(assetId, thumbCandidate, thumb, isOpen);
 
-            processingLargest = false;
             processedWidths.Add(thumbCandidate.Width);
         }
             
@@ -99,16 +97,9 @@ public class ThumbCreator : IThumbCreator
         return new Size(0, 0);
     }
 
-    private async Task UploadThumbs(bool processingLargest, AssetId assetId, ImageOnDisk thumbCandidate, Size thumb,
+    private async Task UploadThumbs(AssetId assetId, ImageOnDisk thumbCandidate, Size thumb,
         bool isOpen)
     {
-        if (processingLargest)
-        {
-            // The largest thumb always goes to low.jpg as well as the 'normal' place
-            var lowKey = storageKeyGenerator.GetLargestThumbnailLocation(assetId);
-            await bucketWriter.WriteFileToBucket(lowKey, thumbCandidate.Path, MIMEHelper.JPEG);
-        }
-
         var thumbKey = storageKeyGenerator.GetThumbnailLocation(assetId, thumb.MaxDimension, isOpen);
         await bucketWriter.WriteFileToBucket(thumbKey, thumbCandidate.Path, MIMEHelper.JPEG);
     }

@@ -166,7 +166,6 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // S3 assets created
         BucketWriter.ShouldHaveKey(assetId.ToString()).ForBucket(LocalStackFixture.StorageBucketName);
-        BucketWriter.ShouldHaveKey($"{assetId}/low.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/200.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/400.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/1024.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
@@ -270,7 +269,6 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // S3 assets created
         BucketWriter.ShouldHaveKey(assetId.ToString()).ForBucket(LocalStackFixture.StorageBucketName);
-        BucketWriter.ShouldHaveKey($"{assetId}/low.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/200.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/400.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
         BucketWriter.ShouldHaveKey($"{assetId}/open/1024.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
