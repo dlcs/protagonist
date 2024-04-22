@@ -101,12 +101,12 @@ public class CantaloupeThumbsClientTests
     public async Task GenerateThumbnails_Ignores400_AndProcessesRest()
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsNothing_WhenCantaloupeReturns400));
+        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_Ignores400_AndProcessesRest));
         var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
 
         var thumbSizes = new List<string> { "!1024,1024", "!400,400" };
         
-        // first size is 400, then 200 after
+        // first size returns BadRequest (400), then OK (200) after
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadRequest));
         httpHandler.RegisterCallback(_ => httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)));
 
