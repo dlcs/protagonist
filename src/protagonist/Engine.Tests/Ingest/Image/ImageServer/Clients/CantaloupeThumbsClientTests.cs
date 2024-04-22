@@ -96,4 +96,30 @@ public class CantaloupeThumbsClientTests
         // Assert
         thumbs.Should().HaveCount(0);
     }
+    
+    [Fact]
+    public async Task GenerateThumbnails_Ignores400_AndProcessesRest()
+    {
+        // Arrange
+        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsNothing_WhenCantaloupeReturns400));
+        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+
+        var thumbSizes = new List<string> { "!1024,1024", "!400,400" };
+        
+        // first size is 400, then 200 after
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadRequest));
+        httpHandler.RegisterCallback(_ => httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)));
+
+        context.WithLocation(new ImageLocation()
+        {
+            S3 = "//some/location/with/s3"
+        });
+
+        // Act
+        var thumbs = await sut.GenerateThumbnails(context, thumbSizes, ThumbsRoot);
+
+        // Assert
+        thumbs.Should().HaveCount(1);
+        thumbs[0].Path.Should().Be($"{Path.DirectorySeparatorChar}thumbs{Path.DirectorySeparatorChar}thumb2");
+    }
 }
