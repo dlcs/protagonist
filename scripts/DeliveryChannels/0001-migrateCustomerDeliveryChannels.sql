@@ -54,43 +54,35 @@ WHERE DDC."Space" = 0
 
 -- if you had customer 2, this would update the DDC entry for default-audio to use the DeliveryChannelPolicy created
 -- above, instead of the policy used by customer 1
-UPDATE "DefaultDeliveryChannels" as DDC
-SET "DeliveryChannelPolicyId" = DCP."Id"
-FROM (SELECT "DeliveryChannelPolicies"."Id", DDC2."Customer"
-      FROM "DeliveryChannelPolicies"
-               JOIN public."DefaultDeliveryChannels" DDC2
-                    on "DeliveryChannelPolicies"."Id" = DDC2."DeliveryChannelPolicyId"
-      WHERE "Name" = 'default-audio'
-        AND "MediaType" = 'audio/*') as DCP
-WHERE DDC."Customer" = DCP."Customer"
-  AND DDC."Customer" <> 1
-  AND "MediaType" = 'audio/*';
 
-UPDATE "DefaultDeliveryChannels" as DDC
-SET "DeliveryChannelPolicyId" = DCP."Id"
-FROM (SELECT "DeliveryChannelPolicies"."Id", DDC2."Customer"
-      FROM "DeliveryChannelPolicies"
-               JOIN public."DefaultDeliveryChannels" DDC2
-                    on "DeliveryChannelPolicies"."Id" = DDC2."DeliveryChannelPolicyId"
-      WHERE "Name" = 'default-video'
-        AND "MediaType" = 'video/*') as DCP
-WHERE DDC."Customer" = DCP."Customer"
-  AND DDC."Customer" <> 1
-  AND "MediaType" = 'video/*';
+-- Update 'default-audio' PolicyId from system to Customer specific Id
+UPDATE "DefaultDeliveryChannels" as ddc
+SET "DeliveryChannelPolicyId" = dcp."Id"
+FROM "DeliveryChannelPolicies" dcp
+WHERE dcp."Name" = 'default-audio'
+  AND ddc."Customer" = dcp."Customer"
+  AND ddc."Customer" <> 1
+  AND ddc."MediaType" = 'audio/*';
 
-UPDATE "DefaultDeliveryChannels" AS DDC
-SET "DeliveryChannelPolicyId" = DCP."Id"
-FROM (SELECT "DeliveryChannelPolicies"."Id", DDC2."Customer"
-      FROM "DeliveryChannelPolicies"
-               JOIN public."DefaultDeliveryChannels" DDC2 on "DeliveryChannelPolicies"."Customer" = DDC2."Customer"
-      WHERE "Name" = 'default'
-        AND "MediaType" = 'image/*'
-        AND "Channel" = 'thumbs'
-        AND "DeliveryChannelPolicyId" = 3)
-         as DCP
-WHERE DDC."Customer" = DCP."Customer"
-  AND DDC."Customer" <> 1
-  AND "MediaType" = 'image/*'
-  AND "DeliveryChannelPolicyId" = 3;
+-- Update 'default-video' PolicyId from system to Customer specific Id
+UPDATE "DefaultDeliveryChannels" as ddc
+SET "DeliveryChannelPolicyId" = dcp."Id"
+FROM "DeliveryChannelPolicies" dcp
+WHERE dcp."Name" = 'default-video'
+  AND ddc."Customer" = dcp."Customer"
+  AND ddc."Customer" <> 1
+  AND ddc."MediaType" = 'video/*';
+
+-- Update 'default' thumbs PolicyId from system to Customer specific Id
+-- PolicyId 3 in WHERE is the System 'thumbs'/'default'. Required to avoid finding 'iiif-image'/'default'
+UPDATE "DefaultDeliveryChannels" as ddc
+SET "DeliveryChannelPolicyId" = dcp."Id"
+FROM "DeliveryChannelPolicies" dcp
+WHERE dcp."Name" = 'default'
+  AND dcp."Channel" = 'thumbs'
+  AND ddc."Customer" = dcp."Customer"
+  AND ddc."Customer" <> 1
+  AND ddc."MediaType" = 'image/*'
+  AND ddc."DeliveryChannelPolicyId" = 3;
 
 COMMIT;
