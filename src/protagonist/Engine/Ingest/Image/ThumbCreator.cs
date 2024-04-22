@@ -39,7 +39,10 @@ public class ThumbCreator : IThumbCreator
             return 0;
         }
 
-        var maxAvailableThumb = GetMaxThumbnailSize(asset, thumbsToProcess);
+        // Images processed Largest->Smallest. This is how they are stored in S3 + DB as it saves reordering on read 
+        var orderedThumbs = thumbsToProcess.OrderByDescending(i => Math.Max(i.Height, i.Width)).ToList();
+
+        var maxAvailableThumb = GetMaxThumbnailSize(asset, orderedThumbs);
         var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);
         var processedWidths = new List<int>(thumbsToProcess.Count);
         
@@ -47,7 +50,7 @@ public class ThumbCreator : IThumbCreator
 
         // First is always largest
         bool processingLargest = true;
-        foreach (var thumbCandidate in thumbsToProcess)
+        foreach (var thumbCandidate in orderedThumbs)
         {
             if (thumbCandidate.Width > asset.Width || thumbCandidate.Height > asset.Height) continue;
             
@@ -83,17 +86,16 @@ public class ThumbCreator : IThumbCreator
         return thumbnailSizes.Count;
     }
     
-    private Size GetMaxThumbnailSize(Asset asset, IReadOnlyList<ImageOnDisk> thumbsToProcess)
+    private Size GetMaxThumbnailSize(Asset asset, List<ImageOnDisk> orderedThumbsToProcess)
     {
         if (asset.MaxUnauthorised == 0) return new Size(0, 0);
+        if ((asset.MaxUnauthorised ?? -1) == -1) return new Size(orderedThumbsToProcess[0].Width, orderedThumbsToProcess[0].Height);
 
-        foreach (var thumb in thumbsToProcess.OrderByDescending(x => Math.Max(x.Height, x.Width)))
+        foreach (var thumb in orderedThumbsToProcess)
         {
-            if ((asset.MaxUnauthorised ?? -1) == -1) return new Size(thumb.Width, thumb.Height);
-
             if (asset.MaxUnauthorised > Math.Max(thumb.Width, thumb.Height)) return new Size(thumb.Width, thumb.Height);
         }
-        
+
         return new Size(0, 0);
     }
 
