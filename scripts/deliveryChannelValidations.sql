@@ -9,32 +9,32 @@ SELECT count(*) FROM "ImageDeliveryChannels";
 
 SELECT count(*) FROM "Images" where "MediaType" LIKE 'image/%';
 
-SELECT count(*) FROM "ImageDeliveryChannels" where "Channel" = 'iiif-img';
+SELECT count(*) FROM "ImageDeliveryChannels" WHERE "Channel" = 'iiif-img';
 
-SELECT count(*) FROM "ImageDeliveryChannels" where "Channel" = 'thumbs';
+SELECT count(*) FROM "ImageDeliveryChannels" WHERE "Channel" = 'thumbs';
 
--- checking counts for any image that isn't use original
+-- checking counts for any image that aren't use original
 
-SELECT count(distinct("Id")) FROM "Images" where "ImageOptimisationPolicy" <>  'use-original' AND "DeliveryChannels" LIKE '%iiif-img%' AND "NotForDelivery" = False;
+SELECT count(distinct("Id")) FROM "Images" WHERE "ImageOptimisationPolicy" <>  'use-original' AND "DeliveryChannels" LIKE '%iiif-img%' AND "NotForDelivery" = False;
 SELECT count(distinct("ImageId")) FROM "ImageDeliveryChannels"
-    JOIN "DeliveryChannelPolicies" DCP on DCP."Id" = "ImageDeliveryChannels"."DeliveryChannelPolicyId"
-                where "ImageDeliveryChannels"."Channel" = 'iiif-img'
+    JOIN "DeliveryChannelPolicies" DCP ON DCP."Id" = "ImageDeliveryChannels"."DeliveryChannelPolicyId"
+                WHERE "ImageDeliveryChannels"."Channel" = 'iiif-img'
                 AND DCP."Name" <> 'use-original';
 
 -- retrieves id of any image that doesn't have a related image delivery channel
 
-SELECT "Id" FROM "Images" where "DeliveryChannels" LIKE '%iiif-img%' AND "NotForDelivery" = False
+SELECT "Id" FROM "Images" WHERE "DeliveryChannels" LIKE '%iiif-img%' AND "NotForDelivery" = False
 EXCEPT
 SELECT "ImageId" FROM "ImageDeliveryChannels"
-    JOIN "DeliveryChannelPolicies" DCP on DCP."Id" = "ImageDeliveryChannels"."DeliveryChannelPolicyId"
-                where "ImageDeliveryChannels"."Channel" = 'iiif-img';
+    JOIN "DeliveryChannelPolicies" DCP ON DCP."Id" = "ImageDeliveryChannels"."DeliveryChannelPolicyId"
+                WHERE "ImageDeliveryChannels"."Channel" = 'iiif-img';
 
 -- retrieves images that should have a default policy
 
 SELECT * FROM "Images"
-            JOIN "ImageDeliveryChannels" IDC on "Images"."Id" = IDC."ImageId"
-            JOIN "DeliveryChannelPolicies" DCP on DCP."Id" = IDC."DeliveryChannelPolicyId"
-            where "ImageOptimisationPolicy" <>  'use-original' AND "DeliveryChannels" LIKE '%iiif-img%' AND "NotForDelivery" = False AND
+            JOIN "ImageDeliveryChannels" IDC ON "Images"."Id" = IDC."ImageId"
+            JOIN "DeliveryChannelPolicies" DCP ON DCP."Id" = IDC."DeliveryChannelPolicyId"
+            WHERE "ImageOptimisationPolicy" <>  'use-original' AND "DeliveryChannels" LIKE '%iiif-img%' AND "NotForDelivery" = False AND
                   IDC."Channel" = 'iiif-img'
                 AND DCP."Name" = 'default';
 
@@ -52,24 +52,49 @@ SELECT "ImageId", I."Created", DCP."Name" FROM "ImageDeliveryChannels"
                 where "ImageDeliveryChannels"."Channel" = 'iiif-img'
                 AND DCP."Name" <> 'use-original' AND I."Created" < CURRENT_DATE - 2
 EXCEPT
-SELECT "Id", "Created" FROM "Images" where "ImageOptimisationPolicy" <>  'use-original' AND "DeliveryChannels" LIKE '%iiif-img%' AND "NotForDelivery" = False
+SELECT "Id", "Created" FROM "Images" WHERE "ImageOptimisationPolicy" <>  'use-original'
+                                       AND "DeliveryChannels" LIKE '%iiif-img%' AND "NotForDelivery" = False
     ORDER BY "Created";
 
 
--- retrieves all assets, while excluding the channel it should be on, this shows if there's anything unexpected
+-- retrieves the Id of assets that would be put into a channel, but aren't as they don't have an old delivery channel
 
-SELECT "Images"."Id" FROM "Images"
-         JOIN "ImageDeliveryChannels" IDC on "Images"."Id" = IDC."ImageId"
-                     where "MediaType" LIKE 'image/%'
+SELECT "Id" FROM "Images" WHERE "MediaType" LIKE 'image/%' AND "NotForDelivery" = False
 EXCEPT
-SELECT "ImageId" FROM "ImageDeliveryChannels" where "Channel" = 'thumbs';
+SELECT "ImageId" FROM "ImageDeliveryChannels" WHERE "Channel" IN ('iiif-img', 'thumbs');
 
-SELECT "Images"."Id" FROM "Images"
-         JOIN "ImageDeliveryChannels" IDC on "Images"."Id" = IDC."ImageId"
-                     where "MediaType" LIKE 'image/%'
+SELECT "Id" FROM "Images" WHERE "MediaType" LIKE ANY (array['audio/%', 'video%'])
 EXCEPT
-SELECT "ImageId" FROM "ImageDeliveryChannels" where "Channel" = 'iiif-img';
+SELECT "ImageId" FROM "ImageDeliveryChannels" WHERE "Channel" = 'iiif-av';
 
--- shows if all assets have image delivery channels attached - check if not 0
+-- retrieves the Id of assets that should have a delivery channel, but don't (requires investigation if any assets retrieved)
 
-SELECT count(*) FROM "Images" JOIN "ImageDeliveryChannels" IDC on "Images"."Id" = IDC."ImageId" where IDC."Id" = null;
+SELECT "Id" FROM "Images" WHERE "MediaType" LIKE 'image/%' AND "NotForDelivery" = False AND "DeliveryChannels" LIKE '%iiif-img%'
+EXCEPT
+SELECT "ImageId" FROM "ImageDeliveryChannels" WHERE "Channel" IN ('iiif-img', 'thumbs');
+
+SELECT "Id" FROM "Images" WHERE "MediaType" LIKE ANY (array['audio/%', 'video%']) AND "DeliveryChannels" LIKE '%iiif-av%'
+EXCEPT
+SELECT "ImageId" FROM "ImageDeliveryChannels" WHERE "Channel" = 'iiif-av';
+
+--- retrieves specific image and any IDC attached
+
+SELECT * FROM "Images"
+         LEFT JOIN "ImageDeliveryChannels" IDC ON "Images"."Id" = IDC."ImageId"
+         WHERE "Images"."Id" = 'CHANGE ME';
+
+
+-- shows the delta between assets that have image delivery channels attached and not
+
+SELECT count(*) AS "No delivery channels" FROM "Images"
+    LEFT JOIN "ImageDeliveryChannels" IDC ON "Images"."Id" = IDC."ImageId"
+                WHERE IDC."Id" IS NULL;
+
+-- delta as a percentage of all images
+
+SELECT to_char(a.c::DECIMAL / b.c * 100, 'FM999999999.00') AS "delta percentage"
+FROM (SELECT count(*) AS c FROM "Images"
+    LEFT JOIN "ImageDeliveryChannels" IDC ON "Images"."Id" = IDC."ImageId"
+                WHERE IDC."Id" IS NULL) AS a,
+(SELECT count(*) AS c FROM "Images") AS b;
+
