@@ -1,86 +1,65 @@
+-- Note that for large datasets is may be performant to add an index for DeliveryChannels
+-- create index IX_Image_DeliveryChannels on "Images" ("DeliveryChannels", "Family", "NotForDelivery");
+
 BEGIN TRANSACTION;
 
 -- convert image defaults
 INSERT INTO "ImageDeliveryChannels" ("ImageId", "Channel", "DeliveryChannelPolicyId")
 SELECT "Id",
        'iiif-img',
-       (SELECT "DeliveryChannelPolicies"."Id"
-        from "DeliveryChannelPolicies"
-        WHERE ("DeliveryChannelPolicies"."Customer", "Channel", "DeliveryChannelPolicies"."Name") =
-              (1, 'iiif-img', 'default'))
+       CASE
+           WHEN "ImageOptimisationPolicy" != 'use-original' THEN 1 -- 1 is 'default' for image
+           WHEN "ImageOptimisationPolicy" = 'use-original' THEN 2 -- 2 is 'use-original' for image
+           END
 FROM "Images"
-      WHERE "Images"."DeliveryChannels" LIKE '%iiif-img%'
-        AND "Images"."ImageOptimisationPolicy" <> 'use-original'
-        AND "NotForDelivery" = false
-UNION
-SELECT I."Id", 'thumbs', DCP."Id"
-FROM "Images" as I
-         JOIN "DeliveryChannelPolicies" DCP on I."Customer" = DCP."Customer"
-WHERE I."DeliveryChannels" LIKE '%iiif-img%'
-  AND I."ImageOptimisationPolicy" <> 'use-original'
-  AND DCP."Channel" = 'thumbs'
-  AND DCP."Name" = I."ThumbnailPolicy"
+WHERE "Family" = 'I'
+  AND "DeliveryChannels" LIKE '%iiif-img%'
   AND "NotForDelivery" = false;
 
--- convert image use original
+-- create thumbs - 1 per image
+-- NOTE: For particularly large, single-customer deployments it will be quicker to use query similar to above and hardcode based on ThumbnailPolicy
+INSERT INTO "ImageDeliveryChannels" ("ImageId", "Channel", "DeliveryChannelPolicyId")
+SELECT i."Id",
+       'thumbs',
+       dcp."Id"
+FROM "Images" i
+         INNER JOIN (SELECT p."Id", p."Name", p."Customer"
+                     FROM "DeliveryChannelPolicies" p
+                     WHERE "Channel" = 'thumbs') dcp
+                    ON (i."Customer" = dcp."Customer" AND i."ThumbnailPolicy" = dcp."Name")
+WHERE i."Family" = 'I'
+  AND i."DeliveryChannels" LIKE '%iiif-img%'
+  AND i."NotForDelivery" = false;
+
+-- convert timebased
+SELECT i."Id",
+       'iiif-av',
+       CASE
+           WHEN "MediaType" LIKE 'audio/%' THEN (SELECT "Id"
+                                                 FROM "DeliveryChannelPolicies"
+                                                 WHERE "Customer" = i."Customer"
+                                                   AND "Channel" = 'iiif-av'
+                                                   AND "Name" = 'default-audio')
+           WHEN "MediaType" LIKE 'video/%' THEN (SELECT "Id"
+                                                 FROM "DeliveryChannelPolicies"
+                                                 WHERE "Customer" = i."Customer"
+                                                   AND "Channel" = 'iiif-av'
+                                                   AND "Name" = 'default-video')
+           END
+FROM "Images" i
+WHERE i."Family" = 'T'
+  AND i."DeliveryChannels" LIKE '%iiif-av%'
+  AND i."NotForDelivery" = false;
+
+-- convert file
 INSERT INTO "ImageDeliveryChannels" ("ImageId", "Channel", "DeliveryChannelPolicyId")
 SELECT "Id",
-       'iiif-img',
-       (SELECT "DeliveryChannelPolicies"."Id"
-        from "DeliveryChannelPolicies"
-        WHERE ("DeliveryChannelPolicies"."Customer", "Channel", "DeliveryChannelPolicies"."Name") =
-              (1, 'iiif-img', 'use-original'))
-FROM "Images" as I
-      WHERE I."DeliveryChannels" LIKE '%iiif-img%'
-        AND I."ImageOptimisationPolicy" = 'use-original'
-        AND "NotForDelivery" = false
-UNION
-SELECT "Images"."Id", 'thumbs', DCP."Id"
+       'file',
+       4 -- 4 is the "file" channel for system
 FROM "Images"
-         JOIN "DeliveryChannelPolicies" DCP on "Images"."Customer" = DCP."Customer"
-WHERE "Images"."DeliveryChannels" LIKE '%iiif-img%'
-  AND "Images"."ImageOptimisationPolicy" = 'use-original'
-  AND "Channel" = 'thumbs'
-  AND DCP."Name" = "Images"."ThumbnailPolicy"
+WHERE "DeliveryChannels" LIKE '%file%'
   AND "NotForDelivery" = false;
 
--- convert audio
-
-INSERT INTO "ImageDeliveryChannels" ("ImageId", "Channel", "DeliveryChannelPolicyId")
-SELECT images.ImageId, 'iiif-av', images.DeliveryChannelPolicyId
-FROM (SELECT "Images"."Id" AS ImageId, DCP."Id" AS DeliveryChannelPolicyId
-      FROM "Images"
-               JOIN "DeliveryChannelPolicies" DCP on "Images"."Customer" = DCP."Customer"
-      WHERE "Images"."DeliveryChannels" LIKE '%iiif-av%'
-        AND "Images"."MediaType" LIKE 'audio/%'
-        AND "Channel" = 'iiif-av'
-        AND DCP."Name" = 'default-audio'
-        AND "NotForDelivery" = false) as images;
-
--- convert video
-
-INSERT INTO "ImageDeliveryChannels" ("ImageId", "Channel", "DeliveryChannelPolicyId")
-SELECT images.ImageId, 'iiif-av', images.DeliveryChannelPolicyId
-FROM (SELECT "Images"."Id" AS ImageId, DCP."Id" AS DeliveryChannelPolicyId
-      FROM "Images"
-               JOIN "DeliveryChannelPolicies" DCP on "Images"."Customer" = DCP."Customer"
-      WHERE "Images"."DeliveryChannels" LIKE '%iiif-av%'
-        AND "Images"."MediaType" LIKE 'video/%'
-        AND "Channel" = 'iiif-av'
-        AND DCP."Name" = 'default-video'
-        AND "NotForDelivery" = false) as images;
-
--- convert pdf file
-
-INSERT INTO "ImageDeliveryChannels" ("ImageId", "Channel", "DeliveryChannelPolicyId")
-SELECT images."Id", 'file', DCPImages."Id"
-FROM (SELECT *
-      FROM "Images"
-      WHERE "Images"."DeliveryChannels" LIKE '%file%'
-        ANd "NotForDelivery" = false) AS images,
-     (SELECT "DeliveryChannelPolicies"."Id"
-      from "DeliveryChannelPolicies"
-      WHERE ("DeliveryChannelPolicies"."Customer", "Channel", "DeliveryChannelPolicies"."Name") =
-            (1, 'file', 'none')) AS DCPImages;
-
 COMMIT;
+
+-- drop index IX_Image_DeliveryChannels;
