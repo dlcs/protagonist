@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.IIIF;
@@ -106,18 +107,29 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
             }
             else
             {
-                var largestThumb = await GetThumbnailLocation(i);
-                playbook.Pages.Add(FireballPage.Image(largestThumb.GetS3Uri().ToString()));
+                var thumbToInclude = await GetThumbnailLocation(i);
+                if (thumbToInclude != null)
+                {
+                    playbook.Pages.Add(FireballPage.Image(thumbToInclude.GetS3Uri().ToString()));
+                }
             }
         }
 
         return playbook;
     }
 
-    private async Task<ObjectInBucket> GetThumbnailLocation(Asset asset)
+    private async Task<ObjectInBucket?> GetThumbnailLocation(Asset asset)
     {
         var availableSizes = await thumbSizeProvider.GetThumbSizesForImage(asset, false);
+
+        if (availableSizes.IsNullOrEmpty())
+        {
+            Logger.LogInformation("Unable to find thumbnail for {AssetId}, excluding from PDF", asset.Id);
+            return null;
+        }
+        
         var selectedSize = availableSizes.SizeClosestTo(NamedQuerySettings.ProjectionThumbsize);
+        Logger.LogTrace("Using thumbnail {ThumbnailSize} for asset {AssetId}", selectedSize, asset.Id);
         return StorageKeyGenerator.GetThumbnailLocation(asset.Id, selectedSize.MaxDimension);
     }
 

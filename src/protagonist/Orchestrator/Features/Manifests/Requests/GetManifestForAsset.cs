@@ -9,6 +9,7 @@ using IIIF;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
@@ -61,7 +62,8 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
     {
         var assetId = request.AssetRequest.GetAssetId();
 
-        var asset = await dlcsContext.Images.IncludeRequiredDataForManifest()
+        var asset = await dlcsContext.Images
+            .IncludeDataForThumbs()
             .FirstOrDefaultAsync(a => a.Id == assetId, cancellationToken);
 
         if (asset is not { Family: AssetFamily.Image, NotForDelivery: false })

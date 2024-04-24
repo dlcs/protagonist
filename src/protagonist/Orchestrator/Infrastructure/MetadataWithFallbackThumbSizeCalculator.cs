@@ -18,7 +18,7 @@ namespace Orchestrator.Infrastructure;
 public interface IThumbSizeProvider
 {
     /// <summary>
-    /// Get available sizes for thumbnails (if any). ie it will only return "Open" thumb sizes
+    /// Get available sizes for thumbnails. Can optionally return only available (ie "Open") or all thumb sizes
     /// </summary>
     Task<List<Size>> GetThumbSizesForImage(Asset asset, bool openOnly);
 }
@@ -40,11 +40,11 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
     }
     
     /// <summary>
-    /// Get available sizes for thumbnails (if any). ie it will only return "Open" thumb sizes
+    /// Get available sizes for thumbnails. Can optionally return only available (ie "Open") or all thumb sizes
     ///
     /// This will _not_ hit S3 to read available thumbs, it will:
     /// Attempt to read from asset.AssetApplicationMetadata. If found return. Else
-    /// Get thumbnail policy and calculate available sizes. 
+    /// Get thumbnail policy and calculate sizes. 
     /// </summary>
     public async Task<List<Size>> GetThumbSizesForImage(Asset asset, bool openOnly)
     {

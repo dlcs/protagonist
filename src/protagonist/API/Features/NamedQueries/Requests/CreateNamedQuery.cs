@@ -31,10 +31,10 @@ public class CreateNamedQueryHandler : IRequestHandler<CreateNamedQuery, ModifyE
     
     public async Task<ModifyEntityResult<NamedQuery>> Handle(CreateNamedQuery request, CancellationToken cancellationToken)
     {
-        var existingNamedQuery = await dbContext.NamedQueries.AsNoTracking().SingleOrDefaultAsync(
+        var existingNamedQuery = await dbContext.NamedQueries.AnyAsync(
             nq => nq.Customer == request.CustomerId && nq.Name == request.NamedQuery.Name, cancellationToken);
         
-        if (existingNamedQuery != null)
+        if (existingNamedQuery)
         {
             return ModifyEntityResult<NamedQuery>.Failure("A named query with that name already exists",
                 WriteResult.Conflict);

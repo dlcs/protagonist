@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
+using DLCS.Core.Collections;
 using DLCS.Core.Streams;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
@@ -103,7 +104,7 @@ public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
     {
         if (image.RequiresAuth)
         {
-            Logger.LogDebug("Image {Image} of {S3Key} has roles, redacting", image.Id, storageKey);
+            Logger.LogDebug("Image {Image} of {S3Key} requires auth, redacting", image.Id, storageKey);
             return;
         }
 
@@ -138,7 +139,11 @@ public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
     private async Task<Stream?> GetThumbnailStream(Asset asset)
     {
         var availableSizes = await thumbSizeProvider.GetThumbSizesForImage(asset, false);
+        
+        if (availableSizes.IsNullOrEmpty()) return null;
+        
         var selectedSize = availableSizes.SizeClosestTo(NamedQuerySettings.ProjectionThumbsize);
+        Logger.LogTrace("Using thumbnail {ThumbnailSize} for asset {AssetId}", selectedSize, asset.Id);
         var thumbnailLocation = StorageKeyGenerator.GetThumbnailLocation(asset.Id, selectedSize.MaxDimension);
         
         var thumbStream = await BucketReader.GetObjectContentFromBucket(thumbnailLocation);

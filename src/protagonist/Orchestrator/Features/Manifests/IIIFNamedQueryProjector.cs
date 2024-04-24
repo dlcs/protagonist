@@ -11,6 +11,7 @@ using IIIF;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.EntityFrameworkCore;
+using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.NamedQueries;
 using Version = IIIF.Presentation.Version;
@@ -38,7 +39,8 @@ public class IIIFNamedQueryProjector
     {
         var parsedNamedQuery = namedQueryResult.ParsedQuery.ThrowIfNull(nameof(request.Query))!;
 
-        var assets = await namedQueryResult.Results.IncludeRequiredDataForManifest()
+        var assets = await namedQueryResult.Results
+            .IncludeDataForThumbs()
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
         if (assets.Count == 0) return null;

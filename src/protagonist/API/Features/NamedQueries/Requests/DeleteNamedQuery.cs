@@ -29,20 +29,20 @@ public class DeleteNamedQueryHandler : IRequestHandler<DeleteNamedQuery, ResultM
 
     public async Task<ResultMessage<DeleteResult>> Handle(DeleteNamedQuery request, CancellationToken cancellationToken)
     {
-        var deleteResult = DeleteResult.NotFound;
-        var message = string.Empty;
-        
         var namedQuery = await dbContext.NamedQueries.SingleOrDefaultAsync(
             nq => nq.Customer == request.CustomerId && 
                     nq.Id == request.NamedQueryId,
                     cancellationToken: cancellationToken);
 
-        if (namedQuery == null) return new ResultMessage<DeleteResult>(message, deleteResult);
+        if (namedQuery == null)
+        {
+            return new ResultMessage<DeleteResult>("Couldn't find a named query with the id {request.NamedQuery.Id}",
+                DeleteResult.NotFound);
+        }
 
         dbContext.NamedQueries.Remove(namedQuery);
-        await dbContext.SaveChangesAsync(cancellationToken);
-        deleteResult = DeleteResult.Deleted;
+        await dbContext.SaveChangesAsync(cancellationToken); ;
 
-        return new ResultMessage<DeleteResult>(message, deleteResult);
+        return new ResultMessage<DeleteResult>(string.Empty, DeleteResult.Deleted);
     }
 }
