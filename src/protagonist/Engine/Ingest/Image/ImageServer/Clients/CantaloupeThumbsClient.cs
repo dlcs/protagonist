@@ -2,28 +2,31 @@
 using DLCS.Core.Exceptions;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
-using Engine.Ingest.Image.ImageServer.Manipulation;
+using Engine.Ingest.Image.ImageServer.Measuring;
 using IIIF;
 using IIIF.ImageApi;
 
 namespace Engine.Ingest.Image.ImageServer.Clients;
 
-public class CantaloupeThumbsClient : ICantaloupeThumbsClient
+/// <summary>
+/// Implementation of <see cref="IThumbCreator"/> using Cantaloupe for generation
+/// </summary>
+public class CantaloupeThumbsClient : IThumbsClient
 {
     private readonly HttpClient cantaloupeClient;
     private readonly IFileSystem fileSystem;
-    private readonly IImageManipulator imageManipulator;
+    private readonly IImageMeasurer imageMeasurer;
     private readonly ILogger<CantaloupeThumbsClient> logger;
         
     public CantaloupeThumbsClient(
         HttpClient cantaloupeClient,
         IFileSystem fileSystem,
-        IImageManipulator imageManipulator,
+        IImageMeasurer imageMeasurer,
         ILogger<CantaloupeThumbsClient> logger)
     {
         this.cantaloupeClient = cantaloupeClient;
         this.fileSystem = fileSystem;
-        this.imageManipulator = imageManipulator;
+        this.imageMeasurer = imageMeasurer;
         this.logger = logger;
     }
 
@@ -58,7 +61,7 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
             {
                 var imageOnDisk = await SaveImageToDisk(response, size, thumbFolder, count, cancellationToken);
                 thumbsResponse.Add(imageOnDisk);
-                ValidateReturnedSize(size, Math.Max(imageOnDisk.Width, imageOnDisk.Height), imageSize, assetId);
+                ValidateSize(size, imageSize, imageOnDisk, assetId);
             }
             else
             {
@@ -76,18 +79,11 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
         await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
         var localThumbsPath = Path.Join(thumbFolder, $"thumb{count}");
-        logger.LogDebug("Saving thumb for {ThumbSize} to {ThumbLocation}", size, localThumbsPath);
+        logger.LogTrace("Saving thumb for {ThumbSize} to {ThumbLocation}", size, localThumbsPath);
                 
         await fileSystem.CreateFileFromStream(localThumbsPath, responseStream, cancellationToken);
                 
-        using var image = await imageManipulator.LoadAsync(localThumbsPath, cancellationToken);
-
-        var imageOnDisk = new ImageOnDisk
-        {
-            Path = localThumbsPath,
-            Width = image.Width,
-            Height = image.Height
-        };
+        var imageOnDisk = await imageMeasurer.MeasureImage(localThumbsPath, cancellationToken);
         return imageOnDisk;
     }
 
@@ -98,17 +94,51 @@ public class CantaloupeThumbsClient : ICantaloupeThumbsClient
             "Cantaloupe responded with status code {StatusCode} when processing Asset {AssetId}, size '{Size}' and body {ErrorResponse}",
             response.StatusCode, assetId, size, errorResponse);
     }
-    
-    private void ValidateReturnedSize(string sizeParam, int actualMaxDimension, Size originSize, AssetId assetId)
+
+    private void ValidateSize(string sizeParam, Size originSize, ImageOnDisk imageOnDisk, AssetId assetId)
     {
+        var actualSize = new Size(imageOnDisk.Width, imageOnDisk.Height);
         var sizeParameter = SizeParameter.Parse(sizeParam);
         var expectedSize = sizeParameter.GetResultingSize(originSize);
-        var expectedMax = expectedSize.MaxDimension;
-        if (expectedMax != actualMaxDimension)
+        
+        if (expectedSize.ToString() == actualSize.ToString()) return;
+
+        if (sizeParameter.Confined)
         {
+            // always need longest to match. e.g. for !400,400: 299,400 + 301,400 are ok. 300,401 + 300,399 are not
+            HandleMismatch(expectedSize.MaxDimension == actualSize.MaxDimension);
+            return;
+        }
+
+        if (sizeParameter.Width.HasValue)
+        {
+            // always need w to match. e.g. for 400,: 400,500 + 400,499 are ok. 399,500 + 401,500 are not
+            HandleMismatch(expectedSize.Width == actualSize.Width);
+            return;
+        }
+
+        if (sizeParameter.Height.HasValue)
+        {
+            // always need h to match. e.g. for ,500: 399,500 + 401,500 are ok. 400,499 + 400,501 are not
+            HandleMismatch(expectedSize.Height == actualSize.Height);
+            return;
+        }
+
+        void HandleMismatch(bool allowed)
+        {
+            if (allowed)
+            {
+                logger.LogTrace(
+                    "Size mismatch for {AssetId}, size '{Size}'. Expected:'{Expected}', actual:'{Actual}'.",
+                    assetId, sizeParam, expectedSize, actualSize);
+                return;
+            }
+            
             logger.LogWarning(
-                "Possible size mismatch for asset {AssetId}, size {Size}. Expected maxDimension to be {ExpectedMax} but got {ActualMax}",
-                assetId, sizeParam, expectedMax, actualMaxDimension);
+                "Size mismatch for {AssetId}, size '{Size}'. Expected:'{Expected}', actual:'{Actual}'. Using expected size",
+                assetId, sizeParam, expectedSize, actualSize);
+            imageOnDisk.Width = expectedSize.Width;
+            imageOnDisk.Height = expectedSize.Height;
         }
     }
 }

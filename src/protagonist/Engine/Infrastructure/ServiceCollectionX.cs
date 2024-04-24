@@ -26,7 +26,7 @@ using Engine.Ingest.Image;
 using Engine.Ingest.Image.Completion;
 using Engine.Ingest.Image.ImageServer;
 using Engine.Ingest.Image.ImageServer.Clients;
-using Engine.Ingest.Image.ImageServer.Manipulation;
+using Engine.Ingest.Image.ImageServer.Measuring;
 using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased;
 using Engine.Ingest.Timebased.Completion;
@@ -101,7 +101,7 @@ public static class ServiceCollectionX
         {
             services.AddTransient<TimingHandler>();
             services.AddScoped<IImageProcessor, ImageServerClient>()
-                .AddScoped<IImageManipulator, ImageSharpManipulator>();
+                .AddScoped<IImageMeasurer, ImageSharpMeasurer>();
                 
             services.AddHttpClient<IAppetiserClient, AppetiserClient>(client =>
                 {
@@ -109,7 +109,7 @@ public static class ServiceCollectionX
                     client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
                 }).AddHttpMessageHandler<TimingHandler>();
             
-            services.AddHttpClient<ICantaloupeThumbsClient, CantaloupeThumbsClient>(client =>
+            services.AddHttpClient<IThumbsClient, CantaloupeThumbsClient>(client =>
             {
                 client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUrl;
                 client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
