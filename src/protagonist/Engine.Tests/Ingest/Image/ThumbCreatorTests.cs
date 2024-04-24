@@ -128,9 +128,6 @@ public class ThumbCreatorTests
         thumbsCreated.Should().Be(3);
 
         bucketWriter
-            .ShouldHaveKey("10/20/foo/low.jpg")
-            .WithFilePath("1000.jpg");
-        bucketWriter
             .ShouldHaveKey("10/20/foo/o/1000.jpg")
             .WithFilePath("1000.jpg");
         bucketWriter

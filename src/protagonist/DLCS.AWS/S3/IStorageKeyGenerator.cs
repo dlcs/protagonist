@@ -52,16 +52,7 @@ public interface IStorageKeyGenerator
     /// <param name="assetId">Unique identifier for Asset</param>
     /// <returns><see cref="ObjectInBucket"/> for sizes json</returns>
     ObjectInBucket GetThumbsSizesJsonLocation(AssetId assetId);
-
-    /// <summary>
-    /// Get <see cref="ObjectInBucket"/> for largest pre-generated thumbnail.
-    /// i.e. low.jpg
-    /// </summary>
-    /// <param name="assetId">Unique identifier for Asset</param>
-    /// <returns><see cref="ObjectInBucket"/> for largest thumbnail</returns>
-    [Obsolete]
-    ObjectInBucket GetLargestThumbnailLocation(AssetId assetId);
-
+    
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> for root location of thumbnails for asset, rather than an individual file
     /// </summary>

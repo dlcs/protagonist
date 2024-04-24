@@ -36,11 +36,6 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
     public const string MetadataKey = "metadata";
     
     /// <summary>
-    /// Key of the largest pre-generated thumbnail
-    /// </summary>
-    public const string LargestThumbKey = "low.jpg";
-    
-    /// <summary>
     /// S3 slug where open thumbnails are stored.
     /// </summary>
     public const string OpenSlug = "open";
@@ -104,14 +99,7 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
         var key = $"{GetStorageKey(assetId)}/{SizesJsonKey}";
         return new ObjectInBucket(s3Options.ThumbsBucket, key);
     }
-
-    [Obsolete]
-    public ObjectInBucket GetLargestThumbnailLocation(AssetId assetId)
-    {
-        var key = $"{GetStorageKey(assetId)}/{LargestThumbKey}";
-        return new ObjectInBucket(s3Options.ThumbsBucket, key);
-    }
-
+    
     public ObjectInBucket GetThumbnailsRoot(AssetId assetId)
     {
         var key = $"{GetStorageKey(assetId)}/";
