@@ -8,7 +8,6 @@ SELECT count(*) FROM "Images";
 
 SELECT count(*) FROM "ImageDeliveryChannels";
 
-
 -- iif-img/thumbs selects - should provide numbers close to each other, but might not be the exact same
 
 SELECT count(*) FROM "Images" where "MediaType" LIKE 'image/%';
