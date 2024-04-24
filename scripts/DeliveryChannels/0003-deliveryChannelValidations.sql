@@ -1,3 +1,7 @@
+-- queries that can be used to help verify changes based on the previous 2 scripts run
+-- NOTE: some of these queries will stop working correctly when new data is added to the DB
+-- this is due to certain fields like old deliveryChannels no longer being updated
+
 -- general selects
 
 SELECT count(*) FROM "Images";
@@ -98,3 +102,30 @@ FROM (SELECT count(*) AS c FROM "Images"
                 WHERE IDC."Id" IS NULL) AS a,
 (SELECT count(*) AS c FROM "Images") AS b;
 
+-- checking for delta on expected new + old on updated DDC policies - check if not 0
+
+SELECT old.c - new.c as delta
+FROM
+(SELECT count(*) as c FROM "Images"
+                JOIN "ImageDeliveryChannels" IDC on "Images"."Id" = IDC."ImageId"
+WHERE "Customer" <> 1 AND IDC."Channel" = 'iiif-av' AND IDC."DeliveryChannelPolicyId" <> 5) as new,
+(SELECT count(*) as c FROM "Images"
+WHERE "Customer" <> 1 AND "DeliveryChannels" LIKE '%iiif-av%' AND "MediaType" LIKE 'audio/%') as old;
+
+SELECT old.c - new.c as delta
+FROM
+(SELECT count(*) as c FROM "Images"
+                JOIN "ImageDeliveryChannels" IDC on "Images"."Id" = IDC."ImageId"
+WHERE "Customer" <> 1 AND IDC."Channel" = 'iiif-av' AND IDC."DeliveryChannelPolicyId" <> 6) as new,
+(SELECT count(*) as c FROM "Images"
+WHERE "Customer" <> 1 AND "DeliveryChannels" LIKE '%iiif-av%' AND "MediaType" LIKE 'video/%') as old;
+
+SELECT old.c - new.c as delta
+FROM
+(SELECT count(*) as c FROM "Images"
+                JOIN "ImageDeliveryChannels" IDC on "Images"."Id" = IDC."ImageId"
+WHERE "Customer" <> 1 AND IDC."Channel" = 'thumbs' AND IDC."DeliveryChannelPolicyId" <> 3) as new,
+(SELECT count(*) as c FROM "Images"
+WHERE "Customer" <> 1 AND "DeliveryChannels" LIKE '%iiif-img%' AND "Family" = 'I'
+  AND "NotForDelivery" = False) as old;
+ 
