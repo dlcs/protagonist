@@ -231,7 +231,7 @@ public class FireballPdfCreatorTests
             }
         };
 
-        A.CallTo(() => thumbSizeProvider.GetAvailableThumbSizesForImage(A<Asset>._))
+        A.CallTo(() => thumbSizeProvider.GetThumbSizesForImage(A<Asset>._, false))
             .Returns(new List<Size> { new(500, 500) });
 
         var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);

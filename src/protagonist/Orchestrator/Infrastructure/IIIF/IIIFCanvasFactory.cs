@@ -166,7 +166,7 @@ public class IIIFCanvasFactory
     
     private async Task<ImageSizeDetails?> RetrieveThumbnails(Asset asset)
     {
-        var thumbnailSizes = await thumbSizeProvider.GetAvailableThumbSizesForImage(asset);
+        var thumbnailSizes = await thumbSizeProvider.GetThumbSizesForImage(asset, true);
         return new ImageSizeDetails
         {
             MaxDerivativeSize = thumbnailSizes.MaxBy(s => s.MaxDimension)!,

@@ -116,7 +116,7 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
 
     private async Task<ObjectInBucket> GetThumbnailLocation(Asset asset)
     {
-        var availableSizes = await thumbSizeProvider.GetAvailableThumbSizesForImage(asset);
+        var availableSizes = await thumbSizeProvider.GetThumbSizesForImage(asset, false);
         var selectedSize = availableSizes.SizeClosestTo(NamedQuerySettings.ProjectionThumbsize);
         return StorageKeyGenerator.GetThumbnailLocation(asset.Id, selectedSize.MaxDimension);
     }

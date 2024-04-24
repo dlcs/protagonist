@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using IIIF;
 using Newtonsoft.Json;
 
@@ -43,4 +44,13 @@ public class ThumbnailSizes
         Count++;
         Open.Add(size.ToArray());
     }
+}
+
+public static class ThumbnailSizesX
+{
+    /// <summary>
+    /// Get a list of all available sizes (Auth and Open)
+    /// </summary>
+    public static IEnumerable<int[]> GetAllSizes(this ThumbnailSizes sizes)
+        => sizes.Auth.Union(sizes.Open);
 }

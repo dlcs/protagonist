@@ -215,7 +215,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels)
-            .AddTestThumbnailMetadata();
+            .WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
             
         var path = $"iiif-manifest/v2/{id}";
@@ -240,7 +240,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin").AddTestThumbnailMetadata();
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin").WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
             
         var path = $"iiif-manifest/v2/{id}";
@@ -332,7 +332,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels)
-            .AddTestThumbnailMetadata();
+            .WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
             
         var path = $"iiif-manifest/{id}";
@@ -357,7 +357,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin").AddTestThumbnailMetadata();
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin").WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
             
         var path = $"iiif-manifest/{id}";

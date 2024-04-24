@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
@@ -19,7 +20,7 @@ public interface IThumbSizeProvider
     /// <summary>
     /// Get available sizes for thumbnails (if any). ie it will only return "Open" thumb sizes
     /// </summary>
-    Task<List<Size>> GetAvailableThumbSizesForImage(Asset asset);
+    Task<List<Size>> GetThumbSizesForImage(Asset asset, bool openOnly);
 }
 
 public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
@@ -30,8 +31,8 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
     private readonly Dictionary<int, List<ImageApi.SizeParameter>> thumbnailPolicies = new();
 
     public MetadataWithFallbackThumbSizeProvider(IPolicyRepository policyRepository, 
-        ILogger<MetadataWithFallbackThumbSizeProvider> logger,
-        IOptions<OrchestratorSettings> orchestratorOptions)
+        IOptions<OrchestratorSettings> orchestratorOptions,
+        ILogger<MetadataWithFallbackThumbSizeProvider> logger)
     {
         this.policyRepository = policyRepository;
         this.logger = logger;
@@ -45,14 +46,15 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
     /// Attempt to read from asset.AssetApplicationMetadata. If found return. Else
     /// Get thumbnail policy and calculate available sizes. 
     /// </summary>
-    public async Task<List<Size>> GetAvailableThumbSizesForImage(Asset asset)
+    public async Task<List<Size>> GetThumbSizesForImage(Asset asset, bool openOnly)
     {
         var thumbnailSizes = asset.AssetApplicationMetadata?.GetThumbsMetadata();
         
         if (thumbnailSizes != null)
         {
             logger.LogDebug("ThumbSizes metadata found for {AssetId}", asset.Id);
-            return thumbnailSizes.Open.Select(t => new Size(t[0], t[1])).ToList();
+            var candidates = openOnly ? thumbnailSizes.Open : thumbnailSizes.GetAllSizes();
+            return candidates.Select(t => new Size(t[0], t[1])).ToList();
         }
 
         if ((orchestratorSettings.ThumbsMetadataDate ?? DateTime.MaxValue) < asset.Finished)
@@ -62,23 +64,25 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
                 asset.Finished);
         }
         
-        return await GetThumbnailSizesForImage(asset) ?? Enumerable.Empty<Size>().ToList();
+        return await GetThumbnailSizesForImage(asset, openOnly) ?? Enumerable.Empty<Size>().ToList();
     }
 
-    private async Task<List<Size>?> GetThumbnailSizesForImage(Asset asset)
+    private async Task<List<Size>?> GetThumbnailSizesForImage(Asset asset, bool openOnly)
     {
         logger.LogDebug("Calculating thumbnail sizes for {AssetId}", asset.Id);
         var sizeParameters = await GetThumbnailPolicyAsSizeParams(asset);
+        
+        if (sizeParameters.IsNullOrEmpty()) return null;
 
-        var thumbnailSizesForImage = asset.GetAvailableThumbSizes(sizeParameters, out _);
+        var thumbnailSizesForImage = asset.GetAvailableThumbSizes(sizeParameters, out _, !openOnly);
         return thumbnailSizesForImage;
     }
 
-    private async Task<List<ImageApi.SizeParameter>> GetThumbnailPolicyAsSizeParams(Asset image)
+    private async Task<List<ImageApi.SizeParameter>?> GetThumbnailPolicyAsSizeParams(Asset image)
     {
         var thumbnailDeliveryChannel = image.ImageDeliveryChannels.GetThumbsChannel();
 
-        if (thumbnailDeliveryChannel is null) return Enumerable.Empty<ImageApi.SizeParameter>().ToList();
+        if (thumbnailDeliveryChannel is null) return null;
 
         if (thumbnailPolicies.TryGetValue(thumbnailDeliveryChannel.DeliveryChannelPolicyId, out var thumbnailPolicy))
         {
