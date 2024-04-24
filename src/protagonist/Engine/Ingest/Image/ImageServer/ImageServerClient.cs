@@ -1,4 +1,3 @@
-using System.Text.Json;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core;
@@ -21,7 +20,7 @@ namespace Engine.Ingest.Image.ImageServer;
 public class ImageServerClient : IImageProcessor
 {
     private readonly IAppetiserClient appetiserClient;
-    private readonly ICantaloupeThumbsClient thumbsClient;
+    private readonly IThumbsClient thumbsClient;
     private readonly EngineSettings engineSettings;
     private readonly ILogger<ImageServerClient> logger;
     private readonly IBucketWriter bucketWriter;
@@ -31,7 +30,7 @@ public class ImageServerClient : IImageProcessor
 
     public ImageServerClient(
         IAppetiserClient appetiserClient,
-        ICantaloupeThumbsClient thumbsClient,
+        IThumbsClient thumbsClient,
         IBucketWriter bucketWriter,
         IStorageKeyGenerator storageKeyGenerator,
         IThumbCreator thumbCreator,

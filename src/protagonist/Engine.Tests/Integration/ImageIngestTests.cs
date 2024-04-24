@@ -10,7 +10,8 @@ using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.Utils;
-using Engine.Ingest.Image.ImageServer.Manipulation;
+using Engine.Ingest.Image;
+using Engine.Ingest.Image.ImageServer.Measuring;
 using Engine.Ingest.Image.ImageServer.Models;
 using Engine.Tests.Integration.Infrastructure;
 using FakeItEasy;
@@ -38,7 +39,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsContext dbContext;
     private static readonly TestBucketWriter BucketWriter = new();
     private readonly ApiStub apiStub;
-    private readonly IImageManipulator imageManipulator;
+    private readonly IImageMeasurer imageMeasurer;
     
     private readonly List<ImageDeliveryChannel> imageDeliveryChannels = new()
     {
@@ -69,7 +70,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         dbContext = engineFixture.DbFixture.DbContext;
         apiStub = engineFixture.ApiStub;
-        imageManipulator = A.Fake<IImageManipulator>();
+        imageMeasurer = A.Fake<IImageMeasurer>();
         httpClient = appFactory
             .WithTestServices(services =>
             {
@@ -77,7 +78,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 services
                     .AddSingleton<IFileSaver, FakeFileSaver>()
                     .AddSingleton<IFileSystem, FakeFileSystem>()
-                    .AddSingleton(imageManipulator)
+                    .AddSingleton(imageMeasurer)
                     .AddSingleton<IBucketWriter>(BucketWriter);
             })
             .WithConfigValue("OrchestratorBaseUrl", apiStub.Address)
@@ -92,15 +93,14 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             Height = 1024, Width = 1024
         };
 
-        
-        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("thumb1"), A<CancellationToken>._))
-            .Returns(Task.FromResult(GenerateTestImage(1024, 1024)));
-        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("thumb2"), A<CancellationToken>._))
-            .Returns(Task.FromResult(GenerateTestImage(400, 400)));
-        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("thumb3"), A<CancellationToken>._))
-            .Returns(Task.FromResult(GenerateTestImage(200, 200)));
-        A.CallTo(() => imageManipulator.LoadAsync(A<string>.That.EndsWith("thumb4"), A<CancellationToken>._))
-            .Returns(Task.FromResult(GenerateTestImage(100, 100)));
+        A.CallTo(() => imageMeasurer.MeasureImage(A<string>.That.EndsWith("thumb1"), A<CancellationToken>._))
+            .Returns(Task.FromResult(new ImageOnDisk { Width = 1024, Height = 1024 }));
+        A.CallTo(() => imageMeasurer.MeasureImage(A<string>.That.EndsWith("thumb2"), A<CancellationToken>._))
+            .Returns(Task.FromResult(new ImageOnDisk { Width = 400, Height = 400 }));
+        A.CallTo(() => imageMeasurer.MeasureImage(A<string>.That.EndsWith("thumb3"), A<CancellationToken>._))
+            .Returns(Task.FromResult(new ImageOnDisk { Width = 200, Height = 200 }));
+        A.CallTo(() => imageMeasurer.MeasureImage(A<string>.That.EndsWith("thumb4"), A<CancellationToken>._))
+            .Returns(Task.FromResult(new ImageOnDisk { Width = 100, Height = 100 }));
         
         var testImage = GenerateTestImageByteData();
         
@@ -115,21 +115,6 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .Header("Content-Type", "image/jpeg");
 
         engineFixture.DbFixture.CleanUp();
-    }
-
-    private SixLabors.ImageSharp.Image GenerateTestImage(int width, int height)
-    { 
-        using var image = new Image<Rgba32>(width, height);
-
-        //draw a useless line for some data
-        image.Mutate(imageContext =>
-        {
-            // draw background
-            var bgColor = Rgba32.ParseHex("#f00a21");
-            imageContext.BackgroundColor(bgColor);
-        });
-
-        return image;
     }
     
     private byte[] GenerateTestImageByteData()
