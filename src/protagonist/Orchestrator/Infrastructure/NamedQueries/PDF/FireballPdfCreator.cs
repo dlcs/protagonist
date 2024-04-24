@@ -29,7 +29,7 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF;
 public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
 {
     private const string PdfEndpoint = "pdf";
-    private readonly IThumbSizeCalculator thumbSizeCalculator;
+    private readonly IThumbSizeProvider thumbSizeProvider;
     private readonly HttpClient fireballClient;
     private readonly JsonSerializerSettings jsonSerializerSettings;
 
@@ -37,13 +37,13 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
         IBucketReader bucketReader,
         IBucketWriter bucketWriter,
         IOptions<NamedQuerySettings> namedQuerySettings,
-        IThumbSizeCalculator thumbSizeCalculator,
+        IThumbSizeProvider thumbSizeProvider,
         ILogger<FireballPdfCreator> logger,
         HttpClient fireballClient,
         IStorageKeyGenerator storageKeyGenerator
     ) : base(bucketReader, bucketWriter, namedQuerySettings, storageKeyGenerator, logger)
     {
-        this.thumbSizeCalculator = thumbSizeCalculator;
+        this.thumbSizeProvider = thumbSizeProvider;
         this.fireballClient = fireballClient;
         jsonSerializerSettings = new JsonSerializerSettings
         {
@@ -116,7 +116,7 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
 
     private async Task<ObjectInBucket> GetThumbnailLocation(Asset asset)
     {
-        var availableSizes = await thumbSizeCalculator.GetAvailableThumbSizesForImage(asset);
+        var availableSizes = await thumbSizeProvider.GetAvailableThumbSizesForImage(asset);
         var selectedSize = availableSizes.SizeClosestTo(NamedQuerySettings.ProjectionThumbsize);
         return StorageKeyGenerator.GetThumbnailLocation(asset.Id, selectedSize.MaxDimension);
     }

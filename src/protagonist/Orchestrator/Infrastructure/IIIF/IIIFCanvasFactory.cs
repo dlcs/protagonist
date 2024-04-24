@@ -32,16 +32,16 @@ public class IIIFCanvasFactory
 {
     private readonly IAssetPathGenerator assetPathGenerator;
     private readonly OrchestratorSettings orchestratorSettings;
-    private readonly IThumbSizeCalculator thumbSizeCalculator;
+    private readonly IThumbSizeProvider thumbSizeProvider;
     private const string MetadataLanguage = "none";
     
     public IIIFCanvasFactory(
         IAssetPathGenerator assetPathGenerator,
         IOptions<OrchestratorSettings> orchestratorSettings,
-        IThumbSizeCalculator thumbSizeCalculator)
+        IThumbSizeProvider thumbSizeProvider)
     {
         this.assetPathGenerator = assetPathGenerator;
-        this.thumbSizeCalculator = thumbSizeCalculator;
+        this.thumbSizeProvider = thumbSizeProvider;
         this.orchestratorSettings = orchestratorSettings.Value;
     }
 
@@ -166,7 +166,7 @@ public class IIIFCanvasFactory
     
     private async Task<ImageSizeDetails?> RetrieveThumbnails(Asset asset)
     {
-        var thumbnailSizes = await thumbSizeCalculator.GetAvailableThumbSizesForImage(asset);
+        var thumbnailSizes = await thumbSizeProvider.GetAvailableThumbSizesForImage(asset);
         return new ImageSizeDetails
         {
             MaxDerivativeSize = thumbnailSizes.MaxBy(s => s.MaxDimension)!,

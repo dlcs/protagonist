@@ -27,7 +27,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF;
 public class FireballPdfCreatorTests
 {
     private readonly IBucketReader bucketReader;
-    private readonly IThumbSizeCalculator thumbSizeCalculator;
+    private readonly IThumbSizeProvider thumbSizeProvider;
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly FireballPdfCreator sut;
     private const int Customer = 99;
@@ -48,7 +48,7 @@ public class FireballPdfCreatorTests
     
         bucketReader = A.Fake<IBucketReader>();
         bucketWriter = A.Fake<IBucketWriter>();
-        thumbSizeCalculator = A.Fake<IThumbSizeCalculator>();
+        thumbSizeProvider = A.Fake<IThumbSizeProvider>();
         
         httpHandler = new ControllableHttpMessageHandler();
         var httpClient = new HttpClient(httpHandler)
@@ -67,7 +67,7 @@ public class FireballPdfCreatorTests
                 }
             }));
 
-        sut = new FireballPdfCreator(bucketReader, bucketWriter, namedQuerySettings, thumbSizeCalculator,
+        sut = new FireballPdfCreator(bucketReader, bucketWriter, namedQuerySettings, thumbSizeProvider,
             new NullLogger<FireballPdfCreator>(), httpClient, bucketKeyGenerator);
     }
 
@@ -231,7 +231,7 @@ public class FireballPdfCreatorTests
             }
         };
 
-        A.CallTo(() => thumbSizeCalculator.GetAvailableThumbSizesForImage(A<Asset>._))
+        A.CallTo(() => thumbSizeProvider.GetAvailableThumbSizesForImage(A<Asset>._))
             .Returns(new List<Size> { new(500, 500) });
 
         var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
