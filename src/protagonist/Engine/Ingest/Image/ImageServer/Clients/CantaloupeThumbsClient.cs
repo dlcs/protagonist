@@ -76,7 +76,6 @@ public class CantaloupeThumbsClient : IThumbsClient
 
         if (response.IsSuccessStatusCode)
         {
-
             return await SaveImageToDisk(response, size, thumbFolder, count, retry, convertedS3Location,
                 assetId, thumbsResponse, imageSize, cancellationToken);
         }
@@ -85,7 +84,7 @@ public class CantaloupeThumbsClient : IThumbsClient
         throw new HttpException(response.StatusCode, "failed to retrieve data from the thumbs processor");
     }
 
-    private async Task<ImageOnDisk?> SaveImageToDisk(HttpResponseMessage response, string size, string thumbFolder,
+    private async Task<ImageOnDisk> SaveImageToDisk(HttpResponseMessage response, string size, string thumbFolder,
         int count, bool retry, string convertedS3Location, AssetId assetId, List<ImageOnDisk> thumbsResponse,
         Size imageSize, CancellationToken cancellationToken)
     {
@@ -98,13 +97,13 @@ public class CantaloupeThumbsClient : IThumbsClient
                 
         var imageOnDisk = await imageMeasurer.MeasureImage(localThumbsPath, cancellationToken);
 
-        return imageOnDisk switch
+        return (imageOnDisk switch
         {
             null when retry => await GenerateSingleThumbnail(thumbFolder, convertedS3Location, size, assetId, count,
                 thumbsResponse, imageSize, false, cancellationToken),
             null when !retry => throw new InvalidOperationException("Failed to retrieve image on disk"),
-            _ => imageOnDisk!
-        };
+            _ => imageOnDisk
+        })!;
     }
 
     private async Task LogErrorResponse(HttpResponseMessage response, AssetId assetId, string size, LogLevel logLevel, CancellationToken cancellationToken)

@@ -23,10 +23,6 @@ public class ImageSharpMeasurer : IImageMeasurer
                 Height = image.Height
             };
 
-            await using var test = new FileStream(path, FileMode.Open);
-            test.Seek(10, SeekOrigin.End);
-            using var testTwo = await SixLabors.ImageSharp.Image.LoadAsync(test, cancellationToken);
-            
             return imageOnDisk;
         }
         catch (UnknownImageFormatException exception)
