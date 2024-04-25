@@ -11,3 +11,4 @@ Scripts related to introduction of DeliveryChannels tables, see RFC [014-deliver
 
 * [0001-migrateCustomerDeliveryChannels.sql](DeliveryChannels/0001-migrateCustomerDeliveryChannels.sql) - Create required `DefaultDeliveryChannels` and `DeliveryChannelPolicies` for all customers from legacy `ThumbnailPolicy` and system `DeliveryChannelPolicies`
 * [0002-migrateImageDeliveryChannels.sql](DeliveryChannels/0002-migrateImageDeliveryChannels.sql) - Create `ImageDeliveryChannels` records for all customers.
+* [0003-deliveryChannelValidations.sql](DeliveryChannels/0003-deliveryChannelValidations.sql) - Various exploratory validation queries for delivery channels.
