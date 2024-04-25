@@ -97,8 +97,7 @@ public class ThumbCreator : IThumbCreator
         return new Size(0, 0);
     }
 
-    private async Task UploadThumbs(AssetId assetId, ImageOnDisk thumbCandidate, Size thumb,
-        bool isOpen)
+    private async Task UploadThumbs(AssetId assetId, ImageOnDisk thumbCandidate, Size thumb, bool isOpen)
     {
         var thumbKey = storageKeyGenerator.GetThumbnailLocation(assetId, thumb.MaxDimension, isOpen);
         await bucketWriter.WriteFileToBucket(thumbKey, thumbCandidate.Path, MIMEHelper.JPEG);
