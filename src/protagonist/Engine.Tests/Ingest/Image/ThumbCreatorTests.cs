@@ -18,7 +18,7 @@ public class ThumbCreatorTests
     private readonly IAssetApplicationMetadataRepository assetApplicationMetadataRepository;
     private readonly List<ImageDeliveryChannel> thumbsDeliveryChannel = new()
     {
-        new ImageDeliveryChannel()
+        new ImageDeliveryChannel
         {
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
             Channel = AssetDeliveryChannels.Thumbnails
@@ -30,9 +30,7 @@ public class ThumbCreatorTests
         bucketWriter = new TestBucketWriter();
         var storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
         assetApplicationMetadataRepository = A.Fake<IAssetApplicationMetadataRepository>();
-
-        A.CallTo(() => storageKeyGenerator.GetLargestThumbnailLocation(A<AssetId>._))
-            .ReturnsLazily((AssetId assetId) => new ObjectInBucket("thumbs-bucket", $"{assetId}/low.jpg"));
+        
         A.CallTo(() => storageKeyGenerator.GetThumbsSizesJsonLocation(A<AssetId>._))
             .ReturnsLazily((AssetId assetId) => new ObjectInBucket("thumbs-bucket", $"{assetId}/s.json"));
         A.CallTo(() => storageKeyGenerator.GetThumbnailLocation(A<AssetId>._, A<int>._, A<bool>._))
@@ -85,9 +83,6 @@ public class ThumbCreatorTests
         thumbsCreated.Should().Be(3);
 
         bucketWriter
-            .ShouldHaveKey("10/20/foo/low.jpg")
-            .WithFilePath("1000.jpg");
-        bucketWriter
             .ShouldHaveKey("10/20/foo/o/1000.jpg")
             .WithFilePath("1000.jpg");
         bucketWriter
@@ -133,9 +128,6 @@ public class ThumbCreatorTests
         thumbsCreated.Should().Be(3);
 
         bucketWriter
-            .ShouldHaveKey("10/20/foo/low.jpg")
-            .WithFilePath("1000.jpg");
-        bucketWriter
             .ShouldHaveKey("10/20/foo/o/1000.jpg")
             .WithFilePath("1000.jpg");
         bucketWriter
@@ -179,10 +171,7 @@ public class ThumbCreatorTests
         
         // Assert
         thumbsCreated.Should().Be(3);
-
-        bucketWriter
-            .ShouldHaveKey("10/20/foo/low.jpg")
-            .WithFilePath("1000.jpg");
+        
         bucketWriter
             .ShouldHaveKey("10/20/foo/a/1000.jpg")
             .WithFilePath("1000.jpg");
@@ -228,10 +217,7 @@ public class ThumbCreatorTests
         
         // Assert
         thumbsCreated.Should().Be(2);
-
-        bucketWriter
-            .ShouldHaveKey("10/20/foo/low.jpg")
-            .WithFilePath("1000.jpg");
+        
         bucketWriter
             .ShouldHaveKey("10/20/foo/o/440.jpg")
             .WithFilePath("1000.jpg");
@@ -272,10 +258,7 @@ public class ThumbCreatorTests
         
         // Assert
         thumbsCreated.Should().Be(3);
-
-        bucketWriter
-            .ShouldHaveKey("10/20/foo/low.jpg")
-            .WithFilePath("1000.jpg");
+        
         bucketWriter
             .ShouldHaveKey("10/20/foo/a/1000.jpg")
             .WithFilePath("1000.jpg");

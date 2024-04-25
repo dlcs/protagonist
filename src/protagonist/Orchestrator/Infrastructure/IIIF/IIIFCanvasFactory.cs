@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
-using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Assets.Metadata;
 using DLCS.Model.IIIF;
 using DLCS.Model.PathElements;
-using DLCS.Model.Policies;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
@@ -21,7 +17,6 @@ using IIIF.Presentation.V2.Strings;
 using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Settings;
 using ImageApi = IIIF.ImageApi;
@@ -36,21 +31,17 @@ namespace Orchestrator.Infrastructure.IIIF;
 public class IIIFCanvasFactory
 {
     private readonly IAssetPathGenerator assetPathGenerator;
-    private readonly IPolicyRepository policyRepository;
-    private readonly ILogger<IIIFCanvasFactory> logger;
     private readonly OrchestratorSettings orchestratorSettings;
-    private readonly Dictionary<int, List<ImageApi.SizeParameter>> thumbnailPolicies = new();
+    private readonly IThumbSizeProvider thumbSizeProvider;
     private const string MetadataLanguage = "none";
     
     public IIIFCanvasFactory(
         IAssetPathGenerator assetPathGenerator,
         IOptions<OrchestratorSettings> orchestratorSettings,
-        IPolicyRepository policyRepository,
-        ILogger<IIIFCanvasFactory> logger)
+        IThumbSizeProvider thumbSizeProvider)
     {
         this.assetPathGenerator = assetPathGenerator;
-        this.policyRepository = policyRepository;
-        this.logger = logger;
+        this.thumbSizeProvider = thumbSizeProvider;
         this.orchestratorSettings = orchestratorSettings.Value;
     }
 
@@ -116,35 +107,6 @@ public class IIIFCanvasFactory
         return canvases;
     }
 
-    private async Task<ImageSizeDetails?> RetrieveThumbnails(Asset asset)
-    {
-        var thumbnailSizes = asset.AssetApplicationMetadata.GetThumbsMetadata();
-        
-        if (thumbnailSizes != null)
-        {
-            logger.LogDebug("ThumbSizes metadata found for {AssetId}", asset.Id);
-            if (thumbnailSizes.Open.Any())
-            {
-                var largest = thumbnailSizes.Open.MaxBy(x => x.Sum());
-        
-                return new ImageSizeDetails
-                {
-                    MaxDerivativeSize = new Size(largest![0], largest[1]),
-                    OpenThumbnails = thumbnailSizes.Open.Select(t => new Size(t[0], t[1])).ToList()
-                };
-            }
-        }
-
-        if ((orchestratorSettings.ThumbsMetadataDate ?? DateTime.MaxValue) < asset.Finished)
-        {
-            logger.LogWarning(
-                "No metadata found for asset {AssetId} with finished date {FinishedDate} and fallback disabled", asset.Id,
-                asset.Finished);
-        }
-        
-        return await GetThumbnailSizesForImage(asset);
-    }
-
     /// <summary>
     /// Generate IIIF V2 canvases for assets.
     /// </summary>
@@ -202,6 +164,21 @@ public class IIIFCanvasFactory
         return canvases;
     }
     
+    private async Task<ImageSizeDetails?> RetrieveThumbnails(Asset asset)
+    {
+        var thumbnailSizes = await thumbSizeProvider.GetThumbSizesForImage(asset, true);
+
+        var maxDerivativeSize = thumbnailSizes.IsNullOrEmpty()
+            ? Size.Confine(orchestratorSettings.TargetThumbnailSize, new Size(asset.Width ?? 0, asset.Height ?? 0))
+            : thumbnailSizes.MaxBy(s => s.MaxDimension)!;
+        
+        return new ImageSizeDetails
+        {
+            MaxDerivativeSize = maxDerivativeSize,
+            OpenThumbnails = thumbnailSizes,
+        };
+    }
+    
     private List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
         List<Size> thumbnailSizes)
     {
@@ -231,65 +208,13 @@ public class IIIFCanvasFactory
         return services;
     }
 
-    private async Task<ImageSizeDetails> GetThumbnailSizesForImage(Asset asset)
-    {
-        logger.LogDebug("Calculating thumbnail sizes for {AssetId}", asset.Id);
-        var sizeParameters = await GetThumbnailDeliveryChannelPolicyForImage(asset);
-        
-        var thumbnailSizesForImage = asset.GetAvailableThumbSizes(sizeParameters, out var maxDimensions);
-
-        if (thumbnailSizesForImage.IsNullOrEmpty())
-        {
-            var largestThumbnail = sizeParameters
-                .Where(s => s.Confined)
-                .MaxBy(s => s.GetMaxDimension())
-                .ThrowIfNull("largestThumbnail");
-
-            return new ImageSizeDetails
-            {
-                OpenThumbnails = new List<Size>(0),
-                MaxDerivativeSize = Size.Confine(largestThumbnail.GetMaxDimension(), new Size(asset.Width.Value, asset.Height.Value))
-            };
-        }
-
-        return new ImageSizeDetails
-        {
-            OpenThumbnails = thumbnailSizesForImage,
-            MaxDerivativeSize = new Size(maxDimensions.maxAvailableWidth, maxDimensions.maxAvailableHeight)
-        };
-    }
-
-    private async Task<List<ImageApi.SizeParameter>> GetThumbnailDeliveryChannelPolicyForImage(Asset image)
-    {
-        var thumbnailDeliveryChannel = image.ImageDeliveryChannels.GetThumbsChannel();
-
-        if (thumbnailDeliveryChannel is null) return new List<ImageApi.SizeParameter>();
-
-        if (thumbnailPolicies.TryGetValue(thumbnailDeliveryChannel.DeliveryChannelPolicyId, out var thumbnailPolicy))
-        {
-            return thumbnailPolicy;
-        }
-
-        var thumbnailPolicyFromDb =
-            await policyRepository.GetThumbnailPolicy(thumbnailDeliveryChannel.DeliveryChannelPolicyId, image.Customer);
-
-        var sizeParameters = thumbnailPolicyFromDb
-            .ThrowIfNull(nameof(thumbnailPolicyFromDb))
-            .ThumbsDataAsSizeParameters();
-        thumbnailPolicies[thumbnailDeliveryChannel.DeliveryChannelPolicyId] = sizeParameters;
-        return sizeParameters;
-    }
-
     private string GetFullQualifiedThumbPath(Asset asset, CustomerPathElement customerPathElement,
         List<Size> availableThumbs)
     {
         var targetThumb = orchestratorSettings.TargetThumbnailSize;
 
         // Get the thumbnail size that is closest to the system-wide TargetThumbnailSize
-        var closestSize = availableThumbs
-            .OrderBy(s => s.MaxDimension)
-            .Aggregate((x, y) =>
-                Math.Abs(x.MaxDimension - targetThumb) < Math.Abs(y.MaxDimension - targetThumb) ? x : y);
+        var closestSize = availableThumbs.SizeClosestTo(targetThumb);
 
         return GetFullQualifiedImagePath(asset, customerPathElement, closestSize, true);
     }

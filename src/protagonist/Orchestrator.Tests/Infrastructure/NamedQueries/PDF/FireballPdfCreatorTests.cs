@@ -14,8 +14,10 @@ using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using FakeItEasy;
 using FizzWare.NBuilder;
+using IIIF;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.NamedQueries.PDF;
 using Orchestrator.Settings;
 using Test.Helpers.Http;
@@ -25,6 +27,7 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF;
 public class FireballPdfCreatorTests
 {
     private readonly IBucketReader bucketReader;
+    private readonly IThumbSizeProvider thumbSizeProvider;
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly FireballPdfCreator sut;
     private const int Customer = 99;
@@ -45,6 +48,7 @@ public class FireballPdfCreatorTests
     
         bucketReader = A.Fake<IBucketReader>();
         bucketWriter = A.Fake<IBucketWriter>();
+        thumbSizeProvider = A.Fake<IThumbSizeProvider>();
         
         httpHandler = new ControllableHttpMessageHandler();
         var httpClient = new HttpClient(httpHandler)
@@ -63,7 +67,7 @@ public class FireballPdfCreatorTests
                 }
             }));
 
-        sut = new FireballPdfCreator(bucketReader, bucketWriter, namedQuerySettings,
+        sut = new FireballPdfCreator(bucketReader, bucketWriter, namedQuerySettings, thumbSizeProvider,
             new NullLogger<FireballPdfCreator>(), httpClient, bucketKeyGenerator);
     }
 
@@ -215,17 +219,20 @@ public class FireballPdfCreatorTests
             },
             new ()
             {
-                Roles = String.Empty,
+                Roles = string.Empty,
                 Id = AssetId.FromString("/99/1/image1.jpg"),
                 MaxUnauthorised = -1
             },
             new ()
             {
-                Roles = String.Empty,
+                Roles = string.Empty,
                 Id = AssetId.FromString("/99/1/image1.jpg"),
                 MaxUnauthorised = -1
             }
         };
+
+        A.CallTo(() => thumbSizeProvider.GetThumbSizesForImage(A<Asset>._, false))
+            .Returns(new List<Size> { new(500, 500) });
 
         var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
         responseMessage.Content =
@@ -242,7 +249,7 @@ public class FireballPdfCreatorTests
         await sut.PersistProjection(parsedNamedQuery, images);
         
         // Assert
-        playbook.Pages.Select(p => p.Type).Should()
-            .BeEquivalentTo(expectedPageTypes, opts => opts.WithStrictOrdering());
+        playbook.Pages.Select(p => p.Type)
+            .Should().BeEquivalentTo(expectedPageTypes, opts => opts.WithStrictOrdering());
     }
 }

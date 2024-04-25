@@ -255,6 +255,11 @@ public class NamedQuerySettings
     /// Customer-specific overrides; keyed by customer Id
     /// </summary>
     public Dictionary<string, CustomerOverride> CustomerOverrides { get; set; } = new();
+
+    /// <summary>
+    /// For NQ projection the thumbnail closest to this size will be selected
+    /// </summary>
+    public int ProjectionThumbsize { get; set; } = 1000;
 }
 
 public class CustomerOverride

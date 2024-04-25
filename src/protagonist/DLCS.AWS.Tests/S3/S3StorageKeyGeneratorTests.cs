@@ -147,21 +147,6 @@ public class S3StorageKeyGeneratorTests
     }
     
     [Fact]
-    public void GetLargestThumbnailLocation_ReturnsExpected()
-    {
-        // Arrange
-        const string expected = "10/20/foo-bar/low.jpg";
-        var asset = new AssetId(10, 20, "foo-bar");
-        
-        // Act
-        var actual = sut.GetLargestThumbnailLocation(asset);
-        
-        // Assert
-        actual.Key.Should().Be(expected);
-        actual.Bucket.Should().Be("test-thumbs");
-    }
-    
-    [Fact]
     public void GetThumbnailsRoot_ReturnsExpected()
     {
         // Arrange

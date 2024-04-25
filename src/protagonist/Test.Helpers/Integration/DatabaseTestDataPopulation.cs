@@ -14,6 +14,7 @@ using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Test.Helpers.Data;
 
 namespace Test.Helpers.Integration;
 
@@ -198,22 +199,12 @@ public static class DatabaseTestDataPopulation
             Created = DateTime.UtcNow,
             Modified = DateTime.UtcNow
         });
-    
-    public static ValueTask<EntityEntry<Asset>> AddTestThumbnailMetadata(
-        this  ValueTask<EntityEntry<Asset>> asset,
-        string metadataValue = "{\"a\": [], \"o\": [[75, 100], [150, 200], [300, 400], [769, 1024]]}")
-    {
-        asset.Result.Entity.AssetApplicationMetadata ??= new List<AssetApplicationMetadata>();
-        
-        asset.Result.Entity.AssetApplicationMetadata.Add(new AssetApplicationMetadata()
-        {
-            AssetId = asset.Result.Entity.Id,
-            MetadataType = AssetApplicationMetadataTypes.ThumbSizes,
-            MetadataValue = metadataValue,
-            Created = DateTime.UtcNow,
-            Modified = DateTime.UtcNow
-        });
 
+    public static ValueTask<EntityEntry<Asset>> WithTestThumbnailMetadata(
+        this ValueTask<EntityEntry<Asset>> asset,
+        string metadataValue = "{\"a\": [], \"o\": [[769,1024],[300,400],[150,200],[75,100]]}")
+    {
+        asset.Result.Entity.WithTestThumbnailMetadata(metadataValue);
         return asset;
     }
 }

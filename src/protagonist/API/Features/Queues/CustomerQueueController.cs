@@ -98,7 +98,6 @@ public class CustomerQueueController : HydraController
         [FromRoute] int customerId,
         [FromBody] HydraCollection<DLCS.HydraModel.Image> images,
         [FromServices] QueuePostValidator validator,
-        [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
         UpdateMembers(customerId, images.Members);

@@ -61,18 +61,18 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
                 }
             });
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-2"), num1: 1, ref1: "my-ref")
-            .AddTestThumbnailMetadata();
+            .WithTestThumbnailMetadata();
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-nothumbs"), num1: 3, ref1: "my-ref",
-            maxUnauthorised: 10, roles: "default").AddTestThumbnailMetadata();
+            maxUnauthorised: 10, roles: "default").WithTestThumbnailMetadata();
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/not-for-delivery"), num1: 4, ref1: "my-ref",
-            notForDelivery: true).AddTestThumbnailMetadata();
+            notForDelivery: true).WithTestThumbnailMetadata();
 
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/auth-1"), num1: 2, ref1: "auth-ref",
-            roles: "clickthrough").AddTestThumbnailMetadata();
+            roles: "clickthrough").WithTestThumbnailMetadata();
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/auth-2"), num1: 1, ref1: "auth-ref",
-            roles: "clickthrough").AddTestThumbnailMetadata();
+            roles: "clickthrough").WithTestThumbnailMetadata();
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/no-auth"), num1: 3, ref1: "auth-ref")
-            .AddTestThumbnailMetadata();
+            .WithTestThumbnailMetadata();
 
         dbFixture.DbContext.SaveChanges();
     }
@@ -248,13 +248,13 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         });
 
         await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/third"), num1: 1, num2: 10, ref1: "z",
-            ref2: "grace").AddTestThumbnailMetadata();;
+            ref2: "grace").WithTestThumbnailMetadata();;
         await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/first"), num1: 1, num2: 20, ref1: "c",
-            ref2: "grace").AddTestThumbnailMetadata();;
+            ref2: "grace").WithTestThumbnailMetadata();;
         await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/fourth"), num1: 2, num2: 10, ref1: "a",
-            ref2: "grace").AddTestThumbnailMetadata();;
+            ref2: "grace").WithTestThumbnailMetadata();;
         await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/second"), num1: 1, num2: 10, ref1: "x",
-            ref2: "grace").AddTestThumbnailMetadata();;
+            ref2: "grace").WithTestThumbnailMetadata();;
         await dbFixture.DbContext.SaveChangesAsync();
 
         var expectedOrder = new[] { "99/1/first", "99/1/second", "99/1/third", "99/1/fourth" };
