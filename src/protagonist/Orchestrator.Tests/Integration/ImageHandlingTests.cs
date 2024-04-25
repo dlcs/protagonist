@@ -1606,9 +1606,9 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
-    [InlineData("/info.json")]
-    [InlineData("/full/max/0/default.jpg")]
-    [InlineData("/0,0,1000,1000/200,200/0/default.jpg")]
+    [InlineData("info.json")]
+    [InlineData("full/max/0/default.jpg")]
+    [InlineData("0,0,1000,1000/200,200/0/default.jpg")]
     public async Task Get_404_IfNotForDelivery(string path)
     {
         // Arrange
@@ -1630,9 +1630,9 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
-    [InlineData("/info.json")]
-    [InlineData("/full/max/0/default.jpg")]
-    [InlineData("/0,0,1000,1000/200,200/0/default.jpg")]
+    [InlineData("info.json")]
+    [InlineData("full/max/0/default.jpg")]
+    [InlineData("0,0,1000,1000/200,200/0/default.jpg")]
     public async Task Get_404_IfNotForImageDeliveryChannel(string path)
     {
         // Arrange

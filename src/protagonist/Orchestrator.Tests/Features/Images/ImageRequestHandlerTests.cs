@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Text.Json.Nodes;
 using System.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.CustomHeaders;
@@ -17,6 +18,7 @@ using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
+using Test.Helpers.Data;
 using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Tests.Features.Images;
@@ -120,6 +122,31 @@ public class ImageRequestHandlerTests
             
         // Act
         var result = await sut.HandleRequest(new DefaultHttpContext());
+            
+        // Assert
+        result.Should().BeOfType<StatusCodeResult>()
+            .Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Theory]
+    [InlineData("0,")]
+    [InlineData(",0")]
+    [InlineData("!0,0")]
+    [InlineData("20,0")]
+    [InlineData("0,20")]
+    public async Task HandleRequest_Returns400_IfInvalidSize(string size)
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+
+        // Act
+        var context = new DefaultHttpContext();
+        context.Request.Path = $"/iiif-img/{id}/full/{size}/0/default.jpg";
+
+        var sut = GetImageRequestHandlerWithMockPathParser();
+            
+        // Act
+        var result = await sut.HandleRequest(context);
             
         // Assert
         result.Should().BeOfType<StatusCodeResult>()
