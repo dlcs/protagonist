@@ -31,6 +31,8 @@ public class CantaloupeThumbsClientTests
         var fileSystem = A.Fake<IFileSystem>();
         imageMeasurer = A.Fake<IImageMeasurer>();
 
+        A.CallTo(() => imageMeasurer.MeasureImage(A<string>._, A<CancellationToken>._)).Returns(new ImageOnDisk());
+
         var httpClient = new HttpClient(httpHandler);
         httpClient.BaseAddress = new Uri("http://image-processor/");
         sut = new CantaloupeThumbsClient(httpClient, fileSystem, imageMeasurer, new NullLogger<CantaloupeThumbsClient>());
@@ -160,6 +162,62 @@ public class CantaloupeThumbsClientTests
 
         // Assert
         thumbs.Should().BeEquivalentTo(expected, reason);
+    }
+    
+    [Fact]
+    public async Task GenerateThumbnails_InvalidOperationException_WhenMeasureImageReturnsNull()
+    {
+        // Arrange
+        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsThumbForSuccessfulResponse));
+        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+        context.Asset.Width = 2000;
+        context.Asset.Height = 2000;
+
+        context.WithLocation(new ImageLocation
+        {
+            S3 = "//some/location/with/s3"
+        });
+
+        ImageOnDisk returnedFromImageMeasurer = null;
+
+        A.CallTo(() => imageMeasurer.MeasureImage(A<string>._, A<CancellationToken>._))
+            .Returns(returnedFromImageMeasurer);
+        
+        // Act
+        Func<Task>  action = async () => await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+        
+        // Assert
+        await action.Should().ThrowAsync<InvalidOperationException>();
+    }
+    
+    [Fact]
+    public async Task GenerateThumbnails_ReturnsThumbForSuccessfulResponse_AfterFirstImageMeasurerFailure()
+    {
+        // Arrange
+        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsThumbForSuccessfulResponse));
+        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+        context.Asset.Width = 2000;
+        context.Asset.Height = 2000;
+
+        context.WithLocation(new ImageLocation
+        {
+            S3 = "//some/location/with/s3"
+        });
+        
+        ImageOnDisk returnedFromImageMeasurer = null;
+
+        A.CallTo(() => imageMeasurer.MeasureImage(A<string>._, A<CancellationToken>._))
+            .Returns(returnedFromImageMeasurer).Once().Then.Returns(new ImageOnDisk());
+        
+        // Act
+        var thumbs = await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+
+        // Assert
+        thumbs.Should().HaveCount(1);
+        thumbs[0].Height.Should().Be(1024);
+        thumbs[0].Width.Should().Be(1024);
     }
 
     public static IEnumerable<object[]> ThumbsAndResults => new List<object[]>
