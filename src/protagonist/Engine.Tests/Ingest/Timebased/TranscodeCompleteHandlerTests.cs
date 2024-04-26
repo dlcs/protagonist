@@ -112,7 +112,7 @@ public class TranscodeCompleteHandlerTests
     }
     
     [Fact]
-    public async Task HandleMessage_ReturnsFalse_FromErrorMessage()
+    public async Task HandleMessage_ReturnsTrue_FromErrorMessage()
     {
         // Arrange
         const string fileName = "ElasticTranscoderErrorNotification.json";
@@ -127,6 +127,6 @@ public class TranscodeCompleteHandlerTests
         var result = await sut.HandleMessage(queueMessage, cancellationToken);
             
         // Assert
-        result.Should().BeFalse();
+        result.Should().BeTrue();
     }
 }

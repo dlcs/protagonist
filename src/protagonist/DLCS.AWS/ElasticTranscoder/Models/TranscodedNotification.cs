@@ -1,4 +1,5 @@
-﻿using Amazon.ElasticTranscoder.Model;
+﻿using System.Text.Json.Serialization;
+using Amazon.ElasticTranscoder.Model;
 using DLCS.Core.Exceptions;
 using DLCS.Core.Types;
 
@@ -39,7 +40,8 @@ public class TranscodedNotification
     /// <summary>
     /// The code of any error that occurred
     /// </summary>
-    public string? ErrorCode { get; set; }
+    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+    public int? ErrorCode { get; set; }
     
     /// <summary>
     /// Prefix for filenames in Amazon S3 bucket
