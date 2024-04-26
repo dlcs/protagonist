@@ -40,6 +40,10 @@
       <Content Include="Samples\ElasticTranscoderNotification.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
+      <None Remove="Samples\ElasticTranscoderErrorNotification.json" />
+      <Content Include="Samples\ElasticTranscoderErrorNotification.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>

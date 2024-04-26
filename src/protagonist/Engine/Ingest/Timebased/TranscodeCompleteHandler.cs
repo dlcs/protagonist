@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.SQS;
 using DLCS.AWS.SQS.Models;
@@ -13,7 +14,10 @@ public class TranscodeCompleteHandler : IMessageHandler
 {
     private readonly ITimebasedIngestorCompletion timebasedIngestorCompletion;
     private readonly ILogger<TranscodeCompleteHandler> logger;
-    private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web)
+    {
+       NumberHandling = JsonNumberHandling.AllowReadingFromString
+    };
 
     public TranscodeCompleteHandler(
         ITimebasedIngestorCompletion timebasedIngestorCompletion,
@@ -26,7 +30,7 @@ public class TranscodeCompleteHandler : IMessageHandler
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken)
     {
         var elasticTranscoderMessage = DeserializeBody(message);
-
+        
         if (elasticTranscoderMessage == null) return false;
 
         var assetId = elasticTranscoderMessage.GetAssetId();
