@@ -69,7 +69,7 @@ public class CantaloupeThumbsClient : IThumbsClient
 
         if (response.StatusCode == HttpStatusCode.BadRequest)
         {
-            // This is likely an error for the individual thumb size, so just continue
+            // This is likely an error for the individual thumb size, so don't throw an error
             await LogErrorResponse(response, assetId, size, LogLevel.Information, cancellationToken);
             return null;
         }
