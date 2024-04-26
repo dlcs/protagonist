@@ -182,10 +182,29 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Get_ReturnsV2Manifest_WithCorrectId_IgnoringQueryParam()
+    {
+        // Arrange
+        const string path = "iiif-resource/v2/99/test-named-query/my-ref/1";
+        const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/2/context.json\"";
+        
+        // Act
+        var response = await httpClient.GetAsync($"{path}?foo=bar");
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Vary.Should().Contain("Accept");
+        response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["@id"].ToString().Should().Be($"http://localhost/{path}");
+    }
+    
+    [Fact]
     public async Task Get_ReturnsV3ManifestWithCorrectCount_ViaConneg()
     {
         // Arrange
         const string path = "iiif-resource/99/test-named-query/my-ref/1";
+        
         const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
         
         // Act
@@ -217,6 +236,24 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse.SelectToken("items").Count().Should().Be(3);
+    }
+    
+    [Fact]
+    public async Task Get_ReturnsV3Manifest_WithCorrectId_IgnoringQueryParam()
+    {
+        // Arrange
+        const string path = "iiif-resource/v3/99/test-named-query/my-ref/1";
+        const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
+        
+        // Act
+        var response = await httpClient.GetAsync($"{path}?foo=bar");
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Vary.Should().Contain("Accept");
+        response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["id"].ToString().Should().Be($"http://localhost/{path}");
     }
     
     [Fact]

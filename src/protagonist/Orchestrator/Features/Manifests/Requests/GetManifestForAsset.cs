@@ -101,5 +101,5 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
     }
 
     private string GetFullyQualifiedId(BaseAssetRequest baseAssetRequest)
-        => assetPathGenerator.GetFullPathForRequest(baseAssetRequest, true);
+        => assetPathGenerator.GetFullPathForRequest(baseAssetRequest, true, false);
 }

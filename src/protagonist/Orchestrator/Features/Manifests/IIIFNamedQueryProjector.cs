@@ -57,7 +57,7 @@ public class IIIFNamedQueryProjector
         CancellationToken cancellationToken)
     {
         var sequenceRootUrl = request.GetDisplayUrl("/iiif-query/");
-        var manifestId = request.GetDisplayUrl();
+        var manifestId = GetManifestId(request);
         var label = GetManifestLabel(parsedNamedQuery);
         var manifest =
             await manifestBuilder.GenerateV2Manifest(results, customerPathElement, manifestId, label, sequenceRootUrl,
@@ -70,7 +70,7 @@ public class IIIFNamedQueryProjector
         CustomerPathElement customerPathElement, List<Asset> results, HttpRequest request,
         CancellationToken cancellationToken)
     {
-        var manifestId = request.GetDisplayUrl();
+        var manifestId = GetManifestId(request);
         var label = GetManifestLabel(parsedNamedQuery);
         var manifest =
             await manifestBuilder.GenerateV3Manifest(results, customerPathElement, manifestId, label,
@@ -78,6 +78,9 @@ public class IIIFNamedQueryProjector
         
         return manifest;
     }
+
+    private static string GetManifestId(HttpRequest request) =>
+        request.GetDisplayUrl(request.Path.Value, includeQueryParams: false);
 
     private static string GetManifestLabel(IIIFParsedNamedQuery parsedNamedQuery)
         => $"Generated from '{parsedNamedQuery.NamedQueryName}' named query";

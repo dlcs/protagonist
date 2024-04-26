@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Tests.Integration.Infrastructure;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using IIIF3 = IIIF.Presentation.V3;
 
@@ -125,7 +126,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_NotForDelivery_Returns404()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_NotForDelivery_Returns404)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true);
         await dbFixture.DbContext.SaveChangesAsync();
             
@@ -144,7 +145,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_NonImage_Returns404(AssetFamily family)
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_NonImage_Returns404)}:{family}");
+        var id = AssetIdGenerator.GetAssetId(assetPostfix: $":{family}");
         await dbFixture.DbContext.Images.AddTestAsset(id, family: family);
         await dbFixture.DbContext.SaveChangesAsync();
             
@@ -161,7 +162,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_ManifestForImage_ReturnsManifest_CustomPathRules_Ignored()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest_CustomPathRules_Ignored)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
             
@@ -185,10 +186,37 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     }
     
     [Fact]
+    public async Task Get_ManifestForImage_ReturnsManifest_IdIgnoresQueryString()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.SaveChangesAsync();
+            
+        var path = $"iiif-manifest/v2/{id}";
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"{path}?foo=bar");
+        request.Headers.Add("Host", "my-proxy.com");
+        var response = await httpClient.SendAsync(request);
+            
+        // Assert
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+        jsonResponse["@id"].ToString().Should().Be($"http://my-proxy.com/iiif-manifest/v2/{id}");
+        jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
+            .Should().StartWith($"http://my-proxy.com/thumbs/{id}/full");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+    }
+    
+    [Fact]
     public async Task Get_ManifestForImage_ReturnsManifest()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
             
@@ -213,7 +241,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_V2ManifestForImage_ReturnsManifest_FromMetadata()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels)
             .WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
@@ -239,7 +267,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_V2ManifestForImage_ReturnsManifestNoThumbnails_WhenNoThumbsChannel()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin").WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
             
@@ -263,7 +291,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_ManifestForImage_ReturnsManifest_ByName()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest_ByName)}");
+        var id = AssetIdGenerator.GetAssetId();
         var namedId = $"test/1/{nameof(Get_ManifestForImage_ReturnsManifest_ByName)}";
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
@@ -290,7 +318,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         const string defaultLanguage = "none"; 
-        var id = AssetId.FromString($"99/1/{nameof(Get_V3ManifestForImage_ReturnsManifest_WithCustomFields)}");
+        var id = AssetIdGenerator.GetAssetId();
         var namedId = $"test/1/{nameof(Get_V3ManifestForImage_ReturnsManifest_WithCustomFields)}";
         var asset = await dbFixture.DbContext.Images.AddTestAsset(id, 
             origin: "testorigin",
@@ -330,7 +358,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_V3ManifestForImage_ReturnsManifest_FromMetadata()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels)
             .WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
@@ -356,7 +384,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_V3ManifestForImage_ReturnsManifestNoThumbnails_WhenNoThumbsChannel()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ManifestForImage_ReturnsManifest)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin").WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
             
@@ -380,7 +408,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_V2ManifestForImage_ReturnsManifest_WithCustomFields()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_V2ManifestForImage_ReturnsManifest_WithCustomFields)}");
+        var id = AssetIdGenerator.GetAssetId();
         var namedId = $"test/1/{nameof(Get_V2ManifestForImage_ReturnsManifest_WithCustomFields)}";
         var asset = await dbFixture.DbContext.Images.AddTestAsset(id, 
             origin: "testorigin",
@@ -420,7 +448,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_V2ManifestForRestrictedImage_ReturnsManifest_WithoutAuthServices()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_V2ManifestForRestrictedImage_ReturnsManifest_WithoutAuthServices)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 400,
             origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
@@ -451,7 +479,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_ReturnsV2Manifest_ViaConneg()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ReturnsV2Manifest_ViaConneg)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"iiif-manifest/{id}";
@@ -478,7 +506,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_ReturnsV2Manifest_ViaDirectPath()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ReturnsV2Manifest_ViaDirectPath)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"iiif-manifest/v2/{id}";
@@ -502,7 +530,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_ReturnsV3Manifest_ViaConneg()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ReturnsV3Manifest_ViaConneg)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"iiif-manifest/{id}";
@@ -529,7 +557,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_ReturnsV3Manifest_ViaDirectPath()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ReturnsV3Manifest_ViaDirectPath)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"iiif-manifest/{id}";
@@ -553,7 +581,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_ReturnsV3ManifestWithCorrectItemCount_AsCanonical()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ReturnsV3ManifestWithCorrectItemCount_AsCanonical)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"iiif-manifest/{id}";
@@ -576,7 +604,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_ReturnsMultipleImageServices()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_ReturnsMultipleImageServices)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"iiif-manifest/{id}";
@@ -603,7 +631,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     public async Task Get_V3ManifestForRestrictedImage_ReturnsManifest_WithAuthServices()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_V3ManifestForRestrictedImage_ReturnsManifest_WithAuthServices)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 400,
             origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
