@@ -40,7 +40,6 @@ public class TranscodedNotification
     /// <summary>
     /// The code of any error that occurred
     /// </summary>
-    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
     public int? ErrorCode { get; set; }
     
     /// <summary>

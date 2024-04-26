@@ -16,7 +16,7 @@ public class TranscodeCompleteHandler : IMessageHandler
     private readonly ILogger<TranscodeCompleteHandler> logger;
     private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web)
     {
-       NumberHandling = JsonNumberHandling.WriteAsString
+       NumberHandling = JsonNumberHandling.AllowReadingFromString
     };
 
     public TranscodeCompleteHandler(
