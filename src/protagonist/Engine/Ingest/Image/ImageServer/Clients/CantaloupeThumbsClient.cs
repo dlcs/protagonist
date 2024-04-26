@@ -61,7 +61,7 @@ public class CantaloupeThumbsClient : IThumbsClient
 
     private async Task<ImageOnDisk?> GenerateSingleThumbnail(string thumbFolder,
         string convertedS3Location, string size, AssetId assetId, int count, List<ImageOnDisk> thumbsResponse,
-        Size imageSize, bool retry, CancellationToken cancellationToken)
+        Size imageSize, bool shouldRetry, CancellationToken cancellationToken)
     {
         using var response =
             await cantaloupeClient.GetAsync(
@@ -76,7 +76,7 @@ public class CantaloupeThumbsClient : IThumbsClient
 
         if (response.IsSuccessStatusCode)
         {
-            return await SaveImageToDisk(response, size, thumbFolder, count, retry, convertedS3Location,
+            return await SaveImageToDisk(response, size, thumbFolder, count, shouldRetry, convertedS3Location,
                 assetId, thumbsResponse, imageSize, cancellationToken);
         }
 
@@ -85,7 +85,7 @@ public class CantaloupeThumbsClient : IThumbsClient
     }
 
     private async Task<ImageOnDisk> SaveImageToDisk(HttpResponseMessage response, string size, string thumbFolder,
-        int count, bool retry, string convertedS3Location, AssetId assetId, List<ImageOnDisk> thumbsResponse,
+        int count, bool shouldRetry, string convertedS3Location, AssetId assetId, List<ImageOnDisk> thumbsResponse,
         Size imageSize, CancellationToken cancellationToken)
     {
         await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -99,9 +99,9 @@ public class CantaloupeThumbsClient : IThumbsClient
 
         return (imageOnDisk switch
         {
-            null when retry => await GenerateSingleThumbnail(thumbFolder, convertedS3Location, size, assetId, count,
+            null when shouldRetry => await GenerateSingleThumbnail(thumbFolder, convertedS3Location, size, assetId, count,
                 thumbsResponse, imageSize, false, cancellationToken),
-            null when !retry => throw new InvalidOperationException("Failed to retrieve image on disk"),
+            null when !shouldRetry => throw new InvalidOperationException("Failed to measure image on disk"),
             _ => imageOnDisk
         })!;
     }
