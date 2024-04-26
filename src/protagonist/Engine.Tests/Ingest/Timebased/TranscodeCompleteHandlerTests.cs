@@ -110,4 +110,23 @@ public class TranscodeCompleteHandlerTests
         // Assert
         result.Should().BeTrue();
     }
+    
+    [Fact]
+    public async Task HandleMessage_ReturnsFalse_FromErrorMessage()
+    {
+        // Arrange
+        const string fileName = "ElasticTranscoderErrorNotification.json";
+        var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Samples", fileName);
+
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonObject.Parse(System.IO.File.OpenRead(filePath)).AsObject()
+        };
+        
+        var cancellationToken = CancellationToken.None;
+        var result = await sut.HandleMessage(queueMessage, cancellationToken);
+            
+        // Assert
+        result.Should().BeFalse();
+    }
 }
