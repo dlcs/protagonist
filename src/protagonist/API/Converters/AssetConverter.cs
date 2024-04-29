@@ -420,10 +420,15 @@ public static class AssetConverter
 
         return assetFilter;
     }
-
+    
     /// <summary>
     /// Converts ImageDeliveryChannels into the old format (WcDeliveryChannels)
     /// </summary>
     private static string[] ConvertImageDeliveryChannelsToWc(ICollection<ImageDeliveryChannel> imageDeliveryChannels)
-        => imageDeliveryChannels.Select(dc => dc.Channel).ToArray();
+    {
+        return imageDeliveryChannels.Select(dc => dc.Channel)
+            // The thumbs channel should not be included when emulating the old delivery channel format
+            .Where(dc => dc != AssetDeliveryChannels.Thumbnails) 
+            .ToArray();
+    }
 }

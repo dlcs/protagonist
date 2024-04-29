@@ -25,31 +25,42 @@ public class OldHydraDeliveryChannelsConverter
         
         foreach (var wcDeliveryChannel in hydraImage.WcDeliveryChannels)
         {
-            var matchedDeliveryChannel = wcDeliveryChannel switch
+            var matchedDeliveryChannels = wcDeliveryChannel switch
             {
-                AssetDeliveryChannels.Image => new DeliveryChannel()
-                {
-                    Channel = AssetDeliveryChannels.Image,
-                    Policy = hydraImage.ImageOptimisationPolicy == ImageUseOriginalPolicy
-                        ? ImageUseOriginalPolicy
-                        : ImageDefaultPolicy
+                AssetDeliveryChannels.Image => new List<DeliveryChannel>(){ 
+                    new() 
+                    {
+                        Channel = AssetDeliveryChannels.Image,
+                        Policy = hydraImage.ImageOptimisationPolicy == ImageUseOriginalPolicy
+                            ? ImageUseOriginalPolicy
+                            : ImageDefaultPolicy 
+                    },
+                    new() 
+                    {
+                        Channel = AssetDeliveryChannels.Thumbnails
+                    },
                 },
-                AssetDeliveryChannels.File => new DeliveryChannel()
+                AssetDeliveryChannels.File => new List<DeliveryChannel>()
                 {
-                    Channel = AssetDeliveryChannels.File,
-                    Policy = FileNonePolicy
+                    new()
+                    {
+                        Channel = AssetDeliveryChannels.File,
+                        Policy = FileNonePolicy
+                    }
                 },
-                AssetDeliveryChannels.Thumbnails or
-                AssetDeliveryChannels.Timebased => new DeliveryChannel()
-                {
-                    Channel = wcDeliveryChannel,
+                AssetDeliveryChannels.Timebased => new List<DeliveryChannel>()
+                { 
+                    new()
+                    {
+                        Channel = wcDeliveryChannel,
+                    }
                 },
                 _ => null
             };
             
-            if (matchedDeliveryChannel != null)
+            if (matchedDeliveryChannels != null)
             {
-                convertedDeliveryChannels.Add(matchedDeliveryChannel);
+                convertedDeliveryChannels.AddRange(matchedDeliveryChannels);
             }
         }
         
