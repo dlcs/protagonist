@@ -71,7 +71,7 @@ This becomes an issue when a delivery channel is changed away from a specific po
   - `info.json` needs regenerated
   - NQ derivatives (like pdf/zip) need to be removed
 - thumbs removed
-  - thumbs derivatives need to be removed
+  - thumbs derivatives need to be removed (i.e. thumbnails and `s.json`)
   - asset metadata for thumbs removed in database
 - iiif-av removed
   - timebased derivative removed
@@ -93,7 +93,7 @@ This is that the delivery channel stays the same, but the id of the policy has c
   - if it moves to a `use-original` policy, is there a need to remove the asset as well?
 - thumbs changed
   - thumbs need to be removed that are no longer required.
-  - s.json and asset application metadata should be updated
+  - `s.json` and asset application metadata should be updated - `s.json` should be updated by the reingest
 - iiif-av changed
   - old transcode derivative if the file extension changes?
 - file changed
@@ -113,7 +113,7 @@ The policy data being updated can be found from the date that the delivery chann
   - if it moves to a `use-original` policy, is there a need to remove the asset as well?
 - thumbs changed
   - thumbs need to be removed that are no longer required.
-  - s.json and asset application metadata should be updated
+  - `s.json` and asset application metadata should be updated - `s.json` should be updated by the reingest
 - iiif-av changed
   - old transcode derivative if the file extension changes?
 - file changed
