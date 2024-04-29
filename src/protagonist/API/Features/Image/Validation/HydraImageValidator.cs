@@ -69,9 +69,9 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .WithMessage("'channel' must be specified when supplying delivery channels to an asset");
             
         RuleForEach(a => a.DeliveryChannels)
-            .Must((a, c) => AssetDeliveryChannels.IsChannelValidForMediaType(c.Channel, a.MediaType!))
+            .Must((a, c) => DeliveryChannelIsValidForMediaType(c.Channel, a.MediaType!))
             .When(a => !string.IsNullOrEmpty(a.MediaType))
-            .WithMessage((a,c) => $"'{c.Channel}' is not a valid delivery channel for asset of type \"{a.MediaType}\"");
+            .WithMessage((a,c) => $"'{c.Channel}' is not a valid delivery channel for asset of type '{a.MediaType}'");
     
         RuleForEach(a => a.DeliveryChannels)
             .Must((a, c) => a.DeliveryChannels!.Count(dc => dc.Channel == c.Channel) <= 1)
@@ -110,5 +110,17 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .When(a => !a.WcDeliveryChannels!.Contains(AssetDeliveryChannels.Image))
             .WithMessage(
                 $"ImageOptimisationPolicy '{KnownImageOptimisationPolicy.UseOriginalId}' only valid for image delivery-channel");
+    }
+
+    private bool DeliveryChannelIsValidForMediaType(string channel, string mediaType)
+    {
+        try
+        {
+            return AssetDeliveryChannels.IsChannelValidForMediaType(channel, mediaType);
+        }
+        catch(ArgumentOutOfRangeException)
+        {
+            return false;
+        }
     }
 }
