@@ -26,6 +26,7 @@ namespace API.Features.Image;
 [ApiController]
 public class ImagesController : HydraController
 {
+    private readonly ApiSettings apiSettings;
     private readonly ILogger<ImagesController> logger;
 
     /// <inheritdoc />
@@ -35,6 +36,7 @@ public class ImagesController : HydraController
         ILogger<ImagesController> logger) : base(options.Value, mediator)
     {
         this.logger = logger;
+        apiSettings = options.Value;
     }
     
     /// <summary>
@@ -74,7 +76,7 @@ public class ImagesController : HydraController
         var imagesRequest = new GetSpaceImages(spaceId, customerId, assetFilter);
         return await HandlePagedFetch<Asset, GetSpaceImages, DLCS.HydraModel.Image>(
             imagesRequest,
-            image => image.ToHydra(GetUrlRoots()),
+            image => image.ToHydra(GetUrlRoots(), apiSettings.EmulateOldDeliveryChannelProperties),
             errorTitle: "Get Space Images failed",
             cancellationToken: cancellationToken
         );
@@ -159,7 +161,7 @@ public class ImagesController : HydraController
         var output = new HydraCollection<DLCS.HydraModel.Image>
         {
             WithContext = true,
-            Members = patchedAssets.Select(a => a.ToHydra(urlRoots)).ToArray(),
+            Members = patchedAssets.Select(a => a.ToHydra(urlRoots, apiSettings.EmulateOldDeliveryChannelProperties)).ToArray(),
             TotalItems = patchedAssets.Count,
             Id = Request.GetDisplayUrl() + "?patch_" + Guid.NewGuid()
         };

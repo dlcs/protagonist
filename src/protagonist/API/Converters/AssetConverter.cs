@@ -22,8 +22,9 @@ public static class AssetConverter
     /// </summary>
     /// <param name="dbAsset"></param>
     /// <param name="urlRoots">The domain name of the API and orchestrator applications</param>
+    /// <param name="emulateWcDeliveryChannels">Includes delivery channels in the old format in the returned model</param>
     /// <returns></returns>
-    public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots)
+    public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots, bool emulateWcDeliveryChannels = false)
     {
         if (dbAsset.Id.Customer != dbAsset.Customer || dbAsset.Id.Space != dbAsset.Space)
         {
@@ -86,7 +87,10 @@ public static class AssetConverter
                         ? c.DeliveryChannelPolicy.Name
                         : $"{urlRoots.BaseUrl}/customers/{c.DeliveryChannelPolicy.Customer}/deliveryChannelPolicies/{c.Channel}/{c.DeliveryChannelPolicy.Name}"
                 }).ToArray();
-            image.WcDeliveryChannels = ConvertImageDeliveryChannelsToWc(dbAsset.ImageDeliveryChannels);
+            if (emulateWcDeliveryChannels)
+            {
+                image.WcDeliveryChannels = ConvertImageDeliveryChannelsToWc(dbAsset.ImageDeliveryChannels);
+            }
         }
         else
         {
