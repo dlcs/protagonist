@@ -26,6 +26,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using AssetFamily = DLCS.Model.Assets.AssetFamily;
@@ -279,7 +280,32 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
     }
-    
+
+    [Fact]
+    public async Task Put_NewImageAsset_BadRequest_WhenDeliveryChannelInvalid()
+    {
+        // arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/my-image.png"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/png"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"":""bad-delivery-channel"",
+                ""policy"":""default""
+            }}]
+        }}";  
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     [Theory]
     [InlineData("T", "video/mp4", "mp4",  "iiif-img")]
     [InlineData("T", "video/mp4", "mp4", "thumbs")]
