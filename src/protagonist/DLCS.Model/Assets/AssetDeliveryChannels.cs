@@ -54,7 +54,7 @@ public static class AssetDeliveryChannels
     /// <summary>
     /// Checks if a delivery channel is valid for a given media type
     /// </summary>
-    public static bool IsChannelValidForMediaType(string deliveryChannel, string mediaType) 
+    public static bool IsChannelValidForMediaType(string deliveryChannel, string mediaType, bool throwIfChannelUnknown = true) 
         => deliveryChannel switch 
         { 
             Image => mediaType.StartsWith("image/"),
@@ -62,8 +62,9 @@ public static class AssetDeliveryChannels
             Timebased => mediaType.StartsWith("video/") || mediaType.StartsWith("audio/"),
             File => true, // A file can be matched to any media type
             None => true, // Likewise for the 'none' channel
-            _ => throw new ArgumentOutOfRangeException(nameof(deliveryChannel), deliveryChannel,
-                $"Acceptable delivery-channels are: {AllString}")
+            _ when throwIfChannelUnknown => throw new ArgumentOutOfRangeException(nameof(deliveryChannel), deliveryChannel,
+                $"Acceptable delivery-channels are: {AllString}"),
+            _ => false,
         };
 }
 
