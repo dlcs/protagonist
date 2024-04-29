@@ -26,6 +26,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using AssetFamily = DLCS.Model.Assets.AssetFamily;
@@ -284,7 +285,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Put_NewImageAsset_BadRequest_WhenDeliveryChannelInvalid()
     {
         // arrange
-        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_BadRequest_WhenDeliveryChannelInvalid));
+        var assetId = AssetIdGenerator.GetAssetId();
         var hydraImageBody = $@"{{
             ""@type"": ""Image"",
             ""origin"": ""https://example.org/my-image.png"",
