@@ -80,8 +80,8 @@ public class CustomerQueueWithOldDeliveryChannelEmulationTests : IClassFixture<P
             .SingleAsync(a => a.Customer == customerId && a.Space == space);
         
         assetInDatabase.ImageDeliveryChannels.Should().Satisfy(
-            dc => dc.Channel == "iiif-img" &&
-                  dc.DeliveryChannelPolicy.Name == "default");
+            dc => dc.Channel == "iiif-img" && dc.DeliveryChannelPolicy.Name == "default",
+                  dc => dc.Channel == "thumbs" && dc.DeliveryChannelPolicy.Name == "default");
     }
     
     [Fact]
@@ -121,48 +121,8 @@ public class CustomerQueueWithOldDeliveryChannelEmulationTests : IClassFixture<P
             .SingleAsync(a => a.Customer == customerId && a.Space == space);
         
         assetInDatabase.ImageDeliveryChannels.Should().Satisfy(
-            dc => dc.Channel == "iiif-img" &&
-                  dc.DeliveryChannelPolicy.Name == "use-original");
-    }
-    
-    [Fact]
-    public async Task Post_CreateBatch_201_SupportsOldDeliveryChannelEmulation_ForThumbsChannel()
-    {
-        const int customerId = 99;
-        const int space = 1;
-        
-        // Arrange
-        var hydraImageBody = $@"{{
-            ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
-            ""@type"": ""Collection"",
-            ""member"": [
-                {{
-                  ""id"": ""{nameof(Post_CreateBatch_201_SupportsOldDeliveryChannelEmulation_ForThumbsChannel)}"",
-                  ""origin"": ""https://example.org/img.tiff"",
-                  ""space"": 1,
-                  ""family"": ""I"",
-                  ""mediaType"": ""image/tiff"",
-                  ""wcDeliveryChannels"": [""thumbs""]
-                }}
-            ]
-        }}";
-
-        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var path = $"/customers/{customerId}/queue";
-
-        // Act
-        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
-        
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        var assetInDatabase = await dbContext.Images
-            .IncludeDeliveryChannelsWithPolicy()
-            .SingleAsync(a => a.Customer == customerId && a.Space == space);
-        
-        assetInDatabase.ImageDeliveryChannels.Should().Satisfy(
-            dc => dc.Channel == "thumbs" &&
-                  dc.DeliveryChannelPolicy.Name == "default");
+            dc => dc.Channel == "iiif-img" && dc.DeliveryChannelPolicy.Name == "use-original",
+            dc => dc.Channel == "thumbs" && dc.DeliveryChannelPolicy.Name == "default");
     }
     
     [Fact]
@@ -297,12 +257,12 @@ public class CustomerQueueWithOldDeliveryChannelEmulationTests : IClassFixture<P
             ""@type"": ""Collection"",
             ""member"": [
                 {{
-                  ""id"": ""{nameof(Post_CreateBatch_201_SupportsOldDeliveryChannelEmulation_ForThumbsChannel)}"",
+                  ""id"": ""{nameof(Post_CreateBatch_201_SupportsOldDeliveryChannelEmulation_ForMultipleChannels)}"",
                   ""origin"": ""https://example.org/img.tiff"",
                   ""space"": 1,
                   ""family"": ""I"",
                   ""mediaType"": ""image/tiff"",
-                  ""wcDeliveryChannels"": [""iiif-img"",""thumbs"",""file""]
+                  ""wcDeliveryChannels"": [""iiif-img"",""file""]
                 }}
             ]
         }}";

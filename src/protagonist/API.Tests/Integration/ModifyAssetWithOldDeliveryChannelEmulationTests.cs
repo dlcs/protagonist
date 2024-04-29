@@ -170,8 +170,8 @@ public class ModifyAssetWithOldDeliveryChannelEmulationTests : IClassFixture<Pro
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
             .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(x => x.Id == assetId);
         asset.ImageDeliveryChannels.Should().Satisfy(
-            dc => dc.Channel == "iiif-img" &&
-                  dc.DeliveryChannelPolicy.Name == "default");
+            dc => dc.Channel == "iiif-img" && dc.DeliveryChannelPolicy.Name == "default",
+            dc => dc.Channel == "thumbs" && dc.DeliveryChannelPolicy.Name == "default");
     }
     
     [Fact]
@@ -203,8 +203,8 @@ public class ModifyAssetWithOldDeliveryChannelEmulationTests : IClassFixture<Pro
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
             .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(x => x.Id == assetId);
         asset.ImageDeliveryChannels.Should().Satisfy(
-            dc => dc.Channel == "iiif-img" &&
-                  dc.DeliveryChannelPolicy.Name == "use-original");
+            dc => dc.Channel == "iiif-img" && dc.DeliveryChannelPolicy.Name == "use-original",
+            dc => dc.Channel == "thumbs" && dc.DeliveryChannelPolicy.Name == "default");
     }
     
     [Fact]
@@ -408,8 +408,8 @@ public class ModifyAssetWithOldDeliveryChannelEmulationTests : IClassFixture<Pro
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
             .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(x => x.Id == assetId);
         asset.ImageDeliveryChannels.Should().Satisfy(
-            dc => dc.Channel == "iiif-img" &&
-                  dc.DeliveryChannelPolicy.Name == "default");
+            dc => dc.Channel == "iiif-img" && dc.DeliveryChannelPolicy.Name == "default",
+            dc => dc.Channel == "thumbs" && dc.DeliveryChannelPolicy.Name == "default");
     }
     
     [Fact]
@@ -441,8 +441,8 @@ public class ModifyAssetWithOldDeliveryChannelEmulationTests : IClassFixture<Pro
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
             .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(x => x.Id == assetId);
         asset.ImageDeliveryChannels.Should().Satisfy(
-            dc => dc.Channel == "iiif-img" &&
-                  dc.DeliveryChannelPolicy.Name == "use-original");
+            dc => dc.Channel == "iiif-img" && dc.DeliveryChannelPolicy.Name == "use-original",
+            dc => dc.Channel == "thumbs" && dc.DeliveryChannelPolicy.Name == "default");
     }
     
     [Fact]
