@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Core.Collections;
@@ -41,12 +40,12 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithLocalStack(orchestratorFixture.LocalStackFixture)
-            .WithTestServices(services => 
+            .WithTestServices(services =>
                 services.AddScoped<IProjectionCreator<PdfParsedNamedQuery>>(_ => pdfCreator))
-            .CreateClient(new WebApplicationFactoryClientOptions {AllowAutoRedirect = false});
-            
+            .CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
         dbFixture.CleanUp();
-            
+
         dbFixture.DbContext.NamedQueries.Add(new NamedQuery
         {
             Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "test-pdf",
@@ -92,11 +91,11 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-        
+
     [Fact]
     public async Task GetPdf_Returns404_IfNQNotFound()
     {
@@ -105,11 +104,11 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-        
+
     [Fact]
     public async Task GetPdf_Returns400_IfParametersIncorrect()
     {
@@ -118,7 +117,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -131,11 +130,11 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-        
+
     [Fact]
     public async Task GetPdf_Returns202_WithRetryAfter_IfPdfInProcess()
     {
@@ -146,12 +145,12 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
         response.Headers.Should().ContainKey("Retry-After");
     }
-        
+
     [Fact]
     public async Task GetPdf_Returns200_WithExistingPdf_IfPdfControlFileAndPdfExist()
     {
@@ -164,13 +163,13 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Be(fakePdfContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/pdf"));
     }
-        
+
     [Fact]
     public async Task GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt()
     {
@@ -178,7 +177,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var fakePdfContent = nameof(GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
         const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/2/tester";
         const string path = "pdf/99/test-pdf/my-ref/1/2";
-            
+
         await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/2/tester.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
         pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
@@ -189,13 +188,13 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Be(fakePdfContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/pdf"));
     }
-        
+
     [Fact]
     public async Task GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileStale()
     {
@@ -205,7 +204,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         const string path = "pdf/99/test-pdf/my-ref/1/3";
         await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/3/tester.json",
             new ControlFile { Created = DateTime.UtcNow.AddHours(-1), InProcess = false });
-            
+
         pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
         {
             AddPdf(pdfStorageKey, fakePdfContent).Wait();
@@ -214,14 +213,14 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Be(fakePdfContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/pdf"));
     }
-    
+
     [Fact]
     public async Task GetPdf_Returns401_IfControlFileFound_HasRoles_UserCannotAccess()
     {
@@ -233,14 +232,14 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 Created = DateTime.UtcNow.AddHours(-1), InProcess = false,
                 Roles = new List<string> { "whitelisted-role" }
             });
-        
+
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
-    
+
     [Fact]
     public async Task GetPdf_Returns200_WithPdf_IfControlFileFound_HasRoles_AndUserCanAccess()
     {
@@ -265,19 +264,19 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
             cf.Roles = new List<string> { "clickthrough" };
             return cf;
         });
-        
+
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
                 DlcsDatabaseFixture.ClickThroughAuthService.AsList());
         var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddMinutes(15),
             sessionUserId: userSession.Entity.Id);
         await dbFixture.DbContext.SaveChangesAsync();
-        
+
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, path);
         request.Headers.Add("Cookie", $"dlcs-token-99=id={authToken.Entity.CookieId};");
         var response = await httpClient.SendAsync(request);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.CacheControl.Public.Should().BeFalse();
@@ -291,35 +290,35 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         const string path = "pdf/99/test-pdf/my-ref/1/4";
         const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/4/tester";
-            
+
         await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/4/tester.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
-            
+
         // return True but don't create object
         pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) => true);
-            
+
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }
-        
+
     [Fact]
     public async Task GetPdf_Returns500_IfPdfCreatorUnsuccessful()
     {
         // Arrange
         const string path = "pdf/99/test-pdf/my-ref/1/5";
         const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/5/tester";
-            
+
         await AddPdfControlFile("99/test-pdf/my-ref/1/5/tester.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
-            
+
         pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) => false);
 
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }
@@ -354,10 +353,10 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         const string path = "pdf/99/ordered-pdf/possum";
         const string pdfStorageKey = "99/pdf/ordered-pdf/possum/tester";
-            
+
         await AddPdfControlFile("99/pdf/ordered-pdf/possum/tester.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
-            
+
         List<Asset> savedAssets = null;
         pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
         {
@@ -367,7 +366,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         await httpClient.GetAsync(path);
-            
+
         // Assert
         savedAssets.Select(s => s.Id).Should().BeEquivalentTo(expectedOrder);
     }
@@ -380,11 +379,11 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-        
+
     [Fact]
     public async Task GetPdfControlFile_Returns404_IfNQNotFound()
     {
@@ -393,11 +392,11 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-        
+
     [Fact]
     public async Task GetPdfControlFile_Returns404_IfParametersIncorrect()
     {
@@ -406,7 +405,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -422,10 +421,10 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
             SizeBytes = 0, Roles = new List<string>(0), PageCount = null
         };
         var pdfControlFileJson = JsonConvert.SerializeObject(pdfControlFile);
-            
+
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Be(pdfControlFileJson);
@@ -443,19 +442,19 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
             SizeBytes = 1024
         };
         await AddPdfControlFile("99/pdf/test-pdf/any-ref/1/5/tester.json", pdfControlFile);
-            
+
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/json"));
-        
+
         var deserialized = JsonConvert.DeserializeObject<PdfControlFile>(await response.Content.ReadAsStringAsync());
         deserialized.Should().BeEquivalentTo(pdfControlFile, opts => opts.Excluding(cf => cf.PageCount));
         deserialized.PageCount.Should().Be(100, "PageCount defaulted from ItemCount if not in JSON");
     }
-    
+
     [Fact]
     public async Task GetPdfControlFile_Returns200_AndControlFile_IfFound_AndInLegacyFormat()
     {
@@ -473,14 +472,14 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }";
 
         await AddPdfControlFile("99/pdf/test-pdf/any-ref/1/5/tester.json", controlFile);
-            
+
         // Act
         var response = await httpClient.GetAsync(path);
-            
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/json"));
-        
+
         var deserialized = JsonConvert.DeserializeObject<PdfControlFile>(await response.Content.ReadAsStringAsync());
         deserialized.Created.Should().BeCloseTo(new DateTime(2021, 7, 11), TimeSpan.FromHours(6));
         deserialized.InProcess.Should().BeFalse();
@@ -491,59 +490,27 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         deserialized.PageCount.Should().Be(172);
     }
 
-    private Task AddPdfControlFile(string key, ControlFile controlFile) 
+    private Task AddPdfControlFile(string key, ControlFile controlFile)
         => amazonS3.PutObjectAsync(new PutObjectRequest
         {
             Key = key,
             BucketName = LocalStackFixture.OutputBucketName,
             ContentBody = JsonConvert.SerializeObject(controlFile)
         });
-    
-    private Task AddPdfControlFile(string key, string controlFile) 
+
+    private Task AddPdfControlFile(string key, string controlFile)
         => amazonS3.PutObjectAsync(new PutObjectRequest
         {
             Key = key,
             BucketName = LocalStackFixture.OutputBucketName,
             ContentBody = controlFile
         });
-        
-    private Task AddPdf(string key, string fakeContent) 
+
+    private Task AddPdf(string key, string fakeContent)
         => amazonS3.PutObjectAsync(new PutObjectRequest
         {
             Key = key,
             BucketName = LocalStackFixture.OutputBucketName,
             ContentBody = fakeContent
         });
-        
-    /// <summary>
-    /// Fake projection creator that handles configured callbacks for when ParsedNamedQuery is persisted.
-    /// Also optional callback for when ControlFile is created during persistence.
-    /// </summary>
-    private class FakePdfCreator : IProjectionCreator<PdfParsedNamedQuery>
-    {
-        private static readonly Dictionary<string, Func<ParsedNamedQuery, List<Asset>, bool>> Callbacks = new();
-        
-        private static readonly Dictionary<string, Func<ControlFile, ControlFile>> ControlFileCallbacks = new();
-        
-        public void AddCallbackFor(string pdfKey, Func<ParsedNamedQuery, List<Asset>, bool> callback)
-            => Callbacks.Add(pdfKey, callback);
-
-        public void AddCallbackFor(string pdfKey, Func<ControlFile, ControlFile> callback)
-            => ControlFileCallbacks.Add(pdfKey, callback);
-
-        public Task<(bool success, ControlFile controlFile)> PersistProjection(PdfParsedNamedQuery parsedNamedQuery,
-            List<Asset> images, CancellationToken cancellationToken = default)
-        {
-            if (Callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
-            {
-                var controlFileCallback = ControlFileCallbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cfcb)
-                    ? cfcb
-                    : file => file;
-
-                return Task.FromResult((cb(parsedNamedQuery, images), controlFileCallback(new ControlFile())));
-            }
-
-            throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");
-        }
-    }
 }
