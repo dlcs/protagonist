@@ -22,14 +22,14 @@ namespace Orchestrator.Tests.Integration;
 /// </summary>
 [Trait("Category", "Integration")]
 [Collection(StorageCollection.CollectionName)]
-public class PdfTestsNoAws : IClassFixture<ProtagonistAppFactory<Startup>>
+public class PdfTestsNoLocalstack : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
     private readonly FakePdfCreator pdfCreator = new();
     private readonly IBucketReader bucketReader;
 
-    public PdfTestsNoAws(ProtagonistAppFactory<Startup> factory, StorageFixture orchestratorFixture)
+    public PdfTestsNoLocalstack(ProtagonistAppFactory<Startup> factory, StorageFixture orchestratorFixture)
     {
         bucketReader = A.Fake<IBucketReader>();
 

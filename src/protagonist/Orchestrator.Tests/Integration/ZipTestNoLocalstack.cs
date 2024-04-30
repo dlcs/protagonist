@@ -21,14 +21,14 @@ namespace Orchestrator.Tests.Integration;
 /// </summary>
 [Trait("Category", "Integration")]
 [Collection(StorageCollection.CollectionName)]
-public class ZipTestNoAws : IClassFixture<ProtagonistAppFactory<Startup>>
+public class ZipTestNoLocalstack : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
     private readonly IBucketReader bucketReader;
     private readonly FakeZipCreator zipCreator = new();
     
-    public ZipTestNoAws(ProtagonistAppFactory<Startup> factory, StorageFixture orchestratorFixture)
+    public ZipTestNoLocalstack(ProtagonistAppFactory<Startup> factory, StorageFixture orchestratorFixture)
     {
         bucketReader = A.Fake<IBucketReader>();
 
