@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using DLCS.AWS.S3;
@@ -18,10 +17,12 @@ using Test.Helpers.Integration;
 namespace Orchestrator.Tests.Integration;
 
 /// <summary>
-/// Tests pdf requests that cannot be tested using localstack
+/// Tests pdf requests that cannot be tested using localstack.
+/// This is due to % characters outlined here - https://github.com/localstack/localstack/issues/9112
+/// This was tested with localstack version 3.4 and still found to be an issue, but should be revisited in the future.
 /// </summary>
 [Trait("Category", "Integration")]
-[Collection(StorageCollection.CollectionName)]
+[Collection(DatabaseCollection.CollectionName)]
 public class PdfTestsNoLocalstack : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsDatabaseFixture dbFixture;
@@ -29,11 +30,11 @@ public class PdfTestsNoLocalstack : IClassFixture<ProtagonistAppFactory<Startup>
     private readonly FakePdfCreator pdfCreator = new();
     private readonly IBucketReader bucketReader;
 
-    public PdfTestsNoLocalstack(ProtagonistAppFactory<Startup> factory, StorageFixture orchestratorFixture)
+    public PdfTestsNoLocalstack(DlcsDatabaseFixture databaseFixture, ProtagonistAppFactory<Startup> factory)
     {
         bucketReader = A.Fake<IBucketReader>();
 
-        dbFixture = orchestratorFixture.DbFixture;
+        dbFixture = databaseFixture;
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithTestServices(services =>
@@ -55,7 +56,7 @@ public class PdfTestsNoLocalstack : IClassFixture<ProtagonistAppFactory<Startup>
     }
 
     [Fact]
-    public async Task GetPdf_Returns200_WhenPathHasSlashes()
+    public async Task GetPdf_ReturnsPdf_WhenPathHasSlashes()
     {
         // Arrange
         const string path = "pdf/99/test-pdf/ref%2Fwith%2Fslashes/1/1";
@@ -77,7 +78,7 @@ public class PdfTestsNoLocalstack : IClassFixture<ProtagonistAppFactory<Startup>
         await httpClient.GetAsync(path);
 
         // Assert
-        savedAssets.Count().Should().Be(1);
+        savedAssets.Should().HaveCount(1);
         savedAssets[0].Id.Should().Be(AssetId.FromString("99/1/slashes-test"));
     }
 }

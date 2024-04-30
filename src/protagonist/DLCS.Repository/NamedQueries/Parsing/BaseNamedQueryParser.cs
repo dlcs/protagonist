@@ -175,7 +175,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         {
             if (args.Count >= argNumber)
             {
-                return args[argNumber - 1].Replace(PathReplacement, "/");
+                return args[argNumber - 1].Replace(PathReplacement, "/", StringComparison.OrdinalIgnoreCase);
             }
 
             throw new ArgumentOutOfRangeException(element,

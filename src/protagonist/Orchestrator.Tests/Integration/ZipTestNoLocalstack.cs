@@ -18,9 +18,11 @@ namespace Orchestrator.Tests.Integration;
 
 /// <summary>
 /// Tests zip requests that cannot be tested using localstack
+/// This is due to % characters outlined here - https://github.com/localstack/localstack/issues/9112
+/// This was tested with localstack version 3.4 and still found to be an issue, but should be revisited in the future.
 /// </summary>
 [Trait("Category", "Integration")]
-[Collection(StorageCollection.CollectionName)]
+[Collection(DatabaseCollection.CollectionName)]
 public class ZipTestNoLocalstack : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsDatabaseFixture dbFixture;
@@ -28,11 +30,11 @@ public class ZipTestNoLocalstack : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly IBucketReader bucketReader;
     private readonly FakeZipCreator zipCreator = new();
     
-    public ZipTestNoLocalstack(ProtagonistAppFactory<Startup> factory, StorageFixture orchestratorFixture)
+    public ZipTestNoLocalstack(DlcsDatabaseFixture databaseFixture, ProtagonistAppFactory<Startup> factory)
     {
         bucketReader = A.Fake<IBucketReader>();
 
-        dbFixture = orchestratorFixture.DbFixture;
+        dbFixture = databaseFixture;
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithTestServices(services =>
@@ -54,7 +56,7 @@ public class ZipTestNoLocalstack : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Getzip_Returns200_WhenPathHasSlashes()
+    public async Task GetZip_ReturnsZip_WhenPathHasSlashes()
     {
         // Arrange
         const string path = "zip/99/test-zip/ref%2Fwith%2Fslashes/1/1";
@@ -76,7 +78,7 @@ public class ZipTestNoLocalstack : IClassFixture<ProtagonistAppFactory<Startup>>
         await httpClient.GetAsync(path);
 
         // Assert
-        savedAssets.Count.Should().Be(1);
+        savedAssets.Should().HaveCount(1);
         savedAssets[0].Id.Should().Be(AssetId.FromString("99/1/slashes-test"));
     }
 }

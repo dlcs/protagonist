@@ -272,8 +272,10 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse.SelectToken("items").Count().Should().Be(3);
     }
     
-    [Fact]
-    public async Task Get_ReturnsManifestWithSlashes()
+    [Theory]
+    [InlineData("iiif-resource/99/manifest-slash-test/with%2Fforward%2Fslashes/1")]
+    [InlineData("iiif-resource/99/manifest-slash-test/with%2fforward%2fslashes/1")]
+    public async Task Get_ReturnsManifestWithSlashes(string path)
     {
         // Arrange
         dbFixture.DbContext.NamedQueries.Add(new NamedQuery
@@ -282,10 +284,9 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
             Template = "manifest=s1&canvas=n1&s1=p1&space=p2"
         });
 
-        await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/first"), num1: 1, ref1: "with/forward/slashes");;
+        await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/first"), num1: 1, ref1: "with/forward/slashes");
         await dbFixture.DbContext.SaveChangesAsync();
-        const string path = "iiif-resource/99/manifest-slash-test/with%2Fforward%2Fslashes/1";
-        
+
         // Act
         var response = await httpClient.GetAsync(path);
         
