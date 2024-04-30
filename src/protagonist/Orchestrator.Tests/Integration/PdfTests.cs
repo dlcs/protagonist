@@ -27,7 +27,7 @@ namespace Orchestrator.Tests.Integration;
 /// </summary>
 [Trait("Category", "Integration")]
 [Collection(StorageCollection.CollectionName)]
-public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
+public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
@@ -41,7 +41,8 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithLocalStack(orchestratorFixture.LocalStackFixture)
-            .WithTestServices(services => services.AddScoped<IProjectionCreator<PdfParsedNamedQuery>>(_ => pdfCreator))
+            .WithTestServices(services => 
+                services.AddScoped<IProjectionCreator<PdfParsedNamedQuery>>(_ => pdfCreator))
             .CreateClient(new WebApplicationFactoryClientOptions {AllowAutoRedirect = false});
             
         dbFixture.CleanUp();
@@ -322,11 +323,10 @@ public class PdfTests: IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }
-        
+
     [Fact]
     public async Task GetPdf_CorrectlyOrdersAssets()
     {
-        // Arrange
         // Arrange
         dbFixture.DbContext.NamedQueries.Add(new NamedQuery
         {

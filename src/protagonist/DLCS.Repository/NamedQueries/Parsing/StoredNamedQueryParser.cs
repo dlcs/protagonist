@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets.NamedQueries;
@@ -57,7 +59,10 @@ public abstract class StoredNamedQueryParser<T> : BaseNamedQueryParser<T>
         var key = GetTemplateFromSettings(namedQuerySettings)
             .Replace("{customer}", parsedNamedQuery.Customer.ToString())
             .Replace("{queryname}", parsedNamedQuery.NamedQueryName)
-            .Replace("{args}", string.Join("/", parsedNamedQuery.Args));
+            .Replace("{args}",
+                string.Join("/",
+                    parsedNamedQuery.Args.Select(
+                        x => x.Replace(PathReplacement, "/", StringComparison.OrdinalIgnoreCase))));
 
         if (parsedNamedQuery.ObjectName.HasText()) key += $"/{parsedNamedQuery.ObjectName}";
         if (isControlFile) key += ".json";

@@ -34,6 +34,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
     protected const string String2 = "s2";
     protected const string String3 = "s3";
     protected const string AssetOrdering = "assetOrder";
+    protected const string PathReplacement = "%2F";
 
     public BaseNamedQueryParser(ILogger logger)
     {
@@ -174,7 +175,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         {
             if (args.Count >= argNumber)
             {
-                return args[argNumber - 1];
+                return args[argNumber - 1].Replace(PathReplacement, "/");
             }
 
             throw new ArgumentOutOfRangeException(element,
