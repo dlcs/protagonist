@@ -74,7 +74,7 @@ public class ImagesController : HydraController
         var imagesRequest = new GetSpaceImages(spaceId, customerId, assetFilter);
         return await HandlePagedFetch<Asset, GetSpaceImages, DLCS.HydraModel.Image>(
             imagesRequest,
-            image => image.ToHydra(GetUrlRoots()),
+            image => image.ToHydra(GetUrlRoots(), Settings.EmulateOldDeliveryChannelProperties),
             errorTitle: "Get Space Images failed",
             cancellationToken: cancellationToken
         );
@@ -159,7 +159,7 @@ public class ImagesController : HydraController
         var output = new HydraCollection<DLCS.HydraModel.Image>
         {
             WithContext = true,
-            Members = patchedAssets.Select(a => a.ToHydra(urlRoots)).ToArray(),
+            Members = patchedAssets.Select(a => a.ToHydra(urlRoots, Settings.EmulateOldDeliveryChannelProperties)).ToArray(),
             TotalItems = patchedAssets.Count,
             Id = Request.GetDisplayUrl() + "?patch_" + Guid.NewGuid()
         };

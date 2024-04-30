@@ -32,7 +32,12 @@ public class OldHydraDeliveryChannelsConverterTests
             {
                 Channel = "iiif-img",
                 Policy = "default",
-            }
+            },
+            new()
+            {
+                Channel = "thumbs",
+                Policy = null,
+            },
         });
     }
     
@@ -56,6 +61,11 @@ public class OldHydraDeliveryChannelsConverterTests
             {
                 Channel = "iiif-img",
                 Policy = "use-original"
+            },
+            new()
+            {
+                Channel = "thumbs",
+                Policy = null,
             }
         });
     }

@@ -230,9 +230,9 @@ public class AssetConverterTests
             false, new []{' '});
         
         // Act
-        var hydraAsset = assetPreparationResult.UpdatedAsset!.ToHydra(dlcsAssetUrlRoot);
+        var hydraAsset = assetPreparationResult.UpdatedAsset!.ToHydra(dlcsAssetUrlRoot, true);
         
         // Assert
-        hydraAsset.WcDeliveryChannels.Should().BeEquivalentTo("iiif-img", "thumbs", "file");
+        hydraAsset.WcDeliveryChannels.Should().BeEquivalentTo("iiif-img", "file");
     }
 }

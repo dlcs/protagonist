@@ -23,7 +23,7 @@ public class CustomerImagesController : HydraController
     public CustomerImagesController(IOptions<ApiSettings> settings, IMediator mediator) : base(settings.Value, mediator)
     {
     }
-
+    
     /// <summary>
     /// Accepts a list of image identifiers, will return a list of matching images.
     ///
@@ -62,7 +62,7 @@ public class CustomerImagesController : HydraController
 
         return await HandleListFetch<Asset, GetMultipleImagesById, DLCS.HydraModel.Image>(
             request,
-            a => a.ToHydra(GetUrlRoots()),
+            a => a.ToHydra(GetUrlRoots(), Settings.EmulateOldDeliveryChannelProperties),
             "Get customer images failed",
             cancellationToken: cancellationToken);
     }

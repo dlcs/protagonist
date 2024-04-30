@@ -26,16 +26,17 @@ namespace API.Features.Image;
 [ApiController]
 public class ImageController : HydraController
 {
-    private readonly ApiSettings apiSettings;
     private readonly ILogger<ImagesController> logger;
+    private readonly OldHydraDeliveryChannelsConverter oldHydraDcConverter;
     
     public ImageController(
         IMediator mediator,
         IOptions<ApiSettings> options, 
-        ILogger<ImagesController> logger) : base(options.Value, mediator)
+        ILogger<ImagesController> logger,
+        OldHydraDeliveryChannelsConverter oldHydraDcConverter) : base(options.Value, mediator)
     {
         this.logger = logger;
-        apiSettings = options.Value;
+        this.oldHydraDcConverter = oldHydraDcConverter;
     }
 
     /// <summary>
@@ -53,7 +54,7 @@ public class ImageController : HydraController
         {
             return this.HydraNotFound();
         }
-        return Ok(dbImage.ToHydra(GetUrlRoots()));
+        return Ok(dbImage.ToHydra(GetUrlRoots(), Settings.EmulateOldDeliveryChannelProperties));
     }
 
     /// <summary>
@@ -95,21 +96,20 @@ public class ImageController : HydraController
         [FromRoute] string imageId,
         [FromBody] ImageWithFile hydraAsset,
         [FromServices] HydraImageValidator validator,
-        [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
-        if (apiSettings.LegacyModeEnabledForSpace(customerId, spaceId))
+        if (Settings.LegacyModeEnabledForSpace(customerId, spaceId))
         {
             hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
         }
         
-        if (apiSettings.EmulateOldDeliveryChannelProperties && 
+        if (Settings.EmulateOldDeliveryChannelProperties && 
             hydraAsset.WcDeliveryChannels != null)
         {
             hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
         }
         
-        if(!apiSettings.EmulateOldDeliveryChannelProperties &&
+        if(!Settings.EmulateOldDeliveryChannelProperties &&
            (hydraAsset.ImageOptimisationPolicy != null || hydraAsset.ThumbnailPolicy != null))
         {
             return this.HydraProblem("ImageOptimisationPolicy and ThumbnailPolicy are disabled", null,
@@ -169,24 +169,23 @@ public class ImageController : HydraController
         [FromRoute] string imageId,
         [FromBody] DLCS.HydraModel.Image hydraAsset,
         [FromServices] HydraImageValidator validator,
-        [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
         if (!hydraAsset.WcDeliveryChannels.IsNullOrEmpty())
         {
-            if (!apiSettings.DeliveryChannelsEnabled)
+            if (!Settings.DeliveryChannelsEnabled)
             {
                 var assetId = new AssetId(customerId, spaceId, imageId);
                 return this.HydraProblem("Delivery channels are disabled", assetId.ToString(), 400, "Bad Request");
             }
             
-            if (apiSettings.EmulateOldDeliveryChannelProperties)
+            if (Settings.EmulateOldDeliveryChannelProperties)
             {
                 hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
             }
         }
         
-        if(!apiSettings.EmulateOldDeliveryChannelProperties &&
+        if(!Settings.EmulateOldDeliveryChannelProperties &&
            (hydraAsset.ImageOptimisationPolicy != null || hydraAsset.ThumbnailPolicy != null))
         {
             return this.HydraProblem("ImageOptimisationPolicy and ThumbnailPolicy are disabled", null,
@@ -246,7 +245,7 @@ public class ImageController : HydraController
     {
         var reingestRequest = new ReingestAsset(customerId, spaceId, imageId);
         return HandleUpsert(reingestRequest, 
-            asset => asset.ToHydra(GetUrlRoots()), 
+            asset => asset.ToHydra(GetUrlRoots(), Settings.EmulateOldDeliveryChannelProperties), 
             reingestRequest.AssetId.ToString(),
             "Reingest Failed", cancellationToken);
     }
@@ -275,7 +274,6 @@ public class ImageController : HydraController
         [FromRoute] string imageId,
         [FromBody] ImageWithFile hydraAsset,
         [FromServices] HydraImageValidator validator,
-        [FromServices] OldHydraDeliveryChannelsConverter oldHydraDcConverter,
         CancellationToken cancellationToken)
     {
 
@@ -283,8 +281,7 @@ public class ImageController : HydraController
             "Warning: POST /customers/{CustomerId}/spaces/{SpaceId}/images/{ImageId} was called. This route is deprecated.",
             customerId, spaceId, imageId);
         
-
-        return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, oldHydraDcConverter, cancellationToken);
+        return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, cancellationToken);
     }
 
     /// <summary>
@@ -328,7 +325,7 @@ public class ImageController : HydraController
 
         return HandleUpsert(
             createOrUpdateRequest,
-            asset => asset.ToHydra(GetUrlRoots()),
+            asset => asset.ToHydra(GetUrlRoots(), Settings.EmulateOldDeliveryChannelProperties),
             assetId.ToString(),
             "Upsert asset failed", cancellationToken);
     }

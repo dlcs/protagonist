@@ -308,7 +308,7 @@ public class CustomerQueueController : HydraController
 
         return await HandlePagedFetch<Asset, GetBatchImages, DLCS.HydraModel.Image>(
             getCustomerRequest,
-            image => image.ToHydra(GetUrlRoots()),
+            image => image.ToHydra(GetUrlRoots(), apiSettings.EmulateOldDeliveryChannelProperties),
             errorTitle: "Get Batch Images failed",
             cancellationToken: cancellationToken
         );
