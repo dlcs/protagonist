@@ -9,6 +9,7 @@ using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.DeliveryChannels;
+using DLCS.Model.Policies;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
@@ -137,6 +138,44 @@ public static class DatabaseTestDataPopulation
                 DeliveryChannelPolicyId = x.DeliveryChannelPolicyId
             }));
 
+    public static Task AddTestCustomerDeliveryChannelPolicies(this DbSet<DeliveryChannelPolicy> deliveryChannelPolicies,
+        int customerId) =>
+        deliveryChannelPolicies.AddRangeAsync(
+            new DeliveryChannelPolicy()
+            {
+                Channel = "thumbs",
+                Created = DateTime.UtcNow,
+                Customer = customerId,
+                DisplayName = "A default thumbs policy", 
+                Modified = DateTime.UtcNow,
+                Name = "default",
+                PolicyData = "[\"!1024,1024\", \"!400,400\", \"!200,200\", \"!100,100\"]",
+                System = false
+            },
+            new DeliveryChannelPolicy()
+            {
+                Channel = "iiif-av",
+                Created = DateTime.UtcNow,
+                Customer = customerId,
+                DisplayName = "A default audio policy", 
+                Modified = DateTime.UtcNow,
+                Name = "default-audio",
+                PolicyData = "[\"audio-mp3-128\"]", 
+                System = false
+            },
+            new DeliveryChannelPolicy()
+            {
+                Channel = "iiif-av",
+                Created = DateTime.UtcNow,
+                Customer = customerId,
+                DisplayName = "A default video policy", 
+                Modified = DateTime.UtcNow,
+                Name = "default-video",
+                PolicyData = "[\"video-mp4-720p\"]", 
+                System = false
+            }
+        );
+    
     public static ValueTask<EntityEntry<User>> AddTestUser(this DbSet<User> users,
         int customer, string email, string password = "password123") => users.AddAsync(new User
     {

@@ -486,6 +486,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
+        await dbContext.DeliveryChannelPolicies.AddTestCustomerDeliveryChannelPolicies(customer);
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
@@ -505,14 +506,16 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         
-        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(i => i.Id == assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(i => i.DeliveryChannelPolicy).Single(i => i.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("image/tiff");
         asset.Family.Should().Be(AssetFamily.Image);
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
-        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs" &&
+                                                                x.DeliveryChannelPolicy.Name == "default");
     }
     
     [Fact]
@@ -524,6 +527,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
+        await dbContext.DeliveryChannelPolicies.AddTestCustomerDeliveryChannelPolicies(customer);
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
@@ -543,15 +547,17 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         
-        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(i => i.Id == assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy).Single(i => i.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("image/unknown");
         asset.Family.Should().Be(AssetFamily.Image);
         asset.ImageDeliveryChannels.Count.Should().Be(2);
-        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
-                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
+        
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" && 
+            x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs" &&
-                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ThumbsDefault);
+            x.DeliveryChannelPolicy.Name == "default");
     }
     
     [Theory]
