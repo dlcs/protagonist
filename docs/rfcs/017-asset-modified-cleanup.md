@@ -15,15 +15,15 @@ As part of this process there will need to be some changes made to the API, whic
 - AssetModifiedMessage needs to be raised whenever an asset is changed. It's currently only happening for single image requests - PUT, POST or PATCH `/customers/{c}/spaces/{s}/images/{i}` as well as `/reingest` too.
   - Needs to happen for bulk operations (batch PATCH + queue).
   - There's already logic to handle batch sending of notifications, just need to get list of messages to send.
-- It's possible to send `AssetModified` messages that aren't required to be ingested (such as metadata changes). In order to reduce churn, an attribute should be added to the request that indicates the asset will be ingested by engine
+- It's possible to send `AssetModified` messages that aren't required to be ingested (such as metadata changes) and this is primarily controlled by `processAssetResult.RequiresEngineNotification`. In order to reduce churn, an attribute should be added to the request that indicates the asset will be ingested by engine
   - This attribute should be called something like `EngineNotified`
-- asset requires the `DeliveryChannelPolicyId` to work out differences in policies (this should be there already)
-- asset requires `roles` as changes to roles can mean the `info.json` needs to be removed
-- API should not be responsible for deciding how cleanup is conducted
+- Asset requires the `DeliveryChannelPolicyId` to work out differences in policies (this should be there already)
+- Asset requires `roles` as changes to roles can mean the `info.json` needs to be removed
+- API should not be responsible for deciding when cleanup is conducted
 
 ## AWS
 
-As part of the changes, there will need to be some changes to the AWS estate to support the changes to asset modified.  Primarily, this will be updating the current SNS topic and adding an SQS listener to listen for asset modified notifications.  Additionally, the queue needs to be set to only listen for assets that have a `EngineNotified` attribute. 
+As part of the changes, there will need to be some changes to the AWS estate to support the changes to asset modified.  Primarily, this will be updating the current SNS topic and adding an SQS listener to listen for asset modified notifications.  The queue should forward all requests to the listener as there's a possibility 
 
 ### Specifics
 
@@ -32,28 +32,32 @@ As part of the changes, there will need to be some changes to the AWS estate to 
 
 ## Handler
 
-After being added to the SQS queue, it needs to be handled by the cleanup handler being extended.  The reason to use a .Net application, is that there will be a lot of shared logic with Engine (for example, working out storage keys) and that access methods for the database and S3 have been written for the DLCS. Additionally, a new implementation of `ImessageHandler` will be created that's designed to handle `AssetModified`
+After being added to the SQS queue, it needs to be handled by the cleanup handler being extended.  The reason to use a .Net application, is that there will be a lot of shared logic with Engine (for example, working out storage keys) and that access methods for the database and S3 have been written for the DLCS.  Additionally, a new implementation of `IMessageHandler` will be created that's designed to handle `AssetModified`
 
 ### Specifics
 
-- Assets should be checked for ingestion complete from the `Finished` property before being processed as well as the `Error` property
-  - this has some implications on assets which do not get completed in the database being continually reprocessed.  As such, a dead letter queue should be implemented after a certain number of retries using the `maxRedrives` variable.  Additionally, a sensible retention period needs to be decided on the DLQ
-  - ingestion completion is needed so that we can check when the asset was last ingested, and whether the attached policy has changed in that time
-  - if there's an error, no need to do anything
-- telling the difference between `before` and `after` should be done with using the `before` from the message, but should the `after` be pulled from the database?
-  - This would help to avoid issues where the asset is changed, then changed back afterwards, but due to `delay_seconds`, the `after` on the message clears up the correct derivatives
+- Assets should be checked for ingestion complete from the `Finished` property before being processed, as well as the `Error` property and `Ingesting`.
+  - The `Finished` property will be checked as current > `Before` to decide if work needs to be done
+  - The `Ingesting` property shows if the asset is currently being ingested.  In this case, the message needs to be requeued
+  - This has some implications on assets which do not get completed in the database being continually reprocessed.  As such, a dead letter queue should be implemented after a certain number of retries using the `maxRetries` variable.  Additionally, a sensible retention period needs to be decided on the DLQ
+  - Ingestion completion is needed so that we can check when the asset was last ingested, and whether the attached policy has changed in that time
+  - If there's an error, no need to do anything
+- Telling the difference between `Before` and `After` should be done with using the `Before` from the message, but the `After` be pulled from the database, to avoid issues with multiple reingests happening
+  - This would help to avoid issues where the asset is changed, then changed back afterwards, but due to `delay_seconds`, the `After` on the message clears up the correct derivatives
 
 ### Logic
 
 #### Thumbs recalculation
 
-Within this, the most complex part of this is recalculating thumbnails.  In general approach to this will be to use the policy of the current asset, along with the thumbnails that currently exist within S3.  This will require a `ListBucket` operation from S3 which has a cost implication.  This could mean that checking 53 million images, would incur a cost of approximately $265
+Within this, the most complex part of this is recalculating thumbnails.  The general approach to this will be to use the policy of the current asset, along with the thumbnails that currently exist within S3.  This will require a `ListBucket` operation from S3 which has a cost implication.  This could mean that checking 53 million images, would incur a cost of approximately $265
 
 Due to the cost, calls to `ListBucket` should be limited
 
-Thumbs should use the iiif.Net library to check expected sizes of thumbnails for an image, and there needs to be some logic to not remove thumbs that are within 2-3 pixels of the expected to avoid off-by-one errors in thumbnail generation.
+Thumbs should use the iiif-net library to check expected sizes of thumbnails for an image, and there needs to be some logic to not remove thumbs that are within 2-3 pixels of the expected to avoid off-by-one errors in thumbnail generation.  These off-by-one errors occur due to rounding errors in cantaloupe thumbs generation, more detgails can be found [here](https://github.com/dlcs/protagonist/pull/819)
 
-System thumbs will need to be left alone.  In order to make it so this doesn't differ from the system thumbs in engine, a parameter store value needs to be created that can be used by both engine and the cleanup handler
+System thumbs will need to be left alone.  In order to make it so this doesn't differ from the system thumbs in engine, a  value needs to be created that can be used by both engine and the cleanup handler.  This is used by these projects through the options pattern in .Net. One of the ways to do this, is a parameter store variable that is exposed to the engine and orchestrator via an environment variable
+
+Finally, maxUnauth/Roles will need to be taken into account as storage in the bucket will have a prefix of `/open` or `/auth` based on this.
 
 #### Named query derivatives
 
@@ -63,65 +67,70 @@ There are many different permutations of objects in named queries, so for now th
 
 There are a number of ways that an update to an asset can cause changes to stored derivatives that aren't tracked.  It can roughly be divided into 4 categories of change:
 
-- delivery channel changed
-- policy id changed
-- roles changed
-- policy data updated
-- origin changes
+- Delivery channel changed
+- Policy id changed
+- Roles changed
+- Policy data updated
+- Origin changes
 
 #### Delivery channels changed
 
-This becomes an issue when a delivery channel is changed away from a specific policy, with the following implications:
+This becomes an issue when a delivery channel is removed from an asset, with the following implications:
 
-- iiif-img removed
-  - stored iiif-img derivative needs to be removed
-  - `info.json` needs removed
-  - asset can exist at both filename and `/original` path
-- thumbs removed
-  - thumbs derivatives need to be removed (i.e. thumbnails and `s.json`)
-  - system thumbs need to be left alone
-  - asset metadata for thumbs removed in database
-- iiif-av removed
-  - timebased derivative removed
-  - metadata removed
-  - timebased input removed?
-- file removed
-  - the asset at origin should be removed if there's an asset on the `/original` path
-- none removed
-  - nothing required
+- Iiif-img removed
+  - Stored iiif-img derivative needs to be removed
+  - `info.json` removed
+  - Asset can exist at both filename and `/original` path - though the `original` needs to be left if the file channel exists on the asset
+- Thumbs removed
+  - `info.json` removed
+  - If removing "thumbs" leaves "iiif-img":
+    - Do not touch `s.json`
+    - Do not touch `AssetApplicationMetadata`
+    - Leave system thumbs
+  - If removing "thumbs" doesn't leave "iiif-img":
+    - Delete `s.json`
+    - Delete `AssetApplicationMetadata`
+    - Delete all thumbs
+- Iiif-av removed
+  - Timebased derivative removed
+  - Metadata removed
+- File removed
+  - The asset at origin should be removed if there's an asset on the `/original` path - should only be removed if `iiif-img` is not using it
+- None removed
+  - Nothing required
 
 #### Policy id changed
 
 This is that the delivery channel stays the same, but the id of the policy has changed.  It should be able to be detected by checking the delivery channel policy id in `before` against the current asset, with the following implications:
 
-- iiif-img changed
+- Iiif-img changed
   - `info.json` needs removed
-  - NQ derivatives need to be regenerated
-  - if it moves to a `use-original` policy, is there a need to remove the asset as well?
-- thumbs changed
-  - thumbs need to be removed that are no longer required.
+- Thumbs changed
+  - Thumbs need to be removed that are no longer required.
   - `s.json` and asset application metadata should be updated - `s.json` should be updated by the reingest
-- iiif-av changed
-  - old transcode derivative if the file extension changes?
-- file changed
-  - the asset at origin should be removed if there's an asset on the `/original` path
+  - `info.json` removed
+- Iiif-av changed
+  - Old transcode derivative removed if the file extension is no longer required
+- File changed
+  - The asset at origin should be removed if there's an asset on the `/original` path - should only be removed if `iiif-img` is not using it
 
 #### Roles changed
 
-This should only have an implication on the `info.json`, which would need to be regenerated
+This should only have an implication on the `info.json`, which would need to be removed
 
 #### Policy data updated
 
 The policy data being updated can be found from the date that the delivery channel policy was updated after the `finished` date of the before asset itself. 
 
-- iiif-img changed
+- Iiif-img changed
   - `info.json` needs removed
   - NQ derivatives need to be regenerated
-  - if it moves to a `use-original` policy, is there a need to remove the asset as well?
-- thumbs changed
-  - thumbs need to be removed that are no longer required.
+  - If it moves to a `use-original` policy, is there a need to remove the asset as well?
+- Thumbs changed
+  - Thumbs need to be removed that are no longer required.
   - `s.json` and asset application metadata should be updated - `s.json` should be updated by the reingest
-- iiif-av changed
-  - old transcode derivative if the file extension changes?
-- file changed
-  - no changes needed?
+  - `info.json` removed
+- Iiif-av changed
+  - Old transcode derivative removed if the file extension is no longer required
+- File changed
+  - The asset at origin should be removed if there's an asset on the `/original` path - should only be removed if `iiif-img` is not using it
