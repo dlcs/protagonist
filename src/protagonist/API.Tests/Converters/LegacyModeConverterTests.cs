@@ -41,7 +41,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_InferMediaType_WhenOriginSet()
     {
         // Arrange
-        var hydraImage = new Image{ Origin = "something.jpg",MaxUnauthorised = 5, Family = AssetFamily.File};
+        var hydraImage = new Image{ Origin = "something.jpg", MaxUnauthorised = 5, Family = AssetFamily.File};
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
@@ -56,7 +56,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_SetMaxUnauthorised_WhenSetToOldFormat()
     {
         // Arrange
-        var hydraImage = new Image{ Origin = "something.jpg",MaxUnauthorised = 0, Family = AssetFamily.File};
+        var hydraImage = new Image{ Origin = "something.jpg", MaxUnauthorised = 0, Family = AssetFamily.File};
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
@@ -142,8 +142,8 @@ public class LegacyModeConverterTests
         
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
-            dc => dc.Channel == AssetDeliveryChannels.Timebased,
-            dc => dc.Channel == "default-video");
+            dc => dc.Channel == AssetDeliveryChannels.Timebased &&
+                  dc.Policy == "default-video");
     }
     
     [Fact]
@@ -160,8 +160,8 @@ public class LegacyModeConverterTests
         
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
-            dc => dc.Channel == AssetDeliveryChannels.Timebased,
-            dc => dc.Channel == "default-audio");
+            dc => dc.Channel == AssetDeliveryChannels.Timebased && 
+                  dc.Policy == "default-audio");
     }
     
     [Fact]
