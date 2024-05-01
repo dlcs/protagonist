@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DLCS.Core.Types;
@@ -25,7 +24,7 @@ namespace Orchestrator.Tests.Integration;
 /// </summary>
 [Trait("Category", "Integration")]
 [Collection(StorageCollection.CollectionName)]
-public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
+public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
@@ -40,10 +39,10 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
             .WithConnectionString(dbFixture.ConnectionString)
             .WithLocalStack(orchestratorFixture.LocalStackFixture)
             .WithTestServices(services => services.AddScoped<IProjectionCreator<ZipParsedNamedQuery>>(_ => zipCreator))
-            .CreateClient(new WebApplicationFactoryClientOptions {AllowAutoRedirect = false});
-        
+            .CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
         dbFixture.CleanUp();
-        
+
         dbFixture.DbContext.NamedQueries.Add(new NamedQuery
         {
             Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "test-zip",
@@ -86,11 +85,11 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-    
+
     [Fact]
     public async Task GetZip_Returns404_IfNQNotFound()
     {
@@ -99,11 +98,11 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-    
+
     [Fact]
     public async Task GetZip_Returns400_IfParametersIncorrect()
     {
@@ -112,7 +111,7 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -125,11 +124,11 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-    
+
     [Fact]
     public async Task GetZip_Returns202_WithRetryAfter_IfZipInProcess()
     {
@@ -140,12 +139,12 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
         response.Headers.Should().ContainKey("Retry-After");
     }
-    
+
     [Fact]
     public async Task GetZip_Returns200_WithExistingZip_IfControlFileAndZipExist()
     {
@@ -158,13 +157,13 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Be(fakeContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/zip"));
     }
-    
+
     [Fact]
     public async Task GetZip_Returns200_WithNewlyCreatedZip_IfControlFileExistsButZipDoesnt()
     {
@@ -172,7 +171,7 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
         var fakeContent = nameof(GetZip_Returns200_WithNewlyCreatedZip_IfControlFileExistsButZipDoesnt);
         const string storageKey = "99/zip/test-zip/my-ref/1/2/tester.zip";
         const string path = "zip/99/test-zip/my-ref/1/2";
-        
+
         await AddControlFile("99/zip/test-zip/my-ref/1/2/tester.zip.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
         zipCreator.AddCallbackFor(storageKey, (query, assets) =>
@@ -183,13 +182,13 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Be(fakeContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/zip"));
     }
-    
+
     [Fact]
     public async Task GetZip_Returns200_WithNewlyCreateZip_IfZipControlFileStale()
     {
@@ -199,7 +198,7 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
         const string path = "zip/99/test-zip/my-ref/1/3";
         await AddControlFile("99/zip/test-zip/my-ref/1/3/tester.json",
             new ControlFile { Created = DateTime.UtcNow.AddHours(-1), InProcess = false });
-        
+
         zipCreator.AddCallbackFor(storageKey, (query, assets) =>
         {
             AddZipArchive(storageKey, fakeContent).Wait();
@@ -208,48 +207,48 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Be(fakeContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/zip"));
     }
-    
+
     [Fact]
     public async Task GetZip_Returns500_IfZipCreatedButCannotBeFound()
     {
         // Arrange
         const string path = "zip/99/test-zip/my-ref/1/4";
         const string storageKey = "99/zip/test-zip/my-ref/1/4/tester";
-        
+
         await AddControlFile("99/zip/test-zip/my-ref/1/4/tester.zip.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
-        
+
         // return True but don't create object in s3
         zipCreator.AddCallbackFor(storageKey, (query, assets) => true);
-        
+
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }
-    
+
     [Fact]
     public async Task GetZip_Returns500_IfZipCreatorUnsuccessful()
     {
         // Arrange
         const string path = "zip/99/test-zip/my-ref/1/5";
         const string storageKey = "99/zip/test-zip/my-ref/1/5/tester";
-        
+
         await AddControlFile("99/test-zip/my-ref/1/5/tester.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
-        
+
         zipCreator.AddCallbackFor(storageKey, (query, assets) => false);
 
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }
@@ -284,7 +283,7 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         const string path = "zip/99/ordered-zip/ordered";
         const string storageKey = "99/zip/ordered-zip/ordered/tester";
-        
+
         await AddControlFile("99/ordered-zip/ordered/tester.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
 
@@ -297,7 +296,7 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         await httpClient.GetAsync(path);
-        
+
         // Assert
         savedAssets.Select(s => s.Id).Should().BeEquivalentTo(expectedOrder);
     }
@@ -310,11 +309,11 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-    
+
     [Fact]
     public async Task GetZipControlFile_Returns404_IfNQNotFound()
     {
@@ -323,11 +322,11 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-    
+
     [Fact]
     public async Task GetZipControlFile_Returns404_IfParametersIncorrect()
     {
@@ -336,7 +335,7 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -347,10 +346,10 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         const string path = "zip-control/99/test-zip/any-ref/1/2";
         var controlFileJson = JsonConvert.SerializeObject(ControlFile.Empty);
-        
+
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Be(controlFileJson);
@@ -369,52 +368,29 @@ public class ZipTests: IClassFixture<ProtagonistAppFactory<Startup>>
         };
         await AddControlFile("99/zip/test-zip/any-ref/1/5/tester.zip.json", controlFile);
         var controlFileJson = JsonConvert.SerializeObject(controlFile);
-        
+
         // Act
         var response = await httpClient.GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Be(controlFileJson);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/json"));
     }
 
-    private Task AddControlFile(string key, ControlFile controlFile) 
+    private Task AddControlFile(string key, ControlFile controlFile)
         => amazonS3.PutObjectAsync(new PutObjectRequest
         {
             Key = key,
             BucketName = "protagonist-output",
             ContentBody = JsonConvert.SerializeObject(controlFile)
         });
-    
-    private Task AddZipArchive(string key, string fakeContent) 
+
+    private Task AddZipArchive(string key, string fakeContent)
         => amazonS3.PutObjectAsync(new PutObjectRequest
         {
             Key = key,
             BucketName = "protagonist-output",
             ContentBody = fakeContent
         });
-    
-    private class FakeZipCreator : IProjectionCreator<ZipParsedNamedQuery>
-    {
-        private static readonly Dictionary<string, Func<ParsedNamedQuery, List<Asset>, bool>> callbacks = new();
-
-        /// <summary>
-        /// Add a callback for when zip is to be created and persisted to S3, allows control of success/failure for
-        /// testing
-        /// </summary>
-        public void AddCallbackFor(string s3Key, Func<ParsedNamedQuery, List<Asset>, bool> callback)
-            => callbacks.Add(s3Key, callback);
-
-        public Task<(bool success, ControlFile controlFile)> PersistProjection(ZipParsedNamedQuery parsedNamedQuery, List<Asset> images,
-            CancellationToken cancellationToken = default)
-        {
-            if (callbacks.TryGetValue(parsedNamedQuery.StorageKey, out var cb))
-            {
-                return Task.FromResult((cb(parsedNamedQuery, images), new ControlFile()));
-            }
-
-            throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");
-        }
-    }
 }

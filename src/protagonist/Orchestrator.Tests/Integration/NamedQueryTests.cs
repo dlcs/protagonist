@@ -5,9 +5,7 @@ using System.Net;
 using System.Net.Http;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Assets.NamedQueries;
-using DLCS.Model.Policies;
 using IIIF.Auth.V2;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
@@ -272,6 +270,31 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse.SelectToken("items").Count().Should().Be(3);
+    }
+    
+    [Theory]
+    [InlineData("iiif-resource/99/manifest-slash-test/with%2Fforward%2Fslashes/1")]
+    [InlineData("iiif-resource/99/manifest-slash-test/with%2fforward%2fslashes/1")]
+    public async Task Get_ReturnsManifestWithSlashes(string path)
+    {
+        // Arrange
+        dbFixture.DbContext.NamedQueries.Add(new NamedQuery
+        {
+            Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "manifest-slash-test",
+            Template = "manifest=s1&canvas=n1&s1=p1&space=p2"
+        });
+
+        await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/first"), num1: 1, ref1: "with/forward/slashes");
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+        
+        // Assert
+        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
+
+        jsonResponse.SelectToken("items").Count().Should().Be(1);
+        jsonResponse.SelectToken("items")[0].SelectToken("id").Value<string>().Should().Contain("99/1/first");
     }
     
     [Fact]
