@@ -1,5 +1,7 @@
 ﻿using API.Converters;
 using DLCS.HydraModel;
+using DLCS.Model.Assets;
+using AssetFamily = DLCS.HydraModel.AssetFamily;
 
 namespace API.Tests.Converters;
 
@@ -106,5 +108,77 @@ public class LegacyModeConverterTests
 
         // Assert
         convertedImage.ModelId.Should().Be("someId");
+    }
+    
+    [Fact]
+    public void VerifyAndConvertToModernFormat_AddsDeliveryChannels_WhenNotSet_ForImage()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Origin = "something.jpg",
+        };
+        
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+        
+        // Assert
+        convertedImage.DeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.Image,
+            dc => dc.Channel == AssetDeliveryChannels.Thumbnails);
+    }
+    
+    [Fact]
+    public void VerifyAndConvertToModernFormat_AddsDeliveryChannels_WhenNotSet_ForVideo()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Origin = "something.mp4",
+        };
+        
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+        
+        // Assert
+        convertedImage.DeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.Timebased,
+            dc => dc.Channel == "default-video");
+    }
+    
+    [Fact]
+    public void VerifyAndConvertToModernFormat_AddsDeliveryChannels_WhenNotSet_ForAudio()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Origin = "something.mp3",
+        };
+        
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+        
+        // Assert
+        convertedImage.DeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.Timebased,
+            dc => dc.Channel == "default-audio");
+    }
+    
+    [Fact]
+    public void VerifyAndConvertToModernFormat_AddsDeliveryChannels_WhenNotSet_ForFile()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Origin = "something.pdf",
+        };
+        
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+        
+        // Assert
+        convertedImage.DeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.File && 
+                  dc.Policy == "none");
     }
 }
