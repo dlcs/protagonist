@@ -140,41 +140,18 @@ public static class DatabaseTestDataPopulation
 
     public static Task AddTestCustomerDeliveryChannelPolicies(this DbSet<DeliveryChannelPolicy> deliveryChannelPolicies,
         int customerId) =>
-        deliveryChannelPolicies.AddRangeAsync(
-            new DeliveryChannelPolicy()
+        deliveryChannelPolicies.AddRangeAsync(deliveryChannelPolicies.Where(d => d.Customer == 1 && !d.System)
+            .Select(x => new DeliveryChannelPolicy()
             {
-                Channel = "thumbs",
-                Created = DateTime.UtcNow,
+                Channel = x.Channel,
+                Created = x.Created,
                 Customer = customerId,
-                DisplayName = "A default thumbs policy", 
-                Modified = DateTime.UtcNow,
-                Name = "default",
-                PolicyData = "[\"!1024,1024\", \"!400,400\", \"!200,200\", \"!100,100\"]",
+                DisplayName = x.DisplayName, 
+                Modified = x.Modified,
+                Name = x.Name,
+                PolicyData = x.PolicyData,
                 System = false
-            },
-            new DeliveryChannelPolicy()
-            {
-                Channel = "iiif-av",
-                Created = DateTime.UtcNow,
-                Customer = customerId,
-                DisplayName = "A default audio policy", 
-                Modified = DateTime.UtcNow,
-                Name = "default-audio",
-                PolicyData = "[\"audio-mp3-128\"]", 
-                System = false
-            },
-            new DeliveryChannelPolicy()
-            {
-                Channel = "iiif-av",
-                Created = DateTime.UtcNow,
-                Customer = customerId,
-                DisplayName = "A default video policy", 
-                Modified = DateTime.UtcNow,
-                Name = "default-video",
-                PolicyData = "[\"video-mp4-720p\"]", 
-                System = false
-            }
-        );
+            }));
     
     public static ValueTask<EntityEntry<User>> AddTestUser(this DbSet<User> users,
         int customer, string email, string password = "password123") => users.AddAsync(new User
