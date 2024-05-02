@@ -137,21 +137,6 @@ public static class DatabaseTestDataPopulation
                 MediaType = x.MediaType,
                 DeliveryChannelPolicyId = x.DeliveryChannelPolicyId
             }));
-
-    public static Task AddTestCustomerDeliveryChannelPolicies(this DbSet<DeliveryChannelPolicy> deliveryChannelPolicies,
-        int customerId) =>
-        deliveryChannelPolicies.AddRangeAsync(deliveryChannelPolicies.Where(d => d.Customer == 1 && !d.System)
-            .Select(x => new DeliveryChannelPolicy()
-            {
-                Channel = x.Channel,
-                Created = x.Created,
-                Customer = customerId,
-                DisplayName = x.DisplayName, 
-                Modified = x.Modified,
-                Name = x.Name,
-                PolicyData = x.PolicyData,
-                System = false
-            }));
     
     public static ValueTask<EntityEntry<User>> AddTestUser(this DbSet<User> users,
         int customer, string email, string password = "password123") => users.AddAsync(new User

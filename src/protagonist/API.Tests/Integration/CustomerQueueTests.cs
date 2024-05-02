@@ -538,9 +538,9 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, 2);
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
-        await dbContext.DeliveryChannelPolicies.AddTestCustomerDeliveryChannelPolicies(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
         await dbContext.SaveChangesAsync();
-
+        
         // Arrange
         var hydraImageBody = @"{
     ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
@@ -556,10 +556,10 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var path = $"/customers/{customerId}/queue";
-
+        
         // Act
         var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
-        
+
         // Assert
         // status code correct
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -573,7 +573,6 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, space);
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
-        await dbContext.DeliveryChannelPolicies.AddTestCustomerDeliveryChannelPolicies(customerId);
         await dbContext.SaveChangesAsync();
 
         // Arrange
@@ -972,7 +971,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, 5);
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
-        await dbContext.DeliveryChannelPolicies.AddTestCustomerDeliveryChannelPolicies(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
         await dbContext.SaveChangesAsync();
         
         // Arrange

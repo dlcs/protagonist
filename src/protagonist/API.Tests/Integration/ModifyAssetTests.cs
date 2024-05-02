@@ -486,7 +486,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestCustomerDeliveryChannelPolicies(customer);
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
@@ -515,7 +514,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs" &&
-                                                                x.DeliveryChannelPolicy.Name == "default");
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ThumbsDefault);
     }
     
     [Fact]
@@ -527,7 +526,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestCustomerDeliveryChannelPolicies(customer);
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
@@ -557,7 +555,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" && 
             x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs" &&
-            x.DeliveryChannelPolicy.Name == "default");
+            x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ThumbsDefault);
     }
     
     [Theory]

@@ -46,61 +46,46 @@ public static class LegacyModeConverter
             image.MaxUnauthorised = -1;
         }
 
-        image.DeliveryChannels = GetDeliveryChannelsForMediaType(image);
+        image.DeliveryChannels = GetDeliveryChannelsForLegacyAsset(image);
         
         return image;
     }
 
-    public static DeliveryChannel[]? GetDeliveryChannelsForMediaType<T>(T image)
+    public static DeliveryChannel[]? GetDeliveryChannelsForLegacyAsset<T>(T image)
         where T : Image
     {
-        var deliveryChannels = new List<DeliveryChannel>();
-        
-        if (!image.ImageOptimisationPolicy.IsNullOrEmpty() && image.ImageOptimisationPolicy == "fast-higher")
+        if (image.Family == AssetFamily.Image && MIMEHelper.IsImage(image.MediaType))
         {
-            deliveryChannels.Add(new DeliveryChannel()
+            return new DeliveryChannel[]
             {
-                Channel = AssetDeliveryChannels.Image,
-                Policy = "default"
-            });
-        }
-
-        if (!image.ThumbnailPolicy.IsNullOrEmpty() && image.ThumbnailPolicy == "default")
-        {
-            deliveryChannels.Add(new DeliveryChannel()
-            {
-                Channel = AssetDeliveryChannels.Thumbnails,
-                Policy = "default"
-            });
-        }
-        
-        if (image.ImageOptimisationPolicy.IsNullOrEmpty() && image.ThumbnailPolicy.IsNullOrEmpty() && 
-            image.DeliveryChannels.IsNullOrEmpty())
-        {
-            if (MIMEHelper.IsImage(image.MediaType))
-            {
-                return new DeliveryChannel[]
+                new()
                 {
-                    new()
-                    {
-                        Channel = AssetDeliveryChannels.Image,
-                        Policy = "default"
-                    },
-                    new()
-                    {
-                        Channel = AssetDeliveryChannels.Thumbnails,
-                        Policy = "default"
-                    },
-                };
-            }
-            if (MIMEHelper.IsVideo(image.MediaType))
+                    Channel = AssetDeliveryChannels.Image,
+                    Policy = image.ImageOptimisationPolicy == "fast-higher" 
+                        ? "default" 
+                        : null
+                },
+                new()
+                {
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    Policy = image.ThumbnailPolicy == "default"
+                        ? "default"
+                        : null
+                },
+            };
+        }
+        if (image.Family == AssetFamily.Timebased)
+        {
+            if(MIMEHelper.IsVideo(image.MediaType))
             {
                 return new DeliveryChannel[]
                 {
                     new()
                     {
                         Channel = AssetDeliveryChannels.Timebased,
-                        Policy = "default-video"
+                        Policy = image.ImageOptimisationPolicy == "video-max" 
+                            ? "default-video"
+                            : null
                     }
                 };       
             }
@@ -111,23 +96,25 @@ public static class LegacyModeConverter
                     new()
                     {
                         Channel = AssetDeliveryChannels.Timebased,
-                        Policy = "default-audio"
+                        Policy = image.ImageOptimisationPolicy == "audio-max"
+                            ? "default-audio"
+                            : null
                     }
                 };        
-            }
-            if (MIMEHelper.IsApplication(image.MediaType))
-            {
-                return new DeliveryChannel[]
-                {
-                    new()
-                    {
-                        Channel = AssetDeliveryChannels.File,
-                        Policy = "none"
-                    }       
-                };
-            }
+            }    
         }
-        
-        return deliveryChannels.ToArray();
+        if (image.Family == AssetFamily.File)
+        {
+            return new DeliveryChannel[]
+            {
+                new()
+                {
+                    Channel = AssetDeliveryChannels.File,
+                    Policy = "none"
+                }       
+            };
+        }
+
+        return Array.Empty<DeliveryChannel>();
     }
 }

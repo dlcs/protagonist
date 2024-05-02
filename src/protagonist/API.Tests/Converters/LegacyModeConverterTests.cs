@@ -116,6 +116,7 @@ public class LegacyModeConverterTests
         // Arrange
         var hydraImage = new Image()
         {
+            Family = AssetFamily.Image,
             Origin = "something.jpg",
         };
         
@@ -124,8 +125,10 @@ public class LegacyModeConverterTests
         
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
-            dc => dc.Channel == AssetDeliveryChannels.Image,
-            dc => dc.Channel == AssetDeliveryChannels.Thumbnails);
+            dc => dc.Channel == AssetDeliveryChannels.Image && 
+                  dc.Policy == null,
+            dc => dc.Channel == AssetDeliveryChannels.Thumbnails &&
+                  dc.Policy == null);
     }
     
     [Fact]
@@ -134,6 +137,7 @@ public class LegacyModeConverterTests
         // Arrange
         var hydraImage = new Image()
         {
+            Family = AssetFamily.Timebased,
             Origin = "something.mp4",
         };
         
@@ -143,7 +147,7 @@ public class LegacyModeConverterTests
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
             dc => dc.Channel == AssetDeliveryChannels.Timebased &&
-                  dc.Policy == "default-video");
+                  dc.Policy == null);
     }
     
     [Fact]
@@ -152,6 +156,7 @@ public class LegacyModeConverterTests
         // Arrange
         var hydraImage = new Image()
         {
+            Family = AssetFamily.Timebased,
             Origin = "something.mp3",
         };
         
@@ -161,7 +166,7 @@ public class LegacyModeConverterTests
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
             dc => dc.Channel == AssetDeliveryChannels.Timebased && 
-                  dc.Policy == "default-audio");
+                  dc.Policy == null);
     }
     
     [Fact]
@@ -170,6 +175,7 @@ public class LegacyModeConverterTests
         // Arrange
         var hydraImage = new Image()
         {
+            Family = AssetFamily.File,
             Origin = "something.pdf",
         };
         
@@ -180,5 +186,69 @@ public class LegacyModeConverterTests
         convertedImage.DeliveryChannels.Should().Satisfy(
             dc => dc.Channel == AssetDeliveryChannels.File && 
                   dc.Policy == "none");
+    }
+    
+    [Fact]
+    public void VerifyAndConvertToModernFormat_AddsImageDeliveryChannelsWithPolicies_WhenFastHigherImageOptimisationPolicySpecified()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Origin = "something.jpg",
+            ImageOptimisationPolicy = "fast-higher"
+        };
+        
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+        
+        // Assert
+        convertedImage.DeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.Image && 
+                  dc.Policy == "default",
+            dc => dc.Channel == AssetDeliveryChannels.Thumbnails && 
+                  dc.Policy == null);
+    }
+        
+    [Fact]
+    public void VerifyAndConvertToModernFormat_AddsImageDeliveryChannelsWithPolicies_WhenDefaultThumbnailPolicySpecified()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Origin = "something.jpg",
+            ThumbnailPolicy = "default"
+        };
+        
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+        
+        // Assert
+        convertedImage.DeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.Image && 
+                  dc.Policy == null,
+            dc => dc.Channel == AssetDeliveryChannels.Thumbnails && 
+                  dc.Policy == "default");
+    }
+    
+    [Fact]
+    public void VerifyAndConvertToModernFormat_AddsImageDeliveryChannelsWithPolicies_WithBothPolicyTypesSpecified()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Origin = "something.jpg",
+            ImageOptimisationPolicy = "fast-higher",
+            ThumbnailPolicy = "default"
+        };
+        
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+        
+        // Assert
+        convertedImage.DeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.Image && 
+                  dc.Policy == "default",
+            dc => dc.Channel == AssetDeliveryChannels.Thumbnails && 
+                  dc.Policy == "default");
     }
 }
