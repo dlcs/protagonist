@@ -77,10 +77,11 @@ There are a number of ways that an update to an asset can cause changes to store
 
 This becomes an issue when a delivery channel is removed from an asset, with the following implications:
 
-- Iiif-img removed
+- iiif-img removed
   - Stored iiif-img derivative needs to be removed
   - `info.json` removed
   - Asset can exist at both filename and `/original` path - though the `original` needs to be left if the file channel exists on the asset
+  - if `thumbs` not there, then `s.json` and thumbnails need removed as well 
 - Thumbs removed
   - `info.json` removed
   - If removing "thumbs" leaves "iiif-img":
@@ -91,7 +92,7 @@ This becomes an issue when a delivery channel is removed from an asset, with the
     - Delete `s.json`
     - Delete `AssetApplicationMetadata`
     - Delete all thumbs
-- Iiif-av removed
+- iiif-av removed
   - Timebased derivative removed
   - Metadata removed
 - File removed
@@ -103,13 +104,13 @@ This becomes an issue when a delivery channel is removed from an asset, with the
 
 This is that the delivery channel stays the same, but the id of the policy has changed.  It should be able to be detected by checking the delivery channel policy id in `before` against the current asset, with the following implications:
 
-- Iiif-img changed
+- iiif-img changed
   - `info.json` needs removed
 - Thumbs changed
   - Thumbs need to be removed that are no longer required.
   - `s.json` and asset application metadata should be updated - `s.json` should be updated by the reingest
   - `info.json` removed
-- Iiif-av changed
+- iiif-av changed
   - Old transcode derivative removed if the file extension is no longer required
 - File changed
   - The asset at origin should be removed if there's an asset on the `/original` path - should only be removed if `iiif-img` is not using it
@@ -120,17 +121,20 @@ This should only have an implication on the `info.json`, which would need to be 
 
 #### Policy data updated
 
-The policy data being updated can be found from the date that the delivery channel policy was updated after the `finished` date of the before asset itself. 
+The policy data being updated can be found from the date that the delivery channel policy was updated, after the `finished` date of the current asset itself. 
 
-- Iiif-img changed
+- iiif-img changed
   - `info.json` needs removed
-  - NQ derivatives need to be regenerated
   - If it moves to a `use-original` policy, is there a need to remove the asset as well?
 - Thumbs changed
   - Thumbs need to be removed that are no longer required.
   - `s.json` and asset application metadata should be updated - `s.json` should be updated by the reingest
   - `info.json` removed
-- Iiif-av changed
+- iiif-av changed
   - Old transcode derivative removed if the file extension is no longer required
 - File changed
   - The asset at origin should be removed if there's an asset on the `/original` path - should only be removed if `iiif-img` is not using it
+
+  ## General comments
+
+  In the case of large reingests, the image could be processed by the handler before the image is updated by engine due to the longest `delay_seconds` being 15 minutes. In this case, the best option would be to disable the handler until after the reingest is completed.
