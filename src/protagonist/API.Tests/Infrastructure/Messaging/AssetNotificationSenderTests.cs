@@ -33,7 +33,7 @@ public class AssetNotificationSenderTests
     {
         // Arrange
         var assetModifiedRecord =
-            AssetModificationRecord.Update(new Asset(new AssetId(1, 2, "foo")), new Asset(new AssetId(1, 2, "bar")));
+            AssetModificationRecord.Update(new Asset(new AssetId(1, 2, "foo")), new Asset(new AssetId(1, 2, "bar")), true);
 
         // Act
         await sut.SendAssetModifiedMessage(assetModifiedRecord, CancellationToken.None);

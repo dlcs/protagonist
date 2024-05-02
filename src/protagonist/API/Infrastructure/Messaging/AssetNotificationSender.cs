@@ -40,11 +40,11 @@ public class AssetNotificationSender : IAssetNotificationSender
         CancellationToken cancellationToken = default)
         => SendAssetModifiedMessage(notification.AsList(), cancellationToken);
 
-    public async Task SendAssetModifiedMessage(IReadOnlyCollection<AssetModificationRecord> notifications,
+    public async Task SendAssetModifiedMessage(IReadOnlyCollection<AssetModificationRecord> notifications, 
         CancellationToken cancellationToken = default)
     {
         // Iterate through AssetModifiedMessage objects and build list(s) of changes
-        var changes = new Dictionary<ChangeType, List<string>>()
+        var changes = new Dictionary<ChangeType, List<(string changees, bool engineNotified)>>()
         {
             [ChangeType.Create] = new(),
             [ChangeType.Update] = new(),
@@ -56,7 +56,7 @@ public class AssetNotificationSender : IAssetNotificationSender
             var serialisedNotification = await GetSerialisedNotification(notification);
             if (serialisedNotification.HasText())
             {
-                changes[notification.ChangeType].Add(serialisedNotification);
+                changes[notification.ChangeType].Add((serialisedNotification, notification.AssetModifiedEngineNotified));
             }
         }
 
@@ -132,13 +132,14 @@ public class AssetNotificationSender : IAssetNotificationSender
         return customerPathElement;
     }
     
-    private async Task<bool> SendAssetModifiedRequest(Dictionary<ChangeType, List<string>> change, CancellationToken cancellationToken)
+    private async Task<bool> SendAssetModifiedRequest(Dictionary<ChangeType, List<(string change, bool engineNotified)>> change,
+        CancellationToken cancellationToken)
     {
         if (change.IsNullOrEmpty()) return true;
 
         var toSend = change
             .SelectMany(kvp => kvp.Value
-                .Select(v => new AssetModifiedNotification(v, kvp.Key)))
+                .Select(v => new AssetModifiedNotification(v.change, kvp.Key, v.engineNotified)))
             .ToList();
         
         return await topicPublisher.PublishToAssetModifiedTopic(toSend, cancellationToken);

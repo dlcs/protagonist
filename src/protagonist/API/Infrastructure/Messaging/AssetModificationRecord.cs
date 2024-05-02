@@ -13,22 +13,25 @@ public class AssetModificationRecord
     public Asset? Before { get; }
     public Asset? After { get; }
     
+    public bool AssetModifiedEngineNotified { get; }
+    
     public ImageCacheType? DeleteFrom { get; }
  
-    private AssetModificationRecord(ChangeType changeType, Asset? before, Asset? after, ImageCacheType? deleteFrom)
+    private AssetModificationRecord(ChangeType changeType, Asset? before, Asset? after, ImageCacheType? deleteFrom, bool assetModifiedEngineNotified)
     {
         ChangeType = changeType;
         Before = before;
         After = after;
         DeleteFrom = deleteFrom;
+        AssetModifiedEngineNotified = assetModifiedEngineNotified;
     }
 
     public static AssetModificationRecord Delete(Asset before, ImageCacheType deleteFrom) 
-        => new(ChangeType.Delete, before.ThrowIfNull(nameof(before)), null, deleteFrom.ThrowIfNull(nameof(deleteFrom)));
+        => new(ChangeType.Delete, before.ThrowIfNull(nameof(before)), null, deleteFrom.ThrowIfNull(nameof(deleteFrom)), false);
     
-    public static AssetModificationRecord Update(Asset before, Asset after)
-        => new(ChangeType.Update, before.ThrowIfNull(nameof(before)), after.ThrowIfNull(nameof(after)), null);
+    public static AssetModificationRecord Update(Asset before, Asset after, bool assetModifiedEngineNotified)
+        => new(ChangeType.Update, before.ThrowIfNull(nameof(before)), after.ThrowIfNull(nameof(after)), null, assetModifiedEngineNotified);
 
     public static AssetModificationRecord Create(Asset after) 
-        => new(ChangeType.Create, null, after.ThrowIfNull(nameof(after)), null);
+        => new(ChangeType.Create, null, after.ThrowIfNull(nameof(after)), null, false);
 }

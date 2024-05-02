@@ -132,7 +132,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
 
         var assetModificationRecord = existingAsset == null
             ? AssetModificationRecord.Create(assetAfterSave)
-            : AssetModificationRecord.Update(existingAsset, assetAfterSave);
+            : AssetModificationRecord.Update(existingAsset, assetAfterSave, processAssetResult.RequiresEngineNotification);
 
         await assetNotificationSender.SendAssetModifiedMessage(assetModificationRecord, cancellationToken);
 

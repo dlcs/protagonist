@@ -2,6 +2,7 @@
 using System.Data;
 using API.Features.Image;
 using API.Features.Image.Ingest;
+using API.Infrastructure.Messaging;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Assets;
@@ -37,6 +38,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
     private readonly IBatchRepository batchRepository;
     private readonly AssetProcessor assetProcessor;
     private readonly IIngestNotificationSender ingestNotificationSender;
+    private readonly IAssetNotificationSender assetNotificationSender;
     private readonly ILogger<CreateBatchOfImagesHandler> logger;
 
     public CreateBatchOfImagesHandler(
@@ -44,12 +46,14 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         IBatchRepository batchRepository,
         AssetProcessor assetProcessor,
         IIngestNotificationSender ingestNotificationSender,
+        IAssetNotificationSender assetNotificationSender,
         ILogger<CreateBatchOfImagesHandler> logger)
     {
         this.dlcsContext = dlcsContext;
         this.batchRepository = batchRepository;
         this.assetProcessor = assetProcessor;
         this.ingestNotificationSender = ingestNotificationSender;
+        this.assetNotificationSender = assetNotificationSender;
         this.logger = logger;
     }
 
@@ -85,6 +89,8 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         var batch = await batchRepository.CreateBatch(request.CustomerId, request.AssetsBeforeProcessing.Select(a => a.Asset).ToList(), cancellationToken);
 
         var assetNotificationList = new List<Asset>(request.AssetsBeforeProcessing.Count);
+        var snsNotificationList = new List<AssetModificationRecord>();
+
         try
         {
             using var logScope = logger.BeginScope("Processing batch {BatchId}", batch.Id);
@@ -106,6 +112,12 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
 
                 var savedAsset = processAssetResult.Result.Entity!;
                 
+                var existingAsset = processAssetResult.ExistingAsset;
+                var assetModificationRecord = existingAsset == null
+                    ? AssetModificationRecord.Create(savedAsset)
+                    : AssetModificationRecord.Update(existingAsset, savedAsset, processAssetResult.RequiresEngineNotification);
+                snsNotificationList.Add(assetModificationRecord);
+                
                 if (processAssetResult.RequiresEngineNotification)
                 {
                     assetNotificationList.Add(savedAsset);
@@ -119,6 +131,8 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 }
             }
             
+            await assetNotificationSender.SendAssetModifiedMessage(snsNotificationList, cancellationToken);
+
             if (batch.Completed > 0)
             {
                 await dlcsContext.SaveChangesAsync(cancellationToken);

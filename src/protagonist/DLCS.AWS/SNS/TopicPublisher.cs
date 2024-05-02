@@ -1,4 +1,5 @@
-﻿using Amazon.SimpleNotificationService;
+﻿using Amazon.Runtime.Internal.Transform;
+using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
 using DLCS.Core;
@@ -30,7 +31,7 @@ public class TopicPublisher : ITopicPublisher
         if (messages.Count == 1)
         {
             var singleMessage = messages[0];
-            return await PublishToAssetModifiedTopic(singleMessage, cancellationToken);
+            return await PublishToAssetModifiedTopic(singleMessage, messages[0].EngineNotified, cancellationToken);
         }
 
         const int maxSnsBatchSize = 10;
@@ -50,14 +51,14 @@ public class TopicPublisher : ITopicPublisher
         return allBatchSuccess;
     }
     
-    private async Task<bool> PublishToAssetModifiedTopic(AssetModifiedNotification message,
+    private async Task<bool> PublishToAssetModifiedTopic(AssetModifiedNotification message, bool engineNotified,
         CancellationToken cancellationToken = default)
     {
         var request = new PublishRequest
         {
             TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
             Message = message.MessageContents,
-            MessageAttributes = GetMessageAttributes(message.ChangeType)
+            MessageAttributes = GetMessageAttributes(message.ChangeType, engineNotified)
         };
 
         try
@@ -83,7 +84,7 @@ public class TopicPublisher : ITopicPublisher
                 TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
                 PublishBatchRequestEntries = chunk.Select(m => new PublishBatchRequestEntry
                 {
-                    MessageAttributes = GetMessageAttributes(m.ChangeType),
+                    MessageAttributes = GetMessageAttributes(m.ChangeType, m.EngineNotified),
                     Message = m.MessageContents,
                     Id = $"{batchIdPrefix}_{batchNumber}_{batchCount++}",
                 }).ToList()
@@ -98,17 +99,29 @@ public class TopicPublisher : ITopicPublisher
             return false;
         }
     }
-
-    private static Dictionary<string, MessageAttributeValue> GetMessageAttributes(ChangeType changeType)
+    
+    private static Dictionary<string, MessageAttributeValue> GetMessageAttributes(ChangeType changeType, bool engineNotified)
     {
         var attributeValue = new MessageAttributeValue
         {
             StringValue = changeType.ToString(),
             DataType = "String"
         };
-        return new Dictionary<string, MessageAttributeValue>
+        var messageAttributes = new Dictionary<string, MessageAttributeValue>
         {
             { "messageType", attributeValue }
         };
+        
+        if (engineNotified)
+        {
+            messageAttributes.Add(new KeyValuePair<string, MessageAttributeValue>("EngineNotified",
+                new MessageAttributeValue()
+                {
+                    DataType = "String",
+                    StringValue = "True"
+                }));
+        }
+
+        return messageAttributes;
     }
 }
