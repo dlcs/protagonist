@@ -23,7 +23,7 @@ As part of this process there will need to be some changes made to the API, whic
 
 ## AWS
 
-As part of the changes, there will need to be some changes to the AWS estate to support the changes to asset modified.  Primarily, this will be updating the current SNS topic and adding an SQS listener to listen for asset modified notifications.  The queue should forward all requests to the listener as there's a possibility 
+As part of the changes, there will need to be some changes to the AWS estate to support the changes to asset modified.  Primarily, this will be updating the current SNS topic and adding an SQS listener to listen for asset modified notifications.  The queue should forward all requests to the listener as there's a possibility that some changes are not captured purely by engine ingest, such as role changes
 
 ### Specifics
 
@@ -53,7 +53,7 @@ Within this, the most complex part of this is recalculating thumbnails.  The gen
 
 Due to the cost, calls to `ListBucket` should be limited
 
-Thumbs should use the iiif-net library to check expected sizes of thumbnails for an image, and there needs to be some logic to not remove thumbs that are within 2-3 pixels of the expected to avoid off-by-one errors in thumbnail generation.  These off-by-one errors occur due to rounding errors in cantaloupe thumbs generation, more detgails can be found [here](https://github.com/dlcs/protagonist/pull/819)
+Thumbs should use the iiif-net library to check expected sizes of thumbnails for an image, and there needs to be some logic to not remove thumbs that are within 2-3 pixels of the expected to avoid off-by-one errors in thumbnail generation.  These off-by-one errors occur due to rounding errors in cantaloupe thumbs generation, more details can be found [here](https://github.com/dlcs/protagonist/pull/819)
 
 System thumbs will need to be left alone.  In order to make it so this doesn't differ from the system thumbs in engine, a  value needs to be created that can be used by both engine and the cleanup handler.  This is used by these projects through the options pattern in .Net. One of the ways to do this, is a parameter store variable that is exposed to the engine and orchestrator via an environment variable
 
@@ -81,7 +81,7 @@ This becomes an issue when a delivery channel is removed from an asset, with the
   - Stored iiif-img derivative needs to be removed
   - `info.json` removed
   - Asset can exist at both filename and `/original` path - though the `original` needs to be left if the file channel exists on the asset
-  - if `thumbs` not there, then `s.json` and thumbnails need removed as well 
+  - if `thumbs` not there, then `s.json`, asset application metadata and thumbnails need removed as well 
 - Thumbs removed
   - `info.json` removed
   - If removing "thumbs" leaves "iiif-img":
@@ -125,7 +125,8 @@ The policy data being updated can be found from the date that the delivery chann
 
 - iiif-img changed
   - `info.json` needs removed
-  - If it moves to a `use-original` policy, is there a need to remove the asset as well?
+  - If it moves to a `use-original` policy, the derivative asset can be removed
+  - If it moves awa from `use-original`, then the `/original` asset can also be removed, provided there isn't a `file` channel
 - Thumbs changed
   - Thumbs need to be removed that are no longer required.
   - `s.json` and asset application metadata should be updated - `s.json` should be updated by the reingest
