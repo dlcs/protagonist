@@ -548,6 +548,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     ""member"": [
         {
           ""id"": ""one"",
+          ""family"": ""T"",
           ""origin"": ""https://example.org/vid.mp4"",
           ""space"": 2,
         }
@@ -573,6 +574,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, space);
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
         await dbContext.SaveChangesAsync();
 
         // Arrange
@@ -582,6 +584,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     ""member"": [
         {
           ""@id"": ""https://test/customers/15/spaces/200/images/one"",
+          ""family"": ""T"", 
           ""origin"": ""https://example.org/vid.mp4"",
           ""space"": 200,
         }

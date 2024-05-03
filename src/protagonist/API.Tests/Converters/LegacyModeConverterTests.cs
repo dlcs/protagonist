@@ -168,24 +168,6 @@ public class LegacyModeConverterTests
             dc => dc.Channel == AssetDeliveryChannels.Timebased && 
                   dc.Policy == null);
     }
-        
-    [Theory]
-    [InlineData("mp3")]
-    [InlineData("mp4")]
-    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_ForTimebasedMedia_WhenNoFamilySpecified(string fileExtension)
-    {
-        // Arrange
-        var hydraImage = new Image()
-        {
-            Origin = $"something.{fileExtension}",
-        };
-        
-        // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
-        
-        // Assert
-        convertedImage.DeliveryChannels.Should().BeEmpty();
-    }
     
     [Fact]
     public void VerifyAndConvertToModernFormat_AddsDeliveryChannels_WhenNotSet_ForFile()
@@ -206,20 +188,25 @@ public class LegacyModeConverterTests
                   dc.Policy == "none");
     }
     
-    [Fact]
-    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_ForFile_WhenNoFamilySpecified()
+    [Theory]
+    [InlineData("mp3")]
+    [InlineData("mp4")]
+    [InlineData("pdf")]
+    public void VerifyAndConvertToModernFormat_TreatsAsImage_ForNonImagesWithoutFamily(string fileExtension)
     {
         // Arrange
         var hydraImage = new Image()
         {
-            Origin = "something.pdf",
+            Origin = $"something.{fileExtension}",
         };
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
         
         // Assert
-        convertedImage.DeliveryChannels.Should().BeEmpty();
+        convertedImage.DeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.Image,
+            dc => dc.Channel == AssetDeliveryChannels.Thumbnails);
     }
     
     [Fact]

@@ -1157,6 +1157,33 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.InsufficientStorage);
     }
+    
+    [Theory]
+    [InlineData("mp4")]
+    [InlineData("mp3")]
+    [InlineData("pdf")]
+    public async Task Put_Asset_Fails_ForNonImage_WhenMediaTypeAndFamilyNotSetWithLegacyEnabled(string fileExtension)
+    {
+        const int customer = 325665;
+        const int space = 2;
+        var assetId = new AssetId(customer, space, nameof(Put_Asset_Fails_ForNonImage_WhenMediaTypeAndFamilyNotSetWithLegacyEnabled));
+        await dbContext.Customers.AddTestCustomer(customer);
+        await dbContext.Spaces.AddTestSpace(customer, space);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""origin"": ""https://example.org/{assetId.Asset}.{fileExtension}""
+        }}";
+                
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+            
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 
     [Theory]
     [InlineData(AssetFamily.Image)]

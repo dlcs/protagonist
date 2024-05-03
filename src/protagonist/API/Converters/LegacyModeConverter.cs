@@ -54,7 +54,7 @@ public static class LegacyModeConverter
     public static DeliveryChannel[]? GetDeliveryChannelsForLegacyAsset<T>(T image)
         where T : Image
     {
-        if (image.Family == AssetFamily.Image && MIMEHelper.IsImage(image.MediaType))
+        if (image.Family == AssetFamily.Image)
         {
             return new DeliveryChannel[]
             {
