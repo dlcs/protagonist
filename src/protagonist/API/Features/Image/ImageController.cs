@@ -98,7 +98,9 @@ public class ImageController : HydraController
         [FromServices] HydraImageValidator validator,
         CancellationToken cancellationToken)
     {
-        if (Settings.LegacyModeEnabledForSpace(customerId, spaceId))
+        var isLegacyAsset = Settings.LegacyModeEnabledForSpace(customerId, spaceId);
+        
+        if (isLegacyAsset)
         {
             hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
         }
@@ -109,7 +111,7 @@ public class ImageController : HydraController
             hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
         }
         
-        if(!Settings.EmulateOldDeliveryChannelProperties &&
+        if(!Settings.EmulateOldDeliveryChannelProperties && !isLegacyAsset &&
            (hydraAsset.ImageOptimisationPolicy != null || hydraAsset.ThumbnailPolicy != null))
         {
             return this.HydraProblem("ImageOptimisationPolicy and ThumbnailPolicy are disabled", null,
