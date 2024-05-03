@@ -17,4 +17,4 @@ public interface ITopicPublisher
 /// <summary>
 /// Represents the contents + type of change for Asset modified notification
 /// </summary>
-public record AssetModifiedNotification(string MessageContents, ChangeType ChangeType, bool EngineNotified);
+public record AssetModifiedNotification(string MessageContents, Dictionary<string, string> Attributes);

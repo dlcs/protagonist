@@ -13,7 +13,7 @@ public class AssetModificationRecord
     public Asset? Before { get; }
     public Asset? After { get; }
     
-    public bool AssetModifiedEngineNotified { get; }
+    public bool EngineNotified { get; }
     
     public ImageCacheType? DeleteFrom { get; }
  
@@ -23,7 +23,7 @@ public class AssetModificationRecord
         Before = before;
         After = after;
         DeleteFrom = deleteFrom;
-        AssetModifiedEngineNotified = assetModifiedEngineNotified;
+        EngineNotified = assetModifiedEngineNotified;
     }
 
     public static AssetModificationRecord Delete(Asset before, ImageCacheType deleteFrom) 

@@ -88,8 +88,8 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         
         var batch = await batchRepository.CreateBatch(request.CustomerId, request.AssetsBeforeProcessing.Select(a => a.Asset).ToList(), cancellationToken);
 
-        var assetNotificationList = new List<Asset>(request.AssetsBeforeProcessing.Count);
-        var snsNotificationList = new List<AssetModificationRecord>();
+        var engineNotificationList = new List<Asset>(request.AssetsBeforeProcessing.Count);
+        var assetModifiedNotificationList = new List<AssetModificationRecord>();
 
         try
         {
@@ -116,11 +116,11 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 var assetModificationRecord = existingAsset == null
                     ? AssetModificationRecord.Create(savedAsset)
                     : AssetModificationRecord.Update(existingAsset, savedAsset, processAssetResult.RequiresEngineNotification);
-                snsNotificationList.Add(assetModificationRecord);
+                assetModifiedNotificationList.Add(assetModificationRecord);
                 
                 if (processAssetResult.RequiresEngineNotification)
                 {
-                    assetNotificationList.Add(savedAsset);
+                    engineNotificationList.Add(savedAsset);
                 }
                 else
                 {
@@ -131,7 +131,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 }
             }
             
-            await assetNotificationSender.SendAssetModifiedMessage(snsNotificationList, cancellationToken);
+            await assetNotificationSender.SendAssetModifiedMessage(assetModifiedNotificationList, cancellationToken);
 
             if (batch.Completed > 0)
             {
@@ -165,7 +165,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         {
             // Raise notifications
             logger.LogDebug("Batch {BatchId} created - sending engine notifications", batch.Id);
-            await ingestNotificationSender.SendIngestAssetsRequest(assetNotificationList, request.IsPriority,
+            await ingestNotificationSender.SendIngestAssetsRequest(engineNotificationList, request.IsPriority,
                 cancellationToken);
         }
         

@@ -53,6 +53,6 @@ public class AssetModificationRecordTests
         notification.ChangeType.Should().Be(ChangeType.Update);
         notification.Before.Should().Be(before);
         notification.After.Should().Be(after);
-        notification.AssetModifiedEngineNotified.Should().Be(engineNotified);
+        notification.EngineNotified.Should().Be(engineNotified);
     }
 }
