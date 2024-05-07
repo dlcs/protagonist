@@ -190,7 +190,7 @@ public class QueuePostValidatorTests
     }
     
     [Fact]
-    public void Member_ImageOptimisationPolicy_Null_WhenOldDeliveryChannelEmulationDisabled()
+    public void Member_ImageOptimisationPolicy_Null()
     {
         var sut = GetSut(false);
         var model = new HydraCollection<Image> { Members = new[] { new Image { ImageOptimisationPolicy = "my-policy" } } };
@@ -199,29 +199,11 @@ public class QueuePostValidatorTests
     }
     
     [Fact]
-    public void Member_ThumbnailPolicy_Null_WhenOldDeliveryChannelEmulationDisabled()
+    public void Member_ThumbnailPolicy_Null()
     {
         var sut = GetSut(false);
         var model = new HydraCollection<Image> { Members = new[] { new Image { ThumbnailPolicy = "my-policy" } } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].ThumbnailPolicy");
-    }
-    
-    [Fact]
-    public void Member_ImageOptimisationPolicy_Allowed_WhenOldDeliveryChannelEmulationEnabled()
-    {
-        var sut = GetSut(true);
-        var model = new HydraCollection<Image> { Members = new[] { new Image { ImageOptimisationPolicy = "my-policy" } } };
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor("Members[0].ImageOptimisationPolicy");
-    }
-    
-    [Fact]
-    public void Member_ThumbnailPolicy_Allowed_WhenOldDeliveryChannelEmulationEnabled()
-    {
-        var sut = GetSut(true);
-        var model = new HydraCollection<Image> { Members = new[] { new Image { ThumbnailPolicy = "my-policy" } } };
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor("Members[0].ThumbnailPolicy");
     }
 }

@@ -1,9 +1,7 @@
-﻿using System.Collections.Generic;
-using DLCS.Core;
+﻿using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
-using DLCS.Model.Policies;
 using Hydra;
 using AssetFamily = DLCS.HydraModel.AssetFamily;
 
@@ -47,6 +45,8 @@ public static class LegacyModeConverter
         }
 
         image.DeliveryChannels = GetDeliveryChannelsForLegacyAsset(image);
+        image.ImageOptimisationPolicy = null;
+        image.ThumbnailPolicy = null;
         
         return image;
     }

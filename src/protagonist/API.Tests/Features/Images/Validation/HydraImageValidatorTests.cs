@@ -172,38 +172,21 @@ public class HydraImageValidatorTests
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Created);
     }
-
-    [Theory]
-    [InlineData("file")]
-    [InlineData("file,iiif-av")]
-    [InlineData("iiif-av")]
-    public void UseOriginalPolicy_NotImage(string dc)
+    
+    [Fact]
+    public void ImageOptimisationPolicy_Disabled()
     {
-        var model = new Image
-        {
-            WcDeliveryChannels = dc.Split(","),
-            MediaType = "image/jpeg",
-            ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId
-        };
+        var model = new Image { ImageOptimisationPolicy= "my-policy" };
         var result = sut.TestValidate(model);
-        result
-            .ShouldHaveValidationErrorFor(a => a.ImageOptimisationPolicy)
-            .WithErrorMessage("ImageOptimisationPolicy 'use-original' only valid for image delivery-channel");
+        result.ShouldHaveValidationErrorFor(a => a.ImageOptimisationPolicy);
     }
     
-    [Theory]
-    [InlineData("iiif-img")]
-    [InlineData("file,iiif-img")]
-    public void UseOriginalPolicy_Image(string dc)
+    [Fact]
+    public void ThumbnailPolicy_Disabled()
     {
-        var model = new Image
-        {
-            WcDeliveryChannels = dc.Split(","),
-            MediaType = "image/jpeg",
-            ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId
-        };
+        var model = new Image { ThumbnailPolicy = "my-policy" };
         var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(a => a.ImageOptimisationPolicy);
+        result.ShouldHaveValidationErrorFor(a => a.ThumbnailPolicy);
     }
     
     [Fact]

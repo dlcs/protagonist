@@ -98,24 +98,13 @@ public class ImageController : HydraController
         [FromServices] HydraImageValidator validator,
         CancellationToken cancellationToken)
     {
-        var isLegacyAsset = Settings.LegacyModeEnabledForSpace(customerId, spaceId);
-        
-        if (isLegacyAsset)
+        if (Settings.LegacyModeEnabledForSpace(customerId, spaceId))
         {
             hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
         }
-        
-        if (Settings.EmulateOldDeliveryChannelProperties && 
-            hydraAsset.WcDeliveryChannels != null)
+        else if (Settings.EmulateOldDeliveryChannelProperties && hydraAsset.WcDeliveryChannels != null)
         {
             hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
-        }
-        
-        if(!Settings.EmulateOldDeliveryChannelProperties && !isLegacyAsset &&
-           (hydraAsset.ImageOptimisationPolicy != null || hydraAsset.ThumbnailPolicy != null))
-        {
-            return this.HydraProblem("ImageOptimisationPolicy and ThumbnailPolicy are disabled", null,
-                400, "Bad Request");
         }
         
         if (hydraAsset.ModelId == null)
@@ -185,13 +174,6 @@ public class ImageController : HydraController
             {
                 hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
             }
-        }
-        
-        if(!Settings.EmulateOldDeliveryChannelProperties &&
-           (hydraAsset.ImageOptimisationPolicy != null || hydraAsset.ThumbnailPolicy != null))
-        {
-            return this.HydraProblem("ImageOptimisationPolicy and ThumbnailPolicy are disabled", null,
-                400, "Bad Request");
         }
         
         var validationResult = await validator.ValidateAsync(hydraAsset, 

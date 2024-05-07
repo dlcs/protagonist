@@ -51,6 +51,16 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleForEach(a => a.WcDeliveryChannels)
             .Must(AssetDeliveryChannels.IsValidChannel)
             .WithMessage($"DeliveryChannel must be one of {AssetDeliveryChannels.AllString}");
+        
+        RuleFor(a => a.ImageOptimisationPolicy)
+            .Null()
+            .When(_ => !apiSettings.Value.EmulateOldDeliveryChannelProperties)
+            .WithMessage("'ImageOptimisationPolicy' is disabled");
+        
+        RuleFor(a => a.ThumbnailPolicy)
+            .Null()
+            .When(_ => !apiSettings.Value.EmulateOldDeliveryChannelProperties)
+            .WithMessage("'ThumbnailPolicy' is disabled");
     }
 
     private void ImageDeliveryChannelDependantValidation()
@@ -86,7 +96,13 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .When(a => !a.WcDeliveryChannels.ContainsOnly(AssetDeliveryChannels.File))
             .WithMessage(
                 $"ImageOptimisationPolicy {KnownImageOptimisationPolicy.NoneId} only valid for 'file' delivery channel");
-
+        
+        RuleFor(a => a.ImageOptimisationPolicy)
+            .Must(iop => !KnownImageOptimisationPolicy.IsUseOriginalIdentifier(iop))
+            .When(a => !a.WcDeliveryChannels!.Contains(AssetDeliveryChannels.Image))
+            .WithMessage(
+                $"ImageOptimisationPolicy '{KnownImageOptimisationPolicy.UseOriginalId}' only valid for image delivery-channel");
+        
         RuleFor(a => a.Width)
             .Empty()
             .WithMessage("Should not include width")
@@ -104,11 +120,5 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .WithMessage("Should not include duration")
             .Unless(a =>
                 a.WcDeliveryChannels.ContainsOnly(AssetDeliveryChannels.File) && !MIMEHelper.IsImage(a.MediaType));
-
-        RuleFor(a => a.ImageOptimisationPolicy)
-            .Must(iop => !KnownImageOptimisationPolicy.IsUseOriginalIdentifier(iop))
-            .When(a => !a.WcDeliveryChannels!.Contains(AssetDeliveryChannels.Image))
-            .WithMessage(
-                $"ImageOptimisationPolicy '{KnownImageOptimisationPolicy.UseOriginalId}' only valid for image delivery-channel");
     }
 }
