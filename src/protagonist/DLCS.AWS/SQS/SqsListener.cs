@@ -142,6 +142,7 @@ public class SqsListener<TMessageType> : IQueueListener
             QueueUrl = queueUrl,
             WaitTimeSeconds = options.SQS.WaitTimeSecs,
             MaxNumberOfMessages = options.SQS.MaxNumberOfMessages,
+            MessageAttributeNames = new List<string>{ "All" }
         }, cancellationToken);
 
     private async Task<bool> HandleMessage(Message message, CancellationToken cancellationToken)
@@ -153,9 +154,15 @@ public class SqsListener<TMessageType> : IQueueListener
                 logger.LogTrace("Handling message {Message} from {Queue}", message.MessageId, QueueName);
             }
 
+            var messageAttributes = message.MessageAttributes
+                .Select(x => new KeyValuePair<string, string>(x.Key, x.Value.StringValue))
+                .ToDictionary(pair => pair.Key, pair => pair.Value);
+
             var queueMessage = new QueueMessage
             {
-                Attributes = message.Attributes,
+                Attributes = message.Attributes.Concat(messageAttributes)
+                    .ToLookup(x => x.Key, x => x.Value)
+                    .ToDictionary(x => x.Key, g => g.First()),
                 Body = JsonNode.Parse(message.Body)!.AsObject(),
                 MessageId = message.MessageId,
                 QueueName = QueueName

@@ -13,4 +13,11 @@ public class CleanupHandlerSettings
     /// AWS config
     /// </summary>
     public AWSSettings AWS { get; set; }
+
+    public AssetModifiedSettings AssetModifiedSettings { get; set; }
+}
+
+public class AssetModifiedSettings
+{
+    
 }
