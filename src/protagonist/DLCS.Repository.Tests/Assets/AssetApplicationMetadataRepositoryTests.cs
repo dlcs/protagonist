@@ -3,6 +3,7 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets.Metadata;
 using DLCS.Repository.Assets;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers.Integration;
 
 namespace DLCS.Repository.Tests.Assets;
@@ -23,7 +24,7 @@ public class AssetApplicationMetadataRepositoryTests
         optionsBuilder.UseNpgsql(dbFixture.ConnectionString);
         contextForTests = new DlcsContext(optionsBuilder.Options);
         
-        sut = new AssetApplicationMetadataRepository(contextForTests);
+        sut = new AssetApplicationMetadataRepository(contextForTests, new NullLogger<AssetApplicationMetadataRepository>());
         
         dbFixture.CleanUp();
         dbContext.Images.AddTestAsset(AssetId.FromString("99/1/1"), ref1: "foobar");
