@@ -24,6 +24,7 @@ public static class ServiceCollectionX
     {
         services
             .AddSingleton<IBucketWriter, S3BucketWriter>()
+            .AddSingleton<IBucketReader, S3BucketReader>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .AddSingleton<SqsListenerManager>()
             .AddTransient(typeof(SqsListener<>))
@@ -60,6 +61,7 @@ public static class ServiceCollectionX
         => services
             .AddSingleton<IAssetRepository, DapperAssetRepository>()
             .AddScoped<IAssetApplicationMetadataRepository, AssetApplicationMetadataRepository>()
+            .AddSingleton<IThumbRepository, ThumbRepository>()
             .AddSingleton<AssetCachingHelper>()
             .AddDlcsContext(configuration);
     

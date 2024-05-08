@@ -1,4 +1,5 @@
-﻿using API.Exceptions;
+﻿using System.Text.Json;
+using API.Exceptions;
 using API.Features.Assets;
 using API.Infrastructure.Requests;
 using API.Settings;
@@ -44,13 +45,15 @@ public class AssetProcessor
     /// </param>
     /// <param name="requiresReingestPreSave">Optional delegate for modifying asset prior to saving</param>
     /// <param name="cancellationToken">Current cancellation token</param>
+    /// <param name="isPriorityQueue">Whether the request is for the priority queue or not</param>
     public async Task<ProcessAssetResult> Process(AssetBeforeProcessing assetBeforeProcessing, bool mustExist, bool alwaysReingest, bool isBatchUpdate, 
         Func<Asset, Task>? requiresReingestPreSave = null, 
         CancellationToken cancellationToken = default)
     {
+        Asset? existingAsset;
         try
         {
-            var existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true);
+            existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true, true);
 
             if (existingAsset == null)
             {
@@ -96,7 +99,7 @@ public class AssetProcessor
                 return new ProcessAssetResult
                 {
                     Result = ModifyEntityResult<Asset>.Failure(
-                        "Delivery channels are required when updating an existing Asset",
+                        "Delivery channels are required when updating an existing Asset via PUT",
                         WriteResult.BadRequest
                     )
                 };
@@ -114,7 +117,7 @@ public class AssetProcessor
                         WriteResult.FailedValidation)
                 };
             }
-
+            
             var updatedAsset = assetPreparationResult.UpdatedAsset!; // this is from Database
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
 
