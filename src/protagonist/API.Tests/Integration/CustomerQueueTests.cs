@@ -6,12 +6,11 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Messaging;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Messaging;
 using FakeItEasy;
@@ -567,6 +566,180 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Post_CreateBatch_WithImageOptimisationPolicy_201_IfLegacyModeEnabled_ForImage()
+    {
+        const int customerId = 15;
+        const int space = 2;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
+        await dbContext.SaveChangesAsync();
+        
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""family"": ""I"",
+          ""origin"": ""https://example.org/image.tiff"",
+          ""imageOptimisationPolicy"": ""fast-higher"",
+          ""space"": 2,
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+        
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var assetInDatabase = dbContext.Images
+            .Include(asset => asset.ImageDeliveryChannels)
+            .First(a => a.Customer == customerId && a.Space == space);
+        
+        assetInDatabase.ImageOptimisationPolicy.Should().BeEmpty();
+        assetInDatabase.ThumbnailPolicy.Should().BeEmpty();
+        assetInDatabase.ImageDeliveryChannels.Should()
+            .ContainSingle(x => x.Channel == AssetDeliveryChannels.Image &&
+                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_WithImageOptimisationPolicy_201_IfLegacyModeEnabled_ForVideo()
+    {
+        const int customerId = 15;
+        const int space = 2;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
+        await dbContext.SaveChangesAsync();
+        
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""family"": ""T"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""imageOptimisationPolicy"": ""fast-higher"",
+          ""space"": 2,
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+        
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var assetInDatabase = dbContext.Images
+            .Include(asset => asset.ImageDeliveryChannels)
+            .First(a => a.Customer == customerId && a.Space == space);
+        
+        assetInDatabase.ImageOptimisationPolicy.Should().BeEmpty();
+        assetInDatabase.ThumbnailPolicy.Should().BeEmpty();
+        assetInDatabase.ImageDeliveryChannels.Should()
+            .ContainSingle(x => x.Channel == AssetDeliveryChannels.Timebased && 
+                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultVideo);
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_WithImageOptimisationPolicySet_201_IfLegacyModeEnabled_ForAudio()
+    {
+        const int customerId = 15;
+        const int space = 2;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
+        await dbContext.SaveChangesAsync();
+        
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""family"": ""T"",
+          ""origin"": ""https://example.org/sound.mp3"",
+          ""imageOptimisationPolicy"": ""fast-higher"",
+          ""space"": 2,
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+        
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var assetInDatabase = dbContext.Images
+            .Include(asset => asset.ImageDeliveryChannels)
+            .First(a => a.Customer == customerId && a.Space == space);
+        
+        assetInDatabase.ImageOptimisationPolicy.Should().BeEmpty();
+        assetInDatabase.ThumbnailPolicy.Should().BeEmpty();
+        assetInDatabase.ImageDeliveryChannels.Should()
+            .ContainSingle(x => x.Channel == AssetDeliveryChannels.Timebased && 
+                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultAudio);
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_WithImageOptimisationPolicy_400_IfLegacyModeDisabled()
+    {
+        const int customerId = 15;
+        const int space = 4;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.SaveChangesAsync();
+        
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""family"": ""T"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""imageOptimisationPolicy"": ""fast-higher"",
+          ""space"": 4,
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+        
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("'ImageOptimisationPolicy' is disabled");
+    }
+    
+    [Fact]
     public async Task Post_CreateBatch_201_IfLegacyModeEnabledWithAtIdFieldSet()
     {
         const int customerId = 15;
@@ -819,7 +992,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
                   ""origin"": ""https://example.org/vid.mp4"",
                   ""space"": 4,
                   ""family"": ""T"",
-                  ""thumbnailPolicy"": ""some-thumbnail-policy""
+                  ""thumbnailPolicy"": ""some-thumbnail-policy"",
                   ""mediaType"": ""video/mp4""
                 }
             ]
@@ -833,6 +1006,42 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_WithThumbnailPolicy_400_IfLegacyModeDisabled()
+    {
+        const int customerId = 15;
+        const int space = 4;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.SaveChangesAsync();
+        
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""family"": ""T"",
+          ""origin"": ""https://example.org/image.tiff"",
+          ""thumbnailPolicy"": ""default"",
+          ""space"": 4,
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+        
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("'ThumbnailPolicy' is disabled");
     }
     
     [Fact]

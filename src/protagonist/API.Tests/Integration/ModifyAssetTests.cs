@@ -162,11 +162,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_NewImageAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled_AndEmulateWcDeliveryChannelsDisabled()
+    public async Task Put_NewImageAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled()
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled_AndEmulateWcDeliveryChannelsDisabled));
+        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled));
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
@@ -196,6 +196,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("image/tiff");
         asset.Family.Should().Be(AssetFamily.Image);
+        asset.ImageOptimisationPolicy.Should().BeEmpty();
+        asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
@@ -204,11 +206,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_NewImageAsset_WithThumbnailPolicy_Creates_Asset_WhenLegacyEnabled_AndEmulateOldDeliveryChannelPropertiesDisabled()
+    public async Task Put_NewImageAsset_WithThumbnailPolicy_Creates_Asset_WhenLegacyEnabled()
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_WithThumbnailPolicy_Creates_Asset_WhenLegacyEnabled_AndEmulateOldDeliveryChannelPropertiesDisabled));
+        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_WithThumbnailPolicy_Creates_Asset_WhenLegacyEnabled));
         
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
@@ -240,6 +242,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("image/tiff");
         asset.Family.Should().Be(AssetFamily.Image);
+        asset.ImageOptimisationPolicy.Should().BeEmpty();
+        asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
@@ -596,6 +600,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("image/tiff");
         asset.Family.Should().Be(AssetFamily.Image);
+        asset.ImageOptimisationPolicy.Should().BeEmpty();
+        asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
@@ -636,8 +642,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("image/unknown");
         asset.Family.Should().Be(AssetFamily.Image);
+        asset.ImageOptimisationPolicy.Should().BeEmpty();
+        asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageDeliveryChannels.Count.Should().Be(2);
-        
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" && 
             x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs" &&
@@ -867,16 +874,15 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_NewAudioAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled_AndEmulateOldDeliveryChannelPropertiesDisabled()
+    public async Task Put_NewAudioAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled()
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewAudioAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled_AndEmulateOldDeliveryChannelPropertiesDisabled));
+        var assetId = new AssetId(customer, space, nameof(Put_NewAudioAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled));
         
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestExampleDeliveryChannelPolicies(customer);
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
@@ -904,9 +910,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("audio/mp3");
         asset.Family.Should().Be(AssetFamily.Timebased);
+        asset.ImageOptimisationPolicy.Should().BeEmpty();
+        asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" && 
-                                                                x.DeliveryChannelPolicy.Name == "default-audio");
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultAudio);
     }
     
     [Fact]
@@ -943,11 +951,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_NewVideoAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled_AndEmulateOldDeliveryChannelPropertiesDisabled()
+    public async Task Put_NewVideoAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled()
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewVideoAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled_AndEmulateOldDeliveryChannelPropertiesDisabled));
+        var assetId = new AssetId(customer, space, nameof(Put_NewVideoAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled));
         
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
@@ -980,6 +988,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("video/mp4");
         asset.Family.Should().Be(AssetFamily.Timebased);
+        asset.ImageOptimisationPolicy.Should().BeEmpty();
+        asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" && 
                                                                 x.DeliveryChannelPolicy.Name == "default-video");
@@ -1281,6 +1291,39 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 i => i.Channel == AssetDeliveryChannels.Image &&
                      i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageUseOriginal,
                 i => i.Channel == AssetDeliveryChannels.File);
+    }
+    
+    [Fact]
+    public async Task Put_Existing_Asset_Returns200_IfDeliveryChannelsEmpty_AndLegacyEnabled()
+    {
+        const int customer = 325665;
+        const int space = 2;
+        var assetId = new AssetId(customer, space, nameof(Put_Existing_Asset_Returns200_IfDeliveryChannelsEmpty_AndLegacyEnabled));
+        await dbContext.Customers.AddTestCustomer(customer);
+        await dbContext.Spaces.AddTestSpace(customer, space);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
+        await dbContext.Images.AddTestAsset(assetId, customer: customer, space: space);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": []
+        }}";
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+    
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
