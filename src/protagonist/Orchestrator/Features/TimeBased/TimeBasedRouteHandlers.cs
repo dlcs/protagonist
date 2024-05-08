@@ -21,7 +21,6 @@ public static class TimeBasedRouteHandlers
 
     static TimeBasedRouteHandlers()
     {
-        // TODO - should this be shared by AV + Image handling?
         HttpClient = new HttpMessageInvoker(new SocketsHttpHandler
         {
             UseProxy = false,
@@ -87,7 +86,7 @@ public static class TimeBasedRouteHandlers
         // Check if the proxy operation was successful
         if (error != ForwarderError.None)
         {
-            error.HandleProxyError(httpContext, logger);
+            error.HandleProxyError(httpContext, RequestOptions, logger);
         }
     }
 }

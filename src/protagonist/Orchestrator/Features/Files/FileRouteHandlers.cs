@@ -87,7 +87,7 @@ public static class FileRouteHandlers
 
         if (error != ForwarderError.None)
         {
-            error.HandleProxyError(httpContext, logger);
+            error.HandleProxyError(httpContext, RequestOptions, logger);
         }
     }
 }
