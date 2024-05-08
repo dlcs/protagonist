@@ -1,4 +1,5 @@
-﻿using API.Exceptions;
+﻿using System.Text.Json;
+using API.Exceptions;
 using API.Features.Assets;
 using API.Infrastructure.Requests;
 using API.Settings;
@@ -52,7 +53,7 @@ public class AssetProcessor
         Asset? existingAsset;
         try
         {
-            existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true);
+            existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true, true);
 
             if (existingAsset == null)
             {
@@ -116,7 +117,7 @@ public class AssetProcessor
                         WriteResult.FailedValidation)
                 };
             }
-
+            
             var updatedAsset = assetPreparationResult.UpdatedAsset!; // this is from Database
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
 
