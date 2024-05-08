@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 using DLCS.Core.Collections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -34,14 +34,14 @@ public class DownstreamDestinationSelector
         this.proxyStateLookup = proxyStateLookup;
         this.orchestratorSettings = orchestratorSettings;
     }
-    
+
     /// <summary>
     /// Attempt to get <see cref="ClusterState"/> object for specified <see cref="ProxyDestination"/>
     /// </summary>
     /// <param name="destination">Destination to get ClusterState for</param>
     /// <param name="clusterState">ClusterState, if found</param>
     /// <returns>true if ClusterState found, else false</returns>
-    public bool TryGetCluster(ProxyDestination destination, out ClusterState? clusterState)
+    public bool TryGetCluster(ProxyDestination destination, [NotNullWhen(true)] out ClusterState? clusterState)
     {
         clusterState = null;
         if (destination is ProxyDestination.S3 or ProxyDestination.Unknown)
