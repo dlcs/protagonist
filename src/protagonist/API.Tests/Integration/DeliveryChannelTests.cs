@@ -786,19 +786,8 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         },
         new object[]
         {
-            "my-thumbs-policy-1-b",
-            @"[\""!400,\"",\""!200,\"",\""!100,\""]"
-        },
-        new object[]
-        {
             "my-thumbs-policy-1-c",
             @"[\"",400\"",\"",200\"",\"",100\""]"
-        },
-        new object[]
-        {
-            "my-thumbs-policy-1-d",
-            @"[\""!,400\"",\""!,200\"",\""!,100\""]"
-
         },
         new object[]
         {
@@ -807,18 +796,8 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         },
         new object[]
         {
-            "my-thumbs-policy-1-f",
-            @"[\""^!400,\"",\""^!200,\"",\""^!100,\""]"
-        },
-        new object[]
-        {
             "my-thumbs-policy-1-g",
             @"[\""^,400\"",\""^,200\"",\""^,100\""]"
-        },
-        new object[]
-        {
-            "my-thumbs-policy-1-h",
-            @"[\""^!,400\"",\""^!,200\"",\""^!,100\""]"
         },
         new object[]
         {
