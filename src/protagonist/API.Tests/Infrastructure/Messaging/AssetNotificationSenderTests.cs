@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using API.Infrastructure.Messaging;
 using DLCS.AWS.SNS;
 using DLCS.Core.Types;
@@ -32,7 +33,7 @@ public class AssetNotificationSenderTests
     {
         // Arrange
         var assetModifiedRecord =
-            AssetModificationRecord.Update(new Asset(new AssetId(1, 2, "foo")), new Asset(new AssetId(1, 2, "bar")), true);
+            AssetModificationRecord.Update(new Asset(new AssetId(1, 2, "foo")), new Asset(new AssetId(1, 2, "bar")));
 
         // Act
         await sut.SendAssetModifiedMessage(assetModifiedRecord, CancellationToken.None);
@@ -75,7 +76,7 @@ public class AssetNotificationSenderTests
         A.CallTo(() =>
             topicPublisher.PublishToAssetModifiedTopic(
                 A<IReadOnlyList<AssetModifiedNotification>>.That.Matches(n =>
-                    n.Single().Attributes.Values.Contains(ChangeType.Delete.ToString()) && n.Single().MessageContents.Contains(customerName)),
+                    n.Single().ChangeType == ChangeType.Delete && n.Single().MessageContents.Contains(customerName)),
                 A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -101,7 +102,7 @@ public class AssetNotificationSenderTests
             topicPublisher.PublishToAssetModifiedTopic(
                 A<IReadOnlyList<AssetModifiedNotification>>.That.Matches(n =>
                     n.Count == 2 && n.All(m =>
-                        n.First().Attributes.Values.Contains(ChangeType.Delete.ToString()) && m.MessageContents.Contains(customerName))),
+                        m.ChangeType == ChangeType.Delete && m.MessageContents.Contains(customerName))),
                 A<CancellationToken>._)).MustHaveHappened();
     }
 }

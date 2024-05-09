@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Amazon.Runtime.Internal.Transform;
 using DLCS.AWS.SNS;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
@@ -41,31 +40,28 @@ public class AssetNotificationSender : IAssetNotificationSender
         CancellationToken cancellationToken = default)
         => SendAssetModifiedMessage(notification.AsList(), cancellationToken);
 
-    public async Task SendAssetModifiedMessage(IReadOnlyCollection<AssetModificationRecord> notifications, 
+    public async Task SendAssetModifiedMessage(IReadOnlyCollection<AssetModificationRecord> notifications,
         CancellationToken cancellationToken = default)
     {
-
-        var changes = new List<AssetModifiedNotification>();
+        // Iterate through AssetModifiedMessage objects and build list(s) of changes
+        var changes = new Dictionary<ChangeType, List<string>>()
+        {
+            [ChangeType.Create] = new(),
+            [ChangeType.Update] = new(),
+            [ChangeType.Delete] = new(),
+        };
         
         foreach (var notification in notifications)
         {
             var serialisedNotification = await GetSerialisedNotification(notification);
             if (serialisedNotification.HasText())
             {
-                var attributes = new Dictionary<string, string>()
-                {
-                    { "messageType", notification.ChangeType.ToString() }
-                };
-                if (notification.EngineNotified)
-                {
-                    attributes.Add("engineNotified", "True");
-                }
-                
-                changes.Add(new AssetModifiedNotification(serialisedNotification!, attributes));
+                changes[notification.ChangeType].Add(serialisedNotification);
             }
         }
 
-        await topicPublisher.PublishToAssetModifiedTopic(changes, cancellationToken);
+        // Send notifications generated in above method
+        await SendAssetModifiedRequest(changes, cancellationToken);
     }
 
     private async Task<string?> GetSerialisedNotification(AssetModificationRecord notification)
@@ -134,5 +130,17 @@ public class AssetNotificationSender : IAssetNotificationSender
         var customerPathElement = await customerPathRepository.GetCustomerPathElement(customer.ToString());
         customerPathElements[customer] = customerPathElement;
         return customerPathElement;
+    }
+    
+    private async Task<bool> SendAssetModifiedRequest(Dictionary<ChangeType, List<string>> change, CancellationToken cancellationToken)
+    {
+        if (change.IsNullOrEmpty()) return true;
+
+        var toSend = change
+            .SelectMany(kvp => kvp.Value
+                .Select(v => new AssetModifiedNotification(v, kvp.Key)))
+            .ToList();
+        
+        return await topicPublisher.PublishToAssetModifiedTopic(toSend, cancellationToken);
     }
 }

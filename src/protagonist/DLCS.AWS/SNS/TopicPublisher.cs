@@ -1,8 +1,8 @@
-﻿using Amazon.Runtime.Internal.Transform;
-using Amazon.SimpleNotificationService;
+﻿using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
 using DLCS.Core;
+using DLCS.Model.Messaging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -50,14 +50,14 @@ public class TopicPublisher : ITopicPublisher
         return allBatchSuccess;
     }
     
-    private async Task<bool> PublishToAssetModifiedTopic(AssetModifiedNotification message, 
+    private async Task<bool> PublishToAssetModifiedTopic(AssetModifiedNotification message,
         CancellationToken cancellationToken = default)
     {
         var request = new PublishRequest
         {
             TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
             Message = message.MessageContents,
-            MessageAttributes = GetMessageAttributes(message.Attributes)
+            MessageAttributes = GetMessageAttributes(message.ChangeType)
         };
 
         try
@@ -83,7 +83,7 @@ public class TopicPublisher : ITopicPublisher
                 TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
                 PublishBatchRequestEntries = chunk.Select(m => new PublishBatchRequestEntry
                 {
-                    MessageAttributes = GetMessageAttributes(m.Attributes),
+                    MessageAttributes = GetMessageAttributes(m.ChangeType),
                     Message = m.MessageContents,
                     Id = $"{batchIdPrefix}_{batchNumber}_{batchCount++}",
                 }).ToList()
@@ -98,20 +98,17 @@ public class TopicPublisher : ITopicPublisher
             return false;
         }
     }
-    
-    private static Dictionary<string, MessageAttributeValue> GetMessageAttributes(Dictionary<string, string> attributes)
+
+    private static Dictionary<string, MessageAttributeValue> GetMessageAttributes(ChangeType changeType)
     {
-        var messageAttributes = new Dictionary<string, MessageAttributeValue>();
-        foreach (var attribute in attributes)
+        var attributeValue = new MessageAttributeValue
         {
-            messageAttributes.Add(new KeyValuePair<string, MessageAttributeValue>(attribute.Key,
-                new MessageAttributeValue()
-                {
-                    DataType = "String",
-                    StringValue = attribute.Value
-                }));
-        }
-        
-        return messageAttributes;
+            StringValue = changeType.ToString(),
+            DataType = "String"
+        };
+        return new Dictionary<string, MessageAttributeValue>
+        {
+            { "messageType", attributeValue }
+        };
     }
 }
