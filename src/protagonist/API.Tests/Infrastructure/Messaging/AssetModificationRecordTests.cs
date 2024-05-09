@@ -37,22 +37,19 @@ public class AssetModificationRecordTests
         notification.Before.Should().BeNull();
     }
     
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void Update_SetsCorrectFields(bool engineNotified)
+    [Fact]
+    public void Update_SetsCorrectFields()
     {
         // Arrange
         var before = new Asset { Id = new AssetId(1, 2, "foo") };
         var after = new Asset { Id = new AssetId(1, 2, "foo"), MaxUnauthorised = 10 };
         
         // Act
-        var notification = AssetModificationRecord.Update(before, after, engineNotified);
+        var notification = AssetModificationRecord.Update(before, after);
         
         // Assert
         notification.ChangeType.Should().Be(ChangeType.Update);
         notification.Before.Should().Be(before);
         notification.After.Should().Be(after);
-        notification.EngineNotified.Should().Be(engineNotified);
     }
 }

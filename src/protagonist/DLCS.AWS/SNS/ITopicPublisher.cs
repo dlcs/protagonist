@@ -10,11 +10,11 @@ public interface ITopicPublisher
     /// <param name="messages">A collection of notifications to send</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Boolean representing the overall success/failure status of all requests</returns>
-    public Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<AssetModifiedNotification> messages, 
+    public Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<AssetModifiedNotification> messages,
         CancellationToken cancellationToken);
 }
 
 /// <summary>
 /// Represents the contents + type of change for Asset modified notification
 /// </summary>
-public record AssetModifiedNotification(string MessageContents, Dictionary<string, string> Attributes);
+public record AssetModifiedNotification(string MessageContents, ChangeType ChangeType);
