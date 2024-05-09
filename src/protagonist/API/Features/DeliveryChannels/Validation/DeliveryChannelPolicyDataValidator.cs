@@ -72,9 +72,9 @@ public class DeliveryChannelPolicyDataValidator
         {
             { Max: true } => false,
             { PercentScale: not null } => false,
-            { Confined: false } and { Width: not null, Height: not null } => false,
+            { Confined: false, Width: not null, Height: not null } => false,
             { Confined: true } and ({ Width: null } or { Height : null }) => false,
-            { Width: null } and { Height: null } => false,
+            { Width: null, Height: null } => false,
             _ => true,
         };
 
