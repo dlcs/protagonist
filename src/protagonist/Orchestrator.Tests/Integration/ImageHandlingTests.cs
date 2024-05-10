@@ -1231,6 +1231,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKey("Set-Cookie");
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+        proxyResponse.ActivityTimeout.Should().BeCloseTo(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(2));
     }
     
     [Theory]
@@ -1480,6 +1481,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromDays(28));
         response.Headers.Should().ContainKey("x-test-key").WhoseValue.Should().BeEquivalentTo("foo bar");
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+        proxyResponse.ActivityTimeout.Should().BeCloseTo(TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(2));
     }
     
     [Theory]

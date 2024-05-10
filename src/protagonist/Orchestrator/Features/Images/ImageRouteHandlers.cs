@@ -20,11 +20,10 @@ namespace Orchestrator.Features.Images;
 public static class ImageRouteHandlers
 {
     private static readonly HttpMessageInvoker HttpClient;
-    private static readonly ForwarderRequestConfig RequestOptions;
+    private static readonly ForwarderRequestConfig DefaultRequestOptions; 
 
     static ImageRouteHandlers()
     {
-        // TODO - should this be shared by AV + Image handling?
         HttpClient = new HttpMessageInvoker(new SocketsHttpHandler
         {
             UseProxy = false,
@@ -34,8 +33,7 @@ public static class ImageRouteHandlers
             ActivityHeadersPropagator = new ReverseProxyPropagator(DistributedContextPropagator.Current)
         });
         
-        // TODO - make this configurable, potentially by target
-        RequestOptions = new ForwarderRequestConfig { ActivityTimeout = TimeSpan.FromSeconds(60) };
+        DefaultRequestOptions = new ForwarderRequestConfig { ActivityTimeout = TimeSpan.FromSeconds(60) };
     }
 
     /// <summary>
@@ -113,7 +111,7 @@ public static class ImageRouteHandlers
             return;
         }
 
-        var destination = destinationSelector.GetClusterTarget(httpContext, cluster!);
+        var destination = destinationSelector.GetClusterTarget(httpContext, cluster);
 
         if (destination == null)
         {
@@ -125,11 +123,15 @@ public static class ImageRouteHandlers
         var root = destination.Model.Config.Address;
 
         var transformer = new PathRewriteTransformer(proxyAction);
-        var error = await forwarder.SendAsync(httpContext, root, HttpClient, RequestOptions, transformer);
+        var requestOptions = GetRequestOptions(cluster);
+        var error = await forwarder.SendAsync(httpContext, root, HttpClient, requestOptions, transformer);
 
         if (error != ForwarderError.None)
         {
-            error.HandleProxyError(httpContext, logger);
+            error.HandleProxyError(httpContext, requestOptions, logger);
         }
     }
+
+    private static ForwarderRequestConfig GetRequestOptions(ClusterState clusterState) =>
+        clusterState.Model.Config.HttpRequest ?? DefaultRequestOptions;
 }

@@ -59,7 +59,7 @@ public class TestProxyForwarder : IHttpForwarder
         await transformer.TransformResponseAsync(context, proxyResponse);
 
         // Write request parameters into response
-        await context.Response.WriteAsJsonAsync(new ProxyResponse(requestMessage));
+        await context.Response.WriteAsJsonAsync(new ProxyResponse(requestMessage, requestConfig.ActivityTimeout));
         return ForwarderError.None;
     }
 }
@@ -71,13 +71,15 @@ public class ProxyResponse
 {
     public Uri Uri { get; set; }
     public HttpMethod Method { get; set;}
+    public TimeSpan? ActivityTimeout { get; set; }
 
     public ProxyResponse()
     {
     }
 
-    public ProxyResponse(HttpRequestMessage request)
+    public ProxyResponse(HttpRequestMessage request, TimeSpan? activityTimeout = null)
     {
+        ActivityTimeout = activityTimeout;
         Uri = request.RequestUri;
         Method = request.Method;
     }
