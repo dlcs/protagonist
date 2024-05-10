@@ -387,7 +387,9 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin").WithTestThumbnailMetadata();
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin")
+            .WithTestDeliveryChannel(AssetDeliveryChannels.Image)
+            .WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
             
         var path = $"iiif-manifest/{id}";
