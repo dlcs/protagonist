@@ -46,6 +46,12 @@ public static class AssetDeliveryChannels
            asset.HasDeliveryChannel(deliveryChannel);
     
     /// <summary>
+    /// Checks if an asset has any delivery channel specified in a list
+    /// </summary>
+    public static bool HasAnyDeliveryChannel(this Asset asset, params string[] deliveryChannels)
+        => deliveryChannels.Any(asset.HasDeliveryChannel);
+
+    /// <summary>
     /// Checks if string is a valid delivery channel
     /// </summary>
     public static bool IsValidChannel(string? deliveryChannel)
