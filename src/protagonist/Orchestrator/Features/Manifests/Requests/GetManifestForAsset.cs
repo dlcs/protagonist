@@ -66,10 +66,11 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
             .IncludeDataForThumbs()
             .FirstOrDefaultAsync(a => a.Id == assetId, cancellationToken);
         
-        if (!asset.HasDeliveryChannel(AssetDeliveryChannels.Image) && 
-            !asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails))
+        if (asset == null || asset.NotForDelivery ||
+            !asset.HasAnyDeliveryChannel(AssetDeliveryChannels.Image, AssetDeliveryChannels.Thumbnails))
         {
-            logger.LogDebug("Attempted to request an iiif-manifest for {AssetId}, but it is unavailable on any image delivery channel.", assetId);
+            logger.LogDebug("Attempted to request an iiif-manifest for {AssetId}, but it was not found or is unavailable on any image delivery channel.",
+                assetId);
             return DescriptionResourceResponse.Empty;
         }    
 

@@ -140,14 +140,16 @@ public class IIIFCanvasFactory
                 {
                     Id = string.Concat(fullyQualifiedImageId, "/imageanno/0"),
                     On = canvasId,
-                    Resource = new IIIF2.ImageResource
-                    {
-                        Id = GetFullQualifiedImagePath(asset, customerPathElement,
-                            thumbnailSizes.MaxDerivativeSize, false),
-                        Width = thumbnailSizes.MaxDerivativeSize.Width,
-                        Height = thumbnailSizes.MaxDerivativeSize.Height,
-                        Service = GetImageServices(asset, customerPathElement, null)
-                    },
+                    Resource = asset.HasDeliveryChannel(AssetDeliveryChannels.Image) 
+                        ? new IIIF2.ImageResource
+                            {
+                                Id = GetFullQualifiedImagePath(asset, customerPathElement,
+                                    thumbnailSizes.MaxDerivativeSize, false),
+                                Width = thumbnailSizes.MaxDerivativeSize.Width,
+                                Height = thumbnailSizes.MaxDerivativeSize.Height,
+                                Service = GetImageServices(asset, customerPathElement, null)
+                            }
+                        : null,
                 }.AsList()
             };
 
