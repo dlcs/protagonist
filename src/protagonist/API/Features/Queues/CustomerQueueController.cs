@@ -94,77 +94,12 @@ public class CustomerQueueController : HydraController
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateBatch(
+    public Task<IActionResult> CreateBatch(
         [FromRoute] int customerId,
         [FromBody] HydraCollection<DLCS.HydraModel.Image> images,
         [FromServices] QueuePostValidator validator,
-        CancellationToken cancellationToken)
-    {
-        UpdateMembers(customerId, images.Members);
-
-        if (apiSettings.EmulateOldDeliveryChannelProperties)
-        {
-            ConvertOldDeliveryChannelsForMembers(images.Members);
-        }
-
-        var validationResult = await validator.ValidateAsync(images, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            return this.ValidationFailed(validationResult);
-        }
-    
-        var assetsBeforeProcessing = CreateAssetsBeforeProcessing(customerId, images);
-
-        var request =
-            new CreateBatchOfImages(customerId, assetsBeforeProcessing);
-
-        return await HandleUpsert(request,
-            batch => batch.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Create batch failed",
-            cancellationToken: cancellationToken);
-    }
-
-    /// <summary>
-    /// Updates assets for legacy mode compatibility and mints GUIDs if no ID set
-    /// </summary>
-    /// <param name="customerId">The customer id</param>
-    /// <param name="members">The assets to update</param>
-    private void UpdateMembers(int customerId, IList<DLCS.HydraModel.Image>? members)
-    {
-        if (members != null)
-        {
-            if (apiSettings.LegacyModeEnabledForCustomer(customerId))
-            {
-                for (int i = 0; i < members.Count; i++)
-                {
-                    if (apiSettings.LegacyModeEnabledForSpace(customerId, members[i].Space))
-                    {
-                        members[i] = LegacyModeConverter.VerifyAndConvertToModernFormat(members[i]);
-                    }
-                }
-            }
-            
-            foreach (var image in members.Where(image =>  string.IsNullOrEmpty(image.ModelId)))
-            {
-                image.ModelId = Guid.NewGuid().ToString();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Converts WcDeliveryChannels (if set) to DeliveryChannels for a list of assets
-    /// </summary>
-    /// <param name="members">The assets to update</param>
-    private void ConvertOldDeliveryChannelsForMembers(IList<DLCS.HydraModel.Image>? members)
-    {
-        if (members == null) return;
-        
-        foreach (var hydraAsset in members)
-        {
-            if (hydraAsset.WcDeliveryChannels.IsNullOrEmpty()) continue;
-            hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
-        }
-    }
+        CancellationToken cancellationToken) =>
+        CreateBatchInternal(customerId, images, validator, QueueNames.Default, cancellationToken);
 
     /// <summary>
     /// Create a batch of images to ingest, adding request to priority queue
@@ -197,30 +132,12 @@ public class CustomerQueueController : HydraController
     [Route("priority")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreatePriorityBatch(
+    public Task<IActionResult> CreatePriorityBatch(
         [FromRoute] int customerId,
         [FromBody] HydraCollection<DLCS.HydraModel.Image> images,
         [FromServices] QueuePostValidator validator,
-        CancellationToken cancellationToken)
-    {
-        UpdateMembers(customerId, images.Members);
-        
-        var validationResult = await validator.ValidateAsync(images, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            return this.ValidationFailed(validationResult);
-        }
-        
-        var assetsBeforeProcessing = CreateAssetsBeforeProcessing(customerId, images);
-
-        var request =
-            new CreateBatchOfImages(customerId, assetsBeforeProcessing, QueueNames.Priority);
-
-        return await HandleUpsert(request,
-            batch => batch.ToHydra(GetUrlRoots().BaseUrl),
-            errorTitle: "Create priority batch failed",
-            cancellationToken: cancellationToken);
-    }
+        CancellationToken cancellationToken) =>
+        CreateBatchInternal(customerId, images, validator, QueueNames.Priority, cancellationToken);
 
     /// <summary>
     /// Get details of priority customer queue
@@ -413,6 +330,28 @@ public class CustomerQueueController : HydraController
             cancellationToken: cancellationToken);
     }
     
+    private async Task<IActionResult> CreateBatchInternal(int customerId, HydraCollection<DLCS.HydraModel.Image> images,
+        QueuePostValidator validator, string queueName, CancellationToken cancellationToken)
+    {
+        UpdateMembers(customerId, images.Members);
+
+        var validationResult = await validator.ValidateAsync(images, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
+    
+        var assetsBeforeProcessing = CreateAssetsBeforeProcessing(customerId, images);
+
+        var request =
+            new CreateBatchOfImages(customerId, assetsBeforeProcessing, queueName);
+
+        return await HandleUpsert(request,
+            batch => batch.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: queueName == QueueNames.Priority ? "Create priority batch failed" : "Create batch failed",
+            cancellationToken: cancellationToken);
+    }
+    
     private static List<AssetBeforeProcessing> CreateAssetsBeforeProcessing(int customerId, HydraCollection<DLCS.HydraModel.Image> images)
     {
         var assetsBeforeProcessing = images.Members!
@@ -420,5 +359,49 @@ public class CustomerQueueController : HydraController
                 (i.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
                 .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.Policy)).ToArray())).ToList();
         return assetsBeforeProcessing;
+    }
+    
+    /// <summary>
+    /// Updates assets for legacy mode compatibility and mints GUIDs if no ID set
+    /// </summary>
+    /// <param name="customerId">The customer id</param>
+    /// <param name="members">The assets to update</param>
+    private void UpdateMembers(int customerId, IList<DLCS.HydraModel.Image>? members)
+    {
+        if (members == null) return;
+        
+        if (apiSettings.LegacyModeEnabledForCustomer(customerId))
+        {
+            for (int i = 0; i < members.Count; i++)
+            {
+                if (apiSettings.LegacyModeEnabledForSpace(customerId, members[i].Space))
+                {
+                    members[i] = LegacyModeConverter.VerifyAndConvertToModernFormat(members[i]);
+                }
+            }
+        }
+
+        foreach (var image in members.Where(image => string.IsNullOrEmpty(image.ModelId)))
+        {
+            image.ModelId = Guid.NewGuid().ToString();
+        }
+            
+        if (apiSettings.EmulateOldDeliveryChannelProperties)
+        {
+            ConvertOldDeliveryChannelsForMembers(members);
+        }
+    }
+
+    /// <summary>
+    /// Converts WcDeliveryChannels (if set) to DeliveryChannels for a list of assets
+    /// </summary>
+    /// <param name="members">The assets to update</param>
+    private void ConvertOldDeliveryChannelsForMembers(IList<DLCS.HydraModel.Image> members)
+    {
+        foreach (var hydraAsset in members)
+        {
+            if (hydraAsset.WcDeliveryChannels.IsNullOrEmpty()) continue;
+            hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
+        }
     }
 }
