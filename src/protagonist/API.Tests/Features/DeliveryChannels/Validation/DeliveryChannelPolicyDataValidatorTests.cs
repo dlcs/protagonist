@@ -24,12 +24,14 @@ public class DeliveryChannelPolicyDataValidatorTests
             .Returns(fakedAvPolicies);
         sut = new DeliveryChannelPolicyDataValidator(avChannelPolicyOptionsRepository);
     }
-
+    
     [Theory]
     [InlineData("[\"400,\",\"200,\",\"100,\"]")]
-    [InlineData("[\"!400,\",\"!200,\",\"!100,\"]")]
     [InlineData("[\",400\",\",200\",\",100\"]")]
-    [InlineData("[\"!,400\",\"!,200\",\"!,100\"]")]
+    [InlineData("[\"^400,\",\"^200,\",\"^100,\"]")]
+    [InlineData("[\"^,400\",\"^,200\",\"^,100\"]")]
+    [InlineData("[\"!400,400\",\"!200,200\",\"!100,100\"]")]
+    [InlineData("[\"^!400,400\",\"^!200,200\",\"^!100,100\"]")]
     public async Task PolicyDataValidator_ReturnsTrue_ForValidThumbParameters(string policyData)
     {
         // Arrange and Act
@@ -88,6 +90,8 @@ public class DeliveryChannelPolicyDataValidatorTests
     [InlineData("[\"^pct:41.6,7.5\"]")]
     [InlineData("[\"10,50\"]")]
     [InlineData("[\",\"]")]
+    [InlineData("[\"!10,\"]")]
+    [InlineData("[\"!,10\"]")]
     public async Task PolicyDataValidator_ReturnsFalse_ForInvalidThumbParameters(string policyData)
     {
         // Arrange and Act

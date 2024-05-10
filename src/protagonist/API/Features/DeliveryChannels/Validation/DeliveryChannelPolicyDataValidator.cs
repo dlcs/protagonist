@@ -68,10 +68,15 @@ public class DeliveryChannelPolicyDataValidator
         return true;
     }
 
-    private bool IsValidThumbnailParameter(SizeParameter param)
-        => !(param.Max || param.PercentScale.HasValue ||
-             (param.Width.HasValue && param.Height.HasValue && !param.Confined) ||
-             (!param.Width.HasValue && !param.Height.HasValue));
+    private bool IsValidThumbnailParameter(SizeParameter param) => param switch
+        {
+            { Max: true } => false,
+            { PercentScale: not null } => false,
+            { Confined: false, Width: not null, Height: not null } => false,
+            { Confined: true } and ({ Width: null } or { Height : null }) => false,
+            { Width: null, Height: null } => false,
+            _ => true,
+        };
 
     private async Task<bool> ValidateTimeBasedPolicyData(string policyDataJson)
     {
